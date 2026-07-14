@@ -1,4 +1,6 @@
-const API_BASE = '/api/v1';
+import { apiUrl } from './config.js';
+
+export { BACKEND_URL, API_BASE, apiUrl } from './config.js';
 
 let accessToken = null;
 
@@ -20,7 +22,7 @@ export async function api(path, options = {}) {
   }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     ...options,
     headers,
     credentials: 'include',
@@ -55,7 +57,7 @@ export async function downloadExcel(path, filename) {
   const headers = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     headers,
     credentials: 'include',
   });
@@ -78,4 +80,18 @@ export async function downloadExcel(path, filename) {
   a.download = filename || 'export.xlsx';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Authenticated blob/file fetch helper for PDF and template downloads. */
+export async function apiFetch(path, options = {}) {
+  if (accessToken == null) loadStoredToken();
+  const headers = { ...(options.headers || {}) };
+  if (accessToken && !headers.Authorization) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return fetch(apiUrl(path), {
+    credentials: 'include',
+    ...options,
+    headers,
+  });
 }

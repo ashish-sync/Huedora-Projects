@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { renderAsync } from 'docx-preview';
-import { loadStoredToken } from '../shared/api.js';
+import { apiFetch } from '../shared/api.js';
+
 
 const RENDER_OPTIONS = {
   className: 'dhub-docx',
@@ -43,11 +44,7 @@ export default function DocxNativePreview({ file, templateId, className = '' }) 
       try {
         let data = file;
         if (!data && templateId) {
-          const token = loadStoredToken();
-          const res = await fetch(`/api/v1/templates/${templateId}/file`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            credentials: 'include',
-          });
+          const res = await apiFetch(`/templates/${templateId}/file`);
           if (!res.ok) throw new Error('Could not load Word file for preview');
           data = await res.blob();
         }

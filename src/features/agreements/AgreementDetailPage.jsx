@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
-import { api, loadStoredToken } from '../../shared/api.js';
+import { api, apiFetch } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 
@@ -159,11 +159,7 @@ export default function AgreementDetailPage() {
     setPdfLoading(true);
     setPdfError('');
     try {
-      const token = loadStoredToken();
-      const res = await fetch(`/api/v1/agreements/${id}/pdf`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-      });
+      const res = await apiFetch(`/agreements/${id}/pdf`);
       if (!res.ok) throw new Error('Could not load PDF preview');
       const blob = await res.blob();
       if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
@@ -318,11 +314,7 @@ export default function AgreementDetailPage() {
   const downloadPdf = async () => {
     setError('');
     try {
-      const token = loadStoredToken();
-      const res = await fetch(`/api/v1/agreements/${id}/pdf?download=1`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-      });
+      const res = await apiFetch(`/agreements/${id}/pdf?download=1`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

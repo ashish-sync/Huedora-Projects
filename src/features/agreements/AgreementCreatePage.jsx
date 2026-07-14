@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, loadStoredToken } from '../../shared/api.js';
+import { api, apiFetch } from '../../shared/api.js';
 import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
 import { MODULE } from '../../shared/labels.js';
 
@@ -23,11 +23,7 @@ function todayISODate() {
 }
 
 async function fetchPdfBlobUrl(previewPath) {
-  const token = loadStoredToken();
-  const res = await fetch(previewPath.startsWith('/api') ? previewPath : `/api/v1${previewPath}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    credentials: 'include',
-  });
+  const res = await apiFetch(previewPath);
   if (!res.ok) throw new Error('Could not load PDF preview');
   const blob = await res.blob();
   return URL.createObjectURL(blob);

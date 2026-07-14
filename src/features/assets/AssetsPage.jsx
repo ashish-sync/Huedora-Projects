@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, loadStoredToken, downloadExcel } from '../../shared/api.js';
+import { api, apiFetch, downloadExcel } from '../../shared/api.js';
+
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -100,11 +101,7 @@ export default function AssetsPage() {
   const downloadSample = async () => {
     setError('');
     try {
-      const token = loadStoredToken();
-      const res = await fetch('/api/v1/devices/import-template', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-      });
+      const res = await apiFetch('/devices/import-template');
       if (!res.ok) throw new Error('Could not download sample Excel');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -298,11 +295,7 @@ export default function AssetsPage() {
     if (!canViewAgreements) return;
     setViewError('');
     try {
-      const token = loadStoredToken();
-      const res = await fetch(`/api/v1/agreements/${agreement._id}/pdf`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-      });
+      const res = await apiFetch(`/agreements/${agreement._id}/pdf`);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error?.message || 'Could not load agreement PDF');

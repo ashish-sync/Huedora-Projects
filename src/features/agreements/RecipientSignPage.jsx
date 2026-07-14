@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { apiFetch, apiUrl } from '../../shared/api.js';
 
 const SENDER_ORG = 'Tylo Care';
 
@@ -260,7 +261,7 @@ export default function RecipientSignPage() {
     setPdfLoading(true);
     setPdfError('');
     try {
-      const res = await fetch(`/api/v1/recipient/${token}/pdf`);
+      const res = await apiFetch(`/recipient/${token}/pdf`);
       if (!res.ok) throw new Error('Could not load document preview');
       const blob = await res.blob();
       if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
@@ -276,7 +277,7 @@ export default function RecipientSignPage() {
   };
 
   const load = () =>
-    fetch(`/api/v1/recipient/${token}`)
+    fetch(apiUrl(`/recipient/${token}`))
       .then(async (r) => {
         const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.error?.message || j.message || 'Unable to open document');
@@ -374,8 +375,8 @@ export default function RecipientSignPage() {
     setMsg('');
     try {
       const url = isNonSigning
-        ? `/api/v1/recipient/${token}/acknowledge`
-        : `/api/v1/recipient/${token}/sign`;
+        ? apiUrl(`/recipient/${token}/acknowledge`)
+        : apiUrl(`/recipient/${token}/sign`);
       const body = isNonSigning
         ? {}
         : mode === 'TYPED'

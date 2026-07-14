@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, loadStoredToken, downloadExcel } from '../../shared/api.js';
+import { api, apiFetch, downloadExcel } from '../../shared/api.js';
+
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -215,11 +216,7 @@ export default function DevicesPage() {
   const downloadSample = async () => {
     setError('');
     try {
-      const token = loadStoredToken();
-      const res = await fetch('/api/v1/devices/import-template', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-      });
+      const res = await apiFetch('/devices/import-template');
       if (!res.ok) throw new Error('Could not download sample Excel');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

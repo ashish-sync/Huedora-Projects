@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, loadStoredToken } from '../../shared/api.js';
+import { api, apiFetch } from '../../shared/api.js';
+
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -245,13 +246,10 @@ export default function VerificationsPage() {
       if (custodianName.trim()) fd.append('custodianName', custodianName.trim());
       if (custodianContact.trim()) fd.append('custodianContact', custodianContact.trim());
 
-      const token = loadStoredToken();
-      const res = await fetch(
-        `/api/v1/verifications/records/${active.record._id}/rounds/${active.condition.nextRound}`,
+      const res = await apiFetch(
+        `/verifications/records/${active.record._id}/rounds/${active.condition.nextRound}`,
         {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: 'include',
           body: fd,
         }
       );

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { apiUrl } from '../../shared/api.js';
 
 const SENDER_ORG = 'Tylo Care';
 
@@ -41,7 +42,7 @@ export default function SelfVerifyPage() {
   const fileRef = useRef(null);
 
   useEffect(() => {
-    fetch(`/api/v1/self-verify/${token}`)
+    fetch(apiUrl(`/self-verify/${token}`))
       .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
       .then(({ ok, j }) => {
         if (!ok) throw new Error(j?.error?.message || 'Invalid verification link');
@@ -97,7 +98,7 @@ export default function SelfVerifyPage() {
       if (zone.trim()) fd.append('zone', zone.trim());
       if (callRemark.trim()) fd.append('callRemark', callRemark.trim());
 
-      const res = await fetch(`/api/v1/self-verify/${token}`, {
+      const res = await fetch(apiUrl(`/self-verify/${token}`), {
         method: 'POST',
         credentials: 'include',
         body: fd,

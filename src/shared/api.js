@@ -95,3 +95,34 @@ export async function apiFetch(path, options = {}) {
     headers,
   });
 }
+
+/**
+ * Liveness check against GET /api/v1/live (falls back to /health).
+ * Resolves when the API responds 200 with live/ok status.
+ */
+export async function checkServerLive({ signal } = {}) {
+  const tryPath = async (path) => {
+    const res = await fetch(apiUrl(path), {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+      signal,
+    });
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
+    }
+    const json = await res.json().catch(() => ({}));
+    const data = json?.data || json || {};
+    if (data.live === false || (data.status && data.status !== 'ok')) {
+      throw new Error('Server reported unhealthy');
+    }
+    return data;
+  };
+
+  try {
+    return await tryPath('/live');
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    return tryPath('/health');
+  }
+}

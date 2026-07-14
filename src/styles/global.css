@@ -1623,19 +1623,48 @@ tr.row-selected {
 }
 
 .boot-gate-card .muted {
-  margin: 0 0 20px;
-  font-size: 0.92rem;
-  line-height: 1.45;
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.boot-gate-footnote {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--muted, #5a6f69) 85%, var(--brand, #0d7a68));
 }
 
 .boot-gate-spinner {
-  width: 42px;
-  height: 42px;
-  margin: 0 auto 18px;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 20px;
   border-radius: 50%;
-  border: 3px solid color-mix(in srgb, var(--brand, #0d7a68) 22%, transparent);
+  border: 3px solid color-mix(in srgb, var(--brand, #0d7a68) 18%, transparent);
   border-top-color: var(--brand, #0d7a68);
-  animation: boot-spin 0.75s linear infinite;
+  animation: boot-spin 0.8s linear infinite;
+}
+
+.boot-gate-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--brand, #0d7a68) 28%, transparent);
+  position: relative;
+}
+
+.boot-gate-icon::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand, #0d7a68) 35%, transparent);
+}
+
+.boot-gate-card .btn {
+  margin-top: 8px;
 }
 
 @keyframes boot-spin {

@@ -4,8 +4,8 @@ import { useAuth } from '../../shared/auth.jsx';
 
 export default function LoginPage() {
   const { user, login } = useAuth();
-  const [email, setEmail] = useState('admin@dhub.local');
-  const [password, setPassword] = useState('Admin@12345');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -16,7 +16,7 @@ export default function LoginPage() {
     setBusy(true);
     setError('');
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -76,10 +76,6 @@ export default function LoginPage() {
           <button className="btn" disabled={busy} type="submit">
             {busy ? 'Signing in…' : 'Continue'}
           </button>
-          <p className="login-hint">
-            Demo: admin@dhub.local · manager@dhub.local · verifier@dhub.local —
-            Admin@12345
-          </p>
         </form>
       </div>
     </div>

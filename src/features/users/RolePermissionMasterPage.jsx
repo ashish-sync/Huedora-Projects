@@ -478,7 +478,7 @@ export default function RolePermissionMasterPage() {
                     minLength={10}
                     value={userDraft.password}
                     disabled={!canWrite}
-                    placeholder={creatingUser ? 'Min 10 characters' : 'Optional new password'}
+                    placeholder={creatingUser ? 'Min 12 characters' : 'Optional new password'}
                     onChange={(e) => setUserDraft({ ...userDraft, password: e.target.value })}
                   />
                 </div>

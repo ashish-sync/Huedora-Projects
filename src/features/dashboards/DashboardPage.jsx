@@ -67,10 +67,26 @@ const OPS = [
   },
 ];
 
+const CAMP_MODULE = {
+  to: '/camps',
+  title: MODULE.CAMP_MANAGEMENT,
+  blurb: 'Submit in-house camp requests and track Pending / Approved / Declined status.',
+  canShow: (can) =>
+    can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
+  icon: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <path d="M4 20V9.5L12 4l8 5.5V20" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 20v-6h6v6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 11h.01M15 11h.01" strokeLinecap="round" />
+    </svg>
+  ),
+};
+
 export default function DashboardPage() {
   const { can } = useAuth();
   const lifecycle = LIFECYCLE.filter((m) => m.canShow(can));
   const ops = OPS.filter((m) => m.canShow(can));
+  const showCamps = CAMP_MODULE.canShow(can);
   const canSeeDashboard = can('dashboards:read') || can('*');
 
   return (
@@ -129,6 +145,22 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
+
+        {showCamps && (
+          <div className="dhub-home-grid dhub-home-grid--camps" style={{ marginTop: 16 }}>
+            <Link to={CAMP_MODULE.to} className="dhub-home-card tone-primary" style={{ '--i': 0 }}>
+              <span className="dhub-home-card-icon">{CAMP_MODULE.icon}</span>
+              <div className="dhub-home-card-body">
+                <h2>{CAMP_MODULE.title}</h2>
+                <p>{CAMP_MODULE.blurb}</p>
+              </div>
+              <span className="dhub-home-card-cta">
+                Open
+                <span aria-hidden="true">→</span>
+              </span>
+            </Link>
+          </div>
+        )}
       </section>
 
       {ops.length > 0 && (

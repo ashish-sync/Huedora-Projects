@@ -21,6 +21,7 @@ import RepairsPage from '../features/repairs/RepairsPage.jsx';
 import ImportsPage from '../features/imports/ImportsPage.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
 import NotificationsPage from '../features/notifications/NotificationsPage.jsx';
+import CampsPage from '../features/camps/CampsPage.jsx';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="/agreements/new" element={<AgreementCreatePage />} />
                 <Route path="/agreements/:id" element={<AgreementDetailPage />} />
                 <Route path="/verifications" element={<VerificationsPage />} />
+                <Route path="/camps" element={<CampsPage />} />
                 <Route path="/movements" element={<MovementsPage />} />
                 <Route path="/repairs" element={<RepairsPage />} />
                 <Route path="/imports" element={<ImportsPage />} />

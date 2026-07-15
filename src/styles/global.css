@@ -5366,3 +5366,49 @@ tr.row-selected {
     padding: 26px 18px;
   }
 }
+
+/* -- In-House Camp Management (shared form layout styles) ----- */
+
+.dhub-home-grid--camps {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 420px;
+}
+
+.logistics-form {
+  margin-bottom: 14px;
+}
+
+.logistics-form h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.logistics-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px 12px;
+}
+
+.logistics-form-grid--inout {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.logistics-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.logistics-toolbar {
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.logistics-form input.is-readonly,
+.logistics-form .is-readonly {
+  background: color-mix(in srgb, var(--line) 35%, #fff);
+  color: var(--muted);
+  cursor: default;
+}

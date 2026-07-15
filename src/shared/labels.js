@@ -9,6 +9,7 @@ export const MODULE = {
   /** @deprecated Prefer ASSET_INVENTORY — register + track are one module */
   ASSET_MASTER: 'Asset Inventory',
   ASSET_VERIFICATION: 'Asset Verification',
+  CAMP_MANAGEMENT: 'In-House Camp Management',
   ROLES_PERMISSIONS: 'Roles & Permissions',
   CONTACT_DIRECTORY: 'Contact Directory',
   DOCUMENT_MASTER: 'Document Master',

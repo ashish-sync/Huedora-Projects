@@ -7,15 +7,16 @@ const NAV = [
   { to: '/logistics', end: true, label: 'Dashboard' },
   { to: '/logistics/inward', label: 'Inward' },
   { to: '/logistics/outward', label: 'Outward' },
-  { to: '/logistics/balance', label: 'Balance Stats' },
+  { to: '/logistics/balance', label: 'Balance' },
   { to: '/logistics/usage', label: 'Usage' },
   { to: '/logistics/output', label: 'Output' },
-  { to: '/logistics/master', label: 'Inventory & Vendor Master' },
+  { to: '/logistics/master', label: 'Masters' },
 ];
 
 export default function LogisticsLayout() {
   const { can } = useAuth();
-  const allowed = can('logistics:read') || can('logistics:write') || can('*');
+  const allowed =
+    can('logistics:read') || can('logistics:write') || can('logistics:master') || can('*');
 
   if (!allowed) {
     return (
@@ -35,7 +36,7 @@ export default function LogisticsLayout() {
         title={MODULE.INVENTORY_LOGISTICS}
         description="Dashboard, inward receipts, outward dispatch, balances, and masters."
       >
-        <nav className="logistics-nav" aria-label="Logistics sections">
+        <nav className="logistics-nav" aria-label="Inventory and Logistics sections">
           {NAV.map((item) => (
             <NavLink
               key={item.to}

@@ -107,7 +107,7 @@ export default function LogisticsUsagePage() {
               <th>HCW Name</th>
               <th>Client</th>
               <th>Process</th>
-              <th>Inventory Type</th>
+              <th>Product Category</th>
               <th>Dr Name</th>
               <th>Machine City</th>
               <th>Camp Date</th>

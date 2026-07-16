@@ -4145,6 +4145,12 @@ tr.row-selected {
   border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
 }
 
+.inv-table th.num,
+.inv-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .inv-table tbody tr:hover td {
   background: color-mix(in srgb, var(--brand-soft, #e8f6f1) 55%, #fff);
 }

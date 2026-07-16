@@ -361,7 +361,7 @@ export default function LogisticsHubPage() {
           </button>
         )}
         <div className="ilog-dash-filter">
-          <label htmlFor="ilog-inv">Inventory Type</label>
+          <label htmlFor="ilog-inv">Product Category</label>
           <select
             id="ilog-inv"
             value={inventoryType}

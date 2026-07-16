@@ -6,7 +6,6 @@ import {
   FALLBACK_PRODUCT,
   Field,
   emptyTxnForm,
-  isInwardRow,
 } from './logisticsTxnShared.jsx';
 
 const SOURCES = [
@@ -74,10 +73,10 @@ export default function LogisticsInwardPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '300' });
+      const params = new URLSearchParams({ limit: '200', entryTypes: 'Inward,Return' });
       if (q.trim()) params.set('q', q.trim());
       const res = await api(`/logistics/in-out?${params}`);
-      setRows((res.data || []).filter((r) => isInwardRow(r.entryType)));
+      setRows(res.data || []);
     } catch (e) {
       setError(e.message);
     }
@@ -347,7 +346,7 @@ export default function LogisticsInwardPage() {
             <Field label="Qty" required>
               <input
                 type="number"
-                min="0"
+                min="0.0001"
                 step="any"
                 required
                 value={form.qty}
@@ -357,7 +356,7 @@ export default function LogisticsInwardPage() {
             <Field label="Per unit cost">
               <input
                 type="number"
-                min="0"
+                min="0.0001"
                 step="any"
                 value={form.perUnitCost}
                 onChange={(e) => setField('perUnitCost', e.target.value)}

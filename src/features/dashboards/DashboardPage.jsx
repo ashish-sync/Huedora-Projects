@@ -72,6 +72,7 @@ const MODULES = [
       can('movements:approve') ||
       can('repairs:read') ||
       can('repairs:write') ||
+      can('maintenance:write') ||
       can('*'),
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
@@ -118,7 +119,8 @@ export default function DashboardPage() {
             {firstName ? `Welcome back, ${firstName}.` : 'Welcome back.'}
           </h1>
           <p className="dhub-home-lead">
-            Choose a workspace — registry, documents, verification, camps, requests, or logistics.
+            Choose a workspace — Asset Registry, Document Center, verification, camps, The Request
+            Center, or Inventory & Logistics.
           </p>
         </div>
 
@@ -128,7 +130,7 @@ export default function DashboardPage() {
               {MODULE.DASHBOARD}
               <span aria-hidden="true"> →</span>
             </Link>
-            <p className="dhub-home-dash-hint">Inventory &amp; verification tracking</p>
+            <p className="dhub-home-dash-hint">Asset Registry &amp; verification tracking</p>
           </div>
         )}
       </header>

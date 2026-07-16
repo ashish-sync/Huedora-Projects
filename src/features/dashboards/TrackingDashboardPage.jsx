@@ -209,7 +209,7 @@ export default function TrackingDashboardPage() {
             />
           </label>
           <p className="muted track-range-hint">
-            Inventory: assets onboarded in range · Verification: condition for{' '}
+            Asset Registry: assets onboarded in range · Verification: condition for{' '}
             {data?.periodKey || 'selected end month'}
             {rangeLabel !== 'All time' ? ` · ${rangeLabel}` : ''}
           </p>
@@ -235,7 +235,7 @@ export default function TrackingDashboardPage() {
                 </p>
               </div>
               <Link className="btn secondary btn-compact" to="/assets">
-                Open inventory
+                Open Asset Registry
               </Link>
             </div>
 

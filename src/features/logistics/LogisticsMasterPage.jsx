@@ -3,7 +3,7 @@ import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
 const ENTITIES = [
-  { id: 'uoms', label: 'UOM', path: '/logistics/uoms', fields: ['code', 'name'] },
+  { id: 'uoms', label: 'Units of Measure (UOM)', path: '/logistics/uoms', fields: ['code', 'name'] },
   {
     id: 'categories',
     label: 'Product Category',
@@ -239,6 +239,12 @@ export default function LogisticsMasterPage() {
       setError('Select a contact from Contact Directory.');
       return;
     }
+    if (c.resourceType && c.resourceType !== entity.partyType) {
+      const ok = window.confirm(
+        `This contact is Resource Type “${c.resourceType}”, but you are adding a ${entity.partyType}. Continue?`
+      );
+      if (!ok) return;
+    }
     setBusy(true);
     setError('');
     setMsg('');
@@ -322,8 +328,8 @@ export default function LogisticsMasterPage() {
   return (
     <div className="logistics-master">
       <p className="muted" style={{ marginTop: 0 }}>
-        Inventory &amp; Vendor Master — UOM, product categories, suppliers, and vendors. Suppliers and vendors can also
-        be added from Contact Directory.
+        Inventory &amp; Logistics Masters — units of measure, product categories, suppliers, and vendors.
+        Suppliers and vendors can also be added from Contact Directory.
       </p>
       <div className="logistics-entity-tabs" role="tablist">
         {ENTITIES.map((e) => (

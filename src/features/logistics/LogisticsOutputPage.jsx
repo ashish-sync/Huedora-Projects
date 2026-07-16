@@ -1,25 +1,80 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api } from '../../shared/api.js';
+
+function formatMoney(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num)) return '—';
+  return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
 
 export default function LogisticsOutputPage() {
-  const [hcw, setHcw] = useState('');
+  const [q, setQ] = useState('');
+  const [rows, setRows] = useState([]);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await api('/logistics/dashboard');
+      setRows(res.data?.byHcw || []);
+    } catch (e) {
+      setError(e.message);
+      setRows([]);
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter(
+      (r) =>
+        String(r.name || '').toLowerCase().includes(needle) ||
+        String(r.id || '').toLowerCase().includes(needle)
+    );
+  }, [rows, q]);
+
+  const totals = useMemo(() => {
+    return filtered.reduce(
+      (acc, r) => {
+        acc.qty += Number(r.qty) || 0;
+        acc.amount += Number(r.amount) || 0;
+        return acc;
+      },
+      { qty: 0, amount: 0 }
+    );
+  }, [filtered]);
 
   return (
     <div className="logistics-output">
       <p className="muted" style={{ marginTop: 0 }}>
-        HCW inventory dashboard — per-HCW stock balance (on-hand with the field resource).
+        Output — field stock still on hand with each resource (Outward − Returns − Used − Wastage).
       </p>
 
-      <div className="logistics-kpis" role="group" aria-label="HCW output snapshot">
+      {error ? (
+        <div className="am-banner is-error" role="status">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="logistics-kpis" role="group" aria-label="Field output snapshot">
         <div className="logistics-kpi">
-          <strong>—</strong>
-          <span>HCWs with stock</span>
+          <strong>{filtered.length}</strong>
+          <span>Resources with stock</span>
         </div>
         <div className="logistics-kpi">
-          <strong>—</strong>
+          <strong>{totals.qty.toLocaleString()}</strong>
           <span>Total on-hand qty</span>
         </div>
         <div className="logistics-kpi">
-          <strong>—</strong>
+          <strong>{formatMoney(totals.amount)}</strong>
           <span>Inventory value</span>
         </div>
       </div>
@@ -27,12 +82,13 @@ export default function LogisticsOutputPage() {
       <div className="inv-toolbar logistics-toolbar">
         <input
           className="esign-search inv-search"
-          placeholder="Search HCW…"
-          value={hcw}
-          onChange={(e) => setHcw(e.target.value)}
+          placeholder="Search resource…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && load()}
         />
-        <button className="btn secondary" type="button" disabled>
-          Search
+        <button className="btn secondary" type="button" onClick={load} disabled={busy}>
+          {busy ? 'Loading…' : 'Refresh'}
         </button>
       </div>
 
@@ -40,26 +96,40 @@ export default function LogisticsOutputPage() {
         <table className="inv-table">
           <thead>
             <tr>
-              <th>HCW</th>
-              <th>Items</th>
+              <th>Resource</th>
+              <th>ID</th>
               <th className="num">On-hand qty</th>
               <th className="num">Value</th>
               <th>Last movement</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={5}>
-                <div className="inv-empty">
-                  <strong>No HCW balances yet</strong>
-                  <p className="muted">
-                    Per-HCW balances will populate when dispatch / assignment posts stock to field
-                    resources.
-                    {hcw ? ` Search ready for “${hcw}”.` : null}
-                  </p>
-                </div>
-              </td>
-            </tr>
+            {filtered.map((r) => (
+              <tr key={r.id}>
+                <td>
+                  <strong>{r.name || '—'}</strong>
+                </td>
+                <td className="mono-sm">{r.id || '—'}</td>
+                <td className="num">{Number(r.qty || 0).toLocaleString()}</td>
+                <td className="num">{formatMoney(r.amount)}</td>
+                <td className="mono-sm">
+                  {r.lastAt ? new Date(r.lastAt).toLocaleString() : '—'}
+                </td>
+              </tr>
+            ))}
+            {!filtered.length && (
+              <tr>
+                <td colSpan={5}>
+                  <div className="inv-empty">
+                    <strong>No field balances yet</strong>
+                    <p className="muted">
+                      Balances appear after outward dispatch to a field resource. Returns and usage
+                      reduce on-hand qty.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

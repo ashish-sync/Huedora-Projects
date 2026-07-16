@@ -9,12 +9,13 @@ import {
   FALLBACK_PRODUCT,
   Field,
   emptyTxnForm,
-  isOutwardRow,
 } from './logisticsTxnShared.jsx';
 
 export default function LogisticsOutwardPage() {
   const { can, user } = useAuth();
   const canWrite = can('logistics:write') || can('*');
+  const canCompleteRequest =
+    can('asset-requests:approve') || can('movements:approve') || can('*');
   const [mode, setMode] = useState('manual'); // manual | requests
   const [rows, setRows] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -56,10 +57,10 @@ export default function LogisticsOutwardPage() {
   const loadRows = useCallback(async () => {
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '300' });
+      const params = new URLSearchParams({ limit: '200', entryType: 'Outward' });
       if (q.trim()) params.set('q', q.trim());
       const res = await api(`/logistics/in-out?${params}`);
-      setRows((res.data || []).filter((r) => isOutwardRow(r.entryType)));
+      setRows(res.data || []);
     } catch (e) {
       setError(e.message);
     }
@@ -68,9 +69,7 @@ export default function LogisticsOutwardPage() {
   const loadRequests = useCallback(async () => {
     try {
       const res = await api('/asset-requests?requestType=LOGISTICS&limit=100');
-      const list = (res.data || []).filter((r) =>
-        ['REQUESTED', 'APPROVED'].includes(String(r.status || ''))
-      );
+      const list = (res.data || []).filter((r) => String(r.status || '') === 'APPROVED');
       setRequests(list);
     } catch {
       setRequests([]);
@@ -229,6 +228,7 @@ export default function LogisticsOutwardPage() {
           sourceWarehouseId: form.warehouseId || null,
           contactId: form.contactId || null,
           productId: form.productId || null,
+          assetRequestId: fulfillingId || form.assetRequestId || null,
           employeeName: form.recipientName,
           name: form.recipientName,
           qty: Number(form.qty) || 0,
@@ -240,26 +240,29 @@ export default function LogisticsOutwardPage() {
       });
 
       if (fulfillingId) {
-        try {
-          const req = requests.find((r) => String(r._id) === String(fulfillingId));
-          if (req?.status === 'REQUESTED') {
-            await api(`/asset-requests/${fulfillingId}/approve`, { method: 'POST', body: {} });
+        if (!canCompleteRequest) {
+          setMsg(
+            'Dispatch saved. Approve and complete the linked request in The Request Center to finish fulfillment.'
+          );
+        } else {
+          try {
+            await api(`/asset-requests/${fulfillingId}/complete`, { method: 'POST', body: {} });
+            setMsg('Dispatch saved and linked logistics request completed.');
+          } catch (reqErr) {
+            setMsg(
+              `Dispatch saved, but request could not be completed: ${reqErr.message}. Finish it in The Request Center.`
+            );
           }
-          await api(`/asset-requests/${fulfillingId}/complete`, { method: 'POST', body: {} });
-        } catch {
-          // Dispatch still succeeded; request may need separate approval
         }
+      } else {
+        setMsg('Outward dispatch saved — stock updated.');
       }
 
-      setMsg(
-        fulfillingId
-          ? 'Dispatch saved and linked logistics request updated.'
-          : 'Outward dispatch saved — stock updated.'
-      );
       setFormOpen(false);
       setFulfillingId('');
       loadRows();
       loadRequests();
+      return;
     } catch (err) {
       setError(err.message);
     } finally {
@@ -300,7 +303,7 @@ export default function LogisticsOutwardPage() {
             setFormOpen(false);
           }}
         >
-          From Request Center
+          From The Request Center
         </button>
       </div>
 
@@ -402,7 +405,7 @@ export default function LogisticsOutwardPage() {
                 <Field label="Qty" required>
                   <input
                     type="number"
-                    min="0"
+                    min="0.0001"
                     step="any"
                     required
                     value={form.qty}

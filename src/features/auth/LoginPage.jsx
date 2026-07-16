@@ -43,7 +43,7 @@ export default function LoginPage() {
         <form className="card login-card" onSubmit={onSubmit} aria-labelledby="login-heading">
           <p className="login-kicker">Welcome back</p>
           <h2 id="login-heading">Sign in</h2>
-          <p>Use your work email to continue to Device Hub.</p>
+          <p>Use your work email to continue to DHub.</p>
 
           <div className="field">
             <label htmlFor="login-email">Work email</label>

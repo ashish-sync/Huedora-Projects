@@ -44,7 +44,7 @@ export default function ServerGate({ children }) {
             <div className="boot-gate-icon" aria-hidden="true" />
             <h1>We&rsquo;ll be right back</h1>
             <p className="muted">
-              Device Hub is taking a short pause. Hold tight — try again in a moment.
+              DHub is taking a short pause. Hold tight — try again in a moment.
             </p>
             <button type="button" className="btn" onClick={() => setAttempt((n) => n + 1)}>
               Try again

@@ -131,7 +131,7 @@ export default function LogisticsInventoryPage() {
   return (
     <div className="logistics-inventory">
       <p className="muted" style={{ marginTop: 0 }}>
-        Balance Stats — current stock calculation across warehouses and statuses.
+        Balance — current stock on hand across warehouses and statuses.
       </p>
 
       {(error || msg) && (
@@ -187,8 +187,7 @@ export default function LogisticsInventoryPage() {
         <form className="card logistics-form" onSubmit={save}>
           <h3>Add stock line</h3>
           <p className="muted" style={{ marginTop: 0 }}>
-            Seed serialised stock for balance stats. Goods Receipt on In_Out will drive inbound
-            updates when that workflow ships.
+            Seed serialised stock for balance. Inward receipts update quantities automatically.
           </p>
           <div className="logistics-form-grid">
             <div className="field">
@@ -232,7 +231,7 @@ export default function LogisticsInventoryPage() {
               </select>
             </div>
             <div className="field">
-              <label>UoM</label>
+              <label>UOM</label>
               <select value={form.uomId} onChange={(e) => setForm({ ...form, uomId: e.target.value })}>
                 <option value="">—</option>
                 {(meta?.uoms || []).map((u) => (
@@ -363,8 +362,8 @@ export default function LogisticsInventoryPage() {
                   <div className="inv-empty">
                     <strong>No stock balance yet</strong>
                     <p className="muted">
-                      Set up Inventory &amp; Vendor Master, then add stock here — or receive via
-                      In_Out → Goods Receipt when that workflow is live.
+                      Set up Masters (products, UOM, warehouses), then add stock here — or receive
+                      via Inward.
                     </p>
                   </div>
                 </td>

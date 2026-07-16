@@ -29,8 +29,11 @@ export default function SelfVerifyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-  const [photo, setPhoto] = useState(null);
-  const [preview, setPreview] = useState('');
+  const [photoFull, setPhotoFull] = useState(null);
+  const [previewFull, setPreviewFull] = useState('');
+  const [photoSerial, setPhotoSerial] = useState(null);
+  const [previewSerial, setPreviewSerial] = useState('');
+  const [extraPhotos, setExtraPhotos] = useState([]);
   const [gps, setGps] = useState(null);
   const [physical, setPhysical] = useState('PASS');
   const [functionality, setFunctionality] = useState('CHECKED');
@@ -39,7 +42,9 @@ export default function SelfVerifyPage() {
   const [callRemark, setCallRemark] = useState('');
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
-  const fileRef = useRef(null);
+  const fullRef = useRef(null);
+  const serialRef = useRef(null);
+  const extraRef = useRef(null);
 
   useEffect(() => {
     fetch(apiUrl(`/self-verify/${token}`))
@@ -55,10 +60,47 @@ export default function SelfVerifyPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const onPickPhoto = (file) => {
-    setPhoto(file || null);
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(file ? URL.createObjectURL(file) : '');
+  useEffect(
+    () => () => {
+      if (previewFull) URL.revokeObjectURL(previewFull);
+      if (previewSerial) URL.revokeObjectURL(previewSerial);
+      extraPhotos.forEach((p) => {
+        if (p.preview) URL.revokeObjectURL(p.preview);
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const onPickRequiredPhoto = (slot, file) => {
+    if (slot === 'full') {
+      if (previewFull) URL.revokeObjectURL(previewFull);
+      setPhotoFull(file || null);
+      setPreviewFull(file ? URL.createObjectURL(file) : '');
+    } else {
+      if (previewSerial) URL.revokeObjectURL(previewSerial);
+      setPhotoSerial(file || null);
+      setPreviewSerial(file ? URL.createObjectURL(file) : '');
+    }
+  };
+
+  const addExtraPhotos = (fileList) => {
+    const files = Array.from(fileList || []).filter(Boolean);
+    if (!files.length) return;
+    setExtraPhotos((prev) => [
+      ...prev,
+      ...files.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ]);
+    if (extraRef.current) extraRef.current.value = '';
+  };
+
+  const removeExtraPhoto = (idx) => {
+    setExtraPhotos((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(idx, 1);
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return next;
+    });
   };
 
   const captureGps = async () => {
@@ -75,8 +117,12 @@ export default function SelfVerifyPage() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!photo) {
-      setError('Upload a GPS photo of the asset');
+    if (!photoFull) {
+      setError('Upload a full device photo');
+      return;
+    }
+    if (!photoSerial) {
+      setError('Upload a device photo with the serial number visible');
       return;
     }
     if (!gps) {
@@ -88,7 +134,11 @@ export default function SelfVerifyPage() {
     setError('');
     try {
       const fd = new FormData();
-      fd.append('photo', photo);
+      fd.append('photoFull', photoFull);
+      fd.append('photoSerial', photoSerial);
+      for (const item of extraPhotos) {
+        if (item.file) fd.append('photosExtra', item.file);
+      }
       fd.append('latitude', String(gps.latitude));
       fd.append('longitude', String(gps.longitude));
       if (gps.accuracy != null) fd.append('accuracy', String(gps.accuracy));
@@ -170,8 +220,8 @@ export default function SelfVerifyPage() {
         <div className="sv-card">
           <h1>Verify your asset</h1>
           <p className="muted">
-            Hello {ctx?.holder?.name || 'there'}. Please confirm the asset condition and upload a
-            GPS-tagged photo.
+            Hello {ctx?.holder?.name || 'there'}. Confirm the asset condition and upload the required
+            photos with GPS.
           </p>
 
           <div className="sv-asset-summary">
@@ -196,77 +246,143 @@ export default function SelfVerifyPage() {
           )}
 
           <form className="sv-form" onSubmit={submit}>
-            <div className="field">
-              <label>GPS photo *</label>
-              <input
-                ref={fileRef}
-                className="vf-file-input"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                required
-                onChange={(e) => onPickPhoto(e.target.files?.[0] || null)}
-              />
-              {preview && <img src={preview} alt="Preview" className="sv-photo-preview" />}
-            </div>
-
-            <div className="field">
-              <label>GPS location *</label>
-              <div className="sv-gps-row">
-                <button type="button" className="btn secondary" disabled={gpsBusy} onClick={captureGps}>
-                  {gpsBusy ? 'Locating…' : gps ? 'Refresh GPS' : 'Capture GPS'}
-                </button>
-                {gps ? (
-                  <code className="mono-sm">
-                    {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
-                  </code>
-                ) : (
-                  <span className="muted">Required before submit</span>
+            <section className="vf-form-section">
+              <div className="vf-form-section-head">
+                <h3>Photos</h3>
+                <p className="muted">Full device and serial photos are required.</p>
+              </div>
+              <div className="field">
+                <label>Full device photo *</label>
+                <p className="muted vf-photo-hint">Entire device in frame, clearly visible.</p>
+                <input
+                  ref={fullRef}
+                  className="vf-file-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                  onChange={(e) => onPickRequiredPhoto('full', e.target.files?.[0] || null)}
+                />
+                {previewFull && (
+                  <img src={previewFull} alt="Full device preview" className="sv-photo-preview" />
                 )}
               </div>
-            </div>
 
-            <div className="sv-form-grid">
               <div className="field">
-                <label>Physical condition</label>
-                <select value={physical} onChange={(e) => setPhysical(e.target.value)}>
-                  <option value="PASS">Pass</option>
-                  <option value="FAIL">Fail</option>
-                </select>
-              </div>
-              <div className="field">
-                <label>Functionality</label>
-                <select value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
-                  <option value="CHECKED">Checked</option>
-                  <option value="NOT_CHECKED">Not checked</option>
-                </select>
-              </div>
-              <div className="field">
-                <label>Current location</label>
+                <label>Serial number photo *</label>
+                <p className="muted vf-photo-hint">Close-up where the serial can be read.</p>
                 <input
-                  value={currentLocation}
-                  onChange={(e) => setCurrentLocation(e.target.value)}
-                  placeholder="Where is the asset now?"
+                  ref={serialRef}
+                  className="vf-file-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                  onChange={(e) => onPickRequiredPhoto('serial', e.target.files?.[0] || null)}
+                />
+                {previewSerial && (
+                  <img src={previewSerial} alt="Serial number preview" className="sv-photo-preview" />
+                )}
+              </div>
+
+              <div className="field">
+                <label>Additional photos</label>
+                <p className="muted vf-photo-hint">Optional. Add damage, packaging, or other views.</p>
+                <input
+                  ref={extraRef}
+                  className="vf-file-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  onChange={(e) => addExtraPhotos(e.target.files)}
+                />
+                {extraPhotos.length > 0 && (
+                  <div className="vf-photo-extra-grid">
+                    {extraPhotos.map((item, idx) => (
+                      <div key={`${item.preview}-${idx}`} className="vf-photo-extra-item">
+                        <img src={item.preview} alt={`Extra ${idx + 1}`} className="sv-photo-preview" />
+                        <button
+                          type="button"
+                          className="btn secondary btn-compact"
+                          onClick={() => removeExtraPhoto(idx)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="vf-form-section">
+              <div className="vf-form-section-head">
+                <h3>Location</h3>
+              </div>
+              <div className="field">
+                <label>GPS *</label>
+                <div className="vf-gps-box">
+                  <button type="button" className="btn secondary" disabled={gpsBusy} onClick={captureGps}>
+                    {gpsBusy ? 'Locating…' : gps ? 'Refresh GPS' : 'Capture GPS'}
+                  </button>
+                  {gps ? (
+                    <code className="mono-sm vf-gps-coords">
+                      {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
+                    </code>
+                  ) : (
+                    <span className="muted">Not captured</span>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="vf-form-section">
+              <div className="vf-form-section-head">
+                <h3>Condition &amp; place</h3>
+              </div>
+              <div className="sv-form-grid">
+                <div className="field">
+                  <label>Physical condition</label>
+                  <select value={physical} onChange={(e) => setPhysical(e.target.value)}>
+                    <option value="PASS">Pass</option>
+                    <option value="FAIL">Fail</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Functionality</label>
+                  <select value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
+                    <option value="CHECKED">Checked</option>
+                    <option value="NOT_CHECKED">Not checked</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Current location</label>
+                  <input
+                    value={currentLocation}
+                    onChange={(e) => setCurrentLocation(e.target.value)}
+                    placeholder="City or site"
+                  />
+                </div>
+                <div className="field">
+                  <label>Zone / area</label>
+                  <input value={zone} onChange={(e) => setZone(e.target.value)} placeholder="Optional" />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Remarks</label>
+                <textarea
+                  rows={3}
+                  value={callRemark}
+                  onChange={(e) => setCallRemark(e.target.value)}
+                  placeholder="Optional notes"
                 />
               </div>
-              <div className="field">
-                <label>Zone / area</label>
-                <input value={zone} onChange={(e) => setZone(e.target.value)} placeholder="Optional" />
-              </div>
-            </div>
-
-            <div className="field">
-              <label>Remarks</label>
-              <textarea
-                value={callRemark}
-                onChange={(e) => setCallRemark(e.target.value)}
-                placeholder="Any notes about the asset condition"
-                rows={3}
-              />
-            </div>
+            </section>
 
             <button className="btn btn-block" type="submit" disabled={busy}>
-              {busy ? 'Submitting…' : `Submit Round ${ctx?.round} verification`}
+              {busy ? 'Submitting…' : `Submit Round ${ctx?.round || ''} verification`}
             </button>
           </form>
         </div>

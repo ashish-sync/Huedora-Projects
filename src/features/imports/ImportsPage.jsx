@@ -33,7 +33,7 @@ export default function ImportsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Excel import' }]}
       title="Excel import"
-      description="Dry-run validates rows; commit writes Contact Directory custodians, Asset Inventory, or verification records."
+      description="Dry-run validates rows; commit writes Contact Directory custodians, Asset Registry, or verification records."
     >
       {error && <p className="error">{error}</p>}
 

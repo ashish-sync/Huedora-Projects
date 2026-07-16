@@ -92,8 +92,11 @@ export default function VerificationsPage() {
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);
   const [verifyStep, setVerifyStep] = useState(null);
-  const [photo, setPhoto] = useState(null);
-  const [preview, setPreview] = useState('');
+  const [photoFull, setPhotoFull] = useState(null);
+  const [previewFull, setPreviewFull] = useState('');
+  const [photoSerial, setPhotoSerial] = useState(null);
+  const [previewSerial, setPreviewSerial] = useState('');
+  const [extraPhotos, setExtraPhotos] = useState([]); // [{ file, preview }]
   const [gps, setGps] = useState(null);
   const [physical, setPhysical] = useState('PASS');
   const [functionality, setFunctionality] = useState('CHECKED');
@@ -106,10 +109,14 @@ export default function VerificationsPage() {
   const [custodianName, setCustodianName] = useState('');
   const [custodianContact, setCustodianContact] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [linkValidDays, setLinkValidDays] = useState(7);
+  const [linkExpiresAt, setLinkExpiresAt] = useState('');
   const [activity, setActivity] = useState([]);
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
-  const fileRef = useRef(null);
+  const fullRef = useRef(null);
+  const serialRef = useRef(null);
+  const extraRef = useRef(null);
 
   const periodKey = periodKeyFromIso(toDate);
 
@@ -162,9 +169,21 @@ export default function VerificationsPage() {
     }
   };
 
+  const clearPhotoPreviews = () => {
+    if (previewFull) URL.revokeObjectURL(previewFull);
+    if (previewSerial) URL.revokeObjectURL(previewSerial);
+    extraPhotos.forEach((p) => {
+      if (p.preview) URL.revokeObjectURL(p.preview);
+    });
+  };
+
   const resetForm = (row) => {
-    setPhoto(null);
-    setPreview('');
+    clearPhotoPreviews();
+    setPhotoFull(null);
+    setPreviewFull('');
+    setPhotoSerial(null);
+    setPreviewSerial('');
+    setExtraPhotos([]);
     setGps(null);
     setPhysical('PASS');
     setFunctionality('CHECKED');
@@ -177,7 +196,11 @@ export default function VerificationsPage() {
     setCustodianName(row?.holder?.name || '');
     setCustodianContact(row?.holder?.phone || row?.holder?.email || '');
     setLinkUrl('');
-    if (fileRef.current) fileRef.current.value = '';
+    setLinkValidDays(7);
+    setLinkExpiresAt('');
+    if (fullRef.current) fullRef.current.value = '';
+    if (serialRef.current) serialRef.current.value = '';
+    if (extraRef.current) extraRef.current.value = '';
   };
 
   const openVerify = (row) => {
@@ -200,10 +223,35 @@ export default function VerificationsPage() {
     resetForm(null);
   };
 
-  const onPickPhoto = (file) => {
-    setPhoto(file || null);
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(file ? URL.createObjectURL(file) : '');
+  const onPickRequiredPhoto = (slot, file) => {
+    if (slot === 'full') {
+      if (previewFull) URL.revokeObjectURL(previewFull);
+      setPhotoFull(file || null);
+      setPreviewFull(file ? URL.createObjectURL(file) : '');
+    } else {
+      if (previewSerial) URL.revokeObjectURL(previewSerial);
+      setPhotoSerial(file || null);
+      setPreviewSerial(file ? URL.createObjectURL(file) : '');
+    }
+  };
+
+  const addExtraPhotos = (fileList) => {
+    const files = Array.from(fileList || []).filter(Boolean);
+    if (!files.length) return;
+    setExtraPhotos((prev) => [
+      ...prev,
+      ...files.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ]);
+    if (extraRef.current) extraRef.current.value = '';
+  };
+
+  const removeExtraPhoto = (idx) => {
+    setExtraPhotos((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(idx, 1);
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return next;
+    });
   };
 
   const captureGps = async () => {
@@ -221,8 +269,12 @@ export default function VerificationsPage() {
   const submitManual = async (e) => {
     e.preventDefault();
     if (!active?.record?._id || !active.condition?.nextRound) return;
-    if (!photo) {
-      setError('Upload a GPS photo of the asset');
+    if (!photoFull) {
+      setError('Upload a full device photo');
+      return;
+    }
+    if (!photoSerial) {
+      setError('Upload a device photo with the serial number visible');
       return;
     }
     if (!gps) {
@@ -234,7 +286,11 @@ export default function VerificationsPage() {
     setError('');
     try {
       const fd = new FormData();
-      fd.append('photo', photo);
+      fd.append('photoFull', photoFull);
+      fd.append('photoSerial', photoSerial);
+      for (const item of extraPhotos) {
+        if (item.file) fd.append('photosExtra', item.file);
+      }
       fd.append('latitude', String(gps.latitude));
       fd.append('longitude', String(gps.longitude));
       if (gps.accuracy != null) fd.append('accuracy', String(gps.accuracy));
@@ -275,11 +331,19 @@ export default function VerificationsPage() {
     try {
       const { data } = await api(`/verifications/records/${active.record._id}/send-link`, {
         method: 'POST',
-        body: { round: active.condition.nextRound },
+        body: {
+          round: active.condition.nextRound,
+          validForDays: Number(linkValidDays),
+        },
       });
       const url = `${window.location.origin}/v/${data.invite.shortCode}`;
       setLinkUrl(url);
-      setMsg(`Verification link sent for Round ${active.condition.nextRound}.`);
+      setLinkExpiresAt(data.invite.expiresAt || '');
+      setMsg(
+        `Verification link sent for Round ${active.condition.nextRound} (valid ${linkValidDays} day${
+          Number(linkValidDays) === 1 ? '' : 's'
+        }).`
+      );
       await loadActivity(active.record._id);
       await load();
     } catch (err) {
@@ -448,7 +512,7 @@ export default function VerificationsPage() {
                   className="vf-choose-btn"
                   onClick={() => setVerifyStep('link')}
                   disabled={!active.holder}
-                  title={active.holder ? undefined : 'Assign a custodian in Asset Inventory first'}
+                  title={active.holder ? undefined : 'Assign a custodian in Asset Registry first'}
                 >
                   Send link to Holder
                 </button>
@@ -527,70 +591,174 @@ export default function VerificationsPage() {
                   <span className="vf-back-icon" aria-hidden="true">←</span>
                   Back
                 </button>
-                <div className="vf-verify-grid">
-                  <div className="field">
-                    <label>GPS photo *</label>
-                    <input
-                      ref={fileRef}
-                      className="vf-file-input"
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      required
-                      onChange={(e) => onPickPhoto(e.target.files?.[0] || null)}
-                    />
-                    {preview && <img src={preview} alt="Verification preview" className="vf-photo-preview" />}
+
+                <section className="vf-form-section">
+                  <div className="vf-form-section-head">
+                    <h3>Photos</h3>
+                    <p className="muted">Full device and serial photos are required. Extra photos are optional.</p>
                   </div>
-                  <div className="field">
-                    <label>GPS location *</label>
-                    <div className="vf-gps-row">
-                      <button type="button" className="btn secondary" disabled={gpsBusy} onClick={captureGps}>
-                        {gpsBusy ? 'Locating…' : gps ? 'Refresh GPS' : 'Capture GPS'}
-                      </button>
-                      {gps ? (
-                        <code className="mono-sm">
-                          {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
-                        </code>
-                      ) : (
-                        <span className="muted">Not captured yet</span>
+                  <div className="vf-photo-pair">
+                    <div className="field">
+                      <label>Full device photo *</label>
+                      <p className="muted vf-photo-hint">Entire device in frame, clearly visible.</p>
+                      <input
+                        ref={fullRef}
+                        className="vf-file-input"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        required
+                        onChange={(e) => onPickRequiredPhoto('full', e.target.files?.[0] || null)}
+                      />
+                      {previewFull && (
+                        <img src={previewFull} alt="Full device preview" className="vf-photo-preview" />
+                      )}
+                    </div>
+                    <div className="field">
+                      <label>Serial number photo *</label>
+                      <p className="muted vf-photo-hint">Close-up where the serial can be read.</p>
+                      <input
+                        ref={serialRef}
+                        className="vf-file-input"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        required
+                        onChange={(e) => onPickRequiredPhoto('serial', e.target.files?.[0] || null)}
+                      />
+                      {previewSerial && (
+                        <img
+                          src={previewSerial}
+                          alt="Serial number preview"
+                          className="vf-photo-preview"
+                        />
                       )}
                     </div>
                   </div>
                   <div className="field">
-                    <label>Physical</label>
-                    <select value={physical} onChange={(e) => setPhysical(e.target.value)}>
-                      <option value="PASS">Pass</option>
-                      <option value="FAIL">Fail</option>
-                    </select>
+                    <label>Additional photos</label>
+                    <p className="muted vf-photo-hint">Optional. Add damage, packaging, or other views.</p>
+                    <input
+                      ref={extraRef}
+                      className="vf-file-input"
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      multiple
+                      onChange={(e) => addExtraPhotos(e.target.files)}
+                    />
+                    {extraPhotos.length > 0 && (
+                      <div className="vf-photo-extra-grid">
+                        {extraPhotos.map((item, idx) => (
+                          <div key={`${item.preview}-${idx}`} className="vf-photo-extra-item">
+                            <img src={item.preview} alt={`Extra ${idx + 1}`} className="vf-photo-preview" />
+                            <button
+                              type="button"
+                              className="btn secondary btn-compact"
+                              onClick={() => removeExtraPhoto(idx)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section className="vf-form-section">
+                  <div className="vf-form-section-head">
+                    <h3>Location</h3>
+                    <p className="muted">Capture GPS at the verification site.</p>
                   </div>
                   <div className="field">
-                    <label>Functionality</label>
-                    <select value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
-                      <option value="CHECKED">Checked</option>
-                      <option value="NOT_CHECKED">Not checked</option>
-                    </select>
+                    <label>GPS *</label>
+                    <div className="vf-gps-box">
+                      <button type="button" className="btn secondary" disabled={gpsBusy} onClick={captureGps}>
+                        {gpsBusy ? 'Locating…' : gps ? 'Refresh GPS' : 'Capture GPS'}
+                      </button>
+                      {gps ? (
+                        <code className="mono-sm vf-gps-coords">
+                          {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
+                        </code>
+                      ) : (
+                        <span className="muted">Not captured</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="field">
-                    <label>Custodian name</label>
-                    <input value={custodianName} onChange={(e) => setCustodianName(e.target.value)} />
+                </section>
+
+                <section className="vf-form-section">
+                  <div className="vf-form-section-head">
+                    <h3>Condition</h3>
                   </div>
-                  <div className="field">
-                    <label>Custodian contact</label>
-                    <input value={custodianContact} onChange={(e) => setCustodianContact(e.target.value)} />
+                  <div className="vf-verify-grid">
+                    <div className="field">
+                      <label>Physical condition</label>
+                      <select value={physical} onChange={(e) => setPhysical(e.target.value)}>
+                        <option value="PASS">Pass</option>
+                        <option value="FAIL">Fail</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Functionality</label>
+                      <select value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
+                        <option value="CHECKED">Checked</option>
+                        <option value="NOT_CHECKED">Not checked</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className="field">
-                    <label>Current location</label>
-                    <input value={currentLocation} onChange={(e) => setCurrentLocation(e.target.value)} />
+                </section>
+
+                <section className="vf-form-section">
+                  <div className="vf-form-section-head">
+                    <h3>Custodian &amp; place</h3>
                   </div>
-                  <div className="field">
-                    <label>Zone</label>
-                    <input value={zone} onChange={(e) => setZone(e.target.value)} />
+                  <div className="vf-verify-grid">
+                    <div className="field">
+                      <label>Custodian name</label>
+                      <input
+                        value={custodianName}
+                        onChange={(e) => setCustodianName(e.target.value)}
+                        placeholder="Who has the device"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Custodian contact</label>
+                      <input
+                        value={custodianContact}
+                        onChange={(e) => setCustodianContact(e.target.value)}
+                        placeholder="Phone or email"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Current location</label>
+                      <input
+                        value={currentLocation}
+                        onChange={(e) => setCurrentLocation(e.target.value)}
+                        placeholder="City or site"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Zone / area</label>
+                      <input
+                        value={zone}
+                        onChange={(e) => setZone(e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div className="field vf-span-2">
+                      <label>Remarks</label>
+                      <textarea
+                        value={callRemark}
+                        onChange={(e) => setCallRemark(e.target.value)}
+                        rows={2}
+                        placeholder="Optional notes from this check"
+                      />
+                    </div>
                   </div>
-                  <div className="field vf-span-2">
-                    <label>Call remark</label>
-                    <textarea value={callRemark} onChange={(e) => setCallRemark(e.target.value)} rows={2} />
-                  </div>
-                </div>
+                </section>
+
                 <div className="vf-verify-actions">
                   <button className="btn" type="submit" disabled={busy}>
                     {busy ? 'Saving…' : `Submit Round ${active.condition.nextRound}`}
@@ -614,10 +782,31 @@ export default function VerificationsPage() {
                 </div>
                 {active.pendingLink && !linkUrl && (
                   <p className="muted">
-                    Link already sent {active.pendingLink.sentAt ? new Date(active.pendingLink.sentAt).toLocaleString() : ''}.
-                    Generate a new link below to replace it.
+                    Link already sent{' '}
+                    {active.pendingLink.sentAt
+                      ? new Date(active.pendingLink.sentAt).toLocaleString()
+                      : ''}
+                    {active.pendingLink.expiresAt
+                      ? ` · expires ${new Date(active.pendingLink.expiresAt).toLocaleString()}`
+                      : ''}
+                    . Generate a new link below to replace it.
                   </p>
                 )}
+                <div className="field vf-link-validity">
+                  <label htmlFor="vf-link-valid-days">Link valid for</label>
+                  <select
+                    id="vf-link-valid-days"
+                    value={linkValidDays}
+                    onChange={(e) => setLinkValidDays(Number(e.target.value))}
+                    disabled={busy}
+                  >
+                    <option value={1}>1 day</option>
+                    <option value={3}>3 days</option>
+                    <option value={7}>7 days</option>
+                    <option value={14}>14 days</option>
+                    <option value={30}>30 days</option>
+                  </select>
+                </div>
                 <div className="vf-verify-actions">
                   <button className="btn" type="button" disabled={busy} onClick={sendLink}>
                     {busy ? 'Sending…' : linkUrl ? 'Regenerate link' : 'Generate secure link'}
@@ -631,8 +820,14 @@ export default function VerificationsPage() {
                     </button>
                   </div>
                 )}
-                <p className="muted" style={{ fontSize: '0.8125rem', margin: 0 }}>
-                  Link expires in 7 days.
+                <p className="muted vf-link-expiry">
+                  {linkExpiresAt
+                    ? `Expires ${new Date(linkExpiresAt).toLocaleString()} (${linkValidDays} day${
+                        Number(linkValidDays) === 1 ? '' : 's'
+                      }).`
+                    : `Link will expire after ${linkValidDays} day${
+                        Number(linkValidDays) === 1 ? '' : 's'
+                      }.`}
                 </p>
               </div>
             )}

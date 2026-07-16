@@ -33,7 +33,7 @@ export default function LoginPage() {
         <div className="login-hero-inner">
           <h1>Onboard devices, get them signed, then verify them.</h1>
           <p>
-            Asset Inventory, Document Hub, and Asset Verification — one sequence for the full
+            Asset Registry, Document Center, and Asset Verification — one sequence for the full
             lifecycle.
           </p>
         </div>

@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 
 const MODULES = [
   {
     to: '/assets',
     title: MODULE.ASSET_INVENTORY,
-    blurb: 'Onboard devices — register serials, custody, and status.',
-    step: '01',
+    blurb: MODULE_BLURB.ASSET_INVENTORY,
     canShow: (can) =>
       can('assets:read') ||
       can('assets:write') ||
@@ -24,8 +23,7 @@ const MODULES = [
   {
     to: '/agreements',
     title: MODULE.DOCUMENT_HUB,
-    blurb: 'Get them signed — documents, contacts, and e-signatures.',
-    step: '02',
+    blurb: MODULE_BLURB.DOCUMENT_HUB,
     canShow: (can) => can('agreements:read') || can('agreements:write') || can('*'),
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
@@ -38,8 +36,7 @@ const MODULES = [
   {
     to: '/verifications',
     title: MODULE.ASSET_VERIFICATION,
-    blurb: 'Verify them — Round I / II with photo, GPS, and callbacks.',
-    step: '03',
+    blurb: MODULE_BLURB.ASSET_VERIFICATION,
     canShow: (can) => can('verifications:read') || can('verifications:write') || can('*'),
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
@@ -51,8 +48,7 @@ const MODULES = [
   {
     to: '/camps',
     title: MODULE.CAMP_MANAGEMENT,
-    blurb: 'Submit in-house camp requests and track Pending / Approved / Declined status.',
-    step: '04',
+    blurb: MODULE_BLURB.CAMP_MANAGEMENT,
     canShow: (can) =>
       can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
     icon: (
@@ -63,64 +59,93 @@ const MODULES = [
       </svg>
     ),
   },
-];
-
-const OPS = [
   {
-    to: '/movements',
-    title: 'Movements',
-    blurb: 'Request and approve custody transfers.',
+    to: '/asset-requests',
+    title: MODULE.ASSET_REQUESTS,
+    blurb: MODULE_BLURB.ASSET_REQUESTS,
     canShow: (can) =>
-      can('movements:read') || can('movements:request') || can('movements:approve') || can('*'),
+      can('asset-requests:read') ||
+      can('asset-requests:request') ||
+      can('asset-requests:approve') ||
+      can('movements:read') ||
+      can('movements:request') ||
+      can('movements:approve') ||
+      can('repairs:read') ||
+      can('repairs:write') ||
+      can('*'),
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <path d="M8 7h8M8 12h5M8 17h8" strokeLinecap="round" />
+        <path d="M5 4.75h14A1.25 1.25 0 0 1 20.25 6v12A1.25 1.25 0 0 1 19 19.25H5A1.25 1.25 0 0 1 3.75 18V6A1.25 1.25 0 0 1 5 4.75Z" />
+      </svg>
+    ),
   },
   {
-    to: '/repairs',
-    title: 'Repairs',
-    blurb: 'Track repair and maintenance tickets.',
-    canShow: (can) => can('repairs:read') || can('repairs:write') || can('*'),
+    to: '/logistics',
+    title: MODULE.INVENTORY_LOGISTICS,
+    blurb: MODULE_BLURB.INVENTORY_LOGISTICS,
+    canShow: (can) =>
+      can('logistics:read') ||
+      can('logistics:write') ||
+      can('logistics:master') ||
+      can('*'),
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z" strokeLinejoin="round" />
+        <path d="M12 12v9M3.5 7.5 12 12l8.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M7.5 9.75 12 12.2l4.5-2.45" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
   },
 ];
 
 export default function DashboardPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const modules = MODULES.filter((m) => m.canShow(can));
-  const ops = OPS.filter((m) => m.canShow(can));
   const canSeeDashboard = can('dashboards:read') || can('*');
+  const firstName = String(user?.fullName || '')
+    .trim()
+    .split(/\s+/)[0];
 
   return (
     <div className="dhub-home">
       <div className="dhub-home-atmosphere" aria-hidden="true" />
 
       <header className="dhub-home-hero">
-        <h1 id="dhub-modules-heading" className="dhub-home-prompt">
-          Pick what you want to do today.
-        </h1>
-        <p className="dhub-home-path" aria-hidden="true">
-          Onboard → Sign → Verify → Camps
-        </p>
+        <div className="dhub-home-hero-copy">
+          <p className="dhub-home-kicker">DHub Monitor</p>
+          <h1 id="dhub-modules-heading" className="dhub-home-prompt">
+            {firstName ? `Welcome back, ${firstName}.` : 'Welcome back.'}
+          </h1>
+          <p className="dhub-home-lead">
+            Choose a workspace — registry, documents, verification, camps, requests, or logistics.
+          </p>
+        </div>
+
+        {canSeeDashboard && (
+          <div className="dhub-home-dash-action">
+            <Link className="btn dhub-home-dash-btn" to="/dashboard">
+              {MODULE.DASHBOARD}
+              <span aria-hidden="true"> →</span>
+            </Link>
+            <p className="dhub-home-dash-hint">Inventory &amp; verification tracking</p>
+          </div>
+        )}
       </header>
 
-      {canSeeDashboard && (
-        <section className="dhub-home-dash-callout card" aria-label="Tracking dashboard">
-          <div>
-            <h2>{MODULE.DASHBOARD}</h2>
-            <p className="muted">
-              Track Asset Inventory by status (Qty & Value) and Asset Verification
-              (Safe / Caution / Danger).
-            </p>
-          </div>
-          <Link className="btn secondary" to="/dashboard">
-            View tracking
-          </Link>
-        </section>
-      )}
-
       <section className="dhub-home-modules" aria-labelledby="dhub-modules-heading">
-        {!modules.length && (
-          <p className="dhub-home-empty muted">No modules available for your role.</p>
-        )}
+        <div className="dhub-home-section-head">
+          <h2 className="dhub-home-section-title">Workspaces</h2>
+          <p className="muted dhub-home-section-note">
+            {modules.length
+              ? `${modules.length} available for your role`
+              : 'No modules available for your role'}
+          </p>
+        </div>
 
-        {modules.length > 0 && (
+        {!modules.length ? (
+          <p className="dhub-home-empty muted">Ask an administrator to assign module access.</p>
+        ) : (
           <div className="dhub-home-grid dhub-home-grid--modules">
             {modules.map((m, i) => (
               <Link
@@ -129,16 +154,15 @@ export default function DashboardPage() {
                 className="dhub-home-card tone-primary"
                 style={{ '--i': i }}
               >
-                <span className="dhub-home-card-index" aria-hidden="true">
-                  {m.step}
-                </span>
-                <span className="dhub-home-card-icon">{m.icon}</span>
+                <div className="dhub-home-card-top">
+                  <span className="dhub-home-card-icon">{m.icon}</span>
+                </div>
                 <div className="dhub-home-card-body">
                   <h2>{m.title}</h2>
                   <p>{m.blurb}</p>
                 </div>
                 <span className="dhub-home-card-cta">
-                  Open
+                  Enter
                   <span aria-hidden="true">→</span>
                 </span>
               </Link>
@@ -146,20 +170,6 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
-
-      {ops.length > 0 && (
-        <section className="dhub-home-ops" aria-label="Optional operations">
-          <h2 className="dhub-home-ops-title">Also available</h2>
-          <div className="dhub-home-ops-row">
-            {ops.map((m) => (
-              <Link key={m.to} to={m.to} className="dhub-home-ops-link">
-                <strong>{m.title}</strong>
-                <span>{m.blurb}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

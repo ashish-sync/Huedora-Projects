@@ -1,4 +1,4 @@
-/** Shared with Contact Directory, New Document wizard, and Asset Inventory */
+/** Shared with Contact Directory, New Document wizard, and Asset Registry */
 export const RESOURCE_TYPES = [
   'Individual',
   'Freelancer',
@@ -6,6 +6,8 @@ export const RESOURCE_TYPES = [
   'Retainer',
   'Full Timer',
   'Service Provider',
+  'Supplier',
+  'Vendor',
 ];
 
 export const PROFESSIONS = [

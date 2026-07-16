@@ -247,7 +247,7 @@ export default function CampsPage() {
         breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.CAMP_MANAGEMENT }]}
         title={MODULE.CAMP_MANAGEMENT}
       >
-        <p className="muted">You do not have access to In-House Camp Management.</p>
+        <p className="muted">You do not have access to Camp Management.</p>
       </PageShell>
     );
   }
@@ -407,9 +407,6 @@ export default function CampsPage() {
                 value={form.campSlot || '—'}
                 placeholder="Derived from Start Time"
               />
-              <span className="muted" style={{ fontSize: '0.72rem' }}>
-                Morning 6:00–12:59 · Noon 13:00–16:59 · Evening 17:00–22:00
-              </span>
             </div>
             <div className="field am-form-span">
               <label>Remarks</label>

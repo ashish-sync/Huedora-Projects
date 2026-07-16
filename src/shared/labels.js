@@ -2,18 +2,30 @@
 export const MODULE = {
   HOME: 'Modules',
   DASHBOARD: 'Dashboard',
-  DOCUMENT_HUB: 'Document Hub',
+  DOCUMENT_HUB: 'Document Center',
   /** @deprecated Prefer DOCUMENT_HUB */
-  ASSET_AGREEMENT: 'Document Hub',
-  ASSET_INVENTORY: 'Asset Inventory',
+  ASSET_AGREEMENT: 'Document Center',
+  ASSET_INVENTORY: 'Asset Registry',
   /** @deprecated Prefer ASSET_INVENTORY — register + track are one module */
-  ASSET_MASTER: 'Asset Inventory',
+  ASSET_MASTER: 'Asset Registry',
   ASSET_VERIFICATION: 'Asset Verification',
-  CAMP_MANAGEMENT: 'In-House Camp Management',
+  CAMP_MANAGEMENT: 'Camp Management',
+  ASSET_REQUESTS: 'The Request Center',
+  INVENTORY_LOGISTICS: 'Inventory & Logistics',
   ROLES_PERMISSIONS: 'Roles & Permissions',
   CONTACT_DIRECTORY: 'Contact Directory',
   DOCUMENT_MASTER: 'Document Master',
   DIGITAL_SIGNATURE_MASTER: 'Digital Signature Master',
+};
+
+/** Short module blurbs for home / catalogs */
+export const MODULE_BLURB = {
+  ASSET_INVENTORY: 'Ownership, lifecycle, and status tracking.',
+  DOCUMENT_HUB: 'Contracts, approvals, and digital records.',
+  ASSET_VERIFICATION: 'Photo, GPS, and audit checks.',
+  CAMP_MANAGEMENT: 'Schedule, approve, and monitor camps.',
+  ASSET_REQUESTS: 'Service, logistics, training, and reimbursement requests.',
+  INVENTORY_LOGISTICS: 'Stock, vendors, transfers, and procurement.',
 };
 
 export const FIELD = {

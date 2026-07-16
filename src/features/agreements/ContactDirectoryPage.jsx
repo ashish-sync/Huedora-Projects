@@ -177,7 +177,7 @@ export default function ContactDirectoryPage() {
 
       <p className="muted mono-sm" style={{ margin: '0 0 16px' }}>
         Sample columns: Name · Email · Resource Type · Profession · Contact · City · State.
-        Resource Type: Individual, Freelancer, Contractual, Retainer, Full Timer, Service Provider.
+        Resource Type: Individual, Freelancer, Contractual, Retainer, Full Timer, Service Provider, Supplier, Vendor.
         Profession: MIS Executive, Camp Coordinator, Technician, Phlebotomist, Dietician.
       </p>
 

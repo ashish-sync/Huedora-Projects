@@ -149,7 +149,7 @@ export default function TrackingDashboardPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="Asset Inventory by status (Qty & Value) and Asset Verification condition (Safe / Caution / Danger)."
+      description="Asset Registry by status (Qty & Value) and Asset Verification condition (Safe / Caution / Danger)."
       actions={
         <>
           <button className="btn secondary" type="button" onClick={load} disabled={loading}>

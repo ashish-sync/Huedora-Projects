@@ -11,23 +11,22 @@ const EMPTY_USER = {
   phone: '',
   password: '',
   passwordConfirm: '',
+  moduleIds: [],
   roleIds: [],
   isActive: true,
 };
 
-function expandModulePermissions(modules, permissions) {
-  const set = new Set(permissions);
-  if (set.has('*')) return ['*'];
-  for (const m of modules) {
-    if (m.writeKey && set.has(m.writeKey)) {
-      for (const k of m.writeIncludes || []) set.add(k);
-    }
-    if (m.readKey && set.has(m.readKey)) {
-      for (const k of m.readIncludes || []) set.add(k);
-    }
-  }
-  return [...set];
-}
+const DEFAULT_ACTIONS = [
+  { id: 'all', label: 'All Access' },
+  { id: 'view', label: 'View' },
+  { id: 'add', label: 'Add' },
+  { id: 'delete', label: 'Delete' },
+  { id: 'upload', label: 'Upload' },
+  { id: 'request', label: 'Request' },
+  { id: 'approve', label: 'Approve' },
+];
+
+const WRITE_ACTIONS = new Set(['add', 'delete', 'upload', 'request', 'approve']);
 
 function roleIdOf(r) {
   return String(r?._id || r?.id || r || '');
@@ -42,6 +41,147 @@ function formatWhen(iso) {
   }
 }
 
+function modulePermissionKeys(module) {
+  return [...new Set(Object.values(module?.actions || {}).flat().filter(Boolean))];
+}
+
+function permissionKeysForModules(moduleList) {
+  const keys = new Set();
+  for (const m of moduleList) {
+    for (const k of modulePermissionKeys(m)) keys.add(k);
+  }
+  return keys;
+}
+
+function roleTouchesModules(role, moduleIds, modules) {
+  if (!moduleIds.length) return false;
+  if (role?.permissions?.includes('*')) return true;
+  if (moduleIds.includes('admin')) return role?.permissions?.includes('*');
+  const selected = modules.filter((m) => moduleIds.includes(m.id));
+  const keys = permissionKeysForModules(selected);
+  return (role?.permissions || []).some((p) => keys.has(p));
+}
+
+function modulesCoveredByPermissions(permissions, modules) {
+  const perms = new Set(permissions || []);
+  if (perms.has('*')) return ['admin', ...modules.map((m) => m.id)];
+  return modules
+    .filter((m) => modulePermissionKeys(m).some((k) => perms.has(k)))
+    .map((m) => m.id);
+}
+
+function actionKeys(module, actionId) {
+  return module?.actions?.[actionId] || [];
+}
+
+function moduleHasAction(module, actionId) {
+  return actionKeys(module, actionId).length > 0;
+}
+
+function keysGranted(permissions, keys) {
+  if (!keys.length) return false;
+  const set = new Set(permissions || []);
+  if (set.has('*')) return true;
+  return keys.every((k) => set.has(k));
+}
+
+function detectModuleActions(module, permissions) {
+  const perms = permissions || [];
+  const available = ACCESS_ACTION_IDS(module);
+  if (perms.includes('*')) return available;
+  if (available.includes('all') && keysGranted(perms, actionKeys(module, 'all'))) {
+    return available;
+  }
+  const on = [];
+  for (const id of available) {
+    if (id === 'all') continue;
+    if (keysGranted(perms, actionKeys(module, id))) on.push(id);
+  }
+  return on;
+}
+
+function ACCESS_ACTION_IDS(module) {
+  return Object.keys(module?.actions || {}).filter((id) => module.actions[id]?.length);
+}
+
+function summarizeRoleForModules(role, moduleIds, modules) {
+  if (role?.permissions?.includes('*')) return 'Admin all Access';
+  const selected = modules.filter((m) => moduleIds.includes(m.id));
+  const bits = [];
+  for (const m of selected) {
+    const actions = detectModuleActions(m, role.permissions || []).filter((a) => a !== 'all');
+    const labels = actions.map((id) => {
+      const found = DEFAULT_ACTIONS.find((a) => a.id === id);
+      return found?.label || id;
+    });
+    if (detectModuleActions(m, role.permissions || []).includes('all')) {
+      bits.push(`${m.label}: All Access`);
+    } else if (labels.length) {
+      bits.push(`${m.label}: ${labels.join(' + ')}`);
+    }
+  }
+  return bits.length ? bits.join(' · ') : 'No matching rights';
+}
+
+function stripModulePermissions(permissions, module) {
+  const drop = new Set(modulePermissionKeys(module));
+  return (permissions || []).filter((p) => !drop.has(p));
+}
+
+function applyModuleAction(permissions, module, actionId, enabled) {
+  let next = (permissions || []).filter((p) => p !== '*');
+  const available = ACCESS_ACTION_IDS(module);
+
+  if (actionId === 'all') {
+    if (enabled) {
+      const add = actionKeys(module, 'all');
+      next = [...new Set([...stripModulePermissions(next, module), ...add])];
+    } else {
+      next = stripModulePermissions(next, module);
+    }
+    return next;
+  }
+
+  if (actionId === 'view' && !enabled) {
+    return stripModulePermissions(next, module);
+  }
+
+  const keys = actionKeys(module, actionId);
+  if (!keys.length) return next;
+
+  if (enabled) {
+    next = [...new Set([...next, ...keys])];
+    if (WRITE_ACTIONS.has(actionId) && moduleHasAction(module, 'view')) {
+      next = [...new Set([...next, ...actionKeys(module, 'view')])];
+    }
+  } else {
+    const drop = new Set(keys);
+    const stillOn = available.filter((id) => {
+      if (id === actionId || id === 'all') return false;
+      return keysGranted(next, actionKeys(module, id));
+    });
+    const keep = new Set(stillOn.flatMap((id) => actionKeys(module, id)));
+    next = next.filter((p) => !drop.has(p) || keep.has(p));
+  }
+
+  // Sync "all" — if every non-all action is on, ensure all keys present
+  const nonAll = available.filter((id) => id !== 'all');
+  const allOn = nonAll.every((id) => keysGranted(next, actionKeys(module, id)));
+  if (allOn && moduleHasAction(module, 'all')) {
+    next = [...new Set([...next, ...actionKeys(module, 'all')])];
+  }
+
+  return next;
+}
+
+function moduleActionOn(module, actionId, permissions) {
+  if ((permissions || []).includes('*')) return true;
+  if (actionId === 'all') {
+    return keysGranted(permissions, actionKeys(module, 'all'));
+  }
+  return keysGranted(permissions, actionKeys(module, actionId));
+}
+
 export default function RolePermissionMasterPage() {
   const { can, user: me } = useAuth();
   const canWrite = can('users:write') || can('*');
@@ -50,8 +190,9 @@ export default function RolePermissionMasterPage() {
 
   const [roles, setRoles] = useState([]);
   const [modules, setModules] = useState([]);
+  const [accessActions, setAccessActions] = useState(DEFAULT_ACTIONS);
   const [selectedId, setSelectedId] = useState('');
-  const [draft, setDraft] = useState({ name: '', description: '', permissions: [] });
+  const [draft, setDraft] = useState({ name: '', description: '', permissions: [], moduleIds: [] });
   const [creating, setCreating] = useState(false);
 
   const [users, setUsers] = useState([]);
@@ -87,10 +228,30 @@ export default function RolePermissionMasterPage() {
     });
   }, [users, userQ]);
 
+  const pickerModules = useMemo(
+    () => [{ id: 'admin', label: 'Admin all Access', description: 'Full access to every module' }, ...modules],
+    [modules]
+  );
+
+  const relevantRoles = useMemo(() => {
+    if (userDraft.moduleIds.includes('admin')) {
+      return roles.filter((r) => r.permissions?.includes('*'));
+    }
+    return roles.filter((r) => roleTouchesModules(r, userDraft.moduleIds, modules));
+  }, [roles, userDraft.moduleIds, modules]);
+
+  const visibleRoleModules = useMemo(() => {
+    if (draft.permissions.includes('*') || draft.moduleIds.includes('admin')) return modules;
+    return modules.filter((m) => draft.moduleIds.includes(m.id));
+  }, [modules, draft.moduleIds, draft.permissions]);
+
   const loadRoles = () =>
     Promise.all([api('/users/roles'), api('/users/permissions')]).then(([r, p]) => {
       setRoles(r.data || []);
       setModules(p.data?.modules || []);
+      if (Array.isArray(p.data?.actions) && p.data.actions.length) {
+        setAccessActions(p.data.actions);
+      }
       if (!selectedId && r.data?.[0]) setSelectedId(roleIdOf(r.data[0]));
     });
 
@@ -117,12 +278,14 @@ export default function RolePermissionMasterPage() {
 
   useEffect(() => {
     if (!selected || creating) return;
+    const permissions = [...(selected.permissions || [])];
     setDraft({
       name: selected.name || '',
       description: selected.description || '',
-      permissions: [...(selected.permissions || [])],
+      permissions,
+      moduleIds: modulesCoveredByPermissions(permissions, modules),
     });
-  }, [selected, creating]);
+  }, [selected, creating, modules]);
 
   useEffect(() => {
     if (creatingUser) return;
@@ -130,6 +293,9 @@ export default function RolePermissionMasterPage() {
       setUserDraft(EMPTY_USER);
       return;
     }
+    const roleIds = (editingUser.roles || []).map((r) => String(r.id)).filter(Boolean);
+    const assignedRoles = roles.filter((r) => roleIds.includes(roleIdOf(r)));
+    const unionPerms = assignedRoles.flatMap((r) => r.permissions || []);
     setUserDraft({
       email: editingUser.email || '',
       username: editingUser.username || '',
@@ -137,52 +303,86 @@ export default function RolePermissionMasterPage() {
       phone: editingUser.phone || '',
       password: '',
       passwordConfirm: '',
-      roleIds: (editingUser.roles || []).map((r) => String(r.id)).filter(Boolean),
+      moduleIds: modulesCoveredByPermissions(unionPerms, modules),
+      roleIds,
       isActive: editingUser.isActive !== false,
     });
-  }, [editingUser, creatingUser]);
+  }, [editingUser, creatingUser, roles, modules]);
 
   const isAdminRole = selected?.name === 'Admin';
-  const hasFullAccess = draft.permissions.includes('*');
-
-  const moduleHasAccess = (module, type) => {
-    if (hasFullAccess) return true;
-    const key = type === 'read' ? module.readKey : module.writeKey;
-    if (!key) return false;
-    if (draft.permissions.includes(key)) return true;
-    if (type === 'write' && (module.writeIncludes || []).some((k) => draft.permissions.includes(k))) {
-      return draft.permissions.includes(module.writeKey);
-    }
-    return false;
-  };
-
-  const toggleModuleAccess = (module, type) => {
-    if (!canWrite || isAdminRole) return;
-    const key = type === 'read' ? module.readKey : module.writeKey;
-    if (!key) return;
-    setDraft((prev) => {
-      let next = prev.permissions.filter((p) => p !== '*');
-      const on = next.includes(key);
-      if (on) {
-        next = next.filter((p) => p !== key);
-        const extras = type === 'write' ? module.writeIncludes || [] : module.readIncludes || [];
-        next = next.filter((p) => !extras.includes(p));
-      } else {
-        next.push(key);
-        if (type === 'write' && module.readKey && !next.includes(module.readKey)) {
-          next.push(module.readKey);
-        }
-      }
-      return { ...prev, permissions: expandModulePermissions(modules, next) };
-    });
-  };
+  const hasFullAccess = draft.permissions.includes('*') || draft.moduleIds.includes('admin');
 
   const toggleFullAccess = () => {
     if (!canWrite || isAdminRole) return;
-    setDraft((prev) => ({
-      ...prev,
-      permissions: prev.permissions.includes('*') ? [] : ['*'],
-    }));
+    setDraft((prev) => {
+      const nextFull = !(prev.permissions.includes('*') || prev.moduleIds.includes('admin'));
+      return {
+        ...prev,
+        permissions: nextFull ? ['*'] : [],
+        moduleIds: nextFull ? ['admin', ...modules.map((m) => m.id)] : [],
+      };
+    });
+  };
+
+  const toggleRoleModule = (moduleId) => {
+    if (!canWrite || isAdminRole || hasFullAccess) return;
+    if (moduleId === 'admin') {
+      toggleFullAccess();
+      return;
+    }
+    setDraft((prev) => {
+      const has = prev.moduleIds.includes(moduleId);
+      if (has) {
+        const mod = modules.find((m) => m.id === moduleId);
+        return {
+          ...prev,
+          moduleIds: prev.moduleIds.filter((x) => x !== moduleId),
+          permissions: mod ? stripModulePermissions(prev.permissions, mod) : prev.permissions,
+        };
+      }
+      return { ...prev, moduleIds: [...prev.moduleIds.filter((x) => x !== 'admin'), moduleId] };
+    });
+  };
+
+  const toggleModuleAction = (module, actionId) => {
+    if (!canWrite || isAdminRole || hasFullAccess) return;
+    if (!moduleHasAction(module, actionId)) return;
+    setDraft((prev) => {
+      const on = moduleActionOn(module, actionId, prev.permissions);
+      return {
+        ...prev,
+        permissions: applyModuleAction(prev.permissions, module, actionId, !on),
+      };
+    });
+  };
+
+  const toggleUserModule = (moduleId) => {
+    if (!canWrite) return;
+    setUserDraft((prev) => {
+      if (moduleId === 'admin') {
+        const has = prev.moduleIds.includes('admin');
+        if (has) {
+          return { ...prev, moduleIds: [], roleIds: [] };
+        }
+        const adminRole = roles.find((r) => r.permissions?.includes('*'));
+        return {
+          ...prev,
+          moduleIds: ['admin', ...modules.map((m) => m.id)],
+          roleIds: adminRole ? [roleIdOf(adminRole)] : prev.roleIds,
+        };
+      }
+      const withoutAdmin = prev.moduleIds.filter((x) => x !== 'admin');
+      const has = withoutAdmin.includes(moduleId);
+      const moduleIds = has
+        ? withoutAdmin.filter((x) => x !== moduleId)
+        : [...withoutAdmin, moduleId];
+      const roleIds = prev.roleIds.filter((rid) => {
+        const role = roles.find((r) => roleIdOf(r) === rid);
+        if (role?.permissions?.includes('*')) return false;
+        return role && roleTouchesModules(role, moduleIds, modules);
+      });
+      return { ...prev, moduleIds, roleIds };
+    });
   };
 
   const toggleUserRole = (roleId) => {
@@ -204,7 +404,8 @@ export default function RolePermissionMasterPage() {
     setDraft({
       name: '',
       description: '',
-      permissions: expandModulePermissions(modules, ['dashboards:read', 'notifications:read']),
+      permissions: [],
+      moduleIds: [],
     });
     setMsg('');
     setError('');
@@ -218,17 +419,28 @@ export default function RolePermissionMasterPage() {
   const saveRole = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
+    const full = draft.permissions.includes('*') || draft.moduleIds.includes('admin');
+    if (!isAdminRole && !full && !draft.moduleIds.filter((id) => id !== 'admin').length) {
+      setError('Select at least one module for this role');
+      return;
+    }
+    const permissions = isAdminRole || full ? ['*'] : [...new Set(draft.permissions)];
+    if (!isAdminRole && !permissions.includes('*') && !permissions.length) {
+      setError('Turn on at least one action for the selected modules');
+      return;
+    }
     setBusy(true);
     setError('');
     setMsg('');
     try {
-      const permissions = isAdminRole
-        ? ['*']
-        : expandModulePermissions(modules, draft.permissions);
       if (creating) {
         const { data } = await api('/users/roles', {
           method: 'POST',
-          body: { ...draft, permissions },
+          body: {
+            name: draft.name,
+            description: draft.description,
+            permissions,
+          },
         });
         setCreating(false);
         await loadRoles();
@@ -270,14 +482,7 @@ export default function RolePermissionMasterPage() {
     setTab('users');
     setCreatingUser(true);
     setEditingUserId('');
-    const defaultRole =
-      roles.find((r) => r.name === 'Verifier') ||
-      roles.find((r) => r.name !== 'Admin') ||
-      roles[0];
-    setUserDraft({
-      ...EMPTY_USER,
-      roleIds: defaultRole ? [roleIdOf(defaultRole)] : [],
-    });
+    setUserDraft({ ...EMPTY_USER });
     setMsg('');
     setError('');
   };
@@ -291,8 +496,12 @@ export default function RolePermissionMasterPage() {
   const saveUser = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
+    if (!userDraft.moduleIds.length) {
+      setError('Select at least one module');
+      return;
+    }
     if (!userDraft.roleIds.length) {
-      setError('Select at least one role');
+      setError('Select at least one role for the chosen modules');
       return;
     }
     const pwd = userDraft.password.trim();
@@ -381,11 +590,70 @@ export default function RolePermissionMasterPage() {
 
   const passwordChangedLabel = formatWhen(editingUser?.passwordChangedAt);
 
+  const renderActionMatrix = () => {
+    if (hasFullAccess || isAdminRole) {
+      return <p className="muted rp-hint">Admin all Access is on — every module is included.</p>;
+    }
+    if (!visibleRoleModules.length) {
+      return <p className="muted rp-hint">Select modules above to set access actions.</p>;
+    }
+    return (
+      <div className="rp-action-scroll">
+        <table className="rp-action-grid">
+          <thead>
+            <tr>
+              <th scope="col">Module</th>
+              {accessActions.map((a) => (
+                <th key={a.id} scope="col">
+                  {a.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visibleRoleModules.map((m) => (
+              <tr key={m.id}>
+                <td>
+                  <strong>{m.label}</strong>
+                  <span className="muted rp-action-desc">{m.description}</span>
+                </td>
+                {accessActions.map((a) => {
+                  const available = moduleHasAction(m, a.id);
+                  if (!available) {
+                    return (
+                      <td key={a.id} className="rp-action-cell">
+                        <span className="access-na">—</span>
+                      </td>
+                    );
+                  }
+                  const on = moduleActionOn(m, a.id, draft.permissions);
+                  return (
+                    <td key={a.id} className="rp-action-cell">
+                      <label className={`access-toggle ${on ? 'is-on' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          disabled={!canWrite || isAdminRole}
+                          onChange={() => toggleModuleAction(m, a.id)}
+                        />
+                        <span className="rp-action-short">{a.label}</span>
+                      </label>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
-      description="Who can sign in, and what each role can open."
+      description="Pick modules, then set View / Add / Delete / Upload / Request / Approve."
       actions={
         <>
           <button
@@ -582,34 +850,70 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 <section className="rp-section">
-                  <h4>Roles *</h4>
-                  <p className="muted rp-hint">Module rights are defined on each role.</p>
+                  <h4>Modules *</h4>
+                  <p className="muted rp-hint">
+                    Choose which areas this person can open. Roles below update to match.
+                  </p>
                   <div className="user-role-checks">
-                    {roles.map((r) => {
-                      const id = roleIdOf(r);
-                      return (
-                        <label
-                          key={id}
-                          className={`perm-check ${userDraft.roleIds.includes(id) ? 'is-on' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={userDraft.roleIds.includes(id)}
-                            disabled={!canWrite}
-                            onChange={() => toggleUserRole(id)}
-                          />
-                          <span>
-                            <strong>{r.name}</strong>
-                            <em className="mono-sm">
-                              {r.permissions?.includes('*')
-                                ? 'Full access'
-                                : `${(r.permissions || []).length} rights`}
-                            </em>
-                          </span>
-                        </label>
-                      );
-                    })}
+                    {pickerModules.map((m) => (
+                      <label
+                        key={m.id}
+                        className={`perm-check ${userDraft.moduleIds.includes(m.id) ? 'is-on' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={userDraft.moduleIds.includes(m.id)}
+                          disabled={!canWrite}
+                          onChange={() => toggleUserModule(m.id)}
+                        />
+                        <span>
+                          <strong>{m.label}</strong>
+                          <em className="mono-sm">{m.description}</em>
+                        </span>
+                      </label>
+                    ))}
                   </div>
+                </section>
+
+                <section className="rp-section">
+                  <h4>Roles *</h4>
+                  {!userDraft.moduleIds.length ? (
+                    <p className="muted rp-hint">Select modules first to see matching roles.</p>
+                  ) : relevantRoles.length ? (
+                    <>
+                      <p className="muted rp-hint">
+                        Only roles with access to the selected modules are shown.
+                      </p>
+                      <div className="user-role-checks">
+                        {relevantRoles.map((r) => {
+                          const id = roleIdOf(r);
+                          return (
+                            <label
+                              key={id}
+                              className={`perm-check ${userDraft.roleIds.includes(id) ? 'is-on' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={userDraft.roleIds.includes(id)}
+                                disabled={!canWrite}
+                                onChange={() => toggleUserRole(id)}
+                              />
+                              <span>
+                                <strong>{r.name}</strong>
+                                <em className="mono-sm">
+                                  {summarizeRoleForModules(r, userDraft.moduleIds, modules)}
+                                </em>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="muted rp-hint">
+                      No roles cover these modules yet. Create or update a role under the Roles tab.
+                    </p>
+                  )}
                 </section>
 
                 {!creatingUser && (
@@ -678,7 +982,7 @@ export default function RolePermissionMasterPage() {
                     <strong>{r.name}</strong>
                     <span className="muted mono-sm">
                       {r.permissions?.includes('*')
-                        ? 'Full access'
+                        ? 'Admin all Access'
                         : `${(r.permissions || []).length} rights`}
                       {r.isSystem ? ' · Built-in' : ''}
                     </span>
@@ -724,68 +1028,40 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 <section className="rp-section">
-                  <h4>Privilege</h4>
-                  <label
-                    className={`perm-check ${hasFullAccess || isAdminRole ? 'is-on' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={hasFullAccess || isAdminRole}
-                      disabled={!canWrite || isAdminRole}
-                      onChange={toggleFullAccess}
-                    />
-                    <span>
-                      <strong>Full access</strong>
-                      <em className="mono-sm">Read &amp; write on every module</em>
-                    </span>
-                  </label>
+                  <h4>Modules *</h4>
+                  <p className="muted rp-hint">
+                    Select modules this role covers. Access actions below only show for those.
+                  </p>
+                  <div className="user-role-checks">
+                    {pickerModules.map((m) => {
+                      const checked =
+                        m.id === 'admin'
+                          ? hasFullAccess || isAdminRole
+                          : hasFullAccess || isAdminRole || draft.moduleIds.includes(m.id);
+                      return (
+                        <label key={m.id} className={`perm-check ${checked ? 'is-on' : ''}`}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={!canWrite || isAdminRole || (m.id !== 'admin' && hasFullAccess)}
+                            onChange={() => toggleRoleModule(m.id)}
+                          />
+                          <span>
+                            <strong>{m.label}</strong>
+                            <em className="mono-sm">{m.description}</em>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </section>
 
                 <section className="rp-section rp-section--modules">
-                  <h4>Modules</h4>
-                  <p className="muted rp-hint">Toggle Read / Write, then Save.</p>
-                  <div className="rp-module-grid">
-                    {modules.map((m) => (
-                      <div key={m.id} className="rp-module-row">
-                        <div className="rp-module-card-copy" title={m.description || undefined}>
-                          <strong>{m.label}</strong>
-                          <span className="muted">{m.description}</span>
-                        </div>
-                        <div className="rp-module-toggles">
-                          {m.readKey ? (
-                            <label
-                              className={`access-toggle ${moduleHasAccess(m, 'read') ? 'is-on' : ''}`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={moduleHasAccess(m, 'read')}
-                                disabled={!canWrite || isAdminRole || hasFullAccess}
-                                onChange={() => toggleModuleAccess(m, 'read')}
-                              />
-                              <span>Read</span>
-                            </label>
-                          ) : (
-                            <span className="access-na">—</span>
-                          )}
-                          {m.writeKey ? (
-                            <label
-                              className={`access-toggle ${moduleHasAccess(m, 'write') ? 'is-on' : ''}`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={moduleHasAccess(m, 'write')}
-                                disabled={!canWrite || isAdminRole || hasFullAccess}
-                                onChange={() => toggleModuleAccess(m, 'write')}
-                              />
-                              <span>Write</span>
-                            </label>
-                          ) : (
-                            <span className="access-na">—</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h4>Access control</h4>
+                  <p className="muted rp-hint">
+                    Toggle All Access, View, Add, Delete, Upload, Request, or Approve where available.
+                  </p>
+                  {renderActionMatrix()}
                 </section>
 
                 {canWrite && (

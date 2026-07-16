@@ -53,10 +53,42 @@ function custodianName(row) {
   return row.custodianName || row.contactId?.name || '—';
 }
 
+function IconEdit() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <path d="M12 20h9" strokeLinecap="round" />
+      <path
+        d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconView() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function IconAudit() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5.5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function AssetsPage() {
   const { can } = useAuth();
   const canWrite = can('assets:write') || can('devices:write') || can('*');
   const canViewAgreements = can('agreements:read') || can('*');
+  const canManageAgreements =
+    can('agreements:write') || can('documents:write') || can('assets:write') || can('*');
 
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
@@ -85,6 +117,10 @@ export default function AssetsPage() {
   const [viewError, setViewError] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewTitle, setPreviewTitle] = useState('');
+  const [docBusy, setDocBusy] = useState(false);
+  const uploadDocRef = useRef(null);
+  const replaceDocRef = useRef(null);
+  const [replaceTargetId, setReplaceTargetId] = useState('');
 
   const downloadInventory = async () => {
     setError('');
@@ -305,6 +341,89 @@ export default function AssetsPage() {
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
       setPreviewTitle(agreement.title || agreement.agreementNumber);
+    } catch (err) {
+      setViewError(err.message);
+    }
+  };
+
+  const refreshDocs = async (assetId) => {
+    const { data } = await api(`/assets/${assetId}/documents`);
+    setViewDocs(data || []);
+  };
+
+  const uploadSignedAgreement = async (file) => {
+    if (!viewRow?._id || !file) return;
+    setDocBusy(true);
+    setViewError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append(
+        'title',
+        `Signed agreement — ${viewRow.deviceNameSnapshot || viewRow.serialNumber || 'asset'}`
+      );
+      await api(`/assets/${viewRow._id}/documents`, { method: 'POST', body: fd });
+      await refreshDocs(viewRow._id);
+      setMsg('Signed agreement uploaded. It will stay available under Docs.');
+      load();
+    } catch (err) {
+      setViewError(err.message);
+    } finally {
+      setDocBusy(false);
+      if (uploadDocRef.current) uploadDocRef.current.value = '';
+    }
+  };
+
+  const replaceSignedAgreement = async (agreementId, file) => {
+    if (!viewRow?._id || !agreementId || !file) return;
+    setDocBusy(true);
+    setViewError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      await api(`/assets/${viewRow._id}/documents/${agreementId}/replace`, {
+        method: 'POST',
+        body: fd,
+      });
+      await refreshDocs(viewRow._id);
+      setMsg('Agreement file updated. Previous attachments remain available.');
+      load();
+    } catch (err) {
+      setViewError(err.message);
+    } finally {
+      setDocBusy(false);
+      setReplaceTargetId('');
+      if (replaceDocRef.current) replaceDocRef.current.value = '';
+    }
+  };
+
+  const openAttachment = async (agreement, doc) => {
+    if (!canViewAgreements) return;
+    setViewError('');
+    try {
+      const res = await apiFetch(`/agreements/${agreement._id}/documents/${doc._id}/download`);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error?.message || 'Could not open attachment');
+      }
+      const blob = await res.blob();
+      const name = doc.name || doc.fileName || 'attachment';
+      const isPdf =
+        String(doc.contentType || doc.mimeType || '').includes('pdf') ||
+        String(name).toLowerCase().endsWith('.pdf');
+      if (isPdf) {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setPreviewTitle(`${name}${doc.version ? ` · v${doc.version}` : ''}`);
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       setViewError(err.message);
     }
@@ -658,23 +777,32 @@ export default function AssetsPage() {
                     <div className="inv-row-actions">
                       {canWrite && (
                         <button
-                          className="inv-link"
+                          className="inv-icon-btn"
                           type="button"
+                          title="Edit"
+                          aria-label="Edit"
                           onClick={() => openEdit(a)}
                         >
-                          Edit
+                          <IconEdit />
                         </button>
                       )}
-                      <Link className="inv-link" to={`/assets/${a._id}`}>
-                        Open
-                      </Link>
                       <button
-                        className="inv-link"
+                        className="inv-icon-btn"
                         type="button"
+                        title="View"
+                        aria-label="View documents"
                         onClick={() => openView(a)}
                       >
-                        Docs
+                        <IconView />
                       </button>
+                      <Link
+                        className="inv-icon-btn"
+                        to={`/assets/${a._id}`}
+                        title="Audit Trail"
+                        aria-label="Audit Trail"
+                      >
+                        <IconAudit />
+                      </Link>
                     </div>
                   </td>
                 </tr>
@@ -757,7 +885,7 @@ export default function AssetsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="inv-modal-head">
-              <h2 id="inv-view-title">Related documents</h2>
+              <h2 id="inv-view-title">Docs</h2>
               <button type="button" className="btn secondary btn-compact" onClick={closeView}>
                 Close
               </button>
@@ -765,21 +893,88 @@ export default function AssetsPage() {
             <p className="muted inv-modal-sub">
               {viewRow.deviceNameSnapshot} · {viewRow.serialNumber || 'No serial'}
             </p>
+            <p className="muted inv-doc-intro">
+              Upload, view, or replace signed agreements. Prior attachments stay available for
+              reference.
+            </p>
             {viewError && <p className="error">{viewError}</p>}
-            {viewLoading && <p className="muted">Loading linked agreements…</p>}
+            {viewLoading && <p className="muted">Loading documents…</p>}
+
+            {canManageAgreements && (
+              <div className="inv-doc-upload">
+                <input
+                  ref={uploadDocRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadSignedAgreement(f);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-compact"
+                  disabled={docBusy || viewLoading}
+                  onClick={() => uploadDocRef.current?.click()}
+                >
+                  {docBusy ? 'Uploading…' : viewDocs.length ? 'Upload another agreement' : 'Upload signed agreement'}
+                </button>
+                <input
+                  ref={replaceDocRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && replaceTargetId) replaceSignedAgreement(replaceTargetId, f);
+                  }}
+                />
+              </div>
+            )}
+
             {!viewLoading && !viewDocs.length && !viewError && (
-              <p className="muted">No agreement documents are linked to this asset yet.</p>
+              <p className="muted">
+                No agreement on file yet.
+                {canManageAgreements ? ' Upload a signed agreement to get started.' : ''}
+              </p>
             )}
             {!viewLoading && !!viewDocs.length && (
               <ul className="inv-doc-list">
                 {viewDocs.map((ag) => (
                   <li key={ag._id} className="inv-doc-item">
-                    <div>
+                    <div className="inv-doc-main">
                       <strong>{ag.title || ag.agreementNumber}</strong>
                       <div className="muted mono-sm">
                         {ag.agreementNumber} · {ag.status}
                         {ag.isActiveLink ? ' · Active link' : ''}
                       </div>
+                      {(ag.documents || []).length > 0 && (
+                        <ul className="inv-doc-attachments">
+                          {ag.documents.map((doc) => (
+                            <li key={doc._id}>
+                              <button
+                                type="button"
+                                className="inv-doc-file"
+                                disabled={!canViewAgreements || !doc.hasFile}
+                                onClick={() => openAttachment(ag, doc)}
+                                title={doc.hasFile ? 'Open attachment' : 'No file stored'}
+                              >
+                                <span>
+                                  {doc.name || doc.fileName || 'Attachment'}
+                                  {doc.isPrimary ? ' · Current' : ''}
+                                  {doc.version ? ` · v${doc.version}` : ''}
+                                </span>
+                                <em className="mono-sm">
+                                  {doc.createdAt
+                                    ? new Date(doc.createdAt).toLocaleString()
+                                    : doc.docKind || ''}
+                                </em>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     <div className="inv-doc-actions">
                       {canViewAgreements && (
@@ -788,7 +983,20 @@ export default function AssetsPage() {
                           className="btn secondary btn-compact"
                           onClick={() => openAgreementPdf(ag)}
                         >
-                          Agreement PDF
+                          View
+                        </button>
+                      )}
+                      {canManageAgreements && (
+                        <button
+                          type="button"
+                          className="btn secondary btn-compact"
+                          disabled={docBusy}
+                          onClick={() => {
+                            setReplaceTargetId(ag._id);
+                            replaceDocRef.current?.click();
+                          }}
+                        >
+                          Replace
                         </button>
                       )}
                       <Link

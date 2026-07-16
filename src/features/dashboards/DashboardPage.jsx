@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 
-/** Onboard → sign → verify */
-const LIFECYCLE = [
+const MODULES = [
   {
     to: '/assets',
     title: MODULE.ASSET_INVENTORY,
@@ -49,6 +48,21 @@ const LIFECYCLE = [
       </svg>
     ),
   },
+  {
+    to: '/camps',
+    title: MODULE.CAMP_MANAGEMENT,
+    blurb: 'Submit in-house camp requests and track Pending / Approved / Declined status.',
+    step: '04',
+    canShow: (can) =>
+      can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <path d="M4 20V9.5L12 4l8 5.5V20" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 20v-6h6v6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 11h.01M15 11h.01" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
 const OPS = [
@@ -67,26 +81,10 @@ const OPS = [
   },
 ];
 
-const CAMP_MODULE = {
-  to: '/camps',
-  title: MODULE.CAMP_MANAGEMENT,
-  blurb: 'Submit in-house camp requests and track Pending / Approved / Declined status.',
-  canShow: (can) =>
-    can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
-  icon: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <path d="M4 20V9.5L12 4l8 5.5V20" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 20v-6h6v6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 11h.01M15 11h.01" strokeLinecap="round" />
-    </svg>
-  ),
-};
-
 export default function DashboardPage() {
   const { can } = useAuth();
-  const lifecycle = LIFECYCLE.filter((m) => m.canShow(can));
+  const modules = MODULES.filter((m) => m.canShow(can));
   const ops = OPS.filter((m) => m.canShow(can));
-  const showCamps = CAMP_MODULE.canShow(can);
   const canSeeDashboard = can('dashboards:read') || can('*');
 
   return (
@@ -98,7 +96,7 @@ export default function DashboardPage() {
           Pick what you want to do today.
         </h1>
         <p className="dhub-home-path" aria-hidden="true">
-          Onboard → Sign → Verify
+          Onboard → Sign → Verify → Camps
         </p>
       </header>
 
@@ -118,47 +116,33 @@ export default function DashboardPage() {
       )}
 
       <section className="dhub-home-modules" aria-labelledby="dhub-modules-heading">
-        {!lifecycle.length && (
+        {!modules.length && (
           <p className="dhub-home-empty muted">No modules available for your role.</p>
         )}
 
-        <div className="dhub-home-grid dhub-home-grid--path">
-          {lifecycle.map((m, i) => (
-            <Link
-              key={m.to}
-              to={m.to}
-              className="dhub-home-card tone-primary"
-              style={{ '--i': i }}
-            >
-              <span className="dhub-home-card-index" aria-hidden="true">
-                {m.step}
-              </span>
-              <span className="dhub-home-card-icon">{m.icon}</span>
-              <div className="dhub-home-card-body">
-                <h2>{m.title}</h2>
-                <p>{m.blurb}</p>
-              </div>
-              <span className="dhub-home-card-cta">
-                Open
-                <span aria-hidden="true">→</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-
-        {showCamps && (
-          <div className="dhub-home-grid dhub-home-grid--camps" style={{ marginTop: 16 }}>
-            <Link to={CAMP_MODULE.to} className="dhub-home-card tone-primary" style={{ '--i': 0 }}>
-              <span className="dhub-home-card-icon">{CAMP_MODULE.icon}</span>
-              <div className="dhub-home-card-body">
-                <h2>{CAMP_MODULE.title}</h2>
-                <p>{CAMP_MODULE.blurb}</p>
-              </div>
-              <span className="dhub-home-card-cta">
-                Open
-                <span aria-hidden="true">→</span>
-              </span>
-            </Link>
+        {modules.length > 0 && (
+          <div className="dhub-home-grid dhub-home-grid--modules">
+            {modules.map((m, i) => (
+              <Link
+                key={m.to}
+                to={m.to}
+                className="dhub-home-card tone-primary"
+                style={{ '--i': i }}
+              >
+                <span className="dhub-home-card-index" aria-hidden="true">
+                  {m.step}
+                </span>
+                <span className="dhub-home-card-icon">{m.icon}</span>
+                <div className="dhub-home-card-body">
+                  <h2>{m.title}</h2>
+                  <p>{m.blurb}</p>
+                </div>
+                <span className="dhub-home-card-cta">
+                  Open
+                  <span aria-hidden="true">→</span>
+                </span>
+              </Link>
+            ))}
           </div>
         )}
       </section>

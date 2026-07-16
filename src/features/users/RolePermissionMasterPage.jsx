@@ -96,7 +96,11 @@ export default function RolePermissionMasterPage() {
 
   const loadUsers = () =>
     api('/users')
-      .then((r) => setUsers(r.data || []))
+      .then((r) => {
+        const rows = r.data || [];
+        setUsers(rows);
+        setEditingUserId((cur) => cur || rows[0]?.id || '');
+      })
       .catch((e) => {
         if (canViewUsers) setError(e.message);
       });
@@ -229,7 +233,7 @@ export default function RolePermissionMasterPage() {
         setCreating(false);
         await loadRoles();
         setSelectedId(roleIdOf(data));
-        setMsg('Role saved. Module access will stick after server restart.');
+        setMsg('Role saved — access is stored permanently.');
       } else if (selectedId) {
         await api(`/users/roles/${selectedId}`, {
           method: 'PATCH',
@@ -240,7 +244,7 @@ export default function RolePermissionMasterPage() {
           },
         });
         await loadRoles();
-        setMsg('Role saved. Module access will stick after server restart.');
+        setMsg('Role saved — access is stored permanently.');
       }
     } catch (err) {
       setError(err.message);
@@ -280,7 +284,7 @@ export default function RolePermissionMasterPage() {
 
   const cancelUserForm = () => {
     setCreatingUser(false);
-    setEditingUserId('');
+    setEditingUserId(users[0]?.id || '');
     setUserDraft(EMPTY_USER);
   };
 
@@ -335,8 +339,8 @@ export default function RolePermissionMasterPage() {
         setUserDraft((prev) => ({ ...prev, password: '', passwordConfirm: '' }));
         setMsg(
           pwd
-            ? 'Password and access saved. Sign in with the new password next time.'
-            : 'User access saved. Changes stick after server restart.'
+            ? 'Password and access saved. Use the new password on next sign-in.'
+            : 'Access saved permanently.'
         );
       }
     } catch (err) {
@@ -381,7 +385,7 @@ export default function RolePermissionMasterPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
-      description="Manage who can sign in and what each role can open. Saves are permanent — they no longer reset when the server restarts."
+      description="Who can sign in, and what each role can open."
       actions={
         <>
           <button
@@ -394,7 +398,7 @@ export default function RolePermissionMasterPage() {
           </button>
           {canWrite && tab === 'users' && (
             <button className="btn" type="button" onClick={startCreateUser}>
-              New user
+              New person
             </button>
           )}
           {canWrite && tab === 'roles' && (
@@ -404,10 +408,6 @@ export default function RolePermissionMasterPage() {
           )}
         </>
       }
-      kpis={[
-        { label: 'Users', value: users.length },
-        { label: 'Roles', value: roles.length },
-      ]}
     >
       <div className="rp-tabs" role="tablist">
         <button
@@ -417,7 +417,7 @@ export default function RolePermissionMasterPage() {
           aria-selected={tab === 'users'}
           onClick={() => setTab('users')}
         >
-          People
+          People <span className="rp-tab-count">{users.length}</span>
         </button>
         <button
           type="button"
@@ -426,7 +426,7 @@ export default function RolePermissionMasterPage() {
           aria-selected={tab === 'roles'}
           onClick={() => setTab('roles')}
         >
-          Roles
+          Roles <span className="rp-tab-count">{roles.length}</span>
         </button>
       </div>
 
@@ -434,8 +434,8 @@ export default function RolePermissionMasterPage() {
       {msg && <p className="rp-toast">{msg}</p>}
 
       {tab === 'users' && (
-        <div className="esign-detail-grid role-master-grid">
-          <aside className="card rp-panel">
+        <div className="rp-layout">
+          <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
               <h3>People</h3>
               {canViewUsers && (
@@ -470,32 +470,33 @@ export default function RolePermissionMasterPage() {
                     {String(u.id) === String(me?.id) ? ' (you)' : ''}
                   </strong>
                   <span className="muted mono-sm">
-                    {u.email}
-                    {(u.roles || []).length
-                      ? ` · ${(u.roles || []).map((r) => r.name).filter(Boolean).join(', ')}`
-                      : ' · No roles'}
+                    {(u.roles || []).map((r) => r.name).filter(Boolean).join(', ') || 'No roles'}
                     {u.isActive === false ? ' · Inactive' : ''}
                   </span>
                 </button>
               ))}
               {canViewUsers && !filteredUsers.length && (
-                <p className="muted">{users.length ? 'No matches.' : 'No users yet.'}</p>
+                <p className="muted rp-empty">{users.length ? 'No matches.' : 'No users yet.'}</p>
               )}
             </div>
           </aside>
 
           <form className="card rp-panel" onSubmit={saveUser} autoComplete="off">
-            <h3>
-              {creatingUser ? 'Create person' : editingUser ? 'Person details' : 'Person details'}
-            </h3>
-            {!creatingUser && !editingUser && (
-              <p className="muted">Select someone on the left, or create a new person.</p>
-            )}
-            {(creatingUser || editingUser) && (
+            {!creatingUser && !editingUser ? (
+              <div className="rp-empty-state">
+                <h3>Person details</h3>
+                <p className="muted">Select someone on the left, or create a new person.</p>
+              </div>
+            ) : (
               <>
+                <h3>{creatingUser ? 'Create person' : editingUser?.fullName || 'Person details'}</h3>
+                {editingUser && !creatingUser && (
+                  <p className="muted mono-sm rp-sub">{editingUser.email}</p>
+                )}
+
                 <section className="rp-section">
                   <h4>Profile</h4>
-                  <div className="row">
+                  <div className="rp-form-grid">
                     <div className="field">
                       <label>Full name *</label>
                       <input
@@ -517,8 +518,6 @@ export default function RolePermissionMasterPage() {
                         onChange={(e) => setUserDraft({ ...userDraft, email: e.target.value })}
                       />
                     </div>
-                  </div>
-                  <div className="row">
                     <div className="field">
                       <label>Username *</label>
                       <input
@@ -545,12 +544,12 @@ export default function RolePermissionMasterPage() {
                   <h4>Password</h4>
                   <p className="muted rp-hint">
                     {creatingUser
-                      ? 'Set a password of at least 12 characters. It is stored securely and will not revert on restart.'
+                      ? 'At least 12 characters. Stored securely and kept across restarts.'
                       : passwordChangedLabel
-                        ? `Last changed ${passwordChangedLabel}. Leave blank to keep the current password.`
-                        : 'Leave blank to keep the current password. New password must be at least 12 characters.'}
+                        ? `Last changed ${passwordChangedLabel}. Leave blank to keep current.`
+                        : 'Leave blank to keep the current password (min 12 if resetting).'}
                   </p>
-                  <div className="row">
+                  <div className="rp-form-grid">
                     <div className="field">
                       <label>{creatingUser ? 'Password *' : 'New password'}</label>
                       <input
@@ -565,7 +564,7 @@ export default function RolePermissionMasterPage() {
                       />
                     </div>
                     <div className="field">
-                      <label>{creatingUser ? 'Confirm password *' : 'Confirm new password'}</label>
+                      <label>{creatingUser ? 'Confirm *' : 'Confirm new'}</label>
                       <input
                         required={creatingUser || Boolean(userDraft.password)}
                         type="password"
@@ -583,15 +582,16 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 <section className="rp-section">
-                  <h4>Access *</h4>
-                  <p className="muted rp-hint">
-                    Pick one or more roles. Module rights come from the Roles tab.
-                  </p>
+                  <h4>Roles *</h4>
+                  <p className="muted rp-hint">Module rights are defined on each role.</p>
                   <div className="user-role-checks">
                     {roles.map((r) => {
                       const id = roleIdOf(r);
                       return (
-                        <label key={id} className={`perm-check ${userDraft.roleIds.includes(id) ? 'is-on' : ''}`}>
+                        <label
+                          key={id}
+                          className={`perm-check ${userDraft.roleIds.includes(id) ? 'is-on' : ''}`}
+                        >
                           <input
                             type="checkbox"
                             checked={userDraft.roleIds.includes(id)}
@@ -603,7 +603,7 @@ export default function RolePermissionMasterPage() {
                             <em className="mono-sm">
                               {r.permissions?.includes('*')
                                 ? 'Full access'
-                                : `${(r.permissions || []).length} permission(s)`}
+                                : `${(r.permissions || []).length} rights`}
                             </em>
                           </span>
                         </label>
@@ -613,22 +613,25 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 {!creatingUser && (
-                  <label className="perm-check user-active-toggle">
-                    <input
-                      type="checkbox"
-                      checked={userDraft.isActive}
-                      disabled={!canWrite || String(editingUserId) === String(me?.id)}
-                      onChange={(e) => setUserDraft({ ...userDraft, isActive: e.target.checked })}
-                    />
-                    <span>
-                      <strong>Account active</strong>
-                      <em className="mono-sm">Inactive people cannot sign in</em>
-                    </span>
-                  </label>
+                  <section className="rp-section">
+                    <h4>Status</h4>
+                    <label className={`perm-check ${userDraft.isActive ? 'is-on' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={userDraft.isActive}
+                        disabled={!canWrite || String(editingUserId) === String(me?.id)}
+                        onChange={(e) => setUserDraft({ ...userDraft, isActive: e.target.checked })}
+                      />
+                      <span>
+                        <strong>Account active</strong>
+                        <em className="mono-sm">Inactive people cannot sign in</em>
+                      </span>
+                    </label>
+                  </section>
                 )}
 
                 {canWrite && (
-                  <div className="row rp-actions">
+                  <div className="rp-actions">
                     <button className="btn" type="submit" disabled={busy}>
                       {busy ? 'Saving…' : creatingUser ? 'Create person' : 'Save changes'}
                     </button>
@@ -651,8 +654,8 @@ export default function RolePermissionMasterPage() {
       )}
 
       {tab === 'roles' && (
-        <div className="esign-detail-grid role-master-grid">
-          <aside className="card rp-panel">
+        <div className="rp-layout">
+          <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
               <h3>Roles</h3>
             </div>
@@ -676,70 +679,83 @@ export default function RolePermissionMasterPage() {
                     <span className="muted mono-sm">
                       {r.permissions?.includes('*')
                         ? 'Full access'
-                        : `${(r.permissions || []).length} module right(s)`}
+                        : `${(r.permissions || []).length} rights`}
                       {r.isSystem ? ' · Built-in' : ''}
                     </span>
                   </button>
                 );
               })}
-              {!roles.length && <p className="muted">No roles yet.</p>}
+              {!roles.length && <p className="muted rp-empty">No roles yet.</p>}
             </div>
           </aside>
 
           <form className="card rp-panel" onSubmit={saveRole}>
-            <h3>{creating ? 'Create role' : 'Role access'}</h3>
-            {!creating && !selected && <p className="muted">Select a role to edit module access.</p>}
-            {(creating || selected) && (
+            {!creating && !selected ? (
+              <div className="rp-empty-state">
+                <h3>Role access</h3>
+                <p className="muted">Select a role to edit module access.</p>
+              </div>
+            ) : (
               <>
+                <h3>{creating ? 'Create role' : selected?.name || 'Role access'}</h3>
+
                 <section className="rp-section">
-                  <div className="field">
-                    <label>Role name *</label>
-                    <input
-                      required
-                      value={draft.name}
-                      disabled={!canWrite || isAdminRole}
-                      onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Description</label>
-                    <input
-                      value={draft.description}
-                      disabled={!canWrite}
-                      onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                      placeholder="What this role is for"
-                    />
+                  <h4>Details</h4>
+                  <div className="rp-form-grid">
+                    <div className="field">
+                      <label>Role name *</label>
+                      <input
+                        required
+                        value={draft.name}
+                        disabled={!canWrite || isAdminRole}
+                        onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Description</label>
+                      <input
+                        value={draft.description}
+                        disabled={!canWrite}
+                        onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                        placeholder="What this role is for"
+                      />
+                    </div>
                   </div>
                 </section>
 
-                <label className={`perm-check user-active-toggle ${hasFullAccess || isAdminRole ? 'is-on' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={hasFullAccess || isAdminRole}
-                    disabled={!canWrite || isAdminRole}
-                    onChange={toggleFullAccess}
-                  />
-                  <span>
-                    <strong>Full access</strong>
-                    <em className="mono-sm">Read &amp; write on every module</em>
-                  </span>
-                </label>
-
                 <section className="rp-section">
+                  <h4>Privilege</h4>
+                  <label
+                    className={`perm-check ${hasFullAccess || isAdminRole ? 'is-on' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={hasFullAccess || isAdminRole}
+                      disabled={!canWrite || isAdminRole}
+                      onChange={toggleFullAccess}
+                    />
+                    <span>
+                      <strong>Full access</strong>
+                      <em className="mono-sm">Read &amp; write on every module</em>
+                    </span>
+                  </label>
+                </section>
+
+                <section className="rp-section rp-section--modules">
                   <h4>Modules</h4>
-                  <p className="muted rp-hint">
-                    Turn Read / Write on for each module. Changes stick after you click Save.
-                  </p>
+                  <p className="muted rp-hint">Toggle Read / Write, then Save.</p>
                   <div className="rp-module-grid">
                     {modules.map((m) => (
-                      <div key={m.id} className="rp-module-card">
-                        <div className="rp-module-card-copy">
+                      <div key={m.id} className="rp-module-row">
+                        <div className="rp-module-card-copy" title={m.description || undefined}>
                           <strong>{m.label}</strong>
                           <span className="muted">{m.description}</span>
                         </div>
                         <div className="rp-module-toggles">
                           {m.readKey ? (
-                            <label className={`access-toggle ${moduleHasAccess(m, 'read') ? 'is-on' : ''}`}>
+                            <label
+                              className={`access-toggle ${moduleHasAccess(m, 'read') ? 'is-on' : ''}`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={moduleHasAccess(m, 'read')}
@@ -749,10 +765,12 @@ export default function RolePermissionMasterPage() {
                               <span>Read</span>
                             </label>
                           ) : (
-                            <span className="muted access-toggle">—</span>
+                            <span className="access-na">—</span>
                           )}
                           {m.writeKey ? (
-                            <label className={`access-toggle ${moduleHasAccess(m, 'write') ? 'is-on' : ''}`}>
+                            <label
+                              className={`access-toggle ${moduleHasAccess(m, 'write') ? 'is-on' : ''}`}
+                            >
                               <input
                                 type="checkbox"
                                 checked={moduleHasAccess(m, 'write')}
@@ -762,7 +780,7 @@ export default function RolePermissionMasterPage() {
                               <span>Write</span>
                             </label>
                           ) : (
-                            <span className="muted access-toggle">—</span>
+                            <span className="access-na">—</span>
                           )}
                         </div>
                       </div>
@@ -771,7 +789,7 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 {canWrite && (
-                  <div className="row rp-actions">
+                  <div className="rp-actions">
                     <button className="btn" type="submit" disabled={busy}>
                       {busy ? 'Saving…' : creating ? 'Create role' : 'Save access'}
                     </button>

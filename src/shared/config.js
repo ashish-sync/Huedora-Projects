@@ -1,9 +1,17 @@
 /**
  * Backend base URL (no trailing slash).
- * Set via VITE_BACKEND_URL — e.g. http://localhost:5000 or https://api.example.com
- * Leave empty in local Vite dev to use the built-in `/api` proxy.
+ * Set via VITE_BACKEND_URL — e.g. http://localhost:5000 or https://api.example.com.
+ * Local Vite uses its `/api` proxy. The Render fallback keeps the public frontend
+ * connected if its build-time environment variable is accidentally omitted.
  */
-export const BACKEND_URL = String(import.meta.env.VITE_BACKEND_URL || '')
+const RENDER_BACKEND_FALLBACK =
+  typeof window !== 'undefined' && window.location.hostname === 'huedora-projects.onrender.com'
+    ? 'https://huedora-projects-server.onrender.com'
+    : '';
+
+export const BACKEND_URL = String(
+  import.meta.env.VITE_BACKEND_URL || RENDER_BACKEND_FALLBACK
+)
   .trim()
   .replace(/\/$/, '');
 

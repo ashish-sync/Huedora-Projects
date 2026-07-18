@@ -89,7 +89,7 @@ export default function AgreementsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }]}
       title={MODULE.DOCUMENT_HUB}
       actions={
         <>
@@ -103,7 +103,7 @@ export default function AgreementsPage() {
           </button>
           {can('agreements:write') ? (
             <button className="btn" type="button" onClick={() => navigate('/agreements/new')}>
-              New document
+              New agreement
             </button>
           ) : null}
         </>
@@ -115,14 +115,8 @@ export default function AgreementsPage() {
         active: status === p.key,
         onClick: () => setFilter(status === p.key ? '' : p.key),
       }))}
-      quickActions={[
-        { to: '/agreements/contacts', label: MODULE.CONTACT_DIRECTORY },
-        { to: '/agreements/location-master', label: MODULE.LOCATION_MASTER },
-        { to: '/agreements/document-master', label: MODULE.DOCUMENT_MASTER },
-        { to: '/agreements/signature-master', label: MODULE.DIGITAL_SIGNATURE_MASTER },
-      ]}
       toolbar={
-        <div className="agreements-filters">
+        <div className="filter-bar agreements-filters">
           <input
             className="esign-search"
             placeholder="Search title, party, agreement #"
@@ -159,7 +153,7 @@ export default function AgreementsPage() {
     >
       {error && <p className="error">{error}</p>}
 
-      <div className="card table-wrap esign-table">
+      <div className="card card--flush table-wrap esign-table">
         <table>
           <thead>
             <tr>
@@ -215,7 +209,7 @@ export default function AgreementsPage() {
               ) : (
                 can('agreements:write') && (
                   <button className="btn" type="button" onClick={() => navigate('/agreements/new')}>
-                    New document
+                    New agreement
                   </button>
                 )
               )

@@ -2,79 +2,158 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import ProductMasterPage from './ProductMasterPage.jsx';
+import ContactDirectoryPage from '../agreements/ContactDirectoryPage.jsx';
+import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
+import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
+import LocationMasterPage from '../locations/LocationMasterPage.jsx';
 
-const ENTITIES = [
-  { id: 'uoms', label: 'Units of Measure (UOM)', path: '/logistics/uoms', fields: ['code', 'name'] },
+const MASTER_GROUPS = [
   {
-    id: 'categories',
-    label: 'Product Category',
-    path: '/logistics/categories',
-    fields: ['code', 'name', 'description'],
-  },
-  {
-    id: 'suppliers',
-    label: 'Suppliers',
-    path: '/logistics/suppliers',
-    fields: ['code', 'name', 'contactName', 'email', 'phone', 'city', 'state'],
-    fromContacts: true,
-    partyType: 'Supplier',
-  },
-  {
-    id: 'vendors',
-    label: 'Vendors',
-    path: '/logistics/vendors',
-    fields: ['code', 'name', 'contactName', 'email', 'phone', 'city', 'state'],
-    fromContacts: true,
-    partyType: 'Vendor',
-  },
-  {
-    id: 'products',
+    id: 'product-masters',
     label: 'Products',
-    path: '/logistics/products',
-    fields: [
-      'code',
-      'name',
-      'productType',
-      'programProject',
-      'expiryApplicable',
-      'trackingKind',
-      'brand',
-      'model',
-      'sku',
-      'partNumber',
-      'defaultPerUnitCost',
-      'defaultInvoiceAmount',
-      'description',
+    scope: 'inventory',
+    entities: [
+      {
+        id: 'products',
+        label: 'Products',
+        path: '/logistics/products',
+        dedicated: true,
+        fields: [],
+      },
+      {
+        id: 'categories',
+        label: 'Product Categories',
+        path: '/logistics/categories',
+        fields: ['code', 'name', 'description'],
+      },
+      { id: 'uoms', label: 'Units of Measure', path: '/logistics/uoms', fields: ['code', 'name'] },
     ],
   },
-  { id: 'warehouses', label: 'Warehouses', path: '/logistics/warehouses', fields: ['code', 'name', 'city', 'state', 'address'] },
   {
-    id: 'locations',
-    label: 'Locations',
-    path: '/logistics/locations',
-    fields: ['code', 'name', 'level', 'warehouseId', 'parentId'],
+    id: 'inventory-masters',
+    label: 'Inventory',
+    scope: 'inventory',
+    entities: [
+      {
+        id: 'warehouses',
+        label: 'Warehouses',
+        path: '/logistics/warehouses',
+        fields: ['code', 'name', 'city', 'state', 'address'],
+      },
+      {
+        id: 'locations',
+        label: 'Storage Locations',
+        path: '/logistics/locations',
+        fields: ['code', 'name', 'level', 'warehouseId', 'parentId'],
+      },
+      { id: 'stock-statuses', label: 'Stock Statuses', path: '/logistics/stock-statuses', fields: ['code', 'name'] },
+    ],
   },
   {
-    id: 'transporters',
-    label: 'Transporters / Courier',
-    path: '/logistics/transporters',
-    fields: ['code', 'name', 'contactName', 'email', 'phone'],
+    id: 'business-partners',
+    label: 'Partners',
+    scope: 'logistics',
+    entities: [
+      {
+        id: 'suppliers',
+        label: 'Suppliers',
+        path: '/logistics/suppliers',
+        fields: ['code', 'name', 'contactName', 'email', 'phone', 'city', 'state'],
+        fromContacts: true,
+        partyType: 'Supplier',
+      },
+      {
+        id: 'vendors',
+        label: 'Vendors',
+        path: '/logistics/vendors',
+        fields: ['code', 'name', 'contactName', 'email', 'phone', 'city', 'state'],
+        fromContacts: true,
+        partyType: 'Vendor',
+      },
+      {
+        id: 'transporters',
+        label: 'Transporters',
+        path: '/logistics/transporters',
+        fields: ['code', 'name', 'contactName', 'email', 'phone'],
+      },
+    ],
   },
-  { id: 'stock-statuses', label: 'Stock Statuses', path: '/logistics/stock-statuses', fields: ['code', 'name'] },
   {
-    id: 'movement-types',
-    label: 'Process / Movement Types',
-    path: '/logistics/movement-types',
-    fields: ['code', 'name', 'direction'],
+    id: 'process-masters',
+    label: 'Process',
+    scope: 'logistics',
+    entities: [
+      {
+        id: 'movement-types',
+        label: 'Movement Types',
+        path: '/logistics/movement-types',
+        fields: ['code', 'name', 'direction'],
+      },
+      { id: 'reason-codes', label: 'Reason Codes', path: '/logistics/reason-codes', fields: ['code', 'name'] },
+    ],
   },
-  { id: 'reason-codes', label: 'Reason Codes', path: '/logistics/reason-codes', fields: ['code', 'name'] },
   {
-    id: 'expense-categories',
-    label: 'Expense Categories',
-    path: '/logistics/expense-categories',
-    fields: ['code', 'name'],
+    id: 'finance-masters',
+    label: 'Finance',
+    scope: 'logistics',
+    entities: [
+      {
+        id: 'expense-categories',
+        label: 'Expense Categories',
+        path: '/logistics/expense-categories',
+        fields: ['code', 'name', 'covers'],
+      },
+    ],
+  },
+  {
+    id: 'document-masters',
+    label: 'Document One',
+    scope: 'document',
+    entities: [
+      { id: 'contacts', label: 'Business Partners', embedded: 'contacts', fields: [] },
+      { id: 'pin-codes', label: 'Geography / PIN', embedded: 'pin-codes', fields: [] },
+      { id: 'templates', label: 'Document Templates', embedded: 'templates', fields: [] },
+      { id: 'signatures', label: 'Signatures', embedded: 'signatures', fields: [] },
+    ],
   },
 ];
+
+function groupsForScope(scope) {
+  if (!scope || scope === 'all') return MASTER_GROUPS;
+  const mapped = scope === 'movement' ? 'logistics' : scope;
+  return MASTER_GROUPS.filter((g) => g.scope === mapped);
+}
+
+function EmbeddedMaster({ kind }) {
+  if (kind === 'contacts') return <ContactDirectoryPage embedded />;
+  if (kind === 'pin-codes') return <LocationMasterPage embedded />;
+  if (kind === 'templates') return <DocumentMasterPage embedded />;
+  if (kind === 'signatures') return <SignatureMasterPage embedded />;
+  return null;
+}
+
+function entitySingular(label) {
+  const map = {
+    Products: 'Product',
+    'Product Categories': 'Product Category',
+    'Units of Measure': 'Unit of Measure',
+    Suppliers: 'Supplier',
+    Vendors: 'Vendor',
+    Transporters: 'Transporter',
+    Warehouses: 'Warehouse',
+    Locations: 'Storage Location',
+    'Stock Statuses': 'Stock Status',
+    'Movement Types': 'Movement Type',
+    'Reason Codes': 'Reason Code',
+    'Expense Categories': 'Expense Category',
+    'Business Partners': 'Business Partner',
+    'Geography / PIN': 'Geography / PIN',
+    'Document Templates': 'Document Template',
+    Signatures: 'Signature',
+  };
+  return map[label] || label;
+}
 
 const FIELD_LABELS = {
   code: 'Code',
@@ -100,23 +179,17 @@ const FIELD_LABELS = {
   defaultPerUnitCost: 'Default unit cost',
   defaultInvoiceAmount: 'Default invoice amount',
   direction: 'Direction',
+  covers: 'Covers',
 };
 
-const PRODUCT_TYPES = [
-  'Medical Device',
-  'Non-Medical Device',
-  'Consumable',
-  'Spare Part / Accessory',
-  'Document',
-  'Miscellaneous',
-];
+const PRODUCT_TYPES = ['Device', 'Consumable', 'Accessory', 'Spare Part', 'Document', 'Misc'];
 
 const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 
 const LOCATION_LEVELS = ['Zone', 'Room', 'Rack', 'Shelf', 'Bin'];
 
-const emptyFor = (fields) =>
-  Object.fromEntries(
+function emptyFor(fields) {
+  return Object.fromEntries(
     fields.map((f) => [
       f,
       f === 'direction'
@@ -124,7 +197,7 @@ const emptyFor = (fields) =>
         : f === 'level'
           ? 'Zone'
           : f === 'productType'
-            ? 'Medical Device'
+            ? 'Device'
             : f === 'trackingKind'
               ? 'Serial'
               : f === 'expiryApplicable'
@@ -132,25 +205,37 @@ const emptyFor = (fields) =>
                 : '',
     ])
   );
-
-function codeFromName(name) {
-  const letters = String(name || '')
-    .replace(/[^a-zA-Z0-9\s]/g, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 6);
-  return letters || 'PARTY';
 }
 
-export default function LogisticsMasterPage() {
+export default function LogisticsMasterPage({
+  scope = 'logistics',
+  title = 'Master One',
+  description = 'Business partners, process types, and expense categories.',
+  initialEntity = '',
+} = {}) {
   const { can } = useAuth();
-  const canWrite = can('logistics:master') || can('logistics:write') || can('*');
-  const [entityId, setEntityId] = useState('uoms');
-  const entity = ENTITIES.find((e) => e.id === entityId) || ENTITIES[0];
+  const canWriteLogistics = can('logistics:master') || can('logistics:write') || can('*');
+  const canWriteDocs = can('agreements:write') || can('*');
+  const canReadDocs = can('agreements:read') || canWriteDocs;
+  const visibleGroups = useMemo(() => {
+    const groups = groupsForScope(scope);
+    return groups.filter((g) => {
+      if (g.scope === 'document') return canReadDocs;
+      return canWriteLogistics || can('logistics:read') || can('*');
+    });
+  }, [scope, can, canWriteLogistics, canReadDocs]);
+  const entities = useMemo(() => visibleGroups.flatMap((g) => g.entities), [visibleGroups]);
+  const [entityId, setEntityId] = useState(
+    () => initialEntity || entities[0]?.id || 'suppliers'
+  );
+  const entity = entities.find((e) => e.id === entityId) || entities[0];
+  const activeGroup = visibleGroups.find((g) => g.entities.some((e) => e.id === entityId));
+  const canWrite =
+    activeGroup?.scope === 'document' ? canWriteDocs : canWriteLogistics;
+  const formFields = useMemo(
+    () => (entity?.fields || []).filter((f) => f !== 'code' && f !== 'sku'),
+    [entity?.fields]
+  );
   const [rows, setRows] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -159,10 +244,30 @@ export default function LogisticsMasterPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState(() => emptyFor(entity.fields));
+  const [form, setForm] = useState(() => emptyFor([]));
   const [editingId, setEditingId] = useState('');
+  const editingRow = useMemo(
+    () => (editingId ? rows.find((r) => r._id === editingId) : null),
+    [editingId, rows]
+  );
+
+  useEffect(() => {
+    if (initialEntity && entities.some((e) => e.id === initialEntity)) {
+      setEntityId(initialEntity);
+    }
+  }, [initialEntity, entities]);
+
+  useEffect(() => {
+    if (!entities.some((e) => e.id === entityId)) {
+      setEntityId(entities[0]?.id || '');
+    }
+  }, [entities, entityId]);
 
   const load = useCallback(async () => {
+    if (!entity || entity.dedicated || entity.embedded) {
+      setRows([]);
+      return;
+    }
     setError('');
     try {
       const params = new URLSearchParams({ limit: '200' });
@@ -176,22 +281,23 @@ export default function LogisticsMasterPage() {
     } catch (e) {
       setError(e.message);
     }
-  }, [entity.path, entity.id, q]);
+  }, [entity?.path, entity?.id, entity?.dedicated, entity?.embedded, q]);
 
   useEffect(() => {
-    setForm(emptyFor(entity.fields));
+    if (!entity) return;
+    setForm(emptyFor(formFields));
     setEditingId('');
     setContactPick('');
     setMsg('');
     load();
-  }, [entityId, load]);
+  }, [entityId, load, formFields, entity]);
 
   useEffect(() => {
-    if (!entity.fromContacts) return;
+    if (!entity?.fromContacts) return;
     api('/contacts?limit=500')
       .then((res) => setContacts(res.data || []))
       .catch(() => setContacts([]));
-  }, [entity.fromContacts, entityId]);
+  }, [entity?.fromContacts, entityId]);
 
   const warehouseName = useMemo(() => {
     const map = Object.fromEntries(warehouses.map((w) => [w._id, w.name || w.code]));
@@ -199,17 +305,20 @@ export default function LogisticsMasterPage() {
   }, [warehouses]);
 
   const contactOptions = useMemo(() => {
-    if (!entity.fromContacts) return [];
+    if (!entity?.fromContacts) return [];
     const want = entity.partyType;
     const typed = contacts.filter((c) => c.resourceType === want);
     const rest = contacts.filter((c) => c.resourceType !== want);
     return [...typed, ...rest];
-  }, [contacts, entity.fromContacts, entity.partyType]);
+  }, [contacts, entity?.fromContacts, entity?.partyType]);
 
   const startEdit = (row) => {
     setEditingId(row._id);
-    const next = emptyFor(entity.fields);
-    for (const f of entity.fields) next[f] = row[f] ?? '';
+    const next = emptyFor(formFields);
+    for (const f of formFields) next[f] = row[f] ?? '';
+    if (row.expiryApplicable !== undefined) {
+      next.expiryApplicable = row.expiryApplicable ? 'true' : 'false';
+    }
     setForm(next);
     setContactPick(row.contactId || '');
     setMsg('');
@@ -219,7 +328,7 @@ export default function LogisticsMasterPage() {
   const cancelEdit = () => {
     setEditingId('');
     setContactPick('');
-    setForm(emptyFor(entity.fields));
+    setForm(emptyFor(formFields));
   };
 
   const applyContact = (contactId) => {
@@ -229,7 +338,6 @@ export default function LogisticsMasterPage() {
     if (!c) return;
     setForm((f) => ({
       ...f,
-      code: f.code || codeFromName(c.name),
       name: c.name || f.name,
       contactName: c.name || '',
       email: c.email || '',
@@ -243,12 +351,12 @@ export default function LogisticsMasterPage() {
     if (!canWrite || !contactPick || !entity.fromContacts) return;
     const c = contacts.find((x) => x._id === contactPick);
     if (!c) {
-      setError('Select a contact from Contact Directory.');
+      setError('Select a contact from Business Partners.');
       return;
     }
     if (c.resourceType && c.resourceType !== entity.partyType) {
       const ok = window.confirm(
-        `This contact is Resource Type “${c.resourceType}”, but you are adding a ${entity.partyType}. Continue?`
+        `This partner is Resource Type “${c.resourceType}”, but you are adding a ${entity.partyType}. Continue?`
       );
       if (!ok) return;
     }
@@ -259,7 +367,6 @@ export default function LogisticsMasterPage() {
       await api(entity.path, {
         method: 'POST',
         body: {
-          code: codeFromName(c.name),
           name: c.name,
           contactId: c._id,
           contactName: c.name,
@@ -270,7 +377,7 @@ export default function LogisticsMasterPage() {
           isActive: true,
         },
       });
-      setMsg(`${entity.partyType} added from Contact Directory.`);
+      setMsg(`${entity.partyType} added from Business Partners.`);
       setContactPick('');
       load();
     } catch (err) {
@@ -288,6 +395,8 @@ export default function LogisticsMasterPage() {
     setMsg('');
     try {
       const body = { ...form };
+      delete body.code;
+      delete body.sku;
       if (entity.fromContacts && contactPick) body.contactId = contactPick;
       if (body.parentId === '') body.parentId = null;
       if (body.warehouseId === '') body.warehouseId = null;
@@ -334,25 +443,52 @@ export default function LogisticsMasterPage() {
 
   return (
     <div className="logistics-master">
-      <p className="muted" style={{ marginTop: 0 }}>
-        Configure units of measure, product categories, suppliers, and vendors.
-        Suppliers and vendors can also be added from Contact Directory.
-      </p>
-      <div className="logistics-entity-tabs" role="tablist">
-        {ENTITIES.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            role="tab"
-            className={`logistics-entity-tab${entityId === e.id ? ' is-active' : ''}`}
-            aria-selected={entityId === e.id}
-            onClick={() => setEntityId(e.id)}
-          >
-            {e.label}
-          </button>
-        ))}
-      </div>
+      {description ? (
+        <p className="muted" style={{ marginTop: 0 }}>
+          {description}
+        </p>
+      ) : null}
 
+      {!entity ? (
+        <p className="muted">No masters available in this module.</p>
+      ) : (
+      <div className="logistics-master-layout">
+        <nav className="logistics-master-tree" aria-label={title}>
+          <div className="logistics-master-tree-title">{title}</div>
+          {visibleGroups.map((group) => (
+            <div key={group.id} className="logistics-master-group">
+              <div className="logistics-master-group-label">{group.label}</div>
+              <ul className="logistics-master-group-list">
+                {group.entities.map((e) => (
+                  <li key={e.id}>
+                    <button
+                      type="button"
+                      className={`logistics-master-item${entityId === e.id ? ' is-active' : ''}`}
+                      aria-current={entityId === e.id ? 'page' : undefined}
+                      onClick={() => setEntityId(e.id)}
+                    >
+                      {e.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <div className="logistics-master-content">
+          <div className="logistics-master-crumb muted">
+            {activeGroup?.label}
+            <span aria-hidden="true"> / </span>
+            <span className="logistics-master-crumb-current">{entity.label}</span>
+          </div>
+
+          {entity.dedicated ? (
+            <ProductMasterPage />
+          ) : entity.embedded ? (
+            <EmbeddedMaster kind={entity.embedded} />
+          ) : (
+            <>
       {(error || msg) && (
         <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
           {error || msg}
@@ -361,10 +497,10 @@ export default function LogisticsMasterPage() {
 
       {canWrite && entity.fromContacts && (
         <div className="card logistics-form" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Add from Contact Directory</h3>
+          <h3 style={{ marginTop: 0 }}>Add from Business Partners</h3>
           <p className="muted" style={{ marginTop: 0 }}>
-            Pick a contact (preferably Resource Type = {entity.partyType}). Creates a master record linked to that
-            contact.
+            Pick a partner (preferably Resource Type = {entity.partyType}). Creates a master record linked to that
+            partner.
           </p>
           <div className="logistics-form-grid">
             <div className="field" style={{ gridColumn: '1 / -1' }}>
@@ -395,7 +531,30 @@ export default function LogisticsMasterPage() {
 
       {canWrite && (
         <form className="card logistics-form" onSubmit={save}>
-          <h3>{editingId ? `Edit ${entity.label}` : `New ${entity.label.replace(/s$/, '')}`}</h3>
+          <h3>{editingId ? `Edit ${entitySingular(entity.label)}` : `New ${entitySingular(entity.label)}`}</h3>
+          {editingId ? (
+            <div className="logistics-form-grid" style={{ marginBottom: 12 }}>
+              <div className="field">
+                <label htmlFor="lm-code">Code</label>
+                <input id="lm-code" value={editingRow?.code || ''} readOnly disabled />
+              </div>
+              {entity.fields.includes('sku') ? (
+                <div className="field">
+                  <label htmlFor="lm-sku">SKU</label>
+                  <input id="lm-sku" value={editingRow?.sku || ''} readOnly disabled />
+                </div>
+              ) : null}
+              <p className="muted" style={{ margin: 0, fontSize: '0.8rem', gridColumn: '1 / -1' }}>
+                Assigned automatically and cannot be changed.
+              </p>
+            </div>
+          ) : (
+            <p className="muted" style={{ marginTop: 0 }}>
+              {entity.fields.includes('sku')
+                ? 'Code and SKU are assigned automatically on save.'
+                : 'Code is assigned automatically on save.'}
+            </p>
+          )}
           {entity.fromContacts && editingId ? (
             <div className="field" style={{ marginBottom: 12 }}>
               <label htmlFor="lm-contact-link">Linked contact</label>
@@ -415,7 +574,7 @@ export default function LogisticsMasterPage() {
             </div>
           ) : null}
           <div className="logistics-form-grid">
-            {entity.fields.map((field) => (
+            {formFields.map((field) => (
               <div className="field" key={field}>
                 <label htmlFor={`lm-${field}`}>{FIELD_LABELS[field] || field}</label>
                 {field === 'level' ? (
@@ -495,7 +654,7 @@ export default function LogisticsMasterPage() {
                     onChange={(e) => setForm({ ...form, parentId: e.target.value })}
                     placeholder="Optional parent location id"
                   />
-                ) : field === 'description' || field === 'address' ? (
+                ) : field === 'description' || field === 'address' || field === 'covers' ? (
                   <textarea
                     id={`lm-${field}`}
                     rows={2}
@@ -505,7 +664,7 @@ export default function LogisticsMasterPage() {
                 ) : (
                   <input
                     id={`lm-${field}`}
-                    required={field === 'name' || field === 'code'}
+                    required={field === 'name'}
                     value={form[field]}
                     onChange={(e) => setForm({ ...form, [field]: e.target.value })}
                   />
@@ -539,7 +698,7 @@ export default function LogisticsMasterPage() {
         </button>
       </div>
 
-      <div className="card table-wrap" style={{ padding: 0 }}>
+      <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
             <tr>
@@ -589,6 +748,11 @@ export default function LogisticsMasterPage() {
           </tbody>
         </table>
       </div>
+            </>
+          )}
+        </div>
+      </div>
+      )}
     </div>
   );
 }

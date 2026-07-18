@@ -1,16 +1,14 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 
-const NAV = [
-  { to: '/logistics', end: true, label: 'Dashboard' },
-  { to: '/logistics/inward', label: 'Inward' },
-  { to: '/logistics/outward', label: 'Outward' },
-  { to: '/logistics/balance', label: 'Balance' },
-  { to: '/logistics/usage', label: 'Usage' },
-  { to: '/logistics/output', label: 'Output' },
-  { to: '/logistics/master', label: 'Masters' },
+const NAV_ITEMS = [
+  { to: '/logistics', end: true, label: NAV.OVERVIEW },
+  { to: '/logistics/inward', label: NAV.GOODS_RECEIPT },
+  { to: '/logistics/outward', label: NAV.GOODS_ISSUE },
+  { to: '/logistics/usage', label: NAV.CONSUMPTION },
+  { to: '/logistics/output', label: NAV.PRODUCTION_OUTPUT },
 ];
 
 export default function LogisticsLayout() {
@@ -21,10 +19,10 @@ export default function LogisticsLayout() {
   if (!allowed) {
     return (
       <PageShell
-        breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.INVENTORY_LOGISTICS }]}
-        title={MODULE.INVENTORY_LOGISTICS}
+        breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.LOGISTICS }]}
+        title={MODULE.LOGISTICS}
       >
-        <p className="muted">You do not have access to Inventory &amp; Logistics.</p>
+        <p className="muted">You do not have access to {MODULE.LOGISTICS}.</p>
       </PageShell>
     );
   }
@@ -32,12 +30,12 @@ export default function LogisticsLayout() {
   return (
     <div className="logistics-shell">
       <PageShell
-        breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.INVENTORY_LOGISTICS }]}
-        title={MODULE.INVENTORY_LOGISTICS}
-        description="Dashboard, inward receipts, outward dispatch, stock balances, and masters."
+        breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.LOGISTICS }]}
+        title={MODULE.LOGISTICS}
+        description="Goods receipt, goods issue, consumption, and production output. Reference data is maintained in Master One."
       >
-        <nav className="logistics-nav" aria-label="Inventory and Logistics sections">
-          {NAV.map((item) => (
+        <nav className="logistics-nav" aria-label={`${MODULE.LOGISTICS} sections`}>
+          {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

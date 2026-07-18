@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { api } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
 import { useTheme } from '../shared/theme.jsx';
+import { MODULE } from '../shared/labels.js';
 import {
   emitNotificationsChanged,
   NOTIFICATIONS_CHANGED_EVENT,
@@ -197,7 +198,7 @@ export default function Layout({ children }) {
                     className="header-profile-link"
                     onClick={() => setMenuOpen(false)}
                   >
-                    Roles &amp; Permissions
+                    {MODULE.ROLES_PERMISSIONS}
                   </Link>
                 )}
                 <button type="button" role="menuitem" className="header-profile-logout" onClick={requestLogout}>

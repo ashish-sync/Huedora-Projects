@@ -1,0 +1,655 @@
+/**
+ * TYLO One enterprise design system
+ * Loaded after global.css. Wins on sizing/spacing conflicts.
+ * Search inputs may grow; all other controls stay fixed size.
+ */
+
+/* ── Page rhythm ───────────────────────────────────────────── */
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack) !important;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center !important;
+  gap: var(--stack);
+  margin: 0 !important;
+  padding: 0 0 var(--stack) !important;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.topbar .eyebrow {
+  margin: 0 0 2px !important;
+}
+
+.topbar-title {
+  margin: 0 !important;
+  font-size: 1.35rem !important;
+  font-weight: 650 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em;
+}
+
+.topbar-desc {
+  margin: 4px 0 0 !important;
+  font-size: 0.84rem !important;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--stack-sm);
+  padding-top: 0 !important;
+  flex-shrink: 0;
+}
+
+.page-shell > .page-metrics,
+.page-shell > .toolbar--page {
+  margin-bottom: 0 !important;
+}
+
+/* ── Surfaces ──────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: none;
+  padding: var(--pad);
+}
+
+.card--flush,
+.card.catalog,
+.inv-catalog,
+.am-catalog,
+.vf-catalog {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.card-title,
+.card > h3:first-child,
+.logistics-form h3,
+.arq-form h3 {
+  margin: 0 0 var(--stack-sm);
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.card--flush > .card-title,
+.card--flush > h3:first-child {
+  margin: 0;
+  padding: var(--pad);
+  border-bottom: 1px solid var(--line);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+}
+
+.grid {
+  display: grid;
+  gap: var(--stack);
+}
+
+/* ── Control lock (same height everywhere) ─────────────────── */
+
+.btn,
+.btn.secondary,
+.btn.danger,
+.date-range-filter-actions .btn,
+.agreements-filters .btn,
+.filter-bar .btn,
+.catalog-toolbar .btn,
+.inv-toolbar .btn,
+.am-toolbar .btn,
+.vf-toolbar .btn,
+.logistics-toolbar .btn,
+.esign-search,
+.inv-search,
+.am-search,
+input.esign-search,
+.filter-select,
+.toolbar select,
+.toolbar .filter-select,
+.agreements-filters .filter-select,
+.agreements-filters select,
+.filter-bar select,
+.filter-bar .filter-select,
+.catalog-toolbar select,
+.inv-toolbar select,
+.am-toolbar select,
+.vf-toolbar select,
+.esign-toolbar select,
+.logistics-toolbar select,
+.date-range-filter-field input[type='date'],
+.date-range-filter-field select,
+.field input:not([type='file']):not(.file-picker__input),
+.field select,
+.adaptive-select__control {
+  height: var(--control-h) !important;
+  min-height: var(--control-h) !important;
+  max-height: var(--control-h) !important;
+  box-sizing: border-box !important;
+  border-radius: var(--radius-sm) !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.2 !important;
+}
+
+.btn,
+.btn.secondary,
+.btn.danger {
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.btn.btn-compact {
+  height: var(--control-h-sm) !important;
+  min-height: var(--control-h-sm) !important;
+  max-height: var(--control-h-sm) !important;
+  padding: 0 10px !important;
+  font-size: 0.75rem !important;
+}
+
+.btn.secondary {
+  border-width: 1px !important;
+}
+
+.esign-search,
+.inv-search,
+.am-search,
+input.esign-search,
+.filter-select,
+.toolbar select,
+.agreements-filters select,
+.date-range-filter-field input[type='date'],
+.field input:not([type='file']):not(.file-picker__input),
+.field select {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: var(--line) !important;
+  background: var(--bg-elevated) !important;
+  color: var(--ink) !important;
+}
+
+/* ── KPIs ──────────────────────────────────────────────────── */
+
+.module-dash-kpis,
+.logistics-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--kpi-min), 1fr));
+  gap: var(--stack-sm);
+  margin: 0;
+  align-items: stretch;
+}
+
+.module-dash-kpis[data-count='2'] { grid-template-columns: repeat(2, 8rem); }
+.module-dash-kpis[data-count='3'] { grid-template-columns: repeat(3, 8rem); }
+.module-dash-kpis[data-count='4'] { grid-template-columns: repeat(4, 8rem); }
+.module-dash-kpis[data-count='5'] { grid-template-columns: repeat(5, 7.25rem); }
+.module-dash-kpis[data-count='6'] { grid-template-columns: repeat(6, 6.75rem); }
+.module-dash-kpis[data-count='7'] { grid-template-columns: repeat(7, 6.25rem); }
+
+.module-kpi,
+.logistics-kpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  text-align: left;
+  color: var(--ink);
+  min-height: 52px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+button.module-kpi {
+  cursor: pointer;
+  font: inherit;
+}
+
+.module-kpi.is-active,
+button.module-kpi.is-clickable:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  background: color-mix(in srgb, var(--brand) 4%, var(--bg-elevated));
+}
+
+.module-kpi strong,
+.logistics-kpi strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.module-kpi span,
+.logistics-kpi span {
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ilog-dash-kpi {
+  padding: 8px 10px !important;
+  border-radius: var(--radius-sm) !important;
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+.ilog-dash-kpi strong {
+  font-size: 1.2rem !important;
+  font-weight: 650 !important;
+}
+
+.ilog-dash-kpi span {
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+}
+
+/* ── Metrics row: KPIs + filters on ONE line ───────────────── */
+
+.page-metrics {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: var(--stack) !important;
+  margin: 0 !important;
+  width: 100%;
+  min-width: 0;
+}
+
+.page-metrics--split {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+
+.page-metrics .module-dash-kpis,
+.page-metrics .logistics-kpis {
+  flex: 0 0 auto;
+  margin: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+.page-metrics-toolbar {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: var(--stack-sm) !important;
+}
+
+.filter-bar,
+.agreements-filters {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: var(--stack-sm) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 auto;
+}
+
+.date-range-filter {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: var(--stack-sm);
+  width: auto;
+  margin-left: auto;
+}
+
+.date-range-filter-fields {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-end !important;
+  gap: var(--stack-sm) !important;
+  width: auto;
+}
+
+.page-metrics .date-range-filter {
+  margin-left: auto;
+  width: auto;
+}
+
+/* Search grows; everything else fixed */
+.esign-search,
+.inv-search,
+.am-search,
+.filter-bar .esign-search,
+.agreements-filters .esign-search,
+.catalog-toolbar .esign-search,
+.inv-toolbar .esign-search,
+.am-toolbar .esign-search,
+.vf-toolbar .esign-search,
+.esign-toolbar .esign-search,
+.logistics-toolbar .esign-search,
+.page-metrics .agreements-filters .esign-search,
+.page-metrics .filter-bar .esign-search {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+.filter-select,
+.toolbar .filter-select,
+.agreements-filters .filter-select,
+.agreements-filters select,
+.agreements-filters .adaptive-select,
+.filter-bar .filter-select,
+.filter-bar select,
+.catalog-toolbar select,
+.inv-toolbar select,
+.am-toolbar select,
+.vf-toolbar select,
+.esign-toolbar select,
+.logistics-toolbar select,
+.toolbar select,
+.inv-toolbar > .adaptive-select,
+.am-toolbar > .adaptive-select,
+.vf-toolbar > .adaptive-select,
+.esign-toolbar > .adaptive-select,
+.logistics-toolbar > .adaptive-select,
+.toolbar > .adaptive-select,
+.agreements-filters > .adaptive-select {
+  flex: 0 0 var(--control-w) !important;
+  width: var(--control-w) !important;
+  min-width: var(--control-w) !important;
+  max-width: var(--control-w) !important;
+}
+
+.date-range-filter-field input[type='date'],
+.date-range-filter-field select {
+  width: var(--control-w-date) !important;
+  min-width: var(--control-w-date) !important;
+  max-width: var(--control-w-date) !important;
+}
+
+.date-range-filter-actions .btn,
+.agreements-filters .btn,
+.filter-bar .btn,
+.catalog-toolbar .btn,
+.inv-toolbar .btn,
+.am-toolbar .btn,
+.vf-toolbar .btn,
+.logistics-toolbar .btn {
+  flex: 0 0 auto !important;
+  min-width: var(--control-w-btn) !important;
+  white-space: nowrap;
+}
+
+/* ── Catalog toolbars ──────────────────────────────────────── */
+
+.catalog-toolbar,
+.inv-toolbar,
+.am-toolbar,
+.vf-toolbar,
+.esign-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--stack-sm);
+  padding: var(--toolbar-pad-y) var(--toolbar-pad-x);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 65%, var(--bg-elevated));
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.logistics-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--stack-sm);
+  padding: var(--toolbar-pad-y) var(--toolbar-pad-x);
+  margin: 0 0 var(--stack-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: none;
+}
+
+.logistics-toolbar.inv-toolbar,
+.inv-catalog .logistics-toolbar,
+.card--flush .logistics-toolbar {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface) 65%, var(--bg-elevated));
+}
+
+.toolbar,
+.toolbar--page {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--stack-sm);
+}
+
+.toolbar--page:not(.page-metrics-toolbar) {
+  margin-bottom: 0;
+}
+
+/* ── Forms ─────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.field label {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+
+.field textarea {
+  height: auto !important;
+  min-height: 88px !important;
+  max-height: none !important;
+  padding: 10px 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* ── Tables ────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow: auto;
+  max-width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--table-cell-y) var(--table-cell-x);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  background: color-mix(in srgb, var(--surface) 80%, var(--bg-elevated));
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--brand) 4%, transparent);
+}
+
+/* ── Badges ────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  vertical-align: middle;
+}
+
+/* ── Empty states ──────────────────────────────────────────── */
+
+.empty-state,
+.esign-empty,
+.am-empty,
+.inv-empty,
+.vf-empty,
+.ilog-dash-empty {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+/* ── Module stacks ─────────────────────────────────────────── */
+
+.logistics-inventory,
+.logistics-usage,
+.logistics-inout,
+.logistics-master,
+.ilog-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack);
+  min-width: 0;
+}
+
+.logistics-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 var(--stack-sm);
+  padding-bottom: var(--stack-sm);
+  border-bottom: 1px solid var(--line);
+}
+
+.logistics-nav-link {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+.logistics-form,
+.arq-form {
+  margin-bottom: 0;
+}
+
+.arq-form {
+  padding: var(--pad);
+}
+
+/* ── Narrow screens only ───────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .page-metrics,
+  .page-metrics--split {
+    flex-wrap: wrap !important;
+  }
+
+  .page-metrics .module-dash-kpis,
+  .page-metrics .logistics-kpis {
+    flex: 1 1 100%;
+    width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .page-metrics-toolbar {
+    flex: 1 1 100% !important;
+  }
+
+  .filter-bar,
+  .agreements-filters {
+    flex-wrap: wrap !important;
+  }
+
+  .page-metrics .agreements-filters .esign-search,
+  .filter-bar .esign-search,
+  .agreements-filters .esign-search {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  .date-range-filter,
+  .date-range-filter-fields {
+    flex-wrap: wrap !important;
+    width: 100%;
+    margin-left: 0;
+  }
+}

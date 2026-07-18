@@ -24,7 +24,7 @@ const empty = {
   cityId: '',
 };
 
-export default function ContactDirectoryPage() {
+export default function ContactDirectoryPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');
@@ -132,21 +132,28 @@ export default function ContactDirectoryPage() {
 
   return (
     <PageShell
-      breadcrumbs={[
-        { to: '/', label: 'Modules' },
-        { to: '/agreements', label: MODULE.ASSET_AGREEMENT },
-        { label: MODULE.CONTACT_DIRECTORY },
-      ]}
-      title={MODULE.CONTACT_DIRECTORY}
-      description="Maintain delivery recipients. Add manually or import from Excel."
+      hideChrome={embedded}
+      breadcrumbs={
+        embedded
+          ? []
+          : [
+              { to: '/', label: MODULE.HOME },
+              { to: '/agreements', label: MODULE.ASSET_AGREEMENT },
+              { label: MODULE.CONTACT_DIRECTORY },
+            ]
+      }
+      title={embedded ? undefined : MODULE.CONTACT_DIRECTORY}
+      description={
+        embedded ? undefined : 'Maintain delivery recipients. Add manually or import from Excel.'
+      }
       actions={
-        can('agreements:write') ? (
+        embedded || !can('agreements:write') ? null : (
           <Link className="btn" to="/agreements/new">
             + New document
           </Link>
-        ) : null
+        )
       }
-      kpis={[{ label: 'Contacts', value: rows.length }]}
+      kpis={embedded ? [] : [{ label: 'Contacts', value: rows.length }]}
       toolbar={
         <>
           <input
@@ -200,7 +207,7 @@ export default function ContactDirectoryPage() {
       </p>
 
       <div className="wizard-grid">
-        <div className="card table-wrap">
+        <div className="card card--flush table-wrap">
           <table>
             <thead>
               <tr>

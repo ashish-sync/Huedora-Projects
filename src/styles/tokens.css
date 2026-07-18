@@ -36,7 +36,7 @@
   --muted: var(--tylo-ink-secondary);
   --muted-soft: var(--tylo-cool-gray);
 
-  --bg: #f5f7fa;
+  --bg: #f3f5f8;
   --bg-elevated: var(--tylo-bg);
   --bg-sunken: #eceff1;
   --bg-tint: #e3f2fd;
@@ -69,17 +69,34 @@
   --line-strong: #b0bec5;
   --focus: var(--tylo-secondary);
 
-  --shadow-sm: 0 1px 2px rgba(33, 33, 33, 0.06);
-  --shadow: 0 1px 3px rgba(33, 33, 33, 0.06), 0 8px 24px rgba(13, 71, 161, 0.08);
-  --shadow-lg: 0 8px 16px rgba(33, 33, 33, 0.08), 0 24px 48px rgba(13, 71, 161, 0.12);
+  --shadow-sm: 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 4px 16px rgba(15, 23, 42, 0.08);
 
-  --radius-sm: 8px;
-  --radius: 10px;
-  --radius-lg: 14px;
-  --header-h: 56px;
-  --pad: 24px;
-  --content-max: 1280px;
-  --control-h: 40px;
+  /* ── Enterprise layout scale (shared across all modules) ── */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 10px;
+  --header-h: 52px;
+  --content-max: 1320px;
+
+  --pad: 14px;
+  --stack: 12px;
+  --stack-sm: 8px;
+  --stack-lg: 16px;
+
+  --control-h: 36px;
+  --control-h-sm: 30px;
+  --control-w: 10rem; /* fixed select / filter width */
+  --control-w-date: 9.5rem; /* fixed date input width */
+  --control-w-btn: 5.25rem; /* compact action button min width */
+  --kpi-min: 5.5rem;
+  --kpi-pad-y: 10px;
+  --kpi-pad-x: 12px;
+  --toolbar-pad-y: 10px;
+  --toolbar-pad-x: 12px;
+  --table-cell-y: 9px;
+  --table-cell-x: 12px;
 
   --font: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
   --font-display: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;

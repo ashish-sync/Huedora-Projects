@@ -83,7 +83,7 @@ function bindCanvasDraw(canvas, drawingRef) {
   };
 }
 
-export default function SignatureMasterPage() {
+export default function SignatureMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const canWrite = can('agreements:write');
   const [rows, setRows] = useState([]);
@@ -250,7 +250,8 @@ export default function SignatureMasterPage() {
   };
 
   return (
-    <div className="esign-shell">
+    <div className={embedded ? 'esign-shell esign-shell--embedded' : 'esign-shell'}>
+      {!embedded ? (
       <div className="esign-top">
         <div>
           <p className="eyebrow">
@@ -279,6 +280,18 @@ export default function SignatureMasterPage() {
           </Link>
         </div>
       </div>
+      ) : (
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={exportBusy}
+            onClick={downloadMaster}
+          >
+            {exportBusy ? 'Downloading…' : 'Download Excel'}
+          </button>
+        </div>
+      )}
 
       {error && <p className="error">{error}</p>}
 

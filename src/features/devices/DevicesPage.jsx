@@ -266,8 +266,8 @@ export default function DevicesPage() {
   return (
     <PageShell
       breadcrumbs={[
-        { to: '/', label: 'Modules' },
-        { to: '/assets', label: MODULE.ASSET_INVENTORY },
+        { to: '/', label: MODULE.HOME },
+        { to: '/asset-inventory', label: MODULE.ASSET_INVENTORY },
         { label: MODULE.ASSET_MASTER },
       ]}
       title={MODULE.ASSET_MASTER}
@@ -486,7 +486,7 @@ export default function DevicesPage() {
         </form>
       )}
 
-      <section className="am-catalog card">
+      <section className="am-catalog card card--flush">
         <div className="am-toolbar">
           <input
             className="esign-search am-search"

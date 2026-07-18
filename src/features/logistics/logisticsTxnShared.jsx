@@ -1,12 +1,12 @@
 /** Shared helpers for Inward / Outward transaction forms */
 
 export const FALLBACK_PRODUCT = [
-  'Medical Device',
-  'Non-Medical Device',
+  'Device',
   'Consumable',
-  'Spare Part / Accessory',
+  'Accessory',
+  'Spare Part',
   'Document',
-  'Miscellaneous',
+  'Misc',
 ];
 
 export const FALLBACK_DELIVERY = [
@@ -29,13 +29,42 @@ export const FALLBACK_COURIER = [
 ];
 
 export const FALLBACK_CAT_DEFAULTS = {
+  Device: { expiryApplicable: false, trackingKind: 'Serial' },
+  Consumable: { expiryApplicable: true, trackingKind: 'Batch' },
+  Accessory: { expiryApplicable: false, trackingKind: 'Serial' },
+  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
+  Document: { expiryApplicable: false, trackingKind: 'None' },
+  Misc: { expiryApplicable: false, trackingKind: 'None' },
+  // Legacy keys still present on older stock / txn rows
   'Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
   'Non-Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
-  Consumable: { expiryApplicable: true, trackingKind: 'Batch' },
   'Spare Part / Accessory': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
-  Document: { expiryApplicable: false, trackingKind: 'None' },
   Miscellaneous: { expiryApplicable: false, trackingKind: 'None' },
 };
+
+/** Normalize legacy product types to the current Product Master set. */
+export function resolveProductType(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return '';
+  const aliases = {
+    Device: 'Device',
+    Consumable: 'Consumable',
+    Accessory: 'Accessory',
+    'Spare Part': 'Spare Part',
+    Document: 'Document',
+    Misc: 'Misc',
+    'Medical Device': 'Device',
+    'Non-Medical Device': 'Device',
+    'Spare Part / Accessory': 'Spare Part',
+    Miscellaneous: 'Misc',
+    Documents: 'Document',
+    Others: 'Misc',
+    Other: 'Misc',
+  };
+  if (aliases[v]) return aliases[v];
+  const hit = Object.entries(aliases).find(([k]) => k.toLowerCase() === v.toLowerCase());
+  return hit?.[1] || v;
+}
 
 export function nowLocal() {
   const d = new Date();

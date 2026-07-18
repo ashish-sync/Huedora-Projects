@@ -21,7 +21,12 @@ export function Breadcrumbs({ items = [] }) {
 export function KpiGrid({ items = [] }) {
   if (!items.length) return null;
   return (
-    <div className="module-dash-kpis" role="group" aria-label="Summary">
+    <div
+      className="module-dash-kpis"
+      data-count={items.length}
+      role="group"
+      aria-label="Summary"
+    >
       {items.map((item) => {
         const Comp = item.onClick ? 'button' : 'div';
         return (
@@ -32,7 +37,7 @@ export function KpiGrid({ items = [] }) {
             onClick={item.onClick}
           >
             <strong>{item.value ?? '-'}</strong>
-            <span>{item.label}</span>
+            <span title={item.label}>{item.label}</span>
           </Comp>
         );
       })}
@@ -43,7 +48,7 @@ export function KpiGrid({ items = [] }) {
 export function QuickActions({ items = [] }) {
   if (!items.length) return null;
   return (
-    <div className="toolbar" style={{ marginBottom: '1rem' }}>
+    <div className="toolbar toolbar--page">
       {items.map((item) =>
         item.to ? (
           <Link key={item.label} to={item.to} className="btn secondary btn-compact">
@@ -79,23 +84,31 @@ export default function PageShell({
   toolbar,
   children,
   className = '',
+  hideChrome = false,
 }) {
+  const showTopbar = !hideChrome && (title || breadcrumbs.length > 0 || description || actions);
   return (
-    <div className={className}>
-      <div className="topbar">
-        <div className="topbar-copy">
-          {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
-          <h2 className="topbar-title">{title}</h2>
-          {description && (
-            <p className="muted topbar-desc">{description}</p>
-          )}
+    <div className={`page-shell${className ? ` ${className}` : ''}`}>
+      {showTopbar ? (
+        <div className="topbar">
+          <div className="topbar-copy">
+            {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
+            {title ? <h2 className="topbar-title">{title}</h2> : null}
+            {description && (
+              <p className="muted topbar-desc">{description}</p>
+            )}
+          </div>
+          {actions && <div className="page-actions">{actions}</div>}
         </div>
-        {actions && <div className="page-actions">{actions}</div>}
-      </div>
+      ) : null}
 
       {quickActions?.length > 0 && <QuickActions items={quickActions} />}
-      {kpis?.length > 0 && <KpiGrid items={kpis} />}
-      {toolbar && <div className="toolbar" style={{ marginBottom: '1rem' }}>{toolbar}</div>}
+      {(kpis?.length > 0 || toolbar) && (
+        <div className={`page-metrics${kpis?.length && toolbar ? ' page-metrics--split' : ''}`}>
+          {kpis?.length > 0 && <KpiGrid items={kpis} />}
+          {toolbar && <div className="toolbar toolbar--page page-metrics-toolbar">{toolbar}</div>}
+        </div>
+      )}
       {children}
     </div>
   );

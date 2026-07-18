@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
@@ -30,7 +31,7 @@ export default function UsersPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'System users' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'System users' }]}
       title="System users"
       description="User accounts and role assignments."
       kpis={[{ label: 'Active users', value: rows.length }]}
@@ -39,7 +40,6 @@ export default function UsersPage() {
 
       <form
         className="card"
-        style={{ padding: 20, marginBottom: 16 }}
         onSubmit={async (e) => {
           e.preventDefault();
           try {
@@ -50,7 +50,7 @@ export default function UsersPage() {
           }
         }}
       >
-        <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Create user</h3>
+        <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Create user</h3>
         <div className="row">
           <div className="field">
             <label>Email</label>
@@ -94,7 +94,7 @@ export default function UsersPage() {
         </button>
       </form>
 
-      <div className="card table-wrap">
+      <div className="card card--flush table-wrap">
         <table>
           <thead>
             <tr>

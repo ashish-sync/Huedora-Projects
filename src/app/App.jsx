@@ -11,9 +11,6 @@ import AssetDetailPage from '../features/assets/AssetDetailPage.jsx';
 import AgreementsPage from '../features/agreements/AgreementsPage.jsx';
 import AgreementCreatePage from '../features/agreements/AgreementCreatePage.jsx';
 import AgreementDetailPage from '../features/agreements/AgreementDetailPage.jsx';
-import ContactDirectoryPage from '../features/agreements/ContactDirectoryPage.jsx';
-import DocumentMasterPage from '../features/agreements/DocumentMasterPage.jsx';
-import SignatureMasterPage from '../features/agreements/SignatureMasterPage.jsx';
 import RolePermissionMasterPage from '../features/users/RolePermissionMasterPage.jsx';
 import VerificationsPage from '../features/verifications/VerificationsPage.jsx';
 import AssetRequestsPage from '../features/assetRequests/AssetRequestsPage.jsx';
@@ -29,8 +26,8 @@ import LogisticsOutwardPage from '../features/logistics/LogisticsOutwardPage.jsx
 import LogisticsInventoryPage from '../features/logistics/LogisticsInventoryPage.jsx';
 import LogisticsUsagePage from '../features/logistics/LogisticsUsagePage.jsx';
 import LogisticsOutputPage from '../features/logistics/LogisticsOutputPage.jsx';
-import LogisticsMasterPage from '../features/logistics/LogisticsMasterPage.jsx';
-import LocationMasterPage from '../features/locations/LocationMasterPage.jsx';
+import AssetInventoryLayout from '../features/assets/AssetInventoryLayout.jsx';
+import MasterDataPage from '../features/masters/MasterDataPage.jsx';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -61,26 +58,50 @@ export default function App() {
                   path="/agreements/role-permission-master"
                   element={<Navigate to="/role-permission-master" replace />}
                 />
-                <Route path="/assets" element={<AssetsPage />} />
+                <Route path="/master-data" element={<MasterDataPage />} />
+                <Route path="/asset-inventory" element={<AssetInventoryLayout />}>
+                  <Route index element={<AssetsPage embedded />} />
+                  <Route path="balance" element={<LogisticsInventoryPage />} />
+                  <Route
+                    path="masters"
+                    element={<Navigate to="/master-data?scope=inventory" replace />}
+                  />
+                </Route>
+                <Route path="/assets" element={<Navigate to="/asset-inventory" replace />} />
                 <Route
                   path="/assets/asset-master"
-                  element={<Navigate to="/assets" replace />}
+                  element={<Navigate to="/asset-inventory" replace />}
                 />
                 <Route
                   path="/assets/product-master"
-                  element={<Navigate to="/assets" replace />}
+                  element={<Navigate to="/master-data?scope=inventory&entity=products" replace />}
                 />
                 <Route path="/assets/:id" element={<AssetDetailPage />} />
-                <Route path="/hcws" element={<Navigate to="/agreements/contacts" replace />} />
-                <Route path="/devices" element={<Navigate to="/assets" replace />} />
+                <Route path="/devices" element={<Navigate to="/asset-inventory" replace />} />
                 <Route path="/agreements" element={<AgreementsPage />} />
-                <Route path="/agreements/contacts" element={<ContactDirectoryPage />} />
-                <Route path="/agreements/location-master" element={<LocationMasterPage />} />
-                <Route path="/locations" element={<LocationMasterPage />} />
-                <Route path="/agreements/document-master" element={<DocumentMasterPage />} />
-                <Route path="/agreements/signature-master" element={<SignatureMasterPage />} />
+                <Route
+                  path="/agreements/contacts"
+                  element={<Navigate to="/master-data?scope=document&entity=contacts" replace />}
+                />
+                <Route
+                  path="/agreements/location-master"
+                  element={<Navigate to="/master-data?scope=document&entity=pin-codes" replace />}
+                />
+                <Route
+                  path="/locations"
+                  element={<Navigate to="/master-data?scope=document&entity=pin-codes" replace />}
+                />
+                <Route
+                  path="/agreements/document-master"
+                  element={<Navigate to="/master-data?scope=document&entity=templates" replace />}
+                />
+                <Route
+                  path="/agreements/signature-master"
+                  element={<Navigate to="/master-data?scope=document&entity=signatures" replace />}
+                />
                 <Route path="/agreements/new" element={<AgreementCreatePage />} />
                 <Route path="/agreements/:id" element={<AgreementDetailPage />} />
+                <Route path="/hcws" element={<Navigate to="/master-data?scope=document&entity=contacts" replace />} />
                 <Route path="/verifications" element={<VerificationsPage />} />
                 <Route path="/camps" element={<CampsPage />} />
                 <Route path="/asset-requests" element={<AssetRequestsPage />} />
@@ -91,10 +112,13 @@ export default function App() {
                   <Route path="inward" element={<LogisticsInwardPage />} />
                   <Route path="outward" element={<LogisticsOutwardPage />} />
                   <Route path="in-out" element={<Navigate to="/logistics/inward" replace />} />
-                  <Route path="balance" element={<LogisticsInventoryPage />} />
+                  <Route path="balance" element={<Navigate to="/asset-inventory/balance" replace />} />
                   <Route path="usage" element={<LogisticsUsagePage />} />
                   <Route path="output" element={<LogisticsOutputPage />} />
-                  <Route path="master" element={<LogisticsMasterPage />} />
+                  <Route
+                    path="master"
+                    element={<Navigate to="/master-data?scope=movement" replace />}
+                  />
                 </Route>
                 <Route path="/imports" element={<ImportsPage />} />
                 <Route path="/users" element={<Navigate to="/role-permission-master" replace />} />

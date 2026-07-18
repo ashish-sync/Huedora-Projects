@@ -381,7 +381,7 @@ function TemplatePreviewModal({ template, onClose }) {
   );
 }
 
-export default function DocumentMasterPage() {
+export default function DocumentMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const [view, setView] = useState('templates');
   const [rows, setRows] = useState([]);
@@ -524,7 +524,8 @@ export default function DocumentMasterPage() {
   };
 
   return (
-    <div className="esign-shell">
+    <div className={embedded ? 'esign-shell esign-shell--embedded' : 'esign-shell'}>
+      {!embedded ? (
       <div className="esign-top">
         <div>
           <p className="eyebrow">
@@ -557,6 +558,18 @@ export default function DocumentMasterPage() {
           </Link>
         </div>
       </div>
+      ) : (
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={exportBusy}
+            onClick={downloadMaster}
+          >
+            {exportBusy ? 'Downloading…' : 'Download Excel'}
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="error" role="alert">

@@ -55,7 +55,7 @@ export default function LogisticsOutputPage() {
   return (
     <div className="logistics-output">
       <p className="muted" style={{ marginTop: 0 }}>
-        Field stock still with each resource (Outward minus Returns, Used, and Wastage).
+        Field stock still with each resource (Goods Issue minus Returns, Used, and Wastage).
       </p>
 
       {error ? (
@@ -64,16 +64,16 @@ export default function LogisticsOutputPage() {
         </div>
       ) : null}
 
-      <div className="logistics-kpis" role="group" aria-label="Field output snapshot">
-        <div className="logistics-kpi">
+      <div className="module-dash-kpis" data-count="3" role="group" aria-label="Field output snapshot">
+        <div className="module-kpi">
           <strong>{filtered.length}</strong>
           <span>Resources with stock</span>
         </div>
-        <div className="logistics-kpi">
+        <div className="module-kpi">
           <strong>{totals.qty.toLocaleString()}</strong>
           <span>Total on-hand qty</span>
         </div>
-        <div className="logistics-kpi">
+        <div className="module-kpi">
           <strong>{formatMoney(totals.amount)}</strong>
           <span>Inventory value</span>
         </div>
@@ -92,7 +92,7 @@ export default function LogisticsOutputPage() {
         </button>
       </div>
 
-      <div className="card table-wrap" style={{ padding: 0 }}>
+      <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
             <tr>

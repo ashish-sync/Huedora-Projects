@@ -651,7 +651,7 @@ export default function RolePermissionMasterPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ROLES_PERMISSIONS }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
       description="Select modules, then set View, Add, Delete, Upload, Request, and Approve."
       actions={
@@ -850,7 +850,7 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 <section className="rp-section">
-                  <h4>Modules *</h4>
+                  <h4>Applications *</h4>
                   <p className="muted rp-hint">
                     Choose which areas this person can open. Roles below update to match.
                   </p>
@@ -1028,7 +1028,7 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 <section className="rp-section">
-                  <h4>Modules *</h4>
+                  <h4>Applications *</h4>
                   <p className="muted rp-hint">
                     Select modules this role covers. Access actions below only show for those.
                   </p>

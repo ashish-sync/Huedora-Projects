@@ -53,7 +53,7 @@ export default function AssetDetailPage() {
       <div className="topbar">
         <div>
           <p className="muted" style={{ margin: 0 }}>
-            <Link to="/assets">{MODULE.ASSET_INVENTORY}</Link> / {asset.assetTag}
+            <Link to="/asset-inventory">{MODULE.ASSET_INVENTORY}</Link> / {asset.assetTag}
           </p>
           <h2 style={{ margin: '0.25rem 0 0' }}>{asset.deviceNameSnapshot}</h2>
         </div>

@@ -29,7 +29,7 @@ export default function HcwsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'HCW Directory' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'HCW Directory' }]}
       title="Custodians"
       description="Healthcare worker and custodian records (no login accounts)."
       kpis={[{ label: 'Total custodians', value: rows.length }]}
@@ -37,8 +37,8 @@ export default function HcwsPage() {
       {error && <p className="error">{error}</p>}
 
       {can('hcws:write') && (
-        <form className="card" style={{ padding: 20, marginBottom: 16 }} onSubmit={create}>
-          <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Add custodian</h3>
+        <form className="card" onSubmit={create}>
+          <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Add custodian</h3>
           <div className="row">
             {['hcwId', 'name', 'city', 'contact', 'hcwType', 'hcwCategory'].map((k) => (
               <div className="field" key={k}>
@@ -57,7 +57,7 @@ export default function HcwsPage() {
         </form>
       )}
 
-      <div className="card table-wrap">
+      <div className="card card--flush table-wrap">
         <table>
           <thead>
             <tr>

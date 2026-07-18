@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
+import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
 
@@ -64,7 +65,7 @@ export default function NotificationsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Notifications' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Notifications' }]}
       title="Notifications"
       description="Alerts for agreements, movements, verification, imports, and system events."
       actions={

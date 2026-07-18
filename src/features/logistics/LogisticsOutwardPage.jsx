@@ -10,6 +10,7 @@ import {
   FALLBACK_PRODUCT,
   Field,
   emptyTxnForm,
+  resolveProductType,
 } from './logisticsTxnShared.jsx';
 
 const REQUEST_DELIVERY_MODES = ['Hand Delivery', 'Regular Courier', 'Apex', 'Porter', 'Other'];
@@ -123,7 +124,10 @@ export default function LogisticsOutwardPage() {
   }, [warehouses, defaultWarehouseName]);
 
   const productsForType = useMemo(
-    () => products.filter((p) => !form.productType || p.productType === form.productType),
+    () =>
+      products.filter(
+        (p) => !form.productType || resolveProductType(p.productType) === form.productType
+      ),
     [products, form.productType]
   );
 
@@ -403,7 +407,7 @@ export default function LogisticsOutwardPage() {
   return (
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
-        Outward dispatch: leave warehouse stock manually, or fulfill an approved logistics request.
+        Outward goods issue: leave warehouse stock manually, or fulfill an approved stock transfer request.
       </p>
 
       {(error || msg) && (
@@ -432,7 +436,7 @@ export default function LogisticsOutwardPage() {
             setFormOpen(false);
           }}
         >
-          From Request Center
+          From Request One
         </button>
       </div>
 
@@ -626,7 +630,7 @@ export default function LogisticsOutwardPage() {
             </form>
           )}
 
-          <div className="card table-wrap" style={{ padding: 0 }}>
+          <div className="card card--flush table-wrap">
             <table className="inv-table">
               <thead>
                 <tr>
@@ -678,7 +682,7 @@ export default function LogisticsOutwardPage() {
               + New logistics request
             </Link>
           </div>
-          <div className="card table-wrap" style={{ padding: 0 }}>
+          <div className="card card--flush table-wrap">
             <table className="inv-table">
               <thead>
                 <tr>
@@ -746,7 +750,7 @@ export default function LogisticsOutwardPage() {
                 {!requests.length && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No open logistics requests. Create one in Request Center.
+                      No open stock transfer requests. Create one in Request One.
                     </td>
                   </tr>
                 )}

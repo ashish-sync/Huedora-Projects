@@ -52,7 +52,9 @@ export default function ServerGate({ children }) {
           <>
             <h1>Unable to connect</h1>
             <p className="muted">
-              TYLO One is temporarily unavailable. Try again in a moment.
+              TYLO One is temporarily unavailable.
+              <br />
+              Please try again in a moment.
             </p>
             <button type="button" className="btn" onClick={() => setAttempt((n) => n + 1)}>
               Try again

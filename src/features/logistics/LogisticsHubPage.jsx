@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import { api } from '../../shared/api.js';
+import { MODULE, NAV } from '../../shared/labels.js';
 
 const MAP_VIEW = { width: 420, height: 480, minLon: 68, maxLon: 97.5, minLat: 6.5, maxLat: 37.5 };
 const CITY_COORDS = {
@@ -185,12 +186,15 @@ function IndiaInventoryMap({ cities, metric, focusedCustodian }) {
 function KpiGroup({ title, items, metric, columns }) {
   return (
     <section className="ilog-kpi-group" aria-label={title}>
-      <h3>{title}</h3>
+      <h3 className="ilog-kpi-group-title">{title}</h3>
       <div
         className={`ilog-dash-kpi-row${columns === 4 ? ' ilog-dash-kpi-row--4' : ''}`}
       >
         {items.map((item) => (
-          <div key={item.label} className="ilog-dash-kpi">
+          <div
+            key={item.label}
+            className={`ilog-dash-kpi${item.tone ? ` ilog-dash-kpi--${item.tone}` : ''}`}
+          >
             <strong>{formatNum(item.value, metric)}</strong>
             <span>{item.label}</span>
           </div>
@@ -207,21 +211,35 @@ const EMPTY = {
   byInventoryType: [],
 };
 
-export default function LogisticsHubPage() {
+export default function LogisticsHubPage({
+  embedded = false,
+  initialFrom = '',
+  initialTo = '',
+} = {}) {
   const [data, setData] = useState(EMPTY);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(initialFrom || '');
+  const [dateTo, setDateTo] = useState(initialTo || '');
   const [inventoryType, setInventoryType] = useState('all');
   const [hcwId, setHcwId] = useState('all');
   const [metric, setMetric] = useState('quantity');
   const [applied, setApplied] = useState({
-    dateFrom: '',
-    dateTo: '',
+    dateFrom: initialFrom || '',
+    dateTo: initialTo || '',
     inventoryType: 'all',
     hcwId: 'all',
   });
+
+  useEffect(() => {
+    setDateFrom(initialFrom || '');
+    setDateTo(initialTo || '');
+    setApplied((prev) => ({
+      ...prev,
+      dateFrom: initialFrom || '',
+      dateTo: initialTo || '',
+    }));
+  }, [initialFrom, initialTo]);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -276,27 +294,49 @@ export default function LogisticsHubPage() {
       : null;
 
   const row1 = [
-    { label: `Inward ${unit}`, value: m === 'amount' ? k.inwardAmount : k.inwardQty },
-    { label: `Outward ${unit}`, value: m === 'amount' ? k.outwardAmount : k.outwardQty },
-    { label: `Balance ${unit}`, value: m === 'amount' ? k.balanceAmount : k.balanceQty },
+    { label: `Goods Receipt ${unit}`, value: m === 'amount' ? k.inwardAmount : k.inwardQty, tone: 'in' },
+    { label: `Goods Issue ${unit}`, value: m === 'amount' ? k.outwardAmount : k.outwardQty, tone: 'out' },
+    {
+      label: `Balance ${unit}`,
+      value: m === 'amount' ? k.balanceAmount : k.balanceQty,
+      tone: 'balance',
+    },
   ];
   const row2 = [
-    { label: `Used ${unit}`, value: m === 'amount' ? k.usedAmount : k.usedQty },
-    { label: `Wastage ${unit}`, value: m === 'amount' ? k.wastageAmount : k.wastageQty },
+    { label: `Used ${unit}`, value: m === 'amount' ? k.usedAmount : k.usedQty, tone: 'used' },
+    {
+      label: `Wastage ${unit}`,
+      value: m === 'amount' ? k.wastageAmount : k.wastageQty,
+      tone: 'waste',
+    },
     {
       label: `Field Balance ${unit}`,
       value: m === 'amount' ? k.fieldBalanceAmount : k.fieldBalanceQty,
+      tone: 'field',
     },
   ];
   const row3 = [
-    { label: `Safe ${unit}`, value: m === 'amount' ? k.safeAmount : k.safeQty },
-    { label: `Caution ${unit}`, value: m === 'amount' ? k.cautionAmount : k.cautionQty },
-    { label: `Critical ${unit}`, value: m === 'amount' ? k.criticalAmount : k.criticalQty },
-    { label: `Expired ${unit}`, value: m === 'amount' ? k.expiredAmount : k.expiredQty },
+    { label: `Safe ${unit}`, value: m === 'amount' ? k.safeAmount : k.safeQty, tone: 'safe' },
+    {
+      label: `Caution ${unit}`,
+      value: m === 'amount' ? k.cautionAmount : k.cautionQty,
+      tone: 'caution',
+    },
+    {
+      label: `Critical ${unit}`,
+      value: m === 'amount' ? k.criticalAmount : k.criticalQty,
+      tone: 'critical',
+    },
+    {
+      label: `Expired ${unit}`,
+      value: m === 'amount' ? k.expiredAmount : k.expiredQty,
+      tone: 'expired',
+    },
   ];
 
   return (
-    <div className="ilog-hub">
+    <div className={`ilog-hub${embedded ? ' ilog-hub--embedded' : ''}`}>
+      {!embedded && (
       <section className="ilog-quick-actions" aria-label="Quick actions">
         <Link to="/logistics/inward" className="ilog-rail-card">
           <span className="ilog-rail-icon" aria-hidden="true">
@@ -307,7 +347,7 @@ export default function LogisticsHubPage() {
             </svg>
           </span>
           <span className="ilog-rail-body">
-            <strong>Inward</strong>
+            <strong>{NAV.GOODS_RECEIPT}</strong>
             <span>Seller receipts and field returns land in the warehouse.</span>
             <em>Open →</em>
           </span>
@@ -322,19 +362,20 @@ export default function LogisticsHubPage() {
             </svg>
           </span>
           <span className="ilog-rail-body">
-            <strong>Outward</strong>
-            <span>Manual dispatch or fulfill a Request Center logistics request.</span>
+            <strong>{NAV.GOODS_ISSUE}</strong>
+            <span>Manual goods issue or fulfill a Request One stock transfer.</span>
             <em>Open →</em>
           </span>
         </Link>
       </section>
+      )}
 
       <section className="ilog-dash" aria-busy={busy}>
         <header className="ilog-dash-header">
           <div>
-            <p className="ilog-dash-eyebrow">Inventory overview</p>
+            <p className="ilog-dash-eyebrow">{MODULE.LOGISTICS}</p>
             <h2>Stock movement and field balance</h2>
-            <p>Monitor receipts, dispatches, usage, expiry health, and inventory distribution.</p>
+            <p>Receipts, issues, consumption, expiry health, and city distribution.</p>
           </div>
           <div className="ilog-dash-metric" role="group" aria-label="Display metric">
             <button
@@ -412,17 +453,17 @@ export default function LogisticsHubPage() {
           </DateRangeFilter>
         </div>
 
-        <div className="ilog-kpi-sections">
-          <KpiGroup title="Inventory flow" items={row1} metric={m} />
-          <KpiGroup title="Field usage" items={row2} metric={m} />
-          <KpiGroup title="Expiry health" items={row3} metric={m} columns={4} />
-        </div>
+        <div className="ilog-dash-body">
+          <div className="ilog-kpi-sections">
+            <KpiGroup title="Inventory flow" items={row1} metric={m} />
+            <KpiGroup title="Field usage" items={row2} metric={m} />
+            <KpiGroup title="Expiry health" items={row3} metric={m} columns={4} />
+          </div>
 
-        <div className="ilog-dash-viz">
-          <section className="ilog-dash-panel">
-            <header>
+          <section className="ilog-dash-panel ilog-dash-panel--map">
+            <header className="ilog-dash-panel-head">
               <h3>Inventory by city</h3>
-              <p>Select a custodian to zoom into their location; reset filters for all India.</p>
+              <p>Filter by custodian to zoom</p>
             </header>
             <IndiaInventoryMap
               cities={data.byCity || []}

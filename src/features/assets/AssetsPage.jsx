@@ -84,7 +84,7 @@ function IconAudit() {
   );
 }
 
-export default function AssetsPage() {
+export default function AssetsPage({ embedded = false }) {
   const { can } = useAuth();
   const canWrite = can('assets:write') || can('devices:write') || can('*');
   const canViewAgreements = can('agreements:read') || can('*');
@@ -436,20 +436,7 @@ export default function AssetsPage() {
   const from = meta.total ? (meta.page - 1) * meta.limit + 1 : 0;
   const to = meta.total ? Math.min(meta.page * meta.limit, meta.total) : 0;
 
-  return (
-    <PageShell
-      className="inv-page"
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ASSET_INVENTORY }]}
-      title={
-        <>
-          {MODULE.ASSET_INVENTORY}
-          <span className="inv-count" aria-label={`${meta.total} total assets`}>
-            {meta.total.toLocaleString()} assets
-          </span>
-        </>
-      }
-      description="Register and track devices by type, value, status, custody, and custodian."
-      actions={
+  const headerActions = (
         <div className="inv-header-actions">
           <button
             className="btn secondary btn-compact"
@@ -488,8 +475,10 @@ export default function AssetsPage() {
             </>
           ) : null}
         </div>
-      }
-    >
+  );
+
+  const main = (
+    <>
       {(error || msg) && (
         <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
           {error || msg}
@@ -703,7 +692,7 @@ export default function AssetsPage() {
         </form>
       )}
 
-      <section className="inv-catalog card">
+      <section className="inv-catalog card card--flush">
         <div className="inv-toolbar">
           <input
             className="esign-search inv-search"
@@ -1039,6 +1028,47 @@ export default function AssetsPage() {
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="inv-page">
+        <div className="product-master-toolbar" style={{ marginBottom: 12 }}>
+          <div>
+            <h3 className="product-master-title" style={{ margin: 0 }}>
+              Assets
+              <span className="inv-count" aria-label={`${meta.total} total assets`}>
+                {meta.total.toLocaleString()} assets
+              </span>
+            </h3>
+            <p className="muted" style={{ margin: '4px 0 0' }}>
+              Register and track devices by type, value, status, custody, and custodian.
+            </p>
+          </div>
+          {headerActions}
+        </div>
+        {main}
+      </div>
+    );
+  }
+
+  return (
+    <PageShell
+      className="inv-page"
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_INVENTORY }]}
+      title={
+        <>
+          {MODULE.ASSET_INVENTORY}
+          <span className="inv-count" aria-label={`${meta.total} total assets`}>
+            {meta.total.toLocaleString()} assets
+          </span>
+        </>
+      }
+      description="Register and track devices by type, value, status, custody, and custodian."
+      actions={headerActions}
+    >
+      {main}
     </PageShell>
   );
 }

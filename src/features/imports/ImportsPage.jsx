@@ -32,9 +32,9 @@ export default function ImportsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Excel import' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Excel import' }]}
       title="Excel import"
-      description="Validate rows first, then commit to Contact Directory, Asset Registry, or verification."
+      description="Validate rows first, then commit to Business Partners, Asset Register, or verification."
     >
       {error && <p className="error">{error}</p>}
 
@@ -56,8 +56,8 @@ export default function ImportsPage() {
       </div>
 
       {result && (
-        <div className="card" style={{ padding: 20, marginTop: 16 }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: '1rem' }}>
+        <div className="card">
+          <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>
             Last job: {result.type} / {result.mode}
           </h3>
           <p>
@@ -103,9 +103,9 @@ export default function ImportsPage() {
 function ImportCard({ title, hint, busy, onDry, onCommit }) {
   const [file, setFile] = useState(null);
   return (
-    <div className="card" style={{ padding: 20 }}>
-      <h3 style={{ margin: '0 0 8px', fontSize: '1rem' }}>{title}</h3>
-      <p className="muted" style={{ margin: '0 0 16px' }}>
+    <div className="card">
+      <h3 style={{ margin: '0 0 6px', fontSize: '1rem' }}>{title}</h3>
+      <p className="muted" style={{ margin: '0 0 10px' }}>
         {hint}
       </p>
       <FilePicker

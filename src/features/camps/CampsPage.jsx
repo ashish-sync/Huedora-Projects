@@ -246,17 +246,17 @@ export default function CampsPage() {
   if (!allowed) {
     return (
       <PageShell
-        breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.CAMP_MANAGEMENT }]}
+        breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.CAMP_MANAGEMENT }]}
         title={MODULE.CAMP_MANAGEMENT}
       >
-        <p className="muted">You do not have access to Camp Management.</p>
+        <p className="muted">You do not have access to {MODULE.CAMP_MANAGEMENT}.</p>
       </PageShell>
     );
   }
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.CAMP_MANAGEMENT }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.CAMP_MANAGEMENT }]}
       title={MODULE.CAMP_MANAGEMENT}
       description="Submitters create camp requests. Approvers assign an HCW or decline with a reason."
     >
@@ -452,7 +452,7 @@ export default function CampsPage() {
                     value={decideHcwContactId}
                     onChange={(e) => pickTechnician(e.target.value)}
                   >
-                    <option value="">Select from Contact Directory…</option>
+                    <option value="">Select from Business Partners…</option>
                     {contacts.map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.name}
@@ -517,7 +517,7 @@ export default function CampsPage() {
         </form>
       )}
 
-      <div className="card table-wrap" style={{ padding: 0 }}>
+      <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
             <tr>

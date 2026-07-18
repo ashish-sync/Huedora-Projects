@@ -141,11 +141,11 @@ export default function LogisticsInventoryPage() {
         </div>
       )}
 
-      <div className="logistics-kpis" role="group" aria-label="Inventory summary">
+      <div className="module-dash-kpis" data-count={kpis.length} role="group" aria-label="Inventory summary">
         {kpis.map((k) => (
-          <div key={k.label} className="logistics-kpi">
+          <div key={k.label} className="module-kpi">
             <strong>{k.value}</strong>
-            <span>{k.label}</span>
+            <span title={k.label}>{k.label}</span>
           </div>
         ))}
       </div>
@@ -188,7 +188,7 @@ export default function LogisticsInventoryPage() {
         <form className="card logistics-form" onSubmit={save}>
           <h3>Add stock line</h3>
           <p className="muted" style={{ marginTop: 0 }}>
-            Seed serialised stock for balance. Inward receipts update quantities automatically.
+            Seed serialised stock for balance. Goods receipts update quantities automatically.
           </p>
           <div className="logistics-form-grid">
             <div className="field">
@@ -326,7 +326,7 @@ export default function LogisticsInventoryPage() {
         </form>
       )}
 
-      <div className="card table-wrap" style={{ padding: 0 }}>
+      <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
             <tr>
@@ -363,7 +363,7 @@ export default function LogisticsInventoryPage() {
                   <div className="inv-empty">
                     <strong>No stock balance yet</strong>
                     <p className="muted">
-                      Set up Masters (products, UOM, warehouses), then add stock here, or receive via Inward.
+                      Maintain products, UOM, and warehouses in Master One, then add stock here, or receive via Goods Receipt.
                     </p>
                   </div>
                 </td>

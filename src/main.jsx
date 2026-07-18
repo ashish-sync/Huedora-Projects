@@ -6,6 +6,7 @@ import { AuthProvider } from './shared/auth.jsx';
 import { ThemeProvider } from './shared/theme.jsx';
 import ServerGate from './components/ServerGate.jsx';
 import './styles/global.css';
+import './styles/design-system.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
@@ -19,7 +20,7 @@ const emptyForm = {
   isActive: true,
 };
 
-export default function LocationMasterPage() {
+export default function LocationMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const canWrite = can('agreements:write') || can('users:write') || can('*');
   const [meta, setMeta] = useState(null);
@@ -101,21 +102,28 @@ export default function LocationMasterPage() {
 
   return (
     <PageShell
-      title="Location Master"
-      subtitle="India states, districts, and cities from the local database. PIN codes are maintained here and start empty."
+      hideChrome={embedded}
+      title={embedded ? undefined : MODULE.LOCATION_MASTER}
+      description={
+        embedded
+          ? undefined
+          : 'India states, districts, and cities from the local database. PIN codes are maintained here and start empty.'
+      }
       actions={
-        <Link className="btn secondary" to="/agreements">
-          Back to Document Center
-        </Link>
+        embedded ? null : (
+          <Link className="btn secondary" to="/master-data">
+            Back to Master One
+          </Link>
+        )
       }
     >
       {error ? <p className="error-text">{error}</p> : null}
       {msg ? <p className="muted">{msg}</p> : null}
 
       {meta ? (
-        <div className="card" style={{ marginBottom: '1rem' }}>
+        <div className="card">
           <h3 style={{ marginTop: 0 }}>India geography (local)</h3>
-          <p className="muted" style={{ marginBottom: '0.75rem' }}>
+          <p className="muted" style={{ marginBottom: '0.5rem' }}>
             {meta.counts?.states ?? 0} states · {meta.counts?.districts ?? 0} districts ·{' '}
             {meta.counts?.cities ?? 0} cities · {meta.counts?.pinCodes ?? 0} PIN mappings
           </p>
@@ -127,7 +135,7 @@ export default function LocationMasterPage() {
         </div>
       ) : null}
 
-      <div className="toolbar" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
+      <div className="toolbar toolbar--page">
         <input
           placeholder="Search PIN, city, locality…"
           value={q}
@@ -139,7 +147,7 @@ export default function LocationMasterPage() {
         </button>
       </div>
 
-      <div className="card table-wrap" style={{ marginBottom: '1.25rem' }}>
+      <div className="card card--flush table-wrap">
         <table>
           <thead>
             <tr>

@@ -48,7 +48,7 @@ export default function MovementsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Movements' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Movements' }]}
       title="Asset movements"
       description="Request, approve, ship, and receive asset transfers. You cannot approve your own request."
       actions={
@@ -71,7 +71,6 @@ export default function MovementsPage() {
       {can('movements:request') && (
         <form
           className="card"
-          style={{ padding: 20, marginBottom: 16 }}
           onSubmit={async (e) => {
             e.preventDefault();
             try {
@@ -92,7 +91,7 @@ export default function MovementsPage() {
             }
           }}
         >
-          <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Request movement</h3>
+          <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Request movement</h3>
           <div className="row">
             <div className="field">
               <label>Asset</label>
@@ -132,7 +131,7 @@ export default function MovementsPage() {
         </form>
       )}
 
-      <div className="card table-wrap">
+      <div className="card card--flush table-wrap">
         <table>
           <thead>
             <tr>

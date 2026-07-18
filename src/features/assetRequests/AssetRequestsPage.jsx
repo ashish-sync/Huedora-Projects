@@ -9,13 +9,21 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
+import {
+  MASTER_MODULES,
+  entitiesForModule,
+  getMasterEntity,
+  emptyMasterPayload,
+  validateMasterPayload,
+} from '../masters/masterCatalog.js';
 
 const REQUEST_TYPES = [
   { value: 'SERVICE', label: 'Repair & Maintenance', needsAsset: true },
-  { value: 'LOGISTICS', label: 'Logistics', needsAsset: true },
+  { value: 'LOGISTICS', label: 'Stock Transfer', needsAsset: true },
   { value: 'TRAINING', label: 'Training', needsAsset: false },
   { value: 'REIMBURSEMENT', label: 'Reimbursement', needsAsset: false },
   { value: 'HIRING', label: 'Hiring', needsAsset: false },
+  { value: 'MASTER_ADD', label: 'Master One Request', needsAsset: false },
   { value: 'OTHER', label: 'Others', needsAsset: false },
 ];
 
@@ -142,6 +150,9 @@ const EMPTY_FORM = {
   budgetMax: '',
   otherCategory: '',
   otherSubcategory: '',
+  masterModule: 'inventory',
+  masterEntity: 'categories',
+  masterPayload: emptyMasterPayload('categories'),
 };
 
 function contactRefId(asset) {
@@ -246,7 +257,7 @@ function DirectionContactFields({ label, prefix, contacts, form, setForm }) {
       <legend>{label}</legend>
       <div className="arq-contact-grid">
         <div className="field">
-          <label>Contact Directory *</label>
+          <label>Business Partners *</label>
           <AdaptiveSelect required value={form[idKey]} onChange={(e) => selectContact(e.target.value)}>
             <option value="">Select contact</option>
             {contacts.map((contact) => (
@@ -286,7 +297,7 @@ function typeMeta(value) {
 }
 
 function displayType(t) {
-  if (t === 'MOVEMENT') return 'Logistics';
+  if (t === 'MOVEMENT') return 'Stock Transfer';
   if (t === 'REPAIR' || t === 'MAINTENANCE') return 'Repair & Maintenance';
   return REQUEST_TYPES.find((x) => x.value === t)?.label || t;
 }
@@ -314,6 +325,10 @@ function detailSummary(r) {
     r.hcwType,
     r.campType,
     r.hiringMethod,
+    r.requestType === 'MASTER_ADD'
+      ? `${r.masterModule || ''} · ${getMasterEntity(r.masterEntity)?.label || r.masterEntity || ''}`
+      : '',
+    r.createdMasterCode ? `Created ${r.createdMasterCode}` : '',
     productSummary,
     r.amount != null && r.amount !== '' ? `${r.currency || 'INR'} ${r.amount}` : '',
   ].filter(Boolean);
@@ -503,14 +518,16 @@ export default function AssetRequestsPage() {
       setReimbursementBill(null);
       if (reimbursementBillRef.current) reimbursementBillRef.current.value = '';
     }
-    if (requestType !== 'OTHER') {
+    if (requestType !== 'OTHER' && requestType !== 'MASTER_ADD') {
       setOtherAttachment(null);
       if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
     }
+    const defaultEntity =
+      requestType === 'MASTER_ADD' ? entitiesForModule('inventory')[0]?.id || 'categories' : '';
     setForm((prev) => ({
       ...prev,
       requestType,
-      ...(['TRAINING', 'REIMBURSEMENT', 'HIRING', 'OTHER'].includes(requestType)
+      ...(['TRAINING', 'REIMBURSEMENT', 'HIRING', 'OTHER', 'MASTER_ADD'].includes(requestType)
         ? {
             assetId: '',
             assetName: '',
@@ -522,8 +539,15 @@ export default function AssetRequestsPage() {
             contactId: '',
           }
         : {}),
-      ...(['TRAINING', 'REIMBURSEMENT', 'HIRING'].includes(requestType)
+      ...(['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(requestType)
         ? { reason: '' }
+        : {}),
+      ...(requestType === 'MASTER_ADD'
+        ? {
+            masterModule: 'inventory',
+            masterEntity: defaultEntity,
+            masterPayload: emptyMasterPayload(defaultEntity),
+          }
         : {}),
       logisticsProductsConfirmed:
         requestType === 'LOGISTICS' ? prev.logisticsProductsConfirmed : false,
@@ -611,7 +635,7 @@ export default function AssetRequestsPage() {
       form.trainingMode === 'Physical' &&
       (!form.traineeContactId || !form.venue)
     ) {
-      setError('Physical training requires a trainee with a city in Contact Directory.');
+      setError('Physical training requires a trainee with a city in Business Partners.');
       return;
     }
     if (needsAsset && !form.assetId) {
@@ -651,6 +675,18 @@ export default function AssetRequestsPage() {
       setError('Minimum budget cannot be greater than maximum budget.');
       return;
     }
+    if (form.requestType === 'MASTER_ADD') {
+      const payloadErr = validateMasterPayload(form.masterEntity, form.masterPayload || {});
+      if (payloadErr) {
+        setError(payloadErr);
+        return;
+      }
+      const entityMeta = getMasterEntity(form.masterEntity);
+      if (entityMeta?.docxUpload && !otherAttachment) {
+        setError('Upload a Word (.docx) file for the document template request.');
+        return;
+      }
+    }
     setBusy(true);
     setError('');
     setMsg('');
@@ -661,10 +697,10 @@ export default function AssetRequestsPage() {
             ? 'MAINTENANCE'
             : 'REPAIR'
           : form.requestType;
-      const omitSource = ['TRAINING', 'REIMBURSEMENT', 'HIRING', 'OTHER'].includes(
+      const omitSource = ['TRAINING', 'REIMBURSEMENT', 'HIRING', 'OTHER', 'MASTER_ADD'].includes(
         form.requestType
       );
-      const omitReason = ['TRAINING', 'REIMBURSEMENT', 'HIRING'].includes(
+      const omitReason = ['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(
         form.requestType
       );
       const body = {
@@ -679,7 +715,7 @@ export default function AssetRequestsPage() {
         contactId: omitSource ? undefined : form.contactId || undefined,
         reason: omitReason ? '' : form.reason,
         priority:
-          ['REIMBURSEMENT', 'HIRING'].includes(form.requestType)
+          ['REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType)
             ? undefined
             : form.priority || undefined,
       };
@@ -752,6 +788,12 @@ export default function AssetRequestsPage() {
         body.otherCategory = form.otherCategory;
         body.otherSubcategory = form.otherSubcategory;
       }
+      if (form.requestType === 'MASTER_ADD') {
+        body.masterModule = form.masterModule;
+        body.masterEntity = form.masterEntity;
+        body.masterPayload = form.masterPayload || {};
+        body.reason = form.reason || `Add ${getMasterEntity(form.masterEntity)?.label || form.masterEntity} to master`;
+      }
 
       const created = await api('/asset-requests', { method: 'POST', body });
       let savedMessage = 'Request submitted. Designated approvers have been notified.';
@@ -779,7 +821,10 @@ export default function AssetRequestsPage() {
           savedMessage = `Request saved, but the bill could not be uploaded: ${uploadError.message}`;
         }
       }
-      if (otherAttachment && persistedRequestType === 'OTHER') {
+      if (
+        otherAttachment &&
+        (persistedRequestType === 'OTHER' || persistedRequestType === 'MASTER_ADD')
+      ) {
         try {
           const attachmentBody = new FormData();
           attachmentBody.append('attachment', otherAttachment);
@@ -919,7 +964,7 @@ export default function AssetRequestsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ASSET_REQUESTS }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_REQUESTS }]}
       title={MODULE.ASSET_REQUESTS}
       description="Submit repair, maintenance, logistics, training, reimbursement, hiring, and other requests."
       actions={
@@ -967,7 +1012,7 @@ export default function AssetRequestsPage() {
               </div>
             )}
 
-            {!['REIMBURSEMENT', 'HIRING'].includes(form.requestType) && (
+            {!['REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) && (
               <div className="field">
                 <label>Priority</label>
                 <AdaptiveSelect
@@ -1312,7 +1357,7 @@ export default function AssetRequestsPage() {
                       }));
                     }}
                   >
-                    <option value="">Select from Contact Directory</option>
+                    <option value="">Select from Business Partners</option>
                     {contacts.map((contact) => (
                       <option key={contact._id} value={contact._id}>
                         {contact.name || 'Unnamed'}
@@ -1327,7 +1372,7 @@ export default function AssetRequestsPage() {
                     <input
                       readOnly
                       value={form.venue}
-                      placeholder="Select a trainee with a city in Contact Directory"
+                      placeholder="Select a trainee with a city in Business Partners"
                     />
                   </div>
                 )}
@@ -1368,6 +1413,15 @@ export default function AssetRequestsPage() {
                       </option>
                     ))}
                   </AdaptiveSelect>
+                  {(() => {
+                    const selected = expenseCategories.find((c) => c.name === form.expenseCategory);
+                    if (!selected?.covers) return null;
+                    return (
+                      <p className="muted" style={{ margin: '6px 0 0', fontSize: '0.85rem' }}>
+                        Covers: {selected.covers}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="field">
                   <label>Expense amount (INR) *</label>
@@ -1528,6 +1582,302 @@ export default function AssetRequestsPage() {
                     step="1"
                     value={form.budgetMax}
                     onChange={(e) => setForm({ ...form, budgetMax: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* -- Master One Request -- */}
+            {form.requestType === 'MASTER_ADD' && (
+              <>
+                <div className="field arq-span">
+                  <h4 className="arq-section-title">Master One Request</h4>
+                  <p className="muted" style={{ margin: '0 0 8px' }}>
+                    Choose the module and reference type. On approval the record is created in Master One.
+                  </p>
+                </div>
+                <div className="field">
+                  <label>Module *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.masterModule}
+                    onChange={(e) => {
+                      const moduleId = e.target.value;
+                      const first = entitiesForModule(moduleId)[0];
+                      setForm((prev) => ({
+                        ...prev,
+                        masterModule: moduleId,
+                        masterEntity: first?.id || '',
+                        masterPayload: emptyMasterPayload(first?.id || ''),
+                      }));
+                      setOtherAttachment(null);
+                      if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
+                    }}
+                  >
+                    {MASTER_MODULES.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>Master *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.masterEntity}
+                    onChange={(e) => {
+                      const entityId = e.target.value;
+                      setForm((prev) => ({
+                        ...prev,
+                        masterEntity: entityId,
+                        masterPayload: emptyMasterPayload(entityId),
+                      }));
+                      setOtherAttachment(null);
+                      if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
+                    }}
+                  >
+                    {entitiesForModule(form.masterModule).map((ent) => (
+                      <option key={ent.id} value={ent.id}>
+                        {ent.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                {(getMasterEntity(form.masterEntity)?.id === 'pin-codes'
+                  ? []
+                  : getMasterEntity(form.masterEntity)?.fields || []
+                )
+                  .filter((field) => {
+                    if (form.masterEntity === 'contacts') {
+                      return !['state', 'city', 'pinCode', 'district'].includes(field.name);
+                    }
+                    return true;
+                  })
+                  .map((field) => (
+                  <div className="field" key={field.name}>
+                    <label>
+                      {field.label}
+                      {field.required ? ' *' : ''}
+                    </label>
+                    {field.type === 'select' && field.options ? (
+                      <AdaptiveSelect
+                        required={!!field.required}
+                        value={form.masterPayload?.[field.name] || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              [field.name]: e.target.value,
+                            },
+                          }))
+                        }
+                      >
+                        <option value="">Select…</option>
+                        {field.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    ) : field.type === 'select' && field.source === 'categories' ? (
+                      <AdaptiveSelect
+                        required={!!field.required}
+                        value={form.masterPayload?.[field.name] || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              [field.name]: e.target.value,
+                            },
+                          }))
+                        }
+                      >
+                        <option value="">Select category…</option>
+                        {(logisticsMeta?.categories || []).map((c) => (
+                          <option key={c._id} value={c._id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    ) : field.type === 'select' && field.source === 'uoms' ? (
+                      <AdaptiveSelect
+                        value={form.masterPayload?.[field.name] || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              [field.name]: e.target.value,
+                            },
+                          }))
+                        }
+                      >
+                        <option value="">Select UOM…</option>
+                        {(logisticsMeta?.uoms || []).map((u) => (
+                          <option key={u._id} value={u._id}>
+                            {u.name}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    ) : field.type === 'select' && field.source === 'warehouses' ? (
+                      <AdaptiveSelect
+                        required={!!field.required}
+                        value={form.masterPayload?.[field.name] || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              [field.name]: e.target.value,
+                            },
+                          }))
+                        }
+                      >
+                        <option value="">Select warehouse…</option>
+                        {(logisticsMeta?.warehouses || []).map((w) => (
+                          <option key={w._id} value={w._id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        required={!!field.required}
+                        rows={2}
+                        value={form.masterPayload?.[field.name] || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              [field.name]: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    ) : (
+                      <input
+                        required={!!field.required}
+                        value={form.masterPayload?.[field.name] || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              [field.name]: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    )}
+                  </div>
+                ))}
+                {(form.masterEntity === 'pin-codes' || form.masterEntity === 'contacts') && (
+                  <div className="field arq-span">
+                    <LocationCascade
+                      required={form.masterEntity === 'pin-codes'}
+                      showPin={form.masterEntity === 'contacts'}
+                      pinRequired={false}
+                      value={{
+                        stateId: form.masterPayload?.stateId || '',
+                        districtId: form.masterPayload?.districtId || '',
+                        cityId: form.masterPayload?.cityId || '',
+                        state: form.masterPayload?.state || '',
+                        district: form.masterPayload?.district || '',
+                        city: form.masterPayload?.city || '',
+                        pinCode: form.masterPayload?.pinCode || '',
+                      }}
+                      onChange={(loc) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          masterPayload: {
+                            ...(prev.masterPayload || {}),
+                            stateId: loc.stateId || '',
+                            districtId: loc.districtId || '',
+                            cityId: loc.cityId || '',
+                            state: loc.state || '',
+                            district: loc.district || '',
+                            city: loc.city || '',
+                            pinCode:
+                              form.masterEntity === 'pin-codes'
+                                ? prev.masterPayload?.pinCode || ''
+                                : loc.pinCode || '',
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                )}
+                {form.masterEntity === 'pin-codes' && (
+                  <>
+                    <div className="field">
+                      <label>PIN code *</label>
+                      <input
+                        required
+                        value={form.masterPayload?.pinCode || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              pinCode: e.target.value,
+                            },
+                          }))
+                        }
+                        maxLength={6}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Locality</label>
+                      <input
+                        value={form.masterPayload?.locality || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              locality: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Notes</label>
+                      <input
+                        value={form.masterPayload?.notes || ''}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            masterPayload: {
+                              ...(prev.masterPayload || {}),
+                              notes: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+                {getMasterEntity(form.masterEntity)?.docxUpload ? (
+                  <div className="field arq-span">
+                    <label>Word template (.docx) *</label>
+                    <FilePicker
+                      ref={otherAttachmentRef}
+                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={(e) => setOtherAttachment(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                ) : null}
+                <div className="field arq-span">
+                  <label>Note (optional)</label>
+                  <input
+                    value={form.reason}
+                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                    placeholder="Why this master is needed"
                   />
                 </div>
               </>
@@ -1698,7 +2048,7 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {!['TRAINING', 'REIMBURSEMENT', 'HIRING'].includes(form.requestType) && (
+            {!['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) && (
               <div className="field">
                 <label>Reason / description (optional)</label>
                 <input
@@ -1710,8 +2060,8 @@ export default function AssetRequestsPage() {
             )}
           </div>
           <p className="muted arq-hint">
-            Linked Asset Registry and Contact Directory fields auto-fill when a unique match is found.
-            Asset is required for Repair &amp; Maintenance, and for Logistics rows categorized as
+            Linked Asset Register and Business Partner fields auto-fill when a unique match is found.
+            Asset is required for Repair &amp; Maintenance, and for Stock Transfer rows categorized as
             Medical Device or Non-Medical Device.
           </p>
           <button className="btn" type="submit" disabled={busy}>
@@ -1740,7 +2090,7 @@ export default function AssetRequestsPage() {
         ))}
       </div>
 
-      <div className="card table-wrap">
+      <div className="card card--flush table-wrap">
         <table>
           <thead>
             <tr>
@@ -1778,13 +2128,29 @@ export default function AssetRequestsPage() {
                   </td>
                   <td className="muted mono-sm">{detailSummary(r) || '-'}</td>
                   <td>
-                    <strong>{r.assetName || r.trainingTopic || r.hiringName || '-'}</strong>
+                    <strong>
+                      {r.assetName ||
+                        r.trainingTopic ||
+                        r.hiringName ||
+                        (r.requestType === 'MASTER_ADD'
+                          ? getMasterEntity(r.masterEntity)?.label || r.masterEntity
+                          : '-') ||
+                        '-'}
+                    </strong>
                     <div className="muted mono-sm">
-                      {r.assetCustody ||
-                        r.payeeName ||
-                        r.traineeName ||
-                        [r.hiringCity, r.hiringState].filter(Boolean).join(', ') ||
-                        ''}
+                      {r.requestType === 'MASTER_ADD'
+                        ? [
+                            MASTER_MODULES.find((m) => m.id === r.masterModule)?.label ||
+                              r.masterModule,
+                            r.createdMasterCode ? `Created ${r.createdMasterCode}` : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')
+                        : r.assetCustody ||
+                          r.payeeName ||
+                          r.traineeName ||
+                          [r.hiringCity, r.hiringState].filter(Boolean).join(', ') ||
+                          ''}
                     </div>
                   </td>
                   <td>{r.requestorId?.fullName || r.requestorId?.email || '-'}</td>
@@ -1841,7 +2207,8 @@ export default function AssetRequestsPage() {
                           View bill
                         </button>
                       )}
-                      {r.requestType === 'OTHER' && r.requestAttachment && (
+                      {(r.requestType === 'OTHER' || r.requestType === 'MASTER_ADD') &&
+                        r.requestAttachment && (
                         <button
                           type="button"
                           className="btn secondary btn-compact"

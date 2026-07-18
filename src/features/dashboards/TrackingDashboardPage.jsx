@@ -6,6 +6,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
+import LogisticsHubPage from '../logistics/LogisticsHubPage.jsx';
 
 function toYmd(d) {
   const y = d.getFullYear();
@@ -126,9 +127,14 @@ export default function TrackingDashboardPage() {
       setError('Select a module to review');
       return;
     }
-    setLoading(true);
     setError('');
     setSubmitted(true);
+    if (moduleId === 'logistics') {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const params = new URLSearchParams({ module: moduleId });
       if (from) params.set('from', from);
@@ -144,7 +150,7 @@ export default function TrackingDashboardPage() {
   };
 
   const downloadReview = async () => {
-    if (!moduleId) return;
+    if (!moduleId || moduleId === 'logistics') return;
     setExportBusy(true);
     setError('');
     try {
@@ -190,15 +196,20 @@ export default function TrackingDashboardPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="Select a module and date range, then submit to review records and status breakdowns."
+      description="Select a module and date range, then submit. Movement One opens the stock dashboard."
       actions={
         <>
-          {data?.linkTo ? (
+          {submitted && moduleId === 'logistics' ? (
+            <Link className="btn secondary" to="/logistics">
+              Open Movement One
+            </Link>
+          ) : null}
+          {data?.linkTo && moduleId !== 'logistics' ? (
             <Link className="btn secondary" to={data.linkTo}>
               Open module
             </Link>
           ) : null}
-          {canDownload && data ? (
+          {canDownload && data && moduleId !== 'logistics' ? (
             <button
               className="btn secondary"
               type="button"
@@ -275,9 +286,27 @@ export default function TrackingDashboardPage() {
         />
       ) : null}
 
-      {loading && !data ? <p className="muted">Loading review…</p> : null}
+      {loading && !data && moduleId !== 'logistics' ? <p className="muted">Loading review…</p> : null}
 
-      {data ? (
+      {submitted && moduleId === 'logistics' ? (
+        <div className="module-review-logistics">
+          <div className="module-review-logistics-head">
+            <div>
+              <h2 className="module-review-logistics-title">Movement One dashboard</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                Live stock movement for {rangeLabel}. Open Movement One for goods receipt and
+                goods issue actions.
+              </p>
+            </div>
+            <Link className="btn secondary btn-compact" to="/logistics">
+              Open Movement One
+            </Link>
+          </div>
+          <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
+        </div>
+      ) : null}
+
+      {data && moduleId !== 'logistics' ? (
         <div className="track-sections module-review-results">
           {summaryBlocks.map((block) => (
             <section className="card track-panel" key={block.title}>

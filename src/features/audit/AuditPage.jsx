@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 
@@ -57,7 +58,7 @@ export default function AuditPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Audit log' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Audit log' }]}
       title="Audit log"
       description="Activity history for agreements, assets, and administration."
       toolbar={
@@ -83,7 +84,7 @@ export default function AuditPage() {
       }
     >
       {error && <p className="error">{error}</p>}
-      <div className="card table-wrap">
+      <div className="card card--flush table-wrap">
         <table>
           <thead>
             <tr>

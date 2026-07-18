@@ -1,33 +1,50 @@
-/** Canonical user-facing module and field labels for TYLO One. */
+/** Canonical user-facing module and field labels for TYLO One (ERP-aligned). */
 export const MODULE = {
-  HOME: 'Modules',
-  DASHBOARD: 'Dashboard',
-  DOCUMENT_HUB: 'Document Center',
+  HOME: 'Home',
+  DASHBOARD: 'Operations Dashboard',
+  DOCUMENT_HUB: 'Document One',
   /** @deprecated Prefer DOCUMENT_HUB */
-  ASSET_AGREEMENT: 'Document Center',
-  ASSET_INVENTORY: 'Asset Registry',
-  /** @deprecated Prefer ASSET_INVENTORY; register and track are one module */
-  ASSET_MASTER: 'Asset Registry',
-  ASSET_VERIFICATION: 'Asset Verification',
-  CAMP_MANAGEMENT: 'Camp Management',
-  ASSET_REQUESTS: 'Request Center',
-  INVENTORY_LOGISTICS: 'Inventory & Logistics',
-  ROLES_PERMISSIONS: 'Roles & Permissions',
-  CONTACT_DIRECTORY: 'Contact Directory',
-  LOCATION_MASTER: 'Location Master',
-  DOCUMENT_MASTER: 'Document Master',
-  DIGITAL_SIGNATURE_MASTER: 'Digital Signature Master',
+  ASSET_AGREEMENT: 'Document One',
+  ASSET_INVENTORY: 'Asset One',
+  /** @deprecated Prefer ASSET_INVENTORY */
+  ASSET_MASTER: 'Asset One',
+  ASSET_VERIFICATION: 'Verification One',
+  CAMP_MANAGEMENT: 'Camp One',
+  ASSET_REQUESTS: 'Request One',
+  LOGISTICS: 'Movement One',
+  /** @deprecated Prefer LOGISTICS */
+  INVENTORY_LOGISTICS: 'Movement One',
+  MASTER_DATA: 'Master One',
+  ROLES_PERMISSIONS: 'Access Control',
+  CONTACT_DIRECTORY: 'Business Partners',
+  LOCATION_MASTER: 'Geography',
+  DOCUMENT_MASTER: 'Document Templates',
+  DIGITAL_SIGNATURE_MASTER: 'Signatures',
+};
+
+/** Sub-navigation and operational screen labels */
+export const NAV = {
+  ASSET_REGISTER: 'Asset Register',
+  STOCK_OVERVIEW: 'Stock Overview',
+  OVERVIEW: 'Overview',
+  GOODS_RECEIPT: 'Goods Receipt',
+  GOODS_ISSUE: 'Goods Issue',
+  CONSUMPTION: 'Consumption',
+  PRODUCTION_OUTPUT: 'Production Output',
 };
 
 /** Short module blurbs for home / catalogs */
 export const MODULE_BLURB = {
-  ASSET_INVENTORY: 'Track ownership, status, and custody.',
-  DOCUMENT_HUB: 'Create and manage contracts and digital records.',
-  ASSET_VERIFICATION: 'Photo and GPS verification with audit history.',
-  CAMP_MANAGEMENT: 'Submit, approve, and track camps.',
-  ASSET_REQUESTS: 'Repair, maintenance, logistics, training, reimbursement, and hiring.',
-  INVENTORY_LOGISTICS: 'Manage stock, vendors, transfers, and procurement.',
-  DASHBOARD: 'Select a module and date range to review activity.',
+  ASSET_INVENTORY: 'Fixed assets and inventory balances.',
+  DOCUMENT_HUB: 'Create, send, and track contracts.',
+  ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
+  CAMP_MANAGEMENT: 'Request, approve, and track camps.',
+  ASSET_REQUESTS:
+    'Repair, maintenance, stock transfer, training, reimbursement, hiring, and master data requests.',
+  LOGISTICS: 'Goods receipt, goods issue, consumption, and production output.',
+  INVENTORY_LOGISTICS: 'Goods receipt, goods issue, consumption, and production output.',
+  MASTER_DATA: 'Shared reference data for assets, inventory, movements, and documents.',
+  DASHBOARD: 'Review cross-module activity by date range.',
 };
 
 export const FIELD = {

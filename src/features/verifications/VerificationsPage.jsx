@@ -456,7 +456,7 @@ export default function VerificationsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }]}
       title={MODULE.ASSET_VERIFICATION}
       kpis={[
         { key: 'SAFE', label: 'Safe', value: counts.SAFE || 0, active: filter === 'SAFE', onClick: () => setFilter(filter === 'SAFE' ? '' : 'SAFE') },
@@ -866,7 +866,7 @@ export default function VerificationsPage() {
         </div>
       )}
 
-      <section className="vf-catalog card">
+      <section className="vf-catalog card card--flush">
         <div className="vf-toolbar">
           <input
             className="esign-search"
@@ -958,7 +958,7 @@ export default function VerificationsPage() {
                         Set status to “Agreement Signed” in {MODULE.ASSET_INVENTORY} and assign custodians
                         from {MODULE.CONTACT_DIRECTORY}.
                       </p>
-                      <Link className="btn secondary" to="/assets">
+                      <Link className="btn secondary" to="/asset-inventory">
                         Open {MODULE.ASSET_INVENTORY}
                       </Link>
                     </div>

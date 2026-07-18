@@ -8,6 +8,7 @@ import {
   FALLBACK_PRODUCT,
   Field,
   emptyTxnForm,
+  resolveProductType,
 } from './logisticsTxnShared.jsx';
 
 const SOURCES = [
@@ -68,7 +69,10 @@ export default function LogisticsInwardPage() {
   }, [warehouses, defaultWarehouseName]);
 
   const productsForType = useMemo(
-    () => products.filter((p) => !form.productType || p.productType === form.productType),
+    () =>
+      products.filter(
+        (p) => !form.productType || resolveProductType(p.productType) === form.productType
+      ),
     [products, form.productType]
   );
 
@@ -218,7 +222,7 @@ export default function LogisticsInwardPage() {
       for (const f of docsExtra) fd.append('docsExtra', f);
 
       await api('/logistics/in-out', { method: 'POST', body: fd });
-      setMsg('Inward saved. Warehouse stock updated.');
+      setMsg('Goods receipt saved. Warehouse stock updated.');
       setFormOpen(false);
       setProductPhoto(null);
       setInvoiceDoc(null);
@@ -234,7 +238,7 @@ export default function LogisticsInwardPage() {
   return (
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
-        Inward receipts: seller deliveries, field returns and callbacks, and other warehouse receipts.
+        Goods receipt: seller deliveries, field returns and callbacks, and other warehouse receipts.
       </p>
 
       {(error || msg) && (
@@ -436,7 +440,7 @@ export default function LogisticsInwardPage() {
         </form>
       )}
 
-      <div className="card table-wrap" style={{ padding: 0 }}>
+      <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
             <tr>

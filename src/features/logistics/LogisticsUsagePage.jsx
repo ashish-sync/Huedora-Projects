@@ -52,9 +52,9 @@ export default function LogisticsUsagePage() {
   return (
     <div className="logistics-usage">
       <p className="muted" style={{ marginTop: 0 }}>
-        Usage is auto-synced from <strong>Camp Management</strong> (approved camps). Screen Count
+        Consumption is auto-synced from <strong>Camp One</strong> (approved camps). Screen Count
         feeds dashboard <strong>Used</strong>; Wastage feeds <strong>Wastage</strong>. Field Balance
-        = Outward − Used − Wastage.
+        = Goods Issue − Used − Wastage.
       </p>
 
       {(error || msg) && (
@@ -63,16 +63,16 @@ export default function LogisticsUsagePage() {
         </div>
       )}
 
-      <div className="logistics-kpis" role="group" aria-label="Usage totals">
-        <div className="logistics-kpi">
+      <div className="module-dash-kpis" data-count="3" role="group" aria-label="Usage totals">
+        <div className="module-kpi">
           <strong>{totalUsed.toLocaleString()}</strong>
           <span>Used (Screen Count)</span>
         </div>
-        <div className="logistics-kpi">
+        <div className="module-kpi">
           <strong>{totalWaste.toLocaleString()}</strong>
           <span>Wastage</span>
         </div>
-        <div className="logistics-kpi">
+        <div className="module-kpi">
           <strong>{rows.length}</strong>
           <span>Usage rows</span>
         </div>
@@ -95,11 +95,11 @@ export default function LogisticsUsagePage() {
           Search
         </button>
         <Link className="btn secondary" to="/camps">
-          Open Camp Management
+          Open Camp One
         </Link>
       </div>
 
-      <div className="card table-wrap" style={{ padding: 0 }}>
+      <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
             <tr>
@@ -173,7 +173,7 @@ export default function LogisticsUsagePage() {
             {!rows.length && (
               <tr>
                 <td colSpan={11} className="muted">
-                  No usage yet. Approve camps in Camp Management to auto-create rows, then enter
+                  No consumption yet. Approve camps in Camp One to auto-create rows, then enter
                   Screen Count and Wastage.
                 </td>
               </tr>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
@@ -41,7 +42,7 @@ export default function RepairsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Repairs & maintenance' }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Repairs & maintenance' }]}
       title="Repairs & maintenance"
       description="Track corrective repairs and preventive maintenance separately."
       actions={
@@ -61,11 +62,10 @@ export default function RepairsPage() {
     >
       {error && <p className="error">{error}</p>}
 
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         {can('repairs:write') && (
           <form
             className="card"
-            style={{ padding: 20 }}
             onSubmit={async (e) => {
               e.preventDefault();
               try {
@@ -76,7 +76,7 @@ export default function RepairsPage() {
               }
             }}
           >
-            <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Open repair</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Open repair</h3>
             <div className="field">
               <label>Asset</label>
               <AdaptiveSelect required value={fault.assetId} onChange={(e) => setFault({ ...fault, assetId: e.target.value })}>
@@ -101,7 +101,6 @@ export default function RepairsPage() {
         {can('maintenance:write') && (
           <form
             className="card"
-            style={{ padding: 20 }}
             onSubmit={async (e) => {
               e.preventDefault();
               try {
@@ -112,7 +111,7 @@ export default function RepairsPage() {
               }
             }}
           >
-            <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Start maintenance</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Start maintenance</h3>
             <div className="field">
               <label>Asset</label>
               <AdaptiveSelect required value={mnt.assetId} onChange={(e) => setMnt({ ...mnt, assetId: e.target.value })}>
@@ -135,8 +134,8 @@ export default function RepairsPage() {
         )}
       </div>
 
-      <div className="card table-wrap" style={{ marginBottom: 16 }}>
-        <h3 style={{ margin: '0 0 12px', padding: '16px 16px 0', fontSize: '1rem' }}>Repair tickets</h3>
+      <div className="card card--flush table-wrap">
+        <h3 className="card-title">Repair tickets</h3>
         <table>
           <thead>
             <tr>
@@ -180,8 +179,8 @@ export default function RepairsPage() {
         </table>
       </div>
 
-      <div className="card table-wrap">
-        <h3 style={{ margin: '0 0 12px', padding: '16px 16px 0', fontSize: '1rem' }}>Maintenance orders</h3>
+      <div className="card card--flush table-wrap">
+        <h3 className="card-title">Maintenance orders</h3>
         <table>
           <thead>
             <tr>

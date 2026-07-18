@@ -1812,7 +1812,7 @@ tr.row-selected {
   letter-spacing: 0.01em;
 }
 
-.field input:not([type='file']):not(.file-picker__input),
+.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
 .field select,
 .field textarea,
 .esign-search,
@@ -1990,7 +1990,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   line-height: 1.5;
 }
 
-.field input:not([type='file']):not(.file-picker__input):hover,
+.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):hover,
 .field select:hover,
 .field textarea:hover,
 .esign-search:hover {
@@ -1998,7 +1998,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   background: var(--surface);
 }
 
-.field input:not([type='file']):not(.file-picker__input):focus,
+.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):focus,
 .field select:focus,
 .field textarea:focus,
 .esign-search:focus,
@@ -2059,6 +2059,24 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 .adaptive-select__placeholder {
   margin: 0 !important;
   color: var(--ink) !important;
+}
+
+/* react-select search input must not inherit .field input chrome */
+.adaptive-select__input-container,
+.adaptive-select input,
+.adaptive-select__input {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font: inherit !important;
+  line-height: inherit !important;
 }
 
 .adaptive-select__placeholder {
@@ -7668,6 +7686,33 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 .product-master-form h4 {
   margin: 0 0 12px;
   font-size: 1rem;
+}
+
+.product-master-device-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid var(--border, #d8dde6);
+  border-radius: 6px;
+  max-height: 180px;
+  overflow: auto;
+  background: var(--surface, #fff);
+}
+
+.product-master-device-list li {
+  margin: 0;
+  border-bottom: 1px solid var(--border, #e8ecf2);
+}
+
+.product-master-device-list li:last-child {
+  border-bottom: 0;
+}
+
+.product-master-device-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
 }
 
 .product-section textarea,

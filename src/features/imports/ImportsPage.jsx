@@ -34,7 +34,7 @@ export default function ImportsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Excel import' }]}
       title="Excel import"
-      description="Validate rows first, then commit to Business Partners, Asset Register, or verification."
+      description="Validate rows first, then commit to Contact Directory, Asset Register, or verification."
     >
       {error && <p className="error">{error}</p>}
 

@@ -363,7 +363,7 @@ export default function LogisticsHubPage({
           </span>
           <span className="ilog-rail-body">
             <strong>{NAV.GOODS_ISSUE}</strong>
-            <span>Manual goods issue or fulfill a Request One stock transfer.</span>
+            <span>Manual goods issue or fulfill a Request One goods issue.</span>
             <em>Open →</em>
           </span>
         </Link>

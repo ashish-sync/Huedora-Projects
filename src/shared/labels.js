@@ -16,7 +16,7 @@ export const MODULE = {
   INVENTORY_LOGISTICS: 'Movement One',
   MASTER_DATA: 'Master One',
   ROLES_PERMISSIONS: 'Access Control',
-  CONTACT_DIRECTORY: 'Business Partners',
+  CONTACT_DIRECTORY: 'Contact Directory',
   LOCATION_MASTER: 'Geography',
   DOCUMENT_MASTER: 'Document Templates',
   DIGITAL_SIGNATURE_MASTER: 'Signatures',
@@ -40,7 +40,7 @@ export const MODULE_BLURB = {
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
   CAMP_MANAGEMENT: 'Request, approve, and track camps.',
   ASSET_REQUESTS:
-    'Repair, maintenance, stock transfer, training, reimbursement, hiring, and master data requests.',
+    'Repair, maintenance, goods issue, training, reimbursement, hiring, and master data requests.',
   LOGISTICS: 'Goods receipt, goods issue, consumption, and production output.',
   INVENTORY_LOGISTICS: 'Goods receipt, goods issue, consumption, and production output.',
   MASTER_DATA: 'Shared reference data for assets, inventory, movements, and documents.',

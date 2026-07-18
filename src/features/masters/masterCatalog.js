@@ -6,8 +6,23 @@ export const MASTER_MODULES = [
   { id: 'document', label: 'Document One' },
 ];
 
-export const PRODUCT_TYPES = ['Device', 'Consumable', 'Accessory', 'Spare Part', 'Document', 'Misc'];
-export const LOCATION_LEVELS = ['Zone', 'Room', 'Rack', 'Shelf', 'Bin'];
+export const PRODUCT_TYPES = [
+  'Medical Device',
+  'Non-Medical Device',
+  'Peripheral Device',
+  'Accessory',
+  'Spare Part',
+  'Consumable',
+  'Document',
+  'Other',
+];
+export const PRODUCT_INVENTORY_TYPES = [
+  'Replacement Part for Asset',
+  'Accessory of Asset',
+  'Consumed by Device',
+  'Multi-use',
+];
+export const GST_RATE_PRESETS = ['0', '5', '12', '18', '28'];
 export const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 export const DOCUMENT_TYPES = ['LEASE', 'TEMPORARY_OWNERSHIP', 'LETTER', 'OTHER'];
 export const SIGNING_TYPES = ['SIGNING', 'NON_SIGNING'];
@@ -38,124 +53,47 @@ export const MASTER_ENTITIES = [
     apiPath: '/logistics/products',
     dedicated: true,
     fields: [
-      { name: 'name', label: 'Name', required: true },
       { name: 'productType', label: 'Product type', required: true, type: 'select', options: PRODUCT_TYPES },
-      { name: 'categoryId', label: 'Category', required: true, type: 'select', source: 'categories' },
-      { name: 'brand', label: 'Brand', required: true },
-      { name: 'manufacturer', label: 'Manufacturer', required: true },
+      { name: 'brand', label: 'Brand / Manufacturer', required: true },
+      { name: 'model', label: 'Model/Variant/Name', required: true },
       { name: 'uomId', label: 'UOM', type: 'select', source: 'uoms' },
-      { name: 'trackingKind', label: 'Tracking', type: 'select', options: TRACKING_KINDS },
+      { name: 'unitsPerPack', label: 'Units per pack' },
+      { name: 'purchaseCost', label: 'Purchase cost' },
+      { name: 'gstRate', label: 'GST / Tax (%)', type: 'select', options: GST_RATE_PRESETS },
+      {
+        name: 'inventoryType',
+        label: 'Inventory type',
+        type: 'select',
+        options: PRODUCT_INVENTORY_TYPES,
+      },
+      { name: 'minStock', label: 'Minimum stock level' },
+      { name: 'maxStock', label: 'Maximum stock level' },
       { name: 'description', label: 'Description', type: 'textarea' },
     ],
   },
   {
-    id: 'categories',
-    label: 'Product Categories',
-    module: 'inventory',
-    apiPath: '/logistics/categories',
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'description', label: 'Description', type: 'textarea' },
-    ],
-  },
-  {
-    id: 'uoms',
-    label: 'Units of Measure',
-    module: 'inventory',
-    apiPath: '/logistics/uoms',
-    fields: [{ name: 'name', label: 'Name', required: true }],
-  },
-  {
-    id: 'warehouses',
-    label: 'Warehouses',
-    module: 'inventory',
-    apiPath: '/logistics/warehouses',
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'city', label: 'City' },
-      { name: 'state', label: 'State' },
-      { name: 'address', label: 'Address', type: 'textarea' },
-    ],
-  },
-  {
-    id: 'locations',
-    label: 'Locations',
-    module: 'inventory',
-    apiPath: '/logistics/locations',
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'level', label: 'Level', required: true, type: 'select', options: LOCATION_LEVELS },
-      { name: 'warehouseId', label: 'Warehouse', required: true, type: 'select', source: 'warehouses' },
-      { name: 'parentId', label: 'Parent location', type: 'select', source: 'locations' },
-    ],
-  },
-  {
-    id: 'stock-statuses',
-    label: 'Stock Statuses',
-    module: 'inventory',
-    apiPath: '/logistics/stock-statuses',
-    fields: [{ name: 'name', label: 'Name', required: true }],
-  },
-  {
-    id: 'suppliers',
-    label: 'Suppliers',
+    id: 'parties',
+    label: 'Suppliers & Vendors',
     module: 'movement',
-    apiPath: '/logistics/suppliers',
+    apiPath: '/logistics/parties',
     fromContacts: true,
-    partyType: 'Supplier',
     fields: [
+      {
+        name: 'partyType',
+        label: 'Type',
+        required: true,
+        type: 'select',
+        options: ['Supplier', 'Vendor'],
+      },
       { name: 'name', label: 'Name', required: true },
       { name: 'contactName', label: 'Contact name' },
       { name: 'email', label: 'Email' },
       { name: 'phone', label: 'Phone' },
       { name: 'city', label: 'City' },
       { name: 'state', label: 'State' },
+      { name: 'gstin', label: 'GSTIN' },
+      { name: 'panCard', label: 'PAN Card' },
     ],
-  },
-  {
-    id: 'vendors',
-    label: 'Vendors',
-    module: 'movement',
-    apiPath: '/logistics/vendors',
-    fromContacts: true,
-    partyType: 'Vendor',
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'contactName', label: 'Contact name' },
-      { name: 'email', label: 'Email' },
-      { name: 'phone', label: 'Phone' },
-      { name: 'city', label: 'City' },
-      { name: 'state', label: 'State' },
-    ],
-  },
-  {
-    id: 'transporters',
-    label: 'Transporters',
-    module: 'movement',
-    apiPath: '/logistics/transporters',
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'contactName', label: 'Contact name' },
-      { name: 'email', label: 'Email' },
-      { name: 'phone', label: 'Phone' },
-    ],
-  },
-  {
-    id: 'movement-types',
-    label: 'Process / Movement Types',
-    module: 'movement',
-    apiPath: '/logistics/movement-types',
-    fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'direction', label: 'Direction', type: 'select', options: ['IN', 'OUT'] },
-    ],
-  },
-  {
-    id: 'reason-codes',
-    label: 'Reason Codes',
-    module: 'movement',
-    apiPath: '/logistics/reason-codes',
-    fields: [{ name: 'name', label: 'Name', required: true }],
   },
   {
     id: 'expense-categories',
@@ -169,7 +107,7 @@ export const MASTER_ENTITIES = [
   },
   {
     id: 'contacts',
-    label: 'Business Partners',
+    label: 'Contact Directory',
     module: 'document',
     apiPath: '/contacts',
     embedded: 'contacts',
@@ -183,20 +121,6 @@ export const MASTER_ENTITIES = [
       { name: 'state', label: 'State' },
       { name: 'city', label: 'City' },
       { name: 'pinCode', label: 'PIN code' },
-    ],
-  },
-  {
-    id: 'pin-codes',
-    label: 'Geography / PIN',
-    module: 'document',
-    apiPath: '/geo/pin-codes',
-    embedded: 'pin-codes',
-    fields: [
-      { name: 'pinCode', label: 'PIN code', required: true },
-      { name: 'stateId', label: 'State', required: true, type: 'geo-state' },
-      { name: 'cityId', label: 'City', required: true, type: 'geo-city' },
-      { name: 'locality', label: 'Locality' },
-      { name: 'notes', label: 'Notes', type: 'textarea' },
     ],
   },
   {
@@ -236,25 +160,13 @@ export const MASTER_HUB_GROUPS = [
     id: 'product-masters',
     label: 'Products',
     scope: 'inventory',
-    entityIds: ['products', 'categories', 'uoms'],
-  },
-  {
-    id: 'inventory-masters',
-    label: 'Inventory',
-    scope: 'inventory',
-    entityIds: ['warehouses', 'locations', 'stock-statuses'],
+    entityIds: ['products'],
   },
   {
     id: 'business-partners',
     label: 'Partners',
     scope: 'logistics',
-    entityIds: ['suppliers', 'vendors', 'transporters'],
-  },
-  {
-    id: 'process-masters',
-    label: 'Process',
-    scope: 'logistics',
-    entityIds: ['movement-types', 'reason-codes'],
+    entityIds: ['parties'],
   },
   {
     id: 'finance-masters',
@@ -266,7 +178,7 @@ export const MASTER_HUB_GROUPS = [
     id: 'document-masters',
     label: 'Document One',
     scope: 'document',
-    entityIds: ['contacts', 'pin-codes', 'templates', 'signatures'],
+    entityIds: ['contacts', 'templates', 'signatures'],
   },
 ];
 
@@ -293,10 +205,6 @@ export function validateMasterPayload(entityId, payload = {}) {
     const phone = String(payload.contact || payload.phone || '').trim();
     if (!email && !phone) return 'Email or phone is required for a contact';
   }
-  if (entity.id === 'pin-codes') {
-    const pin = String(payload.pinCode || '').replace(/\D+/g, '');
-    if (!/^\d{6}$/.test(pin)) return 'PIN code must be 6 digits';
-  }
   return '';
 }
 
@@ -307,8 +215,12 @@ export function emptyMasterPayload(entityId) {
   for (const f of entity.fields) {
     if (f.name === 'direction') out[f.name] = 'IN';
     else if (f.name === 'level') out[f.name] = 'Zone';
-    else if (f.name === 'productType') out[f.name] = 'Device';
+    else if (f.name === 'productType') out[f.name] = 'Medical Device';
+    else if (f.name === 'inventoryType') out[f.name] = 'Multi-use';
+    else if (f.name === 'partyType') out[f.name] = 'Supplier';
+    else if (f.name === 'gstRate') out[f.name] = '18';
     else if (f.name === 'trackingKind') out[f.name] = 'Serial';
+    else if (f.name === 'unitsPerPack') out[f.name] = '1';
     else if (f.name === 'documentType') out[f.name] = 'LEASE';
     else if (f.name === 'signingType') out[f.name] = 'SIGNING';
     else if (f.name === 'roleLabel') out[f.name] = 'HR';

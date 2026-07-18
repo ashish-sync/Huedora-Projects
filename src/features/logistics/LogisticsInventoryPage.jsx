@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -26,6 +26,16 @@ function formatMoney(n) {
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function resolveDefaultWarehouseId(warehouses, preferredName = 'Mumbai') {
+  const list = warehouses || [];
+  const hit =
+    list.find((w) => w.name === preferredName) ||
+    list.find((w) => String(w.code || '').toUpperCase() === 'WH-MUM') ||
+    list.find((w) => /mumbai/i.test(w.name || '') || /mumbai/i.test(w.city || '')) ||
+    list[0];
+  return hit?._id || '';
+}
+
 export default function LogisticsInventoryPage() {
   const { can } = useAuth();
   const canWrite = can('logistics:write') || can('*');
@@ -41,6 +51,12 @@ export default function LogisticsInventoryPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
+
+  const defaultWarehouseName = meta?.inOut?.defaultWarehouseName || 'Mumbai';
+  const defaultWarehouseId = useMemo(
+    () => resolveDefaultWarehouseId(meta?.warehouses, defaultWarehouseName),
+    [meta, defaultWarehouseName]
+  );
 
   const loadMeta = useCallback(async () => {
     try {
@@ -71,6 +87,12 @@ export default function LogisticsInventoryPage() {
   }, [loadMeta]);
 
   useEffect(() => {
+    if (!warehouseId && defaultWarehouseId) {
+      setWarehouseId(defaultWarehouseId);
+    }
+  }, [warehouseId, defaultWarehouseId]);
+
+  useEffect(() => {
     load();
   }, [load]);
 
@@ -84,6 +106,16 @@ export default function LogisticsInventoryPage() {
       .catch(() => setLocations([]));
   }, [form.warehouseId]);
 
+  const openCreate = () => {
+    setForm({
+      ...emptyForm,
+      warehouseId: defaultWarehouseId || '',
+    });
+    setFormOpen(true);
+    setMsg('');
+    setError('');
+  };
+
   const save = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -96,7 +128,7 @@ export default function LogisticsInventoryPage() {
           ...form,
           categoryId: form.categoryId || null,
           uomId: form.uomId || null,
-          warehouseId: form.warehouseId || null,
+          warehouseId: form.warehouseId || defaultWarehouseId || null,
           locationId: form.locationId || null,
           quantity: Number(form.quantity) || 1,
           unitValue: form.unitValue === '' ? 0 : Number(form.unitValue),
@@ -104,7 +136,7 @@ export default function LogisticsInventoryPage() {
         },
       });
       setMsg('Stock item added.');
-      setForm(emptyForm);
+      setForm({ ...emptyForm, warehouseId: defaultWarehouseId || '' });
       setFormOpen(false);
       load();
     } catch (err) {
@@ -126,7 +158,7 @@ export default function LogisticsInventoryPage() {
     { label: 'Low stock', value: summary?.lowStock ?? '-' },
     { label: 'Damaged', value: summary?.damagedQty ?? '-' },
     { label: 'Repair', value: summary?.repairQty ?? '-' },
-    { label: 'Pending dispatch', value: summary?.pendingDispatch ?? '-' },
+    { label: 'Pending goods issue', value: summary?.pendingDispatch ?? '-' },
   ];
 
   return (
@@ -178,7 +210,7 @@ export default function LogisticsInventoryPage() {
           Search
         </button>
         {canWrite && (
-          <button className="btn" type="button" onClick={() => setFormOpen((v) => !v)}>
+          <button className="btn" type="button" onClick={() => (formOpen ? setFormOpen(false) : openCreate())}>
             {formOpen ? 'Close form' : '+ Add stock item'}
           </button>
         )}

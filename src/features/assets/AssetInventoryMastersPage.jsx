@@ -7,7 +7,7 @@ export default function AssetInventoryMastersPage() {
     <LogisticsMasterPage
       scope="inventory"
       title="Inventory Masters"
-      description="Products, categories, UOM, warehouses, locations, and stock statuses."
+      description="Products."
     />
   );
 }

@@ -123,7 +123,7 @@ export default function LogisticsOutputPage() {
                   <div className="inv-empty">
                     <strong>No field balances yet</strong>
                     <p className="muted">
-                      Balances appear after outward dispatch to a field resource. Returns and usage
+                      Balances appear after goods issue to a field resource. Returns and usage
                       reduce on-hand qty.
                     </p>
                   </div>

@@ -4,37 +4,112 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import { api, apiUrl } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
-const PRODUCT_TYPES = ['Device', 'Consumable', 'Accessory', 'Spare Part', 'Document', 'Misc'];
-const INVENTORY_TYPES = ['Asset', 'Inventory Item'];
-const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
+const PRODUCT_TYPES = [
+  'Medical Device',
+  'Non-Medical Device',
+  'Peripheral Device',
+  'Accessory',
+  'Spare Part',
+  'Consumable',
+  'Document',
+  'Other',
+];
+
+const INVENTORY_TYPES = [
+  'Replacement Part for Asset',
+  'Accessory of Asset',
+  'Consumed by Device',
+  'Multi-use',
+];
+const GST_PRESETS = [0, 5, 12, 18, 28];
 
 const TYPE_DEFAULTS = {
-  Device: { trackingKind: 'Serial', expiryApplicable: false, inventoryType: 'Asset' },
-  Consumable: { trackingKind: 'Batch', expiryApplicable: true, inventoryType: 'Inventory Item' },
-  Accessory: { trackingKind: 'Serial', expiryApplicable: false, inventoryType: 'Inventory Item' },
-  'Spare Part': {
-    trackingKind: 'Batch + Serial',
+  'Medical Device': {
     expiryApplicable: false,
-    inventoryType: 'Inventory Item',
+    inventoryType: 'Multi-use',
   },
-  Document: { trackingKind: 'None', expiryApplicable: false, inventoryType: 'Inventory Item' },
-  Misc: { trackingKind: 'None', expiryApplicable: false, inventoryType: 'Inventory Item' },
+  'Non-Medical Device': {
+    expiryApplicable: false,
+    inventoryType: 'Multi-use',
+  },
+  'Peripheral Device': {
+    expiryApplicable: false,
+    inventoryType: 'Multi-use',
+  },
+  Accessory: {
+    expiryApplicable: false,
+    inventoryType: 'Accessory of Asset',
+  },
+  'Spare Part': {
+    expiryApplicable: false,
+    inventoryType: 'Replacement Part for Asset',
+  },
+  Consumable: {
+    expiryApplicable: true,
+    inventoryType: 'Consumed by Device',
+  },
+  Document: {
+    expiryApplicable: false,
+    inventoryType: 'Multi-use',
+  },
+  Other: {
+    expiryApplicable: false,
+    inventoryType: 'Consumed by Device',
+  },
 };
+
+const LEGACY_TYPE = {
+  Device: 'Medical Device',
+  Consumables: 'Consumable',
+  Misc: 'Other',
+  Miscellaneous: 'Other',
+};
+
+const LEGACY_INVENTORY = {
+  Asset: 'Replacement Part for Asset',
+  'Inventory Item': 'Multi-use',
+  'Associated to Asset': 'Replacement Part for Asset',
+  'Used by Device': 'Consumed by Device',
+};
+
+function resolveType(raw) {
+  const v = String(raw || '').trim();
+  if (PRODUCT_TYPES.includes(v)) return v;
+  return LEGACY_TYPE[v] || 'Other';
+}
+
+function resolveInventory(raw) {
+  const v = String(raw || '').trim();
+  if (INVENTORY_TYPES.includes(v)) return v;
+  return LEGACY_INVENTORY[v] || 'Multi-use';
+}
+
+function needsLinkedDevice(inventoryType) {
+  return (
+    inventoryType === 'Replacement Part for Asset' ||
+    inventoryType === 'Accessory of Asset' ||
+    inventoryType === 'Consumed by Device'
+  );
+}
 
 function emptyForm() {
   return {
-    name: '',
-    categoryId: '',
     brand: '',
-    manufacturer: '',
-    description: '',
-    isActive: true,
-    productType: 'Device',
-    inventoryType: 'Asset',
-    trackingKind: 'Serial',
+    model: '',
     uomId: '',
+    unitsPerPack: '1',
+    purchaseCost: '',
+    gstRate: '18',
+    gstCustom: false,
+    inventoryType: 'Multi-use',
+    linkedDeviceId: '',
+    linkedDeviceLabel: '',
     expiryApplicable: false,
-    standardCost: '',
+    stockLevelApplicable: false,
+    minStock: '',
+    maxStock: '',
+    isActive: true,
+    productType: 'Medical Device',
   };
 }
 
@@ -44,7 +119,6 @@ export default function ProductMasterPage() {
 
   const [mode, setMode] = useState('list'); // list | create | edit
   const [rows, setRows] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [uoms, setUoms] = useState([]);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -54,11 +128,8 @@ export default function ProductMasterPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState('');
   const [editingMeta, setEditingMeta] = useState({ code: '', sku: '', image: null });
-
-  const categoryName = useMemo(() => {
-    const map = Object.fromEntries(categories.map((c) => [c._id, c.name || c.code]));
-    return (id) => map[id] || '-';
-  }, [categories]);
+  const [deviceQuery, setDeviceQuery] = useState('');
+  const [deviceOptions, setDeviceOptions] = useState([]);
 
   const uomName = useMemo(() => {
     const map = Object.fromEntries(uoms.map((u) => [u._id, u.name || u.code]));
@@ -67,11 +138,7 @@ export default function ProductMasterPage() {
 
   const loadLookups = useCallback(async () => {
     try {
-      const [cat, uom] = await Promise.all([
-        api('/logistics/categories?limit=500'),
-        api('/logistics/uoms?limit=500'),
-      ]);
-      setCategories(cat.data || []);
+      const uom = await api('/logistics/uoms?limit=500');
       setUoms(uom.data || []);
     } catch {
       /* lookups optional for list */
@@ -100,29 +167,72 @@ export default function ProductMasterPage() {
     if (mode === 'list') load();
   }, [mode, load]);
 
+  useEffect(() => {
+    if (!needsLinkedDevice(form.inventoryType)) {
+      setDeviceOptions([]);
+      return;
+    }
+    const term = deviceQuery.trim();
+    if (term.length < 2 && !form.linkedDeviceId) {
+      setDeviceOptions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ limit: '30' });
+        if (term) params.set('q', term);
+        const res = await api(`/assets?${params}`);
+        if (!cancelled) setDeviceOptions(res.data || []);
+      } catch {
+        if (!cancelled) setDeviceOptions([]);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [deviceQuery, form.inventoryType, form.linkedDeviceId]);
+
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const onProductTypeChange = (next) => {
-    const defaults = TYPE_DEFAULTS[next] || TYPE_DEFAULTS.Misc;
+    const defaults = TYPE_DEFAULTS[next] || TYPE_DEFAULTS.Other;
     setForm((f) => ({
       ...f,
       productType: next,
-      trackingKind: defaults.trackingKind,
       expiryApplicable: defaults.expiryApplicable,
       inventoryType: defaults.inventoryType,
+      linkedDeviceId: needsLinkedDevice(defaults.inventoryType) ? f.linkedDeviceId : '',
+      linkedDeviceLabel: needsLinkedDevice(defaults.inventoryType) ? f.linkedDeviceLabel : '',
     }));
+  };
+
+  const onInventoryTypeChange = (next) => {
+    setForm((f) => ({
+      ...f,
+      inventoryType: next,
+      linkedDeviceId: needsLinkedDevice(next) ? f.linkedDeviceId : '',
+      linkedDeviceLabel: needsLinkedDevice(next) ? f.linkedDeviceLabel : '',
+    }));
+    if (!needsLinkedDevice(next)) setDeviceQuery('');
   };
 
   const startCreate = () => {
     setEditingId('');
     setEditingMeta({ code: '', sku: '', image: null });
     setForm(emptyForm());
+    setDeviceQuery('');
+    setDeviceOptions([]);
     setMsg('');
     setError('');
     setMode('create');
   };
 
   const startEdit = (row) => {
+    const gst = Number(row.gstRate ?? 0);
+    const gstCustom = !GST_PRESETS.includes(gst);
+    const inventoryType = resolveInventory(row.inventoryType);
     setEditingId(row._id);
     setEditingMeta({
       code: row.code || '',
@@ -130,22 +240,37 @@ export default function ProductMasterPage() {
       image: row.image || null,
     });
     setForm({
-      name: row.name || '',
-      categoryId: row.categoryId || '',
-      brand: row.brand || '',
-      manufacturer: row.manufacturer || '',
-      description: row.description || '',
-      isActive: row.isActive !== false,
-      productType: row.productType || 'Device',
-      inventoryType: row.inventoryType || 'Inventory Item',
-      trackingKind: row.trackingKind || 'None',
+      brand: row.brand || row.manufacturer || '',
+      model: row.model || row.partNumber || row.name || '',
       uomId: row.uomId || '',
+      unitsPerPack: String(row.unitsPerPack ?? 1),
+      purchaseCost: row.standardCost ?? row.defaultPerUnitCost ?? '',
+      gstRate: String(gst),
+      gstCustom,
+      inventoryType,
+      linkedDeviceId: row.linkedDeviceId || '',
+      linkedDeviceLabel: '',
       expiryApplicable: !!row.expiryApplicable,
-      standardCost: row.standardCost ?? row.defaultPerUnitCost ?? '',
+      stockLevelApplicable: Number(row.minStock) > 0 || Number(row.maxStock) > 0,
+      minStock: row.minStock ?? '',
+      maxStock: row.maxStock ?? '',
+      isActive: row.isActive !== false,
+      productType: resolveType(row.productType),
     });
+    setDeviceQuery('');
     setMsg('');
     setError('');
     setMode('edit');
+    if (row.linkedDeviceId) {
+      api(`/assets/${row.linkedDeviceId}`)
+        .then((res) => {
+          const a = res.data;
+          if (!a) return;
+          const label = [a.assetTag || a.code, a.name || a.model].filter(Boolean).join(' · ');
+          setForm((f) => ({ ...f, linkedDeviceLabel: label || String(row.linkedDeviceId) }));
+        })
+        .catch(() => {});
+    }
   };
 
   const backToList = () => {
@@ -155,21 +280,30 @@ export default function ProductMasterPage() {
     setError('');
   };
 
-  const buildPayload = () => ({
-    name: form.name,
-    categoryId: form.categoryId || null,
-    brand: form.brand,
-    manufacturer: form.manufacturer,
-    description: form.description,
-    isActive: form.isActive,
-    productType: form.productType,
-    inventoryType: form.inventoryType,
-    trackingKind: form.trackingKind,
-    uomId: form.uomId || null,
-    expiryApplicable: form.expiryApplicable,
-    standardCost: form.standardCost === '' ? 0 : Number(form.standardCost),
-    defaultPerUnitCost: form.standardCost === '' ? 0 : Number(form.standardCost),
-  });
+  const buildPayload = () => {
+    const modelVariantName = String(form.model || '').trim();
+    return {
+      name: modelVariantName,
+      brand: form.brand,
+      manufacturer: form.brand,
+      model: modelVariantName,
+      partNumber: modelVariantName,
+      uomId: form.uomId || null,
+      unitsPerPack: form.unitsPerPack === '' ? 1 : Number(form.unitsPerPack),
+      purchaseCost: form.purchaseCost === '' ? 0 : Number(form.purchaseCost),
+      standardCost: form.purchaseCost === '' ? 0 : Number(form.purchaseCost),
+      gstRate: form.gstRate === '' ? 0 : Number(form.gstRate),
+      inventoryType: form.inventoryType,
+      linkedDeviceId: needsLinkedDevice(form.inventoryType) ? form.linkedDeviceId || null : null,
+      expiryApplicable: form.expiryApplicable,
+      minStock:
+        form.stockLevelApplicable && form.minStock !== '' ? Number(form.minStock) : 0,
+      maxStock:
+        form.stockLevelApplicable && form.maxStock !== '' ? Number(form.maxStock) : 0,
+      isActive: form.isActive,
+      productType: form.productType,
+    };
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -224,7 +358,7 @@ export default function ProductMasterPage() {
 
   const uploadImage = async (file) => {
     if (!editingId) {
-      setError('Save the product first, then upload an image.');
+      setError('Save the product first, then upload a photo.');
       return;
     }
     setBusy(true);
@@ -239,7 +373,7 @@ export default function ProductMasterPage() {
         sku: res.data?.sku || editingMeta.sku,
         image: res.data?.image || null,
       });
-      setMsg('Image uploaded.');
+      setMsg('Photo uploaded.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -247,14 +381,27 @@ export default function ProductMasterPage() {
     }
   };
 
+  const selectDevice = (asset) => {
+    const label = [asset.assetTag || asset.code, asset.name || asset.model]
+      .filter(Boolean)
+      .join(' · ');
+    setForm((f) => ({
+      ...f,
+      linkedDeviceId: asset._id,
+      linkedDeviceLabel: label || asset._id,
+    }));
+    setDeviceQuery('');
+    setDeviceOptions([]);
+  };
+
   if (mode === 'list') {
     return (
       <div className="product-master">
         <div className="product-master-toolbar">
           <div>
-            <h3 className="product-master-title">Products</h3>
+            <h3 className="product-master-title">Product Master</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Product catalog for inventory and custody.
+              Catalog for inventory, linked devices, and costing.
             </p>
           </div>
           {canWrite && (
@@ -292,12 +439,11 @@ export default function ProductMasterPage() {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Product</th>
+                <th>Model/Variant/Name</th>
                 <th>Type</th>
-                <th>Category</th>
                 <th>Brand</th>
                 <th>UOM</th>
-                <th>Tracking</th>
+                <th>Inventory</th>
                 <th>Status</th>
                 <th className="inv-col-actions">Actions</th>
               </tr>
@@ -306,12 +452,11 @@ export default function ProductMasterPage() {
               {rows.map((row) => (
                 <tr key={row._id}>
                   <td className="mono-sm">{row.code || '-'}</td>
-                  <td>{row.name || '-'}</td>
-                  <td>{row.productType || '-'}</td>
-                  <td>{categoryName(row.categoryId)}</td>
-                  <td>{row.brand || '-'}</td>
+                  <td>{row.model || row.partNumber || row.name || '-'}</td>
+                  <td>{resolveType(row.productType)}</td>
+                  <td>{row.brand || row.manufacturer || '-'}</td>
                   <td>{uomName(row.uomId)}</td>
-                  <td>{row.trackingKind || '-'}</td>
+                  <td>{resolveInventory(row.inventoryType)}</td>
                   <td>{row.isActive === false ? 'Inactive' : 'Active'}</td>
                   <td className="inv-col-actions">
                     <div className="inv-row-actions">
@@ -331,7 +476,7 @@ export default function ProductMasterPage() {
               ))}
               {!rows.length && (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={8}>
                     <p className="muted" style={{ padding: 16, margin: 0 }}>
                       No products yet.
                     </p>
@@ -344,6 +489,19 @@ export default function ProductMasterPage() {
       </div>
     );
   }
+
+  const showLinked = needsLinkedDevice(form.inventoryType);
+  const codeHint =
+    {
+      'Medical Device': 'MD0001',
+      'Non-Medical Device': 'NM0001',
+      'Peripheral Device': 'PD0001',
+      Accessory: 'AC0001',
+      'Spare Part': 'SP0001',
+      Consumable: 'CN0001',
+      Document: 'DC0001',
+      Other: 'OT0001',
+    }[form.productType] || 'Auto';
 
   return (
     <div className="product-master">
@@ -358,12 +516,10 @@ export default function ProductMasterPage() {
           {mode === 'edit' ? (
             <p className="muted" style={{ margin: 0 }}>
               Code <strong>{editingMeta.code || '—'}</strong>
-              {' · '}
-              SKU <strong>{editingMeta.sku || '—'}</strong>
             </p>
           ) : (
             <p className="muted" style={{ margin: 0 }}>
-              Product code and SKU are assigned automatically on save.
+              Product code is assigned automatically on save (e.g. {codeHint}).
             </p>
           )}
         </div>
@@ -377,41 +533,6 @@ export default function ProductMasterPage() {
 
       <form className="card product-master-form" onSubmit={save}>
         <div className="logistics-form-grid">
-          <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label htmlFor="pm-name">Product Name *</label>
-            <input
-              id="pm-name"
-              required
-              value={form.name}
-              onChange={(e) => setField('name', e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="pm-code">Product Code</label>
-            <input id="pm-code" value={editingMeta.code || 'Auto generated'} readOnly disabled />
-          </div>
-          <div className="field">
-            <label htmlFor="pm-sku">SKU</label>
-            <input id="pm-sku" value={editingMeta.sku || 'Auto generated'} readOnly disabled />
-          </div>
-
-          <div className="field">
-            <label htmlFor="pm-category">Category *</label>
-            <AdaptiveSelect
-              id="pm-category"
-              required
-              value={form.categoryId}
-              onChange={(e) => setField('categoryId', e.target.value)}
-            >
-              <option value="">Select category</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </AdaptiveSelect>
-          </div>
           <div className="field">
             <label htmlFor="pm-type">Product Type *</label>
             <AdaptiveSelect
@@ -427,9 +548,13 @@ export default function ProductMasterPage() {
               ))}
             </AdaptiveSelect>
           </div>
+          <div className="field">
+            <label htmlFor="pm-code">Product Code</label>
+            <input id="pm-code" value={editingMeta.code || 'Auto-generated'} readOnly disabled />
+          </div>
 
           <div className="field">
-            <label htmlFor="pm-brand">Brand *</label>
+            <label htmlFor="pm-brand">Brand / Manufacturer *</label>
             <input
               id="pm-brand"
               required
@@ -438,17 +563,18 @@ export default function ProductMasterPage() {
             />
           </div>
           <div className="field">
-            <label htmlFor="pm-mfr">Manufacturer *</label>
+            <label htmlFor="pm-model">Model/Variant/Name *</label>
             <input
-              id="pm-mfr"
+              id="pm-model"
               required
-              value={form.manufacturer}
-              onChange={(e) => setField('manufacturer', e.target.value)}
+              value={form.model}
+              onChange={(e) => setField('model', e.target.value)}
+              placeholder="Unique model, variant, or name"
             />
           </div>
 
           <div className="field">
-            <label htmlFor="pm-uom">Unit of Measure</label>
+            <label htmlFor="pm-uom">Unit of Measure (UOM)</label>
             <AdaptiveSelect
               id="pm-uom"
               value={form.uomId}
@@ -463,26 +589,73 @@ export default function ProductMasterPage() {
             </AdaptiveSelect>
           </div>
           <div className="field">
-            <label htmlFor="pm-track">Tracking</label>
-            <AdaptiveSelect
-              id="pm-track"
-              value={form.trackingKind}
-              onChange={(e) => setField('trackingKind', e.target.value)}
-            >
-              {TRACKING_KINDS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </AdaptiveSelect>
+            <label htmlFor="pm-upp">Units per Pack</label>
+            <input
+              id="pm-upp"
+              type="number"
+              min="1"
+              step="1"
+              value={form.unitsPerPack}
+              onChange={(e) => setField('unitsPerPack', e.target.value)}
+              placeholder="e.g. 100"
+            />
           </div>
 
           <div className="field">
-            <label htmlFor="pm-inv-type">Inventory Type</label>
+            <label htmlFor="pm-cost">Purchase Cost</label>
+            <input
+              id="pm-cost"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.purchaseCost}
+              onChange={(e) => setField('purchaseCost', e.target.value)}
+              placeholder="Per UOM"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="pm-gst">GST / Tax (%)</label>
+            <AdaptiveSelect
+              id="pm-gst"
+              value={form.gstCustom ? 'custom' : String(form.gstRate)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === 'custom') {
+                  setForm((f) => ({ ...f, gstCustom: true }));
+                } else {
+                  setForm((f) => ({ ...f, gstCustom: false, gstRate: v }));
+                }
+              }}
+            >
+              {GST_PRESETS.map((r) => (
+                <option key={r} value={String(r)}>
+                  {r}%
+                </option>
+              ))}
+              <option value="custom">Custom</option>
+            </AdaptiveSelect>
+            {form.gstCustom && (
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={form.gstRate}
+                onChange={(e) => setField('gstRate', e.target.value)}
+                aria-label="Custom GST rate"
+                placeholder="Enter %"
+                style={{ marginTop: 8 }}
+              />
+            )}
+          </div>
+
+          <div className="field">
+            <label htmlFor="pm-inv-type">Inventory Type *</label>
             <AdaptiveSelect
               id="pm-inv-type"
+              required
               value={form.inventoryType}
-              onChange={(e) => setField('inventoryType', e.target.value)}
+              onChange={(e) => onInventoryTypeChange(e.target.value)}
             >
               {INVENTORY_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -503,17 +676,92 @@ export default function ProductMasterPage() {
             </AdaptiveSelect>
           </div>
 
+          {showLinked && (
+            <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="pm-device">Linked Device</label>
+              {form.linkedDeviceId ? (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <span>{form.linkedDeviceLabel || form.linkedDeviceId}</span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() =>
+                      setForm((f) => ({ ...f, linkedDeviceId: '', linkedDeviceLabel: '' }))
+                    }
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : null}
+              <input
+                id="pm-device"
+                type="search"
+                value={deviceQuery}
+                onChange={(e) => setDeviceQuery(e.target.value)}
+                placeholder="Search Asset Master…"
+              />
+              {deviceOptions.length > 0 && (
+                <ul className="product-master-device-list" role="listbox">
+                  {deviceOptions.map((a) => (
+                    <li key={a._id}>
+                      <button type="button" className="inv-link" onClick={() => selectDevice(a)}>
+                        {[a.assetTag || a.code, a.name || a.model].filter(Boolean).join(' · ') ||
+                          a._id}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           <div className="field">
-            <label htmlFor="pm-cost">Standard Cost</label>
-            <input
-              id="pm-cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.standardCost}
-              onChange={(e) => setField('standardCost', e.target.value)}
-            />
+            <label htmlFor="pm-stock-level">Stock Level</label>
+            <AdaptiveSelect
+              id="pm-stock-level"
+              value={form.stockLevelApplicable ? 'true' : 'false'}
+              onChange={(e) => {
+                const on = e.target.value === 'true';
+                setForm((f) => ({
+                  ...f,
+                  stockLevelApplicable: on,
+                  minStock: on ? f.minStock : '',
+                  maxStock: on ? f.maxStock : '',
+                }));
+              }}
+            >
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </AdaptiveSelect>
           </div>
+
+          {form.stockLevelApplicable && (
+            <>
+              <div className="field">
+                <label htmlFor="pm-min">Minimum Stock Level</label>
+                <input
+                  id="pm-min"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.minStock}
+                  onChange={(e) => setField('minStock', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="pm-max">Maximum Stock Level</label>
+                <input
+                  id="pm-max"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.maxStock}
+                  onChange={(e) => setField('maxStock', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
           <div className="field">
             <label htmlFor="pm-status">Status *</label>
             <AdaptiveSelect
@@ -527,26 +775,16 @@ export default function ProductMasterPage() {
           </div>
 
           <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label htmlFor="pm-desc">Description</label>
-            <textarea
-              id="pm-desc"
-              rows={2}
-              value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label>Image</label>
+            <label>Upload Photo</label>
             {editingMeta.image?.url ? (
               <p className="muted" style={{ margin: '0 0 6px' }}>
                 <a href={apiUrl(editingMeta.image.url)} target="_blank" rel="noreferrer">
-                  {editingMeta.image.name || 'View image'}
+                  {editingMeta.image.name || 'View photo'}
                 </a>
               </p>
             ) : (
               <p className="muted" style={{ margin: '0 0 6px' }}>
-                {editingId ? 'No image yet' : 'Save first to upload'}
+                {editingId ? 'No photo yet' : 'Save first to upload a photo'}
               </p>
             )}
             <FilePicker

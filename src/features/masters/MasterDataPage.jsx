@@ -19,13 +19,13 @@ export default function MasterDataPage() {
 
   const description = useMemo(() => {
     if (scope === 'inventory') {
-      return 'Products, categories, UOM, warehouses, storage locations, and stock statuses.';
+      return 'Products.';
     }
     if (scope === 'movement' || scope === 'logistics') {
-      return 'Suppliers, vendors, transporters, movement types, reason codes, and expense categories.';
+      return 'Suppliers & vendors, and expense categories.';
     }
     if (scope === 'document') {
-      return 'Business partners, geography / PIN, document templates, and signatures.';
+      return 'Contact Directory, document templates, and signatures.';
     }
     return 'Enterprise reference data used across Asset One, Movement One, and Document One.';
   }, [scope]);

@@ -6,7 +6,6 @@ import ProductMasterPage from './ProductMasterPage.jsx';
 import ContactDirectoryPage from '../agreements/ContactDirectoryPage.jsx';
 import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
 import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
-import LocationMasterPage from '../locations/LocationMasterPage.jsx';
 
 const MASTER_GROUPS = [
   {
@@ -21,33 +20,6 @@ const MASTER_GROUPS = [
         dedicated: true,
         fields: [],
       },
-      {
-        id: 'categories',
-        label: 'Product Categories',
-        path: '/logistics/categories',
-        fields: ['code', 'name', 'description'],
-      },
-      { id: 'uoms', label: 'Units of Measure', path: '/logistics/uoms', fields: ['code', 'name'] },
-    ],
-  },
-  {
-    id: 'inventory-masters',
-    label: 'Inventory',
-    scope: 'inventory',
-    entities: [
-      {
-        id: 'warehouses',
-        label: 'Warehouses',
-        path: '/logistics/warehouses',
-        fields: ['code', 'name', 'city', 'state', 'address'],
-      },
-      {
-        id: 'locations',
-        label: 'Storage Locations',
-        path: '/logistics/locations',
-        fields: ['code', 'name', 'level', 'warehouseId', 'parentId'],
-      },
-      { id: 'stock-statuses', label: 'Stock Statuses', path: '/logistics/stock-statuses', fields: ['code', 'name'] },
     ],
   },
   {
@@ -56,41 +28,23 @@ const MASTER_GROUPS = [
     scope: 'logistics',
     entities: [
       {
-        id: 'suppliers',
-        label: 'Suppliers',
-        path: '/logistics/suppliers',
-        fields: ['code', 'name', 'contactName', 'email', 'phone', 'city', 'state'],
+        id: 'parties',
+        label: 'Suppliers & Vendors',
+        path: '/logistics/parties',
+        fields: [
+          'partyType',
+          'code',
+          'name',
+          'contactName',
+          'email',
+          'phone',
+          'city',
+          'state',
+          'gstin',
+          'panCard',
+        ],
         fromContacts: true,
-        partyType: 'Supplier',
       },
-      {
-        id: 'vendors',
-        label: 'Vendors',
-        path: '/logistics/vendors',
-        fields: ['code', 'name', 'contactName', 'email', 'phone', 'city', 'state'],
-        fromContacts: true,
-        partyType: 'Vendor',
-      },
-      {
-        id: 'transporters',
-        label: 'Transporters',
-        path: '/logistics/transporters',
-        fields: ['code', 'name', 'contactName', 'email', 'phone'],
-      },
-    ],
-  },
-  {
-    id: 'process-masters',
-    label: 'Process',
-    scope: 'logistics',
-    entities: [
-      {
-        id: 'movement-types',
-        label: 'Movement Types',
-        path: '/logistics/movement-types',
-        fields: ['code', 'name', 'direction'],
-      },
-      { id: 'reason-codes', label: 'Reason Codes', path: '/logistics/reason-codes', fields: ['code', 'name'] },
     ],
   },
   {
@@ -111,8 +65,7 @@ const MASTER_GROUPS = [
     label: 'Document One',
     scope: 'document',
     entities: [
-      { id: 'contacts', label: 'Business Partners', embedded: 'contacts', fields: [] },
-      { id: 'pin-codes', label: 'Geography / PIN', embedded: 'pin-codes', fields: [] },
+      { id: 'contacts', label: 'Contact Directory', embedded: 'contacts', fields: [] },
       { id: 'templates', label: 'Document Templates', embedded: 'templates', fields: [] },
       { id: 'signatures', label: 'Signatures', embedded: 'signatures', fields: [] },
     ],
@@ -127,7 +80,6 @@ function groupsForScope(scope) {
 
 function EmbeddedMaster({ kind }) {
   if (kind === 'contacts') return <ContactDirectoryPage embedded />;
-  if (kind === 'pin-codes') return <LocationMasterPage embedded />;
   if (kind === 'templates') return <DocumentMasterPage embedded />;
   if (kind === 'signatures') return <SignatureMasterPage embedded />;
   return null;
@@ -136,19 +88,11 @@ function EmbeddedMaster({ kind }) {
 function entitySingular(label) {
   const map = {
     Products: 'Product',
-    'Product Categories': 'Product Category',
-    'Units of Measure': 'Unit of Measure',
     Suppliers: 'Supplier',
     Vendors: 'Vendor',
-    Transporters: 'Transporter',
-    Warehouses: 'Warehouse',
-    Locations: 'Storage Location',
-    'Stock Statuses': 'Stock Status',
-    'Movement Types': 'Movement Type',
-    'Reason Codes': 'Reason Code',
+    'Suppliers & Vendors': 'Supplier / Vendor',
     'Expense Categories': 'Expense Category',
-    'Business Partners': 'Business Partner',
-    'Geography / PIN': 'Geography / PIN',
+    'Contact Directory': 'Contact',
     'Document Templates': 'Document Template',
     Signatures: 'Signature',
   };
@@ -164,6 +108,9 @@ const FIELD_LABELS = {
   phone: 'Phone',
   city: 'City',
   state: 'State',
+  gstin: 'GSTIN',
+  panCard: 'PAN Card',
+  partyType: 'Type',
   address: 'Address',
   level: 'Level',
   warehouseId: 'Warehouse',
@@ -182,7 +129,16 @@ const FIELD_LABELS = {
   covers: 'Covers',
 };
 
-const PRODUCT_TYPES = ['Device', 'Consumable', 'Accessory', 'Spare Part', 'Document', 'Misc'];
+const PRODUCT_TYPES = [
+  'Medical Device',
+  'Non-Medical Device',
+  'Peripheral Device',
+  'Accessory',
+  'Spare Part',
+  'Consumable',
+  'Document',
+  'Other',
+];
 
 const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 
@@ -197,12 +153,14 @@ function emptyFor(fields) {
         : f === 'level'
           ? 'Zone'
           : f === 'productType'
-            ? 'Device'
+            ? 'Medical Device'
             : f === 'trackingKind'
               ? 'Serial'
               : f === 'expiryApplicable'
                 ? 'false'
-                : '',
+                : f === 'partyType'
+                  ? 'Supplier'
+                  : '',
     ])
   );
 }
@@ -226,7 +184,7 @@ export default function LogisticsMasterPage({
   }, [scope, can, canWriteLogistics, canReadDocs]);
   const entities = useMemo(() => visibleGroups.flatMap((g) => g.entities), [visibleGroups]);
   const [entityId, setEntityId] = useState(
-    () => initialEntity || entities[0]?.id || 'suppliers'
+    () => initialEntity || entities[0]?.id || 'parties'
   );
   const entity = entities.find((e) => e.id === entityId) || entities[0];
   const activeGroup = visibleGroups.find((g) => g.entities.some((e) => e.id === entityId));
@@ -306,11 +264,13 @@ export default function LogisticsMasterPage({
 
   const contactOptions = useMemo(() => {
     if (!entity?.fromContacts) return [];
-    const want = entity.partyType;
+    const want = form.partyType || entity.partyType || 'Supplier';
     const typed = contacts.filter((c) => c.resourceType === want);
     const rest = contacts.filter((c) => c.resourceType !== want);
     return [...typed, ...rest];
-  }, [contacts, entity?.fromContacts, entity?.partyType]);
+  }, [contacts, entity?.fromContacts, entity?.partyType, form.partyType]);
+
+  const activePartyType = form.partyType || entity?.partyType || 'Supplier';
 
   const startEdit = (row) => {
     setEditingId(row._id);
@@ -351,12 +311,12 @@ export default function LogisticsMasterPage({
     if (!canWrite || !contactPick || !entity.fromContacts) return;
     const c = contacts.find((x) => x._id === contactPick);
     if (!c) {
-      setError('Select a contact from Business Partners.');
+      setError('Select a contact from Contact Directory.');
       return;
     }
-    if (c.resourceType && c.resourceType !== entity.partyType) {
+    if (c.resourceType && c.resourceType !== activePartyType) {
       const ok = window.confirm(
-        `This partner is Resource Type “${c.resourceType}”, but you are adding a ${entity.partyType}. Continue?`
+        `This partner is Resource Type “${c.resourceType}”, but you are adding a ${activePartyType}. Continue?`
       );
       if (!ok) return;
     }
@@ -368,16 +328,19 @@ export default function LogisticsMasterPage({
         method: 'POST',
         body: {
           name: c.name,
+          partyType: activePartyType,
           contactId: c._id,
           contactName: c.name,
           email: c.email || '',
           phone: c.contact || c.mobile || '',
           city: c.city || '',
           state: c.state || '',
+          gstin: '',
+          panCard: '',
           isActive: true,
         },
       });
-      setMsg(`${entity.partyType} added from Business Partners.`);
+      setMsg(`${activePartyType} added from Contact Directory.`);
       setContactPick('');
       load();
     } catch (err) {
@@ -497,12 +460,23 @@ export default function LogisticsMasterPage({
 
       {canWrite && entity.fromContacts && (
         <div className="card logistics-form" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Add from Business Partners</h3>
+          <h3 style={{ marginTop: 0 }}>Add from Contact Directory</h3>
           <p className="muted" style={{ marginTop: 0 }}>
-            Pick a partner (preferably Resource Type = {entity.partyType}). Creates a master record linked to that
+            Pick a partner (preferably Resource Type = {activePartyType}). Creates a master record linked to that
             partner.
           </p>
           <div className="logistics-form-grid">
+            <div className="field">
+              <label htmlFor="lm-party-type-pick">Type</label>
+              <AdaptiveSelect
+                id="lm-party-type-pick"
+                value={form.partyType || 'Supplier'}
+                onChange={(e) => setForm({ ...form, partyType: e.target.value })}
+              >
+                <option value="Supplier">Supplier</option>
+                <option value="Vendor">Vendor</option>
+              </AdaptiveSelect>
+            </div>
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <label htmlFor="lm-contact-pick">Contact</label>
               <AdaptiveSelect
@@ -523,7 +497,7 @@ export default function LogisticsMasterPage({
           </div>
           <div className="logistics-form-actions">
             <button className="btn" type="button" disabled={busy || !contactPick || editingId} onClick={addFromContact}>
-              {busy ? 'Adding…' : `Add as ${entity.partyType}`}
+              {busy ? 'Adding…' : `Add as ${activePartyType}`}
             </button>
           </div>
         </div>
@@ -632,6 +606,16 @@ export default function LogisticsMasterPage({
                   >
                     <option value="false">No</option>
                     <option value="true">Yes</option>
+                  </AdaptiveSelect>
+                ) : field === 'partyType' ? (
+                  <AdaptiveSelect
+                    id={`lm-${field}`}
+                    required
+                    value={form.partyType || 'Supplier'}
+                    onChange={(e) => setForm({ ...form, partyType: e.target.value })}
+                  >
+                    <option value="Supplier">Supplier</option>
+                    <option value="Vendor">Vendor</option>
                   </AdaptiveSelect>
                 ) : field === 'warehouseId' ? (
                   <AdaptiveSelect

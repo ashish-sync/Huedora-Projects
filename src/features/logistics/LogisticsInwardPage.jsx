@@ -7,7 +7,10 @@ import {
   FALLBACK_CAT_DEFAULTS,
   FALLBACK_PRODUCT,
   Field,
+  SHORT_EXPIRY_APPROVAL_MONTHS,
   emptyTxnForm,
+  nowLocal,
+  requiresShortExpiryApproval,
   resolveProductType,
 } from './logisticsTxnShared.jsx';
 
@@ -17,14 +20,14 @@ const SOURCES = [
     label: 'Seller / Purchase',
     entryType: 'Inward',
     remarkPrefix: '',
-    blurb: 'Goods receipt from vendor into warehouse',
+    blurb: 'Goods receipt from a supplier or vendor into warehouse',
   },
   {
     id: 'return',
     label: 'Field return / Callback',
     entryType: 'Return',
     remarkPrefix: 'Field return / Callback',
-    blurb: 'Stock returned from HCW / field, including callbacks and recalls',
+    blurb: 'Stock returned from a Contact Directory person (HCW / field), including callbacks',
   },
   {
     id: 'other',
@@ -58,12 +61,40 @@ export default function LogisticsInwardPage() {
   const categoryDefaults = cfg.categoryDefaults || FALLBACK_CAT_DEFAULTS;
   const warehouses = meta?.warehouses || [];
   const products = meta?.products || [];
-  const defaultWarehouseName = cfg.defaultWarehouseName || 'Mumbai Warehouse';
+  const uoms = meta?.uoms || [];
+  const parties = useMemo(() => {
+    const list = [...(meta?.suppliers || []), ...(meta?.vendors || [])];
+    const seen = new Set();
+    return list
+      .filter((p) => {
+        if (!p?._id || seen.has(p._id)) return false;
+        seen.add(p._id);
+        return p.isActive !== false;
+      })
+      .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  }, [meta?.suppliers, meta?.vendors]);
+  const defaultWarehouseName = cfg.defaultWarehouseName || 'Mumbai';
+
+  const partyLabel = (p) => {
+    if (!p) return '';
+    const type = p.partyType === 'Vendor' ? 'Vendor' : 'Supplier';
+    return `${p.name || p.code || '—'}${p.code ? ` (${p.code})` : ''} · ${type}`;
+  };
+
+  const uomLabel = useCallback(
+    (uomId) => {
+      if (!uomId) return '';
+      const u = uoms.find((x) => x._id === uomId);
+      return u?.name || u?.code || '';
+    },
+    [uoms]
+  );
 
   const defaultWarehouseId = useMemo(() => {
     const hit =
       warehouses.find((w) => w.name === defaultWarehouseName) ||
-      warehouses.find((w) => /mumbai/i.test(w.name || '')) ||
+      warehouses.find((w) => String(w.code || '').toUpperCase() === 'WH-MUM') ||
+      warehouses.find((w) => /mumbai/i.test(w.name || '') || /mumbai/i.test(w.city || '')) ||
       warehouses[0];
     return hit?._id || '';
   }, [warehouses, defaultWarehouseName]);
@@ -130,6 +161,7 @@ export default function LogisticsInwardPage() {
       productId: '',
       productName: '',
       programProject: '',
+      uomId: '',
       expiryApplicable: !!defaults.expiryApplicable,
       trackingKind: defaults.trackingKind || 'None',
       expiryDate: defaults.expiryApplicable ? f.expiryDate : '',
@@ -137,10 +169,18 @@ export default function LogisticsInwardPage() {
     }));
   };
 
+  const productLabel = (p) => p?.model || p?.partNumber || p?.name || '';
+
   const pickProduct = (productId) => {
     const p = products.find((x) => x._id === productId);
     if (!p) {
-      setForm((f) => ({ ...f, productId: '', productName: '', programProject: '' }));
+      setForm((f) => ({
+        ...f,
+        productId: '',
+        productName: '',
+        programProject: '',
+        uomId: '',
+      }));
       return;
     }
     const defaults =
@@ -150,29 +190,66 @@ export default function LogisticsInwardPage() {
     const expiryApplicable =
       p.expiryApplicable != null ? !!p.expiryApplicable : !!defaults.expiryApplicable;
     const trackingKind = p.trackingKind || defaults.trackingKind || 'None';
-    setForm((f) => ({
-      ...f,
-      productId: p._id,
-      productName: p.name || '',
-      programProject: p.programProject || '',
-      productType: p.productType || f.productType,
-      expiryApplicable,
-      trackingKind,
-      batchOrSerial: trackingKind === 'None' ? 'N/A' : f.batchOrSerial === 'N/A' ? '' : f.batchOrSerial,
-      expiryDate: expiryApplicable ? f.expiryDate : '',
-      perUnitCost: p.defaultPerUnitCost != null ? String(p.defaultPerUnitCost) : f.perUnitCost,
-    }));
+    const unitCost =
+      p.defaultPerUnitCost != null
+        ? p.defaultPerUnitCost
+        : p.standardCost != null
+          ? p.standardCost
+          : p.purchaseCost != null
+            ? p.purchaseCost
+            : null;
+    setForm((f) => {
+      const qty = Number(f.qty) || 0;
+      const perUnitCost = unitCost != null ? Number(unitCost) : Number(f.perUnitCost) || 0;
+      const invoiceAmount =
+        qty > 0 && perUnitCost > 0 ? String(Number((qty * perUnitCost).toFixed(2))) : f.invoiceAmount;
+      return {
+        ...f,
+        productId: p._id,
+        productName: productLabel(p),
+        programProject: p.programProject || '',
+        productType: p.productType || f.productType,
+        uomId: p.uomId || '',
+        expiryApplicable,
+        trackingKind,
+        batchOrSerial: trackingKind === 'None' ? 'N/A' : f.batchOrSerial === 'N/A' ? '' : f.batchOrSerial,
+        expiryDate: expiryApplicable ? f.expiryDate : '',
+        perUnitCost: unitCost != null ? String(unitCost) : f.perUnitCost,
+        invoiceAmount,
+      };
+    });
+  };
+
+  const setQtyOrCost = (key, value) => {
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      const qty = Number(key === 'qty' ? value : next.qty) || 0;
+      const perUnitCost = Number(key === 'perUnitCost' ? value : next.perUnitCost) || 0;
+      if (qty > 0 && perUnitCost > 0) {
+        next.invoiceAmount = String(Number((qty * perUnitCost).toFixed(2)));
+      }
+      return next;
+    });
   };
 
   const pickContact = (contactId) => {
     const c = contacts.find((x) => x._id === contactId);
     if (!c) {
-      setForm((f) => ({ ...f, contactId: '', recipientName: '', empId: '', number: '', city: '' }));
+      setForm((f) => ({
+        ...f,
+        contactId: '',
+        recipientName: '',
+        empId: '',
+        number: '',
+        city: '',
+      }));
       return;
     }
     setForm((f) => ({
       ...f,
       contactId: c._id,
+      supplierId: '',
+      vendor: '',
       recipientName: c.name || '',
       empId: c.employeeId || c.email || '',
       number: c.contact || c.mobile || '',
@@ -181,11 +258,56 @@ export default function LogisticsInwardPage() {
     }));
   };
 
+  const pickParty = (partyId) => {
+    const p = parties.find((x) => x._id === partyId);
+    if (!p) {
+      setForm((f) => ({
+        ...f,
+        supplierId: '',
+        vendor: '',
+        recipientName: '',
+        number: '',
+        city: '',
+      }));
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      supplierId: p._id,
+      vendor: p.name || '',
+      contactId: '',
+      recipientName: p.name || '',
+      empId: '',
+      number: p.phone || '',
+      city: p.city || '',
+      state: p.state || f.state,
+    }));
+  };
+
   const tracked = form.trackingKind && form.trackingKind !== 'None';
+  const asOfDate = new Date().toISOString().slice(0, 10);
+  const needsShortExpiryApproval =
+    form.expiryApplicable &&
+    form.expiryDate &&
+    requiresShortExpiryApproval(form.expiryDate, asOfDate);
 
   const save = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
+    if (source.id === 'seller' && !form.supplierId) {
+      setError('Select a supplier or vendor as Source.');
+      return;
+    }
+    if (source.id === 'return' && !form.contactId) {
+      setError('Select a contact from Contact Directory as Source.');
+      return;
+    }
+    if (needsShortExpiryApproval && !String(form.approvedBy || '').trim()) {
+      setError(
+        `Expiry is under ${SHORT_EXPIRY_APPROVAL_MONTHS} months. Enter Approved By before saving inward.`
+      );
+      return;
+    }
     setBusy(true);
     setError('');
     setMsg('');
@@ -195,22 +317,29 @@ export default function LogisticsInwardPage() {
           ? `${source.remarkPrefix}${form.remark ? `: ${form.remark}` : ''}`
           : form.remark;
 
+      const capturedAt = nowLocal();
       const fd = new FormData();
       const payload = {
         ...form,
         entryType: source.entryType,
-        warehouseId: form.warehouseId || '',
-        sourceWarehouseId: form.warehouseId || '',
-        contactId: form.contactId || '',
+        warehouseId: defaultWarehouseId || form.warehouseId || '',
+        sourceWarehouseId: defaultWarehouseId || form.warehouseId || '',
+        contactId: source.id === 'return' ? form.contactId || '' : '',
+        supplierId: source.id === 'seller' ? form.supplierId || '' : '',
+        vendor: source.id === 'seller' ? form.vendor || form.recipientName || '' : '',
         productId: form.productId || '',
         employeeName: form.recipientName,
         name: form.recipientName,
         qty: String(Number(form.qty) || 0),
+        uomId: form.uomId || '',
         perUnitCost: String(Number(form.perUnitCost) || 0),
+        invoiceAmount: String(Number(form.invoiceAmount) || 0),
         batchOrSerial: tracked ? form.batchOrSerial : 'N/A',
-        transactionDate: String(form.transactionDateTime || '').slice(0, 10),
+        transactionDateTime: capturedAt,
+        transactionDate: String(capturedAt).slice(0, 10),
         remark,
         expiryApplicable: form.expiryApplicable ? 'true' : 'false',
+        approvedBy: needsShortExpiryApproval ? String(form.approvedBy || '').trim() : '',
       };
       Object.entries(payload).forEach(([k, v]) => {
         if (v == null || v === '') return;
@@ -290,37 +419,48 @@ export default function LogisticsInwardPage() {
               openCreate();
             }}
           >
-            {formOpen ? 'Close form' : '+ Record inward'}
+            {formOpen ? 'Close form' : '+ Record goods receipt'}
           </button>
         )}
       </div>
 
       {canWrite && formOpen && (
         <form className="card logistics-form logistics-txn-form" onSubmit={save}>
-          <h3>New {source.label}</h3>
+          <h3>Record goods receipt</h3>
           <div className="logistics-form-grid logistics-form-grid--inout">
-            <Field label="Destination warehouse" required>
-              <AdaptiveSelect
-                required
-                value={form.warehouseId}
-                onChange={(e) => setField('warehouseId', e.target.value)}
-              >
-                <option value="">Select…</option>
-                {warehouses.map((w) => (
-                  <option key={w._id} value={w._id}>
-                    {w.name}
-                  </option>
-                ))}
-              </AdaptiveSelect>
-            </Field>
-            <Field label="Date & time" required>
-              <input
-                type="datetime-local"
-                required
-                value={form.transactionDateTime}
-                onChange={(e) => setField('transactionDateTime', e.target.value)}
-              />
-            </Field>
+            {source.id === 'seller' && (
+              <Field label="Source" required hint="Suppliers & Vendors from Master">
+                <AdaptiveSelect
+                  required
+                  value={form.supplierId}
+                  onChange={(e) => pickParty(e.target.value)}
+                >
+                  <option value="">Select supplier or vendor…</option>
+                  {parties.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {partyLabel(p)}
+                    </option>
+                  ))}
+                </AdaptiveSelect>
+              </Field>
+            )}
+            {source.id === 'return' && (
+              <Field label="Source" required hint="From Contact Directory">
+                <AdaptiveSelect
+                  required
+                  value={form.contactId}
+                  onChange={(e) => pickContact(e.target.value)}
+                >
+                  <option value="">Select contact…</option>
+                  {contacts.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                      {c.city ? `: ${c.city}` : ''}
+                    </option>
+                  ))}
+                </AdaptiveSelect>
+              </Field>
+            )}
             <Field label="Product category" required>
               <AdaptiveSelect
                 required
@@ -334,37 +474,55 @@ export default function LogisticsInwardPage() {
                 ))}
               </AdaptiveSelect>
             </Field>
-            <Field label="Product" required>
+            <Field label="Model/Variant/Name" required>
               <AdaptiveSelect
                 required
                 value={form.productId}
                 onChange={(e) => pickProduct(e.target.value)}
               >
-                <option value="">Select product…</option>
+                <option value="">Select model / variant / name…</option>
                 {productsForType.map((p) => (
                   <option key={p._id} value={p._id}>
-                    {p.name}
+                    {productLabel(p)}
+                    {p.code ? ` (${p.code})` : ''}
                   </option>
                 ))}
               </AdaptiveSelect>
             </Field>
-            <Field label="Qty" required>
+            <Field label="UOM">
+              <input
+                readOnly
+                value={uomLabel(form.uomId) || '—'}
+                title="From Product Master"
+              />
+            </Field>
+            <Field label="Total quantity received" required>
               <input
                 type="number"
                 min="0.0001"
                 step="any"
                 required
                 value={form.qty}
-                onChange={(e) => setField('qty', e.target.value)}
+                onChange={(e) => setQtyOrCost('qty', e.target.value)}
               />
             </Field>
             <Field label="Per unit cost">
               <input
                 type="number"
-                min="0.0001"
+                min="0"
                 step="any"
                 value={form.perUnitCost}
-                onChange={(e) => setField('perUnitCost', e.target.value)}
+                onChange={(e) => setQtyOrCost('perUnitCost', e.target.value)}
+              />
+            </Field>
+            <Field label="Total bill amount" required>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                required
+                value={form.invoiceAmount}
+                onChange={(e) => setField('invoiceAmount', e.target.value)}
               />
             </Field>
             {form.expiryApplicable && (
@@ -377,6 +535,20 @@ export default function LogisticsInwardPage() {
                 />
               </Field>
             )}
+            {needsShortExpiryApproval && (
+              <Field
+                label="Approved By"
+                required
+                hint={`Required: remaining life is under ${SHORT_EXPIRY_APPROVAL_MONTHS} months`}
+              >
+                <input
+                  required
+                  value={form.approvedBy || ''}
+                  onChange={(e) => setField('approvedBy', e.target.value)}
+                  placeholder="Approver name"
+                />
+              </Field>
+            )}
             {tracked && (
               <Field label="Batch / Serial" required>
                 <input
@@ -384,19 +556,6 @@ export default function LogisticsInwardPage() {
                   value={form.batchOrSerial}
                   onChange={(e) => setField('batchOrSerial', e.target.value)}
                 />
-              </Field>
-            )}
-            {source.id === 'return' && (
-              <Field label="Returned by (contact)">
-                <AdaptiveSelect value={form.contactId} onChange={(e) => pickContact(e.target.value)}>
-                  <option value="">-</option>
-                  {contacts.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                      {c.city ? `: ${c.city}` : ''}
-                    </option>
-                  ))}
-                </AdaptiveSelect>
               </Field>
             )}
             <Field label="Remark">
@@ -431,7 +590,7 @@ export default function LogisticsInwardPage() {
 
           <div className="logistics-form-actions">
             <button className="btn" type="submit" disabled={busy}>
-              {busy ? 'Saving…' : 'Save inward'}
+              {busy ? 'Saving…' : 'Save goods receipt'}
             </button>
             <button className="btn secondary" type="button" onClick={() => setFormOpen(false)}>
               Cancel
@@ -447,9 +606,11 @@ export default function LogisticsInwardPage() {
               <th>TXN</th>
               <th>Type</th>
               <th>Date</th>
-              <th>Product</th>
-              <th className="num">Qty</th>
-              <th>From / Contact</th>
+              <th>Model/Variant/Name</th>
+              <th>UOM</th>
+              <th className="num">Qty received</th>
+              <th className="num">Bill amount</th>
+              <th>Source</th>
               <th>Attachments</th>
               <th>Remark</th>
             </tr>
@@ -463,8 +624,17 @@ export default function LogisticsInwardPage() {
                 <td>
                   <strong>{r.productName || r.itemName || '-'}</strong>
                 </td>
+                <td>{uomLabel(r.uomId) || '-'}</td>
                 <td className="num">{r.qty}</td>
-                <td>{r.recipientName || r.employeeName || r.name || '-'}</td>
+                <td className="num">
+                  {r.invoiceAmount != null && Number(r.invoiceAmount) > 0
+                    ? Number(r.invoiceAmount).toLocaleString('en-IN', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })
+                    : '-'}
+                </td>
+                <td>{r.vendor || r.recipientName || r.employeeName || r.name || '-'}</td>
                 <td className="ilog-attach-cell">
                   {r.productPhoto?.url && (
                     <a href={apiUrl(r.productPhoto.url)} target="_blank" rel="noreferrer">
@@ -490,8 +660,8 @@ export default function LogisticsInwardPage() {
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={8} className="muted">
-                  No inward transactions yet.
+                <td colSpan={10} className="muted">
+                  No goods receipt transactions yet.
                 </td>
               </tr>
             )}

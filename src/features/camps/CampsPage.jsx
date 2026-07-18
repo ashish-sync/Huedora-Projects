@@ -452,7 +452,7 @@ export default function CampsPage() {
                     value={decideHcwContactId}
                     onChange={(e) => pickTechnician(e.target.value)}
                   >
-                    <option value="">Select from Business Partners…</option>
+                    <option value="">Select from Contact Directory…</option>
                     {contacts.map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.name}

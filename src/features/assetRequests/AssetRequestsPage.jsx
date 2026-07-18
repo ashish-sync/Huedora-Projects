@@ -19,7 +19,7 @@ import {
 
 const REQUEST_TYPES = [
   { value: 'SERVICE', label: 'Repair & Maintenance', needsAsset: true },
-  { value: 'LOGISTICS', label: 'Stock Transfer', needsAsset: true },
+  { value: 'LOGISTICS', label: 'Goods Issue', needsAsset: true },
   { value: 'TRAINING', label: 'Training', needsAsset: false },
   { value: 'REIMBURSEMENT', label: 'Reimbursement', needsAsset: false },
   { value: 'HIRING', label: 'Hiring', needsAsset: false },
@@ -29,8 +29,17 @@ const REQUEST_TYPES = [
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const SERVICE_TYPES = ['Hardware', 'Software', 'Calibration', 'Power', 'Cosmetic', 'Maintenance'];
-const LOGISTICS_KINDS = ['Inter Transfer', 'Fresh Dispatch', 'Recall / Pickup'];
-const TRANSPORT_MODES = ['Hand Delivery', 'Regular Courier', 'Apex', 'Porter', 'Other'];
+const LOGISTICS_KINDS = ['Fresh Dispatch', 'Inter Transfer', 'Recall / Pickup'];
+const TRANSPORT_MODES = [
+  'Hand Delivery',
+  'Regular Courier',
+  'Apex',
+  'Porter',
+  'Other',
+  'Blue Dart',
+  'DTDC',
+  'Other Courier',
+];
 const TRAINING_TYPES = [
   'Fresh Training',
   'Refresher Device',
@@ -151,8 +160,8 @@ const EMPTY_FORM = {
   otherCategory: '',
   otherSubcategory: '',
   masterModule: 'inventory',
-  masterEntity: 'categories',
-  masterPayload: emptyMasterPayload('categories'),
+  masterEntity: 'products',
+  masterPayload: emptyMasterPayload('products'),
 };
 
 function contactRefId(asset) {
@@ -204,10 +213,10 @@ function DirectionContactFields({ label, prefix, contacts, form, setForm }) {
   const fields = [
     { suffix: 'Name', label: 'Name', value: (c) => c.name || '' },
     { suffix: 'Number', label: 'Number', value: contactNumber },
+    { suffix: 'Address', label: 'Address', value: (c) => c.address || '' },
+    { suffix: 'PinCode', label: 'Pin code', value: (c) => c.pinCode || '' },
     { suffix: 'City', label: 'City', value: (c) => c.city || '' },
     { suffix: 'State', label: 'State', value: (c) => c.state || '' },
-    { suffix: 'PinCode', label: 'Pin Code', value: (c) => c.pinCode || '' },
-    { suffix: 'Address', label: 'Address', value: (c) => c.address || '' },
   ];
 
   const matchingBefore = (fieldIndex) =>
@@ -257,7 +266,7 @@ function DirectionContactFields({ label, prefix, contacts, form, setForm }) {
       <legend>{label}</legend>
       <div className="arq-contact-grid">
         <div className="field">
-          <label>Business Partners *</label>
+          <label>Contact Directory *</label>
           <AdaptiveSelect required value={form[idKey]} onChange={(e) => selectContact(e.target.value)}>
             <option value="">Select contact</option>
             {contacts.map((contact) => (
@@ -297,9 +306,25 @@ function typeMeta(value) {
 }
 
 function displayType(t) {
-  if (t === 'MOVEMENT') return 'Stock Transfer';
+  if (t === 'MOVEMENT' || t === 'LOGISTICS') return 'Goods Issue';
   if (t === 'REPAIR' || t === 'MAINTENANCE') return 'Repair & Maintenance';
   return REQUEST_TYPES.find((x) => x.value === t)?.label || t;
+}
+
+function productOptionLabel(p) {
+  const name = p?.model || p?.partNumber || p?.name || p?.productName || '';
+  return name ? (p.code ? `${name} (${p.code})` : name) : p?._id || '';
+}
+
+function normalizeLogisticsKind(raw) {
+  const v = String(raw || '').trim();
+  if (v === 'Goods Issue' || v === 'Dispatch' || v === 'Delivery') return 'Fresh Dispatch';
+  return v;
+}
+
+function isFreshDispatchKind(kind) {
+  const k = normalizeLogisticsKind(kind);
+  return k === 'Fresh Dispatch';
 }
 
 function detailSummary(r) {
@@ -317,7 +342,11 @@ function detailSummary(r) {
         ? 'Maintenance'
         : '',
     r.priority,
-    r.issueCategory || r.maintenanceKind || r.logisticsKind || r.expenseCategory || r.otherCategory,
+    r.issueCategory ||
+      r.maintenanceKind ||
+      normalizeLogisticsKind(r.logisticsKind) ||
+      r.expenseCategory ||
+      r.otherCategory,
     r.otherSubcategory,
     r.trainingTopic,
     r.traineeName,
@@ -523,7 +552,7 @@ export default function AssetRequestsPage() {
       if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
     }
     const defaultEntity =
-      requestType === 'MASTER_ADD' ? entitiesForModule('inventory')[0]?.id || 'categories' : '';
+      requestType === 'MASTER_ADD' ? entitiesForModule('inventory')[0]?.id || 'products' : '';
     setForm((prev) => ({
       ...prev,
       requestType,
@@ -580,7 +609,7 @@ export default function AssetRequestsPage() {
       product
         ? {
             productId: String(product._id),
-            productName: product.name || product.productName || '',
+            productName: productOptionLabel(product) || product.name || product.productName || '',
             productType: product.productType || form.logisticsProducts[index].productType,
           }
         : { productId: '', productName: '' }
@@ -616,7 +645,7 @@ export default function AssetRequestsPage() {
         Number(item.qty) <= 0
     );
     if (invalid) {
-      setError('Complete every Logistics product row and enter a positive quantity.');
+      setError('Complete every goods issue product row and enter a positive quantity.');
       return;
     }
     const productIds = form.logisticsProducts.map((item) => String(item.productId));
@@ -635,7 +664,7 @@ export default function AssetRequestsPage() {
       form.trainingMode === 'Physical' &&
       (!form.traineeContactId || !form.venue)
     ) {
-      setError('Physical training requires a trainee with a city in Business Partners.');
+      setError('Physical training requires a trainee with a city in Contact Directory.');
       return;
     }
     if (needsAsset && !form.assetId) {
@@ -657,7 +686,7 @@ export default function AssetRequestsPage() {
           Number(item.qty) <= 0
       )
     ) {
-      setError('Complete every Logistics product row and enter a positive quantity.');
+      setError('Complete every goods issue product row and enter a positive quantity.');
       return;
     }
     if (form.requestType === 'LOGISTICS' && !form.logisticsProductsConfirmed) {
@@ -732,7 +761,7 @@ export default function AssetRequestsPage() {
         body.scheduledDate = form.scheduledDate || undefined;
       }
       if (form.requestType === 'LOGISTICS') {
-        body.logisticsKind = form.logisticsKind;
+        body.logisticsKind = normalizeLogisticsKind(form.logisticsKind);
         body.fromContactId = form.fromContactId || undefined;
         body.fromState = form.fromState;
         body.fromCity = form.fromCity;
@@ -1099,14 +1128,14 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* -- Logistics -- */}
+            {/* -- Goods Issue (aligned with Movement One manual dispatch) -- */}
             {form.requestType === 'LOGISTICS' && (
               <>
                 <div className="field">
-                  <label>Logistics kind *</label>
+                  <label>Issue kind *</label>
                   <AdaptiveSelect
                     required
-                    value={form.logisticsKind}
+                    value={normalizeLogisticsKind(form.logisticsKind) || form.logisticsKind}
                     onChange={(e) =>
                       setForm((prev) => ({
                         ...prev,
@@ -1137,7 +1166,7 @@ export default function AssetRequestsPage() {
                   </AdaptiveSelect>
                 </div>
                 <div className="field">
-                  <label>Transport mode *</label>
+                  <label>Delivery mode *</label>
                   <AdaptiveSelect
                     required
                     value={form.transportMode}
@@ -1179,7 +1208,7 @@ export default function AssetRequestsPage() {
                       return (
                         <div className="arq-product-row" key={`logistics-product-${index}`}>
                           <div className="field">
-                            <label>Product Category *</label>
+                            <label>Product category *</label>
                             <AdaptiveSelect
                               required
                               value={item.productType}
@@ -1201,7 +1230,7 @@ export default function AssetRequestsPage() {
                             </AdaptiveSelect>
                           </div>
                           <div className="field">
-                            <label>Product *</label>
+                            <label>Model/Variant/Name *</label>
                             <AdaptiveSelect
                               required
                               value={item.productId}
@@ -1211,11 +1240,13 @@ export default function AssetRequestsPage() {
                               }
                             >
                               <option value="">
-                                {item.productType ? 'Select product' : 'Select category first'}
+                                {item.productType
+                                  ? 'Select model / variant / name'
+                                  : 'Select category first'}
                               </option>
                               {matchingProducts.map((product) => (
                                 <option key={product._id} value={product._id}>
-                                  {product.name || product.productName || product._id}
+                                  {productOptionLabel(product)}
                                 </option>
                               ))}
                             </AdaptiveSelect>
@@ -1270,11 +1301,7 @@ export default function AssetRequestsPage() {
                   (form.logisticsKind === 'Inter Transfer' ||
                     form.logisticsKind === 'Recall / Pickup') && (
                   <DirectionContactFields
-                    label={
-                      form.logisticsKind === 'Recall / Pickup'
-                        ? 'Pickup from / Sender'
-                        : 'From / Sender'
-                    }
+                    label="Sender"
                     prefix="from"
                     contacts={contacts}
                     form={form}
@@ -1283,13 +1310,10 @@ export default function AssetRequestsPage() {
                 )}
                 {form.logisticsProductsConfirmed &&
                   (form.logisticsKind === 'Inter Transfer' ||
-                    form.logisticsKind === 'Fresh Dispatch') && (
+                    form.logisticsKind === 'Recall / Pickup' ||
+                    isFreshDispatchKind(form.logisticsKind)) && (
                   <DirectionContactFields
-                    label={
-                      form.logisticsKind === 'Fresh Dispatch'
-                        ? 'Send to / Recipient'
-                        : 'To / Recipient'
-                    }
+                    label="Send to / Recipient"
                     prefix="to"
                     contacts={contacts}
                     form={form}
@@ -1357,7 +1381,7 @@ export default function AssetRequestsPage() {
                       }));
                     }}
                   >
-                    <option value="">Select from Business Partners</option>
+                    <option value="">Select from Contact Directory</option>
                     {contacts.map((contact) => (
                       <option key={contact._id} value={contact._id}>
                         {contact.name || 'Unnamed'}
@@ -1372,7 +1396,7 @@ export default function AssetRequestsPage() {
                     <input
                       readOnly
                       value={form.venue}
-                      placeholder="Select a trainee with a city in Business Partners"
+                      placeholder="Select a trainee with a city in Contact Directory"
                     />
                   </div>
                 )}
@@ -2060,8 +2084,8 @@ export default function AssetRequestsPage() {
             )}
           </div>
           <p className="muted arq-hint">
-            Linked Asset Register and Business Partner fields auto-fill when a unique match is found.
-            Asset is required for Repair &amp; Maintenance, and for Stock Transfer rows categorized as
+            Linked Asset Register and Contact Directory fields auto-fill when a unique match is found.
+            Asset is required for Repair &amp; Maintenance, and for Goods Issue rows categorized as
             Medical Device or Non-Medical Device.
           </p>
           <button className="btn" type="submit" disabled={busy}>

@@ -1,12 +1,14 @@
 /** Shared helpers for Inward / Outward transaction forms */
 
 export const FALLBACK_PRODUCT = [
-  'Device',
-  'Consumable',
+  'Medical Device',
+  'Non-Medical Device',
+  'Peripheral Device',
   'Accessory',
   'Spare Part',
+  'Consumable',
   'Document',
-  'Misc',
+  'Other',
 ];
 
 export const FALLBACK_DELIVERY = [
@@ -28,16 +30,21 @@ export const FALLBACK_COURIER = [
   'Other Courier',
 ];
 
+/** Same issue kinds as Request One → Goods Issue */
+export const GOODS_ISSUE_KINDS = ['Fresh Dispatch', 'Inter Transfer', 'Recall / Pickup'];
+
 export const FALLBACK_CAT_DEFAULTS = {
-  Device: { expiryApplicable: false, trackingKind: 'Serial' },
-  Consumable: { expiryApplicable: true, trackingKind: 'Batch' },
-  Accessory: { expiryApplicable: false, trackingKind: 'Serial' },
-  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
-  Document: { expiryApplicable: false, trackingKind: 'None' },
-  Misc: { expiryApplicable: false, trackingKind: 'None' },
-  // Legacy keys still present on older stock / txn rows
   'Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
   'Non-Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
+  'Peripheral Device': { expiryApplicable: false, trackingKind: 'Serial' },
+  Accessory: { expiryApplicable: false, trackingKind: 'Serial' },
+  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
+  Consumable: { expiryApplicable: true, trackingKind: 'Batch' },
+  Document: { expiryApplicable: false, trackingKind: 'None' },
+  Other: { expiryApplicable: false, trackingKind: 'None' },
+  // Legacy keys still present on older stock / txn rows
+  Device: { expiryApplicable: false, trackingKind: 'Serial' },
+  Misc: { expiryApplicable: false, trackingKind: 'None' },
   'Spare Part / Accessory': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
   Miscellaneous: { expiryApplicable: false, trackingKind: 'None' },
 };
@@ -47,19 +54,22 @@ export function resolveProductType(raw) {
   const v = String(raw || '').trim();
   if (!v) return '';
   const aliases = {
-    Device: 'Device',
-    Consumable: 'Consumable',
+    'Medical Device': 'Medical Device',
+    'Non-Medical Device': 'Non-Medical Device',
+    'Peripheral Device': 'Peripheral Device',
     Accessory: 'Accessory',
     'Spare Part': 'Spare Part',
+    Consumable: 'Consumable',
+    Consumables: 'Consumable',
     Document: 'Document',
-    Misc: 'Misc',
-    'Medical Device': 'Device',
-    'Non-Medical Device': 'Device',
+    Other: 'Other',
+    Device: 'Medical Device',
+    Peripheral: 'Peripheral Device',
+    Misc: 'Other',
     'Spare Part / Accessory': 'Spare Part',
-    Miscellaneous: 'Misc',
+    Miscellaneous: 'Other',
     Documents: 'Document',
-    Others: 'Misc',
-    Other: 'Misc',
+    Others: 'Other',
   };
   if (aliases[v]) return aliases[v];
   const hit = Object.entries(aliases).find(([k]) => k.toLowerCase() === v.toLowerCase());
@@ -83,23 +93,67 @@ export function emptyTxnForm(user, { entryType = 'Inward', warehouseId = '' } = 
     productName: '',
     programProject: '',
     qty: '1',
+    uomId: '',
     perUnitCost: '',
+    invoiceAmount: '',
     state: '',
     city: '',
     contactId: '',
+    supplierId: '',
+    vendor: '',
     recipientName: '',
     empId: '',
     number: '',
     expiryApplicable: true,
     trackingKind: 'Batch',
     expiryDate: '',
+    serialNumber: '',
+    batchNumber: '',
+    approvedBy: '',
     batchOrSerial: '',
     deliveryMode: 'Hand Delivery',
     awbNumber: '',
     remark: '',
+    logisticsKind: 'Fresh Dispatch',
+    priority: 'Medium',
+    preferredDate: '',
+    logisticsProducts: [{ productType: '', productId: '', productName: '', qty: '1' }],
+    logisticsProductsConfirmed: false,
+    fromContactId: '',
+    fromName: '',
+    fromNumber: '',
+    fromAddress: '',
+    fromPinCode: '',
+    fromCity: '',
+    fromState: '',
+    toContactId: '',
+    toName: '',
+    toNumber: '',
+    toAddress: '',
+    toPinCode: '',
+    toCity: '',
+    toState: '',
     createdBy: user?.email || user?.fullName || '',
     assetRequestId: '',
   };
+}
+
+/** Whole months from asOf (YYYY-MM-DD) until expiryDate. */
+export function monthsUntilExpiry(expiryDate, asOf = new Date()) {
+  const exp = new Date(String(expiryDate || '').slice(0, 10));
+  const from = new Date(String(asOf || '').slice(0, 10));
+  if (Number.isNaN(exp.getTime()) || Number.isNaN(from.getTime())) return null;
+  let months = (exp.getFullYear() - from.getFullYear()) * 12 + (exp.getMonth() - from.getMonth());
+  if (exp.getDate() < from.getDate()) months -= 1;
+  return months;
+}
+
+export const SHORT_EXPIRY_APPROVAL_MONTHS = 12;
+
+export function requiresShortExpiryApproval(expiryDate, asOf = new Date()) {
+  const months = monthsUntilExpiry(expiryDate, asOf);
+  if (months == null) return false;
+  return months < SHORT_EXPIRY_APPROVAL_MONTHS;
 }
 
 export function isInwardRow(entryType) {

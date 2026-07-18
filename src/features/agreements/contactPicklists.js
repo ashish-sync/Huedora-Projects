@@ -1,4 +1,4 @@
-/** Shared with Business Partners, New Agreement wizard, and Asset Register */
+/** Shared with Contact Directory, New Agreement wizard, and Asset Register */
 export const RESOURCE_TYPES = [
   'Individual',
   'Freelancer',

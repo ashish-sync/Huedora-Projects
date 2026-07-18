@@ -64,6 +64,11 @@ export default function ImportsPage() {
             Status <span className="badge tone-neutral">{result.status}</span> · rows {result.totalRows} · ok{' '}
             {result.successRows} · errors {result.errorRows}
           </p>
+          {result.errorReport?.downloadPath ? (
+            <p className="muted">
+              Failed rows Excel is ready in Notifications ({result.errorReport.fileName}).
+            </p>
+          ) : null}
           {result.summary && (
             <pre style={{ fontFamily: 'var(--mono)', fontSize: '0.85rem', overflow: 'auto' }}>
               {JSON.stringify(result.summary, null, 2)}

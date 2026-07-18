@@ -6,11 +6,11 @@ import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import {
   ASSET_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
   ASSET_CUSTODY_OPTIONS,
-  INDIAN_STATES_AND_UTS,
 } from '../devices/assetMasterOptions.js';
 
 const PAGE_SIZES = [10, 25, 50, 100];
@@ -164,8 +164,11 @@ export default function AssetsPage() {
         data.errorRows > 0
           ? ` · ${data.errorRows} row${data.errorRows === 1 ? '' : 's'} failed`
           : '';
+      const reportHint = data.errorReport
+        ? ' Open Notifications to download the failed-rows Excel with reasons.'
+        : '';
       setMsg(
-        `Imported ${data.created} asset${data.created === 1 ? '' : 's'}${errHint}.`
+        `Imported ${data.created} asset${data.created === 1 ? '' : 's'}${errHint}.${reportHint}`
       );
       if (data.errors?.length) {
         setError(data.errors.map((e) => `Row ${e.row}: ${e.message}`).slice(0, 5).join(' · '));
@@ -611,29 +614,31 @@ export default function AssetsPage() {
                 placeholder="Phone or email"
               />
             </div>
-            <div className="field">
-              <label>{FIELD.CUSTODIAN_CITY} *</label>
-              <input
+            <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <LocationCascade
                 required
-                value={form.custodianCity}
-                onChange={(e) => setForm({ ...form, custodianCity: e.target.value })}
-                placeholder="Mumbai"
+                showPin={false}
+                value={{
+                  state: form.custodianState,
+                  city: form.custodianCity,
+                  district: form.custodianDistrict || '',
+                  stateId: form.custodianStateId || '',
+                  districtId: form.custodianDistrictId || '',
+                  cityId: form.custodianCityId || '',
+                }}
+                onChange={(loc) =>
+                  setForm({
+                    ...form,
+                    custodianState: loc.state || '',
+                    custodianCity: loc.city || '',
+                    custodianDistrict: loc.district || '',
+                    custodianStateId: loc.stateId || '',
+                    custodianDistrictId: loc.districtId || '',
+                    custodianCityId: loc.cityId || '',
+                  })
+                }
+                labels={{ state: FIELD.CUSTODIAN_STATE, city: FIELD.CUSTODIAN_CITY, district: 'District' }}
               />
-            </div>
-            <div className="field">
-              <label>{FIELD.CUSTODIAN_STATE} *</label>
-              <AdaptiveSelect
-                required
-                value={form.custodianState}
-                onChange={(e) => setForm({ ...form, custodianState: e.target.value })}
-              >
-                <option value="">Select state / UT</option>
-                {INDIAN_STATES_AND_UTS.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </AdaptiveSelect>
             </div>
             {editingId ? (
               <div className="field">

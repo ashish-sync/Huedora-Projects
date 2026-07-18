@@ -119,7 +119,8 @@ export default function DashboardPage() {
             {firstName ? `Welcome back, ${firstName}.` : 'Welcome back.'}
           </h1>
           <p className="tylo-home-lead">
-            Open a module: Asset Registry, Document Center, Asset Verification, Camp Management, Request Center, or Inventory & Logistics.
+            Open any module to continue: Asset Registry, Document Center, Asset Verification, Camp
+            Management, Request Center, or Inventory &amp; Logistics.
           </p>
         </div>
 
@@ -129,7 +130,7 @@ export default function DashboardPage() {
               {MODULE.DASHBOARD}
               <span aria-hidden="true"> →</span>
             </Link>
-            <p className="tylo-home-dash-hint">Asset Registry and verification overview</p>
+            <p className="tylo-home-dash-hint">Review any module by date range</p>
           </div>
         )}
       </header>

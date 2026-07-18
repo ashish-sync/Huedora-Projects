@@ -6,8 +6,9 @@ import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
-import { INDIAN_STATES_AND_UTS } from '../devices/assetMasterOptions.js';
+import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 
 const REQUEST_TYPES = [
   { value: 'SERVICE', label: 'Repair & Maintenance', needsAsset: true },
@@ -1482,46 +1483,31 @@ export default function AssetRequestsPage() {
                     onChange={(e) => setForm({ ...form, hiringAddress: e.target.value })}
                   />
                 </div>
-                <div className="field">
-                  <label>State *</label>
-                  <AdaptiveSelect
-                    required
-                    value={form.hiringState}
-                    onChange={(e) => setForm({ ...form, hiringState: e.target.value })}
-                  >
-                    <option value="">Select state</option>
-                    {INDIAN_STATES_AND_UTS.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label>City *</label>
-                  <input
-                    required
-                    value={form.hiringCity}
-                    onChange={(e) => setForm({ ...form, hiringCity: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Pin code *</label>
-                  <input
-                    required
-                    inputMode="numeric"
-                    pattern="[0-9]{6}"
-                    maxLength={6}
-                    value={form.hiringPinCode}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        hiringPinCode: e.target.value.replace(/\D/g, '').slice(0, 6),
-                      })
-                    }
-                    placeholder="6-digit PIN"
-                  />
-                </div>
+                <LocationCascade
+                  required
+                  pinRequired
+                  value={{
+                    state: form.hiringState,
+                    city: form.hiringCity,
+                    district: form.hiringDistrict || '',
+                    pinCode: form.hiringPinCode || '',
+                    stateId: form.hiringStateId || '',
+                    districtId: form.hiringDistrictId || '',
+                    cityId: form.hiringCityId || '',
+                  }}
+                  onChange={(loc) =>
+                    setForm({
+                      ...form,
+                      hiringState: loc.state || '',
+                      hiringCity: loc.city || '',
+                      hiringDistrict: loc.district || '',
+                      hiringPinCode: loc.pinCode || '',
+                      hiringStateId: loc.stateId || '',
+                      hiringDistrictId: loc.districtId || '',
+                      hiringCityId: loc.cityId || '',
+                    })
+                  }
+                />
                 <div className="field">
                   <label>Budget minimum (₹) *</label>
                   <input
@@ -1774,12 +1760,21 @@ export default function AssetRequestsPage() {
               const isActive = r.status === 'REQUESTED' || r.status === 'APPROVED';
               const isServiceRequest =
                 r.requestType === 'REPAIR' || r.requestType === 'MAINTENANCE';
+              const overdue =
+                r.status === 'REQUESTED' && isApprovalOverdue(r.createdAt || r.requestedAt);
               return (
                 <tr key={r._id}>
                   <td className="mono-sm">{r.requestNumber}</td>
                   <td>{displayType(r.requestType)}</td>
                   <td>
-                    <span className="badge tone-neutral">{r.status}</span>
+                    <span className={`badge ${overdue ? 'tone-danger' : 'tone-neutral'}`}>
+                      {r.status}
+                    </span>
+                    {overdue ? (
+                      <span className="badge tone-danger" style={{ marginLeft: 6 }}>
+                        Overdue
+                      </span>
+                    ) : null}
                   </td>
                   <td className="muted mono-sm">{detailSummary(r) || '-'}</td>
                   <td>

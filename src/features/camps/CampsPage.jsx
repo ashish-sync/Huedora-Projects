@@ -4,7 +4,8 @@ import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import { INDIAN_STATES_AND_UTS } from '../devices/assetMasterOptions.js';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 
 const FALLBACK_MAP = [
   { method: 'Diagnostic', process: 'NT PRO - BNP', campType: 'Non Device' },
@@ -357,20 +358,26 @@ export default function CampsPage() {
                 onChange={(e) => setField('address', e.target.value)}
               />
             </div>
-            <div className="field">
-              <label>City</label>
-              <input value={form.city} onChange={(e) => setField('city', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>State</label>
-              <AdaptiveSelect value={form.state} onChange={(e) => setField('state', e.target.value)}>
-                <option value="">Select state…</option>
-                {INDIAN_STATES_AND_UTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </AdaptiveSelect>
+            <div className="field am-form-span">
+              <LocationCascade
+                showPin={false}
+                value={{
+                  state: form.state,
+                  city: form.city,
+                  district: form.district || '',
+                  stateId: form.stateId || '',
+                  districtId: form.districtId || '',
+                  cityId: form.cityId || '',
+                }}
+                onChange={(loc) => {
+                  setField('state', loc.state || '');
+                  setField('city', loc.city || '');
+                  setField('district', loc.district || '');
+                  setField('stateId', loc.stateId || '');
+                  setField('districtId', loc.districtId || '');
+                  setField('cityId', loc.cityId || '');
+                }}
+              />
             </div>
             <div className="field">
               <label>Camp Date *</label>
@@ -561,6 +568,11 @@ export default function CampsPage() {
                 <td>{r.requesterName || r.requesterEmail || '-'}</td>
                 <td>
                   <span className={`badge ${statusTone(r.status)}`}>{r.status || '-'}</span>
+                  {r.status === 'Pending' && isApprovalOverdue(r.requestedAt || r.createdAt) ? (
+                    <span className="badge tone-danger" style={{ marginLeft: 6 }}>
+                      Overdue
+                    </span>
+                  ) : null}
                   {r.decisionReason ? (
                     <span className="muted" style={{ display: 'block', fontSize: '0.72rem' }}>
                       {r.decisionReason}

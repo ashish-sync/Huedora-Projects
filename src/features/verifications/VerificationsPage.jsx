@@ -7,6 +7,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 
 function currentPeriod() {
   return new Date().toISOString().slice(0, 7);
@@ -86,6 +87,8 @@ export default function VerificationsPage() {
   const canWrite = can('verifications:write') || can('*');
   const [fromDate, setFromDate] = useState(() => firstDayOfMonth());
   const [toDate, setToDate] = useState(() => todayIso());
+  const [appliedFrom, setAppliedFrom] = useState(() => firstDayOfMonth());
+  const [appliedTo, setAppliedTo] = useState(() => todayIso());
   const [filter, setFilter] = useState('');
   const [q, setQ] = useState('');
   const [board, setBoard] = useState(null);
@@ -120,19 +123,19 @@ export default function VerificationsPage() {
   const serialRef = useRef(null);
   const extraRef = useRef(null);
 
-  const periodKey = periodKeyFromIso(toDate);
+  const periodKey = periodKeyFromIso(appliedTo);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      if (fromDate && toDate && fromDate > toDate) {
+      if (appliedFrom && appliedTo && appliedFrom > appliedTo) {
         throw new Error('From date must be on or before To date');
       }
-      const activePeriod = periodKeyFromIso(toDate);
+      const activePeriod = periodKeyFromIso(appliedTo);
       const params = new URLSearchParams({ periodKey: activePeriod });
-      if (fromDate) params.set('from', fromDate);
-      if (toDate) params.set('to', toDate);
+      if (appliedFrom) params.set('from', appliedFrom);
+      if (appliedTo) params.set('to', appliedTo);
       if (filter) params.set('condition', filter);
       const { data } = await api(`/verifications/board?${params}`);
       setBoard(data);
@@ -141,11 +144,31 @@ export default function VerificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [fromDate, toDate, filter]);
+  }, [appliedFrom, appliedTo, filter]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const submitDates = (e) => {
+    e?.preventDefault?.();
+    if (fromDate && toDate && fromDate > toDate) {
+      setError('From date must be on or before To date');
+      return;
+    }
+    setAppliedFrom(fromDate);
+    setAppliedTo(toDate);
+  };
+
+  const clearDates = () => {
+    const from = firstDayOfMonth();
+    const to = todayIso();
+    setFromDate(from);
+    setToDate(to);
+    setAppliedFrom(from);
+    setAppliedTo(to);
+    setError('');
+  };
 
   const rows = useMemo(() => {
     const list = board?.rows || [];
@@ -442,22 +465,17 @@ export default function VerificationsPage() {
         { key: 'ALL', label: 'Signed assets', value: (board?.rows || []).length },
       ]}
       toolbar={
-        <div className="vf-filters">
-          <label className="vf-date-field">
-            <span>From</span>
-            <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} />
-          </label>
-          <label className="vf-date-field">
-            <span>To</span>
-            <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} />
-          </label>
-          <button className="btn secondary vf-search-btn" type="button" onClick={load} disabled={loading}>
-            {loading ? 'Loading…' : 'Search'}
-          </button>
-          <span className="muted mono-sm vf-period-hint">
-            {board?.periodKey || periodKey}
-          </span>
-        </div>
+        <DateRangeFilter
+          className="vf-filters"
+          from={fromDate}
+          to={toDate}
+          onFromChange={setFromDate}
+          onToChange={setToDate}
+          onSubmit={submitDates}
+          onClear={clearDates}
+          submitting={loading}
+          hint={board?.periodKey || periodKey}
+        />
       }
     >
       {error && !active && (

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import { api } from '../../shared/api.js';
 
 const MAP_VIEW = { width: 420, height: 480, minLon: 68, maxLon: 97.5, minLat: 6.5, maxLat: 37.5 };
@@ -215,16 +216,24 @@ export default function LogisticsHubPage() {
   const [inventoryType, setInventoryType] = useState('all');
   const [hcwId, setHcwId] = useState('all');
   const [metric, setMetric] = useState('quantity');
+  const [applied, setApplied] = useState({
+    dateFrom: '',
+    dateTo: '',
+    inventoryType: 'all',
+    hcwId: 'all',
+  });
 
   const load = useCallback(async () => {
     setBusy(true);
     setError('');
     try {
       const params = new URLSearchParams();
-      if (dateFrom) params.set('dateFrom', dateFrom);
-      if (dateTo) params.set('dateTo', dateTo);
-      if (inventoryType && inventoryType !== 'all') params.set('inventoryType', inventoryType);
-      if (hcwId && hcwId !== 'all') params.set('hcwId', hcwId);
+      if (applied.dateFrom) params.set('dateFrom', applied.dateFrom);
+      if (applied.dateTo) params.set('dateTo', applied.dateTo);
+      if (applied.inventoryType && applied.inventoryType !== 'all') {
+        params.set('inventoryType', applied.inventoryType);
+      }
+      if (applied.hcwId && applied.hcwId !== 'all') params.set('hcwId', applied.hcwId);
       const qs = params.toString();
       const res = await api(`/logistics/dashboard${qs ? `?${qs}` : ''}`);
       setData(res.data || EMPTY);
@@ -234,18 +243,36 @@ export default function LogisticsHubPage() {
     } finally {
       setBusy(false);
     }
-  }, [dateFrom, dateTo, inventoryType, hcwId]);
+  }, [applied]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  const submitFilters = (e) => {
+    e?.preventDefault?.();
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      setError('From date must be on or before To date');
+      return;
+    }
+    setApplied({ dateFrom, dateTo, inventoryType, hcwId });
+  };
+
+  const clearFilters = () => {
+    setDateFrom('');
+    setDateTo('');
+    setInventoryType('all');
+    setHcwId('all');
+    setApplied({ dateFrom: '', dateTo: '', inventoryType: 'all', hcwId: 'all' });
+    setError('');
+  };
+
   const k = data.kpis || {};
   const m = metric;
   const unit = m === 'amount' ? 'Amount' : 'Quantity';
   const focusedCustodian =
-    hcwId !== 'all'
-      ? (data.filters?.hcws || []).find((custodian) => String(custodian.id) === String(hcwId))
+    applied.hcwId !== 'all'
+      ? (data.filters?.hcws || []).find((custodian) => String(custodian.id) === String(applied.hcwId))
       : null;
 
   const row1 = [
@@ -341,28 +368,17 @@ export default function LogisticsHubPage() {
             </div>
             {busy && <span className="muted ilog-dash-busy">Updating…</span>}
           </div>
-          <div className="ilog-dash-filters">
-            <div className="ilog-dash-filter">
-              <label htmlFor="ilog-from">From date</label>
-              <input
-                id="ilog-from"
-                type="date"
-                value={dateFrom}
-                max={dateTo || undefined}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </div>
-            <div className="ilog-dash-filter">
-              <label htmlFor="ilog-to">To date</label>
-              <input
-                id="ilog-to"
-                type="date"
-                value={dateTo}
-                min={dateFrom || undefined}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
-            </div>
-            <div className="ilog-dash-filter">
+          <DateRangeFilter
+            className="ilog-dash-filters"
+            from={dateFrom}
+            to={dateTo}
+            onFromChange={setDateFrom}
+            onToChange={setDateTo}
+            onSubmit={submitFilters}
+            onClear={clearFilters}
+            submitting={busy}
+          >
+            <div className="date-range-filter-field">
               <label htmlFor="ilog-inv">Product category</label>
               <AdaptiveSelect
                 id="ilog-inv"
@@ -377,7 +393,7 @@ export default function LogisticsHubPage() {
                 ))}
               </AdaptiveSelect>
             </div>
-            <div className="ilog-dash-filter">
+            <div className="date-range-filter-field">
               <label htmlFor="ilog-hcw">Custodian / HCW</label>
               <AdaptiveSelect
                 id="ilog-hcw"
@@ -393,21 +409,7 @@ export default function LogisticsHubPage() {
                 ))}
               </AdaptiveSelect>
             </div>
-            {(dateFrom || dateTo || inventoryType !== 'all' || hcwId !== 'all') && (
-              <button
-                type="button"
-                className="btn secondary ilog-dash-clear-dates"
-                onClick={() => {
-                  setDateFrom('');
-                  setDateTo('');
-                  setInventoryType('all');
-                  setHcwId('all');
-                }}
-              >
-                Reset filters
-              </button>
-            )}
-          </div>
+          </DateRangeFilter>
         </div>
 
         <div className="ilog-kpi-sections">

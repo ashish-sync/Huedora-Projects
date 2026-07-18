@@ -1,13 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { api } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
 import { useTheme } from '../shared/theme.jsx';
+import {
+  emitNotificationsChanged,
+  NOTIFICATIONS_CHANGED_EVENT,
+  playNotificationSound,
+} from '../shared/notificationSound.js';
+
 function initials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return 'U';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
+
+const POLL_MS = 30000;
 
 export default function Layout({ children }) {
   const { user, logout, can } = useAuth();
@@ -16,13 +25,57 @@ export default function Layout({ children }) {
   const isHome = pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef(null);
+  const knownUnreadIdsRef = useRef(null);
   const canSeeNotifications = can('notifications:read') || can('dashboards:read') || can('*');
+
+  const refreshUnread = useCallback(async () => {
+    if (!canSeeNotifications) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const res = await api('/notifications?unread=true');
+      const unread = (res.data || []).filter((n) => !n.readAt);
+      const ids = new Set(unread.map((n) => String(n._id)));
+      const prev = knownUnreadIdsRef.current;
+      if (prev) {
+        let hasNew = false;
+        for (const id of ids) {
+          if (!prev.has(id)) {
+            hasNew = true;
+            break;
+          }
+        }
+        if (hasNew) playNotificationSound();
+      }
+      knownUnreadIdsRef.current = ids;
+      setUnreadCount(unread.length);
+    } catch {
+      // Keep last known count on transient errors
+    }
+  }, [canSeeNotifications]);
 
   useEffect(() => {
     setMenuOpen(false);
     setConfirmLogout(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!canSeeNotifications) return undefined;
+    refreshUnread();
+    const timer = window.setInterval(refreshUnread, POLL_MS);
+    const onFocus = () => refreshUnread();
+    const onChanged = () => refreshUnread();
+    window.addEventListener('focus', onFocus);
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    };
+  }, [canSeeNotifications, refreshUnread, pathname]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -54,6 +107,9 @@ export default function Layout({ children }) {
     setConfirmLogout(false);
     logout();
   };
+
+  const unreadLabel =
+    unreadCount > 99 ? '99+' : unreadCount > 0 ? String(unreadCount) : '';
 
   return (
     <div className={`app-shell${isHome ? ' app-shell--home' : ''}`}>
@@ -88,9 +144,16 @@ export default function Layout({ children }) {
           {canSeeNotifications && (
             <Link
               to="/notifications"
-              className={`header-bell${pathname.startsWith('/notifications') ? ' is-active' : ''}`}
-              aria-label="Notifications"
-              title="Notifications"
+              className={`header-bell${pathname.startsWith('/notifications') ? ' is-active' : ''}${
+                unreadCount ? ' has-unread' : ''
+              }`}
+              aria-label={
+                unreadCount
+                  ? `Notifications, ${unreadCount} unread`
+                  : 'Notifications'
+              }
+              title={unreadCount ? `${unreadCount} unread` : 'Notifications'}
+              onClick={() => emitNotificationsChanged()}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
                 <path
@@ -99,6 +162,11 @@ export default function Layout({ children }) {
                 />
                 <path d="M10 17.75a2 2 0 0 0 4 0" strokeLinecap="round" />
               </svg>
+              {unreadLabel ? (
+                <span className="header-bell-badge" aria-hidden="true">
+                  {unreadLabel}
+                </span>
+              ) : null}
             </Link>
           )}
           <div className="header-user" ref={menuRef}>

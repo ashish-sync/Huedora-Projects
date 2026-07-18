@@ -5,6 +5,7 @@ import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
 import { MODULE } from '../../shared/labels.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
 
 const emptyContact = {
   name: '',
@@ -14,6 +15,10 @@ const emptyContact = {
   contact: '',
   state: '',
   city: '',
+  district: '',
+  stateId: '',
+  districtId: '',
+  cityId: '',
 };
 
 function todayISODate() {
@@ -180,6 +185,7 @@ export default function AgreementCreatePage() {
       fd.append('profession', newContact.profession);
       fd.append('contactState', newContact.state);
       fd.append('contactCity', newContact.city);
+      fd.append('contactDistrict', newContact.district || '');
       fd.append('saveContact', 'true');
     }
     fd.append('deliverEmail', String(deliverEmail));
@@ -470,22 +476,11 @@ export default function AgreementCreatePage() {
                     placeholder="Mobile / phone"
                   />
                 </div>
-                <div className="row">
-                  <div className="field" style={{ flex: 1 }}>
-                    <label>City</label>
-                    <input
-                      value={newContact.city}
-                      onChange={(e) => setNewContact({ ...newContact, city: e.target.value })}
-                    />
-                  </div>
-                  <div className="field" style={{ flex: 1 }}>
-                    <label>State</label>
-                    <input
-                      value={newContact.state}
-                      onChange={(e) => setNewContact({ ...newContact, state: e.target.value })}
-                    />
-                  </div>
-                </div>
+                <LocationCascade
+                  showPin={false}
+                  value={newContact}
+                  onChange={(loc) => setNewContact({ ...newContact, ...loc })}
+                />
               </div>
             )}
           </section>

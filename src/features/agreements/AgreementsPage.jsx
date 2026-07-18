@@ -117,6 +117,7 @@ export default function AgreementsPage() {
       }))}
       quickActions={[
         { to: '/agreements/contacts', label: MODULE.CONTACT_DIRECTORY },
+        { to: '/agreements/location-master', label: MODULE.LOCATION_MASTER },
         { to: '/agreements/document-master', label: MODULE.DOCUMENT_MASTER },
         { to: '/agreements/signature-master', label: MODULE.DIGITAL_SIGNATURE_MASTER },
       ]}

@@ -17,12 +17,10 @@ export const ASSET_STATUS_OPTIONS = AGREEMENT_STATUS_OPTIONS;
 /** Sheet: Asset Custody */
 export const DEVICE_CUSTODY_OPTIONS = [
   'Client / Rented',
-  'TCPL - Mumbai Warehouse',
-  'TCPL - Hyderabad Warehouse',
+  'TCPL - Head Office',
+  'TPCL - Warehouse',
   'Individual',
   'Service Provider',
-  'TCPL - HO',
-  'TCPL - Delhi Warehouse',
 ];
 
 export const ASSET_CUSTODY_OPTIONS = DEVICE_CUSTODY_OPTIONS;

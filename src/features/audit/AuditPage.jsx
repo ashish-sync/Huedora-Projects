@@ -2,25 +2,58 @@ import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 
 export default function AuditPage() {
   const { can } = useAuth();
   const [rows, setRows] = useState([]);
   const [action, setAction] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [applied, setApplied] = useState({ action: '', from: '', to: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!can('audit:read')) return <p className="error">No audit access</p>;
 
-  const load = () => {
-    const q = action ? `?action=${encodeURIComponent(action)}` : '';
-    api(`/audit-logs${q}`)
+  const load = (filters = applied) => {
+    setLoading(true);
+    setError('');
+    const params = new URLSearchParams();
+    if (filters.action) params.set('action', filters.action);
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', `${filters.to}T23:59:59.999`);
+    const q = params.toString();
+    api(`/audit-logs${q ? `?${q}` : ''}`)
       .then((r) => setRows(r.data))
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, []);
+
+  const submitFilters = (e) => {
+    e?.preventDefault?.();
+    if (from && to && from > to) {
+      setError('From date must be on or before To date');
+      return;
+    }
+    const next = { action: action.trim(), from, to };
+    setApplied(next);
+    load(next);
+  };
+
+  const clearFilters = () => {
+    setAction('');
+    setFrom('');
+    setTo('');
+    const next = { action: '', from: '', to: '' };
+    setApplied(next);
+    load(next);
+  };
 
   return (
     <PageShell
@@ -28,18 +61,25 @@ export default function AuditPage() {
       title="Audit log"
       description="Activity history for agreements, assets, and administration."
       toolbar={
-        <>
-          <input
-            style={{ flex: 1, minWidth: 200 }}
-            placeholder="Filter by action code"
-            value={action}
-            onChange={(e) => setAction(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && load()}
-          />
-          <button className="btn secondary" type="button" onClick={load}>
-            Search
-          </button>
-        </>
+        <DateRangeFilter
+          from={from}
+          to={to}
+          onFromChange={setFrom}
+          onToChange={setTo}
+          onSubmit={submitFilters}
+          onClear={clearFilters}
+          submitting={loading}
+        >
+          <label className="date-range-filter-field" style={{ flex: 1, minWidth: 180 }}>
+            <span>Action</span>
+            <input
+              placeholder="Filter by action code"
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
+              style={{ textTransform: 'none', fontWeight: 500, letterSpacing: 'normal' }}
+            />
+          </label>
+        </DateRangeFilter>
       }
     >
       {error && <p className="error">{error}</p>}
@@ -70,6 +110,11 @@ export default function AuditPage() {
             ))}
           </tbody>
         </table>
+        {!rows.length && !loading ? (
+          <p className="muted" style={{ padding: '1rem' }}>
+            No audit rows for this filter.
+          </p>
+        ) : null}
       </div>
     </PageShell>
   );

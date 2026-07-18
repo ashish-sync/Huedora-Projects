@@ -1,34 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
-import { MODULE, FIELD } from '../../shared/labels.js';
+import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
-import PageShell from '../../components/ui/PageShell.jsx';
-
-function formatMoney(n) {
-  const num = Number(n);
-  if (!Number.isFinite(num)) return '-';
-  return num.toLocaleString(undefined, {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  });
-}
-
-function statusTone(status) {
-  const s = String(status || '');
-  if (s === 'Agreement Signed') return 'ok';
-  if (s === 'Lost/Stolen' || s === 'Untraceable' || s === 'End of Life') return 'danger';
-  if (s === 'Under Repairs' || s === 'With TCPL') return 'warn';
-  if (s === 'Not Applicable') return 'neutral';
-  return 'neutral';
-}
-
-function conditionTone(key) {
-  if (key === 'SAFE') return 'ok';
-  if (key === 'CAUTION') return 'warn';
-  if (key === 'DANGER') return 'danger';
-  return 'neutral';
-}
+import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 
 function toYmd(d) {
   const y = d.getFullYear();
@@ -76,18 +53,56 @@ function detectPreset(from, to) {
   return 'custom';
 }
 
+function breakdownEntries(summary = {}) {
+  const skip = new Set(['total', 'unread', 'read', 'active', 'inactive']);
+  const blocks = [];
+  for (const [key, value] of Object.entries(summary)) {
+    if (skip.has(key)) continue;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      blocks.push({
+        title: key
+          .replace(/^by/, '')
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^\s+/, '')
+          .replace(/^./, (c) => c.toUpperCase()),
+        entries: Object.entries(value).sort((a, b) => b[1] - a[1]),
+      });
+    }
+  }
+  return blocks;
+}
+
 export default function TrackingDashboardPage() {
   const { can } = useAuth();
   const canDownload = can('dashboards:read') || can('*');
-  const canViewValue = can('assets:view-value') || can('*');
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [exportBusy, setExportBusy] = useState(false);
 
+  const [modules, setModules] = useState([]);
+  const [moduleId, setModuleId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [preset, setPreset] = useState('all');
+  const [preset, setPreset] = useState('month');
+
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const initial = rangeForPreset('month');
+    if (initial) {
+      setFrom(initial.from);
+      setTo(initial.to);
+    }
+    api('/dashboards/modules')
+      .then((r) => {
+        const list = r.data || [];
+        setModules(list);
+        if (list.length && !moduleId) setModuleId(list[0].id);
+      })
+      .catch((e) => setError(e.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load catalog once
+  }, []);
 
   const applyPreset = (id) => {
     setPreset(id);
@@ -98,23 +113,6 @@ export default function TrackingDashboardPage() {
     }
   };
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError('');
-    const params = new URLSearchParams();
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const qs = params.toString();
-    api(`/dashboards/tracking${qs ? `?${qs}` : ''}`)
-      .then((r) => setData(r.data))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [from, to]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
   const rangeLabel = useMemo(() => {
     if (!from && !to) return 'All time';
     if (from && to) return `${from} → ${to}`;
@@ -122,22 +120,42 @@ export default function TrackingDashboardPage() {
     return `Through ${to}`;
   }, [from, to]);
 
-  const inventory = data?.inventory || { qty: 0, value: 0, statuses: [] };
-  const verification = data?.verification || {
-    qty: 0,
-    value: 0,
-    conditions: [
-      { key: 'SAFE', label: 'Safe', qty: 0, value: 0 },
-      { key: 'CAUTION', label: 'Caution', qty: 0, value: 0 },
-      { key: 'DANGER', label: 'Danger', qty: 0, value: 0 },
-    ],
+  const submitReview = async (e) => {
+    e?.preventDefault?.();
+    if (!moduleId) {
+      setError('Select a module to review');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSubmitted(true);
+    try {
+      const params = new URLSearchParams({ module: moduleId });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const res = await api(`/dashboards/module-review?${params}`);
+      setData(res.data);
+    } catch (err) {
+      setData(null);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const downloadSummary = async () => {
-    setError('');
+  const downloadReview = async () => {
+    if (!moduleId) return;
     setExportBusy(true);
+    setError('');
     try {
-      await downloadExcel('/dashboards/export', 'TYLO_One_Dashboard_Summary.xlsx');
+      const params = new URLSearchParams({ module: moduleId });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const name = (data?.moduleLabel || moduleId).replace(/\s+/g, '_');
+      await downloadExcel(
+        `/dashboards/module-review/export?${params}`,
+        `TYLO_One_${name}_Review.xlsx`
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -145,30 +163,56 @@ export default function TrackingDashboardPage() {
     }
   };
 
+  const clearReview = () => {
+    setFrom('');
+    setTo('');
+    setPreset('all');
+    setData(null);
+    setSubmitted(false);
+    setError('');
+  };
+
+  const summaryBlocks = breakdownEntries(data?.summary);
+  const kpiItems = [
+    { label: 'Records in range', value: data?.summary?.total ?? data?.total ?? 0 },
+    data?.summary?.unread != null
+      ? { label: 'Unread', value: data.summary.unread }
+      : null,
+    data?.summary?.active != null
+      ? { label: 'Active', value: data.summary.active }
+      : null,
+    data?.summary?.inactive != null
+      ? { label: 'Inactive', value: data.summary.inactive }
+      : null,
+  ].filter(Boolean);
+
   return (
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="Asset Registry by status (quantity and value) and verification condition (Safe, Caution, Danger)."
+      description="Select a module and date range, then submit to review records and status breakdowns."
       actions={
         <>
-          <button className="btn secondary" type="button" onClick={load} disabled={loading}>
-            {loading ? 'Refreshing…' : 'Refresh'}
-          </button>
-          {canDownload && (
+          {data?.linkTo ? (
+            <Link className="btn secondary" to={data.linkTo}>
+              Open module
+            </Link>
+          ) : null}
+          {canDownload && data ? (
             <button
               className="btn secondary"
               type="button"
-              disabled={exportBusy}
-              onClick={downloadSummary}
+              disabled={exportBusy || loading}
+              onClick={downloadReview}
             >
               {exportBusy ? 'Downloading…' : 'Download Excel'}
             </button>
-          )}
+          ) : null}
         </>
       }
+      kpis={data ? kpiItems : undefined}
     >
-      <section className="card track-range" aria-label="Date range">
+      <div className="card track-range" aria-label="Module review filters">
         <div className="track-range-presets" role="group" aria-label="Quick ranges">
           {PRESETS.map((p) => (
             <button
@@ -181,149 +225,139 @@ export default function TrackingDashboardPage() {
             </button>
           ))}
         </div>
-        <div className="track-range-fields">
-          <label className="track-range-field">
-            <span>From</span>
-            <input
-              type="date"
-              value={from}
-              max={to || undefined}
-              onChange={(e) => {
-                const next = e.target.value;
-                setFrom(next);
-                setPreset(detectPreset(next, to));
-              }}
-            />
-          </label>
-          <label className="track-range-field">
-            <span>To</span>
-            <input
-              type="date"
-              value={to}
-              min={from || undefined}
-              onChange={(e) => {
-                const next = e.target.value;
-                setTo(next);
-                setPreset(detectPreset(from, next));
-              }}
-            />
-          </label>
-          <p className="muted track-range-hint">
-            Asset Registry: assets onboarded in range · Verification: condition for{' '}
-            {data?.periodKey || 'selected end month'}
-            {rangeLabel !== 'All time' ? ` · ${rangeLabel}` : ''}
-          </p>
-        </div>
-      </section>
 
-      {error && (
+        <DateRangeFilter
+          from={from}
+          to={to}
+          onFromChange={(next) => {
+            setFrom(next);
+            setPreset(detectPreset(next, to));
+          }}
+          onToChange={(next) => {
+            setTo(next);
+            setPreset(detectPreset(from, next));
+          }}
+          onSubmit={submitReview}
+          onClear={clearReview}
+          submitting={loading}
+          disabled={!moduleId}
+          hint={`Review uses each module's activity date (${data?.dateFieldLabel || 'created / transaction date'}). Current range: ${rangeLabel}.`}
+        >
+          <label className="date-range-filter-field module-review-module">
+            <span>Module</span>
+            <AdaptiveSelect
+              required
+              value={moduleId}
+              onChange={(e) => setModuleId(e.target.value)}
+              aria-label="Module"
+            >
+              <option value="">Select module</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </AdaptiveSelect>
+          </label>
+        </DateRangeFilter>
+      </div>
+
+      {error ? (
         <div className="am-banner is-error" role="alert">
           {error}
         </div>
-      )}
+      ) : null}
 
-      {loading && !data ? (
-        <p className="muted">Loading tracking data…</p>
-      ) : (
-        <div className="track-sections">
-          <section className="card track-panel">
+      {!submitted && !data ? (
+        <EmptyState
+          title="Choose a module and date range"
+          description="Pick what you want to review, set From and To, then click Submit."
+        />
+      ) : null}
+
+      {loading && !data ? <p className="muted">Loading review…</p> : null}
+
+      {data ? (
+        <div className="track-sections module-review-results">
+          {summaryBlocks.map((block) => (
+            <section className="card track-panel" key={block.title}>
+              <div className="track-panel-head">
+                <div>
+                  <h2>{block.title}</h2>
+                  <p className="muted">
+                    {data.moduleLabel} · {rangeLabel}
+                  </p>
+                </div>
+              </div>
+              <div className="track-table-wrap">
+                <table className="track-table">
+                  <thead>
+                    <tr>
+                      <th>Value</th>
+                      <th className="num">Count</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.entries.map(([label, count]) => (
+                      <tr key={label}>
+                        <td>
+                          <span className="badge tone-neutral">{label}</span>
+                        </td>
+                        <td className="num mono-sm">{count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
+
+          <section className="card track-panel" style={{ gridColumn: '1 / -1' }}>
             <div className="track-panel-head">
               <div>
-                <h2>{MODULE.ASSET_INVENTORY}</h2>
+                <h2>{data.moduleLabel} records</h2>
                 <p className="muted">
-                  {FIELD.ASSET_STATUS} for assets onboarded in the selected range
+                  Showing {data.rows?.length || 0}
+                  {data.truncated ? ` of ${data.total}` : ''} in range
+                  {data.dateFieldLabel ? ` · sorted by ${data.dateFieldLabel}` : ''}
                 </p>
               </div>
-              <Link className="btn secondary btn-compact" to="/assets">
-                Open Asset Registry
-              </Link>
+              {data.linkTo ? (
+                <Link className="btn secondary btn-compact" to={data.linkTo}>
+                  Open {data.moduleLabel}
+                </Link>
+              ) : null}
             </div>
-
-            <div className="track-table-wrap">
+            <div className="track-table-wrap card table-wrap" style={{ boxShadow: 'none', border: 0 }}>
               <table className="track-table">
                 <thead>
                   <tr>
-                    <th>{FIELD.ASSET_STATUS}</th>
-                    <th className="num">Qty</th>
-                    {canViewValue && <th className="num">Value</th>}
+                    {(data.columns || []).map((col) => (
+                      <th key={col.key}>{col.label}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {(inventory.statuses || []).map((row) => (
-                    <tr key={row.status}>
-                      <td>
-                        <span className={`badge tone-${statusTone(row.status)}`}>{row.status}</span>
-                      </td>
-                      <td className="num mono-sm">{row.qty || 0}</td>
-                      {canViewValue && (
-                        <td className="num mono-sm">{formatMoney(row.value)}</td>
-                      )}
+                  {(data.rows || []).map((row) => (
+                    <tr key={row.id}>
+                      {(data.columns || []).map((col) => (
+                        <td key={col.key} className={col.key === 'when' ? 'mono-sm muted' : undefined}>
+                          {row[col.key] ?? '-'}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
-                <tfoot>
-                  <tr>
-                    <th>Total</th>
-                    <th className="num">{inventory.qty || 0}</th>
-                    {canViewValue && (
-                      <th className="num">{formatMoney(inventory.value)}</th>
-                    )}
-                  </tr>
-                </tfoot>
               </table>
-            </div>
-          </section>
-
-          <section className="card track-panel">
-            <div className="track-panel-head">
-              <div>
-                <h2>{MODULE.ASSET_VERIFICATION}</h2>
-                <p className="muted">
-                  Safe / Caution / Danger
-                  {data?.periodKey ? ` · period ${data.periodKey}` : ''}
+              {!data.rows?.length ? (
+                <p className="muted" style={{ padding: '1rem' }}>
+                  No records found for this module in the selected date range.
                 </p>
-              </div>
-              <Link className="btn secondary btn-compact" to="/verifications">
-                Open verification
-              </Link>
-            </div>
-
-            <div className="track-table-wrap">
-              <table className="track-table">
-                <thead>
-                  <tr>
-                    <th>Condition</th>
-                    <th className="num">Qty</th>
-                    {canViewValue && <th className="num">Value</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(verification.conditions || []).map((row) => (
-                    <tr key={row.key}>
-                      <td>
-                        <span className={`badge tone-${conditionTone(row.key)}`}>{row.label}</span>
-                      </td>
-                      <td className="num mono-sm">{row.qty || 0}</td>
-                      {canViewValue && (
-                        <td className="num mono-sm">{formatMoney(row.value)}</td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th>Total (signed)</th>
-                    <th className="num">{verification.qty || 0}</th>
-                    {canViewValue && (
-                      <th className="num">{formatMoney(verification.value)}</th>
-                    )}
-                  </tr>
-                </tfoot>
-              </table>
+              ) : null}
             </div>
           </section>
         </div>
-      )}
+      ) : null}
     </PageShell>
   );
 }

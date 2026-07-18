@@ -5,6 +5,7 @@ import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
 
 const empty = {
@@ -15,8 +16,12 @@ const empty = {
   contact: '',
   city: '',
   state: '',
+  district: '',
   pinCode: '',
   address: '',
+  stateId: '',
+  districtId: '',
+  cityId: '',
 };
 
 export default function ContactDirectoryPage() {
@@ -81,8 +86,12 @@ export default function ContactDirectoryPage() {
       contact: c.contact || c.mobile || '',
       city: c.city || '',
       state: c.state || '',
+      district: c.district || '',
       pinCode: c.pinCode || '',
       address: c.address || '',
+      stateId: c.stateId || '',
+      districtId: c.districtId || '',
+      cityId: c.cityId || '',
     });
   };
 
@@ -98,11 +107,15 @@ export default function ContactDirectoryPage() {
       const { data } = await api('/contacts/import', { method: 'POST', body: fd });
       if (mode === 'DRY_RUN') {
         setImportMsg(
-          `Dry-run: ${data.totalRows} rows · ${data.validated} valid · ${data.errorRows} errors`
+          `Dry-run: ${data.totalRows} rows · ${data.validated} valid · ${data.errorRows} errors${
+            data.errorReport ? '. Failed rows Excel is in Notifications.' : ''
+          }`
         );
       } else {
         setImportMsg(
-          `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors`
+          `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors${
+            data.errorReport ? '. Failed rows Excel is in Notifications.' : ''
+          }`
         );
         load();
       }
@@ -197,6 +210,7 @@ export default function ContactDirectoryPage() {
                 <th>Profession</th>
                 <th>Contact</th>
                 <th>City</th>
+                <th>District</th>
                 <th>State</th>
                 <th>Pin Code</th>
                 <th>Address</th>
@@ -212,6 +226,7 @@ export default function ContactDirectoryPage() {
                   <td>{c.profession || '-'}</td>
                   <td>{c.contact || c.mobile || '-'}</td>
                   <td>{c.city || '-'}</td>
+                  <td>{c.district || '-'}</td>
                   <td>{c.state || '-'}</td>
                   <td>{c.pinCode || '-'}</td>
                   <td>{c.address || '-'}</td>
@@ -260,24 +275,10 @@ export default function ContactDirectoryPage() {
               <label>Contact</label>
               <input value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="Mobile / phone" />
             </div>
-            <div className="row">
-              <div className="field" style={{ flex: 1 }}>
-                <label>City</label>
-                <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-              </div>
-              <div className="field" style={{ flex: 1 }}>
-                <label>State</label>
-                <input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-              </div>
-            </div>
-            <div className="field">
-              <label>Pin Code</label>
-              <input
-                inputMode="numeric"
-                value={form.pinCode}
-                onChange={(e) => setForm({ ...form, pinCode: e.target.value })}
-              />
-            </div>
+            <LocationCascade
+              value={form}
+              onChange={(loc) => setForm({ ...form, ...loc })}
+            />
             <div className="field">
               <label>Address</label>
               <textarea

@@ -4,6 +4,7 @@ import { FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 
 export default function MovementsPage() {
   const { can, user } = useAuth();
@@ -147,7 +148,20 @@ export default function MovementsPage() {
               <tr key={m._id}>
                 <td>{m.movementNumber}</td>
                 <td>
-                  <span className="badge tone-neutral">{m.status}</span>
+                  <span
+                    className={`badge ${
+                      m.status === 'REQUESTED' && isApprovalOverdue(m.createdAt)
+                        ? 'tone-danger'
+                        : 'tone-neutral'
+                    }`}
+                  >
+                    {m.status}
+                  </span>
+                  {m.status === 'REQUESTED' && isApprovalOverdue(m.createdAt) ? (
+                    <span className="badge tone-danger" style={{ marginLeft: 6 }}>
+                      Overdue
+                    </span>
+                  ) : null}
                 </td>
                 <td>{m.requestorId?.fullName || '-'}</td>
                 <td>{m.reason}</td>

@@ -30,6 +30,7 @@ import LogisticsInventoryPage from '../features/logistics/LogisticsInventoryPage
 import LogisticsUsagePage from '../features/logistics/LogisticsUsagePage.jsx';
 import LogisticsOutputPage from '../features/logistics/LogisticsOutputPage.jsx';
 import LogisticsMasterPage from '../features/logistics/LogisticsMasterPage.jsx';
+import LocationMasterPage from '../features/locations/LocationMasterPage.jsx';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -74,6 +75,8 @@ export default function App() {
                 <Route path="/devices" element={<Navigate to="/assets" replace />} />
                 <Route path="/agreements" element={<AgreementsPage />} />
                 <Route path="/agreements/contacts" element={<ContactDirectoryPage />} />
+                <Route path="/agreements/location-master" element={<LocationMasterPage />} />
+                <Route path="/locations" element={<LocationMasterPage />} />
                 <Route path="/agreements/document-master" element={<DocumentMasterPage />} />
                 <Route path="/agreements/signature-master" element={<SignatureMasterPage />} />
                 <Route path="/agreements/new" element={<AgreementCreatePage />} />

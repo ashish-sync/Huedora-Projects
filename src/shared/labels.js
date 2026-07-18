@@ -14,6 +14,7 @@ export const MODULE = {
   INVENTORY_LOGISTICS: 'Inventory & Logistics',
   ROLES_PERMISSIONS: 'Roles & Permissions',
   CONTACT_DIRECTORY: 'Contact Directory',
+  LOCATION_MASTER: 'Location Master',
   DOCUMENT_MASTER: 'Document Master',
   DIGITAL_SIGNATURE_MASTER: 'Digital Signature Master',
 };
@@ -26,6 +27,7 @@ export const MODULE_BLURB = {
   CAMP_MANAGEMENT: 'Submit, approve, and track camps.',
   ASSET_REQUESTS: 'Repair, maintenance, logistics, training, reimbursement, and hiring.',
   INVENTORY_LOGISTICS: 'Manage stock, vendors, transfers, and procurement.',
+  DASHBOARD: 'Select a module and date range to review activity.',
 };
 
 export const FIELD = {

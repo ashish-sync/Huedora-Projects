@@ -180,6 +180,7 @@ textarea {
 }
 
 .header-bell {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -200,6 +201,35 @@ textarea {
 .header-bell.is-active {
   background: rgba(255, 255, 255, 0.16);
   color: #fff;
+}
+
+.header-bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.35);
+  pointer-events: none;
+}
+
+.notification-unread-dot {
+  position: static;
+  display: inline-block;
+  min-width: 8px;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  box-shadow: none;
+  flex-shrink: 0;
 }
 
 .header-nav-link {
@@ -783,6 +813,73 @@ html[data-theme='dark'] .tylo-home-atmosphere {
   font-size: 0.82rem;
   line-height: 1.35;
   align-self: center;
+}
+
+.date-range-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.date-range-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.date-range-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.date-range-filter-field input[type='date'],
+.date-range-filter-field select {
+  min-width: 10.5rem;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: var(--surface, var(--bg-elevated));
+  color: var(--ink);
+  font: inherit;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.date-range-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.date-range-filter-actions .btn {
+  min-height: 38px;
+  min-width: 5.5rem;
+}
+
+.date-range-filter-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.module-review-module {
+  min-width: min(240px, 100%);
+  flex: 1.2;
+}
+
+.module-review-results {
+  margin-top: 1rem;
 }
 
 .track-panel-head {
@@ -2136,6 +2233,80 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   height: 48px;
   margin-top: 6px;
   font-size: 0.98rem;
+}
+
+.login-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-password-wrap input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.login-password-toggle:hover,
+.login-password-toggle:focus-visible {
+  color: var(--brand);
+  background: var(--brand-soft);
+  outline: none;
+}
+
+.login-password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.login-switch {
+  margin: 16px 0 0;
+  text-align: center;
+}
+
+.login-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.login-link:hover,
+.login-link:focus-visible {
+  color: var(--brand-hover);
+  outline: none;
+}
+
+.login-success {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .login-hint {
@@ -6641,12 +6812,15 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   }
 }
 
-.ilog-dash-filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
-  align-items: flex-end;
+.ilog-dash-filters.date-range-filter .date-range-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  margin: 0;
+  align-items: flex-end;
+}
+
+.ilog-dash-filters .date-range-filter-actions {
+  margin-left: 0;
 }
 
 .ilog-filter-panel {

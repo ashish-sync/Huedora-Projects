@@ -22,7 +22,7 @@ const emptyForm = {
 
 function formatMoney(n) {
   const num = Number(n);
-  if (!Number.isFinite(num)) return '—';
+  if (!Number.isFinite(num)) return '-';
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
@@ -116,23 +116,23 @@ export default function LogisticsInventoryPage() {
 
   const nameOf = (list, id) => {
     const hit = (list || []).find((x) => x._id === id);
-    return hit?.name || hit?.code || '—';
+    return hit?.name || hit?.code || '-';
   };
 
   const kpis = [
     { label: 'Inventory value', value: formatMoney(summary?.totalValue) },
-    { label: 'Available', value: summary?.availableQty ?? '—' },
-    { label: 'Reserved', value: summary?.reservedQty ?? '—' },
-    { label: 'Low stock', value: summary?.lowStock ?? '—' },
-    { label: 'Damaged', value: summary?.damagedQty ?? '—' },
-    { label: 'Repair', value: summary?.repairQty ?? '—' },
-    { label: 'Pending dispatch', value: summary?.pendingDispatch ?? '—' },
+    { label: 'Available', value: summary?.availableQty ?? '-' },
+    { label: 'Reserved', value: summary?.reservedQty ?? '-' },
+    { label: 'Low stock', value: summary?.lowStock ?? '-' },
+    { label: 'Damaged', value: summary?.damagedQty ?? '-' },
+    { label: 'Repair', value: summary?.repairQty ?? '-' },
+    { label: 'Pending dispatch', value: summary?.pendingDispatch ?? '-' },
   ];
 
   return (
     <div className="logistics-inventory">
       <p className="muted" style={{ marginTop: 0 }}>
-        Balance — current stock on hand across warehouses and statuses.
+        Current stock on hand by warehouse and status.
       </p>
 
       {(error || msg) && (
@@ -223,7 +223,7 @@ export default function LogisticsInventoryPage() {
                 value={form.categoryId}
                 onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 {(meta?.categories || []).map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -234,7 +234,7 @@ export default function LogisticsInventoryPage() {
             <div className="field">
               <label>UOM</label>
               <AdaptiveSelect value={form.uomId} onChange={(e) => setForm({ ...form, uomId: e.target.value })}>
-                <option value="">—</option>
+                <option value="">-</option>
                 {(meta?.uoms || []).map((u) => (
                   <option key={u._id} value={u._id}>
                     {u.name}
@@ -248,7 +248,7 @@ export default function LogisticsInventoryPage() {
                 value={form.warehouseId}
                 onChange={(e) => setForm({ ...form, warehouseId: e.target.value, locationId: '' })}
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 {(meta?.warehouses || []).map((w) => (
                   <option key={w._id} value={w._id}>
                     {w.name}
@@ -262,7 +262,7 @@ export default function LogisticsInventoryPage() {
                 value={form.locationId}
                 onChange={(e) => setForm({ ...form, locationId: e.target.value })}
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 {locations.map((l) => (
                   <option key={l._id} value={l._id}>
                     {l.level}: {l.name}
@@ -345,11 +345,11 @@ export default function LogisticsInventoryPage() {
                 <td>
                   <strong>{r.name}</strong>
                 </td>
-                <td className="mono-sm">{r.sku || '—'}</td>
-                <td className="mono-sm">{r.serialNumber || '—'}</td>
+                <td className="mono-sm">{r.sku || '-'}</td>
+                <td className="mono-sm">{r.serialNumber || '-'}</td>
                 <td>{nameOf(meta?.warehouses, r.warehouseId)}</td>
                 <td>
-                  <span className="badge tone-neutral">{r.status || '—'}</span>
+                  <span className="badge tone-neutral">{r.status || '-'}</span>
                 </td>
                 <td className="num mono-sm">{r.quantity}</td>
                 <td className="num mono-sm">
@@ -363,8 +363,7 @@ export default function LogisticsInventoryPage() {
                   <div className="inv-empty">
                     <strong>No stock balance yet</strong>
                     <p className="muted">
-                      Set up Masters (products, UOM, warehouses), then add stock here — or receive
-                      via Inward.
+                      Set up Masters (products, UOM, warehouses), then add stock here, or receive via Inward.
                     </p>
                   </div>
                 </td>

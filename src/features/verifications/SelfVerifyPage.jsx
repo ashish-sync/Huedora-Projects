@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiUrl } from '../../shared/api.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 const SENDER_ORG = 'Tylo Care';
 
@@ -212,17 +213,16 @@ export default function SelfVerifyPage() {
       <header className="sv-header">
         <div>
           <strong>{SENDER_ORG}</strong>
-          <span>Secure asset verification · Round {ctx?.round}</span>
+          <span>Asset verification · Round {ctx?.round}</span>
         </div>
-        <span className="sv-badge">Protected link</span>
+        <span className="sv-badge">Secure link</span>
       </header>
 
       <main className="sv-main">
         <div className="sv-card">
           <h1>Verify your asset</h1>
           <p className="muted">
-            Hello {ctx?.holder?.name || 'there'}. Confirm the asset condition and upload the required
-            photos with GPS.
+            Please confirm the condition of this asset and upload the required photos with GPS.
           </p>
 
           <div className="sv-asset-summary">
@@ -232,7 +232,7 @@ export default function SelfVerifyPage() {
             </div>
             <div>
               <span className="sv-label">Serial</span>
-              <span className="mono-sm">{ctx?.asset?.serialNumber || '—'}</span>
+              <span className="mono-sm">{ctx?.asset?.serialNumber || '-'}</span>
             </div>
             <div>
               <span className="sv-label">Period</span>
@@ -255,10 +255,8 @@ export default function SelfVerifyPage() {
               <div className="field">
                 <label>Full device photo *</label>
                 <p className="muted vf-photo-hint">Entire device in frame, clearly visible.</p>
-                <input
+                <FilePicker
                   ref={fullRef}
-                  className="vf-file-input"
-                  type="file"
                   accept="image/*"
                   capture="environment"
                   required
@@ -272,10 +270,8 @@ export default function SelfVerifyPage() {
               <div className="field">
                 <label>Serial number photo *</label>
                 <p className="muted vf-photo-hint">Close-up where the serial can be read.</p>
-                <input
+                <FilePicker
                   ref={serialRef}
-                  className="vf-file-input"
-                  type="file"
                   accept="image/*"
                   capture="environment"
                   required
@@ -289,10 +285,8 @@ export default function SelfVerifyPage() {
               <div className="field">
                 <label>Additional photos</label>
                 <p className="muted vf-photo-hint">Optional. Add damage, packaging, or other views.</p>
-                <input
+                <FilePicker
                   ref={extraRef}
-                  className="vf-file-input"
-                  type="file"
                   accept="image/*"
                   capture="environment"
                   multiple

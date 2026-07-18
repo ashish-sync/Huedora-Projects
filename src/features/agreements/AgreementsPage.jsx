@@ -186,13 +186,13 @@ export default function AgreementsPage() {
                   <td>{a.type === 'TEMPORARY_OWNERSHIP' ? 'Temporary ownership' : 'Lease'}</td>
                   <td>
                     <div>{a.partyName}</div>
-                    <div className="muted mono-sm">{a.partyEmail || '—'}</div>
+                    <div className="muted mono-sm">{a.partyEmail || '-'}</div>
                   </td>
-                  <td>{total ? `${done}/${total}` : '—'}</td>
+                  <td>{total ? `${done}/${total}` : '-'}</td>
                   <td>
                     <span className={`badge tone-${meta.tone}`}>{meta.label}</span>
                   </td>
-                  <td className="muted">{a.updatedAt ? new Date(a.updatedAt).toLocaleString() : '—'}</td>
+                  <td className="muted">{a.updatedAt ? new Date(a.updatedAt).toLocaleString() : '-'}</td>
                 </tr>
               );
             })}

@@ -34,7 +34,7 @@ const emptyForm = {
 function assetStatusTone(status) {
   const s = String(status || '');
   if (s === 'Agreement Signed' || s === 'Active') return 'ok';
-  if (['With Kartavya', 'Under Repairs'].includes(s)) return 'info';
+  if (['With TCPL', 'Under Repairs'].includes(s)) return 'info';
   if (['Lost/Stolen', 'Untraceable', 'End of Life'].includes(s)) return 'danger';
   if (s === 'Not Initiated') return 'neutral';
   return 'warn';
@@ -47,11 +47,11 @@ function purchaseToMonthInput(mmYyyy) {
 }
 
 function custodianCity(row) {
-  return row.location?.city || row.contactId?.city || row.custodianCity || '—';
+  return row.location?.city || row.contactId?.city || row.custodianCity || '-';
 }
 
 function custodianName(row) {
-  return row.custodianName || row.contactId?.name || '—';
+  return row.custodianName || row.contactId?.name || '-';
 }
 
 function IconEdit() {
@@ -361,11 +361,11 @@ export default function AssetsPage() {
       fd.append('file', file);
       fd.append(
         'title',
-        `Signed agreement — ${viewRow.deviceNameSnapshot || viewRow.serialNumber || 'asset'}`
+        `Signed agreement: ${viewRow.deviceNameSnapshot || viewRow.serialNumber || 'asset'}`
       );
       await api(`/assets/${viewRow._id}/documents`, { method: 'POST', body: fd });
       await refreshDocs(viewRow._id);
-      setMsg('Signed agreement uploaded. It will stay available under Docs.');
+      setMsg('Signed agreement uploaded. It remains available under Docs.');
       load();
     } catch (err) {
       setViewError(err.message);
@@ -387,7 +387,7 @@ export default function AssetsPage() {
         body: fd,
       });
       await refreshDocs(viewRow._id);
-      setMsg('Agreement file updated. Previous attachments remain available.');
+      setMsg('Agreement file updated. Previous attachments are still available.');
       load();
     } catch (err) {
       setViewError(err.message);
@@ -445,7 +445,7 @@ export default function AssetsPage() {
           </span>
         </>
       }
-      description="Onboard and track devices — type, value, status, custody, and custodian."
+      description="Register and track devices by type, value, status, custody, and custodian."
       actions={
         <div className="inv-header-actions">
           <button
@@ -659,7 +659,7 @@ export default function AssetsPage() {
                     });
                   }}
                 >
-                  <option value="">— None —</option>
+                  <option value="">None</option>
                   {contacts.map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
@@ -760,18 +760,18 @@ export default function AssetsPage() {
               {rows.map((a) => (
                 <tr key={a._id}>
                   <td>
-                    <strong className="inv-device">{a.deviceNameSnapshot || '—'}</strong>
+                    <strong className="inv-device">{a.deviceNameSnapshot || '-'}</strong>
                   </td>
                   <td className="inv-muted-cell">
-                    {a.assetType || a.deviceMasterId?.assetType || '—'}
+                    {a.assetType || a.deviceMasterId?.assetType || '-'}
                   </td>
-                  <td className="mono-sm">{a.serialNumber || '—'}</td>
+                  <td className="mono-sm">{a.serialNumber || '-'}</td>
                   <td>
                     <span className={`badge tone-${assetStatusTone(a.agreementStatus)}`}>
                       {a.agreementStatus || 'Not Initiated'}
                     </span>
                   </td>
-                  <td className="inv-muted-cell">{a.custody || '—'}</td>
+                  <td className="inv-muted-cell">{a.custody || '-'}</td>
                   <td>{custodianName(a)}</td>
                   <td>{custodianCity(a)}</td>
                   <td className="inv-col-actions">

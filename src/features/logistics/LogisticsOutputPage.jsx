@@ -3,7 +3,7 @@ import { api } from '../../shared/api.js';
 
 function formatMoney(n) {
   const num = Number(n);
-  if (!Number.isFinite(num)) return '—';
+  if (!Number.isFinite(num)) return '-';
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
@@ -55,7 +55,7 @@ export default function LogisticsOutputPage() {
   return (
     <div className="logistics-output">
       <p className="muted" style={{ marginTop: 0 }}>
-        Output — field stock still on hand with each resource (Outward − Returns − Used − Wastage).
+        Field stock still with each resource (Outward minus Returns, Used, and Wastage).
       </p>
 
       {error ? (
@@ -107,13 +107,13 @@ export default function LogisticsOutputPage() {
             {filtered.map((r) => (
               <tr key={r.id}>
                 <td>
-                  <strong>{r.name || '—'}</strong>
+                  <strong>{r.name || '-'}</strong>
                 </td>
-                <td className="mono-sm">{r.id || '—'}</td>
+                <td className="mono-sm">{r.id || '-'}</td>
                 <td className="num">{Number(r.qty || 0).toLocaleString()}</td>
                 <td className="num">{formatMoney(r.amount)}</td>
                 <td className="mono-sm">
-                  {r.lastAt ? new Date(r.lastAt).toLocaleString() : '—'}
+                  {r.lastAt ? new Date(r.lastAt).toLocaleString() : '-'}
                 </td>
               </tr>
             ))}

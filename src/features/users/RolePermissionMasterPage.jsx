@@ -164,7 +164,7 @@ function applyModuleAction(permissions, module, actionId, enabled) {
     next = next.filter((p) => !drop.has(p) || keep.has(p));
   }
 
-  // Sync "all" — if every non-all action is on, ensure all keys present
+  // Sync "all": if every non-all action is on, ensure all keys present
   const nonAll = available.filter((id) => id !== 'all');
   const allOn = nonAll.every((id) => keysGranted(next, actionKeys(module, id)));
   if (allOn && moduleHasAction(module, 'all')) {
@@ -445,7 +445,7 @@ export default function RolePermissionMasterPage() {
         setCreating(false);
         await loadRoles();
         setSelectedId(roleIdOf(data));
-        setMsg('Role saved — access is stored permanently.');
+        setMsg('Role saved.');
       } else if (selectedId) {
         await api(`/users/roles/${selectedId}`, {
           method: 'PATCH',
@@ -456,7 +456,7 @@ export default function RolePermissionMasterPage() {
           },
         });
         await loadRoles();
-        setMsg('Role saved — access is stored permanently.');
+        setMsg('Role saved.');
       }
     } catch (err) {
       setError(err.message);
@@ -534,7 +534,7 @@ export default function RolePermissionMasterPage() {
         setCreatingUser(false);
         await loadUsers();
         setEditingUserId(data.id);
-        setMsg('User created. Password and roles are stored permanently.');
+        setMsg('User created.');
       } else if (editingUserId) {
         const body = {
           fullName: userDraft.fullName,
@@ -592,7 +592,7 @@ export default function RolePermissionMasterPage() {
 
   const renderActionMatrix = () => {
     if (hasFullAccess || isAdminRole) {
-      return <p className="muted rp-hint">Admin all Access is on — every module is included.</p>;
+      return <p className="muted rp-hint">Admin All Access is on. Every module is included.</p>;
     }
     if (!visibleRoleModules.length) {
       return <p className="muted rp-hint">Select modules above to set access actions.</p>;
@@ -622,7 +622,7 @@ export default function RolePermissionMasterPage() {
                   if (!available) {
                     return (
                       <td key={a.id} className="rp-action-cell">
-                        <span className="access-na">—</span>
+                        <span className="access-na">-</span>
                       </td>
                     );
                   }
@@ -653,7 +653,7 @@ export default function RolePermissionMasterPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
-      description="Pick modules, then set View / Add / Delete / Upload / Request / Approve."
+      description="Select modules, then set View, Add, Delete, Upload, Request, and Approve."
       actions={
         <>
           <button

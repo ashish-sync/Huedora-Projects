@@ -26,7 +26,7 @@ export default function AuditPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Audit log' }]}
       title="Audit log"
-      description="Append-only activity trail across agreements, assets, and administration."
+      description="Activity history for agreements, assets, and administration."
       toolbar={
         <>
           <input
@@ -63,7 +63,7 @@ export default function AuditPage() {
                   <code className="mono-sm">{a.action}</code>
                 </td>
                 <td>
-                  {a.entityType || '—'} {a.entityId ? String(a.entityId).slice(-6) : ''}
+                  {a.entityType || '-'} {a.entityId ? String(a.entityId).slice(-6) : ''}
                 </td>
                 <td>{a.result}</td>
               </tr>

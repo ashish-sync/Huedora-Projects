@@ -39,7 +39,7 @@ function SignatureMark({ signer, label, showDate }) {
           </div>
           {showDate && (
             <div className="esign-sig-date">
-              Date: {when ? new Date(when).toLocaleDateString() : '—'}
+              Date: {when ? new Date(when).toLocaleDateString() : '-'}
             </div>
           )}
           <div className="esign-sig-meta">
@@ -49,9 +49,9 @@ function SignatureMark({ signer, label, showDate }) {
       ) : (
         <>
           <div className="esign-party-sig-await">
-            {signer?.name ? `${signer.name} — awaiting` : 'Awaiting'}
+            {signer?.name ? `${signer.name}: awaiting` : 'Awaiting'}
           </div>
-          {showDate && <div className="esign-sig-date">Date: —</div>}
+          {showDate && <div className="esign-sig-date">Date: -</div>}
         </>
       )}
     </div>
@@ -444,8 +444,8 @@ export default function AgreementDetailPage() {
                 <strong>{isFullySigned ? 'Signed document' : 'Document preview'}</strong>
                 <p className="muted" style={{ margin: '2px 0 0' }}>
                   {isFullySigned
-                    ? 'Executed PDF with both party marks on every page.'
-                    : 'Live preview — signatures appear here as each party completes.'}
+                    ? 'Signed PDF with both party marks on every page.'
+                    : 'Preview updates as each party signs.'}
                 </p>
               </div>
               <button className="btn secondary" type="button" onClick={downloadPdf} disabled={pdfLoading}>
@@ -530,7 +530,7 @@ export default function AgreementDetailPage() {
                             onClick={() => setSelectedMasterId(s._id)}
                           >
                             <strong>
-                              {s.roleLabel} — {s.name}
+                              {s.roleLabel}: {s.name}
                             </strong>
                             <div className="sig-pick-preview">
                               {(s.signatureType === 'DRAWN' || s.signatureType === 'UPLOADED') &&
@@ -543,7 +543,7 @@ export default function AgreementDetailPage() {
                           </button>
                         ))}
                         {!masterSignatures.length && (
-                          <p className="muted">No signature saved yet — add one in Signature Master.</p>
+                          <p className="muted">No signature saved yet. Add one in Signature Master.</p>
                         )}
                       </div>
                     </div>
@@ -599,7 +599,7 @@ export default function AgreementDetailPage() {
             <div className="esign-party-card">
               <SignatureMark signer={sender} label="Sender / Owner" />
               <div className="muted mono-sm" style={{ marginTop: 8 }}>
-                {sender?.email || '—'}
+                {sender?.email || '-'}
               </div>
               <span className="badge" style={{ marginTop: 8 }}>
                 {sender?.status || 'PENDING'}
@@ -608,7 +608,7 @@ export default function AgreementDetailPage() {
             <div className="esign-party-card">
               <SignatureMark signer={receiver} label="Receiver" showDate />
               <div className="muted mono-sm" style={{ marginTop: 8 }}>
-                {receiver?.email || doc.partyEmail || '—'}
+                {receiver?.email || doc.partyEmail || '-'}
               </div>
               <span className="badge" style={{ marginTop: 8 }}>
                 {receiver?.status || 'PENDING'}
@@ -673,9 +673,9 @@ export default function AgreementDetailPage() {
               <tbody>
                 {(doc.assets || []).map((l) => (
                   <tr key={l._id}>
-                    <td>{l.assetId?.assetTag || '—'}</td>
-                    <td>{l.assetId?.deviceNameSnapshot || '—'}</td>
-                    <td>{l.assetId?.status || '—'}</td>
+                    <td>{l.assetId?.assetTag || '-'}</td>
+                    <td>{l.assetId?.deviceNameSnapshot || '-'}</td>
+                    <td>{l.assetId?.status || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -703,7 +703,7 @@ export default function AgreementDetailPage() {
                   <option value="">Select</option>
                   {assets.map((a) => (
                     <option key={a._id} value={a._id}>
-                      {a.assetTag} — {a.deviceNameSnapshot}
+                      {a.assetTag}. {a.deviceNameSnapshot}
                     </option>
                   ))}
                 </AdaptiveSelect>

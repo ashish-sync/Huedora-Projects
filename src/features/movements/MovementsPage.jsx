@@ -49,7 +49,7 @@ export default function MovementsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Movements' }]}
       title="Asset movements"
-      description="Request, approve, ship, and receive asset transfers. Requestor cannot approve their own request."
+      description="Request, approve, ship, and receive asset transfers. You cannot approve your own request."
       actions={
         <button
           className="btn secondary"
@@ -107,11 +107,11 @@ export default function MovementsPage() {
             <div className="field">
               <label>To {FIELD.CUSTODIAN}</label>
               <AdaptiveSelect value={form.toContactId} onChange={(e) => setForm({ ...form, toContactId: e.target.value })}>
-                <option value="">—</option>
+                <option value="">-</option>
                 {contacts.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
-                    {c.city ? ` — ${c.city}` : ''}
+                    {c.city ? `: ${c.city}` : ''}
                   </option>
                 ))}
               </AdaptiveSelect>
@@ -149,7 +149,7 @@ export default function MovementsPage() {
                 <td>
                   <span className="badge tone-neutral">{m.status}</span>
                 </td>
-                <td>{m.requestorId?.fullName || '—'}</td>
+                <td>{m.requestorId?.fullName || '-'}</td>
                 <td>{m.reason}</td>
                 <td className="row">
                   {can('movements:approve') &&

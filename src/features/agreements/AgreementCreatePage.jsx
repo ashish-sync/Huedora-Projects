@@ -4,6 +4,7 @@ import { api, apiFetch } from '../../shared/api.js';
 import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
 import { MODULE } from '../../shared/labels.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 const emptyContact = {
   name: '',
@@ -309,8 +310,7 @@ export default function AgreementCreatePage() {
           </p>
           <h1>Send a document</h1>
           <p className="muted esign-sub">
-            Pick the person who will receive this document and sign it (or acknowledge it for
-            non-signing templates), then choose the document from {MODULE.DOCUMENT_MASTER}.{' '}
+            Select the recipient, then choose a template or document from {MODULE.DOCUMENT_MASTER}.{' '}
             <Link to="/agreements/contacts">{MODULE.CONTACT_DIRECTORY}</Link>
             {' · '}
             <Link to="/agreements/document-master">{MODULE.DOCUMENT_MASTER}</Link>
@@ -408,7 +408,7 @@ export default function AgreementCreatePage() {
                       <strong>{c.name}</strong>
                       <span>{[c.email, c.contact || c.mobile].filter(Boolean).join(' · ') || 'No delivery details'}</span>
                       <span className="muted">
-                        {[c.profession, c.resourceType, c.city, c.state].filter(Boolean).join(' · ') || '—'}
+                        {[c.profession, c.resourceType, c.city, c.state].filter(Boolean).join(' · ') || '-'}
                       </span>
                     </button>
                   ))}
@@ -580,8 +580,7 @@ export default function AgreementCreatePage() {
             ) : (
               <div>
                 <p className="muted">Upload an existing PDF or Word document (no merge fields).</p>
-                <input
-                  type="file"
+                <FilePicker
                   accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={(e) => {
                     const f = e.target.files?.[0] || null;
@@ -589,11 +588,6 @@ export default function AgreementCreatePage() {
                     if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, ''));
                   }}
                 />
-                {uploadFile && (
-                  <p className="muted" style={{ marginTop: '0.75rem' }}>
-                    Selected: <strong>{uploadFile.name}</strong> ({Math.round(uploadFile.size / 1024)} KB)
-                  </p>
-                )}
               </div>
             )}
           </section>
@@ -666,14 +660,14 @@ export default function AgreementCreatePage() {
               {recipientMode === 'directory' && selectedContact ? (
                 <>
                   <strong>{selectedContact.name}</strong>
-                  <div className="muted">{selectedContact.email || '—'}</div>
-                  <div className="muted">{selectedContact.contact || selectedContact.mobile || '—'}</div>
+                  <div className="muted">{selectedContact.email || '-'}</div>
+                  <div className="muted">{selectedContact.contact || selectedContact.mobile || '-'}</div>
                 </>
               ) : (
                 <>
                   <strong>{newContact.name}</strong>
-                  <div className="muted">{newContact.email || '—'}</div>
-                  <div className="muted">{newContact.contact || '—'}</div>
+                  <div className="muted">{newContact.email || '-'}</div>
+                  <div className="muted">{newContact.contact || '-'}</div>
                 </>
               )}
               <div className="muted" style={{ marginTop: 6 }}>

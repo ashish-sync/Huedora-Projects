@@ -4,6 +4,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 const ROLES_FALLBACK = [
   'HR',
@@ -261,9 +262,7 @@ export default function SignatureMasterPage() {
           </p>
           <h1>{MODULE.DIGITAL_SIGNATURE_MASTER}</h1>
           <p className="muted esign-sub">
-            Store reusable signatures for HR, Director Finance, and other roles. Capture by drawing,
-            uploading an image, or typing a name — then apply them when a document needs that
-            sign-off.
+            Save reusable signatures for HR, Director Finance, and other roles. Draw, upload an image, or type a name, then apply when a document needs that sign-off.
           </p>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -313,7 +312,7 @@ export default function SignatureMasterPage() {
                   </div>
                   <strong>{row.name}</strong>
                   <span className="muted mono-sm">
-                    {[row.email, row.department].filter(Boolean).join(' · ') || '—'}
+                    {[row.email, row.department].filter(Boolean).join(' · ') || '-'}
                   </span>
                 </div>
                 <div className="sig-master-preview">
@@ -451,13 +450,12 @@ export default function SignatureMasterPage() {
             ) : form.signatureType === 'UPLOADED' ? (
               <div className="field">
                 <label>Upload signature image *</label>
-                <input
-                  type="file"
+                <FilePicker
                   accept="image/png,image/jpeg,image/jpg,image/webp"
                   onChange={(e) => onUploadFile(e.target.files?.[0])}
                 />
                 <p className="muted" style={{ marginBottom: 0 }}>
-                  PNG, JPG, or WebP — transparent PNG works best.
+                  PNG, JPG, or WebP. Transparent PNG works best.
                 </p>
                 {form.uploadPreview?.startsWith('data:image') && (
                   <div className="sig-master-preview" style={{ marginTop: 10 }}>

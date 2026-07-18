@@ -3,6 +3,7 @@ import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 export default function ImportsPage() {
   const { can } = useAuth();
@@ -33,7 +34,7 @@ export default function ImportsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Excel import' }]}
       title="Excel import"
-      description="Dry-run validates rows; commit writes Contact Directory custodians, Asset Registry, or verification records."
+      description="Validate rows first, then commit to Contact Directory, Asset Registry, or verification."
     >
       {error && <p className="error">{error}</p>}
 
@@ -102,7 +103,10 @@ function ImportCard({ title, hint, busy, onDry, onCommit }) {
       <p className="muted" style={{ margin: '0 0 16px' }}>
         {hint}
       </p>
-      <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+      <FilePicker
+        accept=".xlsx,.xls,.csv"
+        onChange={(e) => setFile(e.target.files?.[0] || null)}
+      />
       <div className="row" style={{ marginTop: 12 }}>
         <button className="btn secondary" type="button" disabled={!file || busy} onClick={() => onDry(file)}>
           Dry-run

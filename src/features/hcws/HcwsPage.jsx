@@ -31,7 +31,7 @@ export default function HcwsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'HCW Directory' }]}
       title="Custodians"
-      description="Healthcare worker and custodian master data — no login accounts."
+      description="Healthcare worker and custodian records (no login accounts)."
       kpis={[{ label: 'Total custodians', value: rows.length }]}
     >
       {error && <p className="error">{error}</p>}
@@ -75,10 +75,10 @@ export default function HcwsPage() {
               <tr key={h._id}>
                 <td>{h.hcwId}</td>
                 <td>{h.name}</td>
-                <td>{h.hcwType || '—'}</td>
-                <td>{h.hcwCategory || '—'}</td>
-                <td>{h.city || '—'}</td>
-                <td>{h.contact || '—'}</td>
+                <td>{h.hcwType || '-'}</td>
+                <td>{h.hcwCategory || '-'}</td>
+                <td>{h.city || '-'}</td>
+                <td>{h.contact || '-'}</td>
                 <td>
                   <span className="badge tone-neutral">{h.status}</span>
                 </td>

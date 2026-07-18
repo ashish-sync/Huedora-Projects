@@ -32,7 +32,7 @@ export default function UsersPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'System users' }]}
       title="System users"
-      description="Local accounts with role-based access control."
+      description="User accounts and role assignments."
       kpis={[{ label: 'Active users', value: rows.length }]}
     >
       {error && <p className="error">{error}</p>}
@@ -108,7 +108,7 @@ export default function UsersPage() {
               <tr key={u._id}>
                 <td>{u.fullName}</td>
                 <td>{u.email}</td>
-                <td>{(u.roles || []).map((r) => r.name).join(', ') || '—'}</td>
+                <td>{(u.roles || []).map((r) => r.name).join(', ') || '-'}</td>
               </tr>
             ))}
           </tbody>

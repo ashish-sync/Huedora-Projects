@@ -28,15 +28,15 @@ function PageChrome({ children }) {
       <header className="rs-header">
         <div className="rs-header-brand">
           <span className="rs-logo">{SENDER_ORG}</span>
-          <span className="rs-header-tag">Secure document delivery</span>
+          <span className="rs-header-tag">Document signing</span>
         </div>
-        <span className="rs-header-badge" aria-label="Secure link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <rect x="5" y="11" width="14" height="10" rx="2" />
-            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          </svg>
-          Protected
-        </span>
+          <span className="rs-header-badge" aria-label="Secure link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            Secure link
+          </span>
       </header>
       {children}
     </div>
@@ -129,7 +129,7 @@ function SignPanel({
           </>
         ) : (
           <>
-            <div className="rs-panel-step">Step 2 of 2 — Action required</div>
+            <div className="rs-panel-step">Step 2 of 2. Action required</div>
             <h2 className="rs-panel-title">
               {isNonSigning ? 'Acknowledge this document' : 'Sign this document'}
             </h2>
@@ -451,13 +451,13 @@ export default function RecipientSignPage() {
 
         <div className="rs-flow">
           <section className="rs-envelope">
-            <p className="rs-step-label">Step 1 of 2 — Review document</p>
+            <p className="rs-step-label">Step 1 of 2. Review document</p>
             <p className="rs-sent-by">
               Sent by <strong>{SENDER_ORG}</strong>
             </p>
             <h1 className="rs-doc-title">{doc.title}</h1>
             <p className="rs-greeting">
-              Hello <strong>{receiverName}</strong>, please read the full document below. Signing
+              <strong>{receiverName}</strong>, please read the full document below. Signing
               options appear only after you reach the end
               {isNonSigning ? ' and acknowledge.' : '.'}
             </p>

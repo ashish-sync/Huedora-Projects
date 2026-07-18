@@ -43,7 +43,7 @@ export default function RepairsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Repairs & maintenance' }]}
       title="Repairs & maintenance"
-      description="Separate lifecycle states for corrective repairs and preventive maintenance."
+      description="Track corrective repairs and preventive maintenance separately."
       actions={
         <button
           className="btn secondary"
@@ -151,7 +151,7 @@ export default function RepairsPage() {
             {repairs.map((t) => (
               <tr key={t._id}>
                 <td>{t.ticketNumber}</td>
-                <td>{t.assetId?.assetTag || '—'}</td>
+                <td>{t.assetId?.assetTag || '-'}</td>
                 <td>
                   <span className="badge tone-neutral">{t.status}</span>
                 </td>
@@ -196,7 +196,7 @@ export default function RepairsPage() {
             {maintenance.map((o) => (
               <tr key={o._id}>
                 <td>{o.orderNumber}</td>
-                <td>{o.assetId?.assetTag || '—'}</td>
+                <td>{o.assetId?.assetTag || '-'}</td>
                 <td>
                   <span className="badge tone-neutral">{o.status}</span>
                 </td>

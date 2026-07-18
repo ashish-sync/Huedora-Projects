@@ -281,7 +281,7 @@ export default function LogisticsHubPage() {
           </span>
           <span className="ilog-rail-body">
             <strong>Inward</strong>
-            <span>Seller receipts, field returns / callbacks — all land in warehouse.</span>
+            <span>Seller receipts and field returns land in the warehouse.</span>
             <em>Open →</em>
           </span>
         </Link>
@@ -388,7 +388,7 @@ export default function LogisticsHubPage() {
                 {(data.filters?.hcws || []).map((hcw) => (
                   <option key={hcw.id} value={hcw.id}>
                     {hcw.id}
-                    {hcw.name && hcw.name !== hcw.id ? ` — ${hcw.name}` : ''}
+                    {hcw.name && hcw.name !== hcw.id ? `: ${hcw.name}` : ''}
                   </option>
                 ))}
               </AdaptiveSelect>

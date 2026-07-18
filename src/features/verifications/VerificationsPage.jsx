@@ -6,6 +6,7 @@ import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 function currentPeriod() {
   return new Date().toISOString().slice(0, 7);
@@ -488,7 +489,7 @@ export default function VerificationsPage() {
                       : `Round ${active.condition.nextRound} · ${active.asset.deviceNameSnapshot || 'Asset'}`}
                 </h2>
                 <p className="muted">
-                  {active.asset.serialNumber || '—'}
+                  {active.asset.serialNumber || '-'}
                   {active.holder?.name ? ` · ${active.holder.name}` : ''}
                 </p>
               </div>
@@ -602,10 +603,8 @@ export default function VerificationsPage() {
                     <div className="field">
                       <label>Full device photo *</label>
                       <p className="muted vf-photo-hint">Entire device in frame, clearly visible.</p>
-                      <input
+                      <FilePicker
                         ref={fullRef}
-                        className="vf-file-input"
-                        type="file"
                         accept="image/*"
                         capture="environment"
                         required
@@ -618,10 +617,8 @@ export default function VerificationsPage() {
                     <div className="field">
                       <label>Serial number photo *</label>
                       <p className="muted vf-photo-hint">Close-up where the serial can be read.</p>
-                      <input
+                      <FilePicker
                         ref={serialRef}
-                        className="vf-file-input"
-                        type="file"
                         accept="image/*"
                         capture="environment"
                         required
@@ -639,10 +636,8 @@ export default function VerificationsPage() {
                   <div className="field">
                     <label>Additional photos</label>
                     <p className="muted vf-photo-hint">Optional. Add damage, packaging, or other views.</p>
-                    <input
+                    <FilePicker
                       ref={extraRef}
-                      className="vf-file-input"
-                      type="file"
                       accept="image/*"
                       capture="environment"
                       multiple
@@ -897,13 +892,13 @@ export default function VerificationsPage() {
                   </td>
                   <td>
                     <div className="vf-device-cell">
-                      <strong>{row.asset.deviceNameSnapshot || '—'}</strong>
+                      <strong>{row.asset.deviceNameSnapshot || '-'}</strong>
                       <span className="muted mono-sm">{row.asset.assetTag}</span>
                     </div>
                   </td>
-                  <td className="mono-sm">{row.asset.serialNumber || '—'}</td>
+                  <td className="mono-sm">{row.asset.serialNumber || '-'}</td>
                   <td>
-                    <div>{row.holder?.name || '—'}</div>
+                    <div>{row.holder?.name || '-'}</div>
                     {row.holder?.city && <span className="muted mono-sm">{row.holder.city}</span>}
                   </td>
                   <td>
@@ -920,7 +915,7 @@ export default function VerificationsPage() {
                   <td className="mono-sm">
                     {row.condition.lastVerifiedAt
                       ? new Date(row.condition.lastVerifiedAt).toLocaleString()
-                      : '—'}
+                      : '-'}
                   </td>
                   <td className="muted vf-reason">{row.condition.reason}</td>
                   {canWrite && (

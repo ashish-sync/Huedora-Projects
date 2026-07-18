@@ -31,20 +31,28 @@ export default function ServerGate({ children }) {
   return (
     <div className="boot-gate" role="status" aria-live="polite" aria-busy={status === 'loading'}>
       <div className="boot-gate-card">
-        <p className="brand-mark boot-gate-brand">DHub</p>
+        <img
+          className="boot-gate-logo"
+          src="/tylo-one-logo.png"
+          alt="TYLO One"
+          width="88"
+          height="88"
+        />
+        <p className="brand-wordmark brand-wordmark--gate">
+          TYLO <span>One</span>
+        </p>
         {status === 'loading' ? (
           <>
             <div className="boot-gate-spinner" aria-hidden="true" />
-            <h1>Hold tight</h1>
-            <p className="muted">We're getting things ready for you. This will only take a moment.</p>
-            <p className="boot-gate-footnote">We&rsquo;ll be right with you.</p>
+            <h1>Connecting</h1>
+            <p className="muted">Checking server availability.</p>
+            <p className="boot-gate-footnote">Please wait.</p>
           </>
         ) : (
           <>
-            <div className="boot-gate-icon" aria-hidden="true" />
-            <h1>We&rsquo;ll be right back</h1>
+            <h1>Unable to connect</h1>
             <p className="muted">
-              DHub is taking a short pause. Hold tight — try again in a moment.
+              TYLO One is temporarily unavailable. Try again in a moment.
             </p>
             <button type="button" className="btn" onClick={() => setAttempt((n) => n + 1)}>
               Try again

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/auth.jsx';
-
+import { useTheme } from '../shared/theme.jsx';
 function initials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return 'U';
@@ -11,6 +11,7 @@ function initials(name = '') {
 
 export default function Layout({ children }) {
   const { user, logout, can } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { pathname } = useLocation();
   const isHome = pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,10 +61,30 @@ export default function Layout({ children }) {
         Skip to content
       </a>
       <header className="app-header">
-        <Link to="/" className="brand" aria-label="DHub Monitor home">
-          <strong>DHub Monitor</strong>
+        <Link to="/" className="brand" aria-label="TYLO One home">
+          <strong className="brand-wordmark">
+            TYLO <span>One</span>
+          </strong>
         </Link>
         <div className="header-actions">
+          <button
+            type="button"
+            className="header-theme-toggle"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5Z" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
           {canSeeNotifications && (
             <Link
               to="/notifications"
@@ -134,7 +155,7 @@ export default function Layout({ children }) {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 id="logout-confirm-title">Log out?</h3>
-            <p>Are you sure you want to logout?</p>
+            <p>Are you sure you want to log out?</p>
             <div className="confirm-actions">
               <button type="button" className="btn secondary" onClick={() => setConfirmLogout(false)}>
                 Cancel

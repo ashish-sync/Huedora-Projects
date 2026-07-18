@@ -4,14 +4,30 @@ export { BACKEND_URL, API_BASE, apiUrl } from './config.js';
 
 let accessToken = null;
 
+const ACCESS_KEY = 'tylo_one_access';
+const LEGACY_ACCESS_KEY = 'dhub_access';
+
 export function setAccessToken(token) {
   accessToken = token;
-  if (token) sessionStorage.setItem('dhub_access', token);
-  else sessionStorage.removeItem('dhub_access');
+  if (token) {
+    sessionStorage.setItem(ACCESS_KEY, token);
+    sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+  } else {
+    sessionStorage.removeItem(ACCESS_KEY);
+    sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+  }
 }
 
 export function loadStoredToken() {
-  accessToken = sessionStorage.getItem('dhub_access');
+  accessToken = sessionStorage.getItem(ACCESS_KEY);
+  if (!accessToken) {
+    const legacy = sessionStorage.getItem(LEGACY_ACCESS_KEY);
+    if (legacy) {
+      sessionStorage.setItem(ACCESS_KEY, legacy);
+      sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+      accessToken = legacy;
+    }
+  }
   return accessToken;
 }
 

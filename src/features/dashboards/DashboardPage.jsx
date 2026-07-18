@@ -109,36 +109,35 @@ export default function DashboardPage() {
     .split(/\s+/)[0];
 
   return (
-    <div className="dhub-home">
-      <div className="dhub-home-atmosphere" aria-hidden="true" />
+    <div className="tylo-home">
+      <div className="tylo-home-atmosphere" aria-hidden="true" />
 
-      <header className="dhub-home-hero">
-        <div className="dhub-home-hero-copy">
-          <p className="dhub-home-kicker">DHub Monitor</p>
-          <h1 id="dhub-modules-heading" className="dhub-home-prompt">
+      <header className="tylo-home-hero">
+        <div className="tylo-home-hero-copy">
+          <p className="tylo-home-kicker">TYLO One</p>
+          <h1 id="tylo-modules-heading" className="tylo-home-prompt">
             {firstName ? `Welcome back, ${firstName}.` : 'Welcome back.'}
           </h1>
-          <p className="dhub-home-lead">
-            Choose a workspace — Asset Registry, Document Center, verification, camps, The Request
-            Center, or Inventory & Logistics.
+          <p className="tylo-home-lead">
+            Open a module: Asset Registry, Document Center, Asset Verification, Camp Management, Request Center, or Inventory & Logistics.
           </p>
         </div>
 
         {canSeeDashboard && (
-          <div className="dhub-home-dash-action">
-            <Link className="btn dhub-home-dash-btn" to="/dashboard">
+          <div className="tylo-home-dash-action">
+            <Link className="btn tylo-home-dash-btn" to="/dashboard">
               {MODULE.DASHBOARD}
               <span aria-hidden="true"> →</span>
             </Link>
-            <p className="dhub-home-dash-hint">Asset Registry &amp; verification tracking</p>
+            <p className="tylo-home-dash-hint">Asset Registry and verification overview</p>
           </div>
         )}
       </header>
 
-      <section className="dhub-home-modules" aria-labelledby="dhub-modules-heading">
-        <div className="dhub-home-section-head">
-          <h2 className="dhub-home-section-title">Workspaces</h2>
-          <p className="muted dhub-home-section-note">
+      <section className="tylo-home-modules" aria-labelledby="tylo-modules-heading">
+        <div className="tylo-home-section-head">
+          <h2 className="tylo-home-section-title">Modules</h2>
+          <p className="muted tylo-home-section-note">
             {modules.length
               ? `${modules.length} available for your role`
               : 'No modules available for your role'}
@@ -146,25 +145,25 @@ export default function DashboardPage() {
         </div>
 
         {!modules.length ? (
-          <p className="dhub-home-empty muted">Ask an administrator to assign module access.</p>
+          <p className="tylo-home-empty muted">Ask an administrator to grant module access.</p>
         ) : (
-          <div className="dhub-home-grid dhub-home-grid--modules">
+          <div className="tylo-home-grid tylo-home-grid--modules">
             {modules.map((m, i) => (
               <Link
                 key={m.to}
                 to={m.to}
-                className="dhub-home-card tone-primary"
+                className="tylo-home-card tone-primary"
                 style={{ '--i': i }}
               >
-                <div className="dhub-home-card-top">
-                  <span className="dhub-home-card-icon">{m.icon}</span>
+                <div className="tylo-home-card-top">
+                  <span className="tylo-home-card-icon">{m.icon}</span>
                 </div>
-                <div className="dhub-home-card-body">
+                <div className="tylo-home-card-body">
                   <h2>{m.title}</h2>
                   <p>{m.blurb}</p>
                 </div>
-                <span className="dhub-home-card-cta">
-                  Enter
+                <span className="tylo-home-card-cta">
+                  Open
                   <span aria-hidden="true">→</span>
                 </span>
               </Link>

@@ -7,7 +7,7 @@ import PageShell from '../../components/ui/PageShell.jsx';
 
 function formatMoney(n) {
   const num = Number(n);
-  if (!Number.isFinite(num)) return '—';
+  if (!Number.isFinite(num)) return '-';
   return num.toLocaleString(undefined, {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
@@ -18,7 +18,7 @@ function statusTone(status) {
   const s = String(status || '');
   if (s === 'Agreement Signed') return 'ok';
   if (s === 'Lost/Stolen' || s === 'Untraceable' || s === 'End of Life') return 'danger';
-  if (s === 'Under Repairs' || s === 'With Kartavya') return 'warn';
+  if (s === 'Under Repairs' || s === 'With TCPL') return 'warn';
   if (s === 'Not Applicable') return 'neutral';
   return 'neutral';
 }
@@ -137,7 +137,7 @@ export default function TrackingDashboardPage() {
     setError('');
     setExportBusy(true);
     try {
-      await downloadExcel('/dashboards/export', 'DHub_Dashboard_Summary.xlsx');
+      await downloadExcel('/dashboards/export', 'TYLO_One_Dashboard_Summary.xlsx');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -149,7 +149,7 @@ export default function TrackingDashboardPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="Asset Registry by status (Qty & Value) and Asset Verification condition (Safe / Caution / Danger)."
+      description="Asset Registry by status (quantity and value) and verification condition (Safe, Caution, Danger)."
       actions={
         <>
           <button className="btn secondary" type="button" onClick={load} disabled={loading}>
@@ -231,7 +231,7 @@ export default function TrackingDashboardPage() {
               <div>
                 <h2>{MODULE.ASSET_INVENTORY}</h2>
                 <p className="muted">
-                  {FIELD.ASSET_STATUS} — onboarded in selected range
+                  {FIELD.ASSET_STATUS} for assets onboarded in the selected range
                 </p>
               </div>
               <Link className="btn secondary btn-compact" to="/assets">

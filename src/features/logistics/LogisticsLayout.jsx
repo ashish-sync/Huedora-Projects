@@ -34,7 +34,7 @@ export default function LogisticsLayout() {
       <PageShell
         breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.INVENTORY_LOGISTICS }]}
         title={MODULE.INVENTORY_LOGISTICS}
-        description="Dashboard, inward receipts, outward dispatch, balances, and masters."
+        description="Dashboard, inward receipts, outward dispatch, stock balances, and masters."
       >
         <nav className="logistics-nav" aria-label="Inventory and Logistics sections">
           {NAV.map((item) => (

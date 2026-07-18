@@ -31,7 +31,7 @@ export function KpiGrid({ items = [] }) {
             className={`module-kpi${item.active ? ' is-active' : ''}${item.onClick ? ' is-clickable' : ''}`}
             onClick={item.onClick}
           >
-            <strong>{item.value ?? '—'}</strong>
+            <strong>{item.value ?? '-'}</strong>
             <span>{item.label}</span>
           </Comp>
         );
@@ -61,10 +61,10 @@ export function QuickActions({ items = [] }) {
 
 export function EmptyState({ title, description, action }) {
   return (
-    <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
-      <h3 style={{ marginTop: 0 }}>{title}</h3>
-      {description && <p className="muted">{description}</p>}
-      {action}
+    <div className="empty-state card">
+      <h3 className="empty-state-title">{title}</h3>
+      {description && <p className="muted empty-state-desc">{description}</p>}
+      {action ? <div className="empty-state-action">{action}</div> : null}
     </div>
   );
 }

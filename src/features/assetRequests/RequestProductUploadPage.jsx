@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiUrl } from '../../shared/api.js';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 const SENDER_ORG = 'Tylo Care';
 
@@ -172,11 +173,11 @@ export default function RequestProductUploadPage() {
           <div className="sv-asset-summary">
             <div>
               <span className="sv-label">Request</span>
-              <strong>{request.requestNumber || '—'}</strong>
+              <strong>{request.requestNumber || '-'}</strong>
             </div>
             <div>
               <span className="sv-label">Asset</span>
-              <strong>{request.assetName || request.asset?.name || '—'}</strong>
+              <strong>{request.assetName || request.asset?.name || '-'}</strong>
             </div>
             {(request.serialNumber ||
               request.asset?.serialNumber ||
@@ -214,10 +215,8 @@ export default function RequestProductUploadPage() {
               <p className="muted vf-photo-hint">
                 Keep the full product in frame and ensure damage or service concerns are visible.
               </p>
-              <input
+              <FilePicker
                 ref={fileRef}
-                className="vf-file-input"
-                type="file"
                 accept="image/*"
                 capture="environment"
                 required

@@ -4,7 +4,7 @@ import { apiFetch } from '../shared/api.js';
 
 
 const RENDER_OPTIONS = {
-  className: 'dhub-docx',
+  className: 'tylo-docx',
   inWrapper: true,
   ignoreWidth: false,
   ignoreHeight: false,
@@ -20,7 +20,7 @@ const RENDER_OPTIONS = {
 };
 
 /**
- * Faithful Word (.docx) preview — preserves pages, bold, tables, images.
+ * Native Word (.docx) preview that preserves pages, bold, tables, and images.
  * Pass either a local File/Blob (`file`) or a template id (`templateId`) to fetch the stored Word file.
  */
 export default function DocxNativePreview({ file, templateId, className = '' }) {

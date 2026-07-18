@@ -46,7 +46,7 @@ export default function AssetDetailPage() {
 
   if (!asset) return <p className="muted">{error || 'Loading…'}</p>;
 
-  const custodian = asset.contactId?.name || '—';
+  const custodian = asset.contactId?.name || '-';
 
   return (
     <div>
@@ -75,7 +75,7 @@ export default function AssetDetailPage() {
               </tr>
               <tr>
                 <td>Serial</td>
-                <td>{asset.serialNumber || '—'}</td>
+                <td>{asset.serialNumber || '-'}</td>
               </tr>
               <tr>
                 <td>Qty</td>
@@ -90,24 +90,24 @@ export default function AssetDetailPage() {
                 <td>
                   {[asset.location?.city, asset.location?.zone, asset.location?.currentLocation]
                     .filter(Boolean)
-                    .join(' / ') || '—'}
+                    .join(' / ') || '-'}
                 </td>
               </tr>
               <tr>
                 <td>Agreement status</td>
-                <td>{asset.agreementStatus || '—'}</td>
+                <td>{asset.agreementStatus || '-'}</td>
               </tr>
               <tr>
                 <td>Custody</td>
-                <td>{asset.custody || '—'}</td>
+                <td>{asset.custody || '-'}</td>
               </tr>
               <tr>
                 <td>Added month</td>
-                <td>{asset.addedMonth || '—'}</td>
+                <td>{asset.addedMonth || '-'}</td>
               </tr>
               <tr>
                 <td>Remarks</td>
-                <td>{asset.remarks || '—'}</td>
+                <td>{asset.remarks || '-'}</td>
               </tr>
             </tbody>
           </table>
@@ -141,11 +141,11 @@ export default function AssetDetailPage() {
               <div className="field">
                 <label>{FIELD.CUSTODIAN} (for Assigned/Verified)</label>
                 <AdaptiveSelect value={contactId} onChange={(e) => setContactId(e.target.value)}>
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {contacts.map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
-                      {c.city ? ` — ${c.city}` : ''}
+                      {c.city ? `: ${c.city}` : ''}
                     </option>
                   ))}
                 </AdaptiveSelect>
@@ -176,12 +176,12 @@ export default function AssetDetailPage() {
           <tbody>
             {timeline.map((ev) => (
               <tr key={ev._id}>
-                <td>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : '—'}</td>
+                <td>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : '-'}</td>
                 <td>{ev.eventType}</td>
                 <td>
-                  {ev.fromStatus || '—'} → {ev.toStatus || '—'}
+                  {ev.fromStatus || '-'} → {ev.toStatus || '-'}
                 </td>
-                <td>{ev.reason || '—'}</td>
+                <td>{ev.reason || '-'}</td>
               </tr>
             ))}
           </tbody>

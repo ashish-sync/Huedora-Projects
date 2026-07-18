@@ -37,7 +37,7 @@ export default function LogisticsUsagePage() {
     setMsg('');
     try {
       await api(`/logistics/usage/${id}`, { method: 'PATCH', body: patch });
-      setMsg('Usage updated — dashboard Used / Wastage will refresh.');
+      setMsg('Usage updated. Dashboard Used and Wastage figures will refresh.');
       await load();
     } catch (e) {
       setError(e.message);
@@ -119,16 +119,16 @@ export default function LogisticsUsagePage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r._id}>
-                <td className="mono-sm">{r.hcwId || '—'}</td>
-                <td>{r.hcwName || '—'}</td>
-                <td>{r.clientName || '—'}</td>
-                <td>{r.processName || '—'}</td>
+                <td className="mono-sm">{r.hcwId || '-'}</td>
+                <td>{r.hcwName || '-'}</td>
+                <td>{r.clientName || '-'}</td>
+                <td>{r.processName || '-'}</td>
                 <td>
-                  <strong>{r.inventoryType || r.productName || '—'}</strong>
+                  <strong>{r.inventoryType || r.productName || '-'}</strong>
                 </td>
-                <td>{r.doctorName || '—'}</td>
-                <td>{r.machineCity || '—'}</td>
-                <td className="mono-sm">{String(r.campDate || '').slice(0, 10) || '—'}</td>
+                <td>{r.doctorName || '-'}</td>
+                <td>{r.machineCity || '-'}</td>
+                <td className="mono-sm">{String(r.campDate || '').slice(0, 10) || '-'}</td>
                 <td className="num">
                   {canWrite ? (
                     <input
@@ -166,7 +166,7 @@ export default function LogisticsUsagePage() {
                   )}
                 </td>
                 <td>
-                  <span className="badge tone-neutral">{r.source || '—'}</span>
+                  <span className="badge tone-neutral">{r.source || '-'}</span>
                 </td>
               </tr>
             ))}

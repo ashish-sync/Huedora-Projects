@@ -5,6 +5,7 @@ import { FIELD, MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { INDIAN_STATES_AND_UTS } from '../devices/assetMasterOptions.js';
 
@@ -250,7 +251,7 @@ function DirectionContactFields({ label, prefix, contacts, form, setForm }) {
             {contacts.map((contact) => (
               <option key={contact._id} value={contact._id}>
                 {contact.name || 'Unnamed'}
-                {contact.city ? ` — ${contact.city}` : ''}
+                {contact.city ? `: ${contact.city}` : ''}
               </option>
             ))}
           </AdaptiveSelect>
@@ -919,7 +920,7 @@ export default function AssetRequestsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.ASSET_REQUESTS }]}
       title={MODULE.ASSET_REQUESTS}
-      description="Submit repair and maintenance, logistics, training, reimbursement, hiring, and other requests. Fields adapt to the type you choose."
+      description="Submit repair, maintenance, logistics, training, reimbursement, hiring, and other requests."
       actions={
         <button className="btn secondary" type="button" disabled={exportBusy} onClick={downloadMaster}>
           {exportBusy ? 'Downloading…' : 'Download Excel'}
@@ -981,7 +982,7 @@ export default function AssetRequestsPage() {
               </div>
             )}
 
-            {/* —— Repair —— */}
+            {/* -- Repair -- */}
             {form.requestType === 'SERVICE' && form.serviceType !== 'Maintenance' && (
               <>
                 <div className="field">
@@ -1002,7 +1003,7 @@ export default function AssetRequestsPage() {
                     {vendorContacts.map((vendor) => (
                       <option key={vendor._id} value={vendor._id}>
                         {vendor.organization || vendor.name}
-                        {vendor.city ? ` — ${vendor.city}` : ''}
+                        {vendor.city ? `: ${vendor.city}` : ''}
                       </option>
                     ))}
                   </AdaptiveSelect>
@@ -1021,10 +1022,8 @@ export default function AssetRequestsPage() {
             {form.requestType === 'SERVICE' && (
               <div className="field arq-span">
                 <label>Product image</label>
-                <input
+                <FilePicker
                   ref={productPhotoRef}
-                  className="vf-file-input"
-                  type="file"
                   accept="image/*"
                   onChange={(e) => setProductPhoto(e.target.files?.[0] || null)}
                 />
@@ -1032,7 +1031,7 @@ export default function AssetRequestsPage() {
               </div>
             )}
 
-            {/* —— Maintenance —— */}
+            {/* -- Maintenance -- */}
             {form.requestType === 'SERVICE' && form.serviceType === 'Maintenance' && (
               <>
                 <div className="field">
@@ -1054,7 +1053,7 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* —— Logistics —— */}
+            {/* -- Logistics -- */}
             {form.requestType === 'LOGISTICS' && (
               <>
                 <div className="field">
@@ -1254,7 +1253,7 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* —— Training —— */}
+            {/* -- Training -- */}
             {form.requestType === 'TRAINING' && (
               <>
                 <div className="field">
@@ -1316,7 +1315,7 @@ export default function AssetRequestsPage() {
                     {contacts.map((contact) => (
                       <option key={contact._id} value={contact._id}>
                         {contact.name || 'Unnamed'}
-                        {contact.city ? ` — ${contact.city}` : ''}
+                        {contact.city ? `: ${contact.city}` : ''}
                       </option>
                     ))}
                   </AdaptiveSelect>
@@ -1342,7 +1341,7 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* —— Reimbursement —— */}
+            {/* -- Reimbursement -- */}
             {form.requestType === 'REIMBURSEMENT' && (
               <>
                 <div className="field">
@@ -1382,10 +1381,8 @@ export default function AssetRequestsPage() {
                 </div>
                 <div className="field">
                   <label>Bill *</label>
-                  <input
+                  <FilePicker
                     ref={reimbursementBillRef}
-                    className="vf-file-input"
-                    type="file"
                     required
                     accept="image/*,.pdf"
                     onChange={(e) => setReimbursementBill(e.target.files?.[0] || null)}
@@ -1395,7 +1392,7 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* —— Hiring —— */}
+            {/* -- Hiring -- */}
             {form.requestType === 'HIRING' && (
               <>
                 <div className="field">
@@ -1550,7 +1547,7 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* —— Other —— */}
+            {/* -- Other -- */}
             {form.requestType === 'OTHER' && (
               <>
                 <div className="field">
@@ -1596,10 +1593,8 @@ export default function AssetRequestsPage() {
                 </div>
                 <div className="field">
                   <label>Attachment (optional)</label>
-                  <input
+                  <FilePicker
                     ref={otherAttachmentRef}
-                    className="vf-file-input"
-                    type="file"
                     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                     onChange={(e) => setOtherAttachment(e.target.files?.[0] || null)}
                   />
@@ -1786,9 +1781,9 @@ export default function AssetRequestsPage() {
                   <td>
                     <span className="badge tone-neutral">{r.status}</span>
                   </td>
-                  <td className="muted mono-sm">{detailSummary(r) || '—'}</td>
+                  <td className="muted mono-sm">{detailSummary(r) || '-'}</td>
                   <td>
-                    <strong>{r.assetName || r.trainingTopic || r.hiringName || '—'}</strong>
+                    <strong>{r.assetName || r.trainingTopic || r.hiringName || '-'}</strong>
                     <div className="muted mono-sm">
                       {r.assetCustody ||
                         r.payeeName ||
@@ -1797,8 +1792,8 @@ export default function AssetRequestsPage() {
                         ''}
                     </div>
                   </td>
-                  <td>{r.requestorId?.fullName || r.requestorId?.email || '—'}</td>
-                  <td className="arq-reason">{r.reason || '—'}</td>
+                  <td>{r.requestorId?.fullName || r.requestorId?.email || '-'}</td>
+                  <td className="arq-reason">{r.reason || '-'}</td>
                   <td>
                     <div className="arq-actions">
                       {canApprove && r.status === 'REQUESTED' && !isMine && (

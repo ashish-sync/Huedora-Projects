@@ -1,0 +1,182 @@
+/**
+ * TYLO design tokens for TYLO One
+ * Source of truth: TYLO Brand Identity & Design System
+ * Product name: TYLO One.
+ */
+
+:root {
+  /* ── TYLO Light ─────────────────────────────────────────── */
+  --tylo-primary: #0d47a1;
+  --tylo-primary-hover: #0a3a82;
+  --tylo-secondary: #1976d2;
+  --tylo-secondary-muted: #455a64;
+  --tylo-cool-gray: #607d8b;
+  --tylo-accent: #d32f2f;
+  --tylo-accent-soft: #ffebee;
+
+  --tylo-ok: #2e7d32;
+  --tylo-ok-soft: #e8f5e9;
+  --tylo-warn: #ffc107;
+  --tylo-warn-soft: #fff8e1;
+  --tylo-danger: #e53935;
+  --tylo-danger-soft: #ffebee;
+  --tylo-info: #0277bd;
+  --tylo-info-soft: #e1f5fe;
+
+  --tylo-bg: #ffffff;
+  --tylo-surface: #f5f5f5;
+  --tylo-border: #e0e0e0;
+  --tylo-ink: #212121;
+  --tylo-ink-secondary: #546e7a;
+  --tylo-disabled: #b0bec5;
+
+  /* ── Legacy aliases (existing CSS keeps working) ────────── */
+  --ink: var(--tylo-ink);
+  --ink-soft: #37474f;
+  --muted: var(--tylo-ink-secondary);
+  --muted-soft: var(--tylo-cool-gray);
+
+  --bg: #f5f7fa;
+  --bg-elevated: var(--tylo-bg);
+  --bg-sunken: #eceff1;
+  --bg-tint: #e3f2fd;
+  --sand: var(--tylo-surface);
+  --sand-deep: #eceff1;
+
+  --surface: var(--tylo-surface);
+  --surface-muted: #eceff1;
+
+  --brand: var(--tylo-primary);
+  --brand-hover: var(--tylo-primary-hover);
+  --brand-bright: var(--tylo-secondary);
+  --brand-soft: #e3f2fd;
+  --brand-ink: #f5f9ff;
+  --header-bg: var(--tylo-primary);
+  --accent: var(--tylo-accent);
+  --accent-soft: var(--tylo-accent-soft);
+  --glow: rgba(13, 71, 161, 0.18);
+
+  --info: var(--tylo-info);
+  --info-soft: var(--tylo-info-soft);
+  --ok: var(--tylo-ok);
+  --ok-soft: var(--tylo-ok-soft);
+  --warn: #f9a825;
+  --warn-soft: var(--tylo-warn-soft);
+  --danger: var(--tylo-danger);
+  --danger-soft: var(--tylo-danger-soft);
+
+  --line: var(--tylo-border);
+  --line-strong: #b0bec5;
+  --focus: var(--tylo-secondary);
+
+  --shadow-sm: 0 1px 2px rgba(33, 33, 33, 0.06);
+  --shadow: 0 1px 3px rgba(33, 33, 33, 0.06), 0 8px 24px rgba(13, 71, 161, 0.08);
+  --shadow-lg: 0 8px 16px rgba(33, 33, 33, 0.08), 0 24px 48px rgba(13, 71, 161, 0.12);
+
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --header-h: 56px;
+  --pad: 24px;
+  --content-max: 1280px;
+  --control-h: 40px;
+
+  --font: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration: 200ms;
+
+  /* Logistics island aliases → TYLO */
+  --ilog-beige: var(--tylo-surface);
+  --ilog-card: var(--tylo-bg);
+  --ilog-ink: var(--tylo-ink);
+  --ilog-muted: var(--tylo-ink-secondary);
+  --ilog-map: #e3f2fd;
+  --ilog-dot: var(--tylo-primary);
+}
+
+html[data-theme='dark'] {
+  /* Enterprise dark: deep navy chrome, muted surfaces; not neon-on-black */
+  --tylo-primary: #3b82f6;
+  --tylo-primary-hover: #60a5fa;
+  --tylo-secondary: #93c5fd;
+  --tylo-secondary-muted: #1e293b;
+  --tylo-cool-gray: #94a3b8;
+  --tylo-accent: #f87171;
+  --tylo-accent-soft: rgba(248, 113, 113, 0.14);
+
+  --tylo-ok: #4ade80;
+  --tylo-ok-soft: rgba(74, 222, 128, 0.14);
+  --tylo-warn: #fbbf24;
+  --tylo-warn-soft: rgba(251, 191, 36, 0.14);
+  --tylo-danger: #f87171;
+  --tylo-danger-soft: rgba(248, 113, 113, 0.14);
+  --tylo-info: #38bdf8;
+  --tylo-info-soft: rgba(56, 189, 248, 0.14);
+
+  --tylo-bg: #0b0f14;
+  --tylo-surface: #151a21;
+  --tylo-border: #2a3340;
+  --tylo-ink: #e8eef5;
+  --tylo-ink-secondary: #9aa8b8;
+  --tylo-disabled: #64748b;
+
+  --ink: var(--tylo-ink);
+  --ink-soft: #c5d0dc;
+  --muted: var(--tylo-ink-secondary);
+  --muted-soft: #7b8a9a;
+
+  --bg: #0b0f14;
+  --bg-elevated: #151a21;
+  --bg-sunken: #080b0f;
+  --bg-tint: #1a2433;
+  --sand: #151a21;
+  --sand-deep: #1c2430;
+
+  --surface: var(--tylo-surface);
+  --surface-muted: #1c2430;
+
+  --header-bg: #0f2744;
+  --brand: var(--tylo-primary);
+  --brand-hover: var(--tylo-primary-hover);
+  --brand-bright: var(--tylo-secondary);
+  --brand-soft: rgba(59, 130, 246, 0.16);
+  --brand-ink: #f1f5f9;
+  --accent: var(--tylo-accent);
+  --accent-soft: var(--tylo-accent-soft);
+  --glow: rgba(59, 130, 246, 0.2);
+
+  --info: var(--tylo-info);
+  --info-soft: var(--tylo-info-soft);
+  --ok: var(--tylo-ok);
+  --ok-soft: var(--tylo-ok-soft);
+  --warn: var(--tylo-warn);
+  --warn-soft: var(--tylo-warn-soft);
+  --danger: var(--tylo-danger);
+  --danger-soft: var(--tylo-danger-soft);
+
+  --line: var(--tylo-border);
+  --line-strong: #3a4556;
+  --focus: #60a5fa;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  --ilog-beige: var(--bg);
+  --ilog-card: var(--bg-elevated);
+  --ilog-ink: var(--tylo-ink);
+  --ilog-muted: var(--tylo-ink-secondary);
+  --ilog-map: #1a2433;
+  --ilog-dot: var(--tylo-primary);
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration: 0.01ms;
+  }
+}

@@ -382,7 +382,7 @@ export default function LogisticsOutwardPage() {
           );
         }
       } else {
-        setMsg('Outward dispatch saved — stock updated.');
+        setMsg('Outward dispatch saved. Stock updated.');
       }
 
       setFormOpen(false);
@@ -403,8 +403,7 @@ export default function LogisticsOutwardPage() {
   return (
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
-        Outward — stock leaving the warehouse. Dispatch manually or fulfill an approved logistics
-        request from The Request Center.
+        Outward dispatch: leave warehouse stock manually, or fulfill an approved logistics request.
       </p>
 
       {(error || msg) && (
@@ -433,7 +432,7 @@ export default function LogisticsOutwardPage() {
             setFormOpen(false);
           }}
         >
-          From The Request Center
+          From Request Center
         </button>
       </div>
 
@@ -556,7 +555,7 @@ export default function LogisticsOutwardPage() {
                     {contacts.map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.name}
-                        {c.city ? ` — ${c.city}` : ''}
+                        {c.city ? `: ${c.city}` : ''}
                       </option>
                     ))}
                   </AdaptiveSelect>
@@ -643,17 +642,17 @@ export default function LogisticsOutwardPage() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r._id}>
-                    <td className="mono-sm">{r.uniqueKey || '—'}</td>
+                    <td className="mono-sm">{r.uniqueKey || '-'}</td>
                     <td className="mono-sm">
                       {String(r.transactionDate || r.transactionDateTime || '').slice(0, 10)}
                     </td>
                     <td>
-                      <strong>{r.productName || r.itemName || '—'}</strong>
+                      <strong>{r.productName || r.itemName || '-'}</strong>
                     </td>
                     <td className="num">{r.qty}</td>
-                    <td>{r.recipientName || r.employeeName || r.name || '—'}</td>
-                    <td>{r.city || '—'}</td>
-                    <td>{r.deliveryMode || r.mode || '—'}</td>
+                    <td>{r.recipientName || r.employeeName || r.name || '-'}</td>
+                    <td>{r.city || '-'}</td>
+                    <td>{r.deliveryMode || r.mode || '-'}</td>
                   </tr>
                 ))}
                 {!rows.length && (
@@ -701,11 +700,11 @@ export default function LogisticsOutwardPage() {
                     <td>
                       <span className="badge tone-neutral">{r.status}</span>
                     </td>
-                    <td>{r.logisticsKind || '—'}</td>
+                    <td>{r.logisticsKind || '-'}</td>
                     <td>
                       {progress.lines.map((line, index) => (
                         <div key={lineId(line) || index} className="logistics-request-line">
-                          <strong>{line.productName || r.assetName || '—'}</strong>
+                          <strong>{line.productName || r.assetName || '-'}</strong>
                           <span className="muted mono-sm">
                             {line.productType || 'Product'} · Qty {line.qty || 0}
                           </span>
@@ -716,12 +715,12 @@ export default function LogisticsOutwardPage() {
                       </div>
                     </td>
                     <td>
-                      {r.toCity || r.toContactId?.city || '—'}
+                      {r.toCity || r.toContactId?.city || '-'}
                       <div className="muted mono-sm">
                         {r.toName || r.toContactId?.name || ''}
                       </div>
                     </td>
-                    <td>{r.requestorId?.fullName || r.requestorId?.email || '—'}</td>
+                    <td>{r.requestorId?.fullName || r.requestorId?.email || '-'}</td>
                     <td>
                       {canWrite &&
                         progress.lines.map((line, index) => {
@@ -747,7 +746,7 @@ export default function LogisticsOutwardPage() {
                 {!requests.length && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No open logistics requests. Create one in The Request Center.
+                      No open logistics requests. Create one in Request Center.
                     </td>
                   </tr>
                 )}

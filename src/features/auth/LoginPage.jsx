@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
-
 export default function LoginPage() {
   const { user, login } = useAuth();
   const [email, setEmail] = useState('');
@@ -28,13 +27,14 @@ export default function LoginPage() {
     <div className="login-page">
       <aside className="login-hero">
         <div className="login-hero-top">
-          <p className="brand-mark">DHub</p>
+          <p className="brand-wordmark brand-wordmark--hero">
+            TYLO <span>One</span>
+          </p>
         </div>
         <div className="login-hero-inner">
-          <h1>Onboard devices, get them signed, then verify them.</h1>
+          <h1>Register assets, complete documents, and verify in the field.</h1>
           <p>
-            Asset Registry, Document Center, and Asset Verification — one sequence for the full
-            lifecycle.
+            Asset Registry, Document Center, and Asset Verification in one place.
           </p>
         </div>
       </aside>
@@ -43,7 +43,7 @@ export default function LoginPage() {
         <form className="card login-card" onSubmit={onSubmit} aria-labelledby="login-heading">
           <p className="login-kicker">Welcome back</p>
           <h2 id="login-heading">Sign in</h2>
-          <p>Use your work email to continue to DHub.</p>
+          <p>Enter your work email and password.</p>
 
           <div className="field">
             <label htmlFor="login-email">Work email</label>

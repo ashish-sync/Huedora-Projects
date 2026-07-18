@@ -195,7 +195,7 @@ export default function LogisticsMasterPage() {
 
   const warehouseName = useMemo(() => {
     const map = Object.fromEntries(warehouses.map((w) => [w._id, w.name || w.code]));
-    return (id) => map[id] || '—';
+    return (id) => map[id] || '-';
   }, [warehouses]);
 
   const contactOptions = useMemo(() => {
@@ -335,7 +335,7 @@ export default function LogisticsMasterPage() {
   return (
     <div className="logistics-master">
       <p className="muted" style={{ marginTop: 0 }}>
-        Inventory &amp; Logistics Masters — units of measure, product categories, suppliers, and vendors.
+        Configure units of measure, product categories, suppliers, and vendors.
         Suppliers and vendors can also be added from Contact Directory.
       </p>
       <div className="logistics-entity-tabs" role="tablist">
@@ -557,7 +557,7 @@ export default function LogisticsMasterPage() {
                     {f === 'warehouseId'
                       ? warehouseName(row.warehouseId)
                       : row[f] == null || row[f] === ''
-                        ? '—'
+                        ? '-'
                         : String(row[f])}
                   </td>
                 ))}

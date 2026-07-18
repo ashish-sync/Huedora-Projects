@@ -21,7 +21,7 @@ export default function NotificationsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: 'Notifications' }]}
       title="Notifications"
-      description="In-app inbox for agreement sends, movements, verification callback reminders, and system events."
+      description="Alerts for agreements, movements, verification callbacks, and system events."
       actions={
         <button
           className="btn secondary"
@@ -55,7 +55,7 @@ export default function NotificationsPage() {
           </div>
         ))}
         {!rows.length && (
-          <EmptyState title="All caught up" description="New notifications will appear here." />
+          <EmptyState title="No notifications" description="New alerts will appear here." />
         )}
       </div>
     </PageShell>

@@ -192,7 +192,7 @@ export default function CampsPage() {
     try {
       const { technicianContactId, technicianName, technicianNumber, ...rest } = form;
       await api('/camps', { method: 'POST', body: rest });
-      setMsg('Camp request submitted — awaiting approval.');
+      setMsg('Camp request submitted. Awaiting approval.');
       setFormOpen(false);
       load();
     } catch (err) {
@@ -257,7 +257,7 @@ export default function CampsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: 'Modules' }, { label: MODULE.CAMP_MANAGEMENT }]}
       title={MODULE.CAMP_MANAGEMENT}
-      description="Person A submits camp details. Person B approves (assigns HCW) or declines with a reason."
+      description="Submitters create camp requests. Approvers assign an HCW or decline with a reason."
     >
       {(error || msg) && (
         <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
@@ -405,7 +405,7 @@ export default function CampsPage() {
               <input
                 readOnly
                 className="is-readonly"
-                value={form.campSlot || '—'}
+                value={form.campSlot || '-'}
                 placeholder="Derived from Start Time"
               />
             </div>
@@ -532,35 +532,35 @@ export default function CampsPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r._id}>
-                <td className="mono-sm">{r.requestKey || '—'}</td>
+                <td className="mono-sm">{r.requestKey || '-'}</td>
                 <td className="mono-sm">
                   {r.requestedAt
                     ? new Date(r.requestedAt).toLocaleString(undefined, {
                         dateStyle: 'short',
                         timeStyle: 'short',
                       })
-                    : '—'}
+                    : '-'}
                 </td>
-                <td>{r.method || '—'}</td>
-                <td>{r.process || '—'}</td>
-                <td>{r.campType || '—'}</td>
-                <td className="mono-sm">{r.campDate || '—'}</td>
+                <td>{r.method || '-'}</td>
+                <td>{r.process || '-'}</td>
+                <td>{r.campType || '-'}</td>
+                <td className="mono-sm">{r.campDate || '-'}</td>
                 <td>
-                  <span className="badge tone-neutral">{r.campSlot || '—'}</span>
+                  <span className="badge tone-neutral">{r.campSlot || '-'}</span>
                 </td>
-                <td>{r.doctorName || '—'}</td>
+                <td>{r.doctorName || '-'}</td>
                 <td>
-                  {r.technicianName || '—'}
+                  {r.technicianName || '-'}
                   {r.technicianNumber ? (
                     <span className="muted" style={{ display: 'block', fontSize: '0.75rem' }}>
                       {r.technicianNumber}
                     </span>
                   ) : null}
                 </td>
-                <td>{r.city || '—'}</td>
-                <td>{r.requesterName || r.requesterEmail || '—'}</td>
+                <td>{r.city || '-'}</td>
+                <td>{r.requesterName || r.requesterEmail || '-'}</td>
                 <td>
-                  <span className={`badge ${statusTone(r.status)}`}>{r.status || '—'}</span>
+                  <span className={`badge ${statusTone(r.status)}`}>{r.status || '-'}</span>
                   {r.decisionReason ? (
                     <span className="muted" style={{ display: 'block', fontSize: '0.72rem' }}>
                       {r.decisionReason}
@@ -601,7 +601,7 @@ export default function CampsPage() {
                         </button>
                       </>
                     ) : (
-                      '—'
+                      '-'
                     )}
                   </td>
                 )}

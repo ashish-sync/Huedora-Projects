@@ -125,7 +125,7 @@ export default function ContactDirectoryPage() {
         { label: MODULE.CONTACT_DIRECTORY },
       ]}
       title={MODULE.CONTACT_DIRECTORY}
-      description="Maintain recipients used for delivery — add manually or import from Excel."
+      description="Maintain delivery recipients. Add manually or import from Excel."
       actions={
         can('agreements:write') ? (
           <Link className="btn" to="/agreements/new">
@@ -207,14 +207,14 @@ export default function ContactDirectoryPage() {
               {rows.map((c) => (
                 <tr key={c._id}>
                   <td><strong>{c.name}</strong></td>
-                  <td>{c.email || '—'}</td>
-                  <td>{c.resourceType || '—'}</td>
-                  <td>{c.profession || '—'}</td>
-                  <td>{c.contact || c.mobile || '—'}</td>
-                  <td>{c.city || '—'}</td>
-                  <td>{c.state || '—'}</td>
-                  <td>{c.pinCode || '—'}</td>
-                  <td>{c.address || '—'}</td>
+                  <td>{c.email || '-'}</td>
+                  <td>{c.resourceType || '-'}</td>
+                  <td>{c.profession || '-'}</td>
+                  <td>{c.contact || c.mobile || '-'}</td>
+                  <td>{c.city || '-'}</td>
+                  <td>{c.state || '-'}</td>
+                  <td>{c.pinCode || '-'}</td>
+                  <td>{c.address || '-'}</td>
                   <td>
                     {can('agreements:write') && (
                       <button className="btn secondary btn-compact" type="button" onClick={() => startEdit(c)}>Edit</button>

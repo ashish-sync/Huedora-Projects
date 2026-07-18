@@ -1,6 +1,6 @@
 /**
  * Backend base URL (no trailing slash).
- * Set via VITE_BACKEND_URL — e.g. http://localhost:5000 or https://api.example.com.
+ * Set via VITE_BACKEND_URL, e.g. http://localhost:5000 or https://api.example.com.
  * Local Vite uses its `/api` proxy. The Render fallback keeps the public frontend
  * connected if its build-time environment variable is accidentally omitted.
  */

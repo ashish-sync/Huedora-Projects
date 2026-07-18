@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 import { api, apiUrl } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import {
@@ -187,7 +188,7 @@ export default function LogisticsInwardPage() {
     try {
       const remark =
         source.remarkPrefix && !String(form.remark || '').startsWith(source.remarkPrefix)
-          ? `${source.remarkPrefix}${form.remark ? ` — ${form.remark}` : ''}`
+          ? `${source.remarkPrefix}${form.remark ? `: ${form.remark}` : ''}`
           : form.remark;
 
       const fd = new FormData();
@@ -217,7 +218,7 @@ export default function LogisticsInwardPage() {
       for (const f of docsExtra) fd.append('docsExtra', f);
 
       await api('/logistics/in-out', { method: 'POST', body: fd });
-      setMsg('Inward saved — warehouse stock updated.');
+      setMsg('Inward saved. Warehouse stock updated.');
       setFormOpen(false);
       setProductPhoto(null);
       setInvoiceDoc(null);
@@ -233,8 +234,7 @@ export default function LogisticsInwardPage() {
   return (
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
-        Inward — everything that ends at the warehouse: seller receipts, field returns / callbacks,
-        and other receipts.
+        Inward receipts: seller deliveries, field returns and callbacks, and other warehouse receipts.
       </p>
 
       {(error || msg) && (
@@ -385,11 +385,11 @@ export default function LogisticsInwardPage() {
             {source.id === 'return' && (
               <Field label="Returned by (contact)">
                 <AdaptiveSelect value={form.contactId} onChange={(e) => pickContact(e.target.value)}>
-                  <option value="">—</option>
+                  <option value="">-</option>
                   {contacts.map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
-                      {c.city ? ` — ${c.city}` : ''}
+                      {c.city ? `: ${c.city}` : ''}
                     </option>
                   ))}
                 </AdaptiveSelect>
@@ -403,33 +403,25 @@ export default function LogisticsInwardPage() {
           <h4 className="logistics-form-section">Attachments</h4>
           <div className="logistics-form-grid logistics-form-grid--inout">
             <Field label="Product photo" hint="JPG / PNG of the product received">
-              <input
-                type="file"
+              <FilePicker
                 accept="image/*"
                 onChange={(e) => setProductPhoto(e.target.files?.[0] || null)}
               />
-              {productPhoto && (
-                <span className="muted mono-sm">{productPhoto.name}</span>
-              )}
             </Field>
             <Field label="Invoice / document" hint="Invoice, challan, GRN, or other PDF / image">
-              <input
-                type="file"
+              <FilePicker
                 accept="image/*,.pdf,.doc,.docx"
                 onChange={(e) => setInvoiceDoc(e.target.files?.[0] || null)}
               />
-              {invoiceDoc && <span className="muted mono-sm">{invoiceDoc.name}</span>}
             </Field>
-            <Field label="Additional documents" hint="Optional — up to 5 files">
-              <input
-                type="file"
+            <Field label="Additional documents" hint="Optional. Up to 5 files.">
+              <FilePicker
                 accept="image/*,.pdf,.doc,.docx"
                 multiple
-                onChange={(e) => setDocsExtra([...((e.target.files && Array.from(e.target.files)) || [])].slice(0, 5))}
+                onChange={(e) =>
+                  setDocsExtra([...((e.target.files && Array.from(e.target.files)) || [])].slice(0, 5))
+                }
               />
-              {!!docsExtra.length && (
-                <span className="muted mono-sm">{docsExtra.length} file(s) selected</span>
-              )}
             </Field>
           </div>
 
@@ -461,14 +453,14 @@ export default function LogisticsInwardPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r._id}>
-                <td className="mono-sm">{r.uniqueKey || '—'}</td>
+                <td className="mono-sm">{r.uniqueKey || '-'}</td>
                 <td>{r.entryType}</td>
                 <td className="mono-sm">{String(r.transactionDate || r.transactionDateTime || '').slice(0, 10)}</td>
                 <td>
-                  <strong>{r.productName || r.itemName || '—'}</strong>
+                  <strong>{r.productName || r.itemName || '-'}</strong>
                 </td>
                 <td className="num">{r.qty}</td>
-                <td>{r.recipientName || r.employeeName || r.name || '—'}</td>
+                <td>{r.recipientName || r.employeeName || r.name || '-'}</td>
                 <td className="ilog-attach-cell">
                   {r.productPhoto?.url && (
                     <a href={apiUrl(r.productPhoto.url)} target="_blank" rel="noreferrer">
@@ -486,10 +478,10 @@ export default function LogisticsInwardPage() {
                     </a>
                   ))}
                   {!r.productPhoto?.url && !r.invoiceDoc?.url && !(r.attachments || []).length && (
-                    <span className="muted">—</span>
+                    <span className="muted">-</span>
                   )}
                 </td>
-                <td className="muted">{r.remark || '—'}</td>
+                <td className="muted">{r.remark || '-'}</td>
               </tr>
             ))}
             {!rows.length && (

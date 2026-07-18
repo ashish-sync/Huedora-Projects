@@ -6,6 +6,7 @@ import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 
 const DOCUMENT_TYPES = [
   { value: 'LEASE', label: 'Lease' },
@@ -14,12 +15,12 @@ const DOCUMENT_TYPES = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-/** Soft A4 body capacity — leaves room for header + signature footer on every page. */
+/** Soft A4 body capacity; leaves room for header and signature footer on every page. */
 const PAGE_MAX_LINES = 24;
 const PAGE_LINE_WIDTH = 72;
 
 function typeLabel(t) {
-  return DOCUMENT_TYPES.find((d) => d.value === t)?.label || t || '—';
+  return DOCUMENT_TYPES.find((d) => d.value === t)?.label || t || '-';
 }
 
 function signingLabel(s) {
@@ -539,7 +540,7 @@ export default function DocumentMasterPage() {
           </p>
           <h1>{MODULE.DOCUMENT_MASTER}</h1>
           <p className="muted esign-sub">
-            Click a template to preview it page-by-page the way the customer will receive it.
+            Click a template to preview pages as the recipient will see them.
           </p>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -638,7 +639,7 @@ export default function DocumentMasterPage() {
                         {(t.placeholders || []).length ? (
                           <span className="badge tone-ok">{(t.placeholders || []).length}</span>
                         ) : (
-                          <span className="muted">—</span>
+                          <span className="muted">-</span>
                         )}
                       </td>
                     </tr>
@@ -657,8 +658,7 @@ export default function DocumentMasterPage() {
             <div className="card">
               <h3 style={{ marginTop: 0 }}>Preview</h3>
               <p className="muted" style={{ marginTop: 0 }}>
-                Select any document in the list to open a page preview — A4 sheets with Sender (left)
-                and Receiver (right) signature slots, matching how it is sent.
+                Select a document to preview A4 pages with Sender (left) and Receiver (right) signature areas.
               </p>
             </div>
           </div>
@@ -679,19 +679,17 @@ export default function DocumentMasterPage() {
 
             <div className="field">
               <label htmlFor="dm-file">Word document (.docx) *</label>
-              <input
+              <FilePicker
                 id="dm-file"
-                type="file"
                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(e) => onPickFile(e.target.files?.[0] || null)}
                 required
+                onChange={(e) => onPickFile(e.target.files?.[0] || null)}
               />
-              {file && (
+              {file && analyzeBusy ? (
                 <span className="muted" style={{ fontSize: '0.85rem' }}>
-                  Selected: {file.name}
-                  {analyzeBusy ? ' · Reading preview…' : ''}
+                  Reading preview…
                 </span>
-              )}
+              ) : null}
             </div>
 
             <div className="field">
@@ -730,10 +728,10 @@ export default function DocumentMasterPage() {
                 value={defaultSignatureId}
                 onChange={(e) => setDefaultSignatureId(e.target.value)}
               >
-                <option value="">None — choose when signing</option>
+                <option value="">None (choose when signing)</option>
                 {masterSignatures.map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.roleLabel} — {s.name}
+                    {s.roleLabel}: {s.name}
                   </option>
                 ))}
               </AdaptiveSelect>
@@ -787,7 +785,7 @@ export default function DocumentMasterPage() {
           <aside className="card dm-upload-preview-card">
             <h3 style={{ marginTop: 0 }}>Document preview</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              Exact Word layout — pages, bold, tables, and images — before you upload.
+              Preview pages, formatting, tables, and images before you upload.
             </p>
             <div className="dm-upload-preview-scroll">
               <DocxNativePreview file={file} />

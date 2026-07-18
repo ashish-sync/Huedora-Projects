@@ -28,9 +28,9 @@ const emptyForm = {
 };
 
 function formatMoney(n) {
-  if (n == null || n === '') return '—';
+  if (n == null || n === '') return '-';
   const num = Number(n);
-  if (!Number.isFinite(num)) return '—';
+  if (!Number.isFinite(num)) return '-';
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
@@ -44,7 +44,7 @@ function statusTone(status) {
   const s = String(status || '');
   if (s === 'Agreement Signed') return 'ok';
   if (s === 'Lost/Stolen' || s === 'Untraceable' || s === 'End of Life') return 'danger';
-  if (s === 'Under Repairs' || s === 'With Kartavya') return 'warn';
+  if (s === 'Under Repairs' || s === 'With TCPL') return 'warn';
   return 'neutral';
 }
 
@@ -268,7 +268,7 @@ export default function DevicesPage() {
         { label: MODULE.ASSET_MASTER },
       ]}
       title={MODULE.ASSET_MASTER}
-      description="Catalog assets with type, value, status, custody, and custodian details."
+      description="Manage assets by type, value, status, custody, and custodian."
       actions={
         <>
           <button
@@ -570,10 +570,10 @@ export default function DevicesPage() {
                   <td>
                     <strong>{d.name}</strong>
                   </td>
-                  <td>{d.assetType || '—'}</td>
-                  <td className="mono-sm am-serial">{d.serialNumber || '—'}</td>
+                  <td>{d.assetType || '-'}</td>
+                  <td className="mono-sm am-serial">{d.serialNumber || '-'}</td>
                   <td className="am-cost">{formatMoney(d.cost)}</td>
-                  <td className="mono-sm">{d.purchaseMonth || '—'}</td>
+                  <td className="mono-sm">{d.purchaseMonth || '-'}</td>
                   <td>
                     {canWrite ? (
                       <AdaptiveSelect
@@ -591,7 +591,7 @@ export default function DevicesPage() {
                       </AdaptiveSelect>
                     ) : (
                       <span className={`badge tone-${statusTone(d.agreementStatus)}`}>
-                        {d.agreementStatus || '—'}
+                        {d.agreementStatus || '-'}
                       </span>
                     )}
                   </td>
@@ -612,14 +612,14 @@ export default function DevicesPage() {
                         ))}
                       </AdaptiveSelect>
                     ) : (
-                      <span className="am-custody-text">{d.custody || '—'}</span>
+                      <span className="am-custody-text">{d.custody || '-'}</span>
                     )}
                   </td>
-                  <td>{d.custodianName || '—'}</td>
-                  <td>{d.custodianContact || '—'}</td>
-                  <td>{d.custodianCity || '—'}</td>
-                  <td>{d.custodianState || '—'}</td>
-                  <td className="muted">{d.description || '—'}</td>
+                  <td>{d.custodianName || '-'}</td>
+                  <td>{d.custodianContact || '-'}</td>
+                  <td>{d.custodianCity || '-'}</td>
+                  <td>{d.custodianState || '-'}</td>
+                  <td className="muted">{d.description || '-'}</td>
                   {canWrite && (
                     <td className="am-col-actions">
                       <div className="am-row-actions">

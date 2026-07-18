@@ -5,6 +5,7 @@ import { api, apiFetch } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 function currentPeriod() {
   return new Date().toISOString().slice(0, 7);
@@ -539,13 +540,13 @@ export default function VerificationsPage() {
                 )}
                 <div className="field">
                   <label>Outcome</label>
-                  <select value={callOutcome} onChange={(e) => setCallOutcome(e.target.value)}>
+                  <AdaptiveSelect value={callOutcome} onChange={(e) => setCallOutcome(e.target.value)}>
                     {CALL_OUTCOME_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </div>
                 {callOutcome === 'CALLBACK_LATER' && (
                   <div className="field">
@@ -695,17 +696,17 @@ export default function VerificationsPage() {
                   <div className="vf-verify-grid">
                     <div className="field">
                       <label>Physical condition</label>
-                      <select value={physical} onChange={(e) => setPhysical(e.target.value)}>
+                      <AdaptiveSelect value={physical} onChange={(e) => setPhysical(e.target.value)}>
                         <option value="PASS">Pass</option>
                         <option value="FAIL">Fail</option>
-                      </select>
+                      </AdaptiveSelect>
                     </div>
                     <div className="field">
                       <label>Functionality</label>
-                      <select value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
+                      <AdaptiveSelect value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
                         <option value="CHECKED">Checked</option>
                         <option value="NOT_CHECKED">Not checked</option>
-                      </select>
+                      </AdaptiveSelect>
                     </div>
                   </div>
                 </section>
@@ -794,7 +795,7 @@ export default function VerificationsPage() {
                 )}
                 <div className="field vf-link-validity">
                   <label htmlFor="vf-link-valid-days">Link valid for</label>
-                  <select
+                  <AdaptiveSelect
                     id="vf-link-valid-days"
                     value={linkValidDays}
                     onChange={(e) => setLinkValidDays(Number(e.target.value))}
@@ -805,7 +806,7 @@ export default function VerificationsPage() {
                     <option value={7}>7 days</option>
                     <option value={14}>14 days</option>
                     <option value={30}>30 days</option>
-                  </select>
+                  </AdaptiveSelect>
                 </div>
                 <div className="vf-verify-actions">
                   <button className="btn" type="button" disabled={busy} onClick={sendLink}>

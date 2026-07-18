@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
@@ -157,22 +158,22 @@ export default function LogisticsInventoryPage() {
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
         />
-        <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+        <AdaptiveSelect value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
           <option value="">All warehouses</option>
           {(meta?.warehouses || []).map((w) => (
             <option key={w._id} value={w._id}>
               {w.name}
             </option>
           ))}
-        </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        </AdaptiveSelect>
+        <AdaptiveSelect value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           {(meta?.statuses || []).map((s) => (
             <option key={s._id || s.code} value={s.name}>
               {s.name}
             </option>
           ))}
-        </select>
+        </AdaptiveSelect>
         <button className="btn secondary" type="button" onClick={load}>
           Search
         </button>
@@ -218,7 +219,7 @@ export default function LogisticsInventoryPage() {
             </div>
             <div className="field">
               <label>Category</label>
-              <select
+              <AdaptiveSelect
                 value={form.categoryId}
                 onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               >
@@ -228,22 +229,22 @@ export default function LogisticsInventoryPage() {
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>UOM</label>
-              <select value={form.uomId} onChange={(e) => setForm({ ...form, uomId: e.target.value })}>
+              <AdaptiveSelect value={form.uomId} onChange={(e) => setForm({ ...form, uomId: e.target.value })}>
                 <option value="">—</option>
                 {(meta?.uoms || []).map((u) => (
                   <option key={u._id} value={u._id}>
                     {u.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Warehouse</label>
-              <select
+              <AdaptiveSelect
                 value={form.warehouseId}
                 onChange={(e) => setForm({ ...form, warehouseId: e.target.value, locationId: '' })}
               >
@@ -253,11 +254,11 @@ export default function LogisticsInventoryPage() {
                     {w.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Location</label>
-              <select
+              <AdaptiveSelect
                 value={form.locationId}
                 onChange={(e) => setForm({ ...form, locationId: e.target.value })}
               >
@@ -267,17 +268,17 @@ export default function LogisticsInventoryPage() {
                     {l.level}: {l.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Status</label>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <AdaptiveSelect value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 {(meta?.statuses || [{ name: 'Available' }]).map((s) => (
                   <option key={s.name} value={s.name}>
                     {s.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Qty</label>

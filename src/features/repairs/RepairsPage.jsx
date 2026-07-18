@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 export default function RepairsPage() {
   const { can } = useAuth();
@@ -78,14 +79,14 @@ export default function RepairsPage() {
             <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Open repair</h3>
             <div className="field">
               <label>Asset</label>
-              <select required value={fault.assetId} onChange={(e) => setFault({ ...fault, assetId: e.target.value })}>
+              <AdaptiveSelect required value={fault.assetId} onChange={(e) => setFault({ ...fault, assetId: e.target.value })}>
                 <option value="">Select</option>
                 {assets.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.assetTag} ({a.status})
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Fault</label>
@@ -114,14 +115,14 @@ export default function RepairsPage() {
             <h3 style={{ margin: '0 0 16px', fontSize: '1rem' }}>Start maintenance</h3>
             <div className="field">
               <label>Asset</label>
-              <select required value={mnt.assetId} onChange={(e) => setMnt({ ...mnt, assetId: e.target.value })}>
+              <AdaptiveSelect required value={mnt.assetId} onChange={(e) => setMnt({ ...mnt, assetId: e.target.value })}>
                 <option value="">Select</option>
                 {assets.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.assetTag} ({a.status})
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Description</label>

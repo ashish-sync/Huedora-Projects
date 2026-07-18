@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import {
@@ -10,6 +11,74 @@ import {
   Field,
   emptyTxnForm,
 } from './logisticsTxnShared.jsx';
+
+const REQUEST_DELIVERY_MODES = ['Hand Delivery', 'Regular Courier', 'Apex', 'Porter', 'Other'];
+const DELIVERY_MODE_ALIASES = {
+  'Hand-carry': 'Hand Delivery',
+  Courier: 'Regular Courier',
+  Road: 'Regular Courier',
+};
+
+function refId(value) {
+  if (!value) return '';
+  if (typeof value === 'object') return String(value._id || value.id || '');
+  return String(value);
+}
+
+function requestLines(request) {
+  if (Array.isArray(request?.logisticsProducts) && request.logisticsProducts.length) {
+    return request.logisticsProducts;
+  }
+  return [
+    {
+      productType: request?.productType || '',
+      productId: request?.productId || '',
+      productName: request?.assetName || request?.productName || '',
+      qty: request?.qty || 1,
+    },
+  ];
+}
+
+function lineId(line) {
+  return String(line?.assetRequestLineId || line?.lineId || line?._id || line?.id || '');
+}
+
+function lineIsFulfilled(line) {
+  const status = String(line?.fulfillmentStatus || line?.status || '').toUpperCase();
+  return (
+    status === 'FULFILLED' ||
+    status === 'DISPATCHED' ||
+    Boolean(line?.fulfilledAt || line?.outwardTransactionId || line?.dispatchId)
+  );
+}
+
+function fulfilledLineIds(request) {
+  const candidates = [
+    request?.fulfilledLineIds,
+    request?.fulfilledAssetRequestLineIds,
+    request?.fulfilledProductLineIds,
+    request?.fulfilledLogisticsProductLineIds,
+    request?.logisticsFulfillment?.fulfilledLineIds,
+  ];
+  return new Set(candidates.find(Array.isArray)?.map(String) || []);
+}
+
+function requestLineIsFulfilled(request, line, index) {
+  if (lineIsFulfilled(line)) return true;
+  const fulfilledIds = fulfilledLineIds(request);
+  const id = lineId(line);
+  return Boolean((id && fulfilledIds.has(id)) || fulfilledIds.has(String(index)));
+}
+
+function fulfillmentProgress(request) {
+  const lines = requestLines(request);
+  const fulfilled = lines.filter((line, index) => requestLineIsFulfilled(request, line, index)).length;
+  return { lines, fulfilled, total: lines.length, allFulfilled: lines.length > 0 && fulfilled === lines.length };
+}
+
+function mapDeliveryMode(mode) {
+  return DELIVERY_MODE_ALIASES[mode] || mode || 'Hand Delivery';
+}
 
 export default function LogisticsOutwardPage() {
   const { can, user } = useAuth();
@@ -28,11 +97,18 @@ export default function LogisticsOutwardPage() {
   const [form, setForm] = useState(() => emptyTxnForm(user, { entryType: 'Outward' }));
   const [busy, setBusy] = useState(false);
   const [fulfillingId, setFulfillingId] = useState('');
+  const [fulfillingLineId, setFulfillingLineId] = useState('');
+  const [fulfillingLineIndex, setFulfillingLineIndex] = useState(null);
+  const [dispatchedLines, setDispatchedLines] = useState(() => new Set());
 
   const cfg = meta?.inOut || {};
   const productTypes = cfg.productTypes || FALLBACK_PRODUCT;
-  const deliveryModes = cfg.deliveryModes || FALLBACK_DELIVERY;
-  const courierModes = cfg.courierModes || FALLBACK_COURIER;
+  const deliveryModes = [
+    ...new Set([...(cfg.deliveryModes || FALLBACK_DELIVERY), ...REQUEST_DELIVERY_MODES]),
+  ];
+  const courierModes = [
+    ...new Set([...(cfg.courierModes || FALLBACK_COURIER), 'Regular Courier', 'Apex', 'Other']),
+  ];
   const categoryDefaults = cfg.categoryDefaults || FALLBACK_CAT_DEFAULTS;
   const warehouses = meta?.warehouses || [];
   const products = meta?.products || [];
@@ -55,7 +131,6 @@ export default function LogisticsOutwardPage() {
   const tracked = form.trackingKind && form.trackingKind !== 'None';
 
   const loadRows = useCallback(async () => {
-    setError('');
     try {
       const params = new URLSearchParams({ limit: '200', entryType: 'Outward' });
       if (q.trim()) params.set('q', q.trim());
@@ -105,6 +180,8 @@ export default function LogisticsOutwardPage() {
     base.trackingKind = defaults?.trackingKind || 'Batch';
     base.batchOrSerial = base.trackingKind === 'None' ? 'N/A' : '';
     setFulfillingId('');
+    setFulfillingLineId('');
+    setFulfillingLineIndex(null);
     setForm(base);
     setFormOpen(true);
     setMode('manual');
@@ -112,34 +189,47 @@ export default function LogisticsOutwardPage() {
     setError('');
   };
 
-  const openFromRequest = (req) => {
+  const openFromRequest = (req, line, lineIndex) => {
     const base = emptyTxnForm(user, {
       entryType: 'Outward',
       warehouseId: defaultWarehouseId,
     });
-    const defaults = categoryDefaults[base.productType] || FALLBACK_CAT_DEFAULTS[base.productType];
+    const requestedType = line?.productType || base.productType;
+    const defaults = categoryDefaults[requestedType] || FALLBACK_CAT_DEFAULTS[requestedType] || {};
     base.expiryApplicable = !!defaults?.expiryApplicable;
     base.trackingKind = defaults?.trackingKind || 'Batch';
     base.batchOrSerial = base.trackingKind === 'None' ? 'N/A' : '';
-    base.contactId = req.toContactId || req.contactId || '';
-    base.recipientName = req.custodianName || '';
-    base.city = req.toCity || req.custodianCity || '';
-    base.state = req.custodianState || '';
-    base.number = req.custodianContact || '';
-    base.productName = req.assetName || '';
-    base.qty = '1';
-    base.remark = `Fulfill ${req.requestNumber || req._id}${req.logisticsKind ? ` · ${req.logisticsKind}` : ''}`;
+    base.contactId = refId(req.toContactId);
+    base.recipientName = req.toName || req.toContactId?.name || '';
+    base.city = req.toCity || req.toContactId?.city || '';
+    base.state = req.toState || req.toContactId?.state || '';
+    base.number = req.toNumber || req.toContactId?.contact || req.toContactId?.mobile || '';
+    base.productType = requestedType;
+    base.productId = refId(line?.productId);
+    base.productName = line?.productName || line?.productId?.name || '';
+    base.qty = String(line?.qty || 1);
+    base.deliveryMode = mapDeliveryMode(req.transportMode);
+    base.remark = `Fulfill ${req.requestNumber || req._id} line ${lineIndex + 1}${
+      req.logisticsKind ? ` · ${req.logisticsKind}` : ''
+    }`;
     base.assetRequestId = req._id;
-    // Try match product by name
-    const match = products.find(
-      (p) => String(p.name || '').toLowerCase() === String(req.assetName || '').toLowerCase()
-    );
+    base.assetRequestLineId = lineId(line);
+    base.assetRequestLineIndex = lineIndex;
+    const match =
+      products.find((product) => String(product._id) === refId(line?.productId)) ||
+      products.find(
+        (product) =>
+          String(product.name || '').toLowerCase() ===
+          String(line?.productName || '').toLowerCase()
+      );
     if (match) {
       base.productId = match._id;
       base.productName = match.name;
       base.productType = match.productType || base.productType;
     }
     setFulfillingId(req._id);
+    setFulfillingLineId(lineId(line));
+    setFulfillingLineIndex(lineIndex);
     setForm(base);
     setFormOpen(true);
     setMode('manual');
@@ -218,8 +308,17 @@ export default function LogisticsOutwardPage() {
     setBusy(true);
     setError('');
     setMsg('');
+    const dispatchKey =
+      fulfillingId && fulfillingLineIndex != null
+        ? `${fulfillingId}:${fulfillingLineId || fulfillingLineIndex}`
+        : '';
+    if (dispatchKey && dispatchedLines.has(dispatchKey)) {
+      setBusy(false);
+      setError('This request product line was already dispatched. Refresh the request list.');
+      return;
+    }
     try {
-      await api('/logistics/in-out', {
+      const dispatchResult = await api('/logistics/in-out', {
         method: 'POST',
         body: {
           ...form,
@@ -229,6 +328,8 @@ export default function LogisticsOutwardPage() {
           contactId: form.contactId || null,
           productId: form.productId || null,
           assetRequestId: fulfillingId || form.assetRequestId || null,
+          assetRequestLineId: fulfillingId ? fulfillingLineId || null : null,
+          assetRequestLineIndex: fulfillingId ? fulfillingLineIndex : null,
           employeeName: form.recipientName,
           name: form.recipientName,
           qty: Number(form.qty) || 0,
@@ -240,26 +341,55 @@ export default function LogisticsOutwardPage() {
       });
 
       if (fulfillingId) {
-        if (!canCompleteRequest) {
-          setMsg(
-            'Dispatch saved. Approve and complete the linked request in The Request Center to finish fulfillment.'
-          );
-        } else {
+        if (dispatchKey) {
+          setDispatchedLines((previous) => new Set(previous).add(dispatchKey));
+        }
+        const confirmedFulfillment = dispatchResult?.fulfillment;
+        let progress = confirmedFulfillment
+          ? {
+              fulfilled: Number(confirmedFulfillment.fulfilledCount) || 0,
+              total: Number(confirmedFulfillment.totalLines) || 0,
+              allFulfilled: confirmedFulfillment.allProductLinesFulfilled === true,
+            }
+          : null;
+        if (!progress) {
           try {
-            await api(`/asset-requests/${fulfillingId}/complete`, { method: 'POST', body: {} });
-            setMsg('Dispatch saved and linked logistics request completed.');
-          } catch (reqErr) {
-            setMsg(
-              `Dispatch saved, but request could not be completed: ${reqErr.message}. Finish it in The Request Center.`
+            const response = await api(`/asset-requests/${fulfillingId}`);
+            progress = fulfillmentProgress(response.data);
+          } catch (statusError) {
+            setError(
+              `Dispatch saved, but fulfillment status could not be confirmed: ${statusError.message}`
             );
           }
+        }
+
+        if (progress?.allFulfilled && canCompleteRequest) {
+          try {
+            await api(`/asset-requests/${fulfillingId}/complete`, { method: 'POST', body: {} });
+            setMsg('Final product line dispatched and linked logistics request completed.');
+          } catch (reqErr) {
+            setError(
+              `All product lines were dispatched, but request completion failed: ${reqErr.message}`
+            );
+          }
+        } else if (progress?.allFulfilled) {
+          setMsg(
+            'All product lines are dispatched. An authorized approver must complete the request.'
+          );
+        } else if (progress) {
+          setMsg(
+            `Product line dispatched. ${progress.fulfilled} of ${progress.total} lines fulfilled.`
+          );
         }
       } else {
         setMsg('Outward dispatch saved — stock updated.');
       }
 
       setFormOpen(false);
+      if (fulfillingId) setMode('requests');
       setFulfillingId('');
+      setFulfillingLineId('');
+      setFulfillingLineIndex(null);
       loadRows();
       loadRequests();
       return;
@@ -345,7 +475,7 @@ export default function LogisticsOutwardPage() {
               <h3>{fulfillingId ? 'Dispatch from request' : 'Manual dispatch'}</h3>
               <div className="logistics-form-grid logistics-form-grid--inout">
                 <Field label="Source warehouse" required>
-                  <select
+                  <AdaptiveSelect
                     required
                     value={form.warehouseId}
                     onChange={(e) => setField('warehouseId', e.target.value)}
@@ -356,7 +486,7 @@ export default function LogisticsOutwardPage() {
                         {w.name}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </Field>
                 <Field label="Date & time" required>
                   <input
@@ -367,8 +497,9 @@ export default function LogisticsOutwardPage() {
                   />
                 </Field>
                 <Field label="Product category" required>
-                  <select
+                  <AdaptiveSelect
                     required
+                    disabled={Boolean(fulfillingId)}
                     value={form.productType}
                     onChange={(e) => onProductCategoryChange(e.target.value)}
                   >
@@ -377,11 +508,12 @@ export default function LogisticsOutwardPage() {
                         {t}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </Field>
                 <Field label="Product" required>
-                  <select
+                  <AdaptiveSelect
                     required={Boolean(productsForType.length)}
+                    disabled={Boolean(fulfillingId)}
                     value={form.productId}
                     onChange={(e) => pickProduct(e.target.value)}
                   >
@@ -391,12 +523,13 @@ export default function LogisticsOutwardPage() {
                         {p.name}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </Field>
                 {!form.productId && (
                   <Field label="Product name" required>
                     <input
                       required
+                      disabled={Boolean(fulfillingId)}
                       value={form.productName}
                       onChange={(e) => setField('productName', e.target.value)}
                     />
@@ -408,12 +541,13 @@ export default function LogisticsOutwardPage() {
                     min="0.0001"
                     step="any"
                     required
+                    disabled={Boolean(fulfillingId)}
                     value={form.qty}
                     onChange={(e) => setField('qty', e.target.value)}
                   />
                 </Field>
                 <Field label="Recipient" required>
-                  <select
+                  <AdaptiveSelect
                     required
                     value={form.contactId}
                     onChange={(e) => pickRecipient(e.target.value)}
@@ -425,13 +559,13 @@ export default function LogisticsOutwardPage() {
                         {c.city ? ` — ${c.city}` : ''}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </Field>
                 <Field label="City">
                   <input value={form.city} onChange={(e) => setField('city', e.target.value)} />
                 </Field>
                 <Field label="Delivery mode" required>
-                  <select
+                  <AdaptiveSelect
                     required
                     value={form.deliveryMode}
                     onChange={(e) => setField('deliveryMode', e.target.value)}
@@ -441,7 +575,7 @@ export default function LogisticsOutwardPage() {
                         {m}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </Field>
                 {needsAwb && (
                   <Field label="AWB number" required>
@@ -483,6 +617,8 @@ export default function LogisticsOutwardPage() {
                   onClick={() => {
                     setFormOpen(false);
                     setFulfillingId('');
+                    setFulfillingLineId('');
+                    setFulfillingLineIndex(null);
                   }}
                 >
                   Cancel
@@ -557,7 +693,9 @@ export default function LogisticsOutwardPage() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((r) => (
+                {requests.map((r) => {
+                  const progress = fulfillmentProgress(r);
+                  return (
                   <tr key={r._id}>
                     <td className="mono-sm">{r.requestNumber}</td>
                     <td>
@@ -565,26 +703,47 @@ export default function LogisticsOutwardPage() {
                     </td>
                     <td>{r.logisticsKind || '—'}</td>
                     <td>
-                      <strong>{r.assetName || '—'}</strong>
+                      {progress.lines.map((line, index) => (
+                        <div key={lineId(line) || index} className="logistics-request-line">
+                          <strong>{line.productName || r.assetName || '—'}</strong>
+                          <span className="muted mono-sm">
+                            {line.productType || 'Product'} · Qty {line.qty || 0}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="muted mono-sm">
+                        {progress.fulfilled}/{progress.total} lines dispatched
+                      </div>
                     </td>
                     <td>
-                      {r.toCity || r.custodianCity || '—'}
-                      <div className="muted mono-sm">{r.custodianName || ''}</div>
+                      {r.toCity || r.toContactId?.city || '—'}
+                      <div className="muted mono-sm">
+                        {r.toName || r.toContactId?.name || ''}
+                      </div>
                     </td>
                     <td>{r.requestorId?.fullName || r.requestorId?.email || '—'}</td>
                     <td>
-                      {canWrite && (
-                        <button
-                          type="button"
-                          className="btn btn-compact"
-                          onClick={() => openFromRequest(r)}
-                        >
-                          Dispatch
-                        </button>
-                      )}
+                      {canWrite &&
+                        progress.lines.map((line, index) => {
+                          const key = `${r._id}:${lineId(line) || index}`;
+                          const fulfilled =
+                            requestLineIsFulfilled(r, line, index) || dispatchedLines.has(key);
+                          return (
+                            <button
+                              key={lineId(line) || index}
+                              type="button"
+                              className="btn btn-compact"
+                              disabled={busy || fulfilled}
+                              onClick={() => openFromRequest(r, line, index)}
+                            >
+                              {fulfilled ? `Line ${index + 1} dispatched` : `Dispatch line ${index + 1}`}
+                            </button>
+                          );
+                        })}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {!requests.length && (
                   <tr>
                     <td colSpan={7} className="muted">

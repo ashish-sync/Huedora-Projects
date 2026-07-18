@@ -4,6 +4,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -129,7 +130,7 @@ export default function AgreementsPage() {
             onKeyDown={(e) => e.key === 'Enter' && load()}
             aria-label="Search agreements"
           />
-          <select
+          <AdaptiveSelect
             className="filter-select"
             value={status}
             onChange={(e) => setFilter(e.target.value)}
@@ -142,7 +143,7 @@ export default function AgreementsPage() {
             <option value="ACTIVE">Active</option>
             <option value="COMPLETED">Completed</option>
             <option value="DECLINED">Declined</option>
-          </select>
+          </AdaptiveSelect>
           <button className="btn secondary" type="button" onClick={load}>
             Search
           </button>

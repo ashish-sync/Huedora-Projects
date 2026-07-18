@@ -3,6 +3,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 export default function MovementsPage() {
   const { can, user } = useAuth();
@@ -94,18 +95,18 @@ export default function MovementsPage() {
           <div className="row">
             <div className="field">
               <label>Asset</label>
-              <select required value={form.assetId} onChange={(e) => setForm({ ...form, assetId: e.target.value })}>
+              <AdaptiveSelect required value={form.assetId} onChange={(e) => setForm({ ...form, assetId: e.target.value })}>
                 <option value="">Select</option>
                 {assets.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.assetTag}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>To {FIELD.CUSTODIAN}</label>
-              <select value={form.toContactId} onChange={(e) => setForm({ ...form, toContactId: e.target.value })}>
+              <AdaptiveSelect value={form.toContactId} onChange={(e) => setForm({ ...form, toContactId: e.target.value })}>
                 <option value="">—</option>
                 {contacts.map((c) => (
                   <option key={c._id} value={c._id}>
@@ -113,7 +114,7 @@ export default function MovementsPage() {
                     {c.city ? ` — ${c.city}` : ''}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>To city</label>

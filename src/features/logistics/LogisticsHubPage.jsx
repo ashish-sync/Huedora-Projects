@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api } from '../../shared/api.js';
 
-/** Approximate lat/lng for common India cities used on the dashboard map */
+const MAP_VIEW = { width: 420, height: 480, minLon: 68, maxLon: 97.5, minLat: 6.5, maxLat: 37.5 };
 const CITY_COORDS = {
   mumbai: [19.076, 72.877],
   pune: [18.52, 73.856],
-  delhi: [28.613, 77.209],
-  'new delhi': [28.613, 77.209],
-  bangalore: [12.972, 77.594],
+  delhi: [28.614, 77.209],
+  'new delhi': [28.614, 77.209],
   bengaluru: [12.972, 77.594],
+  bangalore: [12.972, 77.594],
   hyderabad: [17.385, 78.487],
   chennai: [13.083, 80.27],
   kolkata: [22.573, 88.364],
@@ -20,67 +21,72 @@ const CITY_COORDS = {
   bhopal: [23.26, 77.413],
   nagpur: [21.146, 79.089],
   surat: [21.17, 72.831],
-  kanpur: [26.45, 80.332],
   patna: [25.595, 85.137],
   raipur: [21.251, 81.63],
   ranchi: [23.344, 85.309],
   guwahati: [26.144, 91.736],
   bhubaneswar: [20.296, 85.825],
-  thiruvananthapuram: [8.524, 76.937],
-  trivandrum: [8.524, 76.937],
+  kochi: [9.932, 76.267],
   coimbatore: [11.016, 76.956],
-  madurai: [9.925, 78.12],
-  vijayawada: [16.506, 80.648],
   visakhapatnam: [17.687, 83.219],
   chandigarh: [30.733, 76.779],
-  ludhiana: [30.901, 75.857],
-  amritsar: [31.634, 74.872],
-  jodhpur: [26.239, 73.025],
-  jalandhar: [31.326, 75.576],
-  faridabad: [28.408, 77.318],
-  noida: [28.535, 77.391],
-  gurgaon: [28.46, 77.027],
-  gurugram: [28.46, 77.027],
-  aurangabad: [19.876, 75.343],
-  nashik: [19.997, 73.79],
-  vadodara: [22.307, 73.181],
-  rajkot: [22.304, 70.802],
-  jamnagar: [22.471, 70.058],
-  kolhapur: [16.705, 74.243],
-  satara: [17.68, 74.018],
-  dhule: [20.903, 74.775],
-  akola: [20.7, 77.009],
-  yavatmal: [20.39, 78.131],
-  chandrapur: [19.97, 79.3],
-  warangal: [17.969, 79.594],
-  karimnagar: [18.439, 79.129],
-  kurnool: [15.829, 78.037],
-  bathinda: [30.211, 74.945],
-  kanyakumari: [8.088, 77.538],
-  madhya: [23.473, 77.947],
+};
+const STATE_COORDS = {
+  'andaman and nicobar islands': [11.741, 92.659],
+  'andhra pradesh': [15.912, 79.74],
+  'arunachal pradesh': [28.218, 94.728],
   assam: [26.201, 92.938],
-  'south 24 paragnas': [22.365, 88.431],
-  'south 24 parganas': [22.365, 88.431],
-  midnapore: [22.425, 87.319],
-  burdwan: [23.232, 87.861],
+  bihar: [25.096, 85.313],
+  chandigarh: [30.733, 76.779],
+  chhattisgarh: [21.279, 81.866],
+  delhi: [28.704, 77.102],
+  goa: [15.3, 74.124],
+  gujarat: [22.259, 71.192],
+  haryana: [29.059, 76.086],
+  'himachal pradesh': [31.105, 77.173],
+  'jammu and kashmir': [33.779, 76.576],
+  jharkhand: [23.61, 85.28],
+  karnataka: [15.318, 75.714],
+  kerala: [10.851, 76.271],
+  ladakh: [34.152, 77.577],
+  'madhya pradesh': [22.974, 78.656],
+  maharashtra: [19.751, 75.714],
+  manipur: [24.664, 93.906],
+  meghalaya: [25.467, 91.366],
+  mizoram: [23.165, 92.938],
+  nagaland: [26.159, 94.563],
+  odisha: [20.951, 85.099],
+  puducherry: [11.942, 79.808],
+  punjab: [31.147, 75.341],
+  rajasthan: [27.024, 74.218],
+  sikkim: [27.533, 88.512],
+  'tamil nadu': [11.127, 78.657],
+  telangana: [18.112, 79.019],
+  tripura: [23.941, 91.989],
+  'uttar pradesh': [26.847, 80.947],
+  uttarakhand: [30.067, 79.019],
+  'west bengal': [22.987, 87.855],
 };
 
-const MAP_VIEW = { w: 420, h: 480, minLon: 68, maxLon: 97.5, minLat: 6.5, maxLat: 37.5 };
-
-function project(lat, lon) {
-  const x = ((lon - MAP_VIEW.minLon) / (MAP_VIEW.maxLon - MAP_VIEW.minLon)) * MAP_VIEW.w;
-  const y = ((MAP_VIEW.maxLat - lat) / (MAP_VIEW.maxLat - MAP_VIEW.minLat)) * MAP_VIEW.h;
-  return [x, y];
+function projectPoint([lat, lon]) {
+  return [
+    ((lon - MAP_VIEW.minLon) / (MAP_VIEW.maxLon - MAP_VIEW.minLon)) * MAP_VIEW.width,
+    ((MAP_VIEW.maxLat - lat) / (MAP_VIEW.maxLat - MAP_VIEW.minLat)) * MAP_VIEW.height,
+  ];
 }
 
-function cityPoint(city) {
-  const key = String(city || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-  const coords = CITY_COORDS[key];
+function locationPoint(city, state) {
+  const cityKey = String(city || '').trim().toLowerCase();
+  const stateKey = String(state || '').trim().toLowerCase();
+  const coords = CITY_COORDS[cityKey] || STATE_COORDS[stateKey];
   if (!coords) return null;
-  return project(coords[0], coords[1]);
+  const point = projectPoint(coords);
+  if (!CITY_COORDS[cityKey] && cityKey) {
+    const hash = [...cityKey].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    point[0] += (hash % 13) - 6;
+    point[1] += ((hash * 7) % 13) - 6;
+  }
+  return point;
 }
 
 function formatNum(n, metric) {
@@ -91,87 +97,41 @@ function formatNum(n, metric) {
   return Math.round(num).toLocaleString();
 }
 
-/** Simple slice-and-dice treemap */
-function layoutTreemap(items, metric, width, height) {
-  const valueKey = metric === 'amount' ? 'amount' : 'qty';
-  const data = items
-    .map((d) => ({ ...d, value: Number(d[valueKey]) || 0 }))
-    .filter((d) => d.value > 0)
-    .sort((a, b) => b.value - a.value);
-  if (!data.length) return [];
-
-  const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const rects = [];
-  let x = 0;
-  let y = 0;
-  let w = width;
-  let h = height;
-  let remaining = total;
-
-  data.forEach((d, i) => {
-    const isLast = i === data.length - 1;
-    const frac = d.value / remaining;
-    const horizontal = w >= h;
-    let rw;
-    let rh;
-    if (isLast) {
-      rw = w;
-      rh = h;
-    } else if (horizontal) {
-      rw = w * frac;
-      rh = h;
-    } else {
-      rw = w;
-      rh = h * frac;
-    }
-    rects.push({
-      name: d.name,
-      value: d.value,
-      x,
-      y,
-      w: Math.max(rw, 0),
-      h: Math.max(rh, 0),
-      i,
-    });
-    if (horizontal) {
-      x += rw;
-      w -= rw;
-    } else {
-      y += rh;
-      h -= rh;
-    }
-    remaining -= d.value;
-  });
-
-  return rects;
-}
-
-const TREE_COLORS = ['#7eb6d9', '#3d7ea6', '#5a9fc4', '#2c5f7c', '#a8cfe0', '#e8a87c', '#c4dce8'];
-
-function IndiaMap({ cities, metric }) {
+function IndiaInventoryMap({ cities, metric, focusedCustodian }) {
   const [hover, setHover] = useState(null);
   const valueKey = metric === 'amount' ? 'amount' : 'qty';
-  const max = Math.max(...cities.map((c) => Number(c[valueKey]) || 0), 1);
-
+  const max = Math.max(...cities.map((city) => Number(city[valueKey]) || 0), 1);
   const points = cities
-    .map((c) => {
-      const pt = cityPoint(c.city);
-      if (!pt) return null;
-      const v = Number(c[valueKey]) || 0;
-      const r = 4 + (v / max) * 10;
-      return { ...c, x: pt[0], y: pt[1], r, v };
-    })
-    .filter(Boolean);
+    .map((city) => ({
+      ...city,
+      value: Number(city[valueKey]) || 0,
+      point: locationPoint(city.city, city.state),
+    }))
+    .filter((city) => city.value > 0 && city.point);
+  const focusPoint = focusedCustodian
+    ? locationPoint(focusedCustodian.city, focusedCustodian.state)
+    : null;
+  const zoomWidth = 170;
+  const zoomHeight = 190;
+  const viewBox = focusPoint
+    ? `${Math.max(0, Math.min(focusPoint[0] - zoomWidth / 2, MAP_VIEW.width - zoomWidth))} ${Math.max(
+        0,
+        Math.min(focusPoint[1] - zoomHeight / 2, MAP_VIEW.height - zoomHeight)
+      )} ${zoomWidth} ${zoomHeight}`
+    : `0 0 ${MAP_VIEW.width} ${MAP_VIEW.height}`;
 
   return (
     <div className="ilog-dash-map-wrap">
       <svg
         className="ilog-dash-map"
-        viewBox={`0 0 ${MAP_VIEW.w} ${MAP_VIEW.h}`}
+        viewBox={viewBox}
         role="img"
-        aria-label="Inventory by city across India"
+        aria-label={
+          focusPoint
+            ? `India inventory map focused on ${focusedCustodian.name}`
+            : 'Inventory distribution across India'
+        }
       >
-        {/* Simplified India landmass silhouette */}
         <path
           className="ilog-dash-map-land"
           d="M210 40 L235 48 L255 70 L270 95 L285 120 L295 150 L300 180 L305 210 L300 250
@@ -183,73 +143,59 @@ function IndiaMap({ cities, metric }) {
           className="ilog-dash-map-land ilog-dash-map-land--ne"
           d="M270 95 L300 85 L330 100 L350 130 L340 160 L320 170 L300 155 L285 130 Z"
         />
-        {points.map((p) => (
-          <circle
-            key={p.city}
-            className="ilog-dash-map-dot"
-            cx={p.x}
-            cy={p.y}
-            r={p.r}
-            onMouseEnter={() => setHover(p)}
-            onMouseLeave={() => setHover(null)}
-          />
-        ))}
+        {points.map((city) => {
+          const radius = 5 + (city.value / max) * 9;
+          return (
+            <circle
+              key={`${city.city}-${city.state}`}
+              className="ilog-dash-map-dot"
+              cx={city.point[0]}
+              cy={city.point[1]}
+              r={radius}
+              onMouseEnter={() => setHover(city)}
+              onMouseLeave={() => setHover(null)}
+            >
+              <title>
+                {city.city}: {formatNum(city.value, metric)}
+              </title>
+            </circle>
+          );
+        })}
       </svg>
+      {focusPoint && (
+        <div className="ilog-map-focus">
+          <strong>{focusedCustodian.name}</strong>
+          <span>
+            {[focusedCustodian.city, focusedCustodian.state].filter(Boolean).join(', ')}
+          </span>
+        </div>
+      )}
       {hover && (
         <div className="ilog-dash-map-tip" role="status">
           <strong>{hover.city}</strong>
-          <span>{formatNum(hover.v, metric)}</span>
+          <span>{formatNum(hover.value, metric)}</span>
         </div>
       )}
-      {!points.length && <p className="ilog-dash-empty muted">No city data yet</p>}
+      {!points.length && <p className="ilog-dash-empty muted">No mapped city data yet</p>}
     </div>
   );
 }
 
-function InventoryTreemap({ items, metric }) {
-  const width = 560;
-  const height = 320;
-  const rects = useMemo(() => layoutTreemap(items, metric, width, height), [items, metric]);
-
-  if (!rects.length) {
-    return <p className="ilog-dash-empty muted">No inventory type breakdown yet</p>;
-  }
-
+function KpiGroup({ title, items, metric, columns }) {
   return (
-    <svg
-      className="ilog-dash-treemap"
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label="Inventory type treemap"
-    >
-      {rects.map((r) => (
-        <g key={r.name}>
-          <rect
-            x={r.x + 1}
-            y={r.y + 1}
-            width={Math.max(r.w - 2, 0)}
-            height={Math.max(r.h - 2, 0)}
-            fill={TREE_COLORS[r.i % TREE_COLORS.length]}
-            rx={2}
-          />
-          {r.w > 70 && r.h > 36 && (
-            <>
-              <text className="ilog-dash-tree-label" x={r.x + 10} y={r.y + 22}>
-                {r.name.length > 22 ? `${r.name.slice(0, 20)}…` : r.name}
-              </text>
-              <text className="ilog-dash-tree-value" x={r.x + r.w - 10} y={r.y + r.h - 10} textAnchor="end">
-                {formatNum(r.value, metric)}
-              </text>
-            </>
-          )}
-          {r.w > 40 && r.h > 24 && r.w <= 70 && (
-            <text className="ilog-dash-tree-value" x={r.x + r.w / 2} y={r.y + r.h / 2 + 4} textAnchor="middle">
-              {formatNum(r.value, metric)}
-            </text>
-          )}
-        </g>
-      ))}
-    </svg>
+    <section className="ilog-kpi-group" aria-label={title}>
+      <h3>{title}</h3>
+      <div
+        className={`ilog-dash-kpi-row${columns === 4 ? ' ilog-dash-kpi-row--4' : ''}`}
+      >
+        {items.map((item) => (
+          <div key={item.label} className="ilog-dash-kpi">
+            <strong>{formatNum(item.value, metric)}</strong>
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -297,6 +243,10 @@ export default function LogisticsHubPage() {
   const k = data.kpis || {};
   const m = metric;
   const unit = m === 'amount' ? 'Amount' : 'Quantity';
+  const focusedCustodian =
+    hcwId !== 'all'
+      ? (data.filters?.hcws || []).find((custodian) => String(custodian.id) === String(hcwId))
+      : null;
 
   const row1 = [
     { label: `Inward ${unit}`, value: m === 'amount' ? k.inwardAmount : k.inwardQty },
@@ -319,133 +269,8 @@ export default function LogisticsHubPage() {
   ];
 
   return (
-    <div className="ilog-hub-split">
-      <div className="ilog-dash">
-      {error && (
-        <div className="am-banner is-error" role="status">
-          {error}
-        </div>
-      )}
-
-      <div className="ilog-dash-filters">
-        <div className="ilog-dash-filter">
-          <label htmlFor="ilog-from">From</label>
-          <input
-            id="ilog-from"
-            type="date"
-            value={dateFrom}
-            max={dateTo || undefined}
-            onChange={(e) => setDateFrom(e.target.value)}
-          />
-        </div>
-        <div className="ilog-dash-filter">
-          <label htmlFor="ilog-to">To</label>
-          <input
-            id="ilog-to"
-            type="date"
-            value={dateTo}
-            min={dateFrom || undefined}
-            onChange={(e) => setDateTo(e.target.value)}
-          />
-        </div>
-        {(dateFrom || dateTo) && (
-          <button
-            type="button"
-            className="btn secondary ilog-dash-clear-dates"
-            onClick={() => {
-              setDateFrom('');
-              setDateTo('');
-            }}
-          >
-            Clear dates
-          </button>
-        )}
-        <div className="ilog-dash-filter">
-          <label htmlFor="ilog-inv">Product Category</label>
-          <select
-            id="ilog-inv"
-            value={inventoryType}
-            onChange={(e) => setInventoryType(e.target.value)}
-          >
-            <option value="all">All</option>
-            {(data.filters?.inventoryTypes || []).map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="ilog-dash-filter">
-          <label htmlFor="ilog-hcw">HCW ID</label>
-          <select id="ilog-hcw" value={hcwId} onChange={(e) => setHcwId(e.target.value)}>
-            <option value="all">All</option>
-            {(data.filters?.hcws || []).map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.id}
-                {h.name && h.name !== h.id ? ` — ${h.name}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="ilog-dash-metric" role="group" aria-label="Metric">
-          <button
-            type="button"
-            className={`ilog-dash-metric-btn${metric === 'amount' ? ' is-active' : ''}`}
-            onClick={() => setMetric('amount')}
-          >
-            Amount
-          </button>
-          <button
-            type="button"
-            className={`ilog-dash-metric-btn${metric === 'quantity' ? ' is-active' : ''}`}
-            onClick={() => setMetric('quantity')}
-          >
-            Quantity
-          </button>
-        </div>
-
-        {busy && <span className="muted ilog-dash-busy">Updating…</span>}
-      </div>
-
-      <div className="ilog-dash-kpi-row" role="group" aria-label="Flow">
-        {row1.map((c) => (
-          <div key={c.label} className="ilog-dash-kpi">
-            <strong>{formatNum(c.value, m)}</strong>
-            <span>{c.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="ilog-dash-kpi-row" role="group" aria-label="Usage">
-        {row2.map((c) => (
-          <div key={c.label} className="ilog-dash-kpi">
-            <strong>{formatNum(c.value, m)}</strong>
-            <span>{c.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="ilog-dash-kpi-row ilog-dash-kpi-row--4" role="group" aria-label="Expiry health">
-        {row3.map((c) => (
-          <div key={c.label} className="ilog-dash-kpi">
-            <strong>{formatNum(c.value, m)}</strong>
-            <span>{c.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="ilog-dash-viz">
-        <div className="ilog-dash-panel">
-          <IndiaMap cities={data.byCity || []} metric={metric} />
-        </div>
-        <div className="ilog-dash-panel">
-          <InventoryTreemap items={data.byInventoryType || []} metric={metric} />
-        </div>
-      </div>
-      </div>
-
-      <aside className="ilog-rail" aria-label="Inventory movements">
+    <div className="ilog-hub">
+      <section className="ilog-quick-actions" aria-label="Quick actions">
         <Link to="/logistics/inward" className="ilog-rail-card">
           <span className="ilog-rail-icon" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -475,7 +300,136 @@ export default function LogisticsHubPage() {
             <em>Open →</em>
           </span>
         </Link>
-      </aside>
+      </section>
+
+      <section className="ilog-dash" aria-busy={busy}>
+        <header className="ilog-dash-header">
+          <div>
+            <p className="ilog-dash-eyebrow">Inventory overview</p>
+            <h2>Stock movement and field balance</h2>
+            <p>Monitor receipts, dispatches, usage, expiry health, and inventory distribution.</p>
+          </div>
+          <div className="ilog-dash-metric" role="group" aria-label="Display metric">
+            <button
+              type="button"
+              className={`ilog-dash-metric-btn${metric === 'quantity' ? ' is-active' : ''}`}
+              onClick={() => setMetric('quantity')}
+            >
+              Quantity
+            </button>
+            <button
+              type="button"
+              className={`ilog-dash-metric-btn${metric === 'amount' ? ' is-active' : ''}`}
+              onClick={() => setMetric('amount')}
+            >
+              Amount
+            </button>
+          </div>
+        </header>
+
+        {error && (
+          <div className="am-banner is-error" role="status">
+            {error}
+          </div>
+        )}
+
+        <div className="ilog-filter-panel">
+          <div className="ilog-filter-heading">
+            <div>
+              <strong>Filters</strong>
+              <span>Refine all dashboard metrics</span>
+            </div>
+            {busy && <span className="muted ilog-dash-busy">Updating…</span>}
+          </div>
+          <div className="ilog-dash-filters">
+            <div className="ilog-dash-filter">
+              <label htmlFor="ilog-from">From date</label>
+              <input
+                id="ilog-from"
+                type="date"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div className="ilog-dash-filter">
+              <label htmlFor="ilog-to">To date</label>
+              <input
+                id="ilog-to"
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+            <div className="ilog-dash-filter">
+              <label htmlFor="ilog-inv">Product category</label>
+              <AdaptiveSelect
+                id="ilog-inv"
+                value={inventoryType}
+                onChange={(e) => setInventoryType(e.target.value)}
+              >
+                <option value="all">All categories</option>
+                {(data.filters?.inventoryTypes || []).map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </div>
+            <div className="ilog-dash-filter">
+              <label htmlFor="ilog-hcw">Custodian / HCW</label>
+              <AdaptiveSelect
+                id="ilog-hcw"
+                value={hcwId}
+                onChange={(e) => setHcwId(e.target.value)}
+              >
+                <option value="all">All custodians</option>
+                {(data.filters?.hcws || []).map((hcw) => (
+                  <option key={hcw.id} value={hcw.id}>
+                    {hcw.id}
+                    {hcw.name && hcw.name !== hcw.id ? ` — ${hcw.name}` : ''}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </div>
+            {(dateFrom || dateTo || inventoryType !== 'all' || hcwId !== 'all') && (
+              <button
+                type="button"
+                className="btn secondary ilog-dash-clear-dates"
+                onClick={() => {
+                  setDateFrom('');
+                  setDateTo('');
+                  setInventoryType('all');
+                  setHcwId('all');
+                }}
+              >
+                Reset filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="ilog-kpi-sections">
+          <KpiGroup title="Inventory flow" items={row1} metric={m} />
+          <KpiGroup title="Field usage" items={row2} metric={m} />
+          <KpiGroup title="Expiry health" items={row3} metric={m} columns={4} />
+        </div>
+
+        <div className="ilog-dash-viz">
+          <section className="ilog-dash-panel">
+            <header>
+              <h3>Inventory by city</h3>
+              <p>Select a custodian to zoom into their location; reset filters for all India.</p>
+            </header>
+            <IndiaInventoryMap
+              cities={data.byCity || []}
+              metric={metric}
+              focusedCustodian={focusedCustodian}
+            />
+          </section>
+        </div>
+      </section>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -698,14 +699,14 @@ export default function AgreementDetailPage() {
               <h3>Link {MODULE.ASSET_INVENTORY} item</h3>
               <div className="field">
                 <label>Asset</label>
-                <select required value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+                <AdaptiveSelect required value={assetId} onChange={(e) => setAssetId(e.target.value)}>
                   <option value="">Select</option>
                   {assets.map((a) => (
                     <option key={a._id} value={a._id}>
                       {a.assetTag} — {a.deviceNameSnapshot}
                     </option>
                   ))}
-                </select>
+                </AdaptiveSelect>
               </div>
               <button className="btn" type="submit">
                 Link

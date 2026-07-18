@@ -17,6 +17,7 @@ import SignatureMasterPage from '../features/agreements/SignatureMasterPage.jsx'
 import RolePermissionMasterPage from '../features/users/RolePermissionMasterPage.jsx';
 import VerificationsPage from '../features/verifications/VerificationsPage.jsx';
 import AssetRequestsPage from '../features/assetRequests/AssetRequestsPage.jsx';
+import RequestProductUploadPage from '../features/assetRequests/RequestProductUploadPage.jsx';
 import ImportsPage from '../features/imports/ImportsPage.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
 import NotificationsPage from '../features/notifications/NotificationsPage.jsx';
@@ -45,6 +46,7 @@ export default function App() {
       <Route path="/verify/:token" element={<SelfVerifyPage />} />
       <Route path="/s/:token" element={<RecipientSignPage />} />
       <Route path="/sign/:token" element={<RecipientSignPage />} />
+      <Route path="/request-upload/:token" element={<RequestProductUploadPage />} />
       <Route
         path="/*"
         element={

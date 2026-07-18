@@ -9,8 +9,24 @@ export const FALLBACK_PRODUCT = [
   'Miscellaneous',
 ];
 
-export const FALLBACK_DELIVERY = ['Hand Delivery', 'Porter', 'Blue Dart', 'DTDC', 'Other Courier'];
-export const FALLBACK_COURIER = ['Blue Dart', 'DTDC', 'Other Courier'];
+export const FALLBACK_DELIVERY = [
+  'Hand Delivery',
+  'Regular Courier',
+  'Apex',
+  'Porter',
+  'Other',
+  'Blue Dart',
+  'DTDC',
+  'Other Courier',
+];
+export const FALLBACK_COURIER = [
+  'Regular Courier',
+  'Apex',
+  'Other',
+  'Blue Dart',
+  'DTDC',
+  'Other Courier',
+];
 
 export const FALLBACK_CAT_DEFAULTS = {
   'Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
@@ -67,6 +68,12 @@ const ENTITIES = [
     fields: ['code', 'name', 'direction'],
   },
   { id: 'reason-codes', label: 'Reason Codes', path: '/logistics/reason-codes', fields: ['code', 'name'] },
+  {
+    id: 'expense-categories',
+    label: 'Expense Categories',
+    path: '/logistics/expense-categories',
+    fields: ['code', 'name'],
+  },
 ];
 
 const FIELD_LABELS = {
@@ -362,7 +369,7 @@ export default function LogisticsMasterPage() {
           <div className="logistics-form-grid">
             <div className="field" style={{ gridColumn: '1 / -1' }}>
               <label htmlFor="lm-contact-pick">Contact</label>
-              <select
+              <AdaptiveSelect
                 id="lm-contact-pick"
                 value={contactPick}
                 onChange={(e) => applyContact(e.target.value)}
@@ -375,7 +382,7 @@ export default function LogisticsMasterPage() {
                     {c.city ? ` · ${c.city}` : ''}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
           </div>
           <div className="logistics-form-actions">
@@ -392,7 +399,7 @@ export default function LogisticsMasterPage() {
           {entity.fromContacts && editingId ? (
             <div className="field" style={{ marginBottom: 12 }}>
               <label htmlFor="lm-contact-link">Linked contact</label>
-              <select
+              <AdaptiveSelect
                 id="lm-contact-link"
                 value={contactPick}
                 onChange={(e) => applyContact(e.target.value)}
@@ -404,7 +411,7 @@ export default function LogisticsMasterPage() {
                     {c.resourceType ? ` · ${c.resourceType}` : ''}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
           ) : null}
           <div className="logistics-form-grid">
@@ -412,7 +419,7 @@ export default function LogisticsMasterPage() {
               <div className="field" key={field}>
                 <label htmlFor={`lm-${field}`}>{FIELD_LABELS[field] || field}</label>
                 {field === 'level' ? (
-                  <select
+                  <AdaptiveSelect
                     id={`lm-${field}`}
                     required
                     value={form.level}
@@ -423,18 +430,18 @@ export default function LogisticsMasterPage() {
                         {l}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 ) : field === 'direction' ? (
-                  <select
+                  <AdaptiveSelect
                     id={`lm-${field}`}
                     value={form.direction}
                     onChange={(e) => setForm({ ...form, direction: e.target.value })}
                   >
                     <option value="IN">IN</option>
                     <option value="OUT">OUT</option>
-                  </select>
+                  </AdaptiveSelect>
                 ) : field === 'productType' ? (
-                  <select
+                  <AdaptiveSelect
                     id={`lm-${field}`}
                     required
                     value={form.productType}
@@ -445,9 +452,9 @@ export default function LogisticsMasterPage() {
                         {t}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 ) : field === 'trackingKind' ? (
-                  <select
+                  <AdaptiveSelect
                     id={`lm-${field}`}
                     value={form.trackingKind}
                     onChange={(e) => setForm({ ...form, trackingKind: e.target.value })}
@@ -457,18 +464,18 @@ export default function LogisticsMasterPage() {
                         {t}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 ) : field === 'expiryApplicable' ? (
-                  <select
+                  <AdaptiveSelect
                     id={`lm-${field}`}
                     value={String(form.expiryApplicable === true || form.expiryApplicable === 'true')}
                     onChange={(e) => setForm({ ...form, expiryApplicable: e.target.value })}
                   >
                     <option value="false">No</option>
                     <option value="true">Yes</option>
-                  </select>
+                  </AdaptiveSelect>
                 ) : field === 'warehouseId' ? (
-                  <select
+                  <AdaptiveSelect
                     id={`lm-${field}`}
                     required
                     value={form.warehouseId}
@@ -480,7 +487,7 @@ export default function LogisticsMasterPage() {
                         {w.name} ({w.code})
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 ) : field === 'parentId' ? (
                   <input
                     id={`lm-${field}`}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const ROLES_FALLBACK = [
   'HR',
@@ -362,7 +363,7 @@ export default function SignatureMasterPage() {
             </div>
             <div className="field">
               <label>Role / designation *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.roleLabel}
                 onChange={(e) => setForm({ ...form, roleLabel: e.target.value })}
@@ -372,7 +373,7 @@ export default function SignatureMasterPage() {
                     {r}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="row">
               <div className="field" style={{ flex: 1 }}>

@@ -3,6 +3,7 @@ import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { INDIAN_STATES_AND_UTS } from '../devices/assetMasterOptions.js';
 
 const FALLBACK_MAP = [
@@ -266,17 +267,17 @@ export default function CampsPage() {
 
       <div className="inv-toolbar logistics-toolbar">
         {canApprove && (
-          <select value={view} onChange={(e) => setView(e.target.value)}>
+          <AdaptiveSelect value={view} onChange={(e) => setView(e.target.value)}>
             <option value="all">All requests</option>
             <option value="mine">My requests</option>
-          </select>
+          </AdaptiveSelect>
         )}
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <AdaptiveSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">All statuses</option>
           <option value="Pending">Pending</option>
           <option value="Approved">Approved</option>
           <option value="Declined">Declined</option>
-        </select>
+        </AdaptiveSelect>
         <input
           className="esign-search inv-search"
           placeholder="Search doctor, technician, city…"
@@ -314,17 +315,17 @@ export default function CampsPage() {
           <div className="logistics-form-grid logistics-form-grid--inout">
             <div className="field">
               <label>Method *</label>
-              <select required value={form.method} onChange={(e) => onMethodChange(e.target.value)}>
+              <AdaptiveSelect required value={form.method} onChange={(e) => onMethodChange(e.target.value)}>
                 {methods.map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Process *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.process}
                 onChange={(e) => onProcessChange(e.target.value)}
@@ -334,7 +335,7 @@ export default function CampsPage() {
                     {p}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Camp Type (Auto)</label>
@@ -362,14 +363,14 @@ export default function CampsPage() {
             </div>
             <div className="field">
               <label>State</label>
-              <select value={form.state} onChange={(e) => setField('state', e.target.value)}>
+              <AdaptiveSelect value={form.state} onChange={(e) => setField('state', e.target.value)}>
                 <option value="">Select state…</option>
                 {INDIAN_STATES_AND_UTS.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Camp Date *</label>
@@ -439,7 +440,7 @@ export default function CampsPage() {
               <div className="logistics-form-grid logistics-form-grid--inout">
                 <div className="field">
                   <label>Technician Name (HCW Name) *</label>
-                  <select
+                  <AdaptiveSelect
                     required
                     value={decideHcwContactId}
                     onChange={(e) => pickTechnician(e.target.value)}
@@ -451,7 +452,7 @@ export default function CampsPage() {
                         {c.city ? ` · ${c.city}` : ''}
                       </option>
                     ))}
-                  </select>
+                  </AdaptiveSelect>
                 </div>
                 <div className="field">
                   <label>HCW Name *</label>

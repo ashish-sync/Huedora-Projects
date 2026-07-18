@@ -4,6 +4,7 @@ import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import {
   ASSET_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -344,7 +345,7 @@ export default function DevicesPage() {
             </div>
             <div className="field">
               <label>Asset Type *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.assetType}
                 onChange={(e) => setForm({ ...form, assetType: e.target.value })}
@@ -355,7 +356,7 @@ export default function DevicesPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Serial Number *</label>
@@ -389,7 +390,7 @@ export default function DevicesPage() {
             </div>
             <div className="field">
               <label>Asset Status *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.agreementStatus}
                 onChange={(e) => setForm({ ...form, agreementStatus: e.target.value })}
@@ -399,11 +400,11 @@ export default function DevicesPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Asset Custody *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.custody}
                 onChange={(e) => setForm({ ...form, custody: e.target.value })}
@@ -414,7 +415,7 @@ export default function DevicesPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Custodian Name *</label>
@@ -445,7 +446,7 @@ export default function DevicesPage() {
             </div>
             <div className="field">
               <label>Custodian State *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.custodianState}
                 onChange={(e) => setForm({ ...form, custodianState: e.target.value })}
@@ -456,7 +457,7 @@ export default function DevicesPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field am-form-span">
               <label>Description</label>
@@ -489,7 +490,7 @@ export default function DevicesPage() {
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && load()}
           />
-          <select
+          <AdaptiveSelect
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
             aria-label="Filter by asset type"
@@ -500,8 +501,8 @@ export default function DevicesPage() {
                 {o}
               </option>
             ))}
-          </select>
-          <select
+          </AdaptiveSelect>
+          <AdaptiveSelect
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             aria-label="Filter by asset status"
@@ -512,8 +513,8 @@ export default function DevicesPage() {
                 {o}
               </option>
             ))}
-          </select>
-          <select
+          </AdaptiveSelect>
+          <AdaptiveSelect
             value={filterCustody}
             onChange={(e) => setFilterCustody(e.target.value)}
             aria-label="Filter by custody"
@@ -524,7 +525,7 @@ export default function DevicesPage() {
                 {o}
               </option>
             ))}
-          </select>
+          </AdaptiveSelect>
           <button className="btn secondary" type="button" onClick={load}>
             Search
           </button>
@@ -575,7 +576,7 @@ export default function DevicesPage() {
                   <td className="mono-sm">{d.purchaseMonth || '—'}</td>
                   <td>
                     {canWrite ? (
-                      <select
+                      <AdaptiveSelect
                         className="am-status-select"
                         value={d.agreementStatus || 'Not Initiated'}
                         disabled={statusBusyId === `${d._id}:agreementStatus`}
@@ -587,7 +588,7 @@ export default function DevicesPage() {
                             {o}
                           </option>
                         ))}
-                      </select>
+                      </AdaptiveSelect>
                     ) : (
                       <span className={`badge tone-${statusTone(d.agreementStatus)}`}>
                         {d.agreementStatus || '—'}
@@ -596,7 +597,7 @@ export default function DevicesPage() {
                   </td>
                   <td>
                     {canWrite ? (
-                      <select
+                      <AdaptiveSelect
                         className="am-custody-select"
                         value={d.custody || ''}
                         disabled={statusBusyId === `${d._id}:custody`}
@@ -609,7 +610,7 @@ export default function DevicesPage() {
                             {o}
                           </option>
                         ))}
-                      </select>
+                      </AdaptiveSelect>
                     ) : (
                       <span className="am-custody-text">{d.custody || '—'}</span>
                     )}

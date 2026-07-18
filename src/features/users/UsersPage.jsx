@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 export default function UsersPage() {
   const { can } = useAuth();
@@ -70,7 +71,7 @@ export default function UsersPage() {
         </div>
         <div className="field">
           <label>Roles</label>
-          <select
+          <AdaptiveSelect
             multiple
             value={form.roleIds}
             onChange={(e) =>
@@ -86,7 +87,7 @@ export default function UsersPage() {
                 {r.name}
               </option>
             ))}
-          </select>
+          </AdaptiveSelect>
         </div>
         <button className="btn" type="submit">
           Create user

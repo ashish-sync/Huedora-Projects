@@ -5,6 +5,7 @@ import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import {
   ASSET_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -520,7 +521,7 @@ export default function AssetsPage() {
             </div>
             <div className="field">
               <label>{FIELD.ASSET_TYPE} *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.assetType}
                 onChange={(e) => setForm({ ...form, assetType: e.target.value })}
@@ -531,7 +532,7 @@ export default function AssetsPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Serial Number *</label>
@@ -565,7 +566,7 @@ export default function AssetsPage() {
             </div>
             <div className="field">
               <label>{FIELD.ASSET_STATUS} *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.agreementStatus}
                 onChange={(e) => setForm({ ...form, agreementStatus: e.target.value })}
@@ -575,11 +576,11 @@ export default function AssetsPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>{FIELD.ASSET_CUSTODY} *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.custody}
                 onChange={(e) => setForm({ ...form, custody: e.target.value })}
@@ -590,7 +591,7 @@ export default function AssetsPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>{FIELD.CUSTODIAN_NAME} *</label>
@@ -621,7 +622,7 @@ export default function AssetsPage() {
             </div>
             <div className="field">
               <label>{FIELD.CUSTODIAN_STATE} *</label>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.custodianState}
                 onChange={(e) => setForm({ ...form, custodianState: e.target.value })}
@@ -632,12 +633,12 @@ export default function AssetsPage() {
                     {o}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             {editingId ? (
               <div className="field">
                 <label htmlFor="inv-edit-contact">Link to {MODULE.CONTACT_DIRECTORY}</label>
-                <select
+                <AdaptiveSelect
                   id="inv-edit-contact"
                   value={form.contactId}
                   onChange={(e) => {
@@ -666,7 +667,7 @@ export default function AssetsPage() {
                       {c.profession ? ` · ${c.profession}` : ''}
                     </option>
                   ))}
-                </select>
+                </AdaptiveSelect>
                 {canViewAgreements && (
                   <p className="muted" style={{ marginTop: 6, fontSize: '0.75rem' }}>
                     Optional link from{' '}
@@ -706,7 +707,7 @@ export default function AssetsPage() {
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && runSearch()}
           />
-          <select
+          <AdaptiveSelect
             value={agreementStatus}
             onChange={(e) => {
               setAgreementStatus(e.target.value);
@@ -720,8 +721,8 @@ export default function AssetsPage() {
                 {s}
               </option>
             ))}
-          </select>
-          <select
+          </AdaptiveSelect>
+          <AdaptiveSelect
             value={custody}
             onChange={(e) => {
               setCustody(e.target.value);
@@ -735,7 +736,7 @@ export default function AssetsPage() {
                 {c}
               </option>
             ))}
-          </select>
+          </AdaptiveSelect>
           <button className="btn secondary" type="button" onClick={runSearch}>
             Search
           </button>
@@ -837,7 +838,7 @@ export default function AssetsPage() {
             </span>
             <label className="inv-page-size">
               Rows per page
-              <select
+              <AdaptiveSelect
                 value={limit}
                 onChange={(e) => {
                   setLimit(Number(e.target.value));
@@ -849,7 +850,7 @@ export default function AssetsPage() {
                     {n}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </label>
           </div>
           <div className="inv-pagination-controls">

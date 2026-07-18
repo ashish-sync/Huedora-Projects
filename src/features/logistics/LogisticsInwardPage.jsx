@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { api, apiUrl } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import {
@@ -295,7 +296,7 @@ export default function LogisticsInwardPage() {
           <h3>New {source.label}</h3>
           <div className="logistics-form-grid logistics-form-grid--inout">
             <Field label="Destination warehouse" required>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.warehouseId}
                 onChange={(e) => setField('warehouseId', e.target.value)}
@@ -306,7 +307,7 @@ export default function LogisticsInwardPage() {
                     {w.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </Field>
             <Field label="Date & time" required>
               <input
@@ -317,7 +318,7 @@ export default function LogisticsInwardPage() {
               />
             </Field>
             <Field label="Product category" required>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.productType}
                 onChange={(e) => onProductCategoryChange(e.target.value)}
@@ -327,10 +328,10 @@ export default function LogisticsInwardPage() {
                     {t}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </Field>
             <Field label="Product" required>
-              <select
+              <AdaptiveSelect
                 required
                 value={form.productId}
                 onChange={(e) => pickProduct(e.target.value)}
@@ -341,7 +342,7 @@ export default function LogisticsInwardPage() {
                     {p.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </Field>
             <Field label="Qty" required>
               <input
@@ -383,7 +384,7 @@ export default function LogisticsInwardPage() {
             )}
             {source.id === 'return' && (
               <Field label="Returned by (contact)">
-                <select value={form.contactId} onChange={(e) => pickContact(e.target.value)}>
+                <AdaptiveSelect value={form.contactId} onChange={(e) => pickContact(e.target.value)}>
                   <option value="">—</option>
                   {contacts.map((c) => (
                     <option key={c._id} value={c._id}>
@@ -391,7 +392,7 @@ export default function LogisticsInwardPage() {
                       {c.city ? ` — ${c.city}` : ''}
                     </option>
                   ))}
-                </select>
+                </AdaptiveSelect>
               </Field>
             )}
             <Field label="Remark">

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiUrl } from '../../shared/api.js';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const SENDER_ORG = 'Tylo Care';
 
@@ -344,17 +345,17 @@ export default function SelfVerifyPage() {
               <div className="sv-form-grid">
                 <div className="field">
                   <label>Physical condition</label>
-                  <select value={physical} onChange={(e) => setPhysical(e.target.value)}>
+                  <AdaptiveSelect value={physical} onChange={(e) => setPhysical(e.target.value)}>
                     <option value="PASS">Pass</option>
                     <option value="FAIL">Fail</option>
-                  </select>
+                  </AdaptiveSelect>
                 </div>
                 <div className="field">
                   <label>Functionality</label>
-                  <select value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
+                  <AdaptiveSelect value={functionality} onChange={(e) => setFunctionality(e.target.value)}>
                     <option value="CHECKED">Checked</option>
                     <option value="NOT_CHECKED">Not checked</option>
-                  </select>
+                  </AdaptiveSelect>
                 </div>
                 <div className="field">
                   <label>Current location</label>

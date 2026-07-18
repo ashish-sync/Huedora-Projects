@@ -5,6 +5,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const DOCUMENT_TYPES = [
   { value: 'LEASE', label: 'Lease' },
@@ -695,7 +696,7 @@ export default function DocumentMasterPage() {
 
             <div className="field">
               <label htmlFor="dm-doc-type">Document type *</label>
-              <select
+              <AdaptiveSelect
                 id="dm-doc-type"
                 value={documentType}
                 onChange={(e) => setDocumentType(e.target.value)}
@@ -706,12 +707,12 @@ export default function DocumentMasterPage() {
                     {d.label}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
 
             <div className="field">
               <label htmlFor="dm-signing">Signing *</label>
-              <select
+              <AdaptiveSelect
                 id="dm-signing"
                 value={signingType}
                 onChange={(e) => setSigningType(e.target.value)}
@@ -719,12 +720,12 @@ export default function DocumentMasterPage() {
               >
                 <option value="SIGNING">Signing</option>
                 <option value="NON_SIGNING">Non-signing</option>
-              </select>
+              </AdaptiveSelect>
             </div>
 
             <div className="field">
               <label htmlFor="dm-default-sig">Default sender signature</label>
-              <select
+              <AdaptiveSelect
                 id="dm-default-sig"
                 value={defaultSignatureId}
                 onChange={(e) => setDefaultSignatureId(e.target.value)}
@@ -735,7 +736,7 @@ export default function DocumentMasterPage() {
                     {s.roleLabel} — {s.name}
                   </option>
                 ))}
-              </select>
+              </AdaptiveSelect>
               <span className="muted" style={{ fontSize: '0.82rem' }}>
                 Used as the owner/sender mark for this template (left side).{' '}
                 <Link to="/agreements/signature-master">Manage signatures</Link>

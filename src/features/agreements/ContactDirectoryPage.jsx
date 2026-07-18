@@ -4,6 +4,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
 
 const empty = {
@@ -14,6 +15,8 @@ const empty = {
   contact: '',
   city: '',
   state: '',
+  pinCode: '',
+  address: '',
 };
 
 export default function ContactDirectoryPage() {
@@ -78,6 +81,8 @@ export default function ContactDirectoryPage() {
       contact: c.contact || c.mobile || '',
       city: c.city || '',
       state: c.state || '',
+      pinCode: c.pinCode || '',
+      address: c.address || '',
     });
   };
 
@@ -176,7 +181,7 @@ export default function ContactDirectoryPage() {
       {importMsg && <p className="muted">{importMsg}</p>}
 
       <p className="muted mono-sm" style={{ margin: '0 0 16px' }}>
-        Sample columns: Name · Email · Resource Type · Profession · Contact · City · State.
+        Sample columns: Name · Email · Resource Type · Profession · Contact · City · State · Pin Code · Address.
         Resource Type: Individual, Freelancer, Contractual, Retainer, Full Timer, Service Provider, Supplier, Vendor.
         Profession: MIS Executive, Camp Coordinator, Technician, Phlebotomist, Dietician.
       </p>
@@ -193,6 +198,8 @@ export default function ContactDirectoryPage() {
                 <th>Contact</th>
                 <th>City</th>
                 <th>State</th>
+                <th>Pin Code</th>
+                <th>Address</th>
                 <th></th>
               </tr>
             </thead>
@@ -206,6 +213,8 @@ export default function ContactDirectoryPage() {
                   <td>{c.contact || c.mobile || '—'}</td>
                   <td>{c.city || '—'}</td>
                   <td>{c.state || '—'}</td>
+                  <td>{c.pinCode || '—'}</td>
+                  <td>{c.address || '—'}</td>
                   <td>
                     {can('agreements:write') && (
                       <button className="btn secondary btn-compact" type="button" onClick={() => startEdit(c)}>Edit</button>
@@ -231,21 +240,21 @@ export default function ContactDirectoryPage() {
             </div>
             <div className="field">
               <label>Resource Type</label>
-              <select value={form.resourceType} onChange={(e) => setForm({ ...form, resourceType: e.target.value })}>
+              <AdaptiveSelect value={form.resourceType} onChange={(e) => setForm({ ...form, resourceType: e.target.value })}>
                 <option value="">Select…</option>
                 {RESOURCE_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Profession</label>
-              <select value={form.profession} onChange={(e) => setForm({ ...form, profession: e.target.value })}>
+              <AdaptiveSelect value={form.profession} onChange={(e) => setForm({ ...form, profession: e.target.value })}>
                 <option value="">Select…</option>
                 {PROFESSIONS.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label>Contact</label>
@@ -260,6 +269,22 @@ export default function ContactDirectoryPage() {
                 <label>State</label>
                 <input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
               </div>
+            </div>
+            <div className="field">
+              <label>Pin Code</label>
+              <input
+                inputMode="numeric"
+                value={form.pinCode}
+                onChange={(e) => setForm({ ...form, pinCode: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Address</label>
+              <textarea
+                rows={2}
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+              />
             </div>
             <p className="muted mono-sm">Email or Contact is required for delivery.</p>
             <div className="wizard-actions">

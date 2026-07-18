@@ -24,7 +24,7 @@ export const MODULE_BLURB = {
   DOCUMENT_HUB: 'Contracts, approvals, and digital records.',
   ASSET_VERIFICATION: 'Photo, GPS, and audit checks.',
   CAMP_MANAGEMENT: 'Schedule, approve, and monitor camps.',
-  ASSET_REQUESTS: 'Repair, maintenance, logistics, training, and reimbursement requests.',
+  ASSET_REQUESTS: 'Repair, maintenance, logistics, training, reimbursement, and hiring requests.',
   INVENTORY_LOGISTICS: 'Stock, vendors, transfers, and procurement.',
 };
 

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 export default function AssetDetailPage() {
   const { id } = useParams();
@@ -118,7 +119,7 @@ export default function AssetDetailPage() {
               <h3 style={{ marginTop: 0 }}>Lifecycle transition</h3>
               <div className="field">
                 <label>To status</label>
-                <select required value={toStatus} onChange={(e) => setToStatus(e.target.value)}>
+                <AdaptiveSelect required value={toStatus} onChange={(e) => setToStatus(e.target.value)}>
                   <option value="">Select</option>
                   {[
                     'Received',
@@ -135,11 +136,11 @@ export default function AssetDetailPage() {
                       {s}
                     </option>
                   ))}
-                </select>
+                </AdaptiveSelect>
               </div>
               <div className="field">
                 <label>{FIELD.CUSTODIAN} (for Assigned/Verified)</label>
-                <select value={contactId} onChange={(e) => setContactId(e.target.value)}>
+                <AdaptiveSelect value={contactId} onChange={(e) => setContactId(e.target.value)}>
                   <option value="">—</option>
                   {contacts.map((c) => (
                     <option key={c._id} value={c._id}>
@@ -147,7 +148,7 @@ export default function AssetDetailPage() {
                       {c.city ? ` — ${c.city}` : ''}
                     </option>
                   ))}
-                </select>
+                </AdaptiveSelect>
               </div>
               <div className="field">
                 <label>Reason</label>

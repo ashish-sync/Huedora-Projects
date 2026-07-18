@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
 import { MODULE } from '../../shared/labels.js';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const emptyContact = {
   name: '',
@@ -438,7 +439,7 @@ export default function AgreementCreatePage() {
                 <div className="row">
                   <div className="field" style={{ flex: 1 }}>
                     <label>Resource Type</label>
-                    <select
+                    <AdaptiveSelect
                       value={newContact.resourceType}
                       onChange={(e) => setNewContact({ ...newContact, resourceType: e.target.value })}
                     >
@@ -446,11 +447,11 @@ export default function AgreementCreatePage() {
                       {RESOURCE_TYPES.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}
-                    </select>
+                    </AdaptiveSelect>
                   </div>
                   <div className="field" style={{ flex: 1 }}>
                     <label>Profession</label>
-                    <select
+                    <AdaptiveSelect
                       value={newContact.profession}
                       onChange={(e) => setNewContact({ ...newContact, profession: e.target.value })}
                     >
@@ -458,7 +459,7 @@ export default function AgreementCreatePage() {
                       {PROFESSIONS.map((p) => (
                         <option key={p} value={p}>{p}</option>
                       ))}
-                    </select>
+                    </AdaptiveSelect>
                   </div>
                 </div>
                 <div className="field">
@@ -605,10 +606,10 @@ export default function AgreementCreatePage() {
             </div>
             <div className="field">
               <label>Agreement type</label>
-              <select value={type} onChange={(e) => setType(e.target.value)}>
+              <AdaptiveSelect value={type} onChange={(e) => setType(e.target.value)}>
                 <option value="LEASE">Lease</option>
                 <option value="TEMPORARY_OWNERSHIP">Temporary ownership</option>
-              </select>
+              </AdaptiveSelect>
             </div>
             <div className="field">
               <label htmlFor="agr-start-date">Start date</label>

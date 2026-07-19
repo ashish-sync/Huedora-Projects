@@ -1115,8 +1115,8 @@ html[data-theme='dark'] .tylo-home-atmosphere {
 }
 
 .tylo-home-card.tone-camp {
-  --card-accent: #b45309;
-  --card-soft: color-mix(in srgb, #b45309 12%, var(--bg-elevated));
+  --card-accent: var(--brand);
+  --card-soft: color-mix(in srgb, var(--brand) 12%, var(--bg-elevated));
 }
 
 .tylo-home-card.tone-request {

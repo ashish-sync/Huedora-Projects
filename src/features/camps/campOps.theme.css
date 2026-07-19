@@ -1,0 +1,294 @@
+/**
+ * Camp One — TYLO One semantic theme overlay
+ * Loaded after campOps.css so PageShell / tokens win over HueDora chrome.
+ */
+
+.camp-ops-root {
+  --surface: var(--bg-elevated);
+  --text: var(--ink);
+  --text-muted: var(--muted);
+  --primary: var(--brand);
+  --primary-dark: var(--brand-hover);
+  --accent: var(--brand-bright);
+  --border: var(--line);
+  --success: var(--ok);
+  --warning: var(--warn);
+  --danger: var(--danger);
+  --shadow: none;
+
+  font-family: var(--font) !important;
+  color: var(--ink) !important;
+  background: transparent !important;
+  min-height: 0 !important;
+  min-width: 0;
+  width: 100%;
+}
+
+.camp-ops-root .page-shell {
+  gap: var(--stack) !important;
+}
+
+.camp-ops-root .logistics-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 var(--stack);
+  padding: 0 0 var(--stack);
+  border-bottom: 1px solid var(--line);
+}
+
+.camp-ops-root .logistics-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted) !important;
+  text-decoration: none;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.camp-ops-root .logistics-nav-link:hover {
+  color: var(--ink) !important;
+  background: color-mix(in srgb, var(--brand-soft) 70%, var(--bg-elevated));
+}
+
+.camp-ops-root .logistics-nav-link.is-active {
+  color: var(--brand) !important;
+  border-color: color-mix(in srgb, var(--brand) 28%, var(--line));
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated));
+}
+
+.camp-ops-root .camp-ops-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-lg);
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.camp-ops-root .btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--control-h) !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--brand) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  line-height: 1.2;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+
+.camp-ops-root .btn:hover:not(:disabled) {
+  background: var(--brand-hover) !important;
+}
+
+.camp-ops-root .btn-sm,
+.camp-ops-root .btn.btn-sm {
+  height: var(--control-h-sm) !important;
+  padding: 0 10px !important;
+  font-size: 0.75rem !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.camp-ops-root .btn-primary,
+.camp-ops-root .btn.btn-primary {
+  background: var(--brand) !important;
+  color: #fff !important;
+}
+
+.camp-ops-root .btn-primary:hover:not(:disabled),
+.camp-ops-root .btn.btn-primary:hover:not(:disabled) {
+  background: var(--brand-hover) !important;
+}
+
+.camp-ops-root .btn-secondary,
+.camp-ops-root .btn.btn-secondary,
+.camp-ops-root .btn.secondary {
+  background: var(--bg-elevated) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.camp-ops-root .btn-secondary:hover:not(:disabled),
+.camp-ops-root .btn.btn-secondary:hover:not(:disabled),
+.camp-ops-root .btn.secondary:hover:not(:disabled) {
+  background: var(--surface-muted) !important;
+  border-color: var(--line-strong) !important;
+}
+
+.camp-ops-root .btn-danger,
+.camp-ops-root .btn.btn-danger,
+.camp-ops-root .btn.danger {
+  background: var(--danger) !important;
+  color: #fff !important;
+}
+
+.camp-ops-root .panel,
+.camp-ops-root .table-card,
+.camp-ops-root .form-card,
+.camp-ops-root .import-card,
+.camp-ops-root .widget-card {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+}
+
+.camp-ops-root .panel,
+.camp-ops-root .form-card,
+.camp-ops-root .import-card {
+  padding: var(--pad) !important;
+}
+
+.camp-ops-root .panel h3,
+.camp-ops-root .form-card h3,
+.camp-ops-root .import-card h3 {
+  margin: 0 0 var(--stack-sm) !important;
+  font-size: 1rem !important;
+  font-weight: 650 !important;
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .field label,
+.camp-ops-root .custom-select-label {
+  color: var(--muted) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.camp-ops-root input:not([type='checkbox']):not([type='radio']),
+.camp-ops-root select,
+.camp-ops-root textarea,
+.camp-ops-root .custom-select-trigger {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm) !important;
+  background: var(--bg-elevated) !important;
+  color: var(--ink) !important;
+  box-shadow: none !important;
+}
+
+.camp-ops-root input:not([type='checkbox']):not([type='radio']):focus,
+.camp-ops-root select:focus,
+.camp-ops-root textarea:focus,
+.camp-ops-root .custom-select.is-open .custom-select-trigger,
+.camp-ops-root .custom-select-trigger:hover {
+  border-color: var(--focus) !important;
+  box-shadow: 0 0 0 3px var(--glow) !important;
+  outline: none;
+  background: var(--bg-elevated) !important;
+}
+
+.camp-ops-root .status-pill,
+.camp-ops-root .filter-chip,
+.camp-ops-root .alert-pill {
+  border-radius: var(--radius-sm) !important;
+}
+
+.camp-ops-root .empty-state {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  padding: var(--pad) !important;
+  color: var(--muted) !important;
+  box-shadow: none !important;
+}
+
+.camp-ops-root .error-banner {
+  background: var(--danger-soft) !important;
+  color: var(--danger) !important;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--line)) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.camp-ops-root .success-banner {
+  background: var(--ok-soft) !important;
+  color: var(--ok) !important;
+  border: 1px solid color-mix(in srgb, var(--ok) 28%, var(--line)) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.camp-ops-root .info-banner {
+  background: var(--info-soft) !important;
+  color: var(--info) !important;
+  border: 1px solid color-mix(in srgb, var(--info) 28%, var(--line)) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.camp-ops-root .table-card th,
+.camp-ops-root table th {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted) !important;
+  background: var(--surface-muted) !important;
+  border-bottom: 1px solid var(--line) !important;
+  padding: var(--table-cell-y) var(--table-cell-x) !important;
+}
+
+.camp-ops-root .table-card td,
+.camp-ops-root table td {
+  padding: var(--table-cell-y) var(--table-cell-x) !important;
+  border-bottom: 1px solid var(--line) !important;
+  color: var(--ink) !important;
+  font-size: 0.875rem !important;
+}
+
+.camp-ops-root .widget-card-clickable:hover,
+.camp-ops-root .stat-widget:hover {
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line)) !important;
+  background: color-mix(in srgb, var(--brand) 6%, var(--bg-elevated)) !important;
+}
+
+.camp-ops-root .charts-eye-toggle {
+  height: var(--control-h);
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+  background: var(--bg-elevated) !important;
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .charts-eye-toggle.is-active {
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line)) !important;
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
+  color: var(--brand) !important;
+}
+
+.camp-ops-root .camps-filter-panel,
+.camp-ops-root .dashboard-filter-panel,
+.camp-ops-root .dashboard-camps-panel,
+.camp-ops-root .dashboard-alerts-panel {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+  padding: var(--pad) !important;
+}
+
+.camp-ops-root .bulk-bar {
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
+  border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line)) !important;
+  border-radius: var(--radius) !important;
+  padding: var(--stack-sm) var(--pad) !important;
+}
+
+.camp-ops-root .communications-candidate-btn.is-active,
+.camp-ops-root .communications-candidate-btn:hover {
+  border-color: var(--brand) !important;
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
+  color: var(--brand) !important;
+}

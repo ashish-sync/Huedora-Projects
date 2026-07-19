@@ -34,6 +34,11 @@ export const NAV = {
   PRODUCTION_OUTPUT: 'Production Output',
   EXPENSES: 'Expenses',
   INVOICES: 'Invoices',
+  CAMP_HOME: 'Home',
+  CAMP_REQUESTS: 'Requests',
+  CAMP_SCHEDULE: 'Schedule',
+  CAMP_REPORTS: 'Reports',
+  CAMP_RESOURCES: 'Resources',
 };
 
 /** Short module blurbs for home / catalogs */
@@ -41,7 +46,7 @@ export const MODULE_BLURB = {
   ASSET_INVENTORY: 'Agreements and custody for Medical and Non-Medical Devices.',
   DOCUMENT_HUB: 'Create, send, and track contracts.',
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
-  CAMP_MANAGEMENT: 'Request, approve, and track camps.',
+  CAMP_MANAGEMENT: 'Camp operations — dashboard, camps, client masters, import, and connectors.',
   ASSET_REQUESTS:
     'Repair, maintenance, goods issue, training, reimbursement, hiring, and master data requests.',
   LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',

@@ -17,7 +17,17 @@ import RequestProductUploadPage from '../features/assetRequests/RequestProductUp
 import ImportsPage from '../features/imports/ImportsPage.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
 import NotificationsPage from '../features/notifications/NotificationsPage.jsx';
-import CampsPage from '../features/camps/CampsPage.jsx';
+import CampOpsLayout from '../features/camps/CampOpsLayout.jsx';
+import CampDashboardPage from '../features/camps/CampDashboardPage.jsx';
+import CampManagePage from '../features/camps/CampManagePage.jsx';
+import CampFormPage from '../features/camps/CampFormPage.jsx';
+import ClientMastersPage from '../features/camps/ClientMastersPage.jsx';
+import ClientMasterFormPage from '../features/camps/ClientMasterFormPage.jsx';
+import CampImportPage from '../features/camps/CampImportPage.jsx';
+import CommunicationsEmailPage from '../features/camps/CommunicationsEmailPage.jsx';
+import CommunicationsPastePage from '../features/camps/CommunicationsPastePage.jsx';
+import CommunicationsWhatsAppPage from '../features/camps/CommunicationsWhatsAppPage.jsx';
+import CampUsersPage from '../features/camps/CampUsersPage.jsx';
 import LogisticsLayout from '../features/logistics/LogisticsLayout.jsx';
 import LogisticsHubPage from '../features/logistics/LogisticsHubPage.jsx';
 import LogisticsInwardPage from '../features/logistics/LogisticsInwardPage.jsx';
@@ -108,7 +118,20 @@ export default function App() {
                 <Route path="/agreements/:id" element={<AgreementDetailPage />} />
                 <Route path="/hcws" element={<Navigate to="/master-data?scope=document&entity=contacts" replace />} />
                 <Route path="/verifications" element={<VerificationsPage />} />
-                <Route path="/camps" element={<CampsPage />} />
+                <Route path="/camps" element={<CampOpsLayout />}>
+                  <Route index element={<CampDashboardPage />} />
+                  <Route path="manage" element={<CampManagePage />} />
+                  <Route path="manage/new" element={<CampFormPage />} />
+                  <Route path="manage/:id/edit" element={<CampFormPage />} />
+                  <Route path="client-masters" element={<ClientMastersPage />} />
+                  <Route path="client-masters/new" element={<ClientMasterFormPage />} />
+                  <Route path="client-masters/:id/edit" element={<ClientMasterFormPage />} />
+                  <Route path="import" element={<CampImportPage />} />
+                  <Route path="communications/email" element={<CommunicationsEmailPage />} />
+                  <Route path="communications/paste" element={<CommunicationsPastePage />} />
+                  <Route path="communications/whatsapp" element={<CommunicationsWhatsAppPage />} />
+                  <Route path="users" element={<CampUsersPage />} />
+                </Route>
                 <Route path="/finance" element={<FinanceLayout />}>
                   <Route index element={<FinanceOverviewPage />} />
                   <Route path="expenses" element={<FinanceExpensesPage />} />

@@ -994,22 +994,27 @@ html[data-theme='dark'] .tylo-home-atmosphere {
 }
 
 .tylo-home-grid--modules {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: clamp(10px, 1.4vw, 14px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.5vw, 16px);
+  width: 100%;
 }
 
 .tylo-home-grid--modules .tylo-home-card {
-  min-height: 152px;
+  min-height: 168px;
+  height: 100%;
+  padding: 14px 16px;
 }
 
 .tylo-home-grid--modules .tylo-home-card h2 {
-  font-size: clamp(1rem, 1.2vw, 1.18rem);
+  font-size: clamp(0.98rem, 1.05vw, 1.12rem);
 }
 
 .tylo-home-grid--modules .tylo-home-card p {
-  font-size: 0.86rem;
+  max-width: none;
+  font-size: 0.84rem;
+  line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1127,6 +1132,11 @@ html[data-theme='dark'] .tylo-home-atmosphere {
 .tylo-home-card.tone-movement {
   --card-accent: #0e7490;
   --card-soft: color-mix(in srgb, #0e7490 14%, var(--bg-elevated));
+}
+
+.tylo-home-card.tone-finance {
+  --card-accent: #0f766e;
+  --card-soft: color-mix(in srgb, #0f766e 12%, var(--bg-elevated));
 }
 
 .tylo-home-card:hover,
@@ -1817,6 +1827,9 @@ tr.row-selected {
 .field textarea,
 .esign-search,
 .esign-toolbar select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   height: var(--control-h);
@@ -1828,6 +1841,36 @@ tr.row-selected {
     border-color var(--duration) ease,
     box-shadow var(--duration) ease,
     background var(--duration) ease;
+}
+
+.field textarea {
+  height: auto;
+  min-height: calc(var(--control-h) * 2);
+  padding: 10px 12px;
+}
+
+/* OtherAwareSelect: match AdaptiveSelect / input sizing in forms */
+.other-aware-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.other-aware-select > select,
+.other-aware-select > .adaptive-select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.other-aware-select > .field {
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .field input[type='file']:not(.file-picker__input) {
@@ -6547,9 +6590,13 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
   .tylo-home-grid--modules {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tylo-home-grid--modules .tylo-home-card {
+    min-height: 148px;
   }
 }
 
@@ -6562,6 +6609,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 
   .tylo-home-grid--modules {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .tylo-home-card {
@@ -6569,7 +6617,8 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   }
 
   .tylo-home-grid--modules .tylo-home-card {
-    min-height: 0;
+    min-height: 132px;
+    padding: 12px 14px;
   }
 
   .tylo-home-prompt {
@@ -6687,6 +6736,87 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   color: var(--brand);
   border-color: color-mix(in srgb, var(--brand) 28%, var(--line));
   background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated));
+}
+
+.asset-type-grid {
+  margin: 0 0 var(--stack);
+}
+
+.asset-type-grid-title {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.asset-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.asset-type-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elevated);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.asset-type-card:hover {
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
+  background: color-mix(in srgb, var(--brand) 5%, var(--bg-elevated));
+}
+
+.asset-type-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.asset-type-card-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.asset-type-card-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+.asset-type-card-cta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.asset-split-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 0 0 var(--stack);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line));
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in srgb, var(--brand) 6%, var(--bg-elevated));
+}
+
+.asset-split-callout .btn {
+  flex-shrink: 0;
+}
+
+.asset-register-block {
+  margin-top: var(--stack);
+  padding-top: var(--stack-sm);
+  border-top: 1px solid var(--line);
 }
 
 .logistics-soon {
@@ -7473,6 +7603,10 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 @media (max-width: 640px) {
   .tylo-home-grid--modules {
     grid-template-columns: 1fr;
+  }
+
+  .tylo-home-grid--modules .tylo-home-card {
+    min-height: 0;
   }
 }
 

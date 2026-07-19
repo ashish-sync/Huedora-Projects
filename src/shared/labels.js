@@ -14,6 +14,7 @@ export const MODULE = {
   LOGISTICS: 'Movement One',
   /** @deprecated Prefer LOGISTICS */
   INVENTORY_LOGISTICS: 'Movement One',
+  FINANCE: 'Finance One',
   MASTER_DATA: 'Master One',
   ROLES_PERMISSIONS: 'Access Control',
   CONTACT_DIRECTORY: 'Contact Directory',
@@ -31,18 +32,21 @@ export const NAV = {
   GOODS_ISSUE: 'Goods Issue',
   CONSUMPTION: 'Consumption',
   PRODUCTION_OUTPUT: 'Production Output',
+  EXPENSES: 'Expenses',
+  INVOICES: 'Invoices',
 };
 
 /** Short module blurbs for home / catalogs */
 export const MODULE_BLURB = {
-  ASSET_INVENTORY: 'Fixed assets and inventory balances.',
+  ASSET_INVENTORY: 'Agreements and custody for Medical and Non-Medical Devices.',
   DOCUMENT_HUB: 'Create, send, and track contracts.',
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
   CAMP_MANAGEMENT: 'Request, approve, and track camps.',
   ASSET_REQUESTS:
     'Repair, maintenance, goods issue, training, reimbursement, hiring, and master data requests.',
-  LOGISTICS: 'Goods receipt, goods issue, consumption, and production output.',
-  INVENTORY_LOGISTICS: 'Goods receipt, goods issue, consumption, and production output.',
+  LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
+  INVENTORY_LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
+  FINANCE: 'Expenses, invoices, and payment tracking.',
   MASTER_DATA: 'Shared reference data for assets, inventory, movements, and documents.',
   DASHBOARD: 'Review cross-module activity by date range.',
 };

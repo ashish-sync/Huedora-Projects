@@ -345,7 +345,7 @@ export default function AgreementDetailPage() {
       <div className="esign-top">
         <div>
           <p className="eyebrow">
-            <Link to="/agreements">{MODULE.ASSET_AGREEMENT}</Link>
+            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>{doc.agreementNumber}</span>
           </p>

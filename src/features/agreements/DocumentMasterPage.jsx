@@ -533,7 +533,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
             <span className="crumb-sep" aria-hidden="true">
               /
             </span>
-            <Link to="/agreements">{MODULE.ASSET_AGREEMENT}</Link>
+            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">
               /
             </span>

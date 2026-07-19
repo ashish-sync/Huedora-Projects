@@ -606,6 +606,71 @@ tbody tr:hover {
   box-sizing: border-box;
 }
 
+.asset-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.asset-type-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elevated);
+  text-decoration: none;
+  color: inherit;
+}
+
+.asset-type-card:hover {
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
+}
+
+.asset-type-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.asset-type-card-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.asset-type-card-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+.asset-type-card-cta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.asset-split-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 0 0 var(--stack);
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line));
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in srgb, var(--brand) 6%, var(--bg-elevated));
+}
+
+.asset-register-block {
+  margin-top: var(--stack);
+  padding-top: var(--stack-sm);
+  border-top: 1px solid var(--line);
+}
+
 .logistics-form,
 .arq-form {
   margin-bottom: 0;

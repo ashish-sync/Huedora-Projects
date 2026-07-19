@@ -2,10 +2,15 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { MODULE, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import { ASSET_REGISTER_PRODUCT_TYPES, productTypeToSlug } from './assetProductTypes.js';
 
 const NAV_ITEMS = [
-  { to: '/asset-inventory', end: true, label: NAV.ASSET_REGISTER },
-  { to: '/asset-inventory/balance', label: NAV.STOCK_OVERVIEW },
+  { to: '/asset-inventory', end: true, label: NAV.OVERVIEW },
+  ...ASSET_REGISTER_PRODUCT_TYPES.map((type) => ({
+    to: `/asset-inventory/types/${productTypeToSlug(type)}`,
+    end: false,
+    label: type,
+  })),
 ];
 
 export default function AssetInventoryLayout() {
@@ -36,9 +41,9 @@ export default function AssetInventoryLayout() {
       <PageShell
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_INVENTORY }]}
         title={MODULE.ASSET_INVENTORY}
-        description="Asset register and stock overview. Reference data is maintained in Master One."
+        description="Agreements and custody for Medical and Non-Medical Devices. Record inward for every product type in Movement One → Goods Receipt."
       >
-        <nav className="logistics-nav" aria-label={`${MODULE.ASSET_INVENTORY} sections`}>
+        <nav className="logistics-nav asset-one-nav" aria-label={`${MODULE.ASSET_INVENTORY} sections`}>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}

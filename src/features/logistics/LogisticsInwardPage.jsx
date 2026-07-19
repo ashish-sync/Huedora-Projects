@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api, apiUrl } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import {
@@ -54,6 +55,10 @@ export default function LogisticsInwardPage() {
   const [productPhoto, setProductPhoto] = useState(null);
   const [invoiceDoc, setInvoiceDoc] = useState(null);
   const [docsExtra, setDocsExtra] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
 
   const source = SOURCES.find((s) => s.id === sourceId) || SOURCES[0];
   const cfg = meta?.inOut || {};
@@ -109,21 +114,29 @@ export default function LogisticsInwardPage() {
 
   const load = useCallback(async () => {
     setError('');
+    setListLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '200', entryTypes: 'Inward,Return' });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        entryTypes: 'Inward,Return',
+      });
       if (q.trim()) params.set('q', q.trim());
       const res = await api(`/logistics/in-out?${params}`);
       setRows(res.data || []);
+      setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
     } catch (e) {
       setError(e.message);
+    } finally {
+      setListLoading(false);
     }
-  }, [q]);
+  }, [q, page, limit]);
 
   useEffect(() => {
     api('/logistics/meta')
       .then((r) => setMeta(r.data))
       .catch(() => {});
-    api('/contacts?limit=500')
+    api('/contacts?limit=200')
       .then((r) => setContacts(r.data || []))
       .catch(() => setContacts([]));
   }, []);
@@ -367,7 +380,9 @@ export default function LogisticsInwardPage() {
   return (
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
-        Goods receipt: seller deliveries, field returns and callbacks, and other warehouse receipts.
+        Goods receipt for <strong>all product types</strong>. Seller deliveries, field returns /
+        callbacks, and other warehouse receipts. Agreements and custody for Medical / Non-Medical
+        Devices stay in Asset One.
       </p>
 
       {(error || msg) && (
@@ -668,6 +683,18 @@ export default function LogisticsInwardPage() {
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        page={listMeta.page || page}
+        limit={limit}
+        total={listMeta.total || 0}
+        pages={listMeta.pages || 0}
+        loading={listLoading}
+        onPageChange={setPage}
+        onLimitChange={(n) => {
+          setLimit(n);
+          setPage(1);
+        }}
+      />
     </div>
   );
 }

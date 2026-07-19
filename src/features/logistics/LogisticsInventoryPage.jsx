@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
@@ -36,7 +37,7 @@ function resolveDefaultWarehouseId(warehouses, preferredName = 'Mumbai') {
   return hit?._id || '';
 }
 
-export default function LogisticsInventoryPage() {
+export default function LogisticsInventoryPage({ productType = '' } = {}) {
   const { can } = useAuth();
   const canWrite = can('logistics:write') || can('*');
   const [rows, setRows] = useState([]);
@@ -51,6 +52,11 @@ export default function LogisticsInventoryPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
+  const scopedType = String(productType || '').trim();
 
   const defaultWarehouseName = meta?.inOut?.defaultWarehouseName || 'Mumbai';
   const defaultWarehouseId = useMemo(
@@ -69,18 +75,23 @@ export default function LogisticsInventoryPage() {
 
   const load = useCallback(async () => {
     setError('');
+    setListLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '100' });
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (q.trim()) params.set('q', q.trim());
       if (status) params.set('status', status);
       if (warehouseId) params.set('warehouseId', warehouseId);
+      if (scopedType) params.set('productType', scopedType);
       const res = await api(`/logistics/inventory?${params}`);
       setRows(res.data || []);
       setSummary(res.summary || null);
+      setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
     } catch (e) {
       setError(e.message);
+    } finally {
+      setListLoading(false);
     }
-  }, [q, status, warehouseId]);
+  }, [q, status, warehouseId, scopedType, page, limit]);
 
   useEffect(() => {
     loadMeta();
@@ -126,6 +137,7 @@ export default function LogisticsInventoryPage() {
         method: 'POST',
         body: {
           ...form,
+          productType: scopedType || form.productType || undefined,
           categoryId: form.categoryId || null,
           uomId: form.uomId || null,
           warehouseId: form.warehouseId || defaultWarehouseId || null,
@@ -164,7 +176,9 @@ export default function LogisticsInventoryPage() {
   return (
     <div className="logistics-inventory">
       <p className="muted" style={{ marginTop: 0 }}>
-        Current stock on hand by warehouse and status.
+        {scopedType
+          ? `Current ${scopedType} stock on hand by warehouse and status.`
+          : 'Current stock on hand by warehouse and status.'}
       </p>
 
       {(error || msg) && (
@@ -404,6 +418,18 @@ export default function LogisticsInventoryPage() {
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        page={listMeta.page || page}
+        limit={limit}
+        total={listMeta.total || 0}
+        pages={listMeta.pages || 0}
+        loading={listLoading}
+        onPageChange={setPage}
+        onLimitChange={(n) => {
+          setLimit(n);
+          setPage(1);
+        }}
+      />
     </div>
   );
 }

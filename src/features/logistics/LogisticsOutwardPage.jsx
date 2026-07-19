@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
   FALLBACK_CAT_DEFAULTS,
   FALLBACK_COURIER,
@@ -344,11 +347,23 @@ export default function LogisticsOutwardPage() {
   const [dispatchedLines, setDispatchedLines] = useState(() => new Set());
   const [statusFilter, setStatusFilter] = useState('Open');
   const [deliveryBusyId, setDeliveryBusyId] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
 
   const cfg = meta?.inOut || {};
   const productTypes = cfg.productTypes || FALLBACK_PRODUCT;
+  const { options: picklistDeliveryModes } = usePicklistOptions(
+    'logistics.deliveryMode',
+    REQUEST_DELIVERY_MODES
+  );
   const deliveryModes = [
-    ...new Set([...(cfg.deliveryModes || FALLBACK_DELIVERY), ...REQUEST_DELIVERY_MODES]),
+    ...new Set([
+      ...(cfg.deliveryModes || FALLBACK_DELIVERY),
+      ...REQUEST_DELIVERY_MODES,
+      ...picklistDeliveryModes,
+    ]),
   ];
   const courierModes = [
     ...new Set([
@@ -389,8 +404,13 @@ export default function LogisticsOutwardPage() {
   const needsAwb = courierModes.includes(form.deliveryMode);
 
   const loadRows = useCallback(async () => {
+    setListLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '200', entryTypes: 'Outward,Return' });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        entryTypes: 'Outward,Return',
+      });
       if (q.trim()) params.set('q', q.trim());
       if (statusFilter && statusFilter !== 'All') params.set('dispatchStatus', statusFilter);
       const res = await api(`/logistics/in-out?${params}`);
@@ -398,10 +418,13 @@ export default function LogisticsOutwardPage() {
         (r) => r.entryType !== 'Return' || Boolean(r.logisticsKind)
       );
       setRows(list);
+      setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
     } catch (e) {
       setError(e.message);
+    } finally {
+      setListLoading(false);
     }
-  }, [q, statusFilter]);
+  }, [q, statusFilter, page, limit]);
 
   const markDelivery = async (row, outcome) => {
     if (!canWrite || !row?._id) return;
@@ -438,7 +461,7 @@ export default function LogisticsOutwardPage() {
     api('/logistics/meta')
       .then((r) => setMeta(r.data))
       .catch(() => {});
-    api('/contacts?limit=500')
+    api('/contacts?limit=200')
       .then((r) => setContacts(r.data || []))
       .catch(() => setContacts([]));
   }, []);
@@ -834,6 +857,25 @@ export default function LogisticsOutwardPage() {
           );
         }
 
+        const qty = Number(line.qty) || 0;
+        const availParams = new URLSearchParams();
+        if (line.productId) availParams.set('productId', line.productId);
+        if (form.warehouseId || defaultWarehouseId) {
+          availParams.set('warehouseId', form.warehouseId || defaultWarehouseId);
+        }
+        if (serialNumber) availParams.set('serialNumber', serialNumber);
+        if (batchNumber) availParams.set('batchNumber', batchNumber);
+        if (line.productName || product?.name) {
+          availParams.set('productName', line.productName || productLabel(product) || '');
+        }
+        const availRes = await api(`/logistics/inventory/availability?${availParams}`);
+        const availableQty = Number(availRes.data?.availableQty) || 0;
+        if (qty > availableQty) {
+          throw new Error(
+            `Insufficient available stock for “${line.productName || line.productType || 'product'}” (available ${availableQty}, requested ${qty})`
+          );
+        }
+
         lastResult = await api('/logistics/in-out', {
           method: 'POST',
           body: {
@@ -999,7 +1041,10 @@ export default function LogisticsOutwardPage() {
             />
             <AdaptiveSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
               aria-label="Goods issue status filter"
             >
               <option value="Open">Open</option>
@@ -1073,18 +1118,14 @@ export default function LogisticsOutwardPage() {
                       />
                     </Field>
                     <Field label="Delivery mode" required>
-                      <AdaptiveSelect
+                      <OtherAwareSelect
                         required
+                        picklistKey="logistics.deliveryMode"
+                        source="logistics-outward"
+                        options={deliveryModes}
                         value={form.deliveryMode}
                         onChange={(e) => setField('deliveryMode', e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {deliveryModes.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </AdaptiveSelect>
+                      />
                     </Field>
                     {needsAwb && (
                       <Field label="AWB number" required>
@@ -1396,17 +1437,14 @@ export default function LogisticsOutwardPage() {
                   )}
                   <div className="logistics-form-grid logistics-form-grid--inout">
                     <Field label="Delivery mode" required>
-                      <AdaptiveSelect
+                      <OtherAwareSelect
                         required
+                        picklistKey="logistics.deliveryMode"
+                        source="logistics-outward"
+                        options={deliveryModes}
                         value={form.deliveryMode}
                         onChange={(e) => setField('deliveryMode', e.target.value)}
-                      >
-                        {deliveryModes.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </AdaptiveSelect>
+                      />
                     </Field>
                     {needsAwb && (
                       <Field label="AWB number" required>
@@ -1545,6 +1583,18 @@ export default function LogisticsOutwardPage() {
               </tbody>
             </table>
           </div>
+          <PaginationBar
+            page={listMeta.page || page}
+            limit={limit}
+            total={listMeta.total || 0}
+            pages={listMeta.pages || 0}
+            loading={listLoading}
+            onPageChange={setPage}
+            onLimitChange={(n) => {
+              setLimit(n);
+              setPage(1);
+            }}
+          />
         </>
       )}
 

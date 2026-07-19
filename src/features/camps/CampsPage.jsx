@@ -5,6 +5,7 @@ import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 
 const FALLBACK_MAP = [
@@ -49,7 +50,11 @@ function emptyForm() {
     campDate: '',
     startTime: '09:00',
     endTime: '12:00',
+    durationHours: 3,
     campSlot: 'Morning',
+    expectedPatients: 50,
+    fieldPersonName: '',
+    fieldPersonPhone: '',
     technicianContactId: '',
     technicianName: '',
     technicianNumber: '',
@@ -57,9 +62,19 @@ function emptyForm() {
   };
 }
 
+function computeEndTime(startTime, durationHours) {
+  const m = String(startTime || '').match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+  const total = Number(m[1]) * 60 + Number(m[2]) + Number(durationHours || 3) * 60;
+  const mins = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const h = Math.floor(mins / 60);
+  const mm = mins % 60;
+  return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 function statusTone(status) {
-  if (status === 'Approved') return 'tone-ok';
-  if (status === 'Declined') return 'tone-warn';
+  if (status === 'Approved' || status === 'Completed') return 'tone-ok';
+  if (status === 'Declined' || status === 'Cancelled') return 'tone-warn';
   return 'tone-neutral';
 }
 
@@ -86,10 +101,29 @@ export default function CampsPage() {
   const [decideHcwContactId, setDecideHcwContactId] = useState('');
   const [decideHcwName, setDecideHcwName] = useState('');
   const [decideHcwNumber, setDecideHcwNumber] = useState('');
+  const [editId, setEditId] = useState('');
+  const [completeId, setCompleteId] = useState('');
+  const [completePatients, setCompletePatients] = useState('');
+  const [cancelId, setCancelId] = useState('');
+  const [cancelBy, setCancelBy] = useState('Ops');
+  const [cancelRemarks, setCancelRemarks] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
   const minCampDate = useMemo(() => minCampDateStr(), []);
 
   const processMap = meta?.processMap || FALLBACK_MAP;
   const methods = meta?.methods || [...new Set(processMap.map((r) => r.method))];
+  const durationOptions = meta?.durationOptions || [3, 4, 5, 6, 8];
+  const cancelSources = meta?.cancelSources || ['Brand', 'Ops'];
+  const statuses = meta?.statuses || [
+    'Pending',
+    'Approved',
+    'Declined',
+    'Completed',
+    'Cancelled',
+  ];
 
   const processes = useMemo(
     () => processMap.filter((r) => r.method === form.method).map((r) => r.process),
@@ -98,23 +132,27 @@ export default function CampsPage() {
 
   const load = useCallback(async () => {
     setError('');
+    setListLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '200' });
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (statusFilter) params.set('status', statusFilter);
       if (q.trim()) params.set('q', q.trim());
       if (view === 'mine') params.set('mine', '1');
       const res = await api(`/camps?${params}`);
       setRows(res.data || []);
+      setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
     } catch (e) {
       setError(e.message);
+    } finally {
+      setListLoading(false);
     }
-  }, [statusFilter, q, view]);
+  }, [statusFilter, q, view, page, limit]);
 
   useEffect(() => {
     api('/camps/meta')
       .then((r) => setMeta(r.data))
       .catch(() => {});
-    api('/contacts?limit=500')
+    api('/contacts?limit=200')
       .then((r) => setContacts(r.data || []))
       .catch(() => setContacts([]));
   }, []);
@@ -148,7 +186,17 @@ export default function CampsPage() {
     setForm((f) => ({
       ...f,
       startTime,
+      endTime: computeEndTime(startTime, f.durationHours),
       campSlot: resolveSlot(startTime),
+    }));
+  };
+
+  const onDurationChange = (durationHours) => {
+    const hours = Number(durationHours) || 3;
+    setForm((f) => ({
+      ...f,
+      durationHours: hours,
+      endTime: computeEndTime(f.startTime, hours),
     }));
   };
 
@@ -173,8 +221,38 @@ export default function CampsPage() {
       base.process = first.process;
       base.campType = first.campType;
     }
+    base.endTime = computeEndTime(base.startTime, base.durationHours);
     base.campSlot = resolveSlot(base.startTime);
+    setEditId('');
     setForm(base);
+    setFormOpen(true);
+    setMsg('');
+    setError('');
+  };
+
+  const openEdit = (row) => {
+    setEditId(row._id);
+    setForm({
+      method: row.method || 'Diagnostic',
+      process: row.process || '',
+      campType: row.campType || '',
+      doctorName: row.doctorName || '',
+      address: row.address || '',
+      city: row.city || '',
+      state: row.state || '',
+      campDate: row.campDate || '',
+      startTime: row.startTime || '09:00',
+      endTime: row.endTime || computeEndTime(row.startTime || '09:00', row.durationHours || 3),
+      durationHours: Number(row.durationHours) || 3,
+      campSlot: row.campSlot || resolveSlot(row.startTime),
+      expectedPatients: Number(row.expectedPatients) || 0,
+      fieldPersonName: row.fieldPersonName || '',
+      fieldPersonPhone: row.fieldPersonPhone || '',
+      technicianContactId: '',
+      technicianName: '',
+      technicianNumber: '',
+      remarks: row.remarks || '',
+    });
     setFormOpen(true);
     setMsg('');
     setError('');
@@ -183,7 +261,7 @@ export default function CampsPage() {
   const save = async (e) => {
     e.preventDefault();
     if (!canRequest) return;
-    if (!form.campDate || form.campDate < minCampDate) {
+    if (!editId && (!form.campDate || form.campDate < minCampDate)) {
       setError(`Camp Date must be on or after ${minCampDate}.`);
       return;
     }
@@ -192,9 +270,15 @@ export default function CampsPage() {
     setMsg('');
     try {
       const { technicianContactId, technicianName, technicianNumber, ...rest } = form;
-      await api('/camps', { method: 'POST', body: rest });
-      setMsg('Camp request submitted. Awaiting approval.');
+      if (editId) {
+        await api(`/camps/${editId}`, { method: 'PATCH', body: rest });
+        setMsg('Camp request updated.');
+      } else {
+        await api('/camps', { method: 'POST', body: rest });
+        setMsg('Camp request submitted. Awaiting approval.');
+      }
       setFormOpen(false);
+      setEditId('');
       load();
     } catch (err) {
       setError(err.message);
@@ -209,6 +293,49 @@ export default function CampsPage() {
     setDecideHcwContactId('');
     setDecideHcwName('');
     setDecideHcwNumber('');
+  };
+
+  const submitComplete = async (e) => {
+    e.preventDefault();
+    if (!canApprove || !completeId) return;
+    setBusy(true);
+    setError('');
+    try {
+      const n = Number(completePatients) || 0;
+      await api(`/camps/${completeId}/complete`, {
+        method: 'POST',
+        body: { actualPatients: n, screenCount: n },
+      });
+      setMsg('Camp marked Completed. Usage synced to Movement One.');
+      setCompleteId('');
+      setCompletePatients('');
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitCancel = async (e) => {
+    e.preventDefault();
+    if (!canApprove || !cancelId) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/camps/${cancelId}/cancel`, {
+        method: 'POST',
+        body: { cancelledBy: cancelBy, remarks: cancelRemarks },
+      });
+      setMsg('Camp cancelled.');
+      setCancelId('');
+      setCancelRemarks('');
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const submitDecision = async (e) => {
@@ -258,7 +385,7 @@ export default function CampsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.CAMP_MANAGEMENT }]}
       title={MODULE.CAMP_MANAGEMENT}
-      description="Submitters create camp requests. Approvers assign an HCW or decline with a reason."
+      description="Request camps, assign HCW on approval, then mark Completed or Cancelled. Duration drives end time; overdue Approved camps are flagged."
     >
       {(error || msg) && (
         <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
@@ -268,16 +395,30 @@ export default function CampsPage() {
 
       <div className="inv-toolbar logistics-toolbar">
         {canApprove && (
-          <AdaptiveSelect value={view} onChange={(e) => setView(e.target.value)}>
+          <AdaptiveSelect
+            value={view}
+            onChange={(e) => {
+              setView(e.target.value);
+              setPage(1);
+            }}
+          >
             <option value="all">All requests</option>
             <option value="mine">My requests</option>
           </AdaptiveSelect>
         )}
-        <AdaptiveSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <AdaptiveSelect
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+        >
           <option value="">All statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="Approved">Approved</option>
-          <option value="Declined">Declined</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </AdaptiveSelect>
         <input
           className="esign-search inv-search"
@@ -286,7 +427,14 @@ export default function CampsPage() {
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
         />
-        <button className="btn secondary" type="button" onClick={load}>
+        <button
+          className="btn secondary"
+          type="button"
+          onClick={() => {
+            if (page === 1) load();
+            else setPage(1);
+          }}
+        >
           Search
         </button>
         {canRequest && (
@@ -308,10 +456,11 @@ export default function CampsPage() {
 
       {canRequest && formOpen && (
         <form className="card logistics-form" onSubmit={save}>
-          <h3>Camp Request</h3>
+          <h3>{editId ? 'Edit camp request' : 'Camp Request'}</h3>
           <p className="muted" style={{ marginTop: 0 }}>
-            Request Date &amp; Time is captured on submit. Default status is Pending. Camp Type and
-            Camp Slot fill automatically. Technician / HCW is assigned by the approver later.
+            {editId
+              ? 'Update schedule or details while the request is still Pending.'
+              : 'Request Date & Time is captured on submit. Default status is Pending. Camp Type and Camp Slot fill automatically. Technician / HCW is assigned by the approver later.'}
           </p>
           <div className="logistics-form-grid logistics-form-grid--inout">
             <div className="field">
@@ -399,13 +548,22 @@ export default function CampsPage() {
               />
             </div>
             <div className="field">
-              <label>End Time *</label>
-              <input
-                type="time"
+              <label>Duration (hours) *</label>
+              <AdaptiveSelect
                 required
-                value={form.endTime}
-                onChange={(e) => setField('endTime', e.target.value)}
-              />
+                value={String(form.durationHours)}
+                onChange={(e) => onDurationChange(e.target.value)}
+              >
+                {durationOptions.map((h) => (
+                  <option key={h} value={h}>
+                    {h} hours
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </div>
+            <div className="field">
+              <label>End Time (auto)</label>
+              <input readOnly className="is-readonly" type="time" value={form.endTime} />
             </div>
             <div className="field">
               <label>Camp Slot (Auto)</label>
@@ -414,6 +572,29 @@ export default function CampsPage() {
                 className="is-readonly"
                 value={form.campSlot || '-'}
                 placeholder="Derived from Start Time"
+              />
+            </div>
+            <div className="field">
+              <label>Expected patients</label>
+              <input
+                type="number"
+                min={0}
+                value={form.expectedPatients}
+                onChange={(e) => setField('expectedPatients', e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label>Field person name</label>
+              <input
+                value={form.fieldPersonName}
+                onChange={(e) => setField('fieldPersonName', e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label>Field person phone</label>
+              <input
+                value={form.fieldPersonPhone}
+                onChange={(e) => setField('fieldPersonPhone', e.target.value)}
               />
             </div>
             <div className="field am-form-span">
@@ -427,9 +608,16 @@ export default function CampsPage() {
           </div>
           <div className="logistics-form-actions">
             <button className="btn" type="submit" disabled={busy || !form.campSlot}>
-              {busy ? 'Submitting…' : 'Submit request'}
+              {busy ? 'Saving…' : editId ? 'Save changes' : 'Submit request'}
             </button>
-            <button className="btn secondary" type="button" onClick={() => setFormOpen(false)}>
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={() => {
+                setFormOpen(false);
+                setEditId('');
+              }}
+            >
               Cancel
             </button>
           </div>
@@ -517,6 +705,87 @@ export default function CampsPage() {
         </form>
       )}
 
+      {completeId && canApprove && (
+        <form className="card logistics-form" onSubmit={submitComplete}>
+          <h3>Mark camp Completed</h3>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Enter actual patients / screens screened. This updates Movement One usage.
+          </p>
+          <div className="field">
+            <label>Actual patients / screens *</label>
+            <input
+              required
+              type="number"
+              min={0}
+              value={completePatients}
+              onChange={(e) => setCompletePatients(e.target.value)}
+            />
+          </div>
+          <div className="logistics-form-actions">
+            <button className="btn" type="submit" disabled={busy}>
+              {busy ? 'Saving…' : 'Confirm Completed'}
+            </button>
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={() => {
+                setCompleteId('');
+                setCompletePatients('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {cancelId && canApprove && (
+        <form className="card logistics-form" onSubmit={submitCancel}>
+          <h3>Cancel approved camp</h3>
+          <div className="logistics-form-grid logistics-form-grid--inout">
+            <div className="field">
+              <label>Cancelled by *</label>
+              <AdaptiveSelect
+                required
+                value={cancelBy}
+                onChange={(e) => setCancelBy(e.target.value)}
+              >
+                {cancelSources.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </div>
+            <div className="field am-form-span">
+              <label>Remarks *</label>
+              <textarea
+                required
+                rows={3}
+                value={cancelRemarks}
+                onChange={(e) => setCancelRemarks(e.target.value)}
+                placeholder="Why is this camp cancelled?"
+              />
+            </div>
+          </div>
+          <div className="logistics-form-actions">
+            <button className="btn" type="submit" disabled={busy}>
+              {busy ? 'Saving…' : 'Confirm cancel'}
+            </button>
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={() => {
+                setCancelId('');
+                setCancelRemarks('');
+              }}
+            >
+              Back
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="card card--flush table-wrap">
         <table className="inv-table">
           <thead>
@@ -528,12 +797,13 @@ export default function CampsPage() {
               <th>Type</th>
               <th>Camp Date</th>
               <th>Slot</th>
+              <th>Duration</th>
               <th>Doctor</th>
               <th>HCW / Technician</th>
               <th>City</th>
               <th>Requester</th>
               <th>Status</th>
-              {canApprove && <th>Actions</th>}
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -555,6 +825,14 @@ export default function CampsPage() {
                 <td>
                   <span className="badge tone-neutral">{r.campSlot || '-'}</span>
                 </td>
+                <td className="mono-sm">
+                  {r.durationHours ? `${r.durationHours}h` : '-'}
+                  {r.startTime && r.endTime ? (
+                    <span className="muted" style={{ display: 'block', fontSize: '0.72rem' }}>
+                      {r.startTime}–{r.endTime}
+                    </span>
+                  ) : null}
+                </td>
                 <td>{r.doctorName || '-'}</td>
                 <td>
                   {r.technicianName || '-'}
@@ -573,55 +851,105 @@ export default function CampsPage() {
                       Overdue
                     </span>
                   ) : null}
+                  {r.isScheduleOverdue ? (
+                    <span className="badge tone-danger" style={{ marginLeft: 6 }}>
+                      Past end
+                    </span>
+                  ) : null}
                   {r.decisionReason ? (
                     <span className="muted" style={{ display: 'block', fontSize: '0.72rem' }}>
                       {r.decisionReason}
                     </span>
                   ) : null}
                 </td>
-                {canApprove && (
-                  <td className="inv-actions">
-                    {r.status === 'Pending' ? (
-                      <>
-                        <button
-                          type="button"
-                          className="linkish"
-                          onClick={() => {
-                            setDecideId(r._id);
-                            setDecideAction('Approve');
-                            setDecideReason('');
-                            setDecideHcwContactId('');
-                            setDecideHcwName('');
-                            setDecideHcwNumber('');
-                          }}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="linkish"
-                          onClick={() => {
-                            setDecideId(r._id);
-                            setDecideAction('Decline');
-                            setDecideReason('');
-                            setDecideHcwContactId('');
-                            setDecideHcwName('');
-                            setDecideHcwNumber('');
-                          }}
-                        >
-                          Decline
-                        </button>
-                      </>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                )}
+                <td className="inv-actions">
+                  {r.status === 'Pending' &&
+                  (canRequest || String(r.requesterId) === String(user?._id)) ? (
+                    <button type="button" className="linkish" onClick={() => openEdit(r)}>
+                      Edit
+                    </button>
+                  ) : null}
+                  {canApprove && r.status === 'Pending' ? (
+                    <>
+                      <button
+                        type="button"
+                        className="linkish"
+                        onClick={() => {
+                          setDecideId(r._id);
+                          setDecideAction('Approve');
+                          setDecideReason('');
+                          setDecideHcwContactId('');
+                          setDecideHcwName('');
+                          setDecideHcwNumber('');
+                          setCompleteId('');
+                          setCancelId('');
+                        }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className="linkish"
+                        onClick={() => {
+                          setDecideId(r._id);
+                          setDecideAction('Decline');
+                          setDecideReason('');
+                          setDecideHcwContactId('');
+                          setDecideHcwName('');
+                          setDecideHcwNumber('');
+                          setCompleteId('');
+                          setCancelId('');
+                        }}
+                      >
+                        Decline
+                      </button>
+                    </>
+                  ) : null}
+                  {canApprove && r.status === 'Approved' ? (
+                    <>
+                      <button
+                        type="button"
+                        className="linkish"
+                        onClick={() => {
+                          setCompleteId(r._id);
+                          setCompletePatients(
+                            String(r.expectedPatients || r.screenCount || '')
+                          );
+                          setDecideId('');
+                          setCancelId('');
+                        }}
+                      >
+                        Complete
+                      </button>
+                      <button
+                        type="button"
+                        className="linkish"
+                        onClick={() => {
+                          setCancelId(r._id);
+                          setCancelBy('Ops');
+                          setCancelRemarks('');
+                          setDecideId('');
+                          setCompleteId('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : null}
+                  {!(
+                    (r.status === 'Pending' &&
+                      (canRequest || String(r.requesterId) === String(user?._id))) ||
+                    (canApprove && r.status === 'Pending') ||
+                    (canApprove && r.status === 'Approved')
+                  ) ? (
+                    <span className="muted">—</span>
+                  ) : null}
+                </td>
               </tr>
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={canApprove ? 13 : 12}>
+                <td colSpan={14}>
                   <div className="inv-empty">
                     <strong>No camp requests yet</strong>
                     <p className="muted">
@@ -636,6 +964,18 @@ export default function CampsPage() {
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        page={listMeta.page}
+        limit={limit}
+        total={listMeta.total}
+        pages={listMeta.pages}
+        loading={listLoading}
+        onPageChange={setPage}
+        onLimitChange={(n) => {
+          setLimit(n);
+          setPage(1);
+        }}
+      />
       {user?.email && (
         <p className="muted" style={{ marginTop: 12, fontSize: '0.82rem' }}>
           Signed in as {user.fullName || user.email}.{' '}

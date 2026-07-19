@@ -6,6 +6,7 @@ import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 
 const emptyForm = {
   pinCode: '',
@@ -30,19 +31,30 @@ export default function LocationMasterPage({ embedded = false } = {}) {
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [loading, setLoading] = useState(false);
 
   const load = () => {
-    const params = new URLSearchParams({ limit: '200' });
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (q) params.set('q', q);
+    setLoading(true);
     return Promise.all([
       api('/geo/meta').then((r) => setMeta(r.data)),
-      api(`/geo/pin-codes?${params}`).then((r) => setRows(r.data || [])),
-    ]).catch((e) => setError(e.message));
+      api(`/geo/pin-codes?${params}`).then((r) => {
+        setRows(r.data || []);
+        setListMeta(r.meta || { page, limit, total: 0, pages: 0 });
+      }),
+    ])
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on page/limit
+  }, [page, limit]);
 
   const save = async (e) => {
     e.preventDefault();
@@ -142,7 +154,15 @@ export default function LocationMasterPage({ embedded = false } = {}) {
           onChange={(e) => setQ(e.target.value)}
           style={{ maxWidth: 280 }}
         />
-        <button type="button" className="btn secondary" onClick={load}>
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={() => {
+            setError('');
+            if (page === 1) load();
+            else setPage(1);
+          }}
+        >
           Search
         </button>
       </div>
@@ -257,6 +277,18 @@ export default function LocationMasterPage({ embedded = false } = {}) {
           </div>
         </form>
       ) : null}
+      <PaginationBar
+        page={listMeta.page}
+        limit={limit}
+        total={listMeta.total}
+        pages={listMeta.pages}
+        loading={loading}
+        onPageChange={setPage}
+        onLimitChange={(n) => {
+          setLimit(n);
+          setPage(1);
+        }}
+      />
     </PageShell>
   );
 }

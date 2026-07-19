@@ -4,7 +4,9 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 
 const ROLES_FALLBACK = [
   'HR',
@@ -88,6 +90,8 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
   const canWrite = can('agreements:write');
   const [rows, setRows] = useState([]);
   const [roles, setRoles] = useState(ROLES_FALLBACK);
+  const { options: roleOptions } = usePicklistOptions('signature.role', ROLES_FALLBACK);
+  const roleChoices = roleOptions.length ? roleOptions : roles;
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
   const [form, setForm] = useState(empty);
@@ -257,7 +261,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
           <p className="eyebrow">
             <Link to="/">{MODULE.HOME}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
-            <Link to="/agreements">{MODULE.ASSET_AGREEMENT}</Link>
+            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>{MODULE.DIGITAL_SIGNATURE_MASTER}</span>
           </p>
@@ -375,17 +379,14 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
             </div>
             <div className="field">
               <label>Role / designation *</label>
-              <AdaptiveSelect
+              <OtherAwareSelect
                 required
+                picklistKey="signature.role"
+                source="signature-master"
+                options={roleChoices}
                 value={form.roleLabel}
                 onChange={(e) => setForm({ ...form, roleLabel: e.target.value })}
-              >
-                {roles.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </AdaptiveSelect>
+              />
             </div>
             <div className="row">
               <div className="field" style={{ flex: 1 }}>

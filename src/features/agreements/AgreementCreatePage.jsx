@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
-import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
+import { CONTACT_CATEGORIES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey } from './contactPicklists.js';
+import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
+import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { MODULE } from '../../shared/labels.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
@@ -10,8 +12,11 @@ import LocationCascade from '../../components/ui/LocationCascade.jsx';
 const emptyContact = {
   name: '',
   email: '',
+  contactCategory: '',
   resourceType: '',
   profession: '',
+  organization: '',
+  supplyCategory: '',
   contact: '',
   state: '',
   city: '',
@@ -59,6 +64,21 @@ export default function AgreementCreatePage() {
   const [newContact, setNewContact] = useState(emptyContact);
   const [deliverEmail, setDeliverEmail] = useState(true);
   const [deliverSms, setDeliverSms] = useState(false);
+
+  const professionPicklistKeyValue = professionPicklistKey(newContact.contactCategory);
+  const professionFallback = professionsForCategory(newContact.contactCategory);
+  const { options: resourceTypeOptions } = usePicklistOptions(
+    'contact.resourceType',
+    RESOURCE_TYPES
+  );
+  const { options: supplyCategoryOptions } = usePicklistOptions(
+    'contact.supplyCategory',
+    SUPPLY_CATEGORIES
+  );
+  const { options: professionOptions } = usePicklistOptions(
+    professionPicklistKeyValue,
+    professionFallback
+  );
 
   const [templates, setTemplates] = useState([]);
   const [docMode, setDocMode] = useState('template');
@@ -127,7 +147,14 @@ export default function AgreementCreatePage() {
 
   const recipientReady = () => {
     if (recipientMode === 'directory') return Boolean(selectedContactId);
-    return Boolean(newContact.name && (newContact.email || newContact.contact));
+    if (!newContact.name || !(newContact.email || newContact.contact)) return false;
+    if (!newContact.contactCategory) return false;
+    if (newContact.contactCategory === 'Resource' && !newContact.resourceType) return false;
+    if (newContact.contactCategory === 'Client' && !String(newContact.organization || '').trim()) {
+      return false;
+    }
+    if (newContact.contactCategory === 'Vendor' && !newContact.supplyCategory) return false;
+    return true;
   };
 
   const documentReady = () => {
@@ -181,8 +208,11 @@ export default function AgreementCreatePage() {
       fd.append('contactName', newContact.name);
       fd.append('contactEmail', newContact.email);
       fd.append('contactMobile', newContact.contact);
+      fd.append('contactCategory', newContact.contactCategory);
       fd.append('resourceType', newContact.resourceType);
       fd.append('profession', newContact.profession);
+      fd.append('organization', newContact.organization || '');
+      fd.append('supplyCategory', newContact.supplyCategory || '');
       fd.append('contactState', newContact.state);
       fd.append('contactCity', newContact.city);
       fd.append('contactDistrict', newContact.district || '');
@@ -310,7 +340,7 @@ export default function AgreementCreatePage() {
       <div className="esign-top">
         <div>
           <p className="eyebrow">
-            <Link to="/agreements">{MODULE.ASSET_AGREEMENT}</Link>
+            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>New document</span>
           </p>
@@ -414,7 +444,15 @@ export default function AgreementCreatePage() {
                       <strong>{c.name}</strong>
                       <span>{[c.email, c.contact || c.mobile].filter(Boolean).join(' · ') || 'No delivery details'}</span>
                       <span className="muted">
-                        {[c.profession, c.resourceType, c.city, c.state].filter(Boolean).join(' · ') || '-'}
+                        {[
+                          c.contactCategory,
+                          c.profession,
+                          c.organization || c.supplyCategory || c.resourceType,
+                          c.city,
+                          c.state,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ') || '-'}
                       </span>
                     </button>
                   ))}
@@ -426,6 +464,86 @@ export default function AgreementCreatePage() {
                 <p className="muted" style={{ marginTop: 0 }}>
                   New contacts are saved to the directory for future use.
                 </p>
+                <div className="field">
+                  <label>Contact Category *</label>
+                  <AdaptiveSelect
+                    required
+                    value={newContact.contactCategory}
+                    onChange={(e) => {
+                      const contactCategory = e.target.value;
+                      const nextProfessions = professionsForCategory(contactCategory);
+                      setNewContact({
+                        ...newContact,
+                        contactCategory,
+                        resourceType: contactCategory === 'Resource' ? newContact.resourceType : '',
+                        organization: contactCategory === 'Client' ? newContact.organization : '',
+                        supplyCategory:
+                          contactCategory === 'Vendor' &&
+                          SUPPLY_CATEGORIES.includes(newContact.supplyCategory)
+                            ? newContact.supplyCategory
+                            : '',
+                        profession: nextProfessions.includes(newContact.profession)
+                          ? newContact.profession
+                          : '',
+                      });
+                    }}
+                  >
+                    <option value="">Select…</option>
+                    {CONTACT_CATEGORIES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                {newContact.contactCategory === 'Resource' && (
+                  <div className="field">
+                    <label>Resource Type *</label>
+                    <OtherAwareSelect
+                      required
+                      picklistKey="contact.resourceType"
+                      source="agreement-create"
+                      options={resourceTypeOptions}
+                      value={newContact.resourceType}
+                      onChange={(e) => setNewContact({ ...newContact, resourceType: e.target.value })}
+                    />
+                  </div>
+                )}
+                {newContact.contactCategory === 'Client' && (
+                  <div className="field">
+                    <label>Organization Name *</label>
+                    <input
+                      required
+                      value={newContact.organization}
+                      onChange={(e) => setNewContact({ ...newContact, organization: e.target.value })}
+                    />
+                  </div>
+                )}
+                {newContact.contactCategory === 'Vendor' && (
+                  <div className="field">
+                    <label>Supply Category *</label>
+                    <OtherAwareSelect
+                      required
+                      picklistKey="contact.supplyCategory"
+                      source="agreement-create"
+                      options={supplyCategoryOptions}
+                      value={newContact.supplyCategory}
+                      onChange={(e) =>
+                        setNewContact({ ...newContact, supplyCategory: e.target.value })
+                      }
+                    />
+                  </div>
+                )}
+                <div className="field">
+                  <label>Profession / Role</label>
+                  <OtherAwareSelect
+                    picklistKey={professionPicklistKeyValue}
+                    source="agreement-create"
+                    options={professionOptions}
+                    value={newContact.profession}
+                    onChange={(e) => setNewContact({ ...newContact, profession: e.target.value })}
+                  />
+                </div>
                 <div className="field">
                   <label>Name *</label>
                   <input
@@ -442,42 +560,17 @@ export default function AgreementCreatePage() {
                     onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
                   />
                 </div>
-                <div className="row">
-                  <div className="field" style={{ flex: 1 }}>
-                    <label>Resource Type</label>
-                    <AdaptiveSelect
-                      value={newContact.resourceType}
-                      onChange={(e) => setNewContact({ ...newContact, resourceType: e.target.value })}
-                    >
-                      <option value="">Select…</option>
-                      {RESOURCE_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </AdaptiveSelect>
-                  </div>
-                  <div className="field" style={{ flex: 1 }}>
-                    <label>Profession</label>
-                    <AdaptiveSelect
-                      value={newContact.profession}
-                      onChange={(e) => setNewContact({ ...newContact, profession: e.target.value })}
-                    >
-                      <option value="">Select…</option>
-                      {PROFESSIONS.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </AdaptiveSelect>
-                  </div>
-                </div>
                 <div className="field">
                   <label>Contact</label>
                   <input
                     value={newContact.contact}
                     onChange={(e) => setNewContact({ ...newContact, contact: e.target.value })}
-                    placeholder="Mobile / phone"
+                    placeholder="10-digit mobile"
                   />
                 </div>
                 <LocationCascade
                   showPin={false}
+                  showDistrict={false}
                   value={newContact}
                   onChange={(loc) => setNewContact({ ...newContact, ...loc })}
                 />

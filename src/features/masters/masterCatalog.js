@@ -1,4 +1,5 @@
 /** Shared catalog for Master One hub + Request One “Master One Request”. */
+import { emailError, phoneError } from '../../shared/validation.js';
 
 export const MASTER_MODULES = [
   { id: 'inventory', label: 'Inventory' },
@@ -114,13 +115,83 @@ export const MASTER_ENTITIES = [
     fields: [
       { name: 'name', label: 'Name', required: true },
       { name: 'email', label: 'Email' },
-      { name: 'contact', label: 'Phone / contact' },
-      { name: 'resourceType', label: 'Resource type' },
-      { name: 'profession', label: 'Profession' },
-      { name: 'address', label: 'Address', type: 'textarea' },
-      { name: 'state', label: 'State' },
+      { name: 'contact', label: 'Contact' },
+      {
+        name: 'contactCategory',
+        label: 'Contact Category',
+        required: true,
+        type: 'select',
+        options: ['Resource', 'Client', 'Vendor'],
+      },
+      {
+        name: 'resourceType',
+        label: 'Resource Type',
+        type: 'select',
+        options: [
+          'Full-Time',
+          'Contractual',
+          'Freelancer',
+          'Consultant',
+          'Service Provider',
+          'Individual',
+          'Other',
+        ],
+      },
+      {
+        name: 'profession',
+        label: 'Profession / Role',
+        type: 'select',
+        options: [
+          'Technician',
+          'Phlebotomist',
+          'Dietitian',
+          'Doctor',
+          'Nurse',
+          'Biomedical Engineer',
+          'Project Manager',
+          'Operations Executive',
+          'Human Resources',
+          'Finance',
+          'IT Support',
+          'Administration',
+          'Procurement',
+          'Other',
+          'Product Manager',
+          'Admin',
+          'Sales Executive',
+          'Service Engineer',
+          'Finance Executive',
+          'Owner / Proprietor',
+        ],
+      },
+      { name: 'organization', label: 'Organization Name' },
+      {
+        name: 'supplyCategory',
+        label: 'Supply Category',
+        type: 'select',
+        options: [
+          'Medical Devices',
+          'Medical Consumables',
+          'Printing & Branding',
+          'Office Supplies & Stationery',
+          'Courier & Logistics',
+          'IT Hardware & Software',
+          'Biomedical Service & AMC',
+          'Facility & Housekeeping',
+          'Recruitment & Staffing',
+          'Travel & Transport',
+          'Catering',
+          'Other',
+        ],
+      },
       { name: 'city', label: 'City' },
-      { name: 'pinCode', label: 'PIN code' },
+      { name: 'state', label: 'State' },
+      { name: 'address', label: 'Address', type: 'textarea' },
+      { name: 'pinCode', label: 'PIN Code' },
+      { name: 'panNumber', label: 'PAN Number' },
+      { name: 'ifscCode', label: 'IFSC Code' },
+      { name: 'bankName', label: 'Bank Name' },
+      { name: 'accountNumber', label: 'Account Number' },
     ],
   },
   {
@@ -152,6 +223,26 @@ export const MASTER_ENTITIES = [
       { name: 'notes', label: 'Notes', type: 'textarea' },
     ],
   },
+  {
+    id: 'pin-codes',
+    label: 'Geography',
+    module: 'document',
+    apiPath: '/geo/pin-codes',
+    embedded: 'pin-codes',
+    fields: [
+      { name: 'pinCode', label: 'PIN code', required: true },
+      { name: 'locality', label: 'Locality' },
+      { name: 'notes', label: 'Notes', type: 'textarea' },
+    ],
+  },
+  {
+    id: 'picklist-approvals',
+    label: 'Picklist approvals',
+    module: 'document',
+    apiPath: '/picklists',
+    embedded: 'picklist-approvals',
+    fields: [],
+  },
 ];
 
 /** Hub sidebar groups (mirrors LogisticsMasterPage layout + Document). */
@@ -178,7 +269,7 @@ export const MASTER_HUB_GROUPS = [
     id: 'document-masters',
     label: 'Document One',
     scope: 'document',
-    entityIds: ['contacts', 'templates', 'signatures'],
+    entityIds: ['contacts', 'templates', 'signatures', 'pin-codes', 'picklist-approvals'],
   },
 ];
 
@@ -203,7 +294,26 @@ export function validateMasterPayload(entityId, payload = {}) {
   if (entity.id === 'contacts') {
     const email = String(payload.email || '').trim();
     const phone = String(payload.contact || payload.phone || '').trim();
+    const category = String(payload.contactCategory || '').trim();
     if (!email && !phone) return 'Email or phone is required for a contact';
+    if (!category) return 'Contact Category is required';
+    if (category === 'Resource' && !String(payload.resourceType || '').trim()) {
+      return 'Resource Type is required for Resource contacts';
+    }
+    if (category === 'Client' && !String(payload.organization || '').trim()) {
+      return 'Organization Name is required for Client';
+    }
+    if (category === 'Vendor' && !String(payload.supplyCategory || '').trim()) {
+      return 'Supply Category is required for Vendor';
+    }
+    if (email) {
+      const err = emailError(email);
+      if (err) return err;
+    }
+    if (phone) {
+      const err = phoneError(phone);
+      if (err) return err;
+    }
   }
   return '';
 }

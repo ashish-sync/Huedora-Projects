@@ -5,10 +5,14 @@ import { FIELD, MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
+import { isVendorContact } from '../agreements/contactPicklists.js';
 import {
   MASTER_MODULES,
   entitiesForModule,
@@ -366,6 +370,12 @@ function detailSummary(r) {
 
 export default function AssetRequestsPage() {
   const { can, user } = useAuth();
+  const { options: transportModeOptions } = usePicklistOptions(
+    'logistics.deliveryMode',
+    TRANSPORT_MODES
+  );
+  const { options: hcwTypeOptions } = usePicklistOptions('hiring.hcwType', HCW_TYPES);
+  const { options: hiringMethodOptions } = usePicklistOptions('hiring.method', HIRING_METHODS);
   const [searchParams] = useSearchParams();
   const canRequest =
     can('asset-requests:request') ||
@@ -386,6 +396,10 @@ export default function AssetRequestsPage() {
   const [busy, setBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [typeFilter, setTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
   const [productPhoto, setProductPhoto] = useState(null);
   const [reimbursementBill, setReimbursementBill] = useState(null);
   const [otherAttachment, setOtherAttachment] = useState(null);
@@ -415,7 +429,7 @@ export default function AssetRequestsPage() {
     return map;
   }, [contacts]);
   const vendorContacts = useMemo(
-    () => contacts.filter((contact) => String(contact.resourceType || '').toLowerCase() === 'vendor'),
+    () => contacts.filter((contact) => isVendorContact(contact)),
     [contacts]
   );
   const logisticsConfig = logisticsMeta?.inOut || {};
@@ -462,32 +476,34 @@ export default function AssetRequestsPage() {
     form.logisticsProducts.some((item) => ASSET_PRODUCT_TYPES.has(item.productType));
   const needsAsset =
     form.requestType === 'LOGISTICS' ? logisticsNeedsAsset : typeMeta(form.requestType).needsAsset;
-  const filteredRows = useMemo(() => {
-    if (!typeFilter) return rows;
-    return rows.filter((r) => {
-      const t = r.requestType === 'MOVEMENT' ? 'LOGISTICS' : r.requestType;
-      if (typeFilter === 'SERVICE') return t === 'REPAIR' || t === 'MAINTENANCE';
-      return t === typeFilter;
-    });
-  }, [rows, typeFilter]);
+  const filteredRows = rows;
 
-  const load = () =>
-    api('/asset-requests')
-      .then((r) => setRows(r.data || []))
-      .catch((e) => setError(e.message));
+  const load = () => {
+    setListLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (typeFilter) params.set('requestType', typeFilter);
+    api(`/asset-requests?${params}`)
+      .then((r) => {
+        setRows(r.data || []);
+        setListMeta(r.meta || { page, limit, total: 0, pages: 0 });
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setListLoading(false));
+  };
 
   useEffect(() => {
     load();
-    api('/assets?limit=500')
+    api('/assets?limit=200')
       .then((r) => setAssets(r.data || []))
       .catch(() => {});
-    api('/contacts?limit=500')
+    api('/contacts?limit=200')
       .then((r) => setContacts(r.data || []))
       .catch(() => {});
     api('/logistics/meta')
       .then((r) => setLogisticsMeta(r.data || null))
       .catch(() => setLogisticsMeta(null));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, typeFilter]);
 
   const applyLinked = (partial) => {
     setForm((prev) => ({ ...prev, ...partial }));
@@ -1167,18 +1183,14 @@ export default function AssetRequestsPage() {
                 </div>
                 <div className="field">
                   <label>Delivery mode *</label>
-                  <AdaptiveSelect
+                  <OtherAwareSelect
                     required
+                    picklistKey="logistics.deliveryMode"
+                    source="asset-request"
+                    options={transportModeOptions.length ? transportModeOptions : TRANSPORT_MODES}
                     value={form.transportMode}
                     onChange={(e) => setForm({ ...form, transportMode: e.target.value })}
-                  >
-                    <option value="">Select</option>
-                    {TRANSPORT_MODES.map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
+                  />
                 </div>
                 <div className="field">
                   <label>Preferred date</label>
@@ -1491,18 +1503,15 @@ export default function AssetRequestsPage() {
                 </div>
                 <div className="field">
                   <label>HCW type *</label>
-                  <AdaptiveSelect
+                  <OtherAwareSelect
                     required
+                    picklistKey="hiring.hcwType"
+                    otherLabel="Others"
+                    source="asset-request-hiring"
+                    options={hcwTypeOptions.length ? hcwTypeOptions : HCW_TYPES}
                     value={form.hcwType}
                     onChange={(e) => setForm({ ...form, hcwType: e.target.value })}
-                  >
-                    <option value="">Select HCW type</option>
-                    {HCW_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
+                  />
                 </div>
                 <div className="field">
                   <label>Camp type *</label>
@@ -1521,18 +1530,15 @@ export default function AssetRequestsPage() {
                 </div>
                 <div className="field">
                   <label>Method *</label>
-                  <AdaptiveSelect
+                  <OtherAwareSelect
                     required
+                    picklistKey="hiring.method"
+                    otherLabel="Others"
+                    source="asset-request-hiring"
+                    options={hiringMethodOptions.length ? hiringMethodOptions : HIRING_METHODS}
                     value={form.hiringMethod}
                     onChange={(e) => setForm({ ...form, hiringMethod: e.target.value })}
-                  >
-                    <option value="">Select method</option>
-                    {HIRING_METHODS.map((method) => (
-                      <option key={method} value={method}>
-                        {method}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
+                  />
                 </div>
                 <div className="field">
                   <label>Engagement date &amp; time *</label>
@@ -2098,7 +2104,10 @@ export default function AssetRequestsPage() {
         <button
           type="button"
           className={`arq-type-tab${!typeFilter ? ' is-active' : ''}`}
-          onClick={() => setTypeFilter('')}
+          onClick={() => {
+            setTypeFilter('');
+            setPage(1);
+          }}
         >
           All
         </button>
@@ -2107,7 +2116,10 @@ export default function AssetRequestsPage() {
             key={t.value}
             type="button"
             className={`arq-type-tab${typeFilter === t.value ? ' is-active' : ''}`}
-            onClick={() => setTypeFilter(t.value)}
+            onClick={() => {
+              setTypeFilter(t.value);
+              setPage(1);
+            }}
           >
             {t.label}
           </button>
@@ -2288,6 +2300,18 @@ export default function AssetRequestsPage() {
             )}
           </tbody>
         </table>
+        <PaginationBar
+          page={listMeta.page || page}
+          limit={limit}
+          total={listMeta.total || 0}
+          pages={listMeta.pages || 0}
+          loading={listLoading}
+          onPageChange={setPage}
+          onLimitChange={(n) => {
+            setLimit(n);
+            setPage(1);
+          }}
+        />
       </div>
     </PageShell>
   );

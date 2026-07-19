@@ -146,6 +146,20 @@ const MODULES = [
       </svg>
     ),
   },
+  {
+    to: '/finance',
+    title: MODULE.FINANCE,
+    blurb: MODULE_BLURB.FINANCE,
+    tone: 'tone-finance',
+    canShow: (can) => can('finance:read') || can('finance:write') || can('*'),
+    icon: (
+      <svg {...iconProps}>
+        <rect x="4" y="5" width="16" height="14" rx="2" />
+        <path d="M8 10h8M8 13.5h5" />
+        <circle cx="16.2" cy="14.2" r="1.5" />
+      </svg>
+    ),
+  },
 ];
 
 export default function DashboardPage() {
@@ -168,7 +182,7 @@ export default function DashboardPage() {
           </h1>
           <p className="tylo-home-lead">
             Open an application area to continue: Asset One, Document One, Verification One,
-            Camp One, Request One, Master One, or Movement One.
+            Camp One, Request One, Master One, Movement One, or Finance One.
           </p>
         </div>
 

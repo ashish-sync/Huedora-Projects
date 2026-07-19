@@ -16,7 +16,7 @@ export default function LogisticsUsagePage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '300' });
+      const params = new URLSearchParams({ limit: '200' });
       if (hcw.trim()) params.set('hcw', hcw.trim());
       if (location.trim()) params.set('location', location.trim());
       const res = await api(`/logistics/usage?${params}`);

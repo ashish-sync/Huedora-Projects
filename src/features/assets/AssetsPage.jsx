@@ -7,17 +7,18 @@ import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import {
   ASSET_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
   ASSET_CUSTODY_OPTIONS,
 } from '../devices/assetMasterOptions.js';
-
-const PAGE_SIZES = [10, 25, 50, 100];
+import { phoneOrEmailError, PAGE_SIZES } from '../../shared/validation.js';
 
 const emptyForm = {
   name: '',
   assetType: '',
+  productType: 'Medical Device',
   serialNumber: '',
   cost: '',
   purchaseMonth: '',
@@ -84,12 +85,13 @@ function IconAudit() {
   );
 }
 
-export default function AssetsPage({ embedded = false }) {
+export default function AssetsPage({ embedded = false, productType = '' } = {}) {
   const { can } = useAuth();
   const canWrite = can('assets:write') || can('devices:write') || can('*');
   const canViewAgreements = can('agreements:read') || can('*');
   const canManageAgreements =
     can('agreements:write') || can('documents:write') || can('assets:write') || can('*');
+  const scopedType = String(productType || '').trim();
 
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
@@ -190,6 +192,7 @@ export default function AssetsPage({ embedded = false }) {
       if (q.trim()) params.set('q', q.trim());
       if (agreementStatus) params.set('agreementStatus', agreementStatus);
       if (custody) params.set('custody', custody);
+      if (scopedType) params.set('productType', scopedType);
       const res = await api(`/assets?${params}`);
       setRows(res.data || []);
       setMeta(res.meta || { page, limit, total: 0, pages: 0 });
@@ -198,14 +201,14 @@ export default function AssetsPage({ embedded = false }) {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, q, agreementStatus, custody]);
+  }, [page, limit, q, agreementStatus, custody, scopedType]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
-    api('/contacts?limit=500')
+    api('/contacts?limit=200')
       .then((r) => setContacts(r.data || []))
       .catch(() => {});
   }, []);
@@ -217,7 +220,10 @@ export default function AssetsPage({ embedded = false }) {
 
   const openCreate = () => {
     setEditingId('');
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      productType: scopedType || 'Medical Device',
+    });
     setFormOpen(true);
     setError('');
     setMsg('');
@@ -230,6 +236,7 @@ export default function AssetsPage({ embedded = false }) {
     setForm({
       name: row.deviceNameSnapshot || master?.name || '',
       assetType: row.assetType || master?.assetType || '',
+      productType: row.productType || scopedType || 'Medical Device',
       serialNumber: row.serialNumber || '',
       cost: row.deviceValue == null && master?.cost == null ? '' : String(row.deviceValue ?? master?.cost),
       purchaseMonth: purchaseToMonthInput(row.addedMonth || master?.purchaseMonth),
@@ -261,10 +268,17 @@ export default function AssetsPage({ embedded = false }) {
     setMsg('');
     setBusy(true);
     try {
+      const contactErr = phoneOrEmailError(form.custodianContact.trim(), 'Custodian Contact');
+      if (contactErr) {
+        setError(contactErr);
+        setBusy(false);
+        return;
+      }
       if (editingId) {
         const body = {
           name: form.name.trim(),
           assetType: form.assetType,
+          productType: scopedType || form.productType || 'Medical Device',
           serialNumber: form.serialNumber.trim(),
           deviceValue: form.cost === '' ? null : Number(form.cost),
           purchaseMonth: form.purchaseMonth,
@@ -283,6 +297,7 @@ export default function AssetsPage({ embedded = false }) {
         const payload = {
           name: form.name.trim(),
           assetType: form.assetType,
+          productType: scopedType || form.productType || 'Medical Device',
           serialNumber: form.serialNumber.trim(),
           cost: form.cost === '' ? null : Number(form.cost),
           purchaseMonth: form.purchaseMonth,
@@ -433,9 +448,6 @@ export default function AssetsPage({ embedded = false }) {
     }
   };
 
-  const from = meta.total ? (meta.page - 1) * meta.limit + 1 : 0;
-  const to = meta.total ? Math.min(meta.page * meta.limit, meta.total) : 0;
-
   const headerActions = (
         <div className="inv-header-actions">
           <button
@@ -524,6 +536,18 @@ export default function AssetsPage({ embedded = false }) {
                     {o}
                   </option>
                 ))}
+              </AdaptiveSelect>
+            </div>
+            <div className="field">
+              <label>Product type *</label>
+              <AdaptiveSelect
+                required
+                value={form.productType || scopedType || 'Medical Device'}
+                onChange={(e) => setForm({ ...form, productType: e.target.value })}
+                disabled={Boolean(scopedType)}
+              >
+                <option value="Medical Device">Medical Device</option>
+                <option value="Non-Medical Device">Non-Medical Device</option>
               </AdaptiveSelect>
             </div>
             <div className="field">
@@ -825,50 +849,19 @@ export default function AssetsPage({ embedded = false }) {
           </table>
         </div>
 
-        <footer className="inv-pagination">
-          <div className="inv-pagination-meta">
-            <span>
-              Showing {from}–{to} of {meta.total} entries
-            </span>
-            <label className="inv-page-size">
-              Rows per page
-              <AdaptiveSelect
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-              >
-                {PAGE_SIZES.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </AdaptiveSelect>
-            </label>
-          </div>
-          <div className="inv-pagination-controls">
-            <button
-              type="button"
-              className="btn secondary btn-compact"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Previous
-            </button>
-            <span className="inv-page-indicator">
-              Page {meta.page || page} of {Math.max(meta.pages, 1)}
-            </span>
-            <button
-              type="button"
-              className="btn secondary btn-compact"
-              disabled={page >= meta.pages || loading || !meta.total}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </button>
-          </div>
-        </footer>
+        <PaginationBar
+          page={meta.page || page}
+          limit={limit}
+          total={meta.total || 0}
+          pages={meta.pages || 0}
+          loading={loading}
+          pageSizes={PAGE_SIZES}
+          onPageChange={setPage}
+          onLimitChange={(n) => {
+            setLimit(n);
+            setPage(1);
+          }}
+        />
       </section>
 
       {viewRow && (
@@ -1037,13 +1030,15 @@ export default function AssetsPage({ embedded = false }) {
         <div className="product-master-toolbar" style={{ marginBottom: 12 }}>
           <div>
             <h3 className="product-master-title" style={{ margin: 0 }}>
-              Assets
+              {scopedType || 'Asset Register'}
               <span className="inv-count" aria-label={`${meta.total} total assets`}>
                 {meta.total.toLocaleString()} assets
               </span>
             </h3>
             <p className="muted" style={{ margin: '4px 0 0' }}>
-              Register and track devices by type, value, status, custody, and custodian.
+              {scopedType
+                ? `Agreements, custody, and custodian for ${scopedType} only. Record inward in Movement One → Goods Receipt.`
+                : 'Agreements, custody, and custodian for Medical and Non-Medical Devices.'}
             </p>
           </div>
           {headerActions}

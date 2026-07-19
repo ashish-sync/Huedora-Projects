@@ -4,6 +4,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 
 export default function AuditPage() {
   const { can } = useAuth();
@@ -14,27 +15,35 @@ export default function AuditPage() {
   const [applied, setApplied] = useState({ action: '', from: '', to: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
 
   if (!can('audit:read')) return <p className="error">No audit access</p>;
 
-  const load = (filters = applied) => {
+  const load = (filters = applied, pageNum = page, pageLimit = limit) => {
     setLoading(true);
     setError('');
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({
+      page: String(pageNum),
+      limit: String(pageLimit),
+    });
     if (filters.action) params.set('action', filters.action);
     if (filters.from) params.set('from', filters.from);
     if (filters.to) params.set('to', `${filters.to}T23:59:59.999`);
-    const q = params.toString();
-    api(`/audit-logs${q ? `?${q}` : ''}`)
-      .then((r) => setRows(r.data))
+    api(`/audit-logs?${params}`)
+      .then((r) => {
+        setRows(r.data || []);
+        setListMeta(r.meta || { page: pageNum, limit: pageLimit, total: 0, pages: 0 });
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when page/limit change
+  }, [page, limit]);
 
   const submitFilters = (e) => {
     e?.preventDefault?.();
@@ -44,7 +53,8 @@ export default function AuditPage() {
     }
     const next = { action: action.trim(), from, to };
     setApplied(next);
-    load(next);
+    setPage(1);
+    load(next, 1, limit);
   };
 
   const clearFilters = () => {
@@ -53,7 +63,8 @@ export default function AuditPage() {
     setTo('');
     const next = { action: '', from: '', to: '' };
     setApplied(next);
-    load(next);
+    setPage(1);
+    load(next, 1, limit);
   };
 
   return (
@@ -117,6 +128,18 @@ export default function AuditPage() {
           </p>
         ) : null}
       </div>
+      <PaginationBar
+        page={listMeta.page}
+        limit={limit}
+        total={listMeta.total}
+        pages={listMeta.pages}
+        loading={loading}
+        onPageChange={setPage}
+        onLimitChange={(n) => {
+          setLimit(n);
+          setPage(1);
+        }}
+      />
     </PageShell>
   );
 }

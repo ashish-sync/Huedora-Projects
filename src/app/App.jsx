@@ -6,7 +6,6 @@ import ModulesHomePage from '../features/dashboards/DashboardPage.jsx';
 import TrackingDashboardPage from '../features/dashboards/TrackingDashboardPage.jsx';
 import RecipientSignPage from '../features/agreements/RecipientSignPage.jsx';
 import SelfVerifyPage from '../features/verifications/SelfVerifyPage.jsx';
-import AssetsPage from '../features/assets/AssetsPage.jsx';
 import AssetDetailPage from '../features/assets/AssetDetailPage.jsx';
 import AgreementsPage from '../features/agreements/AgreementsPage.jsx';
 import AgreementCreatePage from '../features/agreements/AgreementCreatePage.jsx';
@@ -23,11 +22,16 @@ import LogisticsLayout from '../features/logistics/LogisticsLayout.jsx';
 import LogisticsHubPage from '../features/logistics/LogisticsHubPage.jsx';
 import LogisticsInwardPage from '../features/logistics/LogisticsInwardPage.jsx';
 import LogisticsOutwardPage from '../features/logistics/LogisticsOutwardPage.jsx';
-import LogisticsInventoryPage from '../features/logistics/LogisticsInventoryPage.jsx';
 import LogisticsUsagePage from '../features/logistics/LogisticsUsagePage.jsx';
 import LogisticsOutputPage from '../features/logistics/LogisticsOutputPage.jsx';
 import AssetInventoryLayout from '../features/assets/AssetInventoryLayout.jsx';
+import AssetOverviewPage from '../features/assets/AssetOverviewPage.jsx';
+import AssetTypeStockPage from '../features/assets/AssetTypeStockPage.jsx';
 import MasterDataPage from '../features/masters/MasterDataPage.jsx';
+import FinanceLayout from '../features/finance/FinanceLayout.jsx';
+import FinanceOverviewPage from '../features/finance/FinanceOverviewPage.jsx';
+import FinanceExpensesPage from '../features/finance/FinanceExpensesPage.jsx';
+import FinanceInvoicesPage from '../features/finance/FinanceInvoicesPage.jsx';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -60,8 +64,9 @@ export default function App() {
                 />
                 <Route path="/master-data" element={<MasterDataPage />} />
                 <Route path="/asset-inventory" element={<AssetInventoryLayout />}>
-                  <Route index element={<AssetsPage embedded />} />
-                  <Route path="balance" element={<LogisticsInventoryPage />} />
+                  <Route index element={<AssetOverviewPage />} />
+                  <Route path="types/:typeSlug" element={<AssetTypeStockPage />} />
+                  <Route path="balance" element={<Navigate to="/asset-inventory" replace />} />
                   <Route
                     path="masters"
                     element={<Navigate to="/master-data?scope=inventory" replace />}
@@ -104,6 +109,11 @@ export default function App() {
                 <Route path="/hcws" element={<Navigate to="/master-data?scope=document&entity=contacts" replace />} />
                 <Route path="/verifications" element={<VerificationsPage />} />
                 <Route path="/camps" element={<CampsPage />} />
+                <Route path="/finance" element={<FinanceLayout />}>
+                  <Route index element={<FinanceOverviewPage />} />
+                  <Route path="expenses" element={<FinanceExpensesPage />} />
+                  <Route path="invoices" element={<FinanceInvoicesPage />} />
+                </Route>
                 <Route path="/asset-requests" element={<AssetRequestsPage />} />
                 <Route path="/movements" element={<Navigate to="/asset-requests" replace />} />
                 <Route path="/repairs" element={<Navigate to="/asset-requests" replace />} />
@@ -112,7 +122,7 @@ export default function App() {
                   <Route path="inward" element={<LogisticsInwardPage />} />
                   <Route path="outward" element={<LogisticsOutwardPage />} />
                   <Route path="in-out" element={<Navigate to="/logistics/inward" replace />} />
-                  <Route path="balance" element={<Navigate to="/asset-inventory/balance" replace />} />
+                  <Route path="balance" element={<Navigate to="/asset-inventory" replace />} />
                   <Route path="usage" element={<LogisticsUsagePage />} />
                   <Route path="output" element={<LogisticsOutputPage />} />
                   <Route

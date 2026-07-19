@@ -50,7 +50,7 @@ export default function AdaptiveSelect({
         name={name}
         aria-label={ariaLabel}
         className={className}
-        style={style}
+        style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', ...style }}
         value={value}
         onChange={onChange}
         multiple={multiple}

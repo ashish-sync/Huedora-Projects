@@ -138,7 +138,7 @@ export default function ProductMasterPage() {
 
   const loadLookups = useCallback(async () => {
     try {
-      const uom = await api('/logistics/uoms?limit=500');
+      const uom = await api('/logistics/uoms?limit=200');
       setUoms(uom.data || []);
     } catch {
       /* lookups optional for list */
@@ -148,7 +148,7 @@ export default function ProductMasterPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '500' });
+      const params = new URLSearchParams({ limit: '200' });
       if (q.trim()) params.set('q', q.trim());
       if (statusFilter === 'active') params.set('isActive', 'true');
       if (statusFilter === 'inactive') params.set('isActive', 'false');

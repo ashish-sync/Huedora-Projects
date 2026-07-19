@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import ProductMasterPage from './ProductMasterPage.jsx';
 import ContactDirectoryPage from '../agreements/ContactDirectoryPage.jsx';
 import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
 import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
+import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
+import LocationMasterPage from '../locations/LocationMasterPage.jsx';
 
 const MASTER_GROUPS = [
   {
@@ -68,6 +71,13 @@ const MASTER_GROUPS = [
       { id: 'contacts', label: 'Contact Directory', embedded: 'contacts', fields: [] },
       { id: 'templates', label: 'Document Templates', embedded: 'templates', fields: [] },
       { id: 'signatures', label: 'Signatures', embedded: 'signatures', fields: [] },
+      { id: 'pin-codes', label: 'Geography', embedded: 'pin-codes', fields: [] },
+      {
+        id: 'picklist-approvals',
+        label: 'Picklist approvals',
+        embedded: 'picklist-approvals',
+        fields: [],
+      },
     ],
   },
 ];
@@ -82,6 +92,8 @@ function EmbeddedMaster({ kind }) {
   if (kind === 'contacts') return <ContactDirectoryPage embedded />;
   if (kind === 'templates') return <DocumentMasterPage embedded />;
   if (kind === 'signatures') return <SignatureMasterPage embedded />;
+  if (kind === 'pin-codes') return <LocationMasterPage embedded />;
+  if (kind === 'picklist-approvals') return <PicklistApprovalsPage embedded />;
   return null;
 }
 
@@ -204,6 +216,10 @@ export default function LogisticsMasterPage({
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(() => emptyFor([]));
   const [editingId, setEditingId] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
   const editingRow = useMemo(
     () => (editingId ? rows.find((r) => r._id === editingId) : null),
     [editingId, rows]
@@ -224,22 +240,23 @@ export default function LogisticsMasterPage({
   const load = useCallback(async () => {
     if (!entity || entity.dedicated || entity.embedded) {
       setRows([]);
+      setListMeta({ page: 1, limit, total: 0, pages: 0 });
       return;
     }
     setError('');
+    setListLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '200' });
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (q.trim()) params.set('q', q.trim());
       const res = await api(`${entity.path}?${params}`);
       setRows(res.data || []);
-      if (entity.id === 'locations') {
-        const wh = await api('/logistics/warehouses?limit=200');
-        setWarehouses(wh.data || []);
-      }
+      setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
     } catch (e) {
       setError(e.message);
+    } finally {
+      setListLoading(false);
     }
-  }, [entity?.path, entity?.id, entity?.dedicated, entity?.embedded, q]);
+  }, [entity?.path, entity?.id, entity?.dedicated, entity?.embedded, q, page, limit]);
 
   useEffect(() => {
     if (!entity) return;
@@ -247,12 +264,16 @@ export default function LogisticsMasterPage({
     setEditingId('');
     setContactPick('');
     setMsg('');
+    setPage(1);
+  }, [entityId, formFields, entity]);
+
+  useEffect(() => {
     load();
-  }, [entityId, load, formFields, entity]);
+  }, [load]);
 
   useEffect(() => {
     if (!entity?.fromContacts) return;
-    api('/contacts?limit=500')
+    api('/contacts?limit=200')
       .then((res) => setContacts(res.data || []))
       .catch(() => setContacts([]));
   }, [entity?.fromContacts, entityId]);
@@ -265,8 +286,15 @@ export default function LogisticsMasterPage({
   const contactOptions = useMemo(() => {
     if (!entity?.fromContacts) return [];
     const want = form.partyType || entity.partyType || 'Supplier';
-    const typed = contacts.filter((c) => c.resourceType === want);
-    const rest = contacts.filter((c) => c.resourceType !== want);
+    const wantCat = want === 'Vendor' ? 'Vendor' : want === 'Supplier' ? 'Vendor' : '';
+    const typed = contacts.filter((c) => {
+      const cat = String(c.contactCategory || '').trim();
+      if (wantCat && cat === 'Vendor') return true;
+      if (wantCat && (c.resourceType === 'Vendor' || c.resourceType === 'Supplier')) return true;
+      if (c.resourceType === want) return true;
+      return false;
+    });
+    const rest = contacts.filter((c) => !typed.includes(c));
     return [...typed, ...rest];
   }, [contacts, entity?.fromContacts, entity?.partyType, form.partyType]);
 
@@ -314,9 +342,13 @@ export default function LogisticsMasterPage({
       setError('Select a contact from Contact Directory.');
       return;
     }
-    if (c.resourceType && c.resourceType !== activePartyType) {
+    const cat = String(c.contactCategory || '').trim();
+    const partyIsVendor = activePartyType === 'Vendor' || activePartyType === 'Supplier';
+    const contactIsVendor =
+      cat === 'Vendor' || c.resourceType === 'Vendor' || c.resourceType === 'Supplier';
+    if (partyIsVendor && cat && !contactIsVendor) {
       const ok = window.confirm(
-        `This partner is Resource Type “${c.resourceType}”, but you are adding a ${activePartyType}. Continue?`
+        `This contact is Category “${cat}”, but you are adding a ${activePartyType}. Continue?`
       );
       if (!ok) return;
     }
@@ -488,7 +520,15 @@ export default function LogisticsMasterPage({
                 {contactOptions.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
-                    {c.resourceType ? ` · ${c.resourceType}` : ''}
+                    {c.contactCategory || c.resourceType
+                      ? ` · ${c.contactCategory || c.resourceType}${
+                          c.organization
+                            ? ` · ${c.organization}`
+                            : c.supplyCategory
+                              ? ` · ${c.supplyCategory}`
+                              : ''
+                        }`
+                      : ''}
                     {c.city ? ` · ${c.city}` : ''}
                   </option>
                 ))}
@@ -541,7 +581,15 @@ export default function LogisticsMasterPage({
                 {contactOptions.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
-                    {c.resourceType ? ` · ${c.resourceType}` : ''}
+                    {c.contactCategory || c.resourceType
+                      ? ` · ${c.contactCategory || c.resourceType}${
+                          c.organization
+                            ? ` · ${c.organization}`
+                            : c.supplyCategory
+                              ? ` · ${c.supplyCategory}`
+                              : ''
+                        }`
+                      : ''}
                   </option>
                 ))}
               </AdaptiveSelect>
@@ -732,6 +780,18 @@ export default function LogisticsMasterPage({
           </tbody>
         </table>
       </div>
+      <PaginationBar
+        page={listMeta.page || page}
+        limit={limit}
+        total={listMeta.total || 0}
+        pages={listMeta.pages || 0}
+        loading={listLoading}
+        onPageChange={setPage}
+        onLimitChange={(n) => {
+          setLimit(n);
+          setPage(1);
+        }}
+      />
             </>
           )}
         </div>

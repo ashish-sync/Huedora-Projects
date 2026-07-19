@@ -5,20 +5,37 @@ import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
-import { RESOURCE_TYPES, PROFESSIONS } from './contactPicklists.js';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import { emailError, phoneError } from '../../shared/validation.js';
+import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
+import {
+  CONTACT_CATEGORIES,
+  RESOURCE_TYPES,
+  SUPPLY_CATEGORIES,
+  professionsForCategory,
+  professionPicklistKey,
+} from './contactPicklists.js';
 
 const empty = {
   name: '',
   email: '',
+  contactCategory: '',
   resourceType: '',
   profession: '',
+  organization: '',
+  supplyCategory: '',
   contact: '',
   city: '',
   state: '',
   district: '',
   pinCode: '',
   address: '',
+  panNumber: '',
+  ifscCode: '',
+  bankName: '',
+  accountNumber: '',
   stateId: '',
   districtId: '',
   cityId: '',
@@ -34,13 +51,39 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [editId, setEditId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
   const fileRef = useRef(null);
 
+  const isResource = form.contactCategory === 'Resource';
+  const isClient = form.contactCategory === 'Client';
+  const isVendor = form.contactCategory === 'Vendor';
+  const showBankAndAddress = !isClient && Boolean(form.contactCategory);
+  const professionKey = professionPicklistKey(form.contactCategory);
+  const professionFallback = professionsForCategory(form.contactCategory);
+  const { options: resourceTypeOptions } = usePicklistOptions(
+    'contact.resourceType',
+    RESOURCE_TYPES
+  );
+  const { options: supplyCategoryOptions } = usePicklistOptions(
+    'contact.supplyCategory',
+    SUPPLY_CATEGORIES
+  );
+  const { options: professionOptions } = usePicklistOptions(professionKey, professionFallback);
+
   const load = () => {
-    const params = q ? `?q=${encodeURIComponent(q)}&limit=200` : '?limit=200';
-    return api(`/contacts${params}`)
-      .then((r) => setRows(r.data))
-      .catch((e) => setError(e.message));
+    setListLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (q.trim()) params.set('q', q.trim());
+    return api(`/contacts?${params}`)
+      .then((r) => {
+        setRows(r.data);
+        setListMeta(r.meta || { page, limit, total: 0, pages: 0 });
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setListLoading(false));
   };
 
   const downloadMaster = async () => {
@@ -57,16 +100,81 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit]);
+
+  const onCategoryChange = (contactCategory) => {
+    const nextProfessions = professionsForCategory(contactCategory);
+    setForm((f) => ({
+      ...f,
+      contactCategory,
+      resourceType: contactCategory === 'Resource' ? f.resourceType : '',
+      organization: contactCategory === 'Client' ? f.organization : '',
+      supplyCategory:
+        contactCategory === 'Vendor' && SUPPLY_CATEGORIES.includes(f.supplyCategory)
+          ? f.supplyCategory
+          : '',
+      profession: nextProfessions.includes(f.profession) ? f.profession : '',
+      address: contactCategory === 'Client' ? '' : f.address,
+      pinCode: contactCategory === 'Client' ? '' : f.pinCode,
+      panNumber: contactCategory === 'Client' ? '' : f.panNumber,
+      ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
+      bankName: contactCategory === 'Client' ? '' : f.bankName,
+      accountNumber: contactCategory === 'Client' ? '' : f.accountNumber,
+    }));
+  };
 
   const save = async (e) => {
     e.preventDefault();
     setError('');
+    if (!form.contactCategory) {
+      setError('Contact Category is required');
+      return;
+    }
+    if (isResource && !form.resourceType) {
+      setError('Resource Type is required for Resource contacts');
+      return;
+    }
+    if (isClient && !String(form.organization || '').trim()) {
+      setError('Organization Name is required for Client');
+      return;
+    }
+    if (isVendor && !form.supplyCategory) {
+      setError('Supply Category is required for Vendor');
+      return;
+    }
+    const eErr = emailError(form.email);
+    if (eErr) {
+      setError(eErr);
+      return;
+    }
+    const pErr = phoneError(form.contact);
+    if (pErr) {
+      setError(pErr);
+      return;
+    }
+    if (!String(form.email || '').trim() && !String(form.contact || '').trim()) {
+      setError('Email or phone is required for a contact');
+      return;
+    }
     try {
+      const body = { ...form };
+      if (isClient) {
+        body.address = '';
+        body.pinCode = '';
+        body.panNumber = '';
+        body.ifscCode = '';
+        body.bankName = '';
+        body.accountNumber = '';
+      }
+      if (!isResource) body.resourceType = '';
+      if (!isClient) body.organization = '';
+      if (!isVendor) body.supplyCategory = '';
+
       if (editId) {
-        await api(`/contacts/${editId}`, { method: 'PATCH', body: form });
+        await api(`/contacts/${editId}`, { method: 'PATCH', body });
       } else {
-        await api('/contacts', { method: 'POST', body: form });
+        await api('/contacts', { method: 'POST', body });
       }
       setForm(empty);
       setEditId(null);
@@ -77,18 +185,33 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   };
 
   const startEdit = (c) => {
+    let contactCategory = c.contactCategory || '';
+    if (!contactCategory) {
+      const rt = String(c.resourceType || '').trim().toLowerCase();
+      if (rt === 'vendor' || rt === 'supplier') contactCategory = 'Vendor';
+      else if (rt === 'client') contactCategory = 'Client';
+      else if (c.resourceType) contactCategory = 'Resource';
+    }
+    const resourceType = contactCategory === 'Resource' ? c.resourceType || '' : '';
     setEditId(c._id);
     setForm({
       name: c.name || '',
       email: c.email || '',
-      resourceType: c.resourceType || '',
+      contactCategory,
+      resourceType,
       profession: c.profession || '',
+      organization: c.organization || '',
+      supplyCategory: c.supplyCategory || '',
       contact: c.contact || c.mobile || '',
       city: c.city || '',
       state: c.state || '',
       district: c.district || '',
       pinCode: c.pinCode || '',
       address: c.address || '',
+      panNumber: c.panNumber || '',
+      ifscCode: c.ifscCode || '',
+      bankName: c.bankName || '',
+      accountNumber: c.accountNumber || '',
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
@@ -138,13 +261,15 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           ? []
           : [
               { to: '/', label: MODULE.HOME },
-              { to: '/agreements', label: MODULE.ASSET_AGREEMENT },
+              { to: '/master-data', label: MODULE.MASTER_DATA },
               { label: MODULE.CONTACT_DIRECTORY },
             ]
       }
       title={embedded ? undefined : MODULE.CONTACT_DIRECTORY}
       description={
-        embedded ? undefined : 'Maintain delivery recipients. Add manually or import from Excel.'
+        embedded
+          ? undefined
+          : 'Resources, clients, and vendors. Category controls which fields are required.'
       }
       actions={
         embedded || !can('agreements:write') ? null : (
@@ -153,17 +278,24 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           </Link>
         )
       }
-      kpis={embedded ? [] : [{ label: 'Contacts', value: rows.length }]}
+      kpis={embedded ? [] : [{ label: 'Contacts', value: listMeta.total || rows.length }]}
       toolbar={
         <>
           <input
             className="esign-search"
-            placeholder="Search name, email, contact, profession, city, state…"
+            placeholder="Search name, email, category, organization, city…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && load()}
           />
-          <button className="btn secondary" type="button" onClick={load}>
+          <button
+            className="btn secondary"
+            type="button"
+            onClick={() => {
+              setPage(1);
+              load();
+            }}
+          >
             Search
           </button>
           <button
@@ -174,9 +306,6 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           >
             {exportBusy ? 'Downloading…' : 'Download Excel'}
           </button>
-          <a className="btn secondary" href="/samples/Contact_Directory_Sample.xlsx" download>
-            Sample Excel
-          </a>
           {can('agreements:write') && (
             <>
               <input
@@ -189,7 +318,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   if (f) runImport(f, 'COMMIT');
                 }}
               />
-              <button className="btn secondary" type="button" onClick={() => fileRef.current?.click()}>
+              <button className="btn secondary" type="button" onClick={() => fileRef.current?.click()} disabled={busy}>
                 Import Excel
               </button>
             </>
@@ -200,106 +329,252 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       {error && <p className="error">{error}</p>}
       {importMsg && <p className="muted">{importMsg}</p>}
 
-      <p className="muted mono-sm" style={{ margin: '0 0 16px' }}>
-        Sample columns: Name · Email · Resource Type · Profession · Contact · City · State · Pin Code · Address.
-        Resource Type: Individual, Freelancer, Contractual, Retainer, Full Timer, Service Provider, Supplier, Vendor.
-        Profession: MIS Executive, Camp Coordinator, Technician, Phlebotomist, Dietician.
-      </p>
-
       <div className="wizard-grid">
         <div className="card card--flush table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Email</th>
+                <th>Category</th>
                 <th>Resource Type</th>
+                <th>Organization</th>
+                <th>Supply Category</th>
                 <th>Profession</th>
+                <th>Email</th>
                 <th>Contact</th>
                 <th>City</th>
-                <th>District</th>
                 <th>State</th>
-                <th>Pin Code</th>
-                <th>Address</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((c) => (
                 <tr key={c._id}>
-                  <td><strong>{c.name}</strong></td>
-                  <td>{c.email || '-'}</td>
-                  <td>{c.resourceType || '-'}</td>
+                  <td>
+                    <strong>{c.name}</strong>
+                  </td>
+                  <td>
+                    {c.contactCategory ||
+                      (['Vendor', 'Supplier'].includes(c.resourceType)
+                        ? 'Vendor'
+                        : c.resourceType === 'Client'
+                          ? 'Client'
+                          : c.resourceType
+                            ? 'Resource'
+                            : '-')}
+                  </td>
+                  <td>
+                    {c.contactCategory === 'Resource' ||
+                    (!c.contactCategory &&
+                      c.resourceType &&
+                      !['Vendor', 'Supplier', 'Client'].includes(c.resourceType))
+                      ? c.resourceType || '-'
+                      : '-'}
+                  </td>
+                  <td>{c.organization || '-'}</td>
+                  <td>{c.supplyCategory || '-'}</td>
                   <td>{c.profession || '-'}</td>
+                  <td>{c.email || '-'}</td>
                   <td>{c.contact || c.mobile || '-'}</td>
                   <td>{c.city || '-'}</td>
-                  <td>{c.district || '-'}</td>
                   <td>{c.state || '-'}</td>
-                  <td>{c.pinCode || '-'}</td>
-                  <td>{c.address || '-'}</td>
                   <td>
                     {can('agreements:write') && (
-                      <button className="btn secondary btn-compact" type="button" onClick={() => startEdit(c)}>Edit</button>
+                      <button
+                        className="btn secondary btn-compact"
+                        type="button"
+                        onClick={() => startEdit(c)}
+                      >
+                        Edit
+                      </button>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {!rows.length && <p className="muted" style={{ padding: '1rem' }}>No contacts yet. Add one or upload Excel.</p>}
+          <PaginationBar
+            page={listMeta.page || page}
+            limit={limit}
+            total={listMeta.total || 0}
+            pages={listMeta.pages || 0}
+            loading={listLoading}
+            onPageChange={setPage}
+            onLimitChange={(n) => {
+              setLimit(n);
+              setPage(1);
+            }}
+          />
+          {!rows.length && (
+            <p className="muted" style={{ padding: '1rem' }}>
+              No contacts yet. Add one or import Excel.
+            </p>
+          )}
         </div>
 
         {can('agreements:write') && (
           <form className="card" onSubmit={save}>
             <h3 style={{ marginTop: 0 }}>{editId ? 'Edit contact' : 'Create new contact'}</h3>
+
+            <div className="field">
+              <label>Contact Category *</label>
+              <AdaptiveSelect
+                required
+                value={form.contactCategory}
+                onChange={(e) => onCategoryChange(e.target.value)}
+              >
+                <option value="">Select…</option>
+                {CONTACT_CATEGORIES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </div>
+
+            {isResource && (
+              <div className="field">
+                <label>Resource Type *</label>
+                <OtherAwareSelect
+                  id="contact-resource-type"
+                  required
+                  picklistKey="contact.resourceType"
+                  source="contact-directory"
+                  options={resourceTypeOptions}
+                  value={form.resourceType}
+                  onChange={(e) => setForm({ ...form, resourceType: e.target.value })}
+                />
+              </div>
+            )}
+
+            {isClient && (
+              <div className="field">
+                <label>Organization Name *</label>
+                <input
+                  required
+                  value={form.organization}
+                  onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                />
+              </div>
+            )}
+
+            {isVendor && (
+              <div className="field">
+                <label>Supply Category *</label>
+                <OtherAwareSelect
+                  id="contact-supply-category"
+                  required
+                  picklistKey="contact.supplyCategory"
+                  source="contact-directory"
+                  options={supplyCategoryOptions}
+                  value={form.supplyCategory}
+                  onChange={(e) => setForm({ ...form, supplyCategory: e.target.value })}
+                />
+              </div>
+            )}
+
+            <div className="field">
+              <label>Profession / Role</label>
+              <OtherAwareSelect
+                id="contact-profession"
+                picklistKey={professionKey}
+                source="contact-directory"
+                options={professionOptions}
+                value={form.profession}
+                onChange={(e) => setForm({ ...form, profession: e.target.value })}
+              />
+            </div>
+
             <div className="field">
               <label>Name *</label>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </div>
             <div className="field">
               <label>Email</label>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div className="field">
-              <label>Resource Type</label>
-              <AdaptiveSelect value={form.resourceType} onChange={(e) => setForm({ ...form, resourceType: e.target.value })}>
-                <option value="">Select…</option>
-                {RESOURCE_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </AdaptiveSelect>
-            </div>
-            <div className="field">
-              <label>Profession</label>
-              <AdaptiveSelect value={form.profession} onChange={(e) => setForm({ ...form, profession: e.target.value })}>
-                <option value="">Select…</option>
-                {PROFESSIONS.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </AdaptiveSelect>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
             </div>
             <div className="field">
               <label>Contact</label>
-              <input value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="Mobile / phone" />
+              <input
+                value={form.contact}
+                onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                placeholder="10-digit mobile"
+              />
             </div>
+
             <LocationCascade
               value={form}
               onChange={(loc) => setForm({ ...form, ...loc })}
+              showDistrict={false}
+              showPin={showBankAndAddress}
             />
-            <div className="field">
-              <label>Address</label>
-              <textarea
-                rows={2}
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
-            <p className="muted mono-sm">Email or Contact is required for delivery.</p>
+
+            {showBankAndAddress && (
+              <>
+                <div className="field">
+                  <label>Address</label>
+                  <textarea
+                    rows={2}
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>PAN Number</label>
+                  <input
+                    value={form.panNumber}
+                    onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
+                  />
+                </div>
+                <div className="field">
+                  <label>IFSC Code</label>
+                  <input
+                    value={form.ifscCode}
+                    onChange={(e) => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Bank Name</label>
+                  <input
+                    value={form.bankName}
+                    onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Account Number</label>
+                  <input
+                    value={form.accountNumber}
+                    onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
+            <p className="muted mono-sm">Email or Contact is required.</p>
             <div className="wizard-actions">
               {editId && (
-                <button className="btn secondary" type="button" onClick={() => { setEditId(null); setForm(empty); }}>Cancel edit</button>
+                <button
+                  className="btn secondary"
+                  type="button"
+                  onClick={() => {
+                    setEditId(null);
+                    setForm(empty);
+                  }}
+                >
+                  Cancel edit
+                </button>
               )}
-              <button className="btn" type="submit">{editId ? 'Save changes' : 'Add to directory'}</button>
+              <button className="btn" type="submit">
+                {editId ? 'Save changes' : 'Add to directory'}
+              </button>
             </div>
           </form>
         )}

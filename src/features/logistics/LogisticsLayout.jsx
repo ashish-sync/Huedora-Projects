@@ -32,7 +32,7 @@ export default function LogisticsLayout() {
       <PageShell
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.LOGISTICS }]}
         title={MODULE.LOGISTICS}
-        description="Goods receipt, goods issue, consumption, and production output. Reference data is maintained in Master One."
+        description="Goods receipt for all product types, plus goods issue, consumption, and production output. Agreements and custody for Medical / Non-Medical Devices are in Asset One."
       >
         <nav className="logistics-nav" aria-label={`${MODULE.LOGISTICS} sections`}>
           {NAV_ITEMS.map((item) => (

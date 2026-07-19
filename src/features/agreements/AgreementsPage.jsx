@@ -5,6 +5,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -26,6 +27,10 @@ export default function AgreementsPage() {
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [error, setError] = useState('');
   const [exportBusy, setExportBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
     setStatus(searchParams.get('status') || '');
@@ -34,20 +39,24 @@ export default function AgreementsPage() {
   const setFilter = (next) => {
     const value = next || '';
     setStatus(value);
+    setPage(1);
     if (value) setSearchParams({ status: value });
     else setSearchParams({});
   };
 
   const load = () => {
-    const params = new URLSearchParams();
+    setListLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (q) params.set('q', q);
     if (status) params.set('status', status);
     Promise.all([api(`/agreements?${params}`), api('/agreements/stats')])
       .then(([list, st]) => {
         setRows(list.data);
+        setListMeta(list.meta || { page, limit, total: 0, pages: 0 });
         setStats(st.data);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setListLoading(false));
   };
 
   const downloadMaster = async () => {
@@ -69,7 +78,7 @@ export default function AgreementsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [status, page, limit]);
 
   const pipeline = useMemo(
     () => [
@@ -193,6 +202,18 @@ export default function AgreementsPage() {
             })}
           </tbody>
         </table>
+        <PaginationBar
+          page={listMeta.page || page}
+          limit={limit}
+          total={listMeta.total || 0}
+          pages={listMeta.pages || 0}
+          loading={listLoading}
+          onPageChange={setPage}
+          onLimitChange={(n) => {
+            setLimit(n);
+            setPage(1);
+          }}
+        />
         {!rows.length && (
           <EmptyState
             title={filteredEmpty ? 'No matching documents' : 'No documents yet'}

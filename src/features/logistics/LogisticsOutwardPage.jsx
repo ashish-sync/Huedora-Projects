@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import { api } from '../../shared/api.js';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -1112,10 +1113,11 @@ export default function LogisticsOutwardPage() {
                       </AdaptiveSelect>
                     </Field>
                     <Field label="Preferred date">
-                      <input
-                        type="date"
+                      <DateInput
+                        hideLabel
+                        aria-label="Preferred date"
                         value={form.preferredDate || ''}
-                        onChange={(e) => setField('preferredDate', e.target.value)}
+                        onChange={(value) => setField('preferredDate', value)}
                       />
                     </Field>
                     <Field label="Delivery mode" required>
@@ -1278,14 +1280,15 @@ export default function LogisticsOutwardPage() {
                             {expiryApplicable && (
                               <div className="field">
                                 <label>Expiry date *</label>
-                                <input
+                                <DateInput
+                                  hideLabel
+                                  aria-label="Expiry date"
                                   required
-                                  type="date"
                                   disabled={form.logisticsProductsConfirmed}
                                   value={item.expiryDate || ''}
-                                  onChange={(event) =>
+                                  onChange={(value) =>
                                     updateIssueProduct(index, {
-                                      expiryDate: event.target.value,
+                                      expiryDate: value,
                                     })
                                   }
                                 />
@@ -1409,11 +1412,12 @@ export default function LogisticsOutwardPage() {
                     )}
                     {form.expiryApplicable && (
                       <Field label="Expiry date" required>
-                        <input
+                        <DateInput
+                          hideLabel
+                          aria-label="Expiry date"
                           required
-                          type="date"
                           value={form.expiryDate || ''}
-                          onChange={(e) => setField('expiryDate', e.target.value)}
+                          onChange={(value) => setField('expiryDate', value)}
                         />
                       </Field>
                     )}

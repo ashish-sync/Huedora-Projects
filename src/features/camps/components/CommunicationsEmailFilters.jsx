@@ -1,4 +1,5 @@
 import { formatDateRangeLabel } from '../utils/dateFormat';
+import { DateInput } from './DateInput';
 
 function SearchIcon() {
   return (
@@ -78,18 +79,22 @@ export function CommunicationsEmailFilters({
       <div className="communications-filter-dates">
         <label>
           <span className="communications-filter-label">Fetch from date</span>
-          <input
-            type="date"
+          <DateInput
+            hideLabel
+            aria-label="Fetch from date"
             value={dateFrom}
-            onChange={(e) => onDateFromChange(e.target.value)}
+            max={dateTo || undefined}
+            onChange={onDateFromChange}
           />
         </label>
         <label>
           <span className="communications-filter-label">Fetch to date</span>
-          <input
-            type="date"
+          <DateInput
+            hideLabel
+            aria-label="Fetch to date"
             value={dateTo}
-            onChange={(e) => onDateToChange(e.target.value)}
+            min={dateFrom || undefined}
+            onChange={onDateToChange}
           />
         </label>
         <p className="meta-text communications-filter-date-hint">

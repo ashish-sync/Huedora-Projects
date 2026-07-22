@@ -1,6 +1,6 @@
 /**
- * TYLO One display dates: DD-MM-YY, times: 24-hour HH:mm.
- * API / <input type="date"> values stay YYYY-MM-DD.
+ * TYLO One display dates: DD-MM-YYYY, times: 24-hour HH:mm.
+ * API / form values stay YYYY-MM-DD.
  */
 
 function expandYear(yearPart) {
@@ -20,7 +20,9 @@ export function parseToDate(value) {
   const text = String(value).trim();
   if (!text) return null;
 
-  const dmyDash = /^(\d{2})-(\d{2})-(\d{2}|\d{4})$/.exec(text);
+  const compact = text.replace(/\s+/g, '');
+
+  const dmyDash = /^(\d{2})-(\d{2})-(\d{2}|\d{4})$/.exec(compact);
   if (dmyDash) {
     const year = expandYear(dmyDash[3]);
     if (!Number.isNaN(year)) {
@@ -28,7 +30,7 @@ export function parseToDate(value) {
     }
   }
 
-  const dmySlash = /^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/.exec(text);
+  const dmySlash = /^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/.exec(compact);
   if (dmySlash) {
     const year = expandYear(dmySlash[3]);
     if (!Number.isNaN(year)) {
@@ -51,7 +53,7 @@ export function parseToDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-/** Display date as DD-MM-YY */
+/** Display date as DD-MM-YYYY */
 export function formatDate(value) {
   if (!value) return '';
   const date = parseToDate(value);
@@ -59,9 +61,12 @@ export function formatDate(value) {
 
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
+  const year = String(date.getFullYear());
   return `${day}-${month}-${year}`;
 }
+
+/** Alias for explicit 4-digit year display */
+export const formatDateDDMMYYYY = formatDate;
 
 /** Display time as HH:mm (24-hour) */
 export function formatTime(value) {
@@ -73,7 +78,7 @@ export function formatTime(value) {
   return `${hours}:${minutes}`;
 }
 
-/** Display as DD-MM-YY HH:mm */
+/** Display as DD-MM-YYYY HH:mm */
 export function formatDateTime(value) {
   if (!value) return '-';
   const date = parseToDate(value);

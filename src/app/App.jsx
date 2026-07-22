@@ -27,6 +27,8 @@ import CampImportPage from '../features/camps/CampImportPage.jsx';
 import CommunicationsLayout from '../features/camps/CommunicationsLayout.jsx';
 import CommunicationsEmailPage from '../features/camps/CommunicationsEmailPage.jsx';
 import CommunicationsPastePage from '../features/camps/CommunicationsPastePage.jsx';
+import CampChargesheetPage from '../features/camps/CampChargesheetPage.jsx';
+import CampPayoutPage from '../features/camps/CampPayoutPage.jsx';
 import LogisticsLayout from '../features/logistics/LogisticsLayout.jsx';
 import LogisticsHubPage from '../features/logistics/LogisticsHubPage.jsx';
 import LogisticsInwardPage from '../features/logistics/LogisticsInwardPage.jsx';
@@ -41,6 +43,9 @@ import FinanceLayout from '../features/finance/FinanceLayout.jsx';
 import FinanceOverviewPage from '../features/finance/FinanceOverviewPage.jsx';
 import FinanceExpensesPage from '../features/finance/FinanceExpensesPage.jsx';
 import FinanceInvoicesPage from '../features/finance/FinanceInvoicesPage.jsx';
+import FinanceGenerateInvoicePage from '../features/finance/FinanceGenerateInvoicePage.jsx';
+import FinanceProformaPage from '../features/finance/FinanceProformaPage.jsx';
+import FinancePurchaseOrdersPage from '../features/finance/FinancePurchaseOrdersPage.jsx';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -130,6 +135,8 @@ export default function App() {
                   <Route path="manage/new" element={<CampFormPage />} />
                   <Route path="manage/:id/edit" element={<CampFormPage />} />
                   <Route path="import" element={<CampImportPage />} />
+                  <Route path="chargesheet" element={<CampChargesheetPage />} />
+                  <Route path="payout" element={<CampPayoutPage />} />
                   <Route path="communications" element={<CommunicationsLayout />}>
                     <Route index element={<Navigate to="paste" replace />} />
                     <Route path="paste" element={<CommunicationsPastePage />} />
@@ -145,6 +152,9 @@ export default function App() {
                   <Route index element={<FinanceOverviewPage />} />
                   <Route path="expenses" element={<FinanceExpensesPage />} />
                   <Route path="invoices" element={<FinanceInvoicesPage />} />
+                  <Route path="proforma" element={<FinanceProformaPage />} />
+                  <Route path="purchase-orders" element={<FinancePurchaseOrdersPage />} />
+                  <Route path="generate-invoice" element={<FinanceGenerateInvoicePage />} />
                 </Route>
                 <Route path="/asset-requests" element={<AssetRequestsPage />} />
                 <Route path="/movements" element={<Navigate to="/asset-requests" replace />} />

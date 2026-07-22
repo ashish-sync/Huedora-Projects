@@ -136,7 +136,7 @@ input.esign-search,
 .vf-toolbar select,
 .esign-toolbar select,
 .logistics-toolbar select,
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .date-range-filter-field select,
 .field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
 .field select,
@@ -180,7 +180,7 @@ input.esign-search,
 .filter-select,
 .toolbar select,
 .agreements-filters select,
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
 .field select {
   padding-top: 0 !important;
@@ -407,7 +407,7 @@ button.module-kpi.is-clickable:hover {
   max-width: var(--control-w) !important;
 }
 
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .date-range-filter-field select {
   width: var(--control-w-date) !important;
   min-width: var(--control-w-date) !important;

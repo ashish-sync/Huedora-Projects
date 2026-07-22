@@ -1,0 +1,105 @@
+.date-input-field {
+  min-width: 0;
+}
+
+.date-input-control {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: var(--control-h, 40px);
+}
+
+.date-input-display {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-h, 40px);
+  padding: 0 42px 0 var(--space-3, 12px);
+  border: 1px solid var(--color-border-default, var(--line, #d0d5dd));
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-bg-elevated, var(--bg-elevated, #fff));
+  color: var(--color-text-primary, var(--ink, #101828));
+  font-size: var(--text-body-sm-size, 0.875rem);
+  line-height: var(--text-body-sm-leading, 1.4);
+  transition:
+    border-color var(--duration-fast, 0.15s) var(--ease-standard, ease),
+    box-shadow var(--duration-fast, 0.15s) var(--ease-standard, ease);
+}
+
+.date-input-display::placeholder {
+  color: var(--color-text-muted, var(--muted, #667085));
+}
+
+.date-input-display:focus {
+  outline: none;
+  border-color: var(--color-brand-primary, var(--brand, #0a5ac2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary, #0a5ac2) 18%, transparent);
+}
+
+.date-input-display:disabled {
+  background: var(--color-bg-sunken, var(--bg-sunken, #f9fafb));
+  color: var(--color-text-muted, var(--muted, #667085));
+  cursor: not-allowed;
+}
+
+.date-input-display.input-invalid {
+  border-color: var(--color-error, #d92d20);
+}
+
+.date-input-picker-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary, var(--muted, #475467));
+  cursor: pointer;
+}
+
+.date-input-picker-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-brand-primary, #0a5ac2) 10%, transparent);
+  color: var(--color-brand-primary, var(--brand, #0a5ac2));
+}
+
+.date-input-picker-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.date-input-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.date-input-control.is-disabled .date-input-picker-btn {
+  pointer-events: none;
+}
+
+.date-range-filter-field .date-input-field,
+.date-range-filter-field .date-input-control {
+  width: 100%;
+}
+
+.camps-date-inputs .date-input-field {
+  flex: 1 1 0;
+  min-width: 140px;
+}
+
+.communications-filter-dates .date-input-field {
+  min-width: 160px;
+}

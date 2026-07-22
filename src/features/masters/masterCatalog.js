@@ -122,7 +122,7 @@ export const MASTER_ENTITIES = [
         label: 'Contact Category',
         required: true,
         type: 'select',
-        options: ['Resource', 'Client', 'Vendor'],
+        options: ['Resource', 'Client', 'Vendor', 'Healthcare Worker'],
       },
       {
         name: 'resourceType',
@@ -148,6 +148,7 @@ export const MASTER_ENTITIES = [
           'Dietitian',
           'Doctor',
           'Nurse',
+          'Physio',
           'Biomedical Engineer',
           'Project Manager',
           'Operations Executive',

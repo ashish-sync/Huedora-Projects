@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import { api, apiUrl } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -543,11 +544,12 @@ export default function LogisticsInwardPage() {
             </Field>
             {form.expiryApplicable && (
               <Field label="Expiry date" required>
-                <input
-                  type="date"
+                <DateInput
+                  hideLabel
+                  aria-label="Expiry date"
                   required
                   value={form.expiryDate}
-                  onChange={(e) => setField('expiryDate', e.target.value)}
+                  onChange={(value) => setField('expiryDate', value)}
                 />
               </Field>
             )}

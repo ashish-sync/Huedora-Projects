@@ -796,7 +796,7 @@ html[data-theme='dark'] .tylo-home-atmosphere {
   color: var(--muted);
 }
 
-.track-range-field input[type='date'] {
+.track-range-field .date-input-display {
   min-width: 10.5rem;
   padding: 7px 10px;
   border-radius: 8px;
@@ -843,7 +843,7 @@ html[data-theme='dark'] .tylo-home-atmosphere {
   color: var(--muted);
 }
 
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .date-range-filter-field select {
   min-width: 8.5rem;
   width: 8.5rem;
@@ -7177,7 +7177,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   min-width: 0;
 }
 
-.ilog-dash-filter input[type='date'] {
+.ilog-dash-filter .date-input-display {
   background: var(--ilog-card);
   border: 1px solid #ddd6c8;
   border-radius: 6px;

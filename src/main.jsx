@@ -13,6 +13,7 @@ import './styles/components/badge.css';
 import './styles/components/alert.css';
 import './styles/components/modal.css';
 import './styles/components/forms.css';
+import './styles/components/date-input.css';
 import './styles/patches/enterprise-polish.css';
 import './styles/design-system.css';
 

@@ -200,7 +200,6 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                     <tr>
                       <th>Client</th>
                       <th>Division / Therapy</th>
-                      <th>Drug / Therapy</th>
                       <th>Camp Name</th>
                       <th>Service Model</th>
                       <th>HCW</th>
@@ -218,7 +217,6 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                       <tr key={record._id}>
                         <td>{record.clientName}</td>
                         <td>{record.programName || '—'}</td>
-                        <td>{record.drugTherapyName || '—'}</td>
                         <td>{record.campName || '—'}</td>
                         <td>{record.campType || '—'}</td>
                         <td>{record.healthcareWorker || '—'}</td>

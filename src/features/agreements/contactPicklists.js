@@ -1,6 +1,6 @@
 /** Shared with Contact Directory, New Agreement wizard, and Asset Register */
 
-export const CONTACT_CATEGORIES = ['Resource', 'Client', 'Vendor'];
+export const CONTACT_CATEGORIES = ['Resource', 'Client', 'Vendor', 'Healthcare Worker'];
 
 export const RESOURCE_TYPES = [
   'Full-Time',
@@ -49,15 +49,29 @@ export const VENDOR_PROFESSIONS = [
   'Other',
 ];
 
+/** Profession / Role when Contact Category is Healthcare Worker */
+export const HEALTHCARE_WORKER_PROFESSIONS = [
+  'Doctor',
+  'Nurse',
+  'Phlebotomist',
+  'Technician',
+  'Dietitian',
+  'Physio',
+  'Biomedical Engineer',
+  'Other',
+];
+
 export function professionsForCategory(contactCategory) {
   if (contactCategory === 'Client') return CLIENT_PROFESSIONS;
   if (contactCategory === 'Vendor') return VENDOR_PROFESSIONS;
+  if (contactCategory === 'Healthcare Worker') return HEALTHCARE_WORKER_PROFESSIONS;
   return PROFESSIONS;
 }
 
 export function professionPicklistKey(contactCategory) {
   if (contactCategory === 'Client') return 'contact.profession.client';
   if (contactCategory === 'Vendor') return 'contact.profession.vendor';
+  if (contactCategory === 'Healthcare Worker') return 'contact.profession.healthcareWorker';
   return 'contact.profession';
 }
 

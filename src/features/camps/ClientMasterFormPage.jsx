@@ -25,7 +25,6 @@ const formStringFields = [
   'clientName',
   'clientCode',
   'programName',
-  'drugTherapyName',
   'campName',
   'campType',
   'coordinatorName',
@@ -52,7 +51,6 @@ const emptyForm = {
   clientName: '',
   clientCode: '',
   programName: '',
-  drugTherapyName: '',
   campName: 'BMD',
   campType: '',
   coordinatorName: '',
@@ -330,15 +328,6 @@ export default function ClientMasterFormPage() {
             className={fieldErrors.programName ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors.programName} />
-        </label>
-        <label>
-          Drug / Therapy Name
-          <input
-            value={form.drugTherapyName}
-            onChange={(e) => updateField('drugTherapyName', e.target.value)}
-            className={fieldErrors.drugTherapyName ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.drugTherapyName} />
         </label>
         <label>
           Camp Name

@@ -1,3 +1,5 @@
+import DateInput from './DateInput.jsx';
+
 /**
  * Standard date-range filter: calendar From/To + mandatory Submit and Clear.
  */
@@ -35,22 +37,24 @@ export default function DateRangeFilter({
       <div className="date-range-filter-fields">
         <label className="date-range-filter-field">
           <span>From</span>
-          <input
-            type="date"
+          <DateInput
+            hideLabel
+            aria-label="From date"
             value={from}
             max={to || undefined}
             disabled={disabled || submitting}
-            onChange={(e) => onFromChange?.(e.target.value)}
+            onChange={onFromChange}
           />
         </label>
         <label className="date-range-filter-field">
           <span>To</span>
-          <input
-            type="date"
+          <DateInput
+            hideLabel
+            aria-label="To date"
             value={to}
             min={from || undefined}
             disabled={disabled || submitting}
-            onChange={(e) => onToChange?.(e.target.value)}
+            onChange={onToChange}
           />
         </label>
         {children}

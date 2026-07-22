@@ -472,7 +472,7 @@
   gap: 6px;
 }
 
-.camp-ops-root .communications-filter-dates input[type='date'] {
+.camp-ops-root .communications-filter-dates .date-input-display {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -1166,6 +1166,24 @@
   gap: 10px;
 }
 
+.camp-ops-root .camp-module-section-lead {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.camp-ops-root .camp-module-section-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.camp-ops-root .camp-module-section-card .empty-state {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .camp-ops-root .communications-coming-soon {
   min-height: 280px;
   display: flex;
@@ -1196,17 +1214,453 @@
 
 .camp-ops-root .communications-paste-page {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  min-height: 0;
+  min-width: 0;
 }
 
-.camp-ops-root .communications-paste-shell {
+.camp-ops-root .communications-paste-shell,
+.camp-ops-root .paste-workflow-shell {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  min-height: calc(92vh - 120px);
+  min-height: clamp(480px, calc(100dvh - 240px), 880px);
   padding: 0;
   overflow: hidden;
   background: var(--bg-elevated);
+  border-radius: 14px;
+}
+
+/* ── Workflow header & stepper ───────────────────────────────── */
+
+.camp-ops-root .paste-workflow-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.camp-ops-root .paste-workflow-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.camp-ops-root .paste-workflow-lead {
+  margin: 2px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-workflow-draft-badge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.camp-ops-root .paste-workflow-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+  padding: 10px 18px;
+  list-style: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-sunken);
+}
+
+.camp-ops-root .paste-workflow-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding-right: 12px;
+}
+
+.camp-ops-root .paste-workflow-step-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.camp-ops-root .paste-workflow-step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.camp-ops-root .paste-workflow-step-copy strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.camp-ops-root .paste-workflow-step-short {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.camp-ops-root .paste-workflow-step-connector {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 12px;
+  height: 2px;
+  background: var(--border);
+  transform: translateY(-50%);
+}
+
+.camp-ops-root .paste-workflow-step--active .paste-workflow-step-marker {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--color-brand-on-primary, #fff);
+}
+
+.camp-ops-root .paste-workflow-step--active .paste-workflow-step-copy strong {
+  color: var(--primary);
+}
+
+.camp-ops-root .paste-workflow-step--complete .paste-workflow-step-marker {
+  border-color: color-mix(in srgb, var(--ok, #12b76a) 55%, var(--border));
+  background: var(--ok-soft, #ecfdf3);
+  color: var(--ok, #12b76a);
+}
+
+.camp-ops-root .paste-workflow-step--complete .paste-workflow-step-connector {
+  background: color-mix(in srgb, var(--ok, #12b76a) 45%, var(--border));
+}
+
+.camp-ops-root .paste-workflow-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 18px 0;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .paste-context-fields {
+  flex-shrink: 0;
+  margin: 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-sunken);
+}
+
+.camp-ops-root .paste-context-fields-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.camp-ops-root .paste-context-fields-heading strong {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.camp-ops-root .paste-context-fields-heading span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-context-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.camp-ops-root .paste-context-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.camp-ops-root .paste-context-field-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-context-field select {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+.camp-ops-root .paste-context-field .field-error {
+  font-size: 0.74rem;
+  color: var(--danger, #d92d20);
+}
+
+.camp-ops-root .paste-context-banner {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  border: 1px solid transparent;
+}
+
+.camp-ops-root .paste-context-banner--neutral {
+  background: var(--bg-sunken);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-context-banner--ready {
+  background: color-mix(in srgb, var(--primary) 8%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+  color: var(--text);
+}
+
+.camp-ops-root .paste-context-banner--success {
+  background: var(--ok-soft, #ecfdf3);
+  border-color: color-mix(in srgb, var(--ok, #12b76a) 35%, var(--border));
+  color: var(--text);
+}
+
+.camp-ops-root .paste-context-banner--warning {
+  background: var(--warn-soft, #fffaeb);
+  border-color: color-mix(in srgb, var(--warn, #f79009) 35%, var(--border));
+  color: var(--text);
+}
+
+.camp-ops-root .paste-context-banner--error {
+  background: var(--danger-soft, #fef3f2);
+  border-color: color-mix(in srgb, var(--danger, #d92d20) 35%, var(--border));
+  color: var(--text);
+}
+
+.camp-ops-root .paste-context-banner--info {
+  background: color-mix(in srgb, var(--primary) 6%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--primary) 20%, var(--border));
+  color: var(--text);
+}
+
+.camp-ops-root .paste-context-banner--locked {
+  background: var(--bg-sunken);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ── Two-column workflow grid ──────────────────────────────────── */
+
+.camp-ops-root .paste-workflow-grid {
+  flex: 1 1 auto;
+  min-height: clamp(340px, 48vh, 620px);
+  padding: 12px 18px !important;
+  gap: 12px !important;
+}
+
+.camp-ops-root .paste-workflow-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+
+.camp-ops-root .paste-column-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .paste-column-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.camp-ops-root .paste-column-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--bg-sunken));
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .paste-column-header h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.camp-ops-root .paste-column-sub {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-status-chip {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-status-chip--ready {
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg-elevated));
+  color: var(--primary);
+}
+
+.camp-ops-root .paste-status-chip--success {
+  border-color: color-mix(in srgb, var(--ok, #12b76a) 35%, var(--border));
+  background: var(--ok-soft, #ecfdf3);
+  color: var(--ok, #12b76a);
+}
+
+.camp-ops-root .paste-status-chip--warning {
+  border-color: color-mix(in srgb, var(--warn, #f79009) 35%, var(--border));
+  background: var(--warn-soft, #fffaeb);
+  color: var(--warn, #f79009);
+}
+
+.camp-ops-root .paste-status-chip--error {
+  border-color: color-mix(in srgb, var(--danger, #d92d20) 35%, var(--border));
+  background: var(--danger-soft, #fef3f2);
+  color: var(--danger, #d92d20);
+}
+
+.camp-ops-root .paste-status-chip--locked {
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-workflow-column .paste-context-banner {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+.camp-ops-root .paste-workflow-column .email-body-pick-buffer {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.camp-ops-root .paste-workflow-column--review .email-extraction-toolbar {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+}
+
+.camp-ops-root .paste-workflow-column--review .email-extraction-toolbar .meta-text {
+  font-size: 0.74rem;
+}
+
+.camp-ops-root .paste-workflow-column--review .email-detail-empty {
+  min-height: 160px;
+  padding: 16px;
+  font-size: 0.84rem;
+}
+
+.camp-ops-root .paste-workflow-column--review .email-extraction-card {
+  padding: 10px 12px;
+}
+
+.camp-ops-root .paste-workflow-column--review .email-extraction-card-header h4 {
+  font-size: 0.86rem;
+}
+
+.camp-ops-root .paste-workflow-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 18px 14px !important;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunken);
+}
+
+.camp-ops-root .paste-workflow-footer-hint {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .paste-workflow-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .paste-workflow-primary-cta {
+  min-width: 148px;
+}
+
+.camp-ops-root .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .camp-ops-root .communications-paste-header {
@@ -1252,19 +1706,42 @@
   color: var(--text);
 }
 
-.camp-ops-root .communications-paste-shell .email-detail-layout {
+.camp-ops-root .communications-paste-shell .email-detail-layout,
+.camp-ops-root .paste-workflow-grid.email-detail-layout {
+  flex: 1 1 auto;
+  min-height: clamp(340px, 48vh, 620px);
+  align-items: stretch;
+  grid-template-rows: minmax(340px, 1fr);
+}
+
+.camp-ops-root .paste-workflow-column.email-detail-panel {
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+  overflow: hidden;
+}
+
+.camp-ops-root .paste-workflow-column--review .email-detail-empty,
+.camp-ops-root .paste-workflow-column--review .email-extraction-panel {
   flex: 1 1 0;
   min-height: 0;
-  align-items: stretch;
 }
 
 .camp-ops-root .communications-paste-shell .email-detail-panel {
-  min-height: 280px;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+}
+
+.camp-ops-root .communications-paste-shell .email-detail-panel-extraction .email-detail-empty,
+.camp-ops-root .communications-paste-shell .email-detail-panel-extraction .email-extraction-panel {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .camp-ops-root .communications-paste-editor {
-  flex: 1 1 auto;
-  min-height: 280px;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -1287,16 +1764,18 @@
   min-height: 0;
   width: 100%;
   margin: 0;
-  padding: 16px;
+  padding: 16px 18px;
   border: 0;
   border-radius: 12px;
   background: transparent;
   resize: none;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 0.94rem;
+  line-height: 1.65;
   font-family: inherit;
   color: var(--text);
 }
@@ -1314,18 +1793,50 @@
   min-height: 0;
   width: 100%;
   margin: 0;
-  padding: 16px;
+  padding: 16px 18px;
   border: 0;
   border-radius: 12px;
   background: transparent;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 0.94rem;
+  line-height: 1.65;
   font-family: inherit;
   color: var(--text);
   user-select: text;
+}
+
+.camp-ops-root .communications-paste-pre,
+.camp-ops-root .communications-paste-textarea,
+.camp-ops-root .communications-paste-shell .email-extraction-panel {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 55%, transparent) transparent;
+}
+
+.camp-ops-root .communications-paste-pre::-webkit-scrollbar,
+.camp-ops-root .communications-paste-textarea::-webkit-scrollbar,
+.camp-ops-root .communications-paste-shell .email-extraction-panel::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.camp-ops-root .communications-paste-pre::-webkit-scrollbar-thumb,
+.camp-ops-root .communications-paste-textarea::-webkit-scrollbar-thumb,
+.camp-ops-root .communications-paste-shell .email-extraction-panel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 45%, var(--border));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.camp-ops-root .communications-paste-pre::-webkit-scrollbar-track,
+.camp-ops-root .communications-paste-textarea::-webkit-scrollbar-track,
+.camp-ops-root .communications-paste-shell .email-extraction-panel::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--bg-sunken) 80%, transparent);
+  border-radius: 999px;
 }
 
 .camp-ops-root .communications-paste-shell .email-detail-actions {
@@ -1344,6 +1855,63 @@
 
   .camp-ops-root .communications-filter-dates, .camp-ops-root .communications-paste-meta, .camp-ops-root .email-detail-layout, .camp-ops-root .email-detail-meta, .camp-ops-root .email-extraction-dl, .camp-ops-root .email-extraction-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .camp-ops-root .communications-paste-shell,
+  .camp-ops-root .paste-workflow-shell {
+    min-height: clamp(440px, calc(100dvh - 200px), 880px);
+  }
+
+  .camp-ops-root .communications-paste-shell .email-detail-layout,
+  .camp-ops-root .paste-workflow-grid.email-detail-layout {
+    min-height: clamp(280px, 42vh, 560px);
+    grid-template-rows: minmax(260px, auto) minmax(260px, auto);
+  }
+
+  .camp-ops-root .paste-workflow-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .camp-ops-root .paste-workflow-stepper {
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+  }
+
+  .camp-ops-root .paste-workflow-step {
+    padding-right: 0;
+  }
+
+  .camp-ops-root .paste-workflow-step-connector {
+    display: none;
+  }
+
+  .camp-ops-root .paste-workflow-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .camp-ops-root .paste-workflow-footer-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .camp-ops-root .paste-workflow-footer-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .camp-ops-root .paste-context-fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .camp-ops-root .paste-workflow-primary-cta {
+    min-width: 0;
+  }
+
+  .camp-ops-root .communications-paste-shell .email-detail-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .camp-ops-root .email-detail-actions {
@@ -1597,6 +2165,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
 }
 
 .camp-ops-root .grid-widgets {

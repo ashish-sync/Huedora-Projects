@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import { api } from '../../shared/api.js';
 import { formatDate, todayIso } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -264,23 +265,18 @@ export default function FinanceInvoicesPage() {
                 placeholder="Amount + tax if blank"
               />
             </div>
-            <div className="field">
-              <label>Invoice date *</label>
-              <input
-                required
-                type="date"
-                value={form.invoiceDate}
-                onChange={(e) => setForm({ ...form, invoiceDate: e.target.value })}
-              />
-            </div>
-            <div className="field">
-              <label>Due date</label>
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-              />
-            </div>
+            <DateInput
+              label="Invoice date *"
+              required
+              value={form.invoiceDate}
+              onChange={(value) => setForm({ ...form, invoiceDate: value })}
+            />
+            <DateInput
+              label="Due date"
+              value={form.dueDate}
+              min={form.invoiceDate || undefined}
+              onChange={(value) => setForm({ ...form, dueDate: value })}
+            />
             <div className="field">
               <label>Status</label>
               <AdaptiveSelect value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>

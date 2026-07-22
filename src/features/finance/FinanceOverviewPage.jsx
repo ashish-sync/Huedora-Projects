@@ -9,6 +9,49 @@ function formatMoney(n) {
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+const QUICK_SECTIONS = [
+  {
+    title: 'Accounts payable',
+    items: [
+      {
+        to: '/finance/expenses',
+        name: NAV.EXPENSES,
+        meta: 'Record and approve operational spend',
+      },
+      {
+        to: '/finance/invoices',
+        name: NAV.INVOICES,
+        meta: 'Vendor bills and payment status',
+      },
+    ],
+  },
+  {
+    title: 'Client billing',
+    items: [
+      {
+        to: '/finance/proforma',
+        name: NAV.PROFORMA,
+        meta: 'Create, upload, and download client proforma invoices',
+      },
+      {
+        to: '/finance/generate-invoice',
+        name: NAV.GENERATE_INVOICE,
+        meta: 'Create client invoices from camp chargesheets',
+      },
+    ],
+  },
+  {
+    title: 'Procurement',
+    items: [
+      {
+        to: '/finance/purchase-orders',
+        name: NAV.PURCHASE_ORDERS,
+        meta: 'Create, issue, and download vendor purchase orders',
+      },
+    ],
+  },
+];
+
 export default function FinanceOverviewPage() {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
@@ -35,12 +78,14 @@ export default function FinanceOverviewPage() {
     { label: 'Invoices', value: summary?.invoiceCount ?? '—' },
     { label: 'Invoice total', value: formatMoney(summary?.invoiceTotal) },
     { label: 'Open invoices', value: summary?.invoiceOpen ?? '—' },
+    { label: 'Proforma', value: summary?.proformaCount ?? '—' },
+    { label: 'Proforma total', value: formatMoney(summary?.proformaTotal) },
   ];
 
   return (
     <div className="finance-overview">
       <p className="muted" style={{ marginTop: 0 }}>
-        {MODULE.FINANCE} summary across expenses and invoices.
+        {MODULE.FINANCE} summary across expenses, invoices, proforma, and purchase orders.
       </p>
 
       {error && (
@@ -63,18 +108,20 @@ export default function FinanceOverviewPage() {
         ))}
       </div>
 
-      <div className="asset-type-cards" style={{ marginTop: 16 }}>
-        <Link to="/finance/expenses" className="asset-type-card">
-          <strong className="asset-type-card-name">{NAV.EXPENSES}</strong>
-          <span className="asset-type-card-meta">Record and approve operational spend</span>
-          <span className="asset-type-card-cta">Open →</span>
-        </Link>
-        <Link to="/finance/invoices" className="asset-type-card">
-          <strong className="asset-type-card-name">{NAV.INVOICES}</strong>
-          <span className="asset-type-card-meta">Vendor bills and payment status</span>
-          <span className="asset-type-card-cta">Open →</span>
-        </Link>
-      </div>
+      {QUICK_SECTIONS.map((section) => (
+        <section key={section.title} className="asset-type-grid" aria-label={section.title}>
+          <h3 className="asset-type-grid-title">{section.title}</h3>
+          <div className="asset-type-cards">
+            {section.items.map((item) => (
+              <Link key={item.to} to={item.to} className="asset-type-card">
+                <strong className="asset-type-card-name">{item.name}</strong>
+                <span className="asset-type-card-meta">{item.meta}</span>
+                <span className="asset-type-card-cta">Open →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

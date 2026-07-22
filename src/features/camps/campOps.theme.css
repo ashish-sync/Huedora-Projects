@@ -275,9 +275,16 @@
 
 .camp-ops-root .communications-hub {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--stack);
   min-width: 0;
+  min-height: 0;
+}
+
+.camp-ops-root .camp-ops-page-content:has(.communications-hub) {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .camp-ops-root .communications-hub > .page-tabs {
@@ -570,10 +577,48 @@
 
 /* ── Communications / Manual Paste (dark-mode safe surfaces) ── */
 .camp-ops-root .communications-paste-shell.panel,
-.camp-ops-root .communications-paste-page .panel {
+.camp-ops-root .communications-paste-page .panel,
+.camp-ops-root .paste-workflow-shell.panel {
   background: var(--bg-elevated) !important;
   border-color: var(--line) !important;
   box-shadow: none !important;
+}
+
+.camp-ops-root .paste-workflow-title,
+.camp-ops-root .paste-column-header h3 {
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .paste-workflow-lead,
+.camp-ops-root .paste-column-sub,
+.camp-ops-root .paste-workflow-footer-hint {
+  color: var(--muted) !important;
+}
+
+.camp-ops-root .paste-workflow-footer {
+  background: var(--bg-sunken) !important;
+  border-top-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-workflow-stepper {
+  background: var(--bg-sunken) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-workflow-column {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-context-fields {
+  background: var(--bg-sunken) !important;
+  border-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-context-field select {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
 }
 
 .camp-ops-root .email-detail-meta {

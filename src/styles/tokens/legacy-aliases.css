@@ -1,0 +1,86 @@
+/**
+ * Maps legacy TYLO variable names → semantic tokens.
+ * Keeps all existing CSS working during migration.
+ */
+:root {
+  --font: var(--font-family-sans);
+  --font-display: var(--font-family-display);
+  --mono: var(--font-family-mono);
+
+  --tylo-primary: var(--color-brand-primary);
+  --tylo-primary-hover: var(--color-brand-primary-hover);
+  --tylo-secondary: var(--color-brand-primary-hover);
+  --tylo-secondary-muted: var(--color-text-secondary);
+  --tylo-cool-gray: var(--color-text-tertiary);
+  --tylo-accent: var(--color-medical);
+  --tylo-accent-soft: var(--color-medical-subtle);
+
+  --tylo-ok: var(--color-success);
+  --tylo-ok-soft: var(--color-success-subtle);
+  --tylo-warn: var(--color-warning);
+  --tylo-warn-soft: var(--color-warning-subtle);
+  --tylo-danger: var(--color-danger);
+  --tylo-danger-soft: var(--color-danger-subtle);
+  --tylo-info: var(--color-info);
+  --tylo-info-soft: var(--color-info-subtle);
+
+  --tylo-bg: var(--color-bg-app);
+  --tylo-surface: var(--color-bg-sidebar);
+  --tylo-border: var(--color-border-default);
+  --tylo-ink: var(--color-text-primary);
+  --tylo-ink-secondary: var(--color-text-secondary);
+  --tylo-disabled: var(--color-text-disabled);
+
+  --ink: var(--color-text-primary);
+  --ink-soft: var(--color-text-secondary);
+  --muted: var(--color-text-secondary);
+  --muted-soft: var(--color-text-tertiary);
+
+  --bg: var(--color-bg-canvas);
+  --bg-elevated: var(--color-bg-elevated);
+  --bg-sunken: var(--color-bg-sunken);
+  --bg-tint: var(--color-brand-primary-subtle);
+  --sand: var(--color-bg-sidebar);
+  --sand-deep: var(--color-bg-hover);
+  --surface: var(--color-bg-sidebar);
+  --surface-muted: var(--color-bg-hover);
+
+  --brand: var(--color-brand-primary);
+  --brand-hover: var(--color-brand-primary-hover);
+  --brand-bright: var(--color-brand-primary-hover);
+  --brand-soft: var(--color-brand-primary-subtle);
+  --brand-ink: var(--color-text-on-primary);
+  --header-bg: var(--color-header-bg);
+  --accent: var(--color-medical);
+  --accent-soft: var(--color-medical-subtle);
+  --glow: color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+
+  --info: var(--color-info);
+  --info-soft: var(--color-info-subtle);
+  --ok: var(--color-success);
+  --ok-soft: var(--color-success-subtle);
+  --warn: var(--color-warning);
+  --warn-soft: var(--color-warning-subtle);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-subtle);
+
+  --line: var(--color-border-default);
+  --line-strong: var(--color-border-strong);
+  --focus: var(--color-focus-ring);
+
+  --shadow-sm: var(--shadow-xs);
+  --shadow: var(--shadow-sm);
+  --shadow-lg: var(--shadow-md);
+
+  /* Logistics island aliases */
+  --ilog-beige: var(--color-bg-sidebar);
+  --ilog-card: var(--color-bg-elevated);
+  --ilog-ink: var(--color-text-primary);
+  --ilog-muted: var(--color-text-secondary);
+  --ilog-map: var(--color-brand-primary-subtle);
+  --ilog-dot: var(--color-brand-primary);
+}
+
+html[data-theme='dark'] {
+  --glow: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
+}

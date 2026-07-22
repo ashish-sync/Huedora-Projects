@@ -1,0 +1,193 @@
+/**
+ * Modal / dialog surfaces — token-driven, shared across modules.
+ */
+.modal-overlay,
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--color-bg-overlay);
+  backdrop-filter: none;
+}
+
+.modal-card,
+.confirm-dialog {
+  width: min(100%, 28rem);
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  padding: var(--space-5);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-card--wide {
+  width: min(100%, 40rem);
+}
+
+.modal-card--cancel {
+  width: min(100%, 32rem);
+}
+
+.modal-card--email {
+  width: min(100%, 56rem);
+  max-height: min(92vh, 900px);
+}
+
+.modal-title,
+.confirm-dialog h3 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-h2-size);
+  font-weight: var(--text-h2-weight);
+  line-height: var(--text-h2-leading);
+  color: var(--color-text-primary);
+}
+
+.modal-message,
+.confirm-dialog p {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-leading);
+}
+
+.modal-actions,
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.modal-camp-summary {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-sunken);
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.modal-camp-summary-grid {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-sunken);
+}
+
+.modal-camp-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--text-body-sm-size);
+}
+
+.modal-camp-summary-row span {
+  color: var(--color-text-tertiary);
+}
+
+.modal-camp-summary-row strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.modal-cancel-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modal-cancel-section-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cancel-source-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cancel-source-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.cancel-source-option:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-sunken);
+}
+
+.cancel-source-option.is-selected {
+  border-color: var(--color-brand-primary);
+  background: var(--color-brand-primary-subtle);
+}
+
+.cancel-source-option-label {
+  font-size: var(--text-body-sm-size);
+  font-weight: 600;
+}
+
+.cancel-source-option-text {
+  font-size: var(--text-caption-size);
+  color: var(--color-text-secondary);
+}
+
+.modal-cancel-remark-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.modal-cancel-remark-field textarea {
+  min-height: 96px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--text-body-sm-size);
+  resize: vertical;
+}
+
+.modal-cancel-remark-hint {
+  font-size: var(--text-caption-size);
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+}
+
+.modal-overlay-nested {
+  z-index: calc(var(--z-modal) + 10);
+}

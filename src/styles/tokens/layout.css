@@ -1,0 +1,51 @@
+:root {
+  /* Shell */
+  --header-height: 64px;
+  --header-h: var(--header-height);
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 72px;
+  --content-max-width: 1320px;
+  --content-max: var(--content-max-width);
+
+  /* 8-point spacing scale */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 56px;
+  --space-10: 64px;
+
+  --pad: var(--space-5);
+  --stack: var(--space-3);
+  --stack-sm: var(--space-2);
+  --stack-lg: var(--space-4);
+
+  /* Controls — WCAG touch target */
+  --control-height: 44px;
+  --control-height-sm: 36px;
+  --control-h: var(--control-height);
+  --control-h-sm: var(--control-height-sm);
+  --touch-target-min: 44px;
+
+  --control-w: 10rem;
+  --control-w-date: 9.5rem;
+  --control-w-btn: 5.25rem;
+
+  --kpi-min: 5.5rem;
+  --kpi-pad-y: var(--space-3);
+  --kpi-pad-x: var(--space-4);
+  --toolbar-pad-y: var(--space-3);
+  --toolbar-pad-x: var(--space-4);
+  --table-cell-y: var(--space-3);
+  --table-cell-x: var(--space-4);
+
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+}

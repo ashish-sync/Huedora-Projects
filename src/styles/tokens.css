@@ -1,0 +1,11 @@
+/**
+ * TYLO One design tokens — import hub
+ * Semantic tokens → legacy aliases → existing CSS keeps working
+ */
+
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/layout.css';
+@import './tokens/elevation.css';
+@import './tokens/motion.css';
+@import './tokens/legacy-aliases.css';

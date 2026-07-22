@@ -1,0 +1,36 @@
+/**
+ * TYLO One — radius, shadows, z-index
+ * Buttons: 12px · Cards: 16px · Subtle layered surfaces
+ */
+
+:root {
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Legacy aliases */
+  --radius: var(--radius-lg);
+  --radius-button: var(--radius-md);
+  --radius-card: var(--radius-lg);
+
+  --shadow-xs: 0 1px 1px rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 2px 8px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 4px 16px rgb(15 23 42 / 0.08);
+
+  --z-dropdown: 40;
+  --z-sticky: 50;
+  --z-header: 50;
+  --z-sidebar: 45;
+  --z-modal: 1000;
+  --z-toast: 1100;
+}
+
+html[data-theme='dark'] {
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
+}

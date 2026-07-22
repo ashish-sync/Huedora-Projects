@@ -1,0 +1,19 @@
+/**
+ * TYLO One — motion tokens (150–200ms, subtle)
+ */
+
+:root {
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease: var(--ease-standard);
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --duration-slow: 280ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0.01ms;
+    --duration: 0.01ms;
+    --duration-slow: 0.01ms;
+  }
+}

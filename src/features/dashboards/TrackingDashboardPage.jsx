@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
+import { formatDateRangeLabel } from '../../shared/dateFormat.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
@@ -116,9 +117,7 @@ export default function TrackingDashboardPage() {
 
   const rangeLabel = useMemo(() => {
     if (!from && !to) return 'All time';
-    if (from && to) return `${from} → ${to}`;
-    if (from) return `From ${from}`;
-    return `Through ${to}`;
+    return formatDateRangeLabel(from, to).replace(' to ', ' → ');
   }, [from, to]);
 
   const submitReview = async (e) => {

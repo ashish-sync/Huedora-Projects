@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../shared/api.js';
+import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 
 export default function LogisticsUsagePage() {
@@ -128,7 +129,7 @@ export default function LogisticsUsagePage() {
                 </td>
                 <td>{r.doctorName || '-'}</td>
                 <td>{r.machineCity || '-'}</td>
-                <td className="mono-sm">{String(r.campDate || '').slice(0, 10) || '-'}</td>
+                <td className="mono-sm">{r.campDate ? formatDate(r.campDate) : '-'}</td>
                 <td className="num">
                   {canWrite ? (
                     <input

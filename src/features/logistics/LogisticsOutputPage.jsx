@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../shared/api.js';
+import { formatDateTime } from '../../shared/dateFormat.js';
 
 function formatMoney(n) {
   const num = Number(n);
@@ -113,7 +114,7 @@ export default function LogisticsOutputPage() {
                 <td className="num">{Number(r.qty || 0).toLocaleString()}</td>
                 <td className="num">{formatMoney(r.amount)}</td>
                 <td className="mono-sm">
-                  {r.lastAt ? new Date(r.lastAt).toLocaleString() : '-'}
+                  {r.lastAt ? formatDateTime(r.lastAt) : '-'}
                 </td>
               </tr>
             ))}

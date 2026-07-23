@@ -1,0 +1,64 @@
+.finance-proforma-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.finance-proforma-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.finance-line-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.finance-line-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 10px);
+  padding: 10px;
+  background: var(--bg-elevated);
+}
+
+.finance-line-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.finance-line-item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.finance-proforma-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.finance-proforma-total {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.finance-upload-panel {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md, 10px);
+  padding: 12px;
+  background: color-mix(in srgb, var(--brand, #0a5ac2) 4%, transparent);
+}
+
+.finance-numbering-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.6;
+  font-size: 0.8rem;
+}

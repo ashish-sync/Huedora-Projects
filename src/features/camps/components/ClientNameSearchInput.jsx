@@ -113,7 +113,6 @@ export function ClientNameSearchInput({
       clientName: client.name,
       client: { code: client.code },
       programName: '',
-      drugTherapyName: '',
       campName: '',
       campType: '',
       coordinatorName: '',

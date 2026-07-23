@@ -64,9 +64,9 @@
 .card {
   background: var(--bg-elevated);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   box-shadow: none;
-  padding: var(--pad);
+  padding: var(--space-5);
 }
 
 .card--flush,
@@ -136,7 +136,7 @@ input.esign-search,
 .vf-toolbar select,
 .esign-toolbar select,
 .logistics-toolbar select,
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .date-range-filter-field select,
 .field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
 .field select,
@@ -145,7 +145,7 @@ input.esign-search,
   min-height: var(--control-h) !important;
   max-height: var(--control-h) !important;
   box-sizing: border-box !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
   font-size: 0.8125rem !important;
   line-height: 1.2 !important;
 }
@@ -180,7 +180,7 @@ input.esign-search,
 .filter-select,
 .toolbar select,
 .agreements-filters select,
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
 .field select {
   padding-top: 0 !important;
@@ -266,7 +266,7 @@ button.module-kpi.is-clickable:hover {
 
 .ilog-dash-kpi {
   padding: 8px 10px !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
   min-height: 52px;
   box-sizing: border-box;
 }
@@ -407,7 +407,7 @@ button.module-kpi.is-clickable:hover {
   max-width: var(--control-w) !important;
 }
 
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .date-range-filter-field select {
   width: var(--control-w-date) !important;
   min-width: var(--control-w-date) !important;
@@ -597,7 +597,7 @@ tbody tr:hover {
   align-items: center;
   height: var(--control-h-sm);
   padding: 0 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-button);
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--muted);

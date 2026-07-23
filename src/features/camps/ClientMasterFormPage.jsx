@@ -4,8 +4,8 @@ import { useAuth } from './useCampOpsAuth.js';
 import { CampNameSelect } from './components/CampNameSelect';
 import { ClientNameSearchInput } from './components/ClientNameSearchInput';
 import { SearchableOptionsInput } from './components/SearchableOptionsInput';
-import { FormPageHeader } from './components/FormPageHeader';
 import { clientMasterApi } from './campOpsApi.js';
+import { clientMasterListPath } from './clientMasterPaths.js';
 import { trimFormStrings } from './utils/trimInput';
 import {
   getProgramDocumentMeta,
@@ -25,7 +25,6 @@ const formStringFields = [
   'clientName',
   'clientCode',
   'programName',
-  'drugTherapyName',
   'campName',
   'campType',
   'coordinatorName',
@@ -52,7 +51,6 @@ const emptyForm = {
   clientName: '',
   clientCode: '',
   programName: '',
-  drugTherapyName: '',
   campName: 'BMD',
   campType: '',
   coordinatorName: '',
@@ -264,7 +262,7 @@ export default function ClientMasterFormPage() {
         setDocumentMeta(getProgramDocumentMeta(data.data));
       }
 
-      navigate('/camps/client-masters');
+      navigate(clientMasterListPath());
     } catch (err) {
       const message = err?.message || 'Failed to save client master record';
       if (pendingPdfFile && !isEdit && err.response?.status !== 400) {
@@ -283,10 +281,6 @@ export default function ClientMasterFormPage() {
 
   return (
     <form className="form-card" onSubmit={handleSubmit} noValidate>
-      <FormPageHeader
-        title={isEdit ? 'Edit Program Configuration' : 'New Program Configuration'}
-        backTo="/camps/client-masters"
-      />
       {error && (
         <div className="page-alerts">
           <div className="error-banner">{error}</div>
@@ -326,7 +320,7 @@ export default function ClientMasterFormPage() {
           </select>
         </label>
         <label>
-          Division / Business
+          Division / Therapy
           <input
             value={form.programName}
             onChange={(e) => updateField('programName', e.target.value)}
@@ -334,15 +328,6 @@ export default function ClientMasterFormPage() {
             className={fieldErrors.programName ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors.programName} />
-        </label>
-        <label>
-          Drug / Therapy Name
-          <input
-            value={form.drugTherapyName}
-            onChange={(e) => updateField('drugTherapyName', e.target.value)}
-            className={fieldErrors.drugTherapyName ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.drugTherapyName} />
         </label>
         <label>
           Camp Name
@@ -512,7 +497,7 @@ export default function ClientMasterFormPage() {
       </div>
 
       <div className="form-actions">
-        <button type="button" className="btn btn-secondary" onClick={() => navigate('/camps/client-masters')}>Cancel</button>
+        <button type="button" className="btn secondary" onClick={() => navigate(clientMasterListPath())}>Cancel</button>
         <button type="submit" className="btn btn-primary" disabled={loading}>
           {loading ? 'Saving...' : isEdit ? 'Update Configuration' : 'Create Configuration'}
         </button>

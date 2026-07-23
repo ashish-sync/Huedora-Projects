@@ -1,0 +1,31 @@
+/**
+ * Enterprise polish — subtle interactive transitions
+ */
+
+.btn,
+a,
+.logistics-nav-link,
+.page-tabs a,
+.cancel-source-option,
+.adaptive-select__control,
+.field input,
+.field select,
+.field textarea,
+.card.interactive,
+.badge {
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+.card:hover,
+.logistics-master-tree-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand-primary) 22%, transparent);
+  color: var(--color-text-primary);
+}

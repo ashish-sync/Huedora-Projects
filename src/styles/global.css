@@ -2,7 +2,7 @@
 
 /*
   TYLO One
-  TYLO visual language · IBM Plex Sans · Enterprise SaaS
+  Inter · 8pt spacing · Enterprise SaaS design tokens
 */
 
 *,
@@ -796,7 +796,7 @@ html[data-theme='dark'] .tylo-home-atmosphere {
   color: var(--muted);
 }
 
-.track-range-field input[type='date'] {
+.track-range-field .date-input-display {
   min-width: 10.5rem;
   padding: 7px 10px;
   border-radius: 8px;
@@ -843,7 +843,7 @@ html[data-theme='dark'] .tylo-home-atmosphere {
   color: var(--muted);
 }
 
-.date-range-filter-field input[type='date'],
+.date-range-filter-field .date-input-display,
 .date-range-filter-field select {
   min-width: 8.5rem;
   width: 8.5rem;
@@ -7177,7 +7177,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   min-width: 0;
 }
 
-.ilog-dash-filter input[type='date'] {
+.ilog-dash-filter .date-input-display {
   background: var(--ilog-card);
   border: 1px solid #ddd6c8;
   border-radius: 6px;
@@ -7636,7 +7636,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 
 .logistics-master-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, var(--sidebar-width)) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -7644,10 +7644,11 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 .logistics-master-tree {
   position: sticky;
   top: 12px;
+  width: var(--sidebar-width);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--bg-elevated);
-  padding: 12px 10px 14px;
+  padding: var(--space-3) var(--space-3) var(--space-4);
 }
 
 .logistics-master-tree-title {

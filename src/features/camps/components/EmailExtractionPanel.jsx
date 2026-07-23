@@ -4,7 +4,7 @@ import { formatDateDDMMYYYY } from '../utils/dateFormat';
 
 const BODY_FIELDS = [
   { key: 'clientName', label: 'Client Name', required: true },
-  { key: 'campaignType', label: 'Division / Business' },
+  { key: 'campaignType', label: 'Division / Therapy' },
   { key: 'campaignName', label: 'Camp Name' },
   { key: 'doctorName', label: 'Doctor Name' },
   { key: 'doctorCode', label: 'Doctor Code' },

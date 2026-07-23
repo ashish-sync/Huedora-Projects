@@ -13,6 +13,7 @@ import { validateBulkCampAction } from './utils/campBulkActions';
 import { useAutoDismiss } from './hooks/useAutoDismiss';
 
 import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
+import { EmptyState } from '../../components/ui/PageShell.jsx';
 
 function buildCancelDetails() {
   return { cancelledBy: 'brand', remarks: '' };
@@ -486,7 +487,6 @@ export default function CampsPage() {
         onFilterChange={handleFilterChange}
         activeChips={activeChips}
         onClearAll={clearFilters}
-        showImportLink={hasPermission('import:create')}
       />
 
       {canBulkManage && selectedIds.length > 0 && (
@@ -542,17 +542,19 @@ export default function CampsPage() {
         </div>
       )}
 
-      <div className="table-card">
+      <div className="card card--flush table-wrap">
         {loading ? (
-          <div className="empty-state">Loading camps...</div>
+          <EmptyState title="Loading…" description="Fetching camps." />
         ) : camps.length === 0 ? (
-          <div className="empty-state">
-            <h3>No camps yet</h3>
-            <p>Create a camp or import from Excel to see records here.</p>
-            {(hasPermission('camps:create') || hasPermission('camps:update')) && (
-              <Link to="/camps/manage/new" className="btn btn-primary">New Camp</Link>
-            )}
-          </div>
+          <EmptyState
+            title="No camps yet"
+            description="Create a camp or import from Excel to see records here."
+            action={
+              (hasPermission('camps:create') || hasPermission('camps:update')) ? (
+                <Link to="/camps/manage/new" className="btn">New Camp</Link>
+              ) : null
+            }
+          />
         ) : (
           <div className="table-scroll">
             <table>
@@ -569,7 +571,7 @@ export default function CampsPage() {
                   )}
                   {/* <th>Camp ID</th> */}
                   <th>Client Name</th>
-                  <th>Division / Business Unit</th>
+                  <th>Division / Therapy</th>
                   <th>Camp Name</th>
                   <th>Time Frame</th>
                   <th>Doctor</th>

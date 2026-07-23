@@ -8,13 +8,19 @@ import { ClientMasterProgramsFilters } from './components/ClientMasterProgramsFi
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import { openProgramDocument } from './utils/programDocument';
+import { EmptyState } from '../../components/ui/PageShell.jsx';
+import {
+  clientMasterEditPath,
+  clientMasterListPath,
+  CLIENT_MASTER_NEW_PATH,
+} from './clientMasterPaths.js';
 
 function formatAmount(value) {
   if (value == null || value === '') return '—';
   return Number(value).toLocaleString('en-IN');
 }
 
-export default function ClientMastersPage() {
+export default function ClientMastersPage({ embedded = false } = {}) {
   const { hasPermission } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'clients' ? 'clients' : 'programs';
@@ -107,11 +113,6 @@ export default function ClientMastersPage() {
     }
   }
 
-  function handleSearch() {
-    setPage(1);
-    loadRecords(1, pageSize);
-  }
-
   function clearProgramFilters() {
     setSearch('');
     setPage(1);
@@ -177,19 +178,28 @@ export default function ClientMastersPage() {
             </div>
           )}
 
-          <div className="table-card">
+          <div className="card card--flush table-wrap">
             {loading ? (
-              <div className="empty-state">Loading client master records...</div>
+              <EmptyState title="Loading…" description="Fetching client master records." />
             ) : records.length === 0 ? (
-              <div className="empty-state">No client master records found.</div>
+              <EmptyState
+                title="No client master records"
+                description="Create a program configuration to get started."
+                action={
+                  hasPermission('client-masters:create') ? (
+                    <Link to={CLIENT_MASTER_NEW_PATH} className="btn">
+                      New Program Config
+                    </Link>
+                  ) : null
+                }
+              />
             ) : (
               <div className="table-scroll">
                 <table>
                   <thead>
                     <tr>
                       <th>Client</th>
-                      <th>Division / Business</th>
-                      <th>Drug / Therapy</th>
+                      <th>Division / Therapy</th>
                       <th>Camp Name</th>
                       <th>Service Model</th>
                       <th>HCW</th>
@@ -207,7 +217,6 @@ export default function ClientMastersPage() {
                       <tr key={record._id}>
                         <td>{record.clientName}</td>
                         <td>{record.programName || '—'}</td>
-                        <td>{record.drugTherapyName || '—'}</td>
                         <td>{record.campName || '—'}</td>
                         <td>{record.campType || '—'}</td>
                         <td>{record.healthcareWorker || '—'}</td>
@@ -223,7 +232,7 @@ export default function ClientMastersPage() {
                           {record.programDocument?.storedName ? (
                             <button
                               type="button"
-                              className="btn btn-secondary btn-sm"
+                              className="btn secondary btn-compact"
                               onClick={() => handlePreviewDocument(record._id)}
                             >
                               View PDF
@@ -235,10 +244,10 @@ export default function ClientMastersPage() {
                         <td>
                           <div className="actions">
                             {hasPermission('client-masters:update') && (
-                              <Link to={`/camps/client-masters/${record._id}/edit`} className="btn btn-secondary btn-sm">Edit</Link>
+                              <Link to={clientMasterEditPath(record._id)} className="btn secondary btn-compact">Edit</Link>
                             )}
                             {hasPermission('client-masters:delete') && (
-                              <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDelete(record._id)}>
+                              <button type="button" className="btn danger btn-compact" onClick={() => handleDelete(record._id)}>
                                 Archive
                               </button>
                             )}

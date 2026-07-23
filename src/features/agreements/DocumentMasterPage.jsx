@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatDate } from '../../shared/dateFormat.js';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
@@ -84,7 +85,7 @@ function paginateDocument(text, maxLines = PAGE_MAX_LINES, lineWidth = PAGE_LINE
 
 function SignatureFooterPreview({ signingType, defaultSenderSignature }) {
   const nonSigning = signingType === 'NON_SIGNING';
-  const sampleDate = new Date().toLocaleDateString();
+  const sampleDate = formatDate(new Date());
   const sender = defaultSenderSignature;
   const senderIsImage =
     sender &&

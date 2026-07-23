@@ -3,6 +3,8 @@ import { apiUrl } from './config.js';
 export { BACKEND_URL, API_BASE, apiUrl } from './config.js';
 
 let accessToken = null;
+/** In-flight refresh so concurrent 401s share one cookie refresh. */
+let refreshPromise = null;
 
 const ACCESS_KEY = 'tylo_one_access';
 const LEGACY_ACCESS_KEY = 'dhub_access';
@@ -31,7 +33,77 @@ export function loadStoredToken() {
   return accessToken;
 }
 
-export async function api(path, options = {}) {
+function isAuthRefreshExempt(path) {
+  const p = String(path || '');
+  return (
+    p.includes('/auth/login')
+    || p.includes('/auth/refresh')
+    || p.includes('/auth/reset-password')
+  );
+}
+
+/**
+ * Exchange httpOnly refresh cookie for a new access token.
+ * Safe to call concurrently — only one network refresh runs at a time.
+ */
+export async function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const res = await fetch(apiUrl('/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: '{}',
+        cache: 'no-store',
+      });
+      let json = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      if (!res.ok) {
+        setAccessToken(null);
+        const err = new Error(json?.error?.message || 'Session expired');
+        err.status = res.status;
+        err.code = json?.error?.code;
+        throw err;
+      }
+      const next = json?.data?.accessToken;
+      if (!next) {
+        setAccessToken(null);
+        throw new Error('Session expired');
+      }
+      setAccessToken(next);
+      return json.data;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+async function parseJsonSafe(res) {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: { message: text || 'Invalid response' } };
+  }
+}
+
+function toApiError(json, status) {
+  const err = new Error(json?.error?.message || `Request failed (${status})`);
+  err.status = status;
+  err.code = json?.error?.code;
+  err.details = json?.error?.details;
+  return err;
+}
+
+export async function api(path, options = {}, retried = false) {
+  if (accessToken == null) loadStoredToken();
+
   const headers = { ...(options.headers || {}) };
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
@@ -48,27 +120,25 @@ export async function api(path, options = {}) {
         : options.body,
   });
 
-  const text = await res.text();
-  let json = null;
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = { error: { message: text || 'Invalid response' } };
-  }
+  const json = await parseJsonSafe(res);
 
   if (!res.ok) {
-    const err = new Error(json?.error?.message || `Request failed (${res.status})`);
-    err.status = res.status;
-    err.code = json?.error?.code;
-    err.details = json?.error?.details;
-    throw err;
+    if (res.status === 401 && !retried && !isAuthRefreshExempt(path)) {
+      try {
+        await refreshAccessToken();
+        return api(path, options, true);
+      } catch {
+        /* fall through with original 401 */
+      }
+    }
+    throw toApiError(json, res.status);
   }
 
   return json;
 }
 
 /** Download an authenticated Excel (or other blob) export from the API. */
-export async function downloadExcel(path, filename) {
+export async function downloadExcel(path, filename, retried = false) {
   if (accessToken == null) loadStoredToken();
   const headers = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -79,6 +149,14 @@ export async function downloadExcel(path, filename) {
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !retried) {
+      try {
+        await refreshAccessToken();
+        return downloadExcel(path, filename, true);
+      } catch {
+        /* fall through */
+      }
+    }
     let message = `Download failed (${res.status})`;
     try {
       const json = await res.json();
@@ -99,17 +177,28 @@ export async function downloadExcel(path, filename) {
 }
 
 /** Authenticated blob/file fetch helper for PDF and template downloads. */
-export async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}, retried = false) {
   if (accessToken == null) loadStoredToken();
   const headers = { ...(options.headers || {}) };
   if (accessToken && !headers.Authorization) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
-  return fetch(apiUrl(path), {
+  const res = await fetch(apiUrl(path), {
     credentials: 'include',
     ...options,
     headers,
   });
+
+  if (res.status === 401 && !retried && !isAuthRefreshExempt(path)) {
+    try {
+      await refreshAccessToken();
+      return apiFetch(path, options, true);
+    } catch {
+      /* return original 401 response */
+    }
+  }
+
+  return res;
 }
 
 /**

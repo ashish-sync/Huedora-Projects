@@ -15,6 +15,10 @@ export default function MasterDataPage() {
     can('logistics:master') ||
     can('logistics:write') ||
     can('agreements:write') ||
+    can('agreements:read') ||
+    can('camps:read') ||
+    can('camps:request') ||
+    can('camps:approve') ||
     can('*');
 
   const description = useMemo(() => {
@@ -27,7 +31,10 @@ export default function MasterDataPage() {
     if (scope === 'document') {
       return 'Contact Directory, document templates, and signatures.';
     }
-    return 'Enterprise reference data used across Asset One, Movement One, and Document One.';
+    if (scope === 'camp') {
+      return 'Client programs, pricing, and camp configuration for Camp One.';
+    }
+    return 'Enterprise reference data used across Asset One, Movement One, Document One, and Camp One.';
   }, [scope]);
 
   if (!allowed) {

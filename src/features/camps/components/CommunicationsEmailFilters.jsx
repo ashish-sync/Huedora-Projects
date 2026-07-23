@@ -1,4 +1,5 @@
 import { formatDateRangeLabel } from '../utils/dateFormat';
+import { DateInput } from './DateInput';
 
 function SearchIcon() {
   return (
@@ -60,12 +61,12 @@ export function CommunicationsEmailFilters({
                 onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
               />
             </div>
-            <button type="button" className="btn btn-primary communications-search-btn" onClick={onSearchSubmit}>
+            <button type="button" className="btn secondary" onClick={onSearchSubmit}>
               Search
             </button>
             <button
               type="button"
-              className="btn btn-primary communications-sync-btn"
+              className="btn"
               onClick={onSync}
               disabled={syncing || !status?.imapConfigured}
             >
@@ -78,18 +79,22 @@ export function CommunicationsEmailFilters({
       <div className="communications-filter-dates">
         <label>
           <span className="communications-filter-label">Fetch from date</span>
-          <input
-            type="date"
+          <DateInput
+            hideLabel
+            aria-label="Fetch from date"
             value={dateFrom}
-            onChange={(e) => onDateFromChange(e.target.value)}
+            max={dateTo || undefined}
+            onChange={onDateFromChange}
           />
         </label>
         <label>
           <span className="communications-filter-label">Fetch to date</span>
-          <input
-            type="date"
+          <DateInput
+            hideLabel
+            aria-label="Fetch to date"
             value={dateTo}
-            onChange={(e) => onDateToChange(e.target.value)}
+            min={dateFrom || undefined}
+            onChange={onDateToChange}
           />
         </label>
         <p className="meta-text communications-filter-date-hint">
@@ -148,7 +153,7 @@ export function CommunicationsEmailFilters({
               </button>
             </span>
           ))}
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onClearAll}>
+          <button type="button" className="btn secondary btn-compact" onClick={onClearAll}>
             Clear all
           </button>
         </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
+import { formatDateTime, todayIso } from '../../shared/dateFormat.js';
 
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -15,10 +16,6 @@ function currentPeriod() {
 
 function firstDayOfMonth(periodKey = currentPeriod()) {
   return `${periodKey}-01`;
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function periodKeyFromIso(iso) {
@@ -798,10 +795,10 @@ export default function VerificationsPage() {
                   <p className="muted">
                     Link already sent{' '}
                     {active.pendingLink.sentAt
-                      ? new Date(active.pendingLink.sentAt).toLocaleString()
+                      ? formatDateTime(active.pendingLink.sentAt)
                       : ''}
                     {active.pendingLink.expiresAt
-                      ? ` · expires ${new Date(active.pendingLink.expiresAt).toLocaleString()}`
+                      ? ` · expires ${formatDateTime(active.pendingLink.expiresAt)}`
                       : ''}
                     . Generate a new link below to replace it.
                   </p>
@@ -836,7 +833,7 @@ export default function VerificationsPage() {
                 )}
                 <p className="muted vf-link-expiry">
                   {linkExpiresAt
-                    ? `Expires ${new Date(linkExpiresAt).toLocaleString()} (${linkValidDays} day${
+                    ? `Expires ${formatDateTime(linkExpiresAt)} (${linkValidDays} day${
                         Number(linkValidDays) === 1 ? '' : 's'
                       }).`
                     : `Link will expire after ${linkValidDays} day${
@@ -855,7 +852,7 @@ export default function VerificationsPage() {
                       <strong>{actionLabel(a.action)}</strong>
                       <span className="muted">{a.message}</span>
                       <span className="mono-sm muted">
-                        {a.actorName || a.actorEmail || 'System'} · {new Date(a.at).toLocaleString()}
+                        {a.actorName || a.actorEmail || 'System'} · {formatDateTime(a.at)}
                       </span>
                     </li>
                   ))}
@@ -932,7 +929,7 @@ export default function VerificationsPage() {
                   </td>
                   <td className="mono-sm">
                     {row.condition.lastVerifiedAt
-                      ? new Date(row.condition.lastVerifiedAt).toLocaleString()
+                      ? formatDateTime(row.condition.lastVerifiedAt)
                       : '-'}
                   </td>
                   <td className="muted vf-reason">{row.condition.reason}</td>

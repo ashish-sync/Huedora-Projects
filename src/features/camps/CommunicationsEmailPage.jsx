@@ -9,7 +9,7 @@ import { CampCreatedBanner, extractCreatedCamps } from './components/CampCreated
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import { IS_DEMO_SERVER } from './constants/roles';
-import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
+import { formatDateDDMMYYYY, formatDateRangeLabel, formatDateTime } from './utils/dateFormat';
 
 const PREVIEW_AUTO_SAVE_KEY = 'communicationsEmailPreviewAutoSave';
 const PREVIEW_AUTO_SAVE_DELAY_MS = 800;
@@ -652,7 +652,7 @@ export default function CommunicationsEmailPage() {
                       <tr key={message.id}>
                         <td className="communications-cell-from">{message.from || '—'}</td>
                         <td className="communications-cell-subject">{message.subject || '—'}</td>
-                        <td>{message.receivedAt ? formatDateDDMMYYYY(message.receivedAt) : '—'}</td>
+                        <td>{message.receivedAt ? formatDateTime(message.receivedAt) : '—'}</td>
                         <td>
                           {message.isCampaignCandidate ? (
                             <span className="status-pill status-pill-success">Candidate</span>
@@ -729,7 +729,7 @@ export default function CommunicationsEmailPage() {
               </div>
               <div className="email-detail-meta-item">
                 <span className="email-detail-meta-label">Received</span>
-                <strong>{selectedEmail.receivedAt ? formatDateDDMMYYYY(selectedEmail.receivedAt) : '—'}</strong>
+                <strong>{selectedEmail.receivedAt ? formatDateTime(selectedEmail.receivedAt) : '—'}</strong>
               </div>
               <div className="email-detail-meta-item">
                 <span className="email-detail-meta-label">Classification</span>

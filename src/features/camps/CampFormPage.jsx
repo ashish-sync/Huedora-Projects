@@ -14,7 +14,7 @@ import { CAMP_NAME_OPTIONS } from './constants/campNames';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
 
-const NO_DIVISION_MESSAGE = 'Create business unit / division first in Client Master before creating a camp.';
+const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
 
 function filterApprovalBlockers(blockers, form) {
   const campDivision = String(form.campaignType || '').trim();
@@ -339,7 +339,7 @@ export default function CampFormPage() {
             </select>
           </label>
           <label htmlFor="camp-division">
-            Division / Business Unit
+            Division / Therapy
             <select
               id="camp-division"
               value={form.campaignType}

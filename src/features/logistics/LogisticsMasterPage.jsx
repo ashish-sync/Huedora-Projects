@@ -9,6 +9,7 @@ import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
 import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
 import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
 import LocationMasterPage from '../locations/LocationMasterPage.jsx';
+import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
 
 const MASTER_GROUPS = [
   {
@@ -80,6 +81,19 @@ const MASTER_GROUPS = [
       },
     ],
   },
+  {
+    id: 'camp-masters',
+    label: 'Camp One',
+    scope: 'camp',
+    entities: [
+      {
+        id: 'client-masters',
+        label: 'Client Master',
+        embedded: 'client-masters',
+        fields: [],
+      },
+    ],
+  },
 ];
 
 function groupsForScope(scope) {
@@ -94,6 +108,7 @@ function EmbeddedMaster({ kind }) {
   if (kind === 'signatures') return <SignatureMasterPage embedded />;
   if (kind === 'pin-codes') return <LocationMasterPage embedded />;
   if (kind === 'picklist-approvals') return <PicklistApprovalsPage embedded />;
+  if (kind === 'client-masters') return <ClientMasterEmbeddedPage />;
   return null;
 }
 
@@ -187,13 +202,15 @@ export default function LogisticsMasterPage({
   const canWriteLogistics = can('logistics:master') || can('logistics:write') || can('*');
   const canWriteDocs = can('agreements:write') || can('*');
   const canReadDocs = can('agreements:read') || canWriteDocs;
+  const canReadCamps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
   const visibleGroups = useMemo(() => {
     const groups = groupsForScope(scope);
     return groups.filter((g) => {
       if (g.scope === 'document') return canReadDocs;
+      if (g.scope === 'camp') return canReadCamps;
       return canWriteLogistics || can('logistics:read') || can('*');
     });
-  }, [scope, can, canWriteLogistics, canReadDocs]);
+  }, [scope, can, canWriteLogistics, canReadDocs, canReadCamps]);
   const entities = useMemo(() => visibleGroups.flatMap((g) => g.entities), [visibleGroups]);
   const [entityId, setEntityId] = useState(
     () => initialEntity || entities[0]?.id || 'parties'
@@ -201,7 +218,11 @@ export default function LogisticsMasterPage({
   const entity = entities.find((e) => e.id === entityId) || entities[0];
   const activeGroup = visibleGroups.find((g) => g.entities.some((e) => e.id === entityId));
   const canWrite =
-    activeGroup?.scope === 'document' ? canWriteDocs : canWriteLogistics;
+    activeGroup?.scope === 'document'
+      ? canWriteDocs
+      : activeGroup?.scope === 'camp'
+        ? canReadCamps
+        : canWriteLogistics;
   const formFields = useMemo(
     () => (entity?.fields || []).filter((f) => f !== 'code' && f !== 'sku'),
     [entity?.fields]

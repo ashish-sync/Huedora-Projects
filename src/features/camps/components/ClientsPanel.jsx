@@ -4,6 +4,7 @@ import { trimFormStrings, trimString } from '../utils/trimInput';
 import { Pagination } from './Pagination';
 import { DEFAULT_PAGE_SIZE } from '../constants/pagination';
 import { ClientsFilters } from './ClientsFilters';
+import { EmptyState } from '../../../components/ui/PageShell.jsx';
 
 const emptyClient = { name: '', code: '', isActive: true };
 
@@ -184,19 +185,25 @@ export function ClientsPanel({
             </label>
           </div>
           <div className="form-actions">
-            <button type="button" className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
+            <button type="button" className="btn secondary" onClick={cancelEdit}>Cancel</button>
+            <button type="submit" className="btn" disabled={saving}>
               {saving ? 'Saving...' : 'Save Client'}
             </button>
           </div>
         </form>
       )}
 
-      <div className="table-card">
+      <div className="card card--flush table-wrap">
         {loading ? (
-          <div className="empty-state">Loading clients...</div>
+          <EmptyState title="Loading…" description="Fetching clients." />
         ) : clients.length === 0 ? (
-          <div className="empty-state">No clients found.</div>
+          <EmptyState
+            title="No clients found"
+            description="Add a client to link program configurations."
+            action={canCreate ? (
+              <button type="button" className="btn" onClick={startCreate}>New Client</button>
+            ) : null}
+          />
         ) : (
           <div className="table-scroll">
             <table>
@@ -219,16 +226,16 @@ export function ClientsPanel({
                         <div className="actions">
                           {canUpdate && (
                             <>
-                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEdit(client)}>
+                              <button type="button" className="btn secondary btn-compact" onClick={() => startEdit(client)}>
                                 Edit
                               </button>
-                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleToggleStatus(client)}>
+                              <button type="button" className="btn secondary btn-compact" onClick={() => handleToggleStatus(client)}>
                                 {client.isActive ? 'Deactivate' : 'Activate'}
                               </button>
                             </>
                           )}
                           {canDelete && (
-                            <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDelete(client)}>
+                            <button type="button" className="btn danger btn-compact" onClick={() => handleDelete(client)}>
                               Archive
                             </button>
                           )}

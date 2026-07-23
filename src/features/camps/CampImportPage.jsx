@@ -23,25 +23,7 @@ async function parseApiErrorMessage(err, fallback) {
   return err?.message || err.message || fallback;
 }
 
-async function downloadSampleFile() {
-  const response = await importApi.downloadSample();
-  const blob = response.data;
-  if (!(blob instanceof Blob)) {
-    throw new Error('Invalid sample file response');
-  }
-  if (blob.type && blob.type.includes('application/json')) {
-    const json = JSON.parse(await blob.text());
-    throw new Error(json.message || 'Failed to download sample file');
-  }
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'camp-import-sample.xlsx';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
+import { downloadCampSampleFile } from './utils/campSampleDownload.js';
 
 export default function ImportPage() {
   const { isSuperAdmin } = useAuth();
@@ -227,7 +209,7 @@ export default function ImportPage() {
   async function handleDownloadSample() {
     setError('');
     try {
-      await downloadSampleFile();
+      await downloadCampSampleFile();
     } catch (err) {
       setError(await parseApiErrorMessage(err, 'Failed to download sample file'));
     }

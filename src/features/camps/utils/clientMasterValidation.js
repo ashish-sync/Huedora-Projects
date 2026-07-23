@@ -21,7 +21,6 @@ export function validateClientMasterForm(form) {
 
   const stringLimits = {
     programName: 160,
-    drugTherapyName: 120,
     campName: 120,
     campType: 80,
     coordinatorName: 80,
@@ -96,7 +95,6 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     clientName: keepClientName ? (record.clientName || '') : '',
     clientCode: record.client?.code || '',
     programName: record.programName || '',
-    drugTherapyName: record.drugTherapyName || '',
     campName: record.campName || 'BMD',
     campType: record.campType || '',
     coordinatorName: record.coordinatorName || '',

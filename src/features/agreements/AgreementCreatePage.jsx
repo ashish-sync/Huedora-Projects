@@ -8,6 +8,7 @@ import { MODULE } from '../../shared/labels.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 
 const emptyContact = {
   name: '',
@@ -693,13 +694,12 @@ export default function AgreementCreatePage() {
                 <option value="TEMPORARY_OWNERSHIP">Temporary ownership</option>
               </AdaptiveSelect>
             </div>
-            <div className="field">
-              <label htmlFor="agr-start-date">Start date</label>
-              <input
+            <div className="agr-start-date-field">
+              <DateInput
                 id="agr-start-date"
-                type="date"
+                label="Start date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={setStartDate}
               />
               <span className="muted" style={{ fontSize: '0.82rem' }}>
                 Defaults to today. Change only if the agreement starts on another day.
@@ -730,17 +730,14 @@ export default function AgreementCreatePage() {
             </div>
 
             {hasExpiry && (
-              <div className="field">
-                <label htmlFor="agr-end-date">End date *</label>
-                <input
-                  id="agr-end-date"
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                />
-              </div>
+              <DateInput
+                id="agr-end-date"
+                label="End date *"
+                required
+                value={endDate}
+                min={startDate || undefined}
+                onChange={setEndDate}
+              />
             )}
 
             <div className="recipient-summary">

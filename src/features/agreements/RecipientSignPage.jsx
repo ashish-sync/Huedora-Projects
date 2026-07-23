@@ -1,21 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiFetch, apiUrl } from '../../shared/api.js';
+import { formatDate } from '../../shared/dateFormat.js';
 
 const SENDER_ORG = 'Tylo Care';
-
-function formatDate(value) {
-  if (!value) return null;
-  try {
-    return new Date(value).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return null;
-  }
-}
 
 function isLikelyMobile() {
   if (typeof window === 'undefined') return false;

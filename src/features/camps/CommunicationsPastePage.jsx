@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { communicationsApi } from './campOpsApi.js';
+import { communicationsApi, clientApi, clientMasterApi } from './campOpsApi.js';
 import { EmailPickBuffer } from './components/EmailPickBuffer';
 import { EmailExtractionPanel } from './components/EmailExtractionPanel';
 import { CampCreatedBanner, extractCreatedCamps } from './components/CampCreatedBanner';
+import { PasteWorkflowStepper } from './components/PasteWorkflowStepper';
+import { PasteContextFields } from './components/PasteContextFields';
 import { IS_DEMO_SERVER } from './constants/roles';
 
 const PASTE_AUTO_SAVE_KEY = 'connectorsManualPasteAutoSave';
@@ -65,12 +67,33 @@ function ConfirmDialog({ action, previewSummary, onCancel, onConfirm, loading })
   );
 }
 
+function ContextBanner({ tone, children }) {
+  if (!children) return null;
+  return (
+    <div className={`paste-context-banner paste-context-banner--${tone}`} role="status">
+      {children}
+    </div>
+  );
+}
+
 function readStoredDraft() {
   if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(PASTE_DRAFT_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const draft = JSON.parse(raw);
+    if (draft?.preview && !Array.isArray(draft.preview.bodyPreview)) {
+      return {
+        pasteText: draft.pasteText || '',
+        preview: null,
+        hasExtracted: false,
+        clientId: draft.clientId || '',
+        clientName: draft.clientName || '',
+        campaignType: draft.campaignType || '',
+        campaignName: draft.campaignName || '',
+      };
+    }
+    return draft;
   } catch {
     return null;
   }
@@ -109,7 +132,31 @@ export default function CommunicationsPastePage() {
     if (typeof window === 'undefined') return true;
     return window.localStorage.getItem(PASTE_AUTO_SAVE_KEY) !== 'false';
   });
+  const [clients, setClients] = useState([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
+  const [divisionOptions, setDivisionOptions] = useState([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
+  const [clientId, setClientId] = useState(storedDraft?.clientId || '');
+  const [clientName, setClientName] = useState(storedDraft?.clientName || '');
+  const [campaignType, setCampaignType] = useState(storedDraft?.campaignType || '');
+  const [campaignName, setCampaignName] = useState(storedDraft?.campaignName || '');
   const autoSaveTimerRef = useRef(null);
+
+  const pasteDefaults = useMemo(() => ({
+    clientName,
+    campaignType,
+    campaignName,
+  }), [clientName, campaignType, campaignName]);
+
+  const contextErrors = useMemo(() => {
+    const errors = {};
+    if (!clientId) errors.clientId = 'Select a client';
+    if (clientId && !campaignType) errors.campaignType = 'Select division / therapy';
+    if (!campaignName) errors.campaignName = 'Select method / camp name';
+    return errors;
+  }, [clientId, campaignType, campaignName]);
+
+  const hasPasteContext = Object.keys(contextErrors).length === 0;
 
   const hasPasteText = Boolean(pasteText.trim());
   const isEditMode = extractionMode === 'edit';
@@ -132,17 +179,13 @@ export default function CommunicationsPastePage() {
     const sampleLabel = firstValidRow
       ? [firstValidRow.clientName, firstValidRow.campaignName].filter(Boolean).join(' · ') || '—'
       : null;
-    const parts = [`${validBodyRows} valid row(s)`, `${invalidBodyRows} invalid row(s)`];
-    if (duplicateBodyRows) {
-      parts.push(`${duplicateBodyRows} duplicate(s)`);
-    }
 
     return {
       validBodyRows,
       invalidBodyRows,
       duplicateBodyRows,
       sampleLabel,
-      label: parts.join(', '),
+      label: `${validBodyRows} valid · ${invalidBodyRows} invalid${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}`,
     };
   }, [preview]);
 
@@ -153,11 +196,138 @@ export default function CommunicationsPastePage() {
 
   const pasteMeta = useMemo(() => {
     const lineCount = pasteText ? pasteText.split('\n').filter((line) => line.trim()).length : 0;
-    return {
-      lineCount,
-      charCount: pasteText.length,
-    };
+    return { lineCount, charCount: pasteText.length };
   }, [pasteText]);
+
+  useEffect(() => {
+    clientApi.list({ limit: 500, page: 1 })
+      .then(({ data }) => setClients(Array.isArray(data?.data) ? data.data : []))
+      .catch(() => setClients([]))
+      .finally(() => setClientsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!clientId) {
+      setDivisionOptions([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setProgramsLoading(true);
+    clientMasterApi.listDivisionsByClient(clientId)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const divisions = Array.isArray(data?.divisions)
+          ? data.divisions
+          : Array.isArray(data?.data)
+            ? data.data.map((item) => item.programName || item).filter(Boolean)
+            : [];
+        setDivisionOptions(divisions);
+        if (divisions.length === 1 && !campaignType) {
+          setCampaignType(divisions[0]);
+        } else if (campaignType && !divisions.includes(campaignType)) {
+          setCampaignType('');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDivisionOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setProgramsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId]);
+
+  useEffect(() => {
+    if (!clientId) return;
+    const match = clients.find((client) => client._id === clientId);
+    if (match && match.name !== clientName) {
+      setClientName(match.name);
+    }
+  }, [clientId, clients, clientName]);
+
+  const currentStep = useMemo(() => {
+    if (!hasExtracted) return 1;
+    if (hasCreatableRows) return 3;
+    return 2;
+  }, [hasExtracted, hasCreatableRows]);
+
+  const primaryHint = useMemo(() => {
+    if (error) return null;
+    if (!hasPasteContext) {
+      return 'Select client, division / therapy, and method / camp name before pasting.';
+    }
+    if (!hasPasteText) return 'Step 1 — Paste camp details on the left to continue.';
+    if (isEditMode) return 'Finish field edits or switch to Preview before extracting again.';
+    if (!hasExtracted) return `Step 1 — ${pasteMeta.lineCount} line(s) ready. Extract to parse camp fields.`;
+    if (!preview) return 'Step 2 — Extraction failed or empty. Try Clear and paste again.';
+    if (previewSummary?.invalidBodyRows > 0 && !hasCreatableRows) {
+      return `Step 2 — Fix ${previewSummary.invalidBodyRows} invalid row(s) in Edit mode, or clear duplicates.`;
+    }
+    if (!hasCreatableRows) {
+      return 'Step 2 — All rows are duplicates or invalid. Adjust data or start over.';
+    }
+    if (previewDirty && !autoSavePreview) {
+      return 'Step 3 — Save your review edits before creating camps.';
+    }
+    return `Step 3 — ${previewSummary?.validBodyRows ?? 0} camp(s) ready. Confirm to import.`;
+  }, [
+    error,
+    hasPasteText,
+    isEditMode,
+    hasExtracted,
+    preview,
+    previewSummary,
+    hasCreatableRows,
+    previewDirty,
+    autoSavePreview,
+    pasteMeta.lineCount,
+    hasPasteContext,
+  ]);
+
+  function buildDraftPayload(overrides = {}) {
+    return {
+      pasteText,
+      preview,
+      hasExtracted,
+      clientId,
+      clientName,
+      campaignType,
+      campaignName,
+      ...overrides,
+    };
+  }
+
+  function invalidateExtraction() {
+    setPreview(null);
+    setHasExtracted(false);
+    setSavedPreviewSnapshot('');
+  }
+
+  function handleClientChange(nextClientId) {
+    const client = clients.find((item) => item._id === nextClientId);
+    invalidateExtraction();
+    setClientId(nextClientId);
+    setClientName(client?.name || '');
+    setCampaignType('');
+    setCampaignName('');
+    setError('');
+  }
+
+  function handleDivisionChange(nextDivision) {
+    if (nextDivision !== campaignType) invalidateExtraction();
+    setCampaignType(nextDivision);
+    setError('');
+  }
+
+  function handleCampNameChange(nextCampName) {
+    if (nextCampName !== campaignName) invalidateExtraction();
+    setCampaignName(nextCampName);
+    setError('');
+  }
 
   useEffect(() => {
     setPendingSelection('');
@@ -173,15 +343,9 @@ export default function CommunicationsPastePage() {
   function saveDraftNow(previewToSave, { silent = false } = {}) {
     if (!previewToSave) return false;
     const snapshot = JSON.stringify(previewToSave);
-    writeStoredDraft({
-      pasteText,
-      preview: previewToSave,
-      hasExtracted,
-    });
+    writeStoredDraft(buildDraftPayload({ preview: previewToSave }));
     setSavedPreviewSnapshot(snapshot);
-    if (!silent) {
-      setSuccess('Extraction changes saved.');
-    }
+    if (!silent) setSuccess('Review changes saved.');
     return true;
   }
 
@@ -199,39 +363,26 @@ export default function CommunicationsPastePage() {
   }
 
   useEffect(() => {
-    if (!autoSavePreview) {
-      return undefined;
-    }
+    if (!autoSavePreview) return undefined;
+    const hasDraftContent = Boolean(pasteText.trim()) || Boolean(preview) || hasPasteContext;
+    if (!hasDraftContent) return undefined;
 
-    const hasDraftContent = Boolean(pasteText.trim()) || Boolean(preview);
-    if (!hasDraftContent) {
-      return undefined;
-    }
-
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
 
     autoSaveTimerRef.current = setTimeout(() => {
-      writeStoredDraft({ pasteText, preview, hasExtracted });
-      if (preview) {
-        setSavedPreviewSnapshot(JSON.stringify(preview));
-      }
+      writeStoredDraft(buildDraftPayload());
+      if (preview) setSavedPreviewSnapshot(JSON.stringify(preview));
     }, PREVIEW_AUTO_SAVE_DELAY_MS);
 
     return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [autoSavePreview, pasteText, preview, hasExtracted]);
+  }, [autoSavePreview, pasteText, preview, hasExtracted, clientId, clientName, campaignType, campaignName]);
 
   function handleMouseUp() {
     if (!activeField || !showReadablePaste) return;
     const selection = window.getSelection()?.toString().trim();
-    if (selection) {
-      setPendingSelection(selection);
-    }
+    if (selection) setPendingSelection(selection);
   }
 
   function handleTextPick(selection) {
@@ -240,10 +391,7 @@ export default function CommunicationsPastePage() {
       if (index !== activeField.rowIndex) return entry;
       return {
         ...entry,
-        row: {
-          ...(entry.row || {}),
-          [activeField.key]: selection,
-        },
+        row: { ...(entry.row || {}), [activeField.key]: selection },
       };
     });
     const nextPreview = { ...preview, bodyPreview: nextRows };
@@ -257,9 +405,7 @@ export default function CommunicationsPastePage() {
     if (!pendingSelection) return;
     const nextPreview = handleTextPick(pendingSelection);
     if (autoSavePreview && nextPreview) {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       saveDraftNow(nextPreview, { silent: true });
     }
   }
@@ -270,7 +416,7 @@ export default function CommunicationsPastePage() {
   }
 
   async function handleExtract({ isReExtract = false } = {}) {
-    if (!hasPasteText) return;
+    if (!hasPasteText || !hasPasteContext) return;
     if (hasExtracted && !IS_DEMO_SERVER) return;
 
     setExtracting(true);
@@ -279,20 +425,17 @@ export default function CommunicationsPastePage() {
     try {
       const { data } = await communicationsApi.extractManualPaste({
         text: pasteText,
+        ...pasteDefaults,
       });
       setPreview(data.data);
       setHasExtracted(true);
       setSavedPreviewSnapshot(JSON.stringify(data.data));
-      writeStoredDraft({
-        pasteText,
-        preview: data.data,
-        hasExtracted: true,
-      });
+      writeStoredDraft(buildDraftPayload({ preview: data.data, hasExtracted: true }));
       setConfirmAction(null);
       setSuccess(
         isReExtract
-          ? 'Camp details re-extracted (demo mode). Previous preview was replaced.'
-          : 'Camp details extracted. Review the preview panel.',
+          ? 'Preview updated from pasted content.'
+          : 'Extraction complete — review parsed fields on the right.',
       );
     } catch (err) {
       setError(err?.message || 'Failed to extract pasted content');
@@ -307,9 +450,7 @@ export default function CommunicationsPastePage() {
       setConfirmAction('reextract');
       return;
     }
-    if (!hasExtracted) {
-      handleExtract();
-    }
+    if (!hasExtracted) handleExtract();
   }
 
   async function handleProcess() {
@@ -320,12 +461,13 @@ export default function CommunicationsPastePage() {
       const { data } = await communicationsApi.processManualPaste({
         previewData: preview,
         text: pasteText,
+        ...pasteDefaults,
       });
       setCreatedCamps(extractCreatedCamps(data.data));
       if (data.data?.duplicates) {
         const duplicateIds = (data.data.duplicateCampIds || []).join(', ');
         setDuplicateNotice(
-          `${data.data.duplicates} duplicate row(s) skipped — camp(s) already exist for the same client, division, date, and doctor${duplicateIds ? ` (${duplicateIds})` : ''}.`,
+          `${data.data.duplicates} duplicate row(s) skipped${duplicateIds ? ` (${duplicateIds})` : ''}.`,
         );
       } else {
         setDuplicateNotice('');
@@ -364,82 +506,114 @@ export default function CommunicationsPastePage() {
       handleExtract({ isReExtract: true });
       return;
     }
-    if (confirmAction === 'process') {
-      handleProcess();
-    }
+    if (confirmAction === 'process') handleProcess();
   }
 
   const extractDisabled = actionLoading
     || !hasPasteText
+    || !hasPasteContext
     || isEditMode
     || (hasExtracted && !IS_DEMO_SERVER);
 
+  const primaryLabel = !hasExtracted
+    ? (extracting ? 'Extracting…' : 'Extract & review')
+    : (processing ? 'Creating camps…' : 'Create camps');
+
+  const primaryDisabled = !hasExtracted
+    ? extractDisabled
+    : (actionLoading || !preview || !hasCreatableRows);
+
+  function handlePrimaryAction() {
+    if (!hasExtracted) {
+      handleExtractClick();
+      return;
+    }
+    setConfirmAction('process');
+  }
+
+  const pasteStatusTone = !hasPasteText
+    ? 'neutral'
+    : !hasExtracted
+      ? 'ready'
+      : 'locked';
+
+  const reviewStatusTone = !preview
+    ? 'neutral'
+    : hasCreatableRows
+      ? 'success'
+      : previewSummary?.invalidBodyRows > 0
+        ? 'warning'
+        : 'error';
+
   return (
     <div className="communications-paste-page">
-      {(error || success || duplicateNotice || createdCamps.length > 0) && (
-        <div className="page-alerts">
-          {error && <div className="error-banner">{error}</div>}
-          {success && <div className="success-banner">{success}</div>}
-          {duplicateNotice && <div className="info-banner">{duplicateNotice}</div>}
-          <CampCreatedBanner
-            camps={createdCamps}
-            onDismiss={() => setCreatedCamps([])}
-          />
-        </div>
+      {createdCamps.length > 0 && (
+        <CampCreatedBanner camps={createdCamps} onDismiss={() => setCreatedCamps([])} />
       )}
 
-      <div className="communications-paste-shell panel">
-        <div className="communications-paste-header">
-          <div className="communications-paste-heading">
-            <span className="email-detail-eyebrow">Connectors</span>
-            <h2>Manual paste</h2>
-            <p className="communications-paste-subtitle">
-              Paste camp details once, extract, review on the right, then create camps. Drafts auto-save locally.
+      <div className="communications-paste-shell paste-workflow-shell panel">
+        <header className="paste-workflow-header">
+          <div className="paste-workflow-header-copy">
+            <h2 className="paste-workflow-title">Manual paste</h2>
+            <p className="paste-workflow-lead">
+              Paste once, verify extracted fields, then import camps.
             </p>
           </div>
-        </div>
+          <span className="paste-workflow-draft-badge">Draft auto-saved</span>
+        </header>
 
-        <div className="communications-paste-meta">
-          <div className="communications-paste-meta-item">
-            <span className="email-detail-meta-label">Content</span>
-            <strong>
-              {hasPasteText
-                ? `${pasteMeta.lineCount} line(s) · ${pasteMeta.charCount} chars`
-                : 'No content pasted'}
-            </strong>
-          </div>
-          <div className="communications-paste-meta-item">
-            <span className="email-detail-meta-label">Status</span>
-            {hasExtracted ? (
-              <span className="status-pill status-pill-success">Extracted</span>
-            ) : hasPasteText ? (
-              <span className="status-pill status-pill-muted">Ready to extract</span>
-            ) : (
-              <span className="status-pill status-pill-muted">Awaiting paste</span>
-            )}
-          </div>
-          <div className="communications-paste-meta-item">
-            <span className="email-detail-meta-label">Preview</span>
-            {previewSummary ? (
-              <strong>{previewSummary.label}</strong>
-            ) : (
-              <strong className="meta-text">Not extracted yet</strong>
-            )}
-          </div>
-        </div>
+        <PasteWorkflowStepper currentStep={currentStep} />
 
-        <div className="email-detail-layout">
-          <section className="email-detail-panel email-detail-panel-message">
-            <div className="email-detail-panel-header">
-              <h3>Pasted content</h3>
-              <span className="meta-text">
-                {showReadablePaste
-                  ? 'Select text below, then press Enter or click → to insert'
-                  : hasExtracted
-                    ? 'Locked after extract — use Clear to start over'
-                    : 'Paste text here, then extract once'}
+        {(error || success || duplicateNotice) && (
+          <div className="paste-workflow-alerts">
+            {error && <ContextBanner tone="error">{error}</ContextBanner>}
+            {success && <ContextBanner tone="success">{success}</ContextBanner>}
+            {duplicateNotice && <ContextBanner tone="info">{duplicateNotice}</ContextBanner>}
+          </div>
+        )}
+
+        <PasteContextFields
+          clients={clients}
+          clientId={clientId}
+          campaignType={campaignType}
+          campaignName={campaignName}
+          divisionOptions={divisionOptions}
+          programsLoading={programsLoading}
+          clientsLoading={clientsLoading}
+          disabled={actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
+          errors={contextErrors}
+          onClientChange={handleClientChange}
+          onDivisionChange={handleDivisionChange}
+          onCampNameChange={handleCampNameChange}
+        />
+
+        <div className="paste-workflow-grid email-detail-layout">
+          <section className="paste-workflow-column email-detail-panel email-detail-panel-message">
+            <header className="paste-column-header">
+              <div className="paste-column-heading">
+                <span className="paste-column-step">1</span>
+                <div>
+                  <h3>Paste</h3>
+                  <p className="paste-column-sub">
+                    {showReadablePaste
+                      ? 'Select text to fill fields in Review'
+                      : 'Paste camp details from email or notes'}
+                  </p>
+                </div>
+              </div>
+              <span className={`paste-status-chip paste-status-chip--${pasteStatusTone}`}>
+                {!hasPasteText && 'Empty'}
+                {hasPasteText && !hasExtracted && `${pasteMeta.lineCount} lines`}
+                {hasExtracted && 'Locked'}
               </span>
-            </div>
+            </header>
+
+            <ContextBanner tone={!hasPasteContext ? 'warning' : pasteStatusTone === 'ready' ? 'ready' : 'neutral'}>
+              {!hasPasteContext && 'Complete camp context above before pasting.'}
+              {hasPasteContext && !hasPasteText && 'Paste camp details below.'}
+              {hasPasteContext && hasPasteText && !hasExtracted && `${pasteMeta.charCount} characters · ready to extract`}
+              {hasPasteContext && hasExtracted && 'Content locked after extract. Use Clear to start over.'}
+            </ContextBanner>
 
             <EmailPickBuffer
               activeField={activeField}
@@ -459,21 +633,50 @@ export default function CommunicationsPastePage() {
                   className="communications-paste-textarea"
                   value={pasteText}
                   onChange={(e) => setPasteText(e.target.value)}
-                  disabled={hasExtracted && !IS_DEMO_SERVER}
-                  placeholder={'Paste camp details here...\n\nExample:\nDATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'}
+                  disabled={(hasExtracted && !IS_DEMO_SERVER) || !hasPasteContext}
+                  placeholder={
+                    hasPasteContext
+                      ? 'DATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'
+                      : 'Select client, division / therapy, and method / camp name first'
+                  }
                   spellCheck={false}
+                  aria-label="Camp details to paste"
                 />
               )}
             </div>
           </section>
 
-          <section className="email-detail-panel email-detail-panel-extraction">
-            <div className="email-detail-panel-header">
-              <h3>Extraction preview</h3>
-              <span className="meta-text">
-                {previewSummary?.label || 'Parsed camp rows before import'}
-              </span>
-            </div>
+          <section className="paste-workflow-column email-detail-panel email-detail-panel-extraction">
+            <header className="paste-column-header">
+              <div className="paste-column-heading">
+                <span className="paste-column-step">2</span>
+                <div>
+                  <h3>Review</h3>
+                  <p className="paste-column-sub">
+                    {previewSummary?.label || 'Parsed camp rows appear here'}
+                  </p>
+                </div>
+              </div>
+              {preview && (
+                <span className={`paste-status-chip paste-status-chip--${reviewStatusTone}`}>
+                  {hasCreatableRows
+                    ? `${previewSummary?.validBodyRows ?? 0} ready`
+                    : previewSummary?.invalidBodyRows
+                      ? `${previewSummary.invalidBodyRows} invalid`
+                      : 'No rows'}
+                </span>
+              )}
+            </header>
+
+            <ContextBanner tone={reviewStatusTone}>
+              {!preview && 'Run Extract & review to parse pasted content.'}
+              {preview && hasCreatableRows && `${previewSummary?.validBodyRows ?? 0} camp(s) ready to import.`}
+              {preview && !hasCreatableRows && previewSummary?.invalidBodyRows > 0
+                && `Fix ${previewSummary.invalidBodyRows} invalid row(s) in Edit mode.`}
+              {preview && !hasCreatableRows && !previewSummary?.invalidBodyRows
+                && 'No importable rows — all duplicates or empty.'}
+            </ContextBanner>
+
             <EmailExtractionPanel
               preview={preview}
               onPreviewChange={setPreview}
@@ -484,45 +687,14 @@ export default function CommunicationsPastePage() {
               autoSavePreview={autoSavePreview}
               onToggleAutoSave={handleToggleAutoSave}
               onSavePreview={handleSavePreview}
-              emptyHint='Use “Extract & preview” once to parse camp details from pasted content.'
+              emptyHint="Extract pasted content to see parsed camp rows here."
             />
           </section>
         </div>
 
-        <div className="email-detail-actions">
-          <div className="email-detail-actions-primary">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleExtractClick}
-              disabled={extractDisabled}
-              title={
-                hasExtracted && !IS_DEMO_SERVER
-                  ? 'Extraction already completed for this paste'
-                  : isEditMode
-                    ? 'Switch to Preview to edit pasted text'
-                    : hasExtracted && IS_DEMO_SERVER
-                      ? 'Demo mode: run extraction again for testing'
-                      : undefined
-              }
-            >
-              {extracting
-                ? 'Extracting...'
-                : hasExtracted
-                  ? (IS_DEMO_SERVER ? 'Re-extract' : 'Extracted')
-                  : 'Extract & preview'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => setConfirmAction('process')}
-              disabled={actionLoading || !preview || !hasCreatableRows}
-              title={!hasCreatableRows && preview ? 'All valid rows match existing camps' : undefined}
-            >
-              Create camps
-            </button>
-          </div>
-          <div className="email-detail-actions-secondary">
+        <footer className="paste-workflow-footer email-detail-actions">
+          <p className="paste-workflow-footer-hint">{primaryHint}</p>
+          <div className="paste-workflow-footer-actions">
             <button
               type="button"
               className="btn btn-secondary"
@@ -531,8 +703,28 @@ export default function CommunicationsPastePage() {
             >
               Clear
             </button>
+            {hasExtracted && IS_DEMO_SERVER && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleExtractClick}
+                disabled={actionLoading || !hasPasteText || isEditMode}
+              >
+                Re-extract
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary paste-workflow-primary-cta"
+              onClick={handlePrimaryAction}
+              disabled={primaryDisabled}
+              aria-describedby="paste-workflow-primary-hint"
+            >
+              {primaryLabel}
+            </button>
           </div>
-        </div>
+        </footer>
+        <p id="paste-workflow-primary-hint" className="sr-only">{primaryHint}</p>
       </div>
 
       <ConfirmDialog

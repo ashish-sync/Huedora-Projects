@@ -1,0 +1,95 @@
+/**
+ * TYLO One — semantic color tokens (light / dark)
+ * Source: TYLO Brand Identity & Design System
+ */
+
+:root,
+html[data-theme='light'] {
+  color-scheme: light;
+
+  /* Brand */
+  --color-brand-primary: #0a5ac2;
+  --color-brand-primary-hover: #084eaa;
+  --color-brand-primary-subtle: #e8f1fb;
+  --color-brand-on-primary: #ffffff;
+
+  /* Medical — critical alerts & medical icon only */
+  --color-medical: #d92d20;
+  --color-medical-subtle: #fef2f1;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-success-subtle: #ecfdf3;
+  --color-warning: #d97706;
+  --color-warning-subtle: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-subtle: #fef2f2;
+  --color-info: #0284c7;
+  --color-info-subtle: #e0f2fe;
+
+  /* Surfaces */
+  --color-bg-app: #ffffff;
+  --color-bg-canvas: #f9fafb;
+  --color-bg-sidebar: #f3f4f6;
+  --color-bg-elevated: #ffffff;
+  --color-bg-sunken: #f8fafc;
+  --color-bg-hover: #f8fafc;
+  --color-bg-surface: #ffffff;
+  --color-bg-overlay: rgb(17 24 39 / 0.45);
+  --color-header-bg: #0a5ac2;
+
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+  --color-text-disabled: #94a3b8;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-primary-muted: rgb(255 255 255 / 0.82);
+
+  /* Borders & focus */
+  --color-border-default: #e5e7eb;
+  --color-border-strong: #cbd5e1;
+  --color-focus-ring: #0a5ac2;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-brand-primary: #60a5fa;
+  --color-brand-primary-hover: #93c5fd;
+  --color-brand-primary-subtle: rgb(96 165 250 / 0.14);
+  --color-brand-on-primary: #0d1117;
+
+  --color-medical: #f97066;
+  --color-medical-subtle: rgb(249 112 102 / 0.14);
+
+  --color-success: #22c55e;
+  --color-success-subtle: rgb(34 197 94 / 0.14);
+  --color-warning: #f59e0b;
+  --color-warning-subtle: rgb(245 158 11 / 0.14);
+  --color-danger: #ef4444;
+  --color-danger-subtle: rgb(239 68 68 / 0.14);
+  --color-info: #38bdf8;
+  --color-info-subtle: rgb(56 189 248 / 0.14);
+
+  --color-bg-app: #0d1117;
+  --color-bg-canvas: #161b22;
+  --color-bg-sidebar: #111827;
+  --color-bg-elevated: #1d2633;
+  --color-bg-sunken: #161b22;
+  --color-bg-hover: #253244;
+  --color-bg-surface: #0d1117;
+  --color-bg-overlay: rgb(0 0 0 / 0.62);
+  --color-header-bg: #111827;
+
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-text-disabled: #64748b;
+  --color-text-on-primary: #f8fafc;
+  --color-text-on-primary-muted: rgb(248 250 252 / 0.78);
+
+  --color-border-default: #2a3340;
+  --color-border-strong: #3a4556;
+  --color-focus-ring: #60a5fa;
+}

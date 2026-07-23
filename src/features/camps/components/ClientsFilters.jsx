@@ -8,25 +8,21 @@ export function ClientsFilters({
   onClearAll,
 }) {
   return (
-    <div className="camps-filter-panel panel">
-      <div className="camps-filter-top">
-        <div className="field field-grow">
-          <label htmlFor="clients-search">Search clients</label>
-          <div className="camps-search-row">
-            <input
-              id="clients-search"
-              placeholder="Client name or code..."
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
-            />
-            <button type="button" className="btn btn-primary" onClick={onSearchSubmit}>
-              Search
-            </button>
-          </div>
-        </div>
+    <>
+      <div className="inv-toolbar logistics-toolbar camp-ops-toolbar">
+        <input
+          id="clients-search"
+          className="esign-search inv-search"
+          placeholder="Client name or code…"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+        />
+        <button type="button" className="btn secondary" onClick={onSearchSubmit}>
+          Search
+        </button>
         {canCreate && (
-          <button type="button" className="btn btn-primary camps-import-btn" onClick={onCreate}>
+          <button type="button" className="btn" onClick={onCreate}>
             New Client
           </button>
         )}
@@ -42,11 +38,11 @@ export function ClientsFilters({
               </button>
             </span>
           ))}
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onClearAll}>
+          <button type="button" className="btn secondary btn-compact" onClick={onClearAll}>
             Clear all
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }

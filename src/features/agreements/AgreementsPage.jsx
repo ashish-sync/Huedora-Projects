@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -196,7 +197,7 @@ export default function AgreementsPage() {
                   <td>
                     <span className={`badge tone-${meta.tone}`}>{meta.label}</span>
                   </td>
-                  <td className="muted">{a.updatedAt ? new Date(a.updatedAt).toLocaleString() : '-'}</td>
+                  <td className="muted">{a.updatedAt ? formatDateTime(a.updatedAt) : '-'}</td>
                 </tr>
               );
             })}

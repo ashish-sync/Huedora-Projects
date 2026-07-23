@@ -28,46 +28,11 @@
   gap: var(--stack) !important;
 }
 
-.camp-ops-root .logistics-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 var(--stack);
-  padding: 0 0 var(--stack);
-  border-bottom: 1px solid var(--line);
-}
-
-.camp-ops-root .logistics-nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--muted) !important;
-  text-decoration: none;
-  border: 1px solid transparent;
-  background: transparent;
-}
-
-.camp-ops-root .logistics-nav-link:hover {
-  color: var(--ink) !important;
-  background: color-mix(in srgb, var(--brand-soft) 70%, var(--bg-elevated));
-}
-
-.camp-ops-root .logistics-nav-link.is-active {
-  color: var(--brand) !important;
-  border-color: color-mix(in srgb, var(--brand) 28%, var(--line));
-  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated));
-}
-
 .camp-ops-root .camp-ops-page-content {
   display: flex;
   flex-direction: column;
-  gap: var(--stack-lg);
+  gap: var(--stack);
   min-width: 0;
-  padding-top: 2px;
 }
 
 .camp-ops-root .btn {
@@ -78,9 +43,9 @@
   height: var(--control-h) !important;
   padding: 0 14px !important;
   border: 0 !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
   background: var(--brand) !important;
-  color: #fff !important;
+  color: var(--color-brand-on-primary) !important;
   font-weight: 600 !important;
   font-size: 0.8125rem !important;
   letter-spacing: -0.01em;
@@ -95,17 +60,19 @@
 }
 
 .camp-ops-root .btn-sm,
-.camp-ops-root .btn.btn-sm {
+.camp-ops-root .btn.btn-sm,
+.camp-ops-root .btn-compact,
+.camp-ops-root .btn.btn-compact {
   height: var(--control-h-sm) !important;
   padding: 0 10px !important;
   font-size: 0.75rem !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
 }
 
 .camp-ops-root .btn-primary,
 .camp-ops-root .btn.btn-primary {
   background: var(--brand) !important;
-  color: #fff !important;
+  color: var(--color-brand-on-primary) !important;
 }
 
 .camp-ops-root .btn-primary:hover:not(:disabled),
@@ -132,7 +99,8 @@
 .camp-ops-root .btn.btn-danger,
 .camp-ops-root .btn.danger {
   background: var(--danger) !important;
-  color: #fff !important;
+  color: var(--color-brand-on-primary) !important;
+  border: 0 !important;
 }
 
 .camp-ops-root .panel,
@@ -175,7 +143,7 @@
 .camp-ops-root textarea,
 .camp-ops-root .custom-select-trigger {
   border: 1px solid var(--line) !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
   background: var(--bg-elevated) !important;
   color: var(--ink) !important;
   box-shadow: none !important;
@@ -195,7 +163,7 @@
 .camp-ops-root .status-pill,
 .camp-ops-root .filter-chip,
 .camp-ops-root .alert-pill {
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
 }
 
 .camp-ops-root .empty-state {
@@ -211,21 +179,21 @@
   background: var(--danger-soft) !important;
   color: var(--danger) !important;
   border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--line)) !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
 }
 
 .camp-ops-root .success-banner {
   background: var(--ok-soft) !important;
   color: var(--ok) !important;
   border: 1px solid color-mix(in srgb, var(--ok) 28%, var(--line)) !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
 }
 
 .camp-ops-root .info-banner {
   background: var(--info-soft) !important;
   color: var(--info) !important;
   border: 1px solid color-mix(in srgb, var(--info) 28%, var(--line)) !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
 }
 
 .camp-ops-root .table-card th,
@@ -256,7 +224,7 @@
 
 .camp-ops-root .charts-eye-toggle {
   height: var(--control-h);
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
   border: 1px solid var(--line) !important;
   background: var(--bg-elevated) !important;
   color: var(--ink) !important;
@@ -291,4 +259,421 @@
   border-color: var(--brand) !important;
   background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
   color: var(--brand) !important;
+}
+
+/* ── Sub-page tabs (Program Configuration / Clients, etc.) ── */
+.camp-ops-root .page-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  background: var(--surface-muted) !important;
+}
+
+.camp-ops-root .communications-hub {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--stack);
+  min-width: 0;
+  min-height: 0;
+}
+
+.camp-ops-root .camp-ops-page-content:has(.communications-hub) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.camp-ops-root .communications-hub > .page-tabs {
+  margin-bottom: 0;
+}
+
+.camp-ops-root .page-tab {
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-button) !important;
+  padding: 5px 12px !important;
+  background: transparent !important;
+  color: var(--muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  line-height: 1.2;
+  height: var(--control-h-sm);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.camp-ops-root .page-tab:hover {
+  color: var(--ink) !important;
+  background: color-mix(in srgb, var(--brand-soft) 70%, var(--bg-elevated)) !important;
+}
+
+.camp-ops-root .page-tab.is-active {
+  background: var(--bg-elevated) !important;
+  color: var(--brand) !important;
+  border-color: color-mix(in srgb, var(--brand) 28%, var(--line)) !important;
+  box-shadow: none !important;
+}
+
+/* ── Toolbars (match Finance / Logistics inv-toolbar) ── */
+.camp-ops-root .inv-toolbar.camp-ops-toolbar,
+.camp-ops-root .camps-filter-panel.camp-ops-toolbar {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+}
+
+.camp-ops-root .camps-filter-panel .inv-toolbar.camp-ops-toolbar {
+  margin: 0 0 var(--stack);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.camp-ops-root .inv-toolbar.camp-ops-toolbar .esign-search,
+.camp-ops-root .inv-toolbar.camp-ops-toolbar .inv-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.camp-ops-root .camps-filter-panel:not(.camp-ops-toolbar) {
+  padding: var(--pad) !important;
+  gap: var(--stack) !important;
+}
+
+.camp-ops-root .camps-filter-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.camp-ops-root .camps-filter-top .field-grow {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.camp-ops-root .camps-filter-top .camps-import-btn {
+  margin-left: auto;
+}
+
+.camp-ops-root .camps-search-row {
+  gap: 8px;
+}
+
+.camp-ops-root .camps-search-row input {
+  height: var(--control-h);
+}
+
+/* ── Tables ── */
+.camp-ops-root .table-card,
+.camp-ops-root .card.table-wrap,
+.camp-ops-root .card.card--flush.table-wrap {
+  overflow: hidden;
+}
+
+.camp-ops-root .table-card .table-scroll,
+.camp-ops-root .card.table-wrap .table-scroll {
+  overflow: auto;
+}
+
+.camp-ops-root .table-card .empty-state,
+.camp-ops-root .card.table-wrap .empty-state {
+  border: 0 !important;
+  border-radius: 0 !important;
+  margin: 0;
+}
+
+.camp-ops-root .table-card table,
+.camp-ops-root .card.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ── Pagination ── */
+.camp-ops-root .pagination-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.camp-ops-root .pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.camp-ops-root .page-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Date quick filters & chips ── */
+.camp-ops-root .date-quick-btn.is-active {
+  color: var(--brand) !important;
+  border-color: color-mix(in srgb, var(--brand) 28%, var(--line)) !important;
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
+}
+
+.camp-ops-root .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.camp-ops-root .filter-chip button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 1rem;
+}
+
+.camp-ops-root .camps-filter-chips,
+.camp-ops-root .communications-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Communications filters ── */
+.camp-ops-root .communications-filter-panel {
+  padding: var(--pad) !important;
+  gap: var(--stack) !important;
+}
+
+.camp-ops-root .communications-search-field {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--control-h);
+  padding: 0 12px;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-button) !important;
+  background: var(--bg-elevated) !important;
+}
+
+.camp-ops-root .communications-search-field:focus-within {
+  border-color: var(--focus) !important;
+  box-shadow: 0 0 0 3px var(--glow) !important;
+}
+
+.camp-ops-root .communications-search-icon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.camp-ops-root .communications-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  height: auto !important;
+  box-shadow: none !important;
+}
+
+.camp-ops-root .communications-search-input:focus {
+  outline: none;
+  box-shadow: none !important;
+}
+
+.camp-ops-root .communications-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.camp-ops-root .communications-candidate-btn {
+  height: var(--control-h-sm);
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.camp-ops-root .communications-filter-label,
+.camp-ops-root .camps-filter-section-title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted) !important;
+}
+
+.camp-ops-root .communications-filter-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.camp-ops-root .communications-filter-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.camp-ops-root .communications-candidate-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Dashboard widgets ── */
+.camp-ops-root .widget-card,
+.camp-ops-root .alert-card-reaction {
+  background: var(--bg-elevated) !important;
+}
+
+.camp-ops-root .widget-stat-value {
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .meta-text {
+  color: var(--muted) !important;
+  font-size: 0.8rem;
+}
+
+/* ── Communications / Manual Paste (dark-mode safe surfaces) ── */
+.camp-ops-root .communications-paste-shell.panel,
+.camp-ops-root .communications-paste-page .panel,
+.camp-ops-root .paste-workflow-shell.panel {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+
+.camp-ops-root .paste-workflow-title,
+.camp-ops-root .paste-column-header h3 {
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .paste-workflow-lead,
+.camp-ops-root .paste-column-sub,
+.camp-ops-root .paste-workflow-footer-hint {
+  color: var(--muted) !important;
+}
+
+.camp-ops-root .paste-workflow-footer {
+  background: var(--bg-sunken) !important;
+  border-top-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-workflow-stepper {
+  background: var(--bg-sunken) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-workflow-column {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-context-fields {
+  background: var(--bg-sunken) !important;
+  border-color: var(--line) !important;
+}
+
+.camp-ops-root .paste-context-field select {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .email-detail-meta {
+  background: var(--bg-sunken) !important;
+}
+
+.camp-ops-root .email-detail-actions {
+  background: var(--bg-elevated) !important;
+  border-top-color: var(--line) !important;
+}
+
+.camp-ops-root .email-detail-panel-header h3,
+.camp-ops-root .communications-paste-heading h2 {
+  color: var(--ink) !important;
+}
+
+.camp-ops-root .email-detail-meta-label,
+.camp-ops-root .email-detail-eyebrow {
+  color: var(--muted) !important;
+}
+
+.camp-ops-root .email-extraction-form-grid input,
+.camp-ops-root .email-extraction-form-grid textarea,
+.camp-ops-root .email-extraction-form-grid select {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink) !important;
+  border-radius: var(--radius-button) !important;
+}
+
+.camp-ops-root .email-extraction-form-grid input::placeholder {
+  color: var(--muted) !important;
+}
+
+.camp-ops-root .email-pick-btn {
+  background: var(--bg-elevated) !important;
+  border-color: var(--line) !important;
+  color: var(--muted) !important;
+}
+
+.camp-ops-root .email-pick-btn.is-active,
+.camp-ops-root .email-pick-btn:hover {
+  background: var(--brand-soft) !important;
+  border-color: var(--brand) !important;
+  color: var(--brand) !important;
+}
+
+.camp-ops-root .email-detail-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.camp-ops-root .communications-paste-meta-item .email-detail-meta-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }

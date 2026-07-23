@@ -5,6 +5,7 @@ export const MASTER_MODULES = [
   { id: 'inventory', label: 'Inventory' },
   { id: 'movement', label: 'Movement One' },
   { id: 'document', label: 'Document One' },
+  { id: 'camp', label: 'Camp One' },
 ];
 
 export const PRODUCT_TYPES = [
@@ -121,7 +122,7 @@ export const MASTER_ENTITIES = [
         label: 'Contact Category',
         required: true,
         type: 'select',
-        options: ['Resource', 'Client', 'Vendor'],
+        options: ['Resource', 'Client', 'Vendor', 'Healthcare Worker'],
       },
       {
         name: 'resourceType',
@@ -147,6 +148,7 @@ export const MASTER_ENTITIES = [
           'Dietitian',
           'Doctor',
           'Nurse',
+          'Physio',
           'Biomedical Engineer',
           'Project Manager',
           'Operations Executive',
@@ -270,6 +272,12 @@ export const MASTER_HUB_GROUPS = [
     label: 'Document One',
     scope: 'document',
     entityIds: ['contacts', 'templates', 'signatures', 'pin-codes', 'picklist-approvals'],
+  },
+  {
+    id: 'camp-masters',
+    label: 'Camp One',
+    scope: 'camp',
+    entityIds: ['client-masters'],
   },
 ];
 

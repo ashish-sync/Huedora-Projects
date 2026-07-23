@@ -4,6 +4,7 @@ import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
@@ -955,7 +956,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                                 </span>
                                 <em className="mono-sm">
                                   {doc.createdAt
-                                    ? new Date(doc.createdAt).toLocaleString()
+                                    ? formatDateTime(doc.createdAt)
                                     : doc.docKind || ''}
                                 </em>
                               </button>

@@ -4,13 +4,10 @@ import { DateRangeFilters } from './components/DateRangeFilters';
 import { ChartPanel, HierarchyCard, StatWidget } from './components/DashboardWidgets';
 import { dashboardApi } from './campOpsApi.js';
 import { getDefaultMonthDateRange } from './utils/dateRange';
+import { clientMasterListPath } from './clientMasterPaths.js';
 
 function buildClientMastersLink({ tab = 'clients', search } = {}) {
-  const params = new URLSearchParams();
-  if (tab) params.set('tab', tab);
-  if (search) params.set('search', search);
-  const query = params.toString();
-  return `/camps/client-masters${query ? `?${query}` : ''}`;
+  return clientMasterListPath({ tab, search });
 }
 
 function buildCampsLink({

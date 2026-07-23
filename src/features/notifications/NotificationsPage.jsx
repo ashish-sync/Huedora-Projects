@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
@@ -106,7 +107,7 @@ export default function NotificationsPage() {
             </div>
             <div className="muted">{n.body}</div>
             <div className="muted" style={{ fontSize: '0.8rem', marginTop: 4 }}>
-              {n.type} · {new Date(n.createdAt).toLocaleString()}
+              {n.type} · {formatDateTime(n.createdAt)}
             </div>
             {n.type === 'IMPORT_ERRORS' && n.meta?.downloadPath ? (
               <div style={{ marginTop: 10 }}>

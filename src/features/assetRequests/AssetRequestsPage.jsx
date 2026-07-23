@@ -9,6 +9,7 @@ import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
@@ -1099,14 +1100,11 @@ export default function AssetRequestsPage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
-                <div className="field">
-                  <label>Expected return date</label>
-                  <input
-                    type="date"
-                    value={form.expectedDate}
-                    onChange={(e) => setForm({ ...form, expectedDate: e.target.value })}
-                  />
-                </div>
+                <DateInput
+                  label="Expected return date"
+                  value={form.expectedDate}
+                  onChange={(value) => setForm({ ...form, expectedDate: value })}
+                />
               </>
             )}
 
@@ -1133,14 +1131,11 @@ export default function AssetRequestsPage() {
                     placeholder="Optional"
                   />
                 </div>
-                <div className="field">
-                  <label>Scheduled date</label>
-                  <input
-                    type="date"
-                    value={form.scheduledDate}
-                    onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })}
-                  />
-                </div>
+                <DateInput
+                  label="Scheduled date"
+                  value={form.scheduledDate}
+                  onChange={(value) => setForm({ ...form, scheduledDate: value })}
+                />
               </>
             )}
 
@@ -1192,16 +1187,13 @@ export default function AssetRequestsPage() {
                     onChange={(e) => setForm({ ...form, transportMode: e.target.value })}
                   />
                 </div>
-                <div className="field">
-                  <label>Preferred date</label>
-                  <input
-                    type="date"
-                    value={form.logisticsPreferredDate}
-                    onChange={(e) =>
-                      setForm({ ...form, logisticsPreferredDate: e.target.value })
-                    }
-                  />
-                </div>
+                <DateInput
+                  label="Preferred date"
+                  value={form.logisticsPreferredDate}
+                  onChange={(value) =>
+                    setForm({ ...form, logisticsPreferredDate: value })
+                  }
+                />
                 <fieldset className="arq-product-group arq-span">
                   <legend>Products *</legend>
                   <div className="arq-product-list">
@@ -1412,29 +1404,23 @@ export default function AssetRequestsPage() {
                     />
                   </div>
                 )}
-                <div className="field">
-                  <label>Preferred date</label>
-                  <input
-                    type="date"
-                    value={form.preferredDate}
-                    onChange={(e) => setForm({ ...form, preferredDate: e.target.value })}
-                  />
-                </div>
+                <DateInput
+                  label="Preferred date"
+                  value={form.preferredDate}
+                  onChange={(value) => setForm({ ...form, preferredDate: value })}
+                />
               </>
             )}
 
             {/* -- Reimbursement -- */}
             {form.requestType === 'REIMBURSEMENT' && (
               <>
-                <div className="field">
-                  <label>Expense date *</label>
-                  <input
-                    required
-                    type="date"
-                    value={form.expenseDate}
-                    onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
-                  />
-                </div>
+                <DateInput
+                  label="Expense date *"
+                  required
+                  value={form.expenseDate}
+                  onChange={(value) => setForm({ ...form, expenseDate: value })}
+                />
                 <div className="field">
                   <label>Expense category *</label>
                   <AdaptiveSelect

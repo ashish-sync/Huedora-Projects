@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 
@@ -132,7 +133,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
                 </td>
                 <td className="muted">{r.source || '-'}</td>
                 <td className="muted mono-sm">
-                  {r.createdAt ? new Date(r.createdAt).toLocaleString() : '-'}
+                  {r.createdAt ? formatDateTime(r.createdAt) : '-'}
                 </td>
                 <td>
                   {r.status === 'PENDING' && (

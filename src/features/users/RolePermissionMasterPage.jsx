@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 
 const EMPTY_USER = {
@@ -34,11 +35,7 @@ function roleIdOf(r) {
 
 function formatWhen(iso) {
   if (!iso) return null;
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return null;
-  }
+  return formatDateTime(iso) === '-' ? null : formatDateTime(iso);
 }
 
 function modulePermissionKeys(module) {

@@ -1,52 +1,44 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { CampManageHeaderActions } from './components/CampManageHeaderActions.jsx';
 import { ChartsEyeToggle } from './components/DashboardWidgets.jsx';
 import { useCampOpsAuth } from './useCampOpsAuth.js';
 import PageShell from '../../components/ui/PageShell.jsx';
-import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
+import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import './campOps.css';
 import './campOps.theme.css';
 
 const pageTitles = {
   '/camps': { title: 'Dashboard', subtitle: 'Camp operations overview' },
   '/camps/manage': { title: 'Camps', subtitle: 'Review, approve, execute and manage camps' },
-  '/camps/client-masters': { title: 'Client Master', subtitle: 'Manage client program, pricing and camp configuration' },
   '/camps/import': { title: 'Excel Import', subtitle: 'Upload, map headers, preview and import camps' },
-  '/camps/users': { title: 'Users', subtitle: 'Camp One users — full admin lives in Access Control' },
-  '/camps/communications/email': { title: 'Email', subtitle: 'Review inbox, extract camps, and manage email rules' },
+  '/camps/chargesheet': { title: NAV.CHARGESHEET, subtitle: 'Prepare and reconcile camp chargesheets' },
+  '/camps/payout': { title: NAV.PAYOUT, subtitle: 'Track camp payouts and settlement status' },
   '/camps/communications/paste': { title: 'Manual Paste', subtitle: 'Paste camp details, extract fields, and create camps' },
-  '/camps/communications/whatsapp': { title: 'WhatsApp', subtitle: 'WhatsApp campaign inbox and handling' },
+  '/camps/communications/email': { title: 'Manual Paste', subtitle: 'Review inbox, extract camps, and manage email rules' },
 };
 
 function getPageMeta(pathname) {
   if (pathname.endsWith('/edit')) {
-    if (pathname.includes('/client-masters/')) {
-      return { title: 'Edit Client Master', subtitle: 'Update client program and camp configuration' };
-    }
     return { title: 'Edit Camp', subtitle: 'Correct camp details and save until execution' };
   }
   if (pathname === '/camps/manage/new') {
     return { title: 'Create Camp', subtitle: 'Add a new camp manually' };
   }
-  if (pathname === '/camps/client-masters/new') {
-    return { title: 'New Client Master', subtitle: 'Add client program and camp configuration' };
-  }
   return pageTitles[pathname] || { title: MODULE.CAMP_MANAGEMENT, subtitle: MODULE_BLURB.CAMP_MANAGEMENT };
 }
 
-function navActive(pathname, to, end) {
-  if (end) return pathname === to;
-  return pathname === to || pathname.startsWith(`${to}/`);
+function isCampsListRoute(pathname) {
+  return pathname === '/camps/manage';
 }
 
 export default function CampOpsLayout() {
-  const { hasPermission, isAdminUser, isStrictAdmin } = useCampOpsAuth();
+  const { hasPermission } = useCampOpsAuth();
   const { pathname } = useLocation();
   const meta = getPageMeta(pathname);
   const [showCharts, setShowCharts] = useState(false);
   const isDashboard = pathname === '/camps';
-  const showNewCampButton = pathname === '/camps/manage'
-    && (hasPermission('camps:create') || hasPermission('camps:update'));
+  const isCampsList = isCampsListRoute(pathname);
 
   const allowed =
     hasPermission('camps:read')
@@ -76,34 +68,26 @@ export default function CampOpsLayout() {
       { to: '/camps', end: true, label: 'Dashboard', show: true },
       { to: '/camps/manage', end: false, label: 'Camps', show: hasPermission('camps:read') },
       {
-        to: '/camps/client-masters',
+        to: '/camps/chargesheet',
         end: false,
-        label: 'Client Master',
-        show: hasPermission('client-masters:read'),
-      },
-      { to: '/camps/import', end: true, label: 'Excel Import', show: isAdminUser() },
-      {
-        to: '/camps/communications/email',
-        end: true,
-        label: 'Email',
-        show: hasPermission('communications:read'),
+        label: NAV.CHARGESHEET,
+        show: hasPermission('camps:read'),
       },
       {
-        to: '/camps/communications/paste',
-        end: true,
+        to: '/camps/payout',
+        end: false,
+        label: NAV.PAYOUT,
+        show: hasPermission('camps:read'),
+      },
+      {
+        to: '/camps/communications',
+        end: false,
         label: 'Manual Paste',
         show: hasPermission('communications:read'),
       },
-      {
-        to: '/camps/communications/whatsapp',
-        end: true,
-        label: 'WhatsApp',
-        show: hasPermission('communications:read'),
-      },
-      { to: '/camps/users', end: true, label: 'Users', show: isStrictAdmin() },
     ];
     return items.filter((item) => item.show);
-  }, [hasPermission, isAdminUser, isStrictAdmin]);
+  }, [hasPermission]);
 
   if (!allowed) {
     return (
@@ -119,20 +103,13 @@ export default function CampOpsLayout() {
     );
   }
 
-  const actions = (isDashboard || showNewCampButton) ? (
-    <>
-      {isDashboard && (
-        <ChartsEyeToggle
-          showCharts={showCharts}
-          onToggle={() => setShowCharts((value) => !value)}
-        />
-      )}
-      {showNewCampButton && (
-        <Link to="/camps/manage/new" className="btn btn-compact">
-          New Camp
-        </Link>
-      )}
-    </>
+  const actions = isDashboard ? (
+    <ChartsEyeToggle
+      showCharts={showCharts}
+      onToggle={() => setShowCharts((value) => !value)}
+    />
+  ) : isCampsList ? (
+    <CampManageHeaderActions />
   ) : null;
 
   return (
@@ -149,7 +126,7 @@ export default function CampOpsLayout() {
               key={item.to}
               to={item.to}
               end={item.end}
-              className={() => `logistics-nav-link${navActive(pathname, item.to, item.end) ? ' is-active' : ''}`}
+              className={({ isActive }) => `logistics-nav-link${isActive ? ' is-active' : ''}`}
             >
               {item.label}
             </NavLink>

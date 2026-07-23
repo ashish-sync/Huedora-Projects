@@ -7,6 +7,9 @@ const NAV_ITEMS = [
   { to: '/finance', end: true, label: NAV.OVERVIEW },
   { to: '/finance/expenses', end: false, label: NAV.EXPENSES },
   { to: '/finance/invoices', end: false, label: NAV.INVOICES },
+  { to: '/finance/proforma', end: false, label: NAV.PROFORMA },
+  { to: '/finance/purchase-orders', end: false, label: NAV.PURCHASE_ORDERS },
+  { to: '/finance/generate-invoice', end: false, label: NAV.GENERATE_INVOICE },
 ];
 
 export default function FinanceLayout() {
@@ -29,7 +32,7 @@ export default function FinanceLayout() {
       <PageShell
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.FINANCE }]}
         title={MODULE.FINANCE}
-        description="Track expenses and vendor invoices. Payments and approvals stay in one place."
+        description="Track expenses, vendor invoices, proforma, purchase orders, and client billing."
       >
         <nav className="logistics-nav" aria-label={`${MODULE.FINANCE} sections`}>
           {NAV_ITEMS.map((item) => (

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { DateInput } from './DateInput';
 import { SelectDropdown } from './SelectDropdown';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
@@ -38,7 +37,6 @@ export function CampsFilters({
   onFilterChange,
   activeChips,
   onClearAll,
-  showImportLink,
 }) {
   const activePreset = matchQuickPreset(dateFrom, dateTo);
 
@@ -51,27 +49,18 @@ export function CampsFilters({
 
   return (
     <div className="camps-filter-panel panel">
-      <div className="camps-filter-top">
-        <div className="field field-grow">
-          <label htmlFor="camps-search">Search camps</label>
-          <div className="camps-search-row">
-            <input
-              id="camps-search"
-              placeholder="Camp ID, doctor, clinic/hospital, city..."
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
-            />
-            <button type="button" className="btn btn-primary" onClick={onSearchSubmit}>
-              Search
-            </button>
-          </div>
-        </div>
-        {showImportLink && (
-          <Link className="btn btn-secondary camps-import-btn" to="/camps/import">
-            Import Excel
-          </Link>
-        )}
+      <div className="inv-toolbar logistics-toolbar camp-ops-toolbar">
+        <input
+          id="camps-search"
+          className="esign-search inv-search"
+          placeholder="Camp ID, doctor, clinic/hospital, city…"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+        />
+        <button type="button" className="btn secondary" onClick={onSearchSubmit}>
+          Search
+        </button>
       </div>
 
       <div className="camps-filter-grid">
@@ -83,7 +72,7 @@ export function CampsFilters({
                 <button
                   key={key}
                   type="button"
-                  className={`btn btn-secondary btn-sm date-quick-btn${activePreset === key ? ' is-active' : ''}`}
+                  className={`btn secondary btn-compact date-quick-btn${activePreset === key ? ' is-active' : ''}`}
                   onClick={() => handleQuickSelect(key)}
                 >
                   {label}
@@ -106,7 +95,7 @@ export function CampsFilters({
               />
             </div>
             {(dateFrom || dateTo) && (
-              <button type="button" className="btn btn-secondary btn-sm" onClick={onClearDates}>
+              <button type="button" className="btn secondary btn-compact" onClick={onClearDates}>
                 Clear dates
               </button>
             )}
@@ -138,7 +127,7 @@ export function CampsFilters({
               </button>
             </span>
           ))}
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onClearAll}>
+          <button type="button" className="btn secondary btn-compact" onClick={onClearAll}>
             Clear all
           </button>
         </div>

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import { api } from '../../shared/api.js';
+import { formatDate, todayIso } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 
@@ -33,10 +35,6 @@ function formatMoney(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return '-';
   return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export default function FinanceExpensesPage() {
@@ -252,15 +250,12 @@ export default function FinanceExpensesPage() {
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
               />
             </div>
-            <div className="field">
-              <label>Date *</label>
-              <input
-                required
-                type="date"
-                value={form.expenseDate}
-                onChange={(e) => setForm({ ...form, expenseDate: e.target.value })}
-              />
-            </div>
+            <DateInput
+              label="Date *"
+              required
+              value={form.expenseDate}
+              onChange={(value) => setForm({ ...form, expenseDate: value })}
+            />
             <div className="field">
               <label>Status</label>
               <AdaptiveSelect value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
@@ -325,7 +320,7 @@ export default function FinanceExpensesPage() {
                   <strong>{r.title}</strong>
                 </td>
                 <td>{r.category || '-'}</td>
-                <td>{r.expenseDate || '-'}</td>
+                <td>{r.expenseDate ? formatDate(r.expenseDate) : '-'}</td>
                 <td>
                   <span className="badge tone-neutral">{r.status || '-'}</span>
                 </td>

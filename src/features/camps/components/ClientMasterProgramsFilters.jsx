@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { CLIENT_MASTER_NEW_PATH } from '../clientMasterPaths.js';
+
 export function ClientMasterProgramsFilters({
   search,
   onSearchChange,
@@ -9,25 +11,21 @@ export function ClientMasterProgramsFilters({
   onClearAll,
 }) {
   return (
-    <div className="camps-filter-panel panel">
-      <div className="camps-filter-top">
-        <div className="field field-grow">
-          <label htmlFor="client-master-search">Search programs</label>
-          <div className="camps-search-row">
-            <input
-              id="client-master-search"
-              placeholder="Client name, program, camp, SPOC..."
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
-            />
-            <button type="button" className="btn btn-primary" onClick={onSearchSubmit}>
-              Search
-            </button>
-          </div>
-        </div>
+    <>
+      <div className="inv-toolbar logistics-toolbar camp-ops-toolbar">
+        <input
+          id="client-master-search"
+          className="esign-search inv-search"
+          placeholder="Client name, program, camp, SPOC…"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+        />
+        <button type="button" className="btn secondary" onClick={onSearchSubmit}>
+          Search
+        </button>
         {showCreateLink && (
-          <Link to="/camps/client-masters/new" className="btn btn-primary camps-import-btn">
+          <Link to={CLIENT_MASTER_NEW_PATH} className="btn">
             New Program Config
           </Link>
         )}
@@ -43,11 +41,11 @@ export function ClientMasterProgramsFilters({
               </button>
             </span>
           ))}
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onClearAll}>
+          <button type="button" className="btn secondary btn-compact" onClick={onClearAll}>
             Clear all
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }

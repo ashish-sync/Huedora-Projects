@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
 const STATUS_META = {
@@ -39,7 +40,7 @@ function SignatureMark({ signer, label, showDate }) {
           </div>
           {showDate && (
             <div className="esign-sig-date">
-              Date: {when ? new Date(when).toLocaleDateString() : '-'}
+              Date: {when ? formatDate(when) : '-'}
             </div>
           )}
           <div className="esign-sig-meta">
@@ -726,7 +727,7 @@ export default function AgreementDetailPage() {
                 <div>{ev.message}</div>
                 <div className="muted mono-sm">
                   {ev.actorName || ev.actorEmail || 'System'} ·{' '}
-                  {ev.at ? new Date(ev.at).toLocaleString() : ''}
+                  {ev.at ? formatDateTime(ev.at) : ''}
                 </div>
               </li>
             ))}

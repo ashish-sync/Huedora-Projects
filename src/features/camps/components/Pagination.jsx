@@ -34,7 +34,7 @@ export function Pagination({
         </label>
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
+          className="btn secondary btn-compact"
           disabled={pagination.page <= 1}
           onClick={() => onPageChange(pagination.page - 1)}
         >
@@ -42,7 +42,7 @@ export function Pagination({
         </button>
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
+          className="btn secondary btn-compact"
           disabled={pagination.page >= pagination.pages}
           onClick={() => onPageChange(pagination.page + 1)}
         >

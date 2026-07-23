@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -109,7 +110,7 @@ export default function AuditPage() {
           <tbody>
             {rows.map((a) => (
               <tr key={a._id}>
-                <td>{new Date(a.at).toLocaleString()}</td>
+                <td>{formatDateTime(a.at)}</td>
                 <td>{a.actorEmail || a.actorType}</td>
                 <td>
                   <code className="mono-sm">{a.action}</code>

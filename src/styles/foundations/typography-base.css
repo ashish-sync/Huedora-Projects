@@ -1,0 +1,56 @@
+/**
+ * Base typography — uses design tokens
+ */
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--text-body-size);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-leading);
+  color: var(--color-text-primary);
+}
+
+h1,
+.topbar-title {
+  font-size: var(--text-h1-size);
+  font-weight: var(--text-h1-weight);
+  line-height: var(--text-h1-leading);
+  letter-spacing: var(--text-h1-tracking);
+}
+
+h2,
+.modal-title {
+  font-size: var(--text-h2-size);
+  font-weight: var(--text-h2-weight);
+  line-height: var(--text-h2-leading);
+  letter-spacing: var(--text-h2-tracking);
+}
+
+h3,
+.card-title {
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
+  line-height: var(--text-h3-leading);
+}
+
+.eyebrow,
+.topbar .eyebrow {
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: var(--text-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.topbar-desc,
+.meta-text,
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.mono-sm,
+code,
+.mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--text-body-sm-size);
+}

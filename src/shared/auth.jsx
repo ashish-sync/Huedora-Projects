@@ -8,24 +8,14 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const refreshMe = useCallback(async () => {
-    const token = loadStoredToken();
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
+    loadStoredToken();
     try {
+      // api() silently refreshes via httpOnly cookie on 401, then retries.
       const { data } = await api('/auth/me');
       setUser(data);
     } catch {
-      try {
-        const { data } = await api('/auth/refresh', { method: 'POST', body: {} });
-        setAccessToken(data.accessToken);
-        setUser(data.user);
-      } catch {
-        setAccessToken(null);
-        setUser(null);
-      }
+      setAccessToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }

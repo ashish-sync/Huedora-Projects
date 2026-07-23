@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../shared/api.js';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -176,7 +177,7 @@ export default function AssetDetailPage() {
           <tbody>
             {timeline.map((ev) => (
               <tr key={ev._id}>
-                <td>{ev.createdAt ? new Date(ev.createdAt).toLocaleString() : '-'}</td>
+                <td>{ev.createdAt ? formatDateTime(ev.createdAt) : '-'}</td>
                 <td>{ev.eventType}</td>
                 <td>
                   {ev.fromStatus || '-'} → {ev.toStatus || '-'}

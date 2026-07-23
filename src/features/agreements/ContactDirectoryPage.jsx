@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, downloadExcel } from '../../shared/api.js';
+import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
@@ -50,12 +52,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [exportBusy, setExportBusy] = useState(false);
+  const excelConfig = masterExcelFor('contacts');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
-  const fileRef = useRef(null);
 
   const isResource = form.contactCategory === 'Resource';
   const isClient = form.contactCategory === 'Client';
@@ -86,17 +87,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       .finally(() => setListLoading(false));
   };
 
-  const downloadMaster = async () => {
-    setError('');
-    setExportBusy(true);
-    try {
-      await downloadExcel('/contacts/export', 'Contact_Directory.xlsx');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setExportBusy(false);
-    }
-  };
+  const canWriteContacts = can('agreements:write');
 
   useEffect(() => {
     load();
@@ -218,41 +209,6 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     });
   };
 
-  const runImport = async (file, mode) => {
-    if (!file) return;
-    setBusy(true);
-    setError('');
-    setImportMsg('');
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('mode', mode);
-      const { data } = await api('/contacts/import', { method: 'POST', body: fd });
-      if (mode === 'DRY_RUN') {
-        setImportMsg(
-          `Dry-run: ${data.totalRows} rows · ${data.validated} valid · ${data.errorRows} errors${
-            data.errorReport ? '. Failed rows Excel is in Notifications.' : ''
-          }`
-        );
-      } else {
-        setImportMsg(
-          `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors${
-            data.errorReport ? '. Failed rows Excel is in Notifications.' : ''
-          }`
-        );
-        load();
-      }
-      if (data.errors?.length) {
-        setError(data.errors.slice(0, 5).map((e) => `Row ${e.row}: ${e.message}`).join(' | '));
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  };
-
   return (
     <PageShell
       hideChrome={embedded}
@@ -298,31 +254,19 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           >
             Search
           </button>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={exportBusy}
-            onClick={downloadMaster}
-          >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
-          </button>
-          {can('agreements:write') && (
-            <>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) runImport(f, 'COMMIT');
-                }}
-              />
-              <button className="btn secondary" type="button" onClick={() => fileRef.current?.click()} disabled={busy}>
-                Import Excel
-              </button>
-            </>
-          )}
+          {excelConfig ? (
+            <MasterExcelToolbar
+              {...excelConfig}
+              canImport={canWriteContacts}
+              onImportComplete={(data) => {
+                setImportMsg(
+                  `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors`
+                );
+                load();
+              }}
+              onError={(message) => setError(message)}
+            />
+          ) : null}
         </>
       }
     >

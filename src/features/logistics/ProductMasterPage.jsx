@@ -3,6 +3,8 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import { api, apiUrl } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 
 const PRODUCT_TYPES = [
   'Medical Device',
@@ -116,6 +118,7 @@ function emptyForm() {
 export default function ProductMasterPage() {
   const { can } = useAuth();
   const canWrite = can('logistics:master') || can('logistics:write') || can('*');
+  const excelConfig = masterExcelFor('products');
 
   const [mode, setMode] = useState('list'); // list | create | edit
   const [rows, setRows] = useState([]);
@@ -432,6 +435,15 @@ export default function ProductMasterPage() {
           <button type="button" className="btn btn-ghost" onClick={load}>
             Refresh
           </button>
+          {excelConfig ? (
+            <MasterExcelToolbar
+              {...excelConfig}
+              canImport={canWrite}
+              onImportComplete={() => load()}
+              onError={(message) => setError(message)}
+              compact
+            />
+          ) : null}
         </div>
 
         <div className="card card--flush table-wrap">

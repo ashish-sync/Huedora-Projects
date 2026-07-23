@@ -277,6 +277,20 @@ export default function FinanceProformaPage() {
   const save = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
+    const recipientName = String(form.recipientName || '').trim();
+    if (!recipientName) {
+      setError('Recipient name is required.');
+      return;
+    }
+    const describedLines = form.lineItems.filter((line) => String(line.description || '').trim());
+    if (!describedLines.length) {
+      setError('Add at least one line item with a description.');
+      return;
+    }
+    if (previewTotal <= 0) {
+      setError('Grand total must be greater than zero.');
+      return;
+    }
     setBusy(true);
     setError('');
     setMsg('');

@@ -10,16 +10,23 @@ export default function ServerGate({ children }) {
 
   const probe = useCallback(async () => {
     setStatus('loading');
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 12000);
-    try {
-      await checkServerLive({ signal: controller.signal });
-      setStatus('ready');
-    } catch {
-      setStatus('error');
-    } finally {
-      window.clearTimeout(timeout);
+    const maxAttempts = 4;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 20000);
+      try {
+        await checkServerLive({ signal: controller.signal });
+        setStatus('ready');
+        return;
+      } catch {
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => window.setTimeout(resolve, attempt * 1500));
+        }
+      } finally {
+        window.clearTimeout(timeout);
+      }
     }
+    setStatus('error');
   }, []);
 
   useEffect(() => {

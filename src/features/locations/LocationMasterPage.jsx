@@ -7,6 +7,8 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 
 const emptyForm = {
   pinCode: '',
@@ -24,6 +26,7 @@ const emptyForm = {
 export default function LocationMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const canWrite = can('agreements:write') || can('users:write') || can('*');
+  const excelConfig = masterExcelFor('pin-codes');
   const [meta, setMeta] = useState(null);
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -165,6 +168,15 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         >
           Search
         </button>
+        {excelConfig ? (
+          <MasterExcelToolbar
+            {...excelConfig}
+            canImport={canWrite}
+            onImportComplete={() => load()}
+            onError={(message) => setError(message)}
+            compact
+          />
+        ) : null}
       </div>
 
       <div className="card card--flush table-wrap">

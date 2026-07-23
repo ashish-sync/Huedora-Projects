@@ -10,6 +10,8 @@ import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
 import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
 import LocationMasterPage from '../locations/LocationMasterPage.jsx';
 import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 
 const MASTER_GROUPS = [
   {
@@ -245,6 +247,7 @@ export default function LogisticsMasterPage({
     () => (editingId ? rows.find((r) => r._id === editingId) : null),
     [editingId, rows]
   );
+  const excelConfig = masterExcelFor(entityId);
 
   useEffect(() => {
     if (initialEntity && entities.some((e) => e.id === initialEntity)) {
@@ -749,6 +752,15 @@ export default function LogisticsMasterPage({
         <button className="btn secondary" type="button" onClick={load}>
           Search
         </button>
+        {excelConfig ? (
+          <MasterExcelToolbar
+            {...excelConfig}
+            canImport={canWrite}
+            onImportComplete={() => load()}
+            onError={(message) => setError(message)}
+            compact
+          />
+        ) : null}
       </div>
 
       <div className="card card--flush table-wrap">

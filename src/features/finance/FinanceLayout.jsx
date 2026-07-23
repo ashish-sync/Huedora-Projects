@@ -14,7 +14,13 @@ const NAV_ITEMS = [
 
 export default function FinanceLayout() {
   const { can } = useAuth();
-  const allowed = can('finance:read') || can('finance:write') || can('*');
+  const canWrite = can('finance:write') || can('*');
+  const allowed = can('finance:read') || canWrite;
+
+  const navItems = NAV_ITEMS.filter((item) => {
+    if (canWrite) return true;
+    return item.to !== '/finance/generate-invoice';
+  });
 
   if (!allowed) {
     return (
@@ -35,7 +41,7 @@ export default function FinanceLayout() {
         description="Track expenses, vendor invoices, proforma, purchase orders, and client billing."
       >
         <nav className="logistics-nav" aria-label={`${MODULE.FINANCE} sections`}>
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

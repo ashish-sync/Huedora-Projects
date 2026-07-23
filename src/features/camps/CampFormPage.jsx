@@ -68,7 +68,7 @@ const emptyForm = {
 
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord } = useAuth();
+  const { canEditCampRecord, hasPermission } = useAuth();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
@@ -222,11 +222,28 @@ export default function CampFormPage() {
       return;
     }
 
+    const campDate = toApiDateValue(form.campDate);
+    if (!campDate) {
+      setError('Camp date is required');
+      return;
+    }
+
+    if (!/^\d{1,2}:\d{2}$/.test(String(form.startTime || '').trim())) {
+      setError('Start time must be in HH:MM format');
+      return;
+    }
+
+    const phoneDigits = String(form.fieldPersonPhone || '').replace(/\D/g, '');
+    if (phoneDigits && (phoneDigits.length < 6 || phoneDigits.length > 15)) {
+      setError('Field person phone must be 6–15 digits');
+      return;
+    }
+
     const trimmed = trimFormStrings(form, formStringFields);
     const payload = {
       ...trimmed,
       clientId: form.clientId,
-      campDate: toApiDateValue(form.campDate),
+      campDate,
       durationHours: form.durationHours,
       expectedPatients: form.expectedPatients,
     };
@@ -250,6 +267,17 @@ export default function CampFormPage() {
 
   if (fetching) {
     return <div className="empty-state">Loading camp...</div>;
+  }
+
+  if (!isEdit && !hasPermission('camps:create')) {
+    return (
+      <div className="empty-state">
+        <p>You do not have permission to create camps.</p>
+        <button type="button" className="btn secondary" onClick={() => navigate('/camps/manage')}>
+          Back to camps
+        </button>
+      </div>
+    );
   }
 
   const visibleApprovalBlockers = campMeta?.status === 'pending_review' && campMeta.canApprove === false
@@ -301,25 +329,8 @@ export default function CampFormPage() {
           </button>
 
           {showSourcePreview && (
-            <div
-              className="form-card"
-              style={{ marginTop: '0.75rem', background: 'var(--surface-muted, #f6f7f9)' }}
-            >
-              <pre
-                style={{
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  maxHeight: '360px',
-                  overflow: 'auto',
-                  margin: 0,
-                  padding: '0.75rem',
-                  background: '#fff',
-                  border: '1px solid #e2e5ea',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  lineHeight: 1.55,
-                }}
-              >
+            <div className="form-card camp-source-preview-card">
+              <pre className="camp-source-preview-text">
                 {buildSourcePreview(campMeta) || 'No original message stored for this camp.'}
               </pre>
             </div>

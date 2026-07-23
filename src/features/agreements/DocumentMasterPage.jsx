@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { api, downloadExcel } from '../../shared/api.js';
+import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -398,7 +400,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
   const [masterSignatures, setMasterSignatures] = useState([]);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [exportBusy, setExportBusy] = useState(false);
+  const excelConfig = masterExcelFor('templates');
   const [analyzeBusy, setAnalyzeBusy] = useState(false);
   const [uploadPreviewText, setUploadPreviewText] = useState('');
   const [uploadPlaceholders, setUploadPlaceholders] = useState([]);
@@ -411,18 +413,6 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
         setRows(r.data);
       })
       .catch((e) => setError(e.message));
-  };
-
-  const downloadMaster = async () => {
-    setError('');
-    setExportBusy(true);
-    try {
-      await downloadExcel('/templates/export', 'Document_Master.xlsx');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setExportBusy(false);
-    }
   };
 
   const loadSignatures = () =>
@@ -546,14 +536,14 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
           </p>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={exportBusy}
-            onClick={downloadMaster}
-          >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
-          </button>
+          {excelConfig ? (
+            <MasterExcelToolbar
+              {...excelConfig}
+              canImport={can('agreements:write')}
+              onImportComplete={() => load()}
+              onError={(message) => setError(message)}
+            />
+          ) : null}
           <Link className="btn secondary" to="/agreements/new">
             Send a document
           </Link>
@@ -561,14 +551,14 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
       </div>
       ) : (
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={exportBusy}
-            onClick={downloadMaster}
-          >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
-          </button>
+          {excelConfig ? (
+            <MasterExcelToolbar
+              {...excelConfig}
+              canImport={can('agreements:write')}
+              onImportComplete={() => load()}
+              onError={(message) => setError(message)}
+            />
+          ) : null}
         </div>
       )}
 

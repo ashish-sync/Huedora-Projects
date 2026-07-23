@@ -26,7 +26,8 @@ async function parseApiErrorMessage(err, fallback) {
 import { downloadCampSampleFile } from './utils/campSampleDownload.js';
 
 export default function ImportPage() {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, hasPermission } = useAuth();
+  const canImport = hasPermission('import:create') || hasPermission('import:execute');
   const isAdminImport = isSuperAdmin();
   const steps = isAdminImport ? STEPS_ADMIN : STEPS_EMPLOYEE;
 
@@ -224,6 +225,17 @@ export default function ImportPage() {
     setMapping({});
     setSelectedTemplateId('');
     setTemplateName('');
+  }
+
+  if (!canImport) {
+    return (
+      <div className="empty-state">
+        <p>You do not have permission to import camps.</p>
+        <Link to="/camps" className="btn secondary">
+          Back to camps
+        </Link>
+      </div>
+    );
   }
 
   return (

@@ -677,3 +677,23 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+.camp-ops-root .camp-source-preview-card {
+  margin-top: 0.75rem;
+  background: var(--bg-sunken, var(--bg-elevated));
+}
+
+.camp-ops-root .camp-source-preview-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--ink);
+}

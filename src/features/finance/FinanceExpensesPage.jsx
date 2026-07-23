@@ -22,7 +22,7 @@ const FALLBACK_PAYMENT_MODES = ['Bank transfer', 'UPI', 'Cheque', 'Cash', 'Card'
 
 const emptyForm = {
   title: '',
-  category: 'Other',
+  category: '',
   amount: '',
   expenseDate: '',
   status: 'Draft',
@@ -128,6 +128,16 @@ export default function FinanceExpensesPage() {
   const save = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
+    const category = String(form.category || '').trim();
+    if (!category || /^other$/i.test(category)) {
+      setError('Select a category (use Other to enter a custom value).');
+      return;
+    }
+    const paymentMode = String(form.paymentMode || '').trim();
+    if (paymentMode && /^other$/i.test(paymentMode)) {
+      setError('Enter a specific payment mode instead of Other.');
+      return;
+    }
     setBusy(true);
     setError('');
     setMsg('');

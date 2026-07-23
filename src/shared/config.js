@@ -4,11 +4,16 @@
  * Local Vite uses its `/api` proxy. The Render fallback keeps the public frontend
  * connected if its build-time environment variable is accidentally omitted.
  */
-// Keep the public Render build usable while environment updates propagate.
-const RENDER_BACKEND_FALLBACK =
-  typeof window !== 'undefined' && window.location.hostname === 'huedora-projects.onrender.com'
-    ? 'https://huedora-projects-server.onrender.com'
-    : '';
+function resolveRenderBackendFallback() {
+  if (typeof window === 'undefined') return '';
+  const host = String(window.location.hostname || '').toLowerCase();
+  if (host === 'huedora-projects.onrender.com' || host.endsWith('.onrender.com')) {
+    return 'https://huedora-projects-server.onrender.com';
+  }
+  return '';
+}
+
+const RENDER_BACKEND_FALLBACK = resolveRenderBackendFallback();
 
 export const BACKEND_URL = String(
   import.meta.env.VITE_BACKEND_URL || RENDER_BACKEND_FALLBACK

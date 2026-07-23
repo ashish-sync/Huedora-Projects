@@ -5,6 +5,16 @@ const DURATION_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
 export function validateClientMasterForm(form) {
   const errors = {};
 
+  const programName = String(form.programName || '').trim();
+  if (!programName) {
+    errors.programName = 'Program / division name is required';
+  }
+
+  const campType = String(form.campType || '').trim();
+  if (!campType) {
+    errors.campType = 'Camp type is required';
+  }
+
   const clientName = String(form.clientName || '').trim();
   if (!clientName) {
     errors.clientName = 'Client name is required';

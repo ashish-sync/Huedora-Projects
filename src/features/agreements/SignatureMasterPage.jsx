@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, downloadExcel } from '../../shared/api.js';
+import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
@@ -97,7 +99,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [exportBusy, setExportBusy] = useState(false);
+  const excelConfig = masterExcelFor('signatures');
   const canvasRef = useRef(null);
   const drawing = useRef(false);
 
@@ -107,18 +109,6 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
     return api(`/signatures?${params}`)
       .then((r) => setRows(r.data))
       .catch((e) => setError(e.message));
-  };
-
-  const downloadMaster = async () => {
-    setError('');
-    setExportBusy(true);
-    try {
-      await downloadExcel('/signatures/export', 'Signature_Master.xlsx');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setExportBusy(false);
-    }
   };
 
   useEffect(() => {
@@ -271,14 +261,14 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
           </p>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={exportBusy}
-            onClick={downloadMaster}
-          >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
-          </button>
+          {excelConfig ? (
+            <MasterExcelToolbar
+              {...excelConfig}
+              canImport={can('agreements:write')}
+              onImportComplete={() => load()}
+              onError={(message) => setError(message)}
+            />
+          ) : null}
           <Link className="btn secondary" to="/agreements/new">
             New document
           </Link>
@@ -286,14 +276,14 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
       </div>
       ) : (
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={exportBusy}
-            onClick={downloadMaster}
-          >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
-          </button>
+          {excelConfig ? (
+            <MasterExcelToolbar
+              {...excelConfig}
+              canImport={can('agreements:write')}
+              onImportComplete={() => load()}
+              onError={(message) => setError(message)}
+            />
+          ) : null}
         </div>
       )}
 

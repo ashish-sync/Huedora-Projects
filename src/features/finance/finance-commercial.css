@@ -62,3 +62,16 @@
   line-height: 1.6;
   font-size: 0.8rem;
 }
+
+@media (max-width: 640px) {
+  .finance-proforma-grid,
+  .finance-line-item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-shell .logistics-nav {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+}

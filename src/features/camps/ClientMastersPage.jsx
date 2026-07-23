@@ -9,6 +9,8 @@ import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import { openProgramDocument } from './utils/programDocument';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
+import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
   clientMasterEditPath,
   clientMasterListPath,
@@ -33,6 +35,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const excelConfig = masterExcelFor('client-masters');
 
   async function loadRecords(nextPage = page, nextPageSize = pageSize, searchValue = search) {
     setLoading(true);
@@ -171,6 +174,17 @@ export default function ClientMastersPage({ embedded = false } = {}) {
             activeChips={programFilterChips}
             onClearAll={clearProgramFilters}
           />
+
+          {excelConfig ? (
+            <div style={{ marginBottom: 12 }}>
+              <MasterExcelToolbar
+                {...excelConfig}
+                canImport={hasPermission('client-masters:create')}
+                onImportComplete={() => loadRecords(page)}
+                onError={(message) => setError(message)}
+              />
+            </div>
+          ) : null}
 
           {error && (
             <div className="page-alerts">

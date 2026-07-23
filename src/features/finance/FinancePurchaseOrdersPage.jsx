@@ -208,6 +208,21 @@ export default function FinancePurchaseOrdersPage() {
   const save = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
+    const vendorName = String(form.vendorName || '').trim();
+    const vendorAddress = String(form.vendorAddress || '').trim();
+    if (!vendorName) {
+      setError('Vendor name is required.');
+      return;
+    }
+    if (!vendorAddress) {
+      setError('Vendor address is required.');
+      return;
+    }
+    const invalidLine = form.lineItems.find((line) => !String(line.description || '').trim());
+    if (invalidLine) {
+      setError('Each line item must have a description.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -237,7 +252,7 @@ export default function FinancePurchaseOrdersPage() {
   };
 
   const issue = async () => {
-    if (!editingId) return;
+    if (!canWrite || !editingId) return;
     setBusy(true);
     try {
       const res = await api(`/finance/purchase-orders/${editingId}/issue`, { method: 'POST' });

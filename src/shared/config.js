@@ -13,13 +13,25 @@ function resolveRenderBackendFallback() {
   return '';
 }
 
-const RENDER_BACKEND_FALLBACK = resolveRenderBackendFallback();
+function resolveBackendUrl() {
+  const fromEnv = String(import.meta.env.VITE_BACKEND_URL || '').trim().replace(/\/$/, '');
+  const fallback = resolveRenderBackendFallback();
 
-export const BACKEND_URL = String(
-  import.meta.env.VITE_BACKEND_URL || RENDER_BACKEND_FALLBACK
-)
-  .trim()
-  .replace(/\/$/, '');
+  if (typeof window !== 'undefined' && fromEnv) {
+    try {
+      const pageHost = window.location.hostname.toLowerCase();
+      const envHost = new URL(fromEnv).hostname.toLowerCase();
+      // Render sometimes sets VITE_BACKEND_URL to the static site URL — ignore that.
+      if (envHost === pageHost) return fallback || fromEnv;
+    } catch {
+      /* ignore malformed env URL */
+    }
+  }
+
+  return fromEnv || fallback;
+}
+
+export const BACKEND_URL = resolveBackendUrl();
 
 /** API root including /api/v1 */
 export const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api/v1` : '/api/v1';

@@ -51,6 +51,7 @@ function statusTone(status) {
 export default function DevicesPage() {
   const { can } = useAuth();
   const canWrite = can('devices:write') || can('*');
+  const canDelete = can('*');
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -198,6 +199,7 @@ export default function DevicesPage() {
   };
 
   const remove = async (row) => {
+    if (!canDelete) return;
     if (!window.confirm(`Delete “${row.name}” (${row.serialNumber || 'no serial'})?`)) return;
     setError('');
     setMsg('');
@@ -636,14 +638,16 @@ export default function DevicesPage() {
                         >
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          className="btn danger btn-compact"
-                          disabled={deletingId === d._id}
-                          onClick={() => remove(d)}
-                        >
-                          {deletingId === d._id ? '…' : 'Delete'}
-                        </button>
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            className="btn danger btn-compact"
+                            disabled={deletingId === d._id}
+                            onClick={() => remove(d)}
+                          >
+                            {deletingId === d._id ? '…' : 'Delete'}
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   )}

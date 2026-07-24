@@ -47,9 +47,12 @@ export function AuthProvider({ children }) {
     return user.permissions.includes('*') || user.permissions.includes(permission);
   };
 
+  const isAdmin = () => can('*');
+  const canDelete = () => isAdmin();
+
   const value = useMemo(
-    () => ({ user, loading, login, logout, can, refreshMe }),
-    [user, loading, can, refreshMe]
+    () => ({ user, loading, login, logout, can, isAdmin, canDelete, refreshMe }),
+    [user, loading, refreshMe]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -195,7 +195,7 @@ export function ClientNameSearchInput({
                     onClick={() => handleSelectMaster(record)}
                   >
                     <strong>{record.clientName}</strong>
-                    <span>{record.programName || 'Division'} · {record.campName || 'Camp name'}</span>
+                    <span>{record.programName || 'Division'} · {record.campName || 'Method'}</span>
                   </button>
                 ))}
             </>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
@@ -10,23 +10,28 @@ import { DateInput } from './components/DateInput';
 import { FormPageHeader } from './components/FormPageHeader';
 import { StateSearchInput } from './components/StateSearchInput';
 import { buildSourcePreview } from './utils/formatSourceMessage';
-import { CAMP_NAME_OPTIONS } from './constants/campNames';
+import {
+  parseClientMasterDivisions,
+  pickSingleOption,
+  resolveCampNameOptions,
+} from './utils/clientMasterCascade';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
 
 const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
+const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for this client and division.';
 
-function filterApprovalBlockers(blockers, form) {
+function filterApprovalBlockers(blockers, form, campNameOptions) {
   const campDivision = String(form.campaignType || '').trim();
   const campCampName = String(form.campaignName || '').trim();
   const hasValidDivision = Boolean(campDivision);
-  const hasValidCampName = CAMP_NAME_OPTIONS.includes(campCampName);
+  const hasValidCampName = campNameOptions.includes(campCampName);
 
   return (blockers || []).filter((message) => {
     if (message.includes('division / business unit')) {
       return !hasValidDivision;
     }
-    if (message.includes('valid camp name')) {
+    if (message.includes('valid camp name') || message.includes('valid method')) {
       return !hasValidCampName;
     }
     if (message.includes('No matching program in Client Master')) {
@@ -46,7 +51,7 @@ const DURATION_OPTIONS = [3, 4, 5, 6, 8];
 
 const emptyForm = {
   clientId: '',
-  campaignName: 'BMD',
+  campaignName: '',
   campaignType: '',
   doctorName: '',
   doctorCode: '',
@@ -72,6 +77,7 @@ export default function CampFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
+  const [divisionPrograms, setDivisionPrograms] = useState([]);
   const [divisionOptions, setDivisionOptions] = useState([]);
   const [programsLoading, setProgramsLoading] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -83,11 +89,31 @@ export default function CampFormPage() {
   const [showSourcePreview, setShowSourcePreview] = useState(false);
 
   useEffect(() => {
-    clientApi.list({ limit: 500, page: 1 }).then(({ data }) => setClients(Array.isArray(data?.data) ? data.data : []));
+    Promise.all([
+      clientApi.list({ limit: 500, page: 1 }),
+      clientMasterApi.list({ limit: 500, page: 1 }),
+    ])
+      .then(([clientRes, masterRes]) => {
+        const allClients = Array.isArray(clientRes.data?.data) ? clientRes.data.data : [];
+        const masters = Array.isArray(masterRes.data?.data) ? masterRes.data.data : [];
+        const configuredClientIds = new Set(
+          masters
+            .map((row) => row.client?._id || row.clientId || row.client)
+            .filter(Boolean)
+            .map(String),
+        );
+        setClients(
+          configuredClientIds.size
+            ? allClients.filter((client) => configuredClientIds.has(String(client._id)))
+            : allClients,
+        );
+      })
+      .catch(() => setClients([]));
   }, []);
 
   useEffect(() => {
     if (!form.clientId) {
+      setDivisionPrograms([]);
       setDivisionOptions([]);
       return undefined;
     }
@@ -97,25 +123,32 @@ export default function CampFormPage() {
     clientMasterApi.listDivisionsByClient(form.clientId)
       .then(({ data }) => {
         if (cancelled) return;
-        const divisions = Array.isArray(data?.divisions)
-          ? data.divisions
-          : Array.isArray(data?.data)
-            ? data.data.map((d) => d.programName || d).filter(Boolean)
-            : [];
+        const { programs, divisions } = parseClientMasterDivisions(data);
+        setDivisionPrograms(programs);
         setDivisionOptions(divisions);
 
         if (!isEdit) {
           setForm((prev) => {
-            const next = { ...prev, campaignType: divisions.length === 1 ? divisions[0] : '' };
-            if (prev.campaignType && !divisions.includes(prev.campaignType)) {
-              next.campaignType = divisions.length === 1 ? divisions[0] : '';
-            }
-            return next;
+            const nextDivision = prev.campaignType && divisions.includes(prev.campaignType)
+              ? prev.campaignType
+              : pickSingleOption(divisions);
+            const campNames = resolveCampNameOptions(programs, nextDivision);
+            const nextCampName = prev.campaignName && campNames.includes(prev.campaignName)
+              ? prev.campaignName
+              : pickSingleOption(campNames);
+            return {
+              ...prev,
+              campaignType: nextDivision,
+              campaignName: nextCampName,
+            };
           });
         }
       })
       .catch(() => {
-        if (!cancelled) setDivisionOptions([]);
+        if (!cancelled) {
+          setDivisionPrograms([]);
+          setDivisionOptions([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setProgramsLoading(false);
@@ -187,6 +220,11 @@ export default function CampFormPage() {
       const next = { ...prev, [field]: value };
       if (field === 'clientId') {
         next.campaignType = '';
+        next.campaignName = '';
+      }
+      if (field === 'campaignType') {
+        const campNames = resolveCampNameOptions(divisionPrograms, value);
+        next.campaignName = pickSingleOption(campNames);
       }
       if (field === 'startTime' || field === 'durationHours') {
         const hours = Number(field === 'durationHours' ? value : next.durationHours) || 3;
@@ -213,12 +251,22 @@ export default function CampFormPage() {
     }
 
     if (!form.campaignType || !divisionOptions.includes(form.campaignType)) {
-      setError('Please select a division / business unit configured for this client');
+      setError('Please select a division / therapy configured for this client');
       return;
     }
 
-    if (!CAMP_NAME_OPTIONS.includes(form.campaignName)) {
-      setError('Please select a camp name');
+    const campNameOptions = resolveCampNameOptions(
+      divisionPrograms,
+      form.campaignType,
+      form.campaignName,
+    );
+    if (!campNameOptions.length) {
+      setError(NO_METHOD_MESSAGE);
+      return;
+    }
+
+    if (!form.campaignName || !campNameOptions.includes(form.campaignName)) {
+      setError('Please select a method configured for this client and division');
       return;
     }
 
@@ -265,6 +313,11 @@ export default function CampFormPage() {
     }
   }
 
+  const campNameOptions = useMemo(
+    () => resolveCampNameOptions(divisionPrograms, form.campaignType, form.campaignName),
+    [divisionPrograms, form.campaignType, form.campaignName],
+  );
+
   if (fetching) {
     return <div className="empty-state">Loading camp...</div>;
   }
@@ -281,11 +334,15 @@ export default function CampFormPage() {
   }
 
   const visibleApprovalBlockers = campMeta?.status === 'pending_review' && campMeta.canApprove === false
-    ? filterApprovalBlockers(campMeta.approvalBlockers, form)
+    ? filterApprovalBlockers(campMeta.approvalBlockers, form, campNameOptions)
     : [];
 
   const hasNoDivisions = Boolean(form.clientId) && !programsLoading && divisionOptions.length === 0;
-  const canSubmit = !readOnly && !hasNoDivisions;
+  const hasNoMethods = Boolean(form.clientId)
+    && Boolean(form.campaignType)
+    && !programsLoading
+    && campNameOptions.length === 0;
+  const canSubmit = !readOnly && !hasNoDivisions && !hasNoMethods;
 
   return (
     <form className="form-card" onSubmit={handleSubmit}>
@@ -314,6 +371,9 @@ export default function CampFormPage() {
         )}
         {hasNoDivisions && (
           <div className="error-banner">{NO_DIVISION_MESSAGE}</div>
+        )}
+        {hasNoMethods && (
+          <div className="error-banner">{NO_METHOD_MESSAGE}</div>
         )}
         {error && <div className="error-banner">{error}</div>}
       </div>
@@ -364,7 +424,7 @@ export default function CampFormPage() {
                   : !form.clientId
                     ? 'Select client first'
                     : divisionOptions.length
-                      ? 'Select division / business unit'
+                      ? 'Select division / therapy'
                       : 'No division configured'}
               </option>
               {divisionOptions.map((division) => (
@@ -373,13 +433,25 @@ export default function CampFormPage() {
             </select>
           </label>
           <label htmlFor="camp-name">
-            Camp Name
+            Method
             <CampNameSelect
               id="camp-name"
               value={form.campaignName}
               onChange={(value) => updateField('campaignName', value)}
-              disabled={readOnly}
+              disabled={readOnly || programsLoading || !form.clientId || !form.campaignType || !campNameOptions.length}
               required
+              options={campNameOptions}
+              emptyLabel={
+                !form.clientId
+                  ? 'Select client first'
+                  : !form.campaignType
+                    ? 'Select division / therapy first'
+                    : programsLoading
+                      ? 'Loading methods...'
+                      : campNameOptions.length
+                        ? 'Select method'
+                        : 'No method configured'
+              }
             />
           </label>
           <label htmlFor="camp-doctor-name">

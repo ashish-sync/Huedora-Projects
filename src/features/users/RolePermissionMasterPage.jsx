@@ -182,6 +182,7 @@ function moduleActionOn(module, actionId, permissions) {
 export default function RolePermissionMasterPage() {
   const { can, user: me } = useAuth();
   const canWrite = can('users:write') || can('*');
+  const canDelete = can('*');
   const canViewUsers = canWrite || can('users:read');
   const [tab, setTab] = useState('users');
 
@@ -463,7 +464,7 @@ export default function RolePermissionMasterPage() {
   };
 
   const removeRole = async () => {
-    if (!selectedId || !canWrite || selected?.isSystem || isAdminRole) return;
+    if (!selectedId || !canDelete || selected?.isSystem || isAdminRole) return;
     if (!window.confirm(`Remove role “${selected.name}”?`)) return;
     try {
       await api(`/users/roles/${selectedId}`, { method: 'DELETE' });
@@ -557,7 +558,7 @@ export default function RolePermissionMasterPage() {
   };
 
   const removeUser = async () => {
-    if (!editingUserId || !canWrite || editingUserId === me?.id) return;
+    if (!editingUserId || !canDelete || editingUserId === me?.id) return;
     if (!window.confirm(`Delete user “${editingUser?.fullName || editingUser?.email}”?`)) return;
     try {
       await api(`/users/${editingUserId}`, { method: 'DELETE' });
@@ -941,7 +942,7 @@ export default function RolePermissionMasterPage() {
                         Cancel
                       </button>
                     )}
-                    {!creatingUser && editingUserId && String(editingUserId) !== String(me?.id) && (
+                    {!creatingUser && editingUserId && String(editingUserId) !== String(me?.id) && canDelete && (
                       <button className="btn danger" type="button" onClick={removeUser}>
                         Delete
                       </button>
@@ -1071,7 +1072,7 @@ export default function RolePermissionMasterPage() {
                         Cancel
                       </button>
                     )}
-                    {!creating && selected && !selected.isSystem && !isAdminRole && (
+                    {!creating && selected && !selected.isSystem && !isAdminRole && canDelete && (
                       <button className="btn danger" type="button" onClick={removeRole}>
                         Remove role
                       </button>

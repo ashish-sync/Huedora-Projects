@@ -23,7 +23,7 @@ function formatAmount(value) {
 }
 
 export default function ClientMastersPage({ embedded = false } = {}) {
-  const { hasPermission } = useAuth();
+  const { hasPermission, isSuperAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'clients' ? 'clients' : 'programs';
   const initialClientSearch = searchParams.get('search') || '';
@@ -81,6 +81,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
   }, [activeTab]);
 
   async function handleDelete(id) {
+    if (!isSuperAdmin()) return;
     if (!window.confirm('Archive this client master record?')) return;
     try {
       await clientMasterApi.remove(id);
@@ -162,7 +163,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
           initialSearch={initialClientSearch}
           canCreate={hasPermission('clients:create')}
           canUpdate={hasPermission('clients:update')}
-          canDelete={hasPermission('clients:delete')}
+          canDelete={isSuperAdmin()}
         />
       ) : (
         <>
@@ -214,7 +215,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                     <tr>
                       <th>Client</th>
                       <th>Division / Therapy</th>
-                      <th>Camp Name</th>
+                      <th>Method</th>
                       <th>Service Model</th>
                       <th>HCW</th>
                       <th>PO Amount</th>
@@ -260,7 +261,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                             {hasPermission('client-masters:update') && (
                               <Link to={clientMasterEditPath(record._id)} className="btn secondary btn-compact">Edit</Link>
                             )}
-                            {hasPermission('client-masters:delete') && (
+                            {isSuperAdmin() && (
                               <button type="button" className="btn danger btn-compact" onClick={() => handleDelete(record._id)}>
                                 Archive
                               </button>

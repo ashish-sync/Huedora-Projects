@@ -522,7 +522,7 @@ export default function CampsPage() {
               Mark Executed
             </button>
           )}
-          {(hasPermission('camps:update') || hasPermission('camps:approve')) && (
+          {isSuperAdmin() && (
             <button
               className="btn btn-danger btn-sm"
               disabled={bulkLoading || confirmLoading || !bulkDeleteValidation.ok}
@@ -572,7 +572,7 @@ export default function CampsPage() {
                   {/* <th>Camp ID</th> */}
                   <th>Client Name</th>
                   <th>Division / Therapy</th>
-                  <th>Camp Name</th>
+                  <th>Method</th>
                   <th>Time Frame</th>
                   <th>Doctor</th>
                   <th>City</th>

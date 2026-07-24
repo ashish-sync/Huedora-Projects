@@ -6,6 +6,11 @@ import { CampCreatedBanner, extractCreatedCamps } from './components/CampCreated
 import { PasteWorkflowStepper } from './components/PasteWorkflowStepper';
 import { PasteContextFields } from './components/PasteContextFields';
 import { IS_DEMO_SERVER } from './constants/roles';
+import {
+  parseClientMasterDivisions,
+  pickSingleOption,
+  resolveCampNameOptions,
+} from './utils/clientMasterCascade';
 
 const PASTE_AUTO_SAVE_KEY = 'connectorsManualPasteAutoSave';
 const PASTE_DRAFT_KEY = 'connectorsManualPasteDraft';
@@ -134,6 +139,7 @@ export default function CommunicationsPastePage() {
   });
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [divisionPrograms, setDivisionPrograms] = useState([]);
   const [divisionOptions, setDivisionOptions] = useState([]);
   const [programsLoading, setProgramsLoading] = useState(false);
   const [clientId, setClientId] = useState(storedDraft?.clientId || '');
@@ -148,13 +154,35 @@ export default function CommunicationsPastePage() {
     campaignName,
   }), [clientName, campaignType, campaignName]);
 
+  const campNameOptions = useMemo(
+    () => resolveCampNameOptions(divisionPrograms, campaignType, campaignName),
+    [divisionPrograms, campaignType, campaignName],
+  );
+
   const contextErrors = useMemo(() => {
     const errors = {};
     if (!clientId) errors.clientId = 'Select a client';
-    if (clientId && !campaignType) errors.campaignType = 'Select division / therapy';
-    if (!campaignName) errors.campaignName = 'Select method / camp name';
+    if (clientId && !programsLoading && !divisionOptions.length) {
+      errors.campaignType = 'No division configured in Client Master';
+    } else if (clientId && !campaignType) {
+      errors.campaignType = 'Select division / therapy';
+    }
+    if (clientId && campaignType && !programsLoading && !campNameOptions.length) {
+      errors.campaignName = 'No method configured in Client Master';
+    } else if (!campaignName) {
+      errors.campaignName = 'Select method';
+    } else if (campNameOptions.length && !campNameOptions.includes(campaignName)) {
+      errors.campaignName = 'Select a method from Client Master';
+    }
     return errors;
-  }, [clientId, campaignType, campaignName]);
+  }, [
+    clientId,
+    campaignType,
+    campaignName,
+    divisionOptions.length,
+    campNameOptions,
+    programsLoading,
+  ]);
 
   const hasPasteContext = Object.keys(contextErrors).length === 0;
 
@@ -200,14 +228,32 @@ export default function CommunicationsPastePage() {
   }, [pasteText]);
 
   useEffect(() => {
-    clientApi.list({ limit: 500, page: 1 })
-      .then(({ data }) => setClients(Array.isArray(data?.data) ? data.data : []))
+    Promise.all([
+      clientApi.list({ limit: 500, page: 1 }),
+      clientMasterApi.list({ limit: 500, page: 1 }),
+    ])
+      .then(([clientRes, masterRes]) => {
+        const allClients = Array.isArray(clientRes.data?.data) ? clientRes.data.data : [];
+        const masters = Array.isArray(masterRes.data?.data) ? masterRes.data.data : [];
+        const configuredClientIds = new Set(
+          masters
+            .map((row) => row.client?._id || row.clientId || row.client)
+            .filter(Boolean)
+            .map(String),
+        );
+        setClients(
+          configuredClientIds.size
+            ? allClients.filter((client) => configuredClientIds.has(String(client._id)))
+            : allClients,
+        );
+      })
       .catch(() => setClients([]))
       .finally(() => setClientsLoading(false));
   }, []);
 
   useEffect(() => {
     if (!clientId) {
+      setDivisionPrograms([]);
       setDivisionOptions([]);
       return undefined;
     }
@@ -217,20 +263,32 @@ export default function CommunicationsPastePage() {
     clientMasterApi.listDivisionsByClient(clientId)
       .then(({ data }) => {
         if (cancelled) return;
-        const divisions = Array.isArray(data?.divisions)
-          ? data.divisions
-          : Array.isArray(data?.data)
-            ? data.data.map((item) => item.programName || item).filter(Boolean)
-            : [];
+        const { programs, divisions } = parseClientMasterDivisions(data);
+        setDivisionPrograms(programs);
         setDivisionOptions(divisions);
-        if (divisions.length === 1 && !campaignType) {
-          setCampaignType(divisions[0]);
-        } else if (campaignType && !divisions.includes(campaignType)) {
+
+        if (campaignType && !divisions.includes(campaignType)) {
           setCampaignType('');
+          setCampaignName('');
+        } else if (!campaignType && divisions.length === 1) {
+          const nextDivision = divisions[0];
+          setCampaignType(nextDivision);
+          const names = resolveCampNameOptions(programs, nextDivision);
+          if (!campaignName) setCampaignName(pickSingleOption(names));
+        } else if (campaignType) {
+          const names = resolveCampNameOptions(programs, campaignType, campaignName);
+          if (campaignName && !names.includes(campaignName)) {
+            setCampaignName(pickSingleOption(names));
+          } else if (!campaignName) {
+            setCampaignName(pickSingleOption(names));
+          }
         }
       })
       .catch(() => {
-        if (!cancelled) setDivisionOptions([]);
+        if (!cancelled) {
+          setDivisionPrograms([]);
+          setDivisionOptions([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setProgramsLoading(false);
@@ -258,7 +316,7 @@ export default function CommunicationsPastePage() {
   const primaryHint = useMemo(() => {
     if (error) return null;
     if (!hasPasteContext) {
-      return 'Select client, division / therapy, and method / camp name before pasting.';
+      return 'Select client, division / therapy, and method before pasting.';
     }
     if (!hasPasteText) return 'Step 1 — Paste camp details on the left to continue.';
     if (isEditMode) return 'Finish field edits or switch to Preview before extracting again.';
@@ -320,6 +378,8 @@ export default function CommunicationsPastePage() {
   function handleDivisionChange(nextDivision) {
     if (nextDivision !== campaignType) invalidateExtraction();
     setCampaignType(nextDivision);
+    const names = resolveCampNameOptions(divisionPrograms, nextDivision);
+    setCampaignName(pickSingleOption(names));
     setError('');
   }
 
@@ -578,6 +638,7 @@ export default function CommunicationsPastePage() {
           campaignType={campaignType}
           campaignName={campaignName}
           divisionOptions={divisionOptions}
+          campNameOptions={campNameOptions}
           programsLoading={programsLoading}
           clientsLoading={clientsLoading}
           disabled={actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
@@ -637,7 +698,7 @@ export default function CommunicationsPastePage() {
                   placeholder={
                     hasPasteContext
                       ? 'DATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'
-                      : 'Select client, division / therapy, and method / camp name first'
+                      : 'Select client, division / therapy, and method first'
                   }
                   spellCheck={false}
                   aria-label="Camp details to paste"

@@ -264,7 +264,7 @@ export default function ImportPage() {
           <h3>Upload Excel / CSV</h3>
           {isAdminImport ? (
             <p className="import-intro">
-              Upload camp data from Excel with automatic header suggestions, or download the sample file. Columns match Client Master (client + division + camp name) and the Create Camp form.
+              Upload camp data from Excel with automatic header suggestions, or download the sample file. Columns match Client Master (client + division + method) and the Create Camp form.
             </p>
           ) : (
             <p className="import-intro">

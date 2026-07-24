@@ -202,6 +202,7 @@ export default function LogisticsMasterPage({
 } = {}) {
   const { can } = useAuth();
   const canWriteLogistics = can('logistics:master') || can('logistics:write') || can('*');
+  const canDelete = can('*');
   const canWriteDocs = can('agreements:write') || can('*');
   const canReadDocs = can('agreements:read') || canWriteDocs;
   const canReadCamps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
@@ -447,7 +448,7 @@ export default function LogisticsMasterPage({
   };
 
   const remove = async (row) => {
-    if (!canWrite || row.isSystem) return;
+    if (!canDelete || row.isSystem) return;
     if (!window.confirm(`Delete “${row.name || row.code}”?`)) return;
     setError('');
     try {
@@ -792,7 +793,7 @@ export default function LogisticsMasterPage({
                         Edit
                       </button>
                     )}
-                    {canWrite && !row.isSystem && (
+                    {canDelete && !row.isSystem && (
                       <button type="button" className="inv-link" onClick={() => remove(row)}>
                         Delete
                       </button>

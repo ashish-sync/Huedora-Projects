@@ -51,10 +51,7 @@ export function CampRowInfoMenu({
   const approvalBlockers = camp.status === 'pending_review' ? (camp.approvalBlockers || []) : [];
   const hasApprovalAlert = approvalBlockers.length > 0;
   const showReject = camp.status === 'pending_review' && canRejectCamps;
-  const showDelete = (
-    ((hasPermission('camps:update') || hasPermission('camps:approve')) && camp.status !== 'executed')
-    || (isSuperAdmin() && camp.status === 'executed')
-  );
+  const showDelete = isSuperAdmin();
   const showCancel = camp.status === 'approved'
     && (hasPermission('camps:cancel') || hasPermission('camps:approve'));
   const hasOverdueNotice = camp.isOverdue && camp.endsAt;

@@ -90,6 +90,7 @@ function bindCanvasDraw(canvas, drawingRef) {
 export default function SignatureMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const canWrite = can('agreements:write');
+  const canDelete = can('*');
   const [rows, setRows] = useState([]);
   const [roles, setRoles] = useState(ROLES_FALLBACK);
   const { options: roleOptions } = usePicklistOptions('signature.role', ROLES_FALLBACK);
@@ -233,7 +234,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
   };
 
   const deactivate = async (id) => {
-    if (!canWrite) return;
+    if (!canDelete) return;
     try {
       await api(`/signatures/${id}`, { method: 'DELETE' });
       if (editId === id) resetForm();
@@ -342,7 +343,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
                     <button className="btn secondary btn-compact" type="button" onClick={() => startEdit(row)}>
                       Edit
                     </button>
-                    {row.isActive && (
+                    {row.isActive && canDelete && (
                       <button className="btn danger btn-compact" type="button" onClick={() => deactivate(row._id)}>
                         Remove
                       </button>

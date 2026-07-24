@@ -62,6 +62,7 @@ async function downloadPoPdf(row, { download = true } = {}) {
 export default function FinancePurchaseOrdersPage() {
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
+  const canDelete = can('*');
   const uploadRef = useRef(null);
 
   const [rows, setRows] = useState([]);
@@ -292,7 +293,7 @@ export default function FinancePurchaseOrdersPage() {
   };
 
   const remove = async (row) => {
-    if (!window.confirm(`Delete PO ${row.documentNumber || row.docKey}?`)) return;
+    if (!canDelete || !window.confirm(`Delete PO ${row.documentNumber || row.docKey}?`)) return;
     await api(`/finance/purchase-orders/${row._id}`, { method: 'DELETE' });
     setMsg('Purchase order deleted.');
     load();
@@ -371,7 +372,7 @@ export default function FinancePurchaseOrdersPage() {
                         Edit
                       </button>
                     )}
-                    {canWrite && (
+                    {canDelete && (
                       <button className="btn secondary btn-compact" type="button" onClick={() => remove(row)}>
                         Delete
                       </button>

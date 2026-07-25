@@ -95,7 +95,7 @@ export default function LogisticsUsagePage() {
         <button className="btn secondary" type="button" onClick={load}>
           Search
         </button>
-        <Link className="btn secondary" to="/camps">
+        <Link className="btn secondary" to="/camps/manage">
           Open Camp One
         </Link>
       </div>

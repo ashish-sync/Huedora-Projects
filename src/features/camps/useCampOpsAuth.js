@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAuth as useTyloAuth } from '../../shared/auth.jsx';
 
 /** TYLO role names that grant full camp-ops access (same as HueDora admin / super_admin). */
@@ -45,7 +45,6 @@ export function useCampOpsAuth() {
     const aliases = {
       'camps:create': ['camps:request'],
       'camps:update': ['camps:request', 'camps:approve'],
-      'camps:delete': ['camps:approve'],
       'camps:execute': ['camps:approve', 'camps:request'],
       'camps:cancel': ['camps:approve'],
       'camps:review': ['camps:approve'],
@@ -53,11 +52,9 @@ export function useCampOpsAuth() {
       'client-masters:read': ['camps:read'],
       'client-masters:create': ['camps:request'],
       'client-masters:update': ['camps:request', 'camps:approve'],
-      'client-masters:delete': ['camps:approve'],
       'clients:read': ['camps:read'],
       'clients:create': ['camps:request'],
       'clients:update': ['camps:request', 'camps:approve'],
-      'clients:delete': ['camps:approve'],
       'communications:read': ['camps:read'],
       'communications:write': ['camps:request', 'camps:approve'],
       'communications:manage': ['camps:request', 'camps:approve'],
@@ -75,14 +72,21 @@ export function useCampOpsAuth() {
     return (aliases[permission] || []).some((p) => can(p));
   };
 
-  const canApproveCamps = () => hasPermission('camps:approve') || isAdmin;
-  const canRejectCamps = () => hasPermission('camps:approve') || isAdmin;
-  const canEditCampRecord = (camp) => {
-    if (isAdmin || hasPermission('camps:update')) return true;
-    if (hasPermission('camps:create') && camp?.status === 'draft') return true;
-    if (hasPermission('camps:create') && camp?.status === 'pending_review') return true;
+  const canApproveCamps = useCallback(
+    () => hasPermission('camps:approve') || isAdmin,
+    [isAdmin, can],
+  );
+  const canRejectCamps = useCallback(
+    () => hasPermission('camps:approve') || isAdmin,
+    [isAdmin, can],
+  );
+  const canEditCampRecord = useCallback((camp) => {
+    const canUpdate = isAdmin || can('*') || can('camps:update') || can('camps:request') || can('camps:approve');
+    if (canUpdate) return true;
+    const canCreate = can('camps:request');
+    if (canCreate && (camp?.status === 'draft' || camp?.status === 'pending_review')) return true;
     return false;
-  };
+  }, [isAdmin, can]);
 
   return {
     user: user

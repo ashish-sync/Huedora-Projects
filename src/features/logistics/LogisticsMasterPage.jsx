@@ -9,6 +9,7 @@ import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
 import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
 import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
 import LocationMasterPage from '../locations/LocationMasterPage.jsx';
+import ZonesMasterPage from '../locations/ZonesMasterPage.jsx';
 import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
@@ -94,6 +95,12 @@ const MASTER_GROUPS = [
         embedded: 'client-masters',
         fields: [],
       },
+      {
+        id: 'zones',
+        label: 'Zones',
+        embedded: 'zones',
+        fields: [],
+      },
     ],
   },
 ];
@@ -111,6 +118,7 @@ function EmbeddedMaster({ kind }) {
   if (kind === 'pin-codes') return <LocationMasterPage embedded />;
   if (kind === 'picklist-approvals') return <PicklistApprovalsPage embedded />;
   if (kind === 'client-masters') return <ClientMasterEmbeddedPage />;
+  if (kind === 'zones') return <ZonesMasterPage embedded />;
   return null;
 }
 
@@ -202,6 +210,7 @@ export default function LogisticsMasterPage({
 } = {}) {
   const { can } = useAuth();
   const canWriteLogistics = can('logistics:master') || can('logistics:write') || can('*');
+  const canDelete = can('*');
   const canWriteDocs = can('agreements:write') || can('*');
   const canReadDocs = can('agreements:read') || canWriteDocs;
   const canReadCamps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
@@ -447,7 +456,7 @@ export default function LogisticsMasterPage({
   };
 
   const remove = async (row) => {
-    if (!canWrite || row.isSystem) return;
+    if (!canDelete || row.isSystem) return;
     if (!window.confirm(`Delete “${row.name || row.code}”?`)) return;
     setError('');
     try {
@@ -792,7 +801,7 @@ export default function LogisticsMasterPage({
                         Edit
                       </button>
                     )}
-                    {canWrite && !row.isSystem && (
+                    {canDelete && !row.isSystem && (
                       <button type="button" className="inv-link" onClick={() => remove(row)}>
                         Delete
                       </button>

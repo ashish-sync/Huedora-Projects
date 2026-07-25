@@ -53,9 +53,7 @@ function canPerformBulkCampAction(action, auth) {
   if (action === 'approve') return auth.canApproveCamps();
   if (action === 'reject') return auth.canRejectCamps();
   if (action === 'execute') return auth.hasPermission('camps:execute');
-  if (action === 'delete') {
-    return auth.hasPermission('camps:update') || auth.hasPermission('camps:approve');
-  }
+  if (action === 'delete') return auth.isSuperAdmin();
   return false;
 }
 

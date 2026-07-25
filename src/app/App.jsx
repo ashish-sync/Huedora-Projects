@@ -18,7 +18,6 @@ import ImportsPage from '../features/imports/ImportsPage.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
 import NotificationsPage from '../features/notifications/NotificationsPage.jsx';
 import CampOpsLayout from '../features/camps/CampOpsLayout.jsx';
-import CampDashboardPage from '../features/camps/CampDashboardPage.jsx';
 import CampManagePage from '../features/camps/CampManagePage.jsx';
 import CampFormPage from '../features/camps/CampFormPage.jsx';
 import ClientMasterFormRoute from '../features/camps/ClientMasterFormRoute.jsx';
@@ -27,8 +26,6 @@ import CampImportPage from '../features/camps/CampImportPage.jsx';
 import CommunicationsLayout from '../features/camps/CommunicationsLayout.jsx';
 import CommunicationsEmailPage from '../features/camps/CommunicationsEmailPage.jsx';
 import CommunicationsPastePage from '../features/camps/CommunicationsPastePage.jsx';
-import CampChargesheetPage from '../features/camps/CampChargesheetPage.jsx';
-import CampPayoutPage from '../features/camps/CampPayoutPage.jsx';
 import LogisticsLayout from '../features/logistics/LogisticsLayout.jsx';
 import LogisticsHubPage from '../features/logistics/LogisticsHubPage.jsx';
 import LogisticsInwardPage from '../features/logistics/LogisticsInwardPage.jsx';
@@ -130,13 +127,13 @@ export default function App() {
                 <Route path="/hcws" element={<Navigate to="/master-data?scope=document&entity=contacts" replace />} />
                 <Route path="/verifications" element={<VerificationsPage />} />
                 <Route path="/camps" element={<CampOpsLayout />}>
-                  <Route index element={<CampDashboardPage />} />
+                  <Route index element={<Navigate to="manage" replace />} />
                   <Route path="manage" element={<CampManagePage />} />
                   <Route path="manage/new" element={<CampFormPage />} />
                   <Route path="manage/:id/edit" element={<CampFormPage />} />
                   <Route path="import" element={<CampImportPage />} />
-                  <Route path="chargesheet" element={<CampChargesheetPage />} />
-                  <Route path="payout" element={<CampPayoutPage />} />
+                  <Route path="chargesheet" element={<Navigate to="/camps/manage" replace />} />
+                  <Route path="payout" element={<Navigate to="/camps/manage" replace />} />
                   <Route path="communications" element={<CommunicationsLayout />}>
                     <Route index element={<Navigate to="paste" replace />} />
                     <Route path="paste" element={<CommunicationsPastePage />} />

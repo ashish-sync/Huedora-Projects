@@ -1,6 +1,6 @@
 import { DateInput } from './DateInput';
-import { SelectDropdown } from './SelectDropdown';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
+import { REQUEST_REVIEW_FILTER_OPTIONS } from '../constants/requestReviewStatus';
 
 const quickPresets = [
   { key: 'today', label: 'Today' },
@@ -23,6 +23,11 @@ const statusOptions = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
+const assignmentFilterOptions = [
+  { value: 'unassigned', label: 'Unassigned' },
+  { value: 'assigned', label: 'Assigned' },
+];
+
 export function CampsFilters({
   search,
   onSearchChange,
@@ -37,6 +42,8 @@ export function CampsFilters({
   onFilterChange,
   activeChips,
   onClearAll,
+  assignmentStage = false,
+  requestStage = false,
 }) {
   const activePreset = matchQuickPreset(dateFrom, dateTo);
 
@@ -48,83 +55,102 @@ export function CampsFilters({
   }
 
   return (
-    <div className="camps-filter-panel panel">
-      <div className="inv-toolbar logistics-toolbar camp-ops-toolbar">
-        <input
-          id="camps-search"
-          className="esign-search inv-search"
-          placeholder="Camp ID, doctor, clinic/hospital, city…"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
-        />
-        <button type="button" className="btn secondary" onClick={onSearchSubmit}>
-          Search
-        </button>
-      </div>
-
-      <div className="camps-filter-grid">
-        <section className="camps-filter-section">
-          <span className="camps-filter-section-title">Date range</span>
-          <div className="camps-filter-date-row">
-            <div className="date-quick-filters" role="group" aria-label="Quick date filters">
-              {quickPresets.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`btn secondary btn-compact date-quick-btn${activePreset === key ? ' is-active' : ''}`}
-                  onClick={() => handleQuickSelect(key)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="camps-date-inputs">
-              <DateInput
-                id="camps-date-from"
-                hideLabel
-                value={dateFrom}
-                onChange={onDateFromChange}
-              />
-              <span className="camps-date-separator">to</span>
-              <DateInput
-                id="camps-date-to"
-                hideLabel
-                value={dateTo}
-                onChange={onDateToChange}
-              />
-            </div>
-            {(dateFrom || dateTo) && (
-              <button type="button" className="btn secondary btn-compact" onClick={onClearDates}>
-                Clear dates
-              </button>
-            )}
-          </div>
-        </section>
-
-        <section className="camps-filter-section">
-          <SelectDropdown
-            id="camps-status-filter"
-            label="Status & alerts"
-            value={filterValue}
-            options={[
-              { value: '', label: 'All camps' },
-              ...alertOptions.map((option) => ({ value: option.value, label: option.label })),
-              ...statusOptions.map((option) => ({ value: option.value, label: option.label })),
-            ]}
-            onChange={onFilterChange}
+    <div className="camps-filter-card">
+      <div className="camps-filter-toolbar">
+        <div className="camps-filter-group camps-filter-group--search">
+          <input
+            id="camps-search"
+            className="camps-filter-control camps-filter-search"
+            placeholder="Search camp ID, doctor, city…"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
           />
-        </section>
+          <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
+            Search
+          </button>
+        </div>
+
+        <span className="camps-filter-divider" aria-hidden="true" />
+
+        <select
+          id="camps-status-filter"
+          className="camps-filter-control camps-filter-status"
+          aria-label={assignmentStage ? 'Assignment status' : requestStage ? 'Request review status' : 'Status and alerts'}
+          value={filterValue}
+          onChange={(e) => onFilterChange(e.target.value)}
+        >
+          {assignmentStage ? (
+            assignmentFilterOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))
+          ) : requestStage ? (
+            REQUEST_REVIEW_FILTER_OPTIONS.map((option) => (
+              <option key={option.value || 'all'} value={option.value}>{option.label}</option>
+            ))
+          ) : (
+            <>
+              <option value="">All camps</option>
+              {alertOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </>
+          )}
+        </select>
+
+        <span className="camps-filter-divider" aria-hidden="true" />
+
+        <div className="camps-filter-group camps-filter-group--dates" role="group" aria-label="Date filters">
+          <div className="camps-filter-quick-dates" role="group" aria-label="Quick date filters">
+            {quickPresets.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                className={`btn secondary btn-compact camps-filter-preset${activePreset === key ? ' is-active' : ''}`}
+                onClick={() => handleQuickSelect(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="camps-filter-date-range">
+            <DateInput
+              id="camps-date-from"
+              hideLabel
+              className="camps-filter-date-field"
+              value={dateFrom}
+              onChange={onDateFromChange}
+            />
+            <span className="camps-filter-date-sep">to</span>
+            <DateInput
+              id="camps-date-to"
+              hideLabel
+              className="camps-filter-date-field"
+              value={dateTo}
+              onChange={onDateToChange}
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button type="button" className="btn secondary btn-compact" onClick={onClearDates}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {activeChips.length > 0 && (
-        <div className="camps-filter-chips">
+        <div className="camps-filter-chips camps-filter-chips--row">
           {activeChips.map((chip) => (
             <span key={chip.key} className="filter-chip">
               {chip.label}
-              <button type="button" aria-label={`Remove ${chip.label} filter`} onClick={chip.onRemove}>
-                ×
-              </button>
+              {chip.onRemove && (
+                <button type="button" aria-label={`Remove ${chip.label} filter`} onClick={chip.onRemove}>
+                  ×
+                </button>
+              )}
             </span>
           ))}
           <button type="button" className="btn secondary btn-compact" onClick={onClearAll}>

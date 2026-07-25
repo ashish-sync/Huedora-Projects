@@ -26,6 +26,7 @@ const emptyForm = {
 export default function LocationMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
   const canWrite = can('agreements:write') || can('users:write') || can('*');
+  const canDelete = can('*');
   const excelConfig = masterExcelFor('pin-codes');
   const [meta, setMeta] = useState(null);
   const [rows, setRows] = useState([]);
@@ -105,6 +106,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
   };
 
   const remove = async (id) => {
+    if (!canDelete) return;
     if (!window.confirm('Remove this PIN mapping?')) return;
     setError('');
     try {
@@ -209,9 +211,11 @@ export default function LocationMasterPage({ embedded = false } = {}) {
                       <button className="btn secondary btn-compact" type="button" onClick={() => startEdit(r)}>
                         Edit
                       </button>{' '}
-                      <button className="btn secondary btn-compact" type="button" onClick={() => remove(r._id)}>
-                        Remove
-                      </button>
+                      {canDelete ? (
+                        <button className="btn secondary btn-compact" type="button" onClick={() => remove(r._id)}>
+                          Remove
+                        </button>
+                      ) : null}
                     </>
                   ) : null}
                 </td>

@@ -1,19 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CampManageHeaderActions } from './components/CampManageHeaderActions.jsx';
-import { ChartsEyeToggle } from './components/DashboardWidgets.jsx';
+import { CampWorkingStageSelect } from './components/CampWorkingStageSelect.jsx';
+import { CampWorkingStageProvider } from './CampWorkingStageContext.jsx';
 import { useCampOpsAuth } from './useCampOpsAuth.js';
-import PageShell from '../../components/ui/PageShell.jsx';
-import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
+import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
+import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
 import './campOps.css';
 import './campOps.theme.css';
 
 const pageTitles = {
-  '/camps': { title: 'Dashboard', subtitle: 'Camp operations overview' },
   '/camps/manage': { title: 'Camps', subtitle: 'Review, approve, execute and manage camps' },
   '/camps/import': { title: 'Excel Import', subtitle: 'Upload, map headers, preview and import camps' },
-  '/camps/chargesheet': { title: NAV.CHARGESHEET, subtitle: 'Prepare and reconcile camp chargesheets' },
-  '/camps/payout': { title: NAV.PAYOUT, subtitle: 'Track camp payouts and settlement status' },
   '/camps/communications/paste': { title: 'Manual Paste', subtitle: 'Paste camp details, extract fields, and create camps' },
   '/camps/communications/email': { title: 'Manual Paste', subtitle: 'Review inbox, extract camps, and manage email rules' },
 };
@@ -32,12 +30,59 @@ function isCampsListRoute(pathname) {
   return pathname === '/camps/manage';
 }
 
+function CampOpsLayoutBody({
+  breadcrumbs,
+  meta,
+  isCampsList,
+  navItems,
+  showSubtitle,
+}) {
+  return (
+    <div className="camp-ops-root logistics-shell">
+      <PageShell hideChrome className="camp-ops-page-shell">
+        <header className="camp-ops-strip">
+          <div className="camp-ops-strip__main">
+            <Breadcrumbs items={breadcrumbs} />
+            <div className="camp-ops-strip__title-row">
+              <h2 className="topbar-title">{meta.title}</h2>
+              {navItems.length > 0 && (
+                <nav className="camp-ops-inline-nav" aria-label={`${MODULE.CAMP_MANAGEMENT} sections`}>
+                  {navItems.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) => `camp-ops-inline-nav-link${isActive ? ' is-active' : ''}`}
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </nav>
+              )}
+            </div>
+            {showSubtitle && (
+              <p className="muted topbar-desc camp-ops-strip__desc">{meta.subtitle}</p>
+            )}
+          </div>
+          <div className="camp-ops-strip__actions">
+            <div className="camp-ops-header-actions">
+              <CampWorkingStageSelect compact />
+              {isCampsList ? <CampManageHeaderActions /> : null}
+            </div>
+          </div>
+        </header>
+        <div className="camp-ops-page-content">
+          <Outlet />
+        </div>
+      </PageShell>
+    </div>
+  );
+}
+
 export default function CampOpsLayout() {
   const { hasPermission } = useCampOpsAuth();
   const { pathname } = useLocation();
   const meta = getPageMeta(pathname);
-  const [showCharts, setShowCharts] = useState(false);
-  const isDashboard = pathname === '/camps';
   const isCampsList = isCampsListRoute(pathname);
 
   const allowed =
@@ -46,18 +91,14 @@ export default function CampOpsLayout() {
     || hasPermission('camps:approve')
     || hasPermission('camps:request');
 
-  useEffect(() => {
-    if (!isDashboard) setShowCharts(false);
-  }, [isDashboard]);
-
   const breadcrumbs = useMemo(() => {
     const items = [
       { to: '/', label: MODULE.HOME },
-      pathname === '/camps'
+      pathname === '/camps/manage'
         ? { label: MODULE.CAMP_MANAGEMENT }
-        : { to: '/camps', label: MODULE.CAMP_MANAGEMENT },
+        : { to: '/camps/manage', label: MODULE.CAMP_MANAGEMENT },
     ];
-    if (pathname !== '/camps' && meta.title) {
+    if (pathname !== '/camps/manage' && meta.title) {
       items.push({ label: meta.title });
     }
     return items;
@@ -65,20 +106,7 @@ export default function CampOpsLayout() {
 
   const navItems = useMemo(() => {
     const items = [
-      { to: '/camps', end: true, label: 'Dashboard', show: true },
       { to: '/camps/manage', end: false, label: 'Camps', show: hasPermission('camps:read') },
-      {
-        to: '/camps/chargesheet',
-        end: false,
-        label: NAV.CHARGESHEET,
-        show: hasPermission('camps:read'),
-      },
-      {
-        to: '/camps/payout',
-        end: false,
-        label: NAV.PAYOUT,
-        show: hasPermission('camps:read'),
-      },
       {
         to: '/camps/communications',
         end: false,
@@ -103,39 +131,15 @@ export default function CampOpsLayout() {
     );
   }
 
-  const actions = isDashboard ? (
-    <ChartsEyeToggle
-      showCharts={showCharts}
-      onToggle={() => setShowCharts((value) => !value)}
-    />
-  ) : isCampsList ? (
-    <CampManageHeaderActions />
-  ) : null;
-
   return (
-    <div className="camp-ops-root logistics-shell">
-      <PageShell
+    <CampWorkingStageProvider>
+      <CampOpsLayoutBody
         breadcrumbs={breadcrumbs}
-        title={meta.title}
-        description={meta.subtitle || MODULE_BLURB.CAMP_MANAGEMENT}
-        actions={actions}
-      >
-        <nav className="logistics-nav" aria-label={`${MODULE.CAMP_MANAGEMENT} sections`}>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `logistics-nav-link${isActive ? ' is-active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="camp-ops-page-content">
-          <Outlet context={{ showCharts }} />
-        </div>
-      </PageShell>
-    </div>
+        meta={meta}
+        isCampsList={isCampsList}
+        navItems={navItems}
+        showSubtitle={!isCampsList && Boolean(meta.subtitle)}
+      />
+    </CampWorkingStageProvider>
   );
 }

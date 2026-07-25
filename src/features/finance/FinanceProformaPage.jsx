@@ -80,6 +80,7 @@ async function downloadProformaPdf(row, { download = true } = {}) {
 export default function FinanceProformaPage() {
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
+  const canDelete = can('*');
   const uploadRef = useRef(null);
 
   const [rows, setRows] = useState([]);
@@ -401,7 +402,7 @@ export default function FinanceProformaPage() {
   };
 
   const remove = async (row) => {
-    if (!canWrite || !window.confirm(`Delete proforma ${row.documentNumber || row.docKey}?`)) return;
+    if (!canDelete || !window.confirm(`Delete proforma ${row.documentNumber || row.docKey}?`)) return;
     try {
       await api(`/finance/proformas/${row._id}`, { method: 'DELETE' });
       setMsg('Proforma deleted.');
@@ -585,7 +586,7 @@ export default function FinanceProformaPage() {
                         Edit
                       </button>
                     )}
-                    {canWrite && (
+                    {canDelete && (
                       <button
                         className="btn secondary btn-compact"
                         type="button"

@@ -7,8 +7,13 @@ export function CampNameSelect({
   disabled = false,
   required = false,
   error = '',
-  placeholder = 'Select camp name',
+  placeholder = 'Select method',
+  options = CAMP_NAME_OPTIONS,
+  emptyLabel = '',
 }) {
+  const list = Array.isArray(options) ? options : CAMP_NAME_OPTIONS;
+  const placeholderText = emptyLabel || placeholder;
+
   return (
     <>
       <select
@@ -19,8 +24,8 @@ export function CampNameSelect({
         required={required}
         className={error ? 'input-invalid' : ''}
       >
-        <option value="">{placeholder}</option>
-        {CAMP_NAME_OPTIONS.map((name) => (
+        <option value="">{placeholderText}</option>
+        {list.map((name) => (
           <option key={name} value={name}>{name}</option>
         ))}
       </select>

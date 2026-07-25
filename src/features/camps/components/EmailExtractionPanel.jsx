@@ -5,23 +5,26 @@ import { formatDateDDMMYYYY } from '../utils/dateFormat';
 const BODY_FIELDS = [
   { key: 'clientName', label: 'Client Name', required: true },
   { key: 'campaignType', label: 'Division / Therapy' },
-  { key: 'campaignName', label: 'Camp Name' },
+  { key: 'campaignName', label: 'Method' },
+  { key: 'campDate', label: 'Camp Date' },
+  { key: 'startTime', label: 'Camp Start Time' },
+  { key: 'endTime', label: 'Camp End Time' },
   { key: 'doctorName', label: 'Doctor Name' },
   { key: 'doctorCode', label: 'Doctor Code' },
   { key: 'campAddress', label: 'Camp Address' },
-  { key: 'city', label: 'City' },
   { key: 'state', label: 'State' },
-  { key: 'pincode', label: 'Pincode' },
-  { key: 'campDate', label: 'Camp Date' },
-  { key: 'startTime', label: 'Start Time' },
-  { key: 'endTime', label: 'End Time' },
+  { key: 'city', label: 'City' },
+  { key: 'hq', label: 'HQ' },
+  { key: 'pincode', label: 'PIN Code' },
   { key: 'expectedPatients', label: 'Expected Patients' },
-  { key: 'fieldPersonName', label: 'Field Person Name' },
-  { key: 'fieldPersonPhone', label: 'Field Person Contact' },
+  { key: 'fieldPersonName', label: 'Contact Person Name' },
+  { key: 'fieldPersonPhone', label: 'Contact Person Number' },
   { key: 'remarks', label: 'Remarks' },
 ];
 
-function formatFieldValue(key, value) {
+function formatFieldValue(key, value, entry) {
+  const display = entry?.pasteDisplay?.[key];
+  if (display) return display;
   if (!value && value !== 0) return '—';
   if (key === 'campDate') return formatDateDDMMYYYY(value) || '—';
   return String(value);
@@ -152,10 +155,16 @@ function BodyExtractionForm({
               {BODY_FIELDS.map((field) => (
                 <div key={field.key} className="email-extraction-dl-row">
                   <dt>{field.label}</dt>
-                  <dd>{formatFieldValue(field.key, entry.row?.[field.key])}</dd>
+                  <dd>{formatFieldValue(field.key, entry.row?.[field.key], entry)}</dd>
                 </div>
               ))}
             </dl>
+            {entry.pasteFormatted ? (
+              <details className="email-extraction-formatted">
+                <summary>Formatted extraction output</summary>
+                <pre>{entry.pasteFormatted}</pre>
+              </details>
+            ) : null}
           </article>
           );
         })}

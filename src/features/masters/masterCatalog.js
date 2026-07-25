@@ -245,6 +245,14 @@ export const MASTER_ENTITIES = [
     embedded: 'picklist-approvals',
     fields: [],
   },
+  {
+    id: 'zones',
+    label: 'Zones',
+    module: 'camp',
+    apiPath: '/geo/zones',
+    embedded: 'zones',
+    fields: [],
+  },
 ];
 
 /** Hub sidebar groups (mirrors LogisticsMasterPage layout + Document). */
@@ -277,7 +285,7 @@ export const MASTER_HUB_GROUPS = [
     id: 'camp-masters',
     label: 'Camp One',
     scope: 'camp',
-    entityIds: ['client-masters'],
+    entityIds: ['client-masters', 'zones'],
   },
 ];
 

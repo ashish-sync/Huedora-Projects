@@ -48,7 +48,7 @@ export function validateClientMasterForm(form) {
 
   const campName = String(form.campName || '').trim();
   if (campName && !CAMP_NAME_OPTIONS.includes(campName)) {
-    errors.campName = 'Select a valid camp name';
+    errors.campName = 'Select a valid method';
   }
 
   const campDuration = String(form.campDuration || '').trim();

@@ -84,10 +84,18 @@ export const campApi = {
   submitReview: (id, payload = {}) => post(`${BASE}/camps/${id}/submit-review`, payload),
   approve: (id, payload = {}) => post(`${BASE}/camps/${id}/approve`, payload),
   reject: (id, payload = {}) => post(`${BASE}/camps/${id}/reject`, payload),
+  requestInformation: (id, payload = {}) => post(`${BASE}/camps/${id}/request-information`, payload),
   cancel: (id, payload = {}) => post(`${BASE}/camps/${id}/cancel`, payload),
+  close: (id, payload = {}) => post(`${BASE}/camps/${id}/close`, payload),
   execute: (id, payload = {}) => post(`${BASE}/camps/${id}/execute`, payload),
   delete: (id) => del(`${BASE}/camps/${id}`),
   bulkAction: (payload) => post(`${BASE}/camps/bulk-action`, payload),
+  uploadExecutionDocuments: (id, files, docType) => {
+    const formData = new FormData();
+    for (const file of files) formData.append('documents', file);
+    formData.append('docType', docType);
+    return postForm(`${BASE}/camps/${id}/execution-documents`, formData);
+  },
 };
 
 export const clientApi = {

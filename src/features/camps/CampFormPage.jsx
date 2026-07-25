@@ -1,93 +1,173 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
+import { api } from '../../shared/api.js';
 import { trimFormStrings } from './utils/trimInput';
 import { toApiDateValue } from './utils/dateFormat';
-import { computeEndTime } from './utils/campSchedule';
-import { CampNameSelect } from './components/CampNameSelect';
-import { DateInput } from './components/DateInput';
+import { computeDurationHours } from './utils/campSchedule';
 import { FormPageHeader } from './components/FormPageHeader';
-import { StateSearchInput } from './components/StateSearchInput';
+import { CampLifecycleForm } from './components/CampLifecycleForm';
+import { CampRowInfoMenu } from './components/CampRowInfoMenu';
+import { CampActionConfirmModal } from './components/CampActionConfirmModal';
+import { buildClosureDetails } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
-import { CAMP_NAME_OPTIONS } from './constants/campNames';
+import {
+  parseClientMasterDivisions,
+  pickSingleOption,
+  resolveCampNameOptions,
+} from './utils/clientMasterCascade';
+import {
+  canEditLifecycleStage,
+  campToForm,
+  emptyLifecycleForm,
+  maxLifecycleStage,
+  resolveCampSlot,
+  hasReachedLifecycleStage,
+  todayIsoDate,
+} from './constants/campLifecycle';
+import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
+import { validateRequestStageForm } from './utils/validateRequestStage';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
-
 const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
+const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for this client and division.';
 
-function filterApprovalBlockers(blockers, form) {
+const formStringFields = [
+  'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state',
+  'pincode', 'startTime', 'endTime', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
+  'hq', 'zone', 'hcwCategory', 'hcwName', 'hcwContact', 'hcwContactId', 'cancellationReason', 'chargeableStatus',
+  'inTime', 'outTime', 'punctuality', 'attire', 'transactionId', 'paymentRemark',
+  'assignmentStatus', 'assignmentDecision', 'assignmentRefusalReason', 'executionStatus', 'source', 'requestDate',
+];
+
+function filterApprovalBlockers(blockers, form, campNameOptions) {
   const campDivision = String(form.campaignType || '').trim();
   const campCampName = String(form.campaignName || '').trim();
   const hasValidDivision = Boolean(campDivision);
-  const hasValidCampName = CAMP_NAME_OPTIONS.includes(campCampName);
+  const hasValidCampName = campNameOptions.includes(campCampName);
 
   return (blockers || []).filter((message) => {
-    if (message.includes('division / business unit')) {
-      return !hasValidDivision;
-    }
-    if (message.includes('valid camp name')) {
-      return !hasValidCampName;
-    }
-    if (message.includes('No matching program in Client Master')) {
-      return !(hasValidDivision && hasValidCampName);
-    }
+    if (message.includes('division / business unit')) return !hasValidDivision;
+    if (message.includes('valid camp name') || message.includes('valid method')) return !hasValidCampName;
+    if (message.includes('No matching program in Client Master')) return !(hasValidDivision && hasValidCampName);
     return true;
   });
 }
 
-const formStringFields = [
-  'campaignName', 'doctorName', 'doctorCode', 'hospitalName',
-  'campAddress', 'city', 'state', 'pincode', 'startTime', 'endTime',
-  'fieldPersonName', 'fieldPersonPhone', 'remarks',
-];
-
-const DURATION_OPTIONS = [3, 4, 5, 6, 8];
-
-const emptyForm = {
-  clientId: '',
-  campaignName: 'BMD',
-  campaignType: '',
-  doctorName: '',
-  doctorCode: '',
-  hospitalName: '',
-  campAddress: '',
-  city: '',
-  state: '',
-  pincode: '',
-  campDate: '',
-  startTime: '09:00',
-  endTime: '12:00',
-  durationHours: 3,
-  expectedPatients: 50,
-  fieldPersonName: '',
-  fieldPersonPhone: '',
-  remarks: '',
-  source: 'dashboard',
-};
-
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord, hasPermission } = useAuth();
+  const { canEditCampRecord, hasPermission, canRejectCamps, isSuperAdmin } = useAuth();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const { workingStage } = useCampWorkingStage();
   const [clients, setClients] = useState([]);
+  const [divisionPrograms, setDivisionPrograms] = useState([]);
   const [divisionOptions, setDivisionOptions] = useState([]);
   const [programsLoading, setProgramsLoading] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(emptyLifecycleForm);
+  const [activeStage, setActiveStage] = useState('request');
   const [campMeta, setCampMeta] = useState(null);
   const [readOnly, setReadOnly] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
   const [showSourcePreview, setShowSourcePreview] = useState(false);
+  const [hcwContacts, setHcwContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [confirmRequest, setConfirmRequest] = useState(null);
+  const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
+  const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const hcwContactsLoadedRef = useRef(false);
+
+  const campStatus = campMeta?.status || 'pending_review';
+
+  function applyCampAccess(camp) {
+    const loadedStage = camp.lifecycleStage || 'request';
+    const preferredStage = workingStage && hasReachedLifecycleStage(loadedStage, workingStage)
+      ? workingStage
+      : loadedStage;
+    setActiveStage(preferredStage);
+
+    const assignmentEditable = hasReachedLifecycleStage(loadedStage, 'assignment')
+      && camp.status === 'approved'
+      && canEditLifecycleStage(camp.status, 'assignment', loadedStage);
+
+    if (!canEditCampRecord(camp) && !assignmentEditable) {
+      setReadOnly(true);
+      return;
+    }
+
+    setReadOnly(
+      assignmentEditable
+        ? false
+        : (!EDITABLE_STATUSES.includes(camp.status) && camp.status !== 'executed'),
+    );
+  }
+
+  const reachedLifecycleStage = campMeta?.lifecycleStage || form.lifecycleStage || 'request';
 
   useEffect(() => {
-    clientApi.list({ limit: 500, page: 1 }).then(({ data }) => setClients(Array.isArray(data?.data) ? data.data : []));
+    if (!isEdit) {
+      setForm((prev) => ({ ...prev, requestDate: todayIsoDate() }));
+    }
+  }, [isEdit]);
+
+  useEffect(() => {
+    if (!isEdit && workingStage) {
+      setActiveStage(workingStage);
+      setForm((prev) => ({ ...prev, lifecycleStage: workingStage }));
+    }
+  }, [isEdit, workingStage]);
+
+  useEffect(() => {
+    if (activeStage !== 'assignment' && workingStage !== 'assignment') return undefined;
+    if (hcwContactsLoadedRef.current) return undefined;
+    let cancelled = false;
+    setContactsLoading(true);
+    api('/contacts?limit=500')
+      .then((res) => {
+        if (!cancelled) {
+          setHcwContacts(res.data || []);
+          hcwContactsLoadedRef.current = true;
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHcwContacts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setContactsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeStage, workingStage]);
+
+  useEffect(() => {
+    Promise.all([
+      clientApi.list({ limit: 500, page: 1 }),
+      clientMasterApi.list({ limit: 500, page: 1 }),
+    ])
+      .then(([clientRes, masterRes]) => {
+        const allClients = Array.isArray(clientRes.data?.data) ? clientRes.data.data : [];
+        const masters = Array.isArray(masterRes.data?.data) ? masterRes.data.data : [];
+        const configuredClientIds = new Set(
+          masters.map((row) => row.client?._id || row.clientId || row.client).filter(Boolean).map(String),
+        );
+        setClients(
+          configuredClientIds.size
+            ? allClients.filter((client) => configuredClientIds.has(String(client._id)))
+            : allClients,
+        );
+      })
+      .catch(() => setClients([]));
   }, []);
 
   useEffect(() => {
     if (!form.clientId) {
+      setDivisionPrograms([]);
       setDivisionOptions([]);
       return undefined;
     }
@@ -97,43 +177,47 @@ export default function CampFormPage() {
     clientMasterApi.listDivisionsByClient(form.clientId)
       .then(({ data }) => {
         if (cancelled) return;
-        const divisions = Array.isArray(data?.divisions)
-          ? data.divisions
-          : Array.isArray(data?.data)
-            ? data.data.map((d) => d.programName || d).filter(Boolean)
-            : [];
+        const { programs, divisions } = parseClientMasterDivisions(data);
+        setDivisionPrograms(programs);
         setDivisionOptions(divisions);
-
         if (!isEdit) {
           setForm((prev) => {
-            const next = { ...prev, campaignType: divisions.length === 1 ? divisions[0] : '' };
-            if (prev.campaignType && !divisions.includes(prev.campaignType)) {
-              next.campaignType = divisions.length === 1 ? divisions[0] : '';
-            }
-            return next;
+            const nextDivision = prev.campaignType && divisions.includes(prev.campaignType)
+              ? prev.campaignType
+              : pickSingleOption(divisions);
+            const campNames = resolveCampNameOptions(programs, nextDivision);
+            const nextCampName = prev.campaignName && campNames.includes(prev.campaignName)
+              ? prev.campaignName
+              : pickSingleOption(campNames);
+            return { ...prev, campaignType: nextDivision, campaignName: nextCampName };
           });
         }
       })
       .catch(() => {
-        if (!cancelled) setDivisionOptions([]);
+        if (!cancelled) {
+          setDivisionPrograms([]);
+          setDivisionOptions([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setProgramsLoading(false);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [form.clientId, isEdit]);
 
   useEffect(() => {
-    if (!isEdit) return undefined;
+    if (!isEdit || !id) return undefined;
 
+    let cancelled = false;
     setFetching(true);
+    setError('');
     campApi.get(id)
       .then(({ data }) => {
+        if (cancelled) return;
         const camp = data.data;
         setCampMeta({
+          _id: camp._id,
           campId: camp.campId,
           status: camp.status,
           source: camp.source,
@@ -145,117 +229,253 @@ export default function CampFormPage() {
           whatsappSenderPhone: camp.whatsappSenderPhone,
           whatsappRawMessage: camp.whatsappRawMessage,
           submittedAt: camp.submittedAt || camp.createdAt,
-        });
-        if (!canEditCampRecord(camp)) {
-          setError('You can only edit camps that are pending review.');
-          setReadOnly(true);
-        } else {
-          setReadOnly(!EDITABLE_STATUSES.includes(camp.status));
-        }
-        setForm({
-          clientId: camp.client?._id || camp.client || '',
-          campaignName: camp.campaignName || 'BMD',
-          campaignType: camp.campaignType || '',
-          doctorName: camp.doctorName || '',
-          doctorCode: camp.doctorCode || '',
-          hospitalName: camp.hospitalName || camp.clinicName || '',
-          campAddress: camp.campAddress || '',
-          city: camp.city || '',
-          state: camp.state || '',
-          pincode: camp.pincode || '',
-          campDate: toApiDateValue(camp.campDate),
-          startTime: camp.startTime || '09:00',
-          endTime: camp.endTime || '12:00',
-          durationHours: camp.durationHours || 3,
-          expectedPatients: camp.expectedPatients ?? 50,
-          fieldPersonName: camp.fieldPersonName || '',
-          fieldPersonPhone: camp.fieldPersonPhone || '',
+          requestReviewStatus: camp.requestReviewStatus || '',
+          requestReviewStatusLabel: camp.requestReviewStatusLabel || '',
+          informationRequestNote: camp.informationRequestNote || '',
+          lifecycleStage: camp.lifecycleStage || 'request',
+          rejectionReason: camp.rejectionReason || '',
+          cancellationReason: camp.cancellationReason || '',
+          closureReasonCode: camp.closureReasonCode || '',
+          assignmentRefusalReason: camp.assignmentRefusalReason || '',
+          cancelledBy: camp.cancelledBy || '',
           remarks: camp.remarks || '',
-          source: camp.source || 'dashboard',
+          clientName: camp.clientName || '',
+          campaignName: camp.campaignName || '',
+          campaignType: camp.campaignType || '',
         });
+        setForm(campToForm(camp));
+        applyCampAccess(camp);
+        if (!canEditCampRecord(camp) && !(workingStage === 'assignment' && camp.status === 'approved')) {
+          setError('You can only edit camps that are pending review.');
+        }
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load camp');
+        if (!cancelled) setError(err?.message || 'Failed to load camp');
       })
-      .finally(() => setFetching(false));
+      .finally(() => {
+        if (!cancelled) setFetching(false);
+      });
 
-    return undefined;
+    return () => {
+      cancelled = true;
+    };
+    // Load camp once per id — stage/permission changes are handled separately.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEdit]);
+
+  useEffect(() => {
+    if (!isEdit || !campMeta) return;
+    applyCampAccess({
+      status: campMeta.status,
+      lifecycleStage: campMeta.lifecycleStage,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workingStage, campMeta?.status, campMeta?.lifecycleStage, isEdit]);
 
   function updateField(field, value) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === 'clientId') {
         next.campaignType = '';
+        next.campaignName = '';
       }
-      if (field === 'startTime' || field === 'durationHours') {
-        const hours = Number(field === 'durationHours' ? value : next.durationHours) || 3;
+      if (field === 'campaignType') {
+        const campNames = resolveCampNameOptions(divisionPrograms, value);
+        next.campaignName = pickSingleOption(campNames);
+      }
+      if (field === 'startTime' || field === 'endTime') {
         const start = field === 'startTime' ? value : next.startTime;
-        next.durationHours = hours;
-        next.endTime = computeEndTime(start, hours);
+        const end = field === 'endTime' ? value : next.endTime;
+        if (start && end) {
+          next.durationHours = computeDurationHours(start, end);
+        }
+        if (start) {
+          next.campSlot = resolveCampSlot(start);
+        }
+      }
+      if (field === 'inTime' || field === 'outTime') {
+        next.lifecycleStage = next.lifecycleStage || 'execution';
       }
       return next;
     });
   }
 
+  function updateFields(patch) {
+    setForm((prev) => ({ ...prev, ...patch }));
+  }
+
+  async function handleUploadDocuments(fileList, docType) {
+    if (!id || !fileList?.length) return;
+    setUploadBusy(true);
+    setError('');
+    try {
+      const { data } = await campApi.uploadExecutionDocuments(id, fileList, docType);
+      setForm(campToForm(data.data));
+    } catch (err) {
+      setError(err?.message || 'Failed to upload documents');
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
+  function openCampActionConfirm(action) {
+    setConfirmRequest({
+      mode: 'single',
+      action,
+      camp: campMeta,
+    });
+    setConfirmClosureDetails(action === 'closeCamp' ? buildClosureDetails() : null);
+    setConfirmReasonDetails(['reject', 'requestInformation'].includes(action) ? { reason: '' } : null);
+    setError('');
+  }
+
+  function closeCampActionConfirm() {
+    if (confirmLoading) return;
+    setConfirmRequest(null);
+    setConfirmClosureDetails(null);
+    setConfirmReasonDetails(null);
+  }
+
+  async function executeCampActionConfirm() {
+    if (!confirmRequest || !id) return;
+
+    setConfirmLoading(true);
+    setError('');
+    try {
+      const { action } = confirmRequest;
+      const payload = action === 'closeCamp'
+        ? {
+          closureType: confirmClosureDetails.closureType,
+          reasonCode: confirmClosureDetails.reasonCode,
+        }
+        : action === 'reject'
+          ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
+          : action === 'requestInformation'
+            ? { informationRequestNote: confirmReasonDetails?.reason?.trim() || '' }
+            : {};
+
+      const handlers = {
+        closeCamp: campApi.close,
+        reject: campApi.reject,
+        requestInformation: campApi.requestInformation,
+        delete: campApi.delete,
+      };
+      const handler = handlers[action];
+      if (!handler) throw new Error(`Unsupported camp action: ${action}`);
+
+      if (action === 'delete') {
+        await handler(id);
+        navigate('/camps/manage');
+        return;
+      }
+
+      const { data } = await handler(id, payload);
+      const camp = data.data;
+      setCampMeta((prev) => ({
+        ...prev,
+        status: camp.status,
+        requestReviewStatus: camp.requestReviewStatus || '',
+        requestReviewStatusLabel: camp.requestReviewStatusLabel || '',
+        informationRequestNote: camp.informationRequestNote || '',
+        rejectionReason: camp.rejectionReason || '',
+        cancellationReason: camp.cancellationReason || '',
+        closureReasonCode: camp.closureReasonCode || '',
+        assignmentRefusalReason: camp.assignmentRefusalReason || '',
+        cancelledBy: camp.cancelledBy || '',
+        remarks: camp.remarks || '',
+      }));
+      setForm(campToForm(camp));
+      applyCampAccess(camp);
+      setConfirmRequest(null);
+      setConfirmClosureDetails(null);
+      setConfirmReasonDetails(null);
+
+      if (action === 'closeCamp') {
+        navigate('/camps/manage');
+      }
+    } catch (err) {
+      setError(err?.message || 'Action failed');
+    } finally {
+      setConfirmLoading(false);
+    }
+  }
+
+  function requestCampAction(_campId, action) {
+    openCampActionConfirm(action);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    if (readOnly) return;
+    if (readOnly && campStatus === 'cancelled') return;
 
-    if (!form.clientId) {
-      setError('Please select a client');
-      return;
+    if (activeStage === 'request' || !isEdit) {
+      const requestErrors = validateRequestStageForm(form);
+      if (requestErrors.length) {
+        setError(requestErrors[0]);
+        return;
+      }
+      if (!divisionOptions.length) {
+        setError(NO_DIVISION_MESSAGE);
+        return;
+      }
+      const campNameOptionsForSave = resolveCampNameOptions(divisionPrograms, form.campaignType, form.campaignName);
+      if (!campNameOptionsForSave.length) {
+        setError(NO_METHOD_MESSAGE);
+        return;
+      }
+      if (!campNameOptionsForSave.includes(form.campaignName)) {
+        setError('Please select a method configured for this client and division');
+        return;
+      }
     }
 
-    if (!divisionOptions.length) {
-      setError(NO_DIVISION_MESSAGE);
-      return;
-    }
-
-    if (!form.campaignType || !divisionOptions.includes(form.campaignType)) {
-      setError('Please select a division / business unit configured for this client');
-      return;
-    }
-
-    if (!CAMP_NAME_OPTIONS.includes(form.campaignName)) {
-      setError('Please select a camp name');
-      return;
-    }
-
-    const campDate = toApiDateValue(form.campDate);
-    if (!campDate) {
-      setError('Camp date is required');
-      return;
-    }
-
-    if (!/^\d{1,2}:\d{2}$/.test(String(form.startTime || '').trim())) {
-      setError('Start time must be in HH:MM format');
-      return;
-    }
-
-    const phoneDigits = String(form.fieldPersonPhone || '').replace(/\D/g, '');
-    if (phoneDigits && (phoneDigits.length < 6 || phoneDigits.length > 15)) {
-      setError('Field person phone must be 6–15 digits');
-      return;
+    if (activeStage === 'assignment') {
+      if (!form.assignmentDecision) {
+        setError('Select Assign or Refuse');
+        return;
+      }
+      if (form.assignmentDecision === 'assign') {
+        if (!form.hcwContactId) {
+          setError('Select an HCW from Contact Directory');
+          return;
+        }
+        if (!form.hcwCategory || !form.hcwName || !form.hcwContact) {
+          setError('HCW Category, Name, and Contact are required when assigning');
+          return;
+        }
+      }
+      if (form.assignmentDecision === 'refuse' && !String(form.assignmentRefusalReason || '').trim()) {
+        setError('Select a refusal reason');
+        return;
+      }
     }
 
     const trimmed = trimFormStrings(form, formStringFields);
     const payload = {
+      ...form,
       ...trimmed,
       clientId: form.clientId,
-      campDate,
+      campDate: toApiDateValue(form.campDate),
+      requestDate: isEdit
+        ? (toApiDateValue(form.requestDate) || form.requestDate)
+        : todayIsoDate(),
       durationHours: form.durationHours,
       expectedPatients: form.expectedPatients,
+      patientsCount: form.patientsCount,
+      editingStage: activeStage,
+      lifecycleStage: isEdit
+        ? maxLifecycleStage(reachedLifecycleStage, activeStage)
+        : activeStage,
+      lifecycleOnly: isEdit && activeStage !== 'request',
     };
 
-    setForm({ ...form, ...trimmed });
     setLoading(true);
     setError('');
     try {
       if (isEdit) {
         await campApi.update(id, payload);
       } else {
-        await campApi.create({ ...payload, source: form.source });
+        await campApi.create(payload);
       }
       navigate('/camps/manage');
     } catch (err) {
@@ -264,6 +484,18 @@ export default function CampFormPage() {
       setLoading(false);
     }
   }
+
+  const campNameOptions = useMemo(
+    () => resolveCampNameOptions(divisionPrograms, form.campaignType, form.campaignName),
+    [divisionPrograms, form.campaignType, form.campaignName],
+  );
+
+  const stageReadOnly = useMemo(() => ({
+    request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage),
+    assignment: readOnly || !canEditLifecycleStage(campStatus, 'assignment', reachedLifecycleStage),
+    execution: readOnly || !canEditLifecycleStage(campStatus, 'execution', reachedLifecycleStage),
+    financial: readOnly || !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage),
+  }), [readOnly, campStatus, reachedLifecycleStage]);
 
   if (fetching) {
     return <div className="empty-state">Loading camp...</div>;
@@ -281,205 +513,117 @@ export default function CampFormPage() {
   }
 
   const visibleApprovalBlockers = campMeta?.status === 'pending_review' && campMeta.canApprove === false
-    ? filterApprovalBlockers(campMeta.approvalBlockers, form)
+    ? filterApprovalBlockers(campMeta.approvalBlockers, form, campNameOptions)
     : [];
 
   const hasNoDivisions = Boolean(form.clientId) && !programsLoading && divisionOptions.length === 0;
-  const canSubmit = !readOnly && !hasNoDivisions;
+  const hasNoMethods = Boolean(form.clientId) && Boolean(form.campaignType) && !programsLoading && campNameOptions.length === 0;
+  const canSubmit = campStatus !== 'cancelled'
+    && campStatus !== 'rejected'
+    && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage)
+    && (!hasNoDivisions || activeStage !== 'request')
+    && (!hasNoMethods || activeStage !== 'request')
+    && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus));
 
   return (
-    <form className="form-card" onSubmit={handleSubmit}>
-      <FormPageHeader
-        title={isEdit ? 'Edit Camp' : 'Create Camp'}
-        backTo="/camps/manage"
-      />
+    <form className="form-card camp-lifecycle-page" onSubmit={handleSubmit}>
+      <div className="camp-form-header-row">
+        <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
+        {isEdit && campMeta && (
+          <CampRowInfoMenu
+            camp={campMeta}
+            hasPermission={hasPermission}
+            canRejectCamps={canRejectCamps()}
+            isSuperAdmin={isSuperAdmin}
+            onAction={requestCampAction}
+          />
+        )}
+      </div>
+
       {campMeta && (
-        <div className="meta-text camp-form-meta" style={{ marginBottom: '1rem' }}>
+        <div className="meta-text camp-form-meta">
           <div><strong>Camp ID:</strong> {campMeta.campId}</div>
           <div><strong>Status:</strong> {campMeta.status.replaceAll('_', ' ')}</div>
-          {campMeta.source && <div><strong>Source:</strong> {campMeta.source}</div>}
         </div>
       )}
 
       <div className="camp-form-alerts">
-        {campMeta && campMeta.status === 'pending_review' && visibleApprovalBlockers.length > 0 && (
+        {campMeta?.requestReviewStatus === 'information_requested' && (
+          <div className="error-banner">
+            Reviewer requested more information
+            {campMeta.informationRequestNote ? `: ${campMeta.informationRequestNote}` : '.'}
+            {' '}Update the request and save to resubmit for review.
+          </div>
+        )}
+        {visibleApprovalBlockers.length > 0 && (
           <div className="error-banner">
             Cannot approve until resolved: {visibleApprovalBlockers.join(' ')}
           </div>
         )}
-        {readOnly && (
-          <div className="error-banner">
-            This camp has been executed or cancelled and can no longer be edited.
-          </div>
-        )}
-        {hasNoDivisions && (
+        {hasNoDivisions && activeStage === 'request' && (
           <div className="error-banner">{NO_DIVISION_MESSAGE}</div>
+        )}
+        {hasNoMethods && activeStage === 'request' && (
+          <div className="error-banner">{NO_METHOD_MESSAGE}</div>
         )}
         {error && <div className="error-banner">{error}</div>}
       </div>
 
       {isEdit && campMeta && (campMeta.source === 'email' || campMeta.source === 'whatsapp') && (
         <div className="camp-form-source-section">
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => setShowSourcePreview((open) => !open)}
-          >
-            {showSourcePreview ? 'Hide' : 'View'} original {campMeta.source === 'email' ? 'email' : 'WhatsApp'}
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowSourcePreview((o) => !o)}>
+            {showSourcePreview ? 'Hide' : 'View'} original {campMeta.source}
           </button>
-
           {showSourcePreview && (
             <div className="form-card camp-source-preview-card">
-              <pre className="camp-source-preview-text">
-                {buildSourcePreview(campMeta) || 'No original message stored for this camp.'}
-              </pre>
+              <pre className="camp-source-preview-text">{buildSourcePreview(campMeta) || 'No original message stored.'}</pre>
             </div>
           )}
         </div>
       )}
 
-      <fieldset disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
-        <div className="form-grid">
-          <label htmlFor="camp-client">
-            Client Name
-            <select id="camp-client" value={form.clientId} onChange={(e) => updateField('clientId', e.target.value)} required>
-              <option value="">Select client</option>
-              {clients.map((client) => (
-                <option key={client._id} value={client._id}>{client.name}</option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="camp-division">
-            Division / Therapy
-            <select
-              id="camp-division"
-              value={form.campaignType}
-              onChange={(e) => updateField('campaignType', e.target.value)}
-              disabled={readOnly || programsLoading || !form.clientId || !divisionOptions.length}
-              required
-            >
-              <option value="">
-                {programsLoading
-                  ? 'Loading divisions...'
-                  : !form.clientId
-                    ? 'Select client first'
-                    : divisionOptions.length
-                      ? 'Select division / business unit'
-                      : 'No division configured'}
-              </option>
-              {divisionOptions.map((division) => (
-                <option key={division} value={division}>{division}</option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="camp-name">
-            Camp Name
-            <CampNameSelect
-              id="camp-name"
-              value={form.campaignName}
-              onChange={(value) => updateField('campaignName', value)}
-              disabled={readOnly}
-              required
-            />
-          </label>
-          <label htmlFor="camp-doctor-name">
-            Doctor Name
-            <input id="camp-doctor-name" value={form.doctorName} onChange={(e) => updateField('doctorName', e.target.value)} />
-          </label>
-          <label htmlFor="camp-doctor-code">
-            Doctor Code
-            <input id="camp-doctor-code" value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} />
-          </label>
-          <label htmlFor="camp-clinic-hospital">
-            Clinic / Hospital
-            <input id="camp-clinic-hospital" value={form.hospitalName} onChange={(e) => updateField('hospitalName', e.target.value)} />
-          </label>
-          <label className="full" htmlFor="camp-address">
-            Camp Address
-            <input id="camp-address" value={form.campAddress} onChange={(e) => updateField('campAddress', e.target.value)} />
-          </label>
-          <label htmlFor="camp-city">
-            City
-            <input id="camp-city" value={form.city} onChange={(e) => updateField('city', e.target.value)} />
-          </label>
-          <label htmlFor="camp-state">
-            State
-            <StateSearchInput
-              id="camp-state"
-              value={form.state}
-              onChange={(value) => updateField('state', value)}
-              disabled={readOnly}
-            />
-          </label>
-          <label htmlFor="camp-pincode">
-            Pincode
-            <input id="camp-pincode" value={form.pincode} onChange={(e) => updateField('pincode', e.target.value)} />
-          </label>
-          <label htmlFor="camp-date">
-            Camp Date
-            <DateInput
-              id="camp-date"
-              hideLabel
-              value={form.campDate}
-              onChange={(value) => updateField('campDate', value)}
-              required
-            />
-          </label>
-          <label htmlFor="camp-duration">
-            Camp Duration
-            <select id="camp-duration" value={form.durationHours} onChange={(e) => updateField('durationHours', Number(e.target.value))}>
-              {DURATION_OPTIONS.map((hours) => (
-                <option key={hours} value={hours}>{hours} hour camp</option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="camp-start-time">
-            Start Time
-            <input id="camp-start-time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} />
-          </label>
-          <label htmlFor="camp-end-time">
-            End Time
-            <input id="camp-end-time" value={form.endTime} readOnly />
-          </label>
-          <label htmlFor="camp-expected-patients">
-            Expected Patients
-            <input
-              id="camp-expected-patients"
-              type="number"
-              value={form.expectedPatients}
-              onChange={(e) => updateField('expectedPatients', Number(e.target.value))}
-            />
-          </label>
-          <label htmlFor="camp-field-person">
-            Field Person Name
-            <input id="camp-field-person" value={form.fieldPersonName} onChange={(e) => updateField('fieldPersonName', e.target.value)} />
-          </label>
-          <label htmlFor="camp-field-phone">
-            Field Person Contact
-            <input
-              id="camp-field-phone"
-              type="tel"
-              inputMode="tel"
-              value={form.fieldPersonPhone}
-              onChange={(e) => updateField('fieldPersonPhone', e.target.value.replace(/[^\d+\-\s]/g, ''))}
-            />
-          </label>
-          <label className="full" htmlFor="camp-remarks">
-            Remarks
-            <textarea id="camp-remarks" rows={3} value={form.remarks} onChange={(e) => updateField('remarks', e.target.value)} />
-          </label>
-        </div>
-      </fieldset>
+      <CampLifecycleForm
+        form={form}
+        updateField={updateField}
+        updateFields={updateFields}
+        activeStage={activeStage}
+        onStageChange={setActiveStage}
+        campStatus={campStatus}
+        clients={clients}
+        divisionOptions={divisionOptions}
+        campNameOptions={campNameOptions}
+        programsLoading={programsLoading}
+        stageReadOnly={stageReadOnly}
+        campId={isEdit ? id : null}
+        onUploadDocuments={handleUploadDocuments}
+        uploadBusy={uploadBusy}
+        hcwContacts={hcwContacts}
+        contactsLoading={contactsLoading}
+        onValidationError={setError}
+        reachedLifecycleStage={reachedLifecycleStage}
+      />
+
       <div className="form-actions">
-        {!readOnly && (
-          <button className="btn btn-primary" disabled={loading || !canSubmit}>
+        {canSubmit && (
+          <button className="btn btn-primary" type="submit" disabled={loading || uploadBusy}>
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Camp'}
           </button>
         )}
         <button type="button" className="btn btn-secondary" onClick={() => navigate('/camps/manage')}>
-          {readOnly ? 'Back to Camps' : 'Cancel'}
+          Cancel
         </button>
       </div>
+
+      <CampActionConfirmModal
+        request={confirmRequest}
+        closureDetails={confirmClosureDetails}
+        onClosureDetailsChange={setConfirmClosureDetails}
+        reasonDetails={confirmReasonDetails}
+        onReasonDetailsChange={setConfirmReasonDetails}
+        onConfirm={executeCampActionConfirm}
+        onCancel={closeCampActionConfirm}
+        loading={confirmLoading}
+      />
     </form>
   );
 }

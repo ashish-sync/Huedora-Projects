@@ -6,6 +6,7 @@ export function PasteContextFields({
   campaignType,
   campaignName,
   divisionOptions = [],
+  campNameOptions = [],
   programsLoading = false,
   clientsLoading = false,
   disabled = false,
@@ -66,15 +67,27 @@ export function PasteContextFields({
         </label>
 
         <label className="paste-context-field" htmlFor="paste-context-camp-name">
-          <span className="paste-context-field-label">Method / Camp Name</span>
+          <span className="paste-context-field-label">Method</span>
           <CampNameSelect
             id="paste-context-camp-name"
             value={campaignName}
             onChange={onCampNameChange}
-            disabled={disabled || !clientId}
+            disabled={disabled || programsLoading || !clientId || !campaignType || !campNameOptions.length}
             required
             error={errors.campaignName || ''}
-            placeholder="Select method / camp name"
+            options={campNameOptions}
+            placeholder="Select method"
+            emptyLabel={
+              !clientId
+                ? 'Select client first'
+                : !campaignType
+                  ? 'Select division / therapy first'
+                  : programsLoading
+                    ? 'Loading methods…'
+                    : campNameOptions.length
+                      ? 'Select method'
+                      : 'No method configured'
+            }
           />
         </label>
       </div>

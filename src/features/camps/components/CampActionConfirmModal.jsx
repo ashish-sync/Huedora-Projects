@@ -1,3 +1,9 @@
+import {
+  CAMP_CLOSURE_TYPES,
+  CAMP_CLOSURE_REASON_CODES,
+  isClosureDetailsReady,
+} from '../constants/campClosure';
+
 const ACTION_COPY = {
   approve: {
     title: 'Approve camp',
@@ -7,9 +13,21 @@ const ACTION_COPY = {
   },
   reject: {
     title: 'Reject camp',
-    message: 'Are you sure you want to reject this camp?',
+    message: 'Provide a mandatory reason before rejecting this camp request.',
     confirmLabel: 'Reject',
     confirmClass: 'btn-danger',
+    requiresReason: true,
+    reasonLabel: 'Rejection reason',
+    reasonPlaceholder: 'Enter why this request is being rejected',
+  },
+  requestInformation: {
+    title: 'Request more information',
+    message: 'Ask the requester to update or clarify details before approval.',
+    confirmLabel: 'Send request',
+    confirmClass: 'btn-primary',
+    requiresReason: true,
+    reasonLabel: 'Information needed',
+    reasonPlaceholder: 'Describe what information is required',
   },
   delete: {
     title: 'Delete camp',
@@ -21,6 +39,12 @@ const ACTION_COPY = {
     title: 'Cancel camp',
     message: 'Choose who cancelled this camp and add a remark.',
     confirmLabel: 'Cancel camp',
+    confirmClass: 'btn-danger',
+  },
+  closeCamp: {
+    title: 'Cancel or refuse camp',
+    message: 'Choose how to close this camp and select a reason code.',
+    confirmLabel: 'Confirm closure',
     confirmClass: 'btn-danger',
   },
   execute: {
@@ -96,10 +120,20 @@ function CampSummary({ camp }) {
   );
 }
 
+const CLOSURE_DESCRIPTIONS = {
+  'Cancelled by TCPL': 'KHW / TCPL cancelled this camp.',
+  Refused: 'Camp request is refused and will not proceed.',
+  'Cancelled by Client': 'The client requested cancellation.',
+};
+
 export function CampActionConfirmModal({
   request,
   cancelDetails,
+  closureDetails,
+  reasonDetails,
   onCancelDetailsChange,
+  onClosureDetailsChange,
+  onReasonDetailsChange,
   onConfirm,
   onCancel,
   loading = false,
@@ -115,9 +149,15 @@ export function CampActionConfirmModal({
 
   const message = isBulk ? copy.message(request.count) : copy.message;
   const showCancelForm = !isBulk && request.action === 'cancel' && cancelDetails;
+  const showClosureForm = !isBulk && request.action === 'closeCamp' && closureDetails;
+  const showReasonForm = !isBulk && copy.requiresReason && reasonDetails;
   const cancelReady = !showCancelForm
     || (cancelDetails.cancelledBy && String(cancelDetails.remarks || '').trim());
-  const modalClassName = showCancelForm ? 'modal-card modal-card-cancel' : 'modal-card';
+  const closureReady = !showClosureForm || isClosureDetailsReady(closureDetails);
+  const reasonReady = !showReasonForm || String(reasonDetails.reason || '').trim();
+  const modalClassName = (showCancelForm || showClosureForm || showReasonForm)
+    ? 'modal-card modal-card-cancel'
+    : 'modal-card';
 
   return (
     <div className="modal-overlay" onClick={loading ? undefined : onCancel}>
@@ -129,13 +169,89 @@ export function CampActionConfirmModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="camp-action-modal-title">{copy.title}</h2>
-        {!showCancelForm && <p className="modal-message">{message}</p>}
+        {!showCancelForm && !showClosureForm && !showReasonForm && <p className="modal-message">{message}</p>}
 
-        {!isBulk && request.camp && !showCancelForm && (
+        {!isBulk && request.camp && !showCancelForm && !showClosureForm && !showReasonForm && (
           <div className="modal-camp-summary">
             <div><strong>Client:</strong> {request.camp.clientName || '—'}</div>
             <div><strong>Camp:</strong> {request.camp.campaignName || '—'}</div>
           </div>
+        )}
+
+        {showReasonForm && (
+          <>
+            <p className="modal-message">{message}</p>
+            <CampSummary camp={request.camp} />
+            <label className="modal-cancel-remark-field">
+              {copy.reasonLabel}
+              <textarea
+                rows={4}
+                value={reasonDetails.reason}
+                placeholder={copy.reasonPlaceholder}
+                onChange={(e) => onReasonDetailsChange({
+                  ...reasonDetails,
+                  reason: e.target.value,
+                })}
+                required
+              />
+              <span className="modal-cancel-remark-hint">Required before confirming.</span>
+            </label>
+          </>
+        )}
+
+        {showClosureForm && (
+          <>
+            <p className="modal-message">{copy.message}</p>
+            <CampSummary camp={request.camp} />
+
+            <div className="modal-cancel-form">
+              <div className="modal-cancel-section">
+                <p className="modal-cancel-section-title">Closure type</p>
+                <div className="cancel-source-options" role="radiogroup" aria-label="Closure type">
+                  {CAMP_CLOSURE_TYPES.map((option) => {
+                    const isSelected = closureDetails.closureType === option;
+
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        className={`cancel-source-option${isSelected ? ' is-selected' : ''}`}
+                        onClick={() => onClosureDetailsChange({
+                          ...closureDetails,
+                          closureType: option,
+                        })}
+                      >
+                        <span className="cancel-source-option-label">{option}</span>
+                        <span className="cancel-source-option-text">
+                          {CLOSURE_DESCRIPTIONS[option] || ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <label className="modal-cancel-remark-field">
+                Reason code
+                <select
+                  value={closureDetails.reasonCode}
+                  onChange={(e) => onClosureDetailsChange({
+                    ...closureDetails,
+                    reasonCode: e.target.value,
+                  })}
+                  required
+                >
+                  <option value="">Select reason code</option>
+                  {CAMP_CLOSURE_REASON_CODES.map((code) => (
+                    <option key={code} value={code}>{code}</option>
+                  ))}
+                </select>
+                <span className="modal-cancel-remark-hint">Required before confirming closure.</span>
+              </label>
+            </div>
+          </>
         )}
 
         {showCancelForm && (
@@ -196,7 +312,7 @@ export function CampActionConfirmModal({
             type="button"
             className={`btn ${copy.confirmClass}`}
             onClick={onConfirm}
-            disabled={loading || !cancelReady}
+            disabled={loading || !cancelReady || !closureReady || !reasonReady}
           >
             {loading ? 'Processing...' : copy.confirmLabel}
           </button>

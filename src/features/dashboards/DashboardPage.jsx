@@ -66,7 +66,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/camps',
+    to: '/camps/manage',
     title: MODULE.CAMP_MANAGEMENT,
     blurb: MODULE_BLURB.CAMP_MANAGEMENT,
     tone: 'tone-camp',

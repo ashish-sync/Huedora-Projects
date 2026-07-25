@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { REQUEST_REVIEW_LABELS } from '../constants/requestReviewStatus.js';
 
 export function ChartsEyeToggle({ showCharts, onToggle }) {
   const label = showCharts ? 'Hide charts' : 'Show charts';
@@ -184,10 +185,34 @@ export function getCampRowClassName(camp) {
   if (camp.alertLevel === 'reaction_required') return 'camp-row-reaction';
   if (camp.alertLevel === 'weekend_attention') return 'camp-row-weekend';
   if (camp.alertLevel === 'off_hours') return 'camp-row-off-hours';
+  if (camp.isReviewOverdue || camp.requestReviewStatus === 'review_overdue') return 'camp-row-overdue';
   if (camp.isOverdue) return 'camp-row-overdue';
   return '';
 }
 
+export function RequestReviewStatusBadge({ camp }) {
+  const status = camp?.requestReviewStatus || '';
+  const label = camp?.requestReviewStatusLabel || REQUEST_REVIEW_LABELS[status] || status.replaceAll('_', ' ');
+  if (!status) return <StatusBadge status={camp?.status || 'pending_review'} />;
+  return <span className={`status-pill status-${status}`}>{label}</span>;
+}
+
 export function StatusBadge({ status }) {
   return <span className={`status-pill status-${status}`}>{status.replaceAll('_', ' ')}</span>;
+}
+
+export function isCampAssigned(camp) {
+  if (!camp) return false;
+  if (camp.assignmentStatus === 'Assigned') return true;
+  if (camp.lifecycleStage === 'execution' && camp.assignmentDecision === 'assign') return true;
+  return false;
+}
+
+export function AssignmentStatusBadge({ camp }) {
+  const assigned = isCampAssigned(camp);
+  return (
+    <span className={`status-pill status-${assigned ? 'assigned' : 'unassigned'}`}>
+      {assigned ? 'Assigned' : 'Unassigned'}
+    </span>
+  );
 }

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { downloadExcel } from '../../../shared/api.js';
 import { useCampOpsAuth } from '../useCampOpsAuth.js';
+import { useCampWorkingStage } from '../CampWorkingStageContext.jsx';
 import { downloadCampSampleFile } from '../utils/campSampleDownload.js';
 
 export function CampManageHeaderActions() {
   const { hasPermission } = useCampOpsAuth();
+  const { workingStage } = useCampWorkingStage();
   const [searchParams] = useSearchParams();
   const [exportBusy, setExportBusy] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
@@ -17,7 +19,9 @@ export function CampManageHeaderActions() {
   async function handleDownloadCamps() {
     setExportBusy(true);
     try {
-      const qs = searchParams.toString();
+      const params = new URLSearchParams(searchParams);
+      if (workingStage) params.set('lifecycleStage', workingStage);
+      const qs = params.toString();
       const path = qs ? `/camp-ops/camps/export?${qs}` : '/camp-ops/camps/export';
       await downloadExcel(path, 'Camps_Export.xlsx');
     } catch (err) {

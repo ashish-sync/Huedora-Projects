@@ -5,7 +5,7 @@ import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
-import { AlertBadge, getCampRowClassName, StatusBadge } from './components/DashboardWidgets';
+import { getCampRowClassName, StatusBadge, AssignmentStatusBadge, RequestReviewStatusBadge, isCampAssigned } from './components/DashboardWidgets';
 import { useAuth } from './useCampOpsAuth.js';
 import { campApi } from './campOpsApi.js';
 import { trimString } from './utils/trimInput';
@@ -14,9 +14,37 @@ import { useAutoDismiss } from './hooks/useAutoDismiss';
 
 import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
+import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
+import { REQUEST_REVIEW_LABELS } from './constants/requestReviewStatus';
+import { buildClosureDetails } from './constants/campClosure';
+
+function buildReasonDetails() {
+  return { reason: '' };
+}
 
 function buildCancelDetails() {
   return { cancelledBy: 'brand', remarks: '' };
+}
+
+function cellText(value) {
+  const text = String(value || '').trim();
+  return text || <span className="camps-cell-empty">—</span>;
+}
+
+function renderRequestTimeFrame(camp) {
+  const start = camp.startTime || '';
+  const end = camp.endTime || '';
+  const timeRange = start && end ? `${start} – ${end}` : camp.timeFrame || '—';
+
+  return (
+    <div className="camps-cell-timeframe">
+      {camp.campSlot ? <span className="camps-cell-timeframe-slot">{camp.campSlot}</span> : null}
+      <span className="camps-cell-timeframe-time">{timeRange}</span>
+      {camp.durationHours ? (
+        <span className="camps-cell-timeframe-meta">{camp.durationHours} hr</span>
+      ) : null}
+    </div>
+  );
 }
 
 export default function CampsPage() {
@@ -27,9 +55,11 @@ export default function CampsPage() {
     canRejectCamps,
     canEditCampRecord,
   } = useAuth();
+  const { workingStage, workingStageMeta } = useCampWorkingStage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [camps, setCamps] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [requestReviewStatus, setRequestReviewStatus] = useState(searchParams.get('requestReviewStatus') || '');
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [overdueOnly, setOverdueOnly] = useState(searchParams.get('overdue') === '1');
   const [reactionRequired, setReactionRequired] = useState(searchParams.get('reactionRequired') === '1');
@@ -40,6 +70,7 @@ export default function CampsPage() {
   const [clientFilter, setClientFilter] = useState(searchParams.get('client') || '');
   const [campaignFilter, setCampaignFilter] = useState(searchParams.get('campaign') || '');
   const [campTypeFilter, setCampTypeFilter] = useState(searchParams.get('campaignType') || '');
+  const [assignmentFilter, setAssignmentFilter] = useState(searchParams.get('assignmentFilter') || 'unassigned');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -50,6 +81,8 @@ export default function CampsPage() {
   const [bulkMessage, setBulkMessage] = useState('');
   const [confirmRequest, setConfirmRequest] = useState(null);
   const [confirmCancelDetails, setConfirmCancelDetails] = useState(null);
+  const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
+  const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   const dismissError = useCallback(() => setError(''), []);
@@ -65,6 +98,8 @@ export default function CampsPage() {
       camp,
     });
     setConfirmCancelDetails(action === 'cancel' ? buildCancelDetails() : null);
+    setConfirmClosureDetails(action === 'closeCamp' ? buildClosureDetails() : null);
+    setConfirmReasonDetails(['reject', 'requestInformation'].includes(action) ? buildReasonDetails() : null);
     setError('');
   }
 
@@ -103,6 +138,8 @@ export default function CampsPage() {
     if (confirmLoading) return;
     setConfirmRequest(null);
     setConfirmCancelDetails(null);
+    setConfirmClosureDetails(null);
+    setConfirmReasonDetails(null);
   }
 
   async function executeCampActionConfirm() {
@@ -138,12 +175,23 @@ export default function CampsPage() {
             cancelledBy: confirmCancelDetails.cancelledBy,
             remarks: confirmCancelDetails.remarks.trim(),
           }
-          : {};
+          : action === 'closeCamp'
+            ? {
+              closureType: confirmClosureDetails.closureType,
+              reasonCode: confirmClosureDetails.reasonCode,
+            }
+            : action === 'reject'
+            ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
+            : action === 'requestInformation'
+              ? { informationRequestNote: confirmReasonDetails?.reason?.trim() || '' }
+              : {};
         await runCampAction(action, camp, payload);
       }
 
       setConfirmRequest(null);
       setConfirmCancelDetails(null);
+      setConfirmClosureDetails(null);
+      setConfirmReasonDetails(null);
       await loadCamps();
     } catch (err) {
       setError(err?.message || 'Action failed');
@@ -165,7 +213,9 @@ export default function CampsPage() {
     const handlers = {
       approve: campApi.approve,
       reject: campApi.reject,
+      requestInformation: campApi.requestInformation,
       cancel: campApi.cancel,
+      closeCamp: campApi.close,
       execute: campApi.execute,
       submitReview: campApi.submitReview,
       delete: campApi.delete,
@@ -195,16 +245,26 @@ export default function CampsPage() {
       if (clientFilter) params.client = clientFilter;
       if (campaignFilter) params.campaign = campaignFilter;
       if (campTypeFilter) params.campaignType = campTypeFilter;
-      if (reactionRequired) {
-        params.reactionRequired = '1';
-      } else if (offHoursOnly) {
-        params.offHours = '1';
-      } else if (weekendAttentionOnly) {
-        params.weekendAttention = '1';
-      } else if (overdueOnly) {
-        params.overdue = '1';
-      } else if (status) {
-        params.status = status;
+      if (workingStage === 'assignment') {
+        params.assignmentFilter = assignmentFilter || 'unassigned';
+      } else if (workingStage === 'request' && requestReviewStatus) {
+        params.requestReviewStatus = requestReviewStatus;
+        if (workingStage) params.lifecycleStage = workingStage;
+      } else {
+        if (reactionRequired) {
+          params.reactionRequired = '1';
+        } else if (offHoursOnly) {
+          params.offHours = '1';
+        } else if (weekendAttentionOnly) {
+          params.weekendAttention = '1';
+        } else if (overdueOnly) {
+          params.overdue = '1';
+        } else if (status) {
+          params.status = status;
+        }
+        if (workingStage) {
+          params.lifecycleStage = workingStage;
+        }
       }
       const { data } = await campApi.list(params);
       setCamps(Array.isArray(data?.data) ? data.data : []);
@@ -230,6 +290,7 @@ export default function CampsPage() {
     const nextOffHours = searchParams.get('offHours') === '1';
     const nextWeekendAttention = searchParams.get('weekendAttention') === '1';
     const hasAlertFilter = nextReactionRequired || nextOffHours || nextWeekendAttention;
+    setRequestReviewStatus(searchParams.get('requestReviewStatus') || '');
     setStatus(hasAlertFilter || nextOverdue ? '' : (searchParams.get('status') || ''));
     setOverdueOnly(nextOverdue);
     setReactionRequired(nextReactionRequired);
@@ -240,12 +301,13 @@ export default function CampsPage() {
     setClientFilter(searchParams.get('client') || '');
     setCampaignFilter(searchParams.get('campaign') || '');
     setCampTypeFilter(searchParams.get('campaignType') || '');
+    setAssignmentFilter(searchParams.get('assignmentFilter') || 'unassigned');
   }, [searchParams]);
 
   useEffect(() => {
     setPage(1);
     loadCamps(1, pageSize);
-  }, [status, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter]);
+  }, [status, requestReviewStatus, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignmentFilter, workingStage]);
 
   function handleSearch() {
     setPage(1);
@@ -273,8 +335,14 @@ export default function CampsPage() {
     const nextClient = overrides.client ?? clientFilter;
     const nextCampaign = overrides.campaign ?? campaignFilter;
     const nextCampType = overrides.campaignType ?? campTypeFilter;
+    const nextAssignmentFilter = overrides.assignmentFilter ?? assignmentFilter;
+    const nextRequestReviewStatus = overrides.requestReviewStatus ?? requestReviewStatus;
 
-    if (nextReactionRequired) params.set('reactionRequired', '1');
+    if (workingStage === 'assignment') {
+      if (nextAssignmentFilter) params.set('assignmentFilter', nextAssignmentFilter);
+    } else if (workingStage === 'request') {
+      if (nextRequestReviewStatus) params.set('requestReviewStatus', nextRequestReviewStatus);
+    } else if (nextReactionRequired) params.set('reactionRequired', '1');
     else if (nextOffHours) params.set('offHours', '1');
     else if (nextWeekendAttention) params.set('weekendAttention', '1');
     else if (nextOverdue) params.set('overdue', '1');
@@ -300,6 +368,11 @@ export default function CampsPage() {
     setSearchParams(buildFilterParams(overrides));
   }
 
+  function handleRequestReviewStatusChange(value) {
+    setRequestReviewStatus(value);
+    updateFilters({ requestReviewStatus: value, status: '' });
+  }
+
   function handleStatusChange(value) {
     setOverdueOnly(false);
     setReactionRequired(false);
@@ -316,6 +389,7 @@ export default function CampsPage() {
   }
 
   function clearFilters() {
+    setRequestReviewStatus('');
     setStatus('');
     setOverdueOnly(false);
     setReactionRequired(false);
@@ -326,11 +400,28 @@ export default function CampsPage() {
     setClientFilter('');
     setCampaignFilter('');
     setCampTypeFilter('');
+    setAssignmentFilter('unassigned');
     setSearch('');
     setSearchParams({});
   }
 
   function handleFilterChange(value) {
+    if (workingStage === 'request') {
+      handleRequestReviewStatusChange(value);
+      return;
+    }
+    if (workingStage === 'assignment') {
+      setAssignmentFilter(value);
+      updateFilters({
+        assignmentFilter: value,
+        status: '',
+        overdue: false,
+        reactionRequired: false,
+        offHours: false,
+        weekendAttention: false,
+      });
+      return;
+    }
     if (value === 'reaction_required') {
       updateFilters({
         status: '',
@@ -374,7 +465,11 @@ export default function CampsPage() {
     handleStatusChange(value);
   }
 
-  const filterValue = reactionRequired
+  const filterValue = workingStage === 'assignment'
+    ? (assignmentFilter || 'unassigned')
+    : workingStage === 'request'
+      ? (requestReviewStatus || '')
+      : reactionRequired
     ? 'reaction_required'
     : offHoursOnly
       ? 'off_hours'
@@ -407,6 +502,12 @@ export default function CampsPage() {
     activeChips.push({
       key: 'overdue',
       label: 'Overdue — not executed',
+      onRemove: () => handleFilterChange(''),
+    });
+  } else if (requestReviewStatus) {
+    activeChips.push({
+      key: 'requestReviewStatus',
+      label: REQUEST_REVIEW_LABELS[requestReviewStatus] || requestReviewStatus.replaceAll('_', ' '),
       onRemove: () => handleFilterChange(''),
     });
   } else if (status) {
@@ -471,26 +572,107 @@ export default function CampsPage() {
   const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
   const bulkDeleteValidation = validateBulkCampAction('delete', selectedCamps, bulkAuth);
 
+  const isRequestStage = workingStage === 'request';
+  const isAssignmentStage = workingStage === 'assignment';
+
+  function renderCampActions(camp) {
+    if (isAssignmentStage) {
+      return (
+        <div className="actions camp-row-actions">
+          {!isCampAssigned(camp) && camp.status === 'approved' && (
+            <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-primary btn-sm">
+              Assign
+            </Link>
+          )}
+          {canEditCampRecord(camp) && (
+            <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-secondary btn-sm">
+              Edit
+            </Link>
+          )}
+          <CampRowInfoMenu
+            camp={camp}
+            hasPermission={hasPermission}
+            canRejectCamps={canRejectCamps()}
+            isSuperAdmin={isSuperAdmin}
+            onAction={requestCampAction}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="actions camp-row-actions">
+        {canEditCampRecord(camp) && (
+          <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-secondary btn-sm">
+            Edit
+          </Link>
+        )}
+        {camp.status === 'pending_review' && canApproveCamps() && (
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={camp.canApprove === false}
+            title={camp.canApprove === false ? (camp.approvalBlockers || []).join(' ') : undefined}
+            onClick={() => openCampActionConfirm('approve', camp)}
+          >
+            Approve
+          </button>
+        )}
+        {camp.status === 'approved' && hasPermission('camps:execute') && (
+          <button className="btn btn-primary btn-sm" onClick={() => openCampActionConfirm('execute', camp)}>
+            Mark Executed
+          </button>
+        )}
+        <CampRowInfoMenu
+          camp={camp}
+          hasPermission={hasPermission}
+          canRejectCamps={canRejectCamps()}
+          isSuperAdmin={isSuperAdmin}
+          onAction={requestCampAction}
+        />
+      </div>
+    );
+  }
+
+  function renderCampStatus(camp) {
+    if (isAssignmentStage) {
+      return <AssignmentStatusBadge camp={camp} />;
+    }
+    if (isRequestStage) {
+      return <RequestReviewStatusBadge camp={camp} />;
+    }
+    return <StatusBadge status={camp.status} />;
+  }
+
   return (
     <>
-      <CampsFilters
-        search={search}
-        onSearchChange={setSearch}
-        onSearchSubmit={handleSearch}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        onDateFromChange={(value) => updateFilters({ dateFrom: value, dateTo })}
-        onDateToChange={(value) => updateFilters({ dateFrom, dateTo: value })}
-        onQuickSelect={applyQuickRange}
-        onClearDates={() => applyQuickRange({ dateFrom: '', dateTo: '' })}
-        filterValue={filterValue}
-        onFilterChange={handleFilterChange}
-        activeChips={activeChips}
-        onClearAll={clearFilters}
-      />
+      {(bulkMessage || error) && (
+        <div className="page-alerts page-alerts--compact">
+          {bulkMessage && <div className="success-banner">{bulkMessage}</div>}
+          {error && <div className="error-banner">{error}</div>}
+        </div>
+      )}
 
-      {canBulkManage && selectedIds.length > 0 && (
-        <div className="bulk-bar">
+      <div className="card card--flush table-wrap camps-manage-card">
+        <CampsFilters
+          search={search}
+          onSearchChange={setSearch}
+          onSearchSubmit={handleSearch}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={(value) => updateFilters({ dateFrom: value, dateTo })}
+          onDateToChange={(value) => updateFilters({ dateFrom, dateTo: value })}
+          onQuickSelect={applyQuickRange}
+          onClearDates={() => applyQuickRange({ dateFrom: '', dateTo: '' })}
+          filterValue={filterValue}
+          onFilterChange={handleFilterChange}
+          assignmentStage={workingStage === 'assignment'}
+          requestStage={workingStage === 'request'}
+          activeChips={activeChips}
+          onClearAll={clearFilters}
+        />
+
+        {canBulkManage && selectedIds.length > 0 && !isAssignmentStage && (
+          <div className="bulk-bar camps-manage-bulk-bar">
           <span>{selectedIds.length} selected</span>
           {canApproveCamps() && (
             <button
@@ -522,7 +704,7 @@ export default function CampsPage() {
               Mark Executed
             </button>
           )}
-          {(hasPermission('camps:update') || hasPermission('camps:approve')) && (
+          {isSuperAdmin() && (
             <button
               className="btn btn-danger btn-sm"
               disabled={bulkLoading || confirmLoading || !bulkDeleteValidation.ok}
@@ -535,19 +717,16 @@ export default function CampsPage() {
         </div>
       )}
 
-      {(bulkMessage || error) && (
-        <div className="page-alerts">
-          {bulkMessage && <div className="success-banner">{bulkMessage}</div>}
-          {error && <div className="error-banner">{error}</div>}
-        </div>
-      )}
-
-      <div className="card card--flush table-wrap">
-        {loading ? (
+        {!workingStage ? (
+          <EmptyState
+            title="Select your working stage"
+            description="Choose a lifecycle stage from the Stage dropdown in the header."
+          />
+        ) : loading ? (
           <EmptyState title="Loading…" description="Fetching camps." />
         ) : camps.length === 0 ? (
           <EmptyState
-            title="No camps yet"
+            title={`No camps in ${workingStageMeta?.label || 'this stage'}`}
             description="Create a camp or import from Excel to see records here."
             action={
               (hasPermission('camps:create') || hasPermission('camps:update')) ? (
@@ -557,7 +736,7 @@ export default function CampsPage() {
           />
         ) : (
           <div className="table-scroll">
-            <table>
+            <table className={isRequestStage ? 'camps-table camps-table--request' : 'camps-table'}>
               <thead>
                 <tr>
                   {canBulkManage && (
@@ -569,16 +748,26 @@ export default function CampsPage() {
                       />
                     </th>
                   )}
-                  {/* <th>Camp ID</th> */}
-                  <th>Client Name</th>
-                  <th>Division / Therapy</th>
-                  <th>Camp Name</th>
-                  <th>Time Frame</th>
-                  <th>Doctor</th>
-                  <th>City</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th className="col-client">Client Name</th>
+                  <th className="col-division">Division / Therapy</th>
+                  <th className="col-method">Method</th>
+                  {isRequestStage ? (
+                    <>
+                      <th className="col-date">Date</th>
+                      <th className="col-timeframe">Time Frame</th>
+                      <th className="col-state">State</th>
+                      <th className="col-city">City</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="col-timeframe">Time Frame</th>
+                      <th>Doctor</th>
+                      <th className="col-city">City</th>
+                      <th className="col-date">Date</th>
+                    </>
+                  )}
+                  <th className="col-status">Status</th>
+                  <th className="col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -593,53 +782,36 @@ export default function CampsPage() {
                         />
                       </td>
                     )}
-                    {/* <td>{camp.campId}</td> */}
-                    <td>{camp.clientName}</td>
-                    <td>{camp.campaignType}</td>
-                    <td>{camp.campaignName}</td>
-                    <td>
-                      <div>{camp.timeFrame}</div>
+                    <td className="col-client">
+                      <span className="camps-cell-client" title={camp.clientName || undefined}>
+                        {cellText(camp.clientName)}
+                      </span>
                     </td>
-                    <td>{camp.doctorName}</td>
-                    <td>{camp.city}</td>
-                    <td className="date-cell">
-                      <div>{formatDateDDMMYYYY(camp.campDate)}</div>
-                      {/* <AlertBadge alertLevel={camp.alertLevel} alertReason={camp.alertReason} /> */}
+                    <td className="col-division">{cellText(camp.campaignType)}</td>
+                    <td className="col-method">{cellText(camp.campaignName)}</td>
+                    {isRequestStage ? (
+                      <>
+                        <td className="col-date date-cell">{formatDateDDMMYYYY(camp.campDate) || '—'}</td>
+                        <td className="col-timeframe">{renderRequestTimeFrame(camp)}</td>
+                        <td className="col-state">{cellText(camp.state)}</td>
+                        <td className="col-city">{cellText(camp.city)}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="col-timeframe">
+                          <div>{camp.timeFrame}</div>
+                        </td>
+                        <td>{camp.doctorName}</td>
+                        <td className="col-city">{cellText(camp.city)}</td>
+                        <td className="col-date date-cell">
+                          <div>{formatDateDDMMYYYY(camp.campDate)}</div>
+                        </td>
+                      </>
+                    )}
+                    <td className="col-status">
+                      {renderCampStatus(camp)}
                     </td>
-                    <td>
-                      <StatusBadge status={camp.status} />
-                    </td>
-                    <td>
-                      <div className="actions camp-row-actions">
-                        {canEditCampRecord(camp) && (
-                          <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-secondary btn-sm">
-                            Edit
-                          </Link>
-                        )}
-                        {camp.status === 'pending_review' && canApproveCamps() && (
-                          <button
-                            className="btn btn-primary btn-sm"
-                            disabled={camp.canApprove === false}
-                            title={camp.canApprove === false ? (camp.approvalBlockers || []).join(' ') : undefined}
-                            onClick={() => openCampActionConfirm('approve', camp)}
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {camp.status === 'approved' && hasPermission('camps:execute') && (
-                          <button className="btn btn-primary btn-sm" onClick={() => openCampActionConfirm('execute', camp)}>
-                            Mark Executed
-                          </button>
-                        )}
-                        <CampRowInfoMenu
-                          camp={camp}
-                          hasPermission={hasPermission}
-                          canRejectCamps={canRejectCamps()}
-                          isSuperAdmin={isSuperAdmin}
-                          onAction={requestCampAction}
-                        />
-                      </div>
-                    </td>
+                    <td className="col-actions">{renderCampActions(camp)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -660,6 +832,10 @@ export default function CampsPage() {
         request={confirmRequest}
         cancelDetails={confirmCancelDetails}
         onCancelDetailsChange={setConfirmCancelDetails}
+        closureDetails={confirmClosureDetails}
+        onClosureDetailsChange={setConfirmClosureDetails}
+        reasonDetails={confirmReasonDetails}
+        onReasonDetailsChange={setConfirmReasonDetails}
         onConfirm={executeCampActionConfirm}
         onCancel={closeCampActionConfirm}
         loading={confirmLoading}

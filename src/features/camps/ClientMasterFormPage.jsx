@@ -87,7 +87,7 @@ function numberInputProps(field, form, updateField, fieldErrors) {
 
 export default function ClientMasterFormPage() {
   const { id } = useParams();
-  const { hasPermission } = useAuth();
+  const { hasPermission, isSuperAdmin } = useAuth();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const canCreateCompany = hasPermission('clients:create');
@@ -193,7 +193,7 @@ export default function ClientMasterFormPage() {
   }
 
   async function handleDeleteDocument() {
-    if (!isEdit || !documentMeta) return;
+    if (!isSuperAdmin() || !isEdit || !documentMeta) return;
     if (!window.confirm('Delete this program PDF?')) return;
 
     setDocumentLoading(true);
@@ -330,7 +330,7 @@ export default function ClientMasterFormPage() {
           <FieldError message={fieldErrors.programName} />
         </label>
         <label>
-          Camp Name
+          Method
           <CampNameSelect
             value={form.campName}
             onChange={(value) => updateField('campName', value)}
@@ -467,14 +467,16 @@ export default function ClientMasterFormPage() {
               <button type="button" className="btn btn-secondary btn-sm" onClick={handlePreviewDocument}>
                 Preview PDF
               </button>
-              <button
-                type="button"
-                className="btn btn-danger btn-sm"
-                onClick={handleDeleteDocument}
-                disabled={documentLoading}
-              >
-                {documentLoading ? 'Deleting...' : 'Delete PDF'}
-              </button>
+              {isSuperAdmin() && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={handleDeleteDocument}
+                  disabled={documentLoading}
+                >
+                  {documentLoading ? 'Deleting...' : 'Delete PDF'}
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -32,6 +32,7 @@ function formatMoney(n) {
 export default function FinanceInvoicesPage() {
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
+  const canDelete = can('*');
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
@@ -147,7 +148,7 @@ export default function FinanceInvoicesPage() {
   };
 
   const remove = async (row) => {
-    if (!canWrite || !window.confirm(`Delete invoice “${row.invoiceNumber}”?`)) return;
+    if (!canDelete || !window.confirm(`Delete invoice “${row.invoiceNumber}”?`)) return;
     try {
       await api(`/finance/invoices/${row._id}`, { method: 'DELETE' });
       setMsg('Invoice deleted.');
@@ -349,9 +350,11 @@ export default function FinanceInvoicesPage() {
                       <button type="button" className="inv-link" onClick={() => openEdit(r)}>
                         Edit
                       </button>
-                      <button type="button" className="inv-link" onClick={() => remove(r)}>
-                        Delete
-                      </button>
+                      {canDelete ? (
+                        <button type="button" className="inv-link" onClick={() => remove(r)}>
+                          Delete
+                        </button>
+                      ) : null}
                     </div>
                   )}
                 </td>

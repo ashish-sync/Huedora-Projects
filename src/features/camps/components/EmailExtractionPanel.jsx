@@ -13,6 +13,7 @@ const BODY_FIELDS = [
   { key: 'doctorCode', label: 'Doctor Code' },
   { key: 'campAddress', label: 'Camp Address' },
   { key: 'state', label: 'State' },
+  { key: 'zone', label: 'Zone' },
   { key: 'city', label: 'City' },
   { key: 'hq', label: 'HQ' },
   { key: 'pincode', label: 'PIN Code' },
@@ -159,6 +160,9 @@ function BodyExtractionForm({
                 </div>
               ))}
             </dl>
+            {entry.pasteDisplay?.locationSource === 'pin-master' ? (
+              <p className="meta-text">City, state, and zone matched from PIN master.</p>
+            ) : null}
             {entry.pasteFormatted ? (
               <details className="email-extraction-formatted">
                 <summary>Formatted extraction output</summary>

@@ -5,21 +5,21 @@ import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PinLocationLookup from '../../components/ui/PinLocationLookup.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
+import { resolveZoneForState } from '../../constants/geoZones.js';
 
 const emptyForm = {
   pinCode: '',
   locality: '',
   notes: '',
   stateId: '',
-  districtId: '',
   cityId: '',
   state: '',
-  district: '',
   city: '',
+  zone: '',
   isActive: true,
 };
 
@@ -28,7 +28,6 @@ export default function LocationMasterPage({ embedded = false } = {}) {
   const canWrite = can('agreements:write') || can('users:write') || can('*');
   const canDelete = can('*');
   const excelConfig = masterExcelFor('pin-codes');
-  const [meta, setMeta] = useState(null);
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
@@ -44,13 +43,11 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (q) params.set('q', q);
     setLoading(true);
-    return Promise.all([
-      api('/geo/meta').then((r) => setMeta(r.data)),
-      api(`/geo/pin-codes?${params}`).then((r) => {
+    return api(`/geo/pin-codes?${params}`)
+      .then((r) => {
         setRows(r.data || []);
         setListMeta(r.meta || { page, limit, total: 0, pages: 0 });
-      }),
-    ])
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   };
@@ -64,11 +61,14 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     e.preventDefault();
     setError('');
     setMsg('');
+    if (!form.cityId || !form.stateId) {
+      setError('Enter a valid PIN or select city and state to create a new mapping.');
+      return;
+    }
     try {
       const body = {
         pinCode: form.pinCode,
         cityId: form.cityId,
-        districtId: form.districtId || undefined,
         stateId: form.stateId,
         locality: form.locality,
         notes: form.notes,
@@ -96,11 +96,10 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       locality: row.locality || '',
       notes: row.notes || '',
       stateId: row.stateId || '',
-      districtId: row.districtId || '',
       cityId: row.cityId || '',
       state: row.stateName || '',
-      district: row.districtName || '',
       city: row.cityName || '',
+      zone: row.zone || resolveZoneForState(row.stateName),
       isActive: row.isActive !== false,
     });
   };
@@ -124,7 +123,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       description={
         embedded
           ? undefined
-          : 'India states, districts, and cities from the local database. PIN codes are maintained here and start empty.'
+          : 'Enter a PIN code to auto-fill city, state, and zone. Add new PINs when postal codes are not yet in the master.'
       }
       actions={
         embedded ? null : (
@@ -137,24 +136,9 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       {error ? <p className="error-text">{error}</p> : null}
       {msg ? <p className="muted">{msg}</p> : null}
 
-      {meta ? (
-        <div className="card">
-          <h3 style={{ marginTop: 0 }}>India geography (local)</h3>
-          <p className="muted" style={{ marginBottom: '0.5rem' }}>
-            {meta.counts?.states ?? 0} states · {meta.counts?.districts ?? 0} districts ·{' '}
-            {meta.counts?.cities ?? 0} cities · {meta.counts?.pinCodes ?? 0} PIN mappings
-          </p>
-          <ul className="muted" style={{ margin: 0, paddingLeft: '1.1rem' }}>
-            {(meta.sources || []).map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
       <div className="toolbar toolbar--page">
         <input
-          placeholder="Search PIN, city, locality…"
+          placeholder="Search PIN, city, state…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           style={{ maxWidth: 280 }}
@@ -187,8 +171,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
             <tr>
               <th>PIN</th>
               <th>City</th>
-              <th>District</th>
               <th>State</th>
+              <th>Zone</th>
               <th>Locality</th>
               <th>Active</th>
               <th></th>
@@ -201,8 +185,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
                   <strong>{r.pinCode}</strong>
                 </td>
                 <td>{r.cityName || '-'}</td>
-                <td>{r.districtName || '-'}</td>
                 <td>{r.stateName || '-'}</td>
+                <td>{r.zone || resolveZoneForState(r.stateName) || '-'}</td>
                 <td>{r.locality || '-'}</td>
                 <td>{r.isActive === false ? 'No' : 'Yes'}</td>
                 <td>
@@ -225,7 +209,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         </table>
         {!rows.length ? (
           <p className="muted" style={{ padding: '1rem' }}>
-            No PIN codes yet. Add mappings below as you learn postal codes for each city.
+            No PIN codes yet. Add mappings below or import from Excel.
           </p>
         ) : null}
       </div>
@@ -233,24 +217,11 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       {canWrite ? (
         <form className="card" onSubmit={save}>
           <h3 style={{ marginTop: 0 }}>{editId ? 'Edit PIN mapping' : 'Add PIN mapping'}</h3>
-          <div className="field">
-            <label>PIN code *</label>
-            <input
-              required
-              inputMode="numeric"
-              maxLength={6}
-              value={form.pinCode}
-              onChange={(e) =>
-                setForm({ ...form, pinCode: e.target.value.replace(/\D+/g, '').slice(0, 6) })
-              }
-              placeholder="6 digits"
-            />
-          </div>
-          <LocationCascade
+          <PinLocationLookup
             required
-            showPin={false}
+            allowCreateMapping={!editId}
             value={form}
-            onChange={(loc) => setForm({ ...form, ...loc })}
+            onChange={(loc) => setForm((prev) => ({ ...prev, ...loc }))}
           />
           <div className="field">
             <label>Locality</label>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import LocationCascade from '../../../components/ui/LocationCascade.jsx';
+import PinLocationLookup from '../../../components/ui/PinLocationLookup.jsx';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
 import { CampAssignmentStage } from './CampAssignmentStage';
@@ -16,7 +16,6 @@ import {
   lifecycleStageIndex,
 } from '../constants/campLifecycle';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
-import { resolveZoneForState } from '../../../constants/geoZones.js';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -147,38 +146,33 @@ export function CampLifecycleForm({
           <input value={form.campAddress} onChange={(e) => updateField('campAddress', e.target.value)} disabled={disabled} required />
         </label>
         <div className="full camp-location-grid">
-          <LocationCascade
-            showDistrict={false}
-            showPin
+          <PinLocationLookup
             disabled={disabled}
             required
-            pinRequired
             value={{
-              state: form.state,
+              pinCode: form.pincode || '',
               city: form.city,
+              state: form.state,
+              zone: form.zone || '',
               stateId: form.stateId || '',
               cityId: form.cityId || '',
-              pinCode: form.pincode || '',
             }}
             onChange={(loc) => {
-              const zone = loc.state ? resolveZoneForState(loc.state) : '';
               updateFields?.({
-                state: loc.state || '',
+                pincode: loc.pinCode || '',
                 city: loc.city || '',
+                state: loc.state || '',
                 stateId: loc.stateId || '',
                 cityId: loc.cityId || '',
-                pincode: loc.pinCode || '',
-                zone,
+                zone: loc.zone || '',
               });
             }}
-            labels={{ state: 'State', city: 'City', pinCode: 'Pin Code' }}
           />
           <label className="camp-location-hq">
             HQ
             <input value={form.hq} onChange={(e) => updateField('hq', e.target.value)} disabled={disabled} required />
           </label>
         </div>
-        <ReadOnlyField label="Zone" value={form.zone || '—'} />
         <label>
           Contact Person Name
           <input value={form.fieldPersonName} onChange={(e) => updateField('fieldPersonName', e.target.value)} disabled={disabled} required />

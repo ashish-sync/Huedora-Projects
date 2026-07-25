@@ -9,7 +9,6 @@ import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
 import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
 import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
 import LocationMasterPage from '../locations/LocationMasterPage.jsx';
-import ZonesMasterPage from '../locations/ZonesMasterPage.jsx';
 import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
@@ -75,7 +74,6 @@ const MASTER_GROUPS = [
       { id: 'contacts', label: 'Contact Directory', embedded: 'contacts', fields: [] },
       { id: 'templates', label: 'Document Templates', embedded: 'templates', fields: [] },
       { id: 'signatures', label: 'Signatures', embedded: 'signatures', fields: [] },
-      { id: 'pin-codes', label: 'Geography', embedded: 'pin-codes', fields: [] },
       {
         id: 'picklist-approvals',
         label: 'Picklist approvals',
@@ -95,12 +93,7 @@ const MASTER_GROUPS = [
         embedded: 'client-masters',
         fields: [],
       },
-      {
-        id: 'zones',
-        label: 'Zones',
-        embedded: 'zones',
-        fields: [],
-      },
+      { id: 'pin-codes', label: 'PIN Geography', embedded: 'pin-codes', fields: [] },
     ],
   },
 ];
@@ -118,7 +111,6 @@ function EmbeddedMaster({ kind }) {
   if (kind === 'pin-codes') return <LocationMasterPage embedded />;
   if (kind === 'picklist-approvals') return <PicklistApprovalsPage embedded />;
   if (kind === 'client-masters') return <ClientMasterEmbeddedPage />;
-  if (kind === 'zones') return <ZonesMasterPage embedded />;
   return null;
 }
 

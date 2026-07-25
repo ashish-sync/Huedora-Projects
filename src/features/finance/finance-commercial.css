@@ -75,3 +75,60 @@
     padding-bottom: 4px;
   }
 }
+
+.finance-generate-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.finance-generate-form {
+  min-width: 0;
+}
+
+.finance-generate-preview {
+  position: sticky;
+  top: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+
+.finance-invoice-preview-frame {
+  height: min(72vh, 640px);
+}
+
+.finance-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 24px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.finance-preview-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+@media (max-width: 1100px) {
+  .finance-generate-split {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-generate-preview {
+    position: static;
+  }
+
+  .finance-invoice-preview-frame {
+    height: min(60vh, 520px);
+  }
+}

@@ -227,8 +227,8 @@ export const MASTER_ENTITIES = [
   },
   {
     id: 'pin-codes',
-    label: 'Geography',
-    module: 'document',
+    label: 'PIN Geography',
+    module: 'camp',
     apiPath: '/geo/pin-codes',
     embedded: 'pin-codes',
     fields: [
@@ -243,14 +243,6 @@ export const MASTER_ENTITIES = [
     module: 'document',
     apiPath: '/picklists',
     embedded: 'picklist-approvals',
-    fields: [],
-  },
-  {
-    id: 'zones',
-    label: 'Zones',
-    module: 'camp',
-    apiPath: '/geo/zones',
-    embedded: 'zones',
     fields: [],
   },
 ];
@@ -279,13 +271,13 @@ export const MASTER_HUB_GROUPS = [
     id: 'document-masters',
     label: 'Document One',
     scope: 'document',
-    entityIds: ['contacts', 'templates', 'signatures', 'pin-codes', 'picklist-approvals'],
+    entityIds: ['contacts', 'templates', 'signatures', 'picklist-approvals'],
   },
   {
     id: 'camp-masters',
     label: 'Camp One',
     scope: 'camp',
-    entityIds: ['client-masters', 'zones'],
+    entityIds: ['client-masters', 'pin-codes'],
   },
 ];
 

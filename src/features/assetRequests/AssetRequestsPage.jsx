@@ -8,6 +8,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PinLocationLookup from '../../components/ui/PinLocationLookup.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
@@ -1791,11 +1792,11 @@ export default function AssetRequestsPage() {
                     )}
                   </div>
                 ))}
-                {(form.masterEntity === 'pin-codes' || form.masterEntity === 'contacts') && (
+                {form.masterEntity === 'contacts' && (
                   <div className="field arq-span">
                     <LocationCascade
-                      required={form.masterEntity === 'pin-codes'}
-                      showPin={form.masterEntity === 'contacts'}
+                      required={false}
+                      showPin
                       pinRequired={false}
                       value={{
                         stateId: form.masterPayload?.stateId || '',
@@ -1817,10 +1818,37 @@ export default function AssetRequestsPage() {
                             state: loc.state || '',
                             district: loc.district || '',
                             city: loc.city || '',
-                            pinCode:
-                              form.masterEntity === 'pin-codes'
-                                ? prev.masterPayload?.pinCode || ''
-                                : loc.pinCode || '',
+                            pinCode: loc.pinCode || '',
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                )}
+                {form.masterEntity === 'pin-codes' && (
+                  <div className="field arq-span">
+                    <PinLocationLookup
+                      required
+                      allowCreateMapping
+                      value={{
+                        pinCode: form.masterPayload?.pinCode || '',
+                        city: form.masterPayload?.city || '',
+                        state: form.masterPayload?.state || '',
+                        zone: form.masterPayload?.zone || '',
+                        cityId: form.masterPayload?.cityId || '',
+                        stateId: form.masterPayload?.stateId || '',
+                      }}
+                      onChange={(loc) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          masterPayload: {
+                            ...(prev.masterPayload || {}),
+                            pinCode: loc.pinCode || '',
+                            cityId: loc.cityId || '',
+                            stateId: loc.stateId || '',
+                            city: loc.city || '',
+                            state: loc.state || '',
+                            zone: loc.zone || '',
                           },
                         }))
                       }
@@ -1829,23 +1857,6 @@ export default function AssetRequestsPage() {
                 )}
                 {form.masterEntity === 'pin-codes' && (
                   <>
-                    <div className="field">
-                      <label>PIN code *</label>
-                      <input
-                        required
-                        value={form.masterPayload?.pinCode || ''}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            masterPayload: {
-                              ...(prev.masterPayload || {}),
-                              pinCode: e.target.value,
-                            },
-                          }))
-                        }
-                        maxLength={6}
-                      />
-                    </div>
                     <div className="field">
                       <label>Locality</label>
                       <input

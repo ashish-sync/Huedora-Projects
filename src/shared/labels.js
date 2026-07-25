@@ -19,7 +19,7 @@ export const MODULE = {
   ROLES_PERMISSIONS: 'Access Control',
   CONTACT_DIRECTORY: 'Contact Directory',
   CLIENT_MASTER: 'Client Master',
-  LOCATION_MASTER: 'Geography',
+  LOCATION_MASTER: 'PIN Geography',
   DOCUMENT_MASTER: 'Document Templates',
   DIGITAL_SIGNATURE_MASTER: 'Signatures',
 };

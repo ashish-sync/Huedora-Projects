@@ -108,11 +108,11 @@ export default function App() {
                 />
                 <Route
                   path="/agreements/location-master"
-                  element={<Navigate to="/master-data?scope=document&entity=pin-codes" replace />}
+                  element={<Navigate to="/master-data?scope=camp&entity=pin-codes" replace />}
                 />
                 <Route
                   path="/locations"
-                  element={<Navigate to="/master-data?scope=document&entity=pin-codes" replace />}
+                  element={<Navigate to="/master-data?scope=camp&entity=pin-codes" replace />}
                 />
                 <Route
                   path="/agreements/document-master"

@@ -7,6 +7,7 @@ const EDITOR_ROUTES = ['/finance/build', '/finance/build/proforma', '/finance/bu
 
 const NAV_ITEMS = [
   { to: '/finance', end: true, label: NAV.OVERVIEW },
+  { to: '/finance/camp-payouts', end: true, label: NAV.CAMP_PAYOUTS },
   { to: '/finance/build', end: true, label: 'Invoice Builder' },
   { to: '/finance/master', end: true, label: NAV.ORG_MASTER },
 ];

@@ -88,17 +88,6 @@ export default function PurchaseOrderBuilderPanel({
         </div>
       </Section>
 
-      <Section title="Addresses" defaultOpen>
-        <div className="ib-grid">
-          <Field label="Billing address" span={2}>
-            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.billingAddress || ''} onChange={(e) => update('billingAddress', e.target.value)} />
-          </Field>
-          <Field label="Delivery address" span={2}>
-            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.deliveryAddress || ''} onChange={(e) => update('deliveryAddress', e.target.value)} />
-          </Field>
-        </div>
-      </Section>
-
       <Section title="Purchase order" defaultOpen>
         <div className="ib-grid">
           <Field label="PO no.">
@@ -115,6 +104,9 @@ export default function PurchaseOrderBuilderPanel({
           </Field>
           <Field label="Payment terms" span={2}>
             <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.po?.paymentTerms || ''} onChange={(e) => update('po.paymentTerms', e.target.value)} />
+          </Field>
+          <Field label="Delivery address" span={2}>
+            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.deliveryAddress || ''} onChange={(e) => update('deliveryAddress', e.target.value)} placeholder="Ship-to location" />
           </Field>
         </div>
       </Section>
@@ -216,16 +208,10 @@ export default function PurchaseOrderBuilderPanel({
         </div>
       </Section>
 
-      <Section title="Signatories">
+      <Section title="Signatory">
         <div className="ib-grid">
-          <Field label="Authorized signatory">
+          <Field label="Authorized signatory" span={2}>
             <input className={inputCls} value={form.signature?.signatoryName || ''} onChange={(e) => update('signature.signatoryName', e.target.value)} />
-          </Field>
-          <Field label="Vendor acceptance name">
-            <input className={inputCls} value={form.vendorAcceptance?.signatoryName || ''} onChange={(e) => update('vendorAcceptance.signatoryName', e.target.value)} />
-          </Field>
-          <Field label="Vendor acceptance date">
-            <input type="date" className={inputCls} value={form.vendorAcceptance?.acceptedDate || ''} onChange={(e) => update('vendorAcceptance.acceptedDate', e.target.value)} />
           </Field>
         </div>
       </Section>

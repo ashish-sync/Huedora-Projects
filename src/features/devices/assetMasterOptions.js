@@ -14,6 +14,14 @@ export const AGREEMENT_STATUS_OPTIONS = [
 
 export const ASSET_STATUS_OPTIONS = AGREEMENT_STATUS_OPTIONS;
 
+/** Medical Device statuses tracked on Verification One (monthly rounds). */
+export const VERIFICATION_ONE_ELIGIBLE_STATUSES = [
+  'With TCPL',
+  'Not Applicable',
+  'Agreement Signed',
+  'Not Initiated',
+];
+
 /** Sheet: Asset Custody */
 export const DEVICE_CUSTODY_OPTIONS = [
   'Client / Rented',

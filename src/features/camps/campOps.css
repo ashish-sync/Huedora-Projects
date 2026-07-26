@@ -2754,6 +2754,11 @@
 .camp-ops-root .status-executed { background: #d1fae5; color: #065f46; }
 .camp-ops-root .status-assigned { background: #dcfce7; color: #166534; }
 .camp-ops-root .status-unassigned { background: #e2e8f0; color: #475569; }
+.camp-ops-root .status-pending-execution { background: #fef3c7; color: #92400e; }
+.camp-ops-root .status-pending-finance { background: #e0e7ff; color: #3730a3; }
+.camp-ops-root .status-under_review { background: #fef3c7; color: #92400e; }
+.camp-ops-root .status-not_paid { background: #fee2e2; color: #991b1b; }
+.camp-ops-root .status-paid { background: #dcfce7; color: #166534; }
 
 .camp-ops-root .btn {
   display: inline-flex;
@@ -2783,14 +2788,21 @@
   background: var(--primary-dark);
 }
 
-.camp-ops-root .btn-secondary {
-  background: var(--surface-muted);
-  color: var(--text);
-}
-
 .camp-ops-root .btn-danger {
   background: #fee2e2;
-  color: var(--danger);
+  color: var(--danger, #b91c1c);
+  border: 1px solid #fecaca;
+}
+
+.camp-ops-root .btn-danger:hover:not(:disabled) {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.camp-ops-root .btn-secondary {
+  background: var(--surface-muted, #f8fafc);
+  color: var(--text, #0f172a);
+  border: 1px solid var(--border, #e2e8f0);
 }
 
 .camp-ops-root .toolbar {
@@ -2985,6 +2997,167 @@
   margin-top: 2px;
 }
 
+.camp-ops-root .camp-form-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.camp-ops-root .camp-row-icon-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.camp-ops-root .camp-row-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.camp-ops-root .camp-row-icon-btn:hover:not(:disabled):not(.is-disabled) {
+  background: #f8fafc;
+}
+
+.camp-ops-root .camp-row-icon-btn.is-disabled,
+.camp-ops-root .camp-row-icon-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.camp-ops-root .camp-row-icon-btn--approve {
+  color: #047857;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.camp-ops-root .camp-row-icon-btn--approve:hover:not(:disabled):not(.is-disabled) {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.camp-ops-root .camp-row-icon-btn--issues {
+  color: #b45309;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.camp-ops-root .camp-row-icon-btn--issues:hover:not(:disabled):not(.is-disabled) {
+  background: #fef3c7;
+  border-color: #fbbf24;
+}
+
+.camp-ops-root .camp-row-icon-btn--refuse {
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #fff;
+}
+
+.camp-ops-root .camp-row-icon-btn--refuse:hover:not(:disabled):not(.is-disabled) {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.camp-ops-root .camp-row-icon-btn--edit {
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.camp-ops-root .camp-row-icon-btn--edit:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.camp-ops-root .camp-approval-issues-modal,
+.camp-ops-root .camp-assign-modal {
+  width: min(560px, 100%);
+  max-height: min(90vh, 720px);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.camp-ops-root .camp-assign-modal-body {
+  padding: 16px 24px 8px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.camp-ops-root .camp-approval-issues-header,
+.camp-ops-root .camp-assign-modal-footer {
+  flex-shrink: 0;
+}
+
+.camp-ops-root .camp-assign-modal-error {
+  margin-bottom: 12px;
+}
+
+.camp-ops-root .camp-assign-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+
+.camp-ops-root .camp-hcw-assign-picker {
+  gap: 0.85rem 1rem;
+}
+
+.camp-ops-root .camp-approval-issues-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.camp-ops-root .camp-approval-issues-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.camp-ops-root .camp-approval-issues-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #64748b);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.camp-ops-root .camp-approval-issues-body {
+  padding: 16px 24px 24px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.camp-ops-root .camp-approval-issues-lead {
+  margin: 0 0 12px;
+  color: var(--text-muted, #64748b);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .camp-ops-root .form-back-btn {
   flex-shrink: 0;
   background: #ecfdf5;
@@ -3118,12 +3291,13 @@
 .camp-info-portal-root {
   position: fixed;
   inset: 0;
-  z-index: 1000;
-  pointer-events: none;
+  z-index: 1200;
 }
 
-.camp-info-portal-root .camp-info-modal-overlay {
-  pointer-events: auto;
+.camp-info-portal-root .camp-info-modal-overlay > .modal-card {
+  margin: auto;
+  position: relative;
+  flex-shrink: 0;
 }
 
 .camp-ops-root .camp-info-modal {
@@ -3361,7 +3535,14 @@
 }
 
 .camp-ops-root .camp-info-action-outline {
-  background: transparent;
+  background: #fff;
+  color: var(--danger, #b91c1c);
+  border: 1px solid #fca5a5;
+}
+
+.camp-ops-root .camp-info-action-outline:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #991b1b;
 }
 
 .camp-ops-root .modal-overlay {
@@ -3372,6 +3553,19 @@
   place-items: center;
   padding: 24px;
   background: rgba(15, 23, 42, 0.45);
+}
+
+.camp-info-portal-root.camp-ops-root .modal-overlay.camp-info-modal-overlay {
+  z-index: 1200;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 24px max(24px, env(safe-area-inset-bottom, 0px));
+  min-height: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
 .camp-ops-root .modal-card {
@@ -4981,6 +5175,94 @@
   gap: 0.75rem;
   margin-top: 0.75rem;
   max-width: 28rem;
+}
+
+.camp-ops-root .camp-in-time-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.camp-ops-root .camp-field-label {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink-soft, #4b5563);
+}
+
+.camp-ops-root .camp-in-time-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.camp-ops-root .camp-in-time-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.camp-ops-root .camp-in-time-selfie-link {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.camp-ops-root .camp-in-time-selfie {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line, #d7dee8);
+  background: var(--bg-muted, #f4f7fb);
+}
+
+.camp-ops-root .camp-in-time-selfie--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-align: center;
+  padding: 0.35rem;
+  line-height: 1.2;
+}
+
+.camp-ops-root .camp-in-time-hint {
+  margin: 0;
+}
+
+.camp-ops-root .camp-payout-submit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .camp-ops-root .camp-payout-submit-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.camp-ops-root .camp-finance-submitted {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: var(--brand-soft, #eef4ff);
+  border: 1px solid color-mix(in srgb, var(--brand, #0d47a1) 15%, transparent);
+}
+
+.camp-ops-root .camp-finance-download-actions {
+  margin-top: 0.65rem;
+}
+
+.camp-ops-root .camp-execution-closed-note {
+  margin: 0.5rem 0 0;
+}
+
+.camp-ops-root .camp-finance-submit-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
 }
 
 .camp-ops-root .camp-ops-header-actions {

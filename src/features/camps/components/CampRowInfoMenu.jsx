@@ -27,15 +27,9 @@ function SectionDivider() {
   return <div className="camp-info-divider" role="separator" />;
 }
 
-function isCampClosed(camp = {}) {
-  return ['cancelled', 'rejected'].includes(camp.status);
-}
-
 export function CampRowInfoMenu({
   camp,
   hasPermission,
-  canRejectCamps = false,
-  isSuperAdmin,
   onAction,
   showStageActions = true,
 }) {
@@ -59,12 +53,7 @@ export function CampRowInfoMenu({
 
   const approvalBlockers = camp.status === 'pending_review' ? (camp.approvalBlockers || []) : [];
   const hasApprovalAlert = approvalBlockers.length > 0;
-  const showReject = showStageActions && camp.status === 'pending_review' && canRejectCamps;
   const showRequestInformation = showStageActions && camp.status === 'pending_review' && hasPermission('camps:approve');
-  const showDelete = showStageActions && isSuperAdmin();
-  const showCloseCamp = showStageActions
-    && !isCampClosed(camp)
-    && (hasPermission('camps:cancel') || hasPermission('camps:approve'));
   const closureSummary = formatClosureSummary(camp);
   const hasOverdueNotice = camp.isOverdue && camp.endsAt;
   const hasAlert = camp.alertLevel && camp.alertLevel !== 'none';
@@ -77,7 +66,7 @@ export function CampRowInfoMenu({
     || hasOverdueNotice
     || (camp.status === 'cancelled' && (camp.cancelledBy || camp.remarks))
     || hasAlert;
-  const hasActions = showReject || showDelete || showCloseCamp || showRequestInformation;
+  const hasActions = showRequestInformation;
   const showEmptyState = !hasApprovalAlert && !hasDetails && !hasActions;
 
   function runAction(action) {
@@ -181,24 +170,9 @@ export function CampRowInfoMenu({
           {hasActions && (
             <footer className="camp-info-modal-footer">
               <div className="camp-info-actions">
-                {showCloseCamp && (
-                  <button type="button" className="btn btn-danger btn-sm" onClick={() => runAction('closeCamp')}>
-                    Cancel / Refuse camp
-                  </button>
-                )}
                 {showRequestInformation && (
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => runAction('requestInformation')}>
                     Request more information
-                  </button>
-                )}
-                {showReject && (
-                  <button type="button" className="btn btn-danger btn-sm camp-info-action-outline" onClick={() => runAction('reject')}>
-                    Reject
-                  </button>
-                )}
-                {showDelete && (
-                  <button type="button" className="btn btn-danger btn-sm camp-info-action-outline" onClick={() => runAction('delete')}>
-                    Delete
                   </button>
                 )}
               </div>

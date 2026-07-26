@@ -2,7 +2,6 @@ const PERMISSION_MESSAGES = {
   approve: 'You do not have permission to approve camps',
   reject: 'You do not have permission to reject camps',
   execute: 'You do not have permission to mark camps as executed',
-  delete: 'You do not have permission to delete camps',
 };
 
 function campLabel(camp) {
@@ -39,13 +38,6 @@ function getCampBulkIssue(action, camp, auth) {
     return null;
   }
 
-  if (action === 'delete') {
-    if (camp.status === 'executed' && !auth.isSuperAdmin()) {
-      return `${campLabel(camp)} is executed and cannot be deleted`;
-    }
-    return null;
-  }
-
   return 'Unsupported bulk action';
 }
 
@@ -53,7 +45,6 @@ function canPerformBulkCampAction(action, auth) {
   if (action === 'approve') return auth.canApproveCamps();
   if (action === 'reject') return auth.canRejectCamps();
   if (action === 'execute') return auth.hasPermission('camps:execute');
-  if (action === 'delete') return auth.isSuperAdmin();
   return false;
 }
 

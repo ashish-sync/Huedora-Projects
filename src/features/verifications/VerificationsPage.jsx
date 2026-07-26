@@ -459,7 +459,7 @@ export default function VerificationsPage() {
         { key: 'SAFE', label: 'Safe', value: counts.SAFE || 0, active: filter === 'SAFE', onClick: () => setFilter(filter === 'SAFE' ? '' : 'SAFE') },
         { key: 'CAUTION', label: 'Caution', value: counts.CAUTION || 0, active: filter === 'CAUTION', onClick: () => setFilter(filter === 'CAUTION' ? '' : 'CAUTION') },
         { key: 'DANGER', label: 'Danger', value: counts.DANGER || 0, active: filter === 'DANGER', onClick: () => setFilter(filter === 'DANGER' ? '' : 'DANGER') },
-        { key: 'ALL', label: 'Signed assets', value: (board?.rows || []).length },
+        { key: 'ALL', label: 'Medical devices', value: (board?.rows || []).length },
       ]}
       toolbar={
         <DateRangeFilter
@@ -950,10 +950,11 @@ export default function VerificationsPage() {
                 <tr>
                   <td colSpan={canWrite ? 8 : 7}>
                     <div className="vf-empty">
-                      <strong>No Agreement Signed assets</strong>
+                      <strong>No Medical Devices due for verification</strong>
                       <p className="muted">
-                        Set status to “Agreement Signed” in {MODULE.ASSET_INVENTORY} and assign custodians
-                        from {MODULE.CONTACT_DIRECTORY}.
+                        Medical Devices with Asset Status With TCPL, Not Applicable, Agreement Signed, or
+                        Not Initiated appear here. Register them in {MODULE.ASSET_INVENTORY} and assign
+                        custodians from {MODULE.CONTACT_DIRECTORY}.
                       </p>
                       <Link className="btn secondary" to="/asset-inventory">
                         Open {MODULE.ASSET_INVENTORY}

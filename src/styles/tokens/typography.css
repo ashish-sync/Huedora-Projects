@@ -6,6 +6,7 @@
   --font-family-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-family-display: var(--font-family-sans);
   --font-family-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', monospace;
+  --font-family-signature: 'Great Vibes', cursive;
 
   --text-h1-size: 1.75rem;
   --text-h1-weight: 700;

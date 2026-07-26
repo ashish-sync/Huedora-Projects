@@ -38,6 +38,7 @@ export const NAV = {
   PROFORMA: 'Proforma',
   PURCHASE_ORDERS: 'Purchase Orders',
   GENERATE: 'Generate',
+  CAMP_PAYOUTS: 'Camp Payouts',
   ORG_MASTER: 'Organisation',
   CHARGESHEET: 'Chargesheet',
   PAYOUT: 'Payout',

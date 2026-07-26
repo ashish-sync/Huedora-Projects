@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { REQUEST_REVIEW_LABELS } from '../constants/requestReviewStatus.js';
+import { financePaymentStatusLabel } from '../constants/campLifecycle.js';
 
 export function ChartsEyeToggle({ showCharts, onToggle }) {
   const label = showCharts ? 'Hide charts' : 'Show charts';
@@ -215,4 +216,29 @@ export function AssignmentStatusBadge({ camp }) {
       {assigned ? 'Assigned' : 'Unassigned'}
     </span>
   );
+}
+
+export function ExecutionStatusBadge({ camp }) {
+  if (camp?.executionStatus === 'Cancelled' || camp?.executionStatus === 'Rejected') {
+    return <span className={`status-pill status-${camp.executionStatus.toLowerCase()}`}>{camp.executionStatus}</span>;
+  }
+  if (camp?.status === 'executed') {
+    return <span className="status-pill status-executed">Executed</span>;
+  }
+  if (['cancelled', 'rejected'].includes(camp?.status)) {
+    return <StatusBadge status={camp.status} />;
+  }
+  return <span className="status-pill status-pending-execution">Pending execution</span>;
+}
+
+export function FinanceSettlementStatusBadge({ camp }) {
+  if (['cancelled', 'rejected'].includes(camp?.status)) {
+    return <StatusBadge status={camp.status} />;
+  }
+  if (camp?.submittedToFinanceAt) {
+    const label = financePaymentStatusLabel(camp.financePaymentStatus) || 'Under Review';
+    const statusClass = camp.financePaymentStatus || 'under_review';
+    return <span className={`status-pill status-${statusClass}`}>{label}</span>;
+  }
+  return <span className="status-pill status-pending-finance">Pending submission</span>;
 }

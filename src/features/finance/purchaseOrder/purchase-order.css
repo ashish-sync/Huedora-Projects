@@ -1,5 +1,74 @@
 /* Purchase order — extends tylo-invoice template (navy theme) */
 
+.tylo-invoice--purchase-order .ti-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3mm;
+  align-items: stretch;
+}
+
+.tylo-invoice--purchase-order .ti-card {
+  height: 100%;
+}
+
+.tylo-invoice--purchase-order .ti-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2mm 3mm;
+  padding: 2.5mm 3mm;
+  flex: 1;
+}
+
+.tylo-invoice--purchase-order .ti-field--full,
+.tylo-invoice--purchase-order .ti-field-row {
+  grid-column: 1 / -1;
+}
+
+.tylo-invoice--purchase-order .ti-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3mm;
+}
+
+.tylo-invoice--purchase-order .ti-field {
+  min-width: 0;
+}
+
+.tylo-invoice--purchase-order .ti-field-label {
+  display: block;
+  margin-bottom: 0.4mm;
+}
+
+.tylo-invoice--purchase-order .ti-field-value,
+.tylo-invoice--purchase-order .ti-field-value .ei-inline {
+  text-align: left;
+  min-height: 2.6mm;
+}
+
+.tylo-invoice--purchase-order .ti-field-value .ei-inline--area {
+  min-height: 28px;
+  max-height: 36px;
+}
+
+.tylo-invoice--purchase-order .ti-footer {
+  grid-template-columns: minmax(0, 1fr) minmax(52mm, 60mm) minmax(24mm, 28mm);
+  align-items: start;
+}
+
+.tylo-invoice--purchase-order .ti-signature {
+  justify-content: flex-start;
+  align-self: start;
+}
+
+.tylo-invoice--purchase-order .ti-totals {
+  justify-self: stretch;
+  width: 100%;
+  max-width: none;
+}
+
+.tylo-invoice--purchase-order .ti-totals-row span:last-child {
+  text-align: right;
+}
+
 .po-lines .po-col-uom,
 .po-lines .po-th-uom,
 .po-lines .po-uom {
@@ -14,13 +83,9 @@
   font-style: italic;
 }
 
-.po-payment-compact {
-  margin-top: 8px;
-}
-
 .po-shipping,
 .po-notes {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .po-shipping p,
@@ -29,22 +94,4 @@
   font-size: 9px;
   line-height: 1.45;
   color: #334155;
-}
-
-.po-signatures {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  grid-column: 1 / -1;
-  margin-top: 4px;
-}
-
-.po-vendor-acceptance .ti-signature-label {
-  color: #475569;
-}
-
-@media print {
-  .po-signatures {
-    break-inside: avoid;
-  }
 }

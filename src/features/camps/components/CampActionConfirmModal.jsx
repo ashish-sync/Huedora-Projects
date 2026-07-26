@@ -42,9 +42,9 @@ const ACTION_COPY = {
     confirmClass: 'btn-danger',
   },
   closeCamp: {
-    title: 'Cancel or refuse camp',
+    title: 'Cancel camp',
     message: 'Choose how to close this camp and select a reason code.',
-    confirmLabel: 'Confirm closure',
+    confirmLabel: 'Confirm cancellation',
     confirmClass: 'btn-danger',
   },
   execute: {

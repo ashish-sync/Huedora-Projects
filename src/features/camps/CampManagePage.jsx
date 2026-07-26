@@ -3,9 +3,23 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CampsFilters } from './components/CampsFilters';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
+import { CampCancelRefuseButton } from './components/CampCancelRefuseButton';
+import { CampRequestRowActions } from './components/CampRequestRowActions';
+import { CampAssignmentRowActions } from './components/CampAssignmentRowActions';
+import { CampExecutionRowActions } from './components/CampExecutionRowActions';
+import { CampFinancialRowActions } from './components/CampFinancialRowActions';
+import { CampAssignModal } from './components/CampAssignModal';
+import { api } from '../../shared/api.js';
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
-import { getCampRowClassName, StatusBadge, AssignmentStatusBadge, RequestReviewStatusBadge, isCampAssigned } from './components/DashboardWidgets';
+import {
+  getCampRowClassName,
+  StatusBadge,
+  AssignmentStatusBadge,
+  ExecutionStatusBadge,
+  FinanceSettlementStatusBadge,
+  RequestReviewStatusBadge,
+} from './components/DashboardWidgets';
 import { useAuth } from './useCampOpsAuth.js';
 import { campApi } from './campOpsApi.js';
 import { trimString } from './utils/trimInput';
@@ -84,6 +98,9 @@ export default function CampsPage() {
   const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
   const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [assignCamp, setAssignCamp] = useState(null);
+  const [hcwContacts, setHcwContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
 
   const dismissError = useCallback(() => setError(''), []);
   const dismissBulkMessage = useCallback(() => setBulkMessage(''), []);
@@ -218,17 +235,11 @@ export default function CampsPage() {
       closeCamp: campApi.close,
       execute: campApi.execute,
       submitReview: campApi.submitReview,
-      delete: campApi.delete,
     };
 
     const handler = handlers[action];
     if (!handler) {
       throw new Error(`Unsupported camp action: ${action}`);
-    }
-
-    if (action === 'delete') {
-      await handler(camp._id);
-      return;
     }
 
     await handler(camp._id, payload);
@@ -308,6 +319,25 @@ export default function CampsPage() {
     setPage(1);
     loadCamps(1, pageSize);
   }, [status, requestReviewStatus, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignmentFilter, workingStage]);
+
+  useEffect(() => {
+    if (workingStage !== 'assignment') return undefined;
+    let cancelled = false;
+    setContactsLoading(true);
+    api('/contacts?contactCategory=Healthcare Worker&limit=500')
+      .then((res) => {
+        if (!cancelled) setHcwContacts(res.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setHcwContacts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setContactsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workingStage]);
 
   function handleSearch() {
     setPage(1);
@@ -570,33 +600,69 @@ export default function CampsPage() {
   const bulkApproveValidation = validateBulkCampAction('approve', selectedCamps, bulkAuth);
   const bulkRejectValidation = validateBulkCampAction('reject', selectedCamps, bulkAuth);
   const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
-  const bulkDeleteValidation = validateBulkCampAction('delete', selectedCamps, bulkAuth);
 
   const isRequestStage = workingStage === 'request';
   const isAssignmentStage = workingStage === 'assignment';
+  const isExecutionStage = workingStage === 'execution';
+  const isFinancialStage = workingStage === 'financial';
+  const canExecuteCamps = hasPermission('camps:execute');
 
   function renderCampActions(camp) {
+    const cancelRefuse = (
+      <CampCancelRefuseButton
+        camp={camp}
+        hasPermission={hasPermission}
+        canRejectCamps={canRejectCamps()}
+        onAction={requestCampAction}
+      />
+    );
+
+    if (isRequestStage) {
+      return (
+        <CampRequestRowActions
+          camp={camp}
+          canEdit={canEditCampRecord(camp)}
+          canApprove={canApproveCamps()}
+          canRejectCamps={canRejectCamps()}
+          hasPermission={hasPermission}
+          onApprove={() => openCampActionConfirm('approve', camp)}
+          onAction={requestCampAction}
+        />
+      );
+    }
+
     if (isAssignmentStage) {
       return (
-        <div className="actions camp-row-actions">
-          {!isCampAssigned(camp) && camp.status === 'approved' && (
-            <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-primary btn-sm">
-              Assign
-            </Link>
-          )}
-          {canEditCampRecord(camp) && (
-            <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-secondary btn-sm">
-              Edit
-            </Link>
-          )}
-          <CampRowInfoMenu
-            camp={camp}
-            hasPermission={hasPermission}
-            canRejectCamps={canRejectCamps()}
-            isSuperAdmin={isSuperAdmin}
-            onAction={requestCampAction}
-          />
-        </div>
+        <CampAssignmentRowActions
+          camp={camp}
+          canRejectCamps={canRejectCamps()}
+          hasPermission={hasPermission}
+          onAction={requestCampAction}
+          onAssign={setAssignCamp}
+        />
+      );
+    }
+
+    if (isExecutionStage) {
+      return (
+        <CampExecutionRowActions
+          camp={camp}
+          canEdit={canEditCampRecord(camp)}
+          canExecute={canExecuteCamps}
+          canRejectCamps={canRejectCamps()}
+          hasPermission={hasPermission}
+          onExecute={() => openCampActionConfirm('execute', camp)}
+          onAction={requestCampAction}
+        />
+      );
+    }
+
+    if (isFinancialStage) {
+      return (
+        <CampFinancialRowActions
+          camp={camp}
+          canEdit={canEditCampRecord(camp)}
+        />
       );
     }
 
@@ -622,11 +688,10 @@ export default function CampsPage() {
             Mark Executed
           </button>
         )}
+        {cancelRefuse}
         <CampRowInfoMenu
           camp={camp}
           hasPermission={hasPermission}
-          canRejectCamps={canRejectCamps()}
-          isSuperAdmin={isSuperAdmin}
           onAction={requestCampAction}
         />
       </div>
@@ -636,6 +701,12 @@ export default function CampsPage() {
   function renderCampStatus(camp) {
     if (isAssignmentStage) {
       return <AssignmentStatusBadge camp={camp} />;
+    }
+    if (isExecutionStage) {
+      return <ExecutionStatusBadge camp={camp} />;
+    }
+    if (isFinancialStage) {
+      return <FinanceSettlementStatusBadge camp={camp} />;
     }
     if (isRequestStage) {
       return <RequestReviewStatusBadge camp={camp} />;
@@ -702,16 +773,6 @@ export default function CampsPage() {
               onClick={() => handleBulk('execute')}
             >
               Mark Executed
-            </button>
-          )}
-          {isSuperAdmin() && (
-            <button
-              className="btn btn-danger btn-sm"
-              disabled={bulkLoading || confirmLoading || !bulkDeleteValidation.ok}
-              title={!bulkDeleteValidation.ok ? bulkDeleteValidation.message : undefined}
-              onClick={() => handleBulk('delete')}
-            >
-              Delete Selected
             </button>
           )}
         </div>
@@ -840,6 +901,19 @@ export default function CampsPage() {
         onCancel={closeCampActionConfirm}
         loading={confirmLoading}
       />
+
+      {assignCamp && (
+        <CampAssignModal
+          camp={assignCamp}
+          hcwContacts={hcwContacts}
+          contactsLoading={contactsLoading}
+          onClose={() => setAssignCamp(null)}
+          onSaved={() => {
+            setAssignCamp(null);
+            loadCamps(page, pageSize);
+          }}
+        />
+      )}
     </>
   );
 }

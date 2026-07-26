@@ -1,8 +1,8 @@
 import { formatDate } from '../../../shared/dateFormat.js';
 
 function detailLine(label, value) {
-  const text = String(value ?? '').trim();
-  return `${label}: ${text || '—'}`;
+  const text = String(value ?? '').trim() || '—';
+  return `*${label}:* ${text}`;
 }
 
 function formatClinicTiming(form = {}) {
@@ -13,9 +13,8 @@ function formatClinicTiming(form = {}) {
 }
 
 /** Plain-text block for WhatsApp / email when sharing an assigned camp. */
-export function formatCampAssignmentDetails(form = {}, { clientName = '' } = {}) {
+export function formatCampAssignmentDetails(form = {}) {
   const lines = [
-    detailLine('Client Name', clientName || form.clientName),
     detailLine('Doctor Name', form.doctorName),
     detailLine('Clinic Date', formatDate(form.campDate) || form.campDate),
     detailLine('Clinic Address', form.campAddress),

@@ -44,14 +44,52 @@ export const ASSIGNMENT_REFUSAL_REASONS = [
 ];
 export const ASSIGNMENT_STATUSES = ['Pending', 'Assigned', 'Reassigned', 'Unassigned'];
 export const EXECUTION_STATUSES = ['Pending', 'In Progress', 'Completed', 'Cancelled', 'Rejected'];
+export const EXECUTION_CLOSED_STATUSES = ['Cancelled', 'Rejected'];
+
+export function isExecutionClosedOut(executionStatus) {
+  return EXECUTION_CLOSED_STATUSES.includes(String(executionStatus || '').trim());
+}
 export const CHARGEABLE_STATUSES = ['Chargeable', 'Non-Chargeable', 'Partial'];
 export const QUALITY_RATINGS = ['Good', 'Average', 'Poor'];
+export const ATTIRE_CHECK_OPTIONS = ['No Issues', 'Issues'];
 export const HCW_CATEGORIES = ['Technician', 'Phlebotomist', 'Dietician', 'Other'];
 export const EXECUTION_DOC_TYPES = [
-  { value: 'doctor_form', label: 'Doctor Form' },
-  { value: 'patient_form', label: 'Patient Form' },
-  { value: 'other', label: 'Other' },
+  { value: 'doctor_form', label: 'DF (Doctor Form)' },
+  { value: 'patient_form', label: 'PF (Patient Form)' },
+  { value: 'other', label: 'Others' },
+  { value: 'gps_selfie', label: 'GPS Selfie' },
 ];
+
+export const PAYMENT_SUBMIT_STATUSES = [
+  { value: 'payment_confirmed', label: 'Payment Confirmed' },
+  { value: 'payment_not_checked', label: 'Payment Not Checked' },
+  { value: 'payment_hold', label: 'Payment Hold' },
+];
+
+export const FINANCE_PAYMENT_STATUSES = [
+  { value: 'not_paid', label: 'Not Paid' },
+  { value: 'under_review', label: 'Under Review' },
+  { value: 'paid', label: 'Paid' },
+];
+
+export function paymentSubmitStatusLabel(value) {
+  return PAYMENT_SUBMIT_STATUSES.find((o) => o.value === value)?.label || value || '—';
+}
+
+export function financePaymentStatusLabel(value) {
+  return FINANCE_PAYMENT_STATUSES.find((o) => o.value === value)?.label || value || '—';
+}
+
+export function resolveInTimeSelfieUrl(campOrForm = {}) {
+  if (campOrForm.inTimeSelfieUrl) return campOrForm.inTimeSelfieUrl;
+  const docs = Array.isArray(campOrForm.executionDocuments) ? campOrForm.executionDocuments : [];
+  const selfies = docs.filter((d) => d.docType === 'gps_selfie');
+  if (!selfies.length) return '';
+  const latest = selfies.sort((a, b) =>
+    String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || ''))
+  )[0];
+  return latest?.url || '';
+}
 
 const DURATION_OPTIONS = [3, 4, 5, 6, 8];
 
@@ -77,6 +115,24 @@ export function resolveCampSlot(startTime) {
   if (mins >= 13 * 60 && mins < 17 * 60) return 'Noon';
   if (mins >= 17 * 60 && mins <= 21 * 60) return 'Evening';
   return '';
+}
+
+/**
+ * Punctuality from camp start vs in time:
+ * on time / early through 5 min late → Good; 5–15 min late → Average; 15+ min late → Poor.
+ */
+export function resolvePunctuality(campStartTime, inTime) {
+  const startMins = parseTimeToMinutes(campStartTime);
+  const inMins = parseTimeToMinutes(inTime);
+  if (startMins == null || inMins == null) return '';
+
+  let lateMinutes = inMins - startMins;
+  if (lateMinutes < -12 * 60) lateMinutes += 24 * 60;
+  if (lateMinutes > 12 * 60) lateMinutes -= 24 * 60;
+
+  if (lateMinutes <= 5) return 'Good';
+  if (lateMinutes <= 15) return 'Average';
+  return 'Poor';
 }
 
 export function computeLifecycleDerived(form = {}) {
@@ -113,6 +169,8 @@ export function computeLifecycleDerived(form = {}) {
   const paidAmount = Number(form.paidAmount) || 0;
   const balance = Math.round((totalPayout - paidAmount) * 100) / 100;
 
+  const punctuality = resolvePunctuality(form.startTime, form.inTime);
+
   return {
     campSlot,
     totalHours: totalHours ?? '',
@@ -120,6 +178,7 @@ export function computeLifecycleDerived(form = {}) {
     totalRevenue,
     totalPayout,
     balance,
+    punctuality,
   };
 }
 
@@ -185,12 +244,14 @@ export function emptyLifecycleForm() {
     cancellationReason: '',
     chargeableStatus: '',
     inTime: '',
+    inTimeSelfieUrl: '',
     outTime: '',
     totalHours: '',
     extraHours: 0,
     kmRoundTrip: '',
     punctuality: '',
     attire: '',
+    labCoat: '',
     patientsCount: 0,
     rxCount: 0,
     executionDocuments: [],
@@ -207,6 +268,9 @@ export function emptyLifecycleForm() {
     balance: 0,
     transactionId: '',
     paymentRemark: '',
+    paymentSubmitStatus: '',
+    financePaymentStatus: '',
+    submittedToFinanceAt: '',
     remarks: '',
     lifecycleStage: 'request',
   };
@@ -256,12 +320,14 @@ export function campToForm(camp) {
     cancellationReason: camp.cancellationReason || camp.remarks || '',
     chargeableStatus: camp.chargeableStatus || '',
     inTime: camp.inTime || '',
+    inTimeSelfieUrl: resolveInTimeSelfieUrl(camp),
     outTime: camp.outTime || '',
     totalHours: camp.totalHours ?? '',
     extraHours: camp.extraHours ?? 0,
     kmRoundTrip: camp.kmRoundTrip ?? '',
     punctuality: camp.punctuality || '',
     attire: camp.attire || '',
+    labCoat: camp.labCoat || '',
     patientsCount: camp.patientsCount ?? camp.actualPatients ?? 0,
     rxCount: camp.rxCount ?? 0,
     executionDocuments: Array.isArray(camp.executionDocuments) ? camp.executionDocuments : [],
@@ -278,6 +344,9 @@ export function campToForm(camp) {
     balance: camp.balance ?? 0,
     transactionId: camp.transactionId || '',
     paymentRemark: camp.paymentRemark || '',
+    paymentSubmitStatus: camp.paymentSubmitStatus || '',
+    financePaymentStatus: camp.financePaymentStatus || '',
+    submittedToFinanceAt: camp.submittedToFinanceAt || '',
     remarks: camp.remarks || '',
     lifecycleStage: camp.lifecycleStage || 'request',
   };

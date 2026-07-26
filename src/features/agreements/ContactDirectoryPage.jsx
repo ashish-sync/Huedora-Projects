@@ -10,6 +10,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import ServiceProviderProfile from './ServiceProviderProfile.jsx';
 import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
@@ -46,6 +47,7 @@ const empty = {
   stateId: '',
   districtId: '',
   cityId: '',
+  providerEmployees: [],
 };
 
 export default function ContactDirectoryPage({ embedded = false } = {}) {
@@ -63,7 +65,12 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
   const [serviceProviders, setServiceProviders] = useState([]);
-  const [managedStaff, setManagedStaff] = useState([]);
+
+  const loadServiceProviders = () => {
+    api('/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500')
+      .then((r) => setServiceProviders(r.data || []))
+      .catch(() => setServiceProviders([]));
+  };
 
   const isResource = form.contactCategory === 'Resource';
   const isHcw = form.contactCategory === 'Healthcare Worker';
@@ -72,7 +79,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const isHcwStaff = isHcw && isHcwStaffResourceType(form.resourceType);
   const isHcwProvider = isHcw && form.resourceType === 'Service Provider';
   const showResourceType = isResource || isHcw;
-  const showBankAndAddress = !isClient && Boolean(form.contactCategory);
+  const showBankAndAddress = !isClient && !isHcwProvider && Boolean(form.contactCategory);
   const professionKey = professionPicklistKey(form.contactCategory);
   const professionFallback = professionsForCategory(form.contactCategory);
   const categoryResourceTypes = resourceTypesForCategory(form.contactCategory);
@@ -125,30 +132,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   }, [page, limit]);
 
   useEffect(() => {
-    api(
-      '/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500'
-    )
-      .then((r) => setServiceProviders(r.data || []))
-      .catch(() => setServiceProviders([]));
+    loadServiceProviders();
   }, []);
-
-  useEffect(() => {
-    if (!editId || !isHcwProvider) {
-      setManagedStaff([]);
-      return undefined;
-    }
-    let cancelled = false;
-    api(`/contacts/${editId}/staff`)
-      .then((r) => {
-        if (!cancelled) setManagedStaff(r.data || []);
-      })
-      .catch(() => {
-        if (!cancelled) setManagedStaff([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [editId, isHcwProvider]);
 
   const onCategoryChange = (contactCategory) => {
     const nextProfessions = professionsForCategory(contactCategory);
@@ -167,7 +152,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           contactCategory === 'Healthcare Worker' && isHcwStaffResourceType(nextResourceType)
             ? f.serviceProviderContactId
             : '',
-      organization: contactCategory === 'Client' ? f.organization : '',
+        providerEmployees:
+          contactCategory === 'Healthcare Worker' && nextResourceType === 'Service Provider'
+            ? f.providerEmployees || []
+            : [],
+        organization: contactCategory === 'Client' ? f.organization : '',
       supplyCategory:
         contactCategory === 'Vendor' && SUPPLY_CATEGORIES.includes(f.supplyCategory)
           ? f.supplyCategory
@@ -206,6 +195,32 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       setError('Supply Category is required for Vendor');
       return;
     }
+    if (isHcwProvider) {
+      if (!String(form.name || '').trim()) {
+        setError('Provider name is required');
+        return;
+      }
+      if (!String(form.contact || '').trim()) {
+        setError('Provider mobile number is required');
+        return;
+      }
+      if (!String(form.state || '').trim()) {
+        setError('Provider state is required');
+        return;
+      }
+      for (let i = 0; i < (form.providerEmployees || []).length; i += 1) {
+        const emp = form.providerEmployees[i];
+        if (!String(emp.name || '').trim()) {
+          setError(`Employee ${i + 1}: name is required`);
+          return;
+        }
+        const empPhoneErr = phoneError(emp.mobile);
+        if (empPhoneErr) {
+          setError(`Employee ${i + 1}: ${empPhoneErr}`);
+          return;
+        }
+      }
+    }
     const eErr = emailError(form.email);
     if (eErr) {
       setError(eErr);
@@ -216,8 +231,12 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       setError(pErr);
       return;
     }
-    if (!String(form.email || '').trim() && !String(form.contact || '').trim()) {
+    if (!isHcwProvider && !String(form.email || '').trim() && !String(form.contact || '').trim()) {
       setError('Email or phone is required for a contact');
+      return;
+    }
+    if (isHcwProvider && !String(form.contact || '').trim()) {
+      setError('Provider mobile number is required');
       return;
     }
     setBusy(true);
@@ -233,6 +252,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       if (!isResource && !isHcw) body.resourceType = '';
       if (!isHcwStaff) body.serviceProviderContactId = '';
+      if (!isHcwProvider) body.providerEmployees = [];
+      else body.serviceProviderContactId = '';
       if (!isClient) body.organization = '';
       if (!isVendor) body.supplyCategory = '';
 
@@ -244,6 +265,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       setForm(empty);
       setEditId(null);
       load();
+      loadServiceProviders();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -286,6 +308,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
+      providerEmployees: Array.isArray(c.providerEmployees) ? c.providerEmployees : [],
     });
   };
 
@@ -410,7 +433,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       {c.serviceProviderName
                         ? c.serviceProviderName
                         : isServiceProviderContact(c)
-                          ? `${staffCountByProvider[String(c._id)] || 0} staff`
+                          ? `${(c.providerEmployees || []).length + (staffCountByProvider[String(c._id)] || 0)} staff`
                           : '—'}
                     </td>
                     <td className="cd-col-org">{c.organization || '—'}</td>
@@ -500,6 +523,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                           serviceProviderContactId: isHcwStaffResourceType(nextType)
                             ? form.serviceProviderContactId
                             : '',
+                          providerEmployees:
+                            nextType === 'Service Provider' ? form.providerEmployees || [] : [],
                         });
                       }}
                     />
@@ -557,7 +582,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   </div>
                 )}
 
-                {form.contactCategory ? (
+                {form.contactCategory && !isHcwProvider ? (
                   <div className="field">
                     <label>Profession / Role</label>
                     <OtherAwareSelect
@@ -573,37 +598,19 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               </div>
             </section>
 
-            {isHcwProvider && (
-              <section className="cd-section">
-                <h4 className="cd-section-title">Managed staff</h4>
-                <p className="cd-form-hint">
-                  Workers with Resource Type Full-Time or Individual linked to this provider.
-                </p>
-                {managedStaff.length > 0 ? (
-                  <ul className="cd-staff-list">
-                    {managedStaff.map((member) => (
-                      <li key={member._id} className="cd-staff-item">
-                        <strong>{member.name}</strong>
-                        <span className="muted">
-                          {[member.profession, member.resourceType, member.city]
-                            .filter(Boolean)
-                            .join(' · ') || '—'}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="muted cd-staff-empty">
-                    No staff linked yet. Edit each worker and assign this provider under Service
-                    Provider (agency).
-                  </p>
-                )}
-                {managedStaff.length > 0 ? (
-                  <p className="cd-staff-count">{managedStaff.length} staff linked</p>
-                ) : null}
-              </section>
-            )}
+            {isHcwProvider ? (
+              <ServiceProviderProfile
+                form={form}
+                disabled={busy}
+                professionOptions={professionOptions}
+                onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+                onEmployeesChange={(providerEmployees) =>
+                  setForm((f) => ({ ...f, providerEmployees }))
+                }
+              />
+            ) : null}
 
+            {!isHcwProvider && (
             <section className="cd-section">
               <h4 className="cd-section-title">Identity</h4>
               <div className="cd-form-grid">
@@ -634,7 +641,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               </div>
               <p className="cd-form-hint">Email or contact number is required.</p>
             </section>
+            )}
 
+            {!isHcwProvider && (
             <section className="cd-section">
               <h4 className="cd-section-title">Location</h4>
               <LocationCascade
@@ -644,6 +653,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                 showPin={showBankAndAddress}
               />
             </section>
+            )}
 
             {showBankAndAddress && (
               <section className="cd-section cd-section--last">

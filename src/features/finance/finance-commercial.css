@@ -470,3 +470,91 @@
     height: min(60vh, 520px);
   }
 }
+
+.finance-camp-payouts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.finance-camp-payouts-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.finance-camp-payouts-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.finance-camp-payouts-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .finance-camp-payouts-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.finance-camp-payouts-items {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.finance-camp-payout-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.finance-camp-payout-item.is-active {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+.finance-camp-payout-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem 1rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.finance-camp-payout-meta dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.finance-camp-payout-meta dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+
+.finance-camp-payout-form {
+  margin-top: 0.5rem;
+}
+
+.finance-camp-payout-download {
+  margin: 0.75rem 0 1rem;
+}

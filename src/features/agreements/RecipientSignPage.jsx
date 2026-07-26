@@ -172,6 +172,7 @@ function SignPanel({
                     <label htmlFor="rs-typed-name">Full legal name</label>
                     <input
                       id="rs-typed-name"
+                      className="esign-typed-input"
                       value={typedName}
                       onChange={(e) => setTypedName(e.target.value)}
                       autoComplete="name"

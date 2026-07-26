@@ -5,6 +5,7 @@
 :root {
   --font: var(--font-family-sans);
   --font-display: var(--font-family-display);
+  --font-signature: var(--font-family-signature);
   --mono: var(--font-family-mono);
 
   --tylo-primary: var(--color-brand-primary);

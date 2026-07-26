@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { CONTACT_CATEGORIES, HCW_RESOURCE_TYPES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey, resourceTypesForCategory, isHcwStaffResourceType } from './contactPicklists.js';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
@@ -9,6 +9,14 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
+import AssetRegistrySearchInput, {
+  AssetRegistryPickerSummary,
+} from './AssetRegistrySearchInput.jsx';
+import {
+  applyAssetSnapshotToPlaceholders,
+  isAssetRegistryPlaceholder,
+  placeholderAssetField,
+} from './assetPlaceholderFields.js';
 
 const emptyContact = {
   name: '',
@@ -55,6 +63,9 @@ function typeLabelBadge(t) {
 
 export default function AgreementCreatePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const linkAssetId = String(searchParams.get('assetId') || '').trim();
+  const [linkAsset, setLinkAsset] = useState(null);
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -102,6 +113,9 @@ export default function AgreementCreatePage() {
   const [endDate, setEndDate] = useState('');
 
   const [placeholderValues, setPlaceholderValues] = useState({});
+  const [selectedLinkAssetId, setSelectedLinkAssetId] = useState('');
+  const [selectedAssetSnapshot, setSelectedAssetSnapshot] = useState(null);
+  const [assetPickerQuery, setAssetPickerQuery] = useState('');
   const [previewToken, setPreviewToken] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
 
@@ -120,6 +134,26 @@ export default function AgreementCreatePage() {
       .catch((e) => setError(e.message));
   }, []);
 
+  useEffect(() => {
+    if (!linkAssetId) return;
+    api(`/assets/${linkAssetId}`)
+      .then((r) => {
+        const asset = r.data;
+        if (!asset) return;
+        setLinkAsset(asset);
+        setSelectedLinkAssetId(linkAssetId);
+        const contactId = asset.contactId?._id || asset.contactId;
+        if (contactId) {
+          setRecipientMode('directory');
+          setSelectedContactId(String(contactId));
+        }
+        if (asset.deviceNameSnapshot) {
+          setTitle((prev) => prev || `Agreement: ${asset.deviceNameSnapshot}`);
+        }
+      })
+      .catch(() => {});
+  }, [linkAssetId]);
+
   useEffect(() => () => {
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
   }, [pdfUrl]);
@@ -136,6 +170,10 @@ export default function AgreementCreatePage() {
 
   const placeholders = selectedTemplate?.placeholders || [];
   const hasPlaceholders = docMode === 'template' && placeholders.length > 0;
+  const assetPlaceholders = useMemo(
+    () => placeholders.filter((p) => isAssetRegistryPlaceholder(p)),
+    [placeholders]
+  );
 
   useEffect(() => {
     if (selectedTemplate && docMode === 'template') {
@@ -179,6 +217,41 @@ export default function AgreementCreatePage() {
     if (hasExpiry && !endDate) return false;
     if (hasExpiry && endDate && startDate && endDate < startDate) return false;
     return true;
+  };
+
+  const seedPlaceholdersFromAsset = async () => {
+    const assetId = selectedLinkAssetId || linkAssetId;
+    if (!assetId || !hasPlaceholders) return;
+    try {
+      const { data: snap } = await api(`/assets/${assetId}/placeholder-snapshot`);
+      setSelectedAssetSnapshot(snap);
+      setSelectedLinkAssetId(snap?.assetId || assetId);
+      setPlaceholderValues((prev) => applyAssetSnapshotToPlaceholders(placeholders, snap, prev));
+    } catch {
+      /* optional prefill */
+    }
+  };
+
+  const handleAssetSelected = (snapshot) => {
+    if (!snapshot?.assetId) return;
+    setSelectedAssetSnapshot(snapshot);
+    setSelectedLinkAssetId(snapshot.assetId);
+    setPlaceholderValues((prev) => applyAssetSnapshotToPlaceholders(placeholders, snapshot, prev));
+  };
+
+  const resolveLinkAssetId = async () => {
+    const known = selectedLinkAssetId || linkAssetId;
+    if (known) return known;
+    const serialPh = placeholders.find((p) => placeholderAssetField(p) === 'serialNumber');
+    const serial = serialPh ? String(placeholderValues[serialPh.key] || '').trim() : '';
+    if (!serial) return '';
+    try {
+      const { data } = await api(`/assets?q=${encodeURIComponent(serial)}&limit=10`);
+      const exact = (data || []).find((a) => String(a.serialNumber || '').trim() === serial);
+      return exact?._id || '';
+    } catch {
+      return '';
+    }
   };
 
   const seedPlaceholdersFromRecipient = () => {
@@ -270,6 +343,7 @@ export default function AgreementCreatePage() {
       }
       if (hasPlaceholders) {
         seedPlaceholdersFromRecipient();
+        seedPlaceholdersFromAsset();
         setStep(3);
         return;
       }
@@ -339,6 +413,17 @@ export default function AgreementCreatePage() {
       }
 
       const { data } = await api('/agreements', { method: 'POST', body: fd });
+      const assetToLink = (await resolveLinkAssetId()) || linkAssetId || selectedLinkAssetId;
+      if (assetToLink) {
+        try {
+          await api(`/agreements/${data._id}/assets`, {
+            method: 'POST',
+            body: { assetIds: [assetToLink] },
+          });
+        } catch {
+          /* agreement created; asset link can be added from envelope detail */
+        }
+      }
       navigate(`/agreements/${data._id}`);
     } catch (err) {
       setError(err.message);
@@ -357,12 +442,21 @@ export default function AgreementCreatePage() {
             <span>New document</span>
           </p>
           <h1>Send a document</h1>
-          <p className="muted esign-sub">
-            Select the recipient, then choose a template or document from {MODULE.DOCUMENT_MASTER}.{' '}
-            <Link to="/agreements/contacts">{MODULE.CONTACT_DIRECTORY}</Link>
-            {' · '}
-            <Link to="/agreements/document-master">{MODULE.DOCUMENT_MASTER}</Link>
-          </p>
+          {linkAsset ? (
+            <p className="muted esign-sub">
+              Creating an agreement for{' '}
+              <strong>{linkAsset.deviceNameSnapshot || linkAsset.serialNumber || 'asset'}</strong>
+              {linkAsset.serialNumber ? ` · ${linkAsset.serialNumber}` : ''}. The asset will be
+              linked when you finish.
+            </p>
+          ) : (
+            <p className="muted esign-sub">
+              Select the recipient, then choose a template or document from {MODULE.DOCUMENT_MASTER}.{' '}
+              <Link to="/agreements/contacts">{MODULE.CONTACT_DIRECTORY}</Link>
+              {' · '}
+              <Link to="/agreements/document-master">{MODULE.DOCUMENT_MASTER}</Link>
+            </p>
+          )}
         </div>
       </div>
 
@@ -816,39 +910,82 @@ export default function AgreementCreatePage() {
         <div className="card ph-step-card">
           <div className="ph-step-head">
             <h3 style={{ margin: 0 }}>Fill placeholders</h3>
+            {assetPlaceholders.length > 0 && (
+              <p className="muted" style={{ margin: '6px 0 0' }}>
+                Asset Name, Model, and Serial Number fields search the Asset Registry and auto-fill
+                when you pick a match.
+              </p>
+            )}
           </div>
+
+          {assetPlaceholders.length > 0 && (
+            <div className="field ph-field ph-asset-picker">
+              <label htmlFor="ph-asset-picker">Link from Asset Registry</label>
+              <AssetRegistrySearchInput
+                id="ph-asset-picker"
+                value={assetPickerQuery}
+                onChange={setAssetPickerQuery}
+                onSelectAsset={(snapshot) => {
+                  handleAssetSelected(snapshot);
+                  setAssetPickerQuery(snapshot.assetName || snapshot.serialNumber || '');
+                }}
+                placeholder="Search by asset name, model, or serial number…"
+              />
+              <AssetRegistryPickerSummary
+                snapshot={selectedAssetSnapshot}
+                onClear={() => {
+                  setSelectedAssetSnapshot(null);
+                  setSelectedLinkAssetId(linkAssetId || '');
+                  setAssetPickerQuery('');
+                }}
+              />
+            </div>
+          )}
 
           <div className="ph-step-fields">
             {placeholders.map((p) => (
               <div className="field ph-field" key={`${p.key}-${p.occurrence || 0}`}>
                 <label htmlFor={`ph-${p.key}`}>{p.label}</label>
-                <input
-                  id={`ph-${p.key}`}
-                  required
-                  inputMode={p.type === 'number' ? 'decimal' : 'text'}
-                  pattern={
-                    p.type === 'name'
-                      ? "[A-Za-z][A-Za-z .'-]*"
-                      : p.type === 'number'
-                        ? '[0-9]+([.,][0-9]+)?'
-                        : p.type === 'alphanumeric'
-                          ? '[A-Za-z0-9][A-Za-z0-9 ._-]*'
-                          : undefined
-                  }
-                  title={
-                    p.type === 'name'
-                      ? 'Letters only'
-                      : p.type === 'number'
-                        ? 'Numbers only'
-                        : p.type === 'alphanumeric'
-                          ? 'Letters and numbers'
-                          : undefined
-                  }
-                  value={placeholderValues[p.key] || ''}
-                  onChange={(e) =>
-                    setPlaceholderValues({ ...placeholderValues, [p.key]: e.target.value })
-                  }
-                />
+                {isAssetRegistryPlaceholder(p) ? (
+                  <AssetRegistrySearchInput
+                    id={`ph-${p.key}`}
+                    required
+                    value={placeholderValues[p.key] || ''}
+                    onChange={(v) =>
+                      setPlaceholderValues({ ...placeholderValues, [p.key]: v })
+                    }
+                    onSelectAsset={handleAssetSelected}
+                    placeholder={`Search ${p.label} in Asset Registry…`}
+                  />
+                ) : (
+                  <input
+                    id={`ph-${p.key}`}
+                    required
+                    inputMode={p.type === 'number' ? 'decimal' : 'text'}
+                    pattern={
+                      p.type === 'name'
+                        ? "[A-Za-z][A-Za-z .'-]*"
+                        : p.type === 'number'
+                          ? '[0-9]+([.,][0-9]+)?'
+                          : p.type === 'alphanumeric'
+                            ? '[A-Za-z0-9][A-Za-z0-9 ._-]*'
+                            : undefined
+                    }
+                    title={
+                      p.type === 'name'
+                        ? 'Letters only'
+                        : p.type === 'number'
+                          ? 'Numbers only'
+                          : p.type === 'alphanumeric'
+                            ? 'Letters and numbers'
+                            : undefined
+                    }
+                    value={placeholderValues[p.key] || ''}
+                    onChange={(e) =>
+                      setPlaceholderValues({ ...placeholderValues, [p.key]: e.target.value })
+                    }
+                  />
+                )}
               </div>
             ))}
             {!placeholders.length && <p className="muted">No placeholders on this template.</p>}

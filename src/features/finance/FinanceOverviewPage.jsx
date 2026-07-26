@@ -46,6 +46,9 @@ export default function FinanceOverviewPage() {
           <Link to="/finance/master" className="btn secondary btn-compact finance-hub-org-link">
             Organisation master
           </Link>
+          <Link to="/finance/camp-payouts" className="btn secondary btn-compact">
+            Camp payouts
+          </Link>
         </header>
 
         {canWrite ? (

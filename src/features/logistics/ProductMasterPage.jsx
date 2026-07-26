@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
@@ -76,6 +77,7 @@ export default function ProductMasterPage() {
   const [form, setForm] = useState(emptyProductForm);
   const [editingId, setEditingId] = useState('');
   const [editingCode, setEditingCode] = useState('');
+  const [productRecord, setProductRecord] = useState(null);
   const [assocQuery, setAssocQuery] = useState('');
 
   const categoryOptions = useMemo(
@@ -180,6 +182,7 @@ export default function ProductMasterPage() {
   const startCreate = () => {
     setEditingId('');
     setEditingCode('');
+    setProductRecord(null);
     setForm(emptyProductForm());
     setAssocQuery('');
     setMsg('');
@@ -190,11 +193,18 @@ export default function ProductMasterPage() {
   const startEdit = (row) => {
     setEditingId(row._id);
     setEditingCode(row.code || '');
+    setProductRecord(row);
     setForm(rowToForm(row));
     setAssocQuery('');
     setMsg('');
     setError('');
     setMode('edit');
+  };
+
+  const onProductMediaUpdated = (row) => {
+    setProductRecord(row);
+    setRows((prev) => prev.map((r) => (String(r._id) === String(row._id) ? { ...r, ...row } : r)));
+    setCatalog((prev) => prev.map((r) => (String(r._id) === String(row._id) ? { ...r, ...row } : r)));
   };
 
   const backToList = () => {
@@ -221,11 +231,13 @@ export default function ProductMasterPage() {
       if (mode === 'edit' && editingId) {
         const res = await api(`/logistics/products/${editingId}`, { method: 'PATCH', body });
         setEditingCode(res.data?.code || editingCode);
+        setProductRecord(res.data || productRecord);
         setMsg('Product updated.');
       } else {
         const res = await api('/logistics/products', { method: 'POST', body });
         setEditingId(res.data?._id || '');
         setEditingCode(res.data?.code || '');
+        setProductRecord(res.data || null);
         setMode('edit');
         setMsg(`Product created as ${res.data?.code || 'saved'}.`);
       }
@@ -556,6 +568,19 @@ export default function ProductMasterPage() {
                 placeholder="Optional"
               />
             </Field>
+          </Section>
+
+          <Section title="Product images" className="pm-section--images">
+            <div className="pm-images-wrap">
+              <ProductImagesPanel
+                productId={editingId}
+                product={productRecord}
+                canWrite={canWrite}
+                showTitle={false}
+                onUpdated={onProductMediaUpdated}
+                hint="Upload one or more photos for visual identification during asset registration."
+              />
+            </div>
           </Section>
 
           <Section title="Commercial">

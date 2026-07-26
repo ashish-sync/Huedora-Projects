@@ -4,9 +4,9 @@ import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
-import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import {
   ASSET_TYPE_OPTIONS,
@@ -15,6 +15,10 @@ import {
 } from '../devices/assetMasterOptions.js';
 import { phoneOrEmailError, PAGE_SIZES } from '../../shared/validation.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
+import { collectProductImages } from '../../shared/productImages.js';
+import {
+  pickSignedAgreementRecord,
+} from './assetAgreementDocs.js';
 
 const emptyForm = {
   productId: '',
@@ -341,6 +345,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     (p) => !form.productType || p.productType === form.productType
   );
 
+  const selectedProduct = useMemo(
+    () => products.find((p) => String(p._id) === String(form.productId)),
+    [products, form.productId]
+  );
+  const selectedProductImages = useMemo(
+    () => collectProductImages(selectedProduct),
+    [selectedProduct]
+  );
+
   const pickProduct = (productId) => {
     const p = products.find((x) => String(x._id) === String(productId));
     if (!p) {
@@ -481,12 +494,18 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setViewRow(row);
     setViewDocs([]);
     setViewError('');
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl('');
     setPreviewTitle('');
     setViewLoading(true);
     try {
       const { data } = await api(`/assets/${row._id}/documents`);
-      setViewDocs(data || []);
+      const docs = data || [];
+      setViewDocs(docs);
+      const signed = pickSignedAgreementRecord(docs, row);
+      if (signed && canViewAgreements) {
+        await openAttachment(signed.agreement, signed.document, { silent: true });
+      }
     } catch (err) {
       setViewError(err.message);
     } finally {
@@ -502,30 +521,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setViewDocs([]);
   };
 
-  const openAgreementPdf = async (agreement) => {
-    if (!canViewAgreements) return;
-    setViewError('');
-    try {
-      const res = await apiFetch(`/agreements/${agreement._id}/pdf`);
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.error?.message || 'Could not load agreement PDF');
-      }
-      const blob = await res.blob();
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewTitle(agreement.title || agreement.agreementNumber);
-    } catch (err) {
-      setViewError(err.message);
-    }
-  };
-
-  const refreshDocs = async (assetId) => {
-    const { data } = await api(`/assets/${assetId}/documents`);
-    setViewDocs(data || []);
-  };
-
   const uploadSignedAgreement = async (file) => {
     if (!viewRow?._id || !file) return;
     setDocBusy(true);
@@ -538,8 +533,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         `Signed agreement: ${viewRow.deviceNameSnapshot || viewRow.serialNumber || 'asset'}`
       );
       await api(`/assets/${viewRow._id}/documents`, { method: 'POST', body: fd });
-      await refreshDocs(viewRow._id);
-      setMsg('Signed agreement uploaded. It remains available under Docs.');
+      const docs = await refreshDocs(viewRow._id);
+      const signed = pickSignedAgreementRecord(docs, { ...viewRow, agreementStatus: 'Agreement Signed' });
+      if (signed && canViewAgreements) {
+        await openAttachment(signed.agreement, signed.document, { silent: true });
+      }
+      setMsg('Signed agreement uploaded to Document One.');
       load();
     } catch (err) {
       setViewError(err.message);
@@ -560,8 +559,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         method: 'POST',
         body: fd,
       });
-      await refreshDocs(viewRow._id);
-      setMsg('Agreement file updated. Previous attachments are still available.');
+      const docs = await refreshDocs(viewRow._id);
+      const signed = pickSignedAgreementRecord(docs, viewRow);
+      if (signed && canViewAgreements) {
+        await openAttachment(signed.agreement, signed.document, { silent: true });
+      }
+      setMsg('Agreement file updated.');
       load();
     } catch (err) {
       setViewError(err.message);
@@ -572,9 +575,9 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     }
   };
 
-  const openAttachment = async (agreement, doc) => {
+  const openAttachment = async (agreement, doc, { silent = false } = {}) => {
     if (!canViewAgreements) return;
-    setViewError('');
+    if (!silent) setViewError('');
     try {
       const res = await apiFetch(`/agreements/${agreement._id}/documents/${doc._id}/download`);
       if (!res.ok) {
@@ -603,6 +606,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       setViewError(err.message);
     }
   };
+
+  const viewSignedRecord = useMemo(
+    () => (viewRow ? pickSignedAgreementRecord(viewDocs, viewRow) : null),
+    [viewDocs, viewRow]
+  );
+  const hasSignedCopy = Boolean(viewSignedRecord);
 
   const headerActions = (
         <div className="inv-header-actions">
@@ -710,6 +719,17 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   title={form.productId ? 'From Product Master' : ''}
                 />
               </div>
+              {form.productId && selectedProductImages.length > 0 ? (
+                <div className="field am-form-span-2 am-product-images-field">
+                  <label>Product reference images</label>
+                  <ProductImagesPanel
+                    product={selectedProduct}
+                    compact
+                    title="Product reference images"
+                    hint="From Product Master — for visual identification."
+                  />
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -947,8 +967,8 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       <button
                         className="inv-icon-btn"
                         type="button"
-                        title="View"
-                        aria-label="View documents"
+                        title="Agreement (Document One)"
+                        aria-label="View agreement"
                         onClick={() => openView(a)}
                       >
                         <IconView />
@@ -1012,7 +1032,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             onClick={(e) => e.stopPropagation()}
           >
             <div className="inv-modal-head">
-              <h2 id="inv-view-title">Docs</h2>
+              <h2 id="inv-view-title">{MODULE.ASSET_AGREEMENT}</h2>
               <button type="button" className="btn secondary btn-compact" onClick={closeView}>
                 Close
               </button>
@@ -1020,143 +1040,127 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             <p className="muted inv-modal-sub">
               {viewRow.deviceNameSnapshot} · {viewRow.serialNumber || 'No serial'}
             </p>
-            <p className="muted inv-doc-intro">
-              Upload, view, or replace signed agreements. Prior attachments stay available for
-              reference.
-            </p>
             {viewError && <p className="error">{viewError}</p>}
-            {viewLoading && <p className="muted">Loading documents…</p>}
+            {viewLoading && <p className="muted">Loading agreement…</p>}
 
-            {canManageAgreements && (
-              <div className="inv-doc-upload">
-                <input
-                  ref={uploadDocRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf"
-                  hidden
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) uploadSignedAgreement(f);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-compact"
-                  disabled={docBusy || viewLoading}
-                  onClick={() => uploadDocRef.current?.click()}
-                >
-                  {docBusy ? 'Uploading…' : viewDocs.length ? 'Upload another agreement' : 'Upload signed agreement'}
-                </button>
-                <input
-                  ref={replaceDocRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf"
-                  hidden
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f && replaceTargetId) replaceSignedAgreement(replaceTargetId, f);
-                  }}
-                />
-              </div>
-            )}
-
-            {!viewLoading && !viewDocs.length && !viewError && (
-              <p className="muted">
-                No agreement on file yet.
-                {canManageAgreements ? ' Upload a signed agreement to get started.' : ''}
-              </p>
-            )}
-            {!viewLoading && !!viewDocs.length && (
-              <ul className="inv-doc-list">
-                {viewDocs.map((ag) => (
-                  <li key={ag._id} className="inv-doc-item">
-                    <div className="inv-doc-main">
-                      <strong>{ag.title || ag.agreementNumber}</strong>
-                      <div className="muted mono-sm">
-                        {ag.agreementNumber} · {ag.status}
-                        {ag.isActiveLink ? ' · Active link' : ''}
-                      </div>
-                      {(ag.documents || []).length > 0 && (
-                        <ul className="inv-doc-attachments">
-                          {ag.documents.map((doc) => (
-                            <li key={doc._id}>
-                              <button
-                                type="button"
-                                className="inv-doc-file"
-                                disabled={!canViewAgreements || !doc.hasFile}
-                                onClick={() => openAttachment(ag, doc)}
-                                title={doc.hasFile ? 'Open attachment' : 'No file stored'}
-                              >
-                                <span>
-                                  {doc.name || doc.fileName || 'Attachment'}
-                                  {doc.isPrimary ? ' · Current' : ''}
-                                  {doc.version ? ` · v${doc.version}` : ''}
-                                </span>
-                                <em className="mono-sm">
-                                  {doc.createdAt
-                                    ? formatDateTime(doc.createdAt)
-                                    : doc.docKind || ''}
-                                </em>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div className="inv-doc-actions">
-                      {canViewAgreements && (
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          onClick={() => openAgreementPdf(ag)}
-                        >
-                          View
-                        </button>
-                      )}
-                      {canManageAgreements && (
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          disabled={docBusy}
-                          onClick={() => {
-                            setReplaceTargetId(ag._id);
-                            replaceDocRef.current?.click();
-                          }}
-                        >
-                          Replace
-                        </button>
-                      )}
-                      <Link
-                        className="btn secondary btn-compact"
-                        to={`/agreements/${ag._id}`}
-                        onClick={closeView}
-                      >
-                        Open envelope
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {previewUrl && (
-              <div className="inv-pdf-preview">
-                <div className="inv-pdf-preview-head">
-                  <strong>{previewTitle}</strong>
-                  <button
-                    type="button"
-                    className="btn secondary btn-compact"
-                    onClick={() => {
-                      URL.revokeObjectURL(previewUrl);
-                      setPreviewUrl('');
-                      setPreviewTitle('');
-                    }}
-                  >
-                    Close preview
-                  </button>
+            {!viewLoading && hasSignedCopy && viewSignedRecord && (
+              <div className="inv-agreement-signed">
+                <p className="inv-agreement-signed-lead">
+                  Signed agreement on file in {MODULE.DOCUMENT_HUB}.
+                </p>
+                <div className="inv-agreement-meta muted mono-sm">
+                  {viewSignedRecord.agreement.agreementNumber}
+                  {viewSignedRecord.agreement.status ? ` · ${viewSignedRecord.agreement.status}` : ''}
                 </div>
-                <iframe title={previewTitle} src={previewUrl} className="inv-pdf-frame" />
+                <div className="inv-agreement-actions">
+                  {canViewAgreements && (
+                    <button
+                      type="button"
+                      className="btn btn-compact"
+                      onClick={() =>
+                        openAttachment(viewSignedRecord.agreement, viewSignedRecord.document)
+                      }
+                    >
+                      View signed copy
+                    </button>
+                  )}
+                  {canViewAgreements && (
+                    <Link
+                      className="btn secondary btn-compact"
+                      to={`/agreements/${viewSignedRecord.agreement._id}`}
+                      onClick={closeView}
+                    >
+                      Open in {MODULE.DOCUMENT_HUB}
+                    </Link>
+                  )}
+                  {canManageAgreements && (
+                    <button
+                      type="button"
+                      className="btn secondary btn-compact"
+                      disabled={docBusy}
+                      onClick={() => {
+                        setReplaceTargetId(viewSignedRecord.agreement._id);
+                        replaceDocRef.current?.click();
+                      }}
+                    >
+                      Replace file
+                    </button>
+                  )}
+                </div>
+                {previewUrl && (
+                  <div className="inv-pdf-preview">
+                    <div className="inv-pdf-preview-head">
+                      <strong>{previewTitle}</strong>
+                      <button
+                        type="button"
+                        className="btn secondary btn-compact"
+                        onClick={() => {
+                          URL.revokeObjectURL(previewUrl);
+                          setPreviewUrl('');
+                          setPreviewTitle('');
+                        }}
+                      >
+                        Close preview
+                      </button>
+                    </div>
+                    <iframe title={previewTitle} src={previewUrl} className="inv-pdf-frame" />
+                  </div>
+                )}
               </div>
             )}
+
+            {!viewLoading && !hasSignedCopy && (
+              <div className="inv-agreement-empty">
+                <p className="inv-agreement-empty-title">No signed agreement yet</p>
+                <p className="muted inv-agreement-empty-desc">
+                  Start a new agreement in {MODULE.DOCUMENT_HUB}, or upload a signed copy if you
+                  already have one.
+                </p>
+                {canManageAgreements && (
+                  <div className="inv-agreement-actions inv-agreement-actions--center">
+                    <Link
+                      className="btn btn-compact"
+                      to={`/agreements/new?assetId=${viewRow._id}`}
+                      onClick={closeView}
+                    >
+                      New Agreement
+                    </Link>
+                    <input
+                      ref={uploadDocRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadSignedAgreement(f);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn secondary btn-compact"
+                      disabled={docBusy}
+                      onClick={() => uploadDocRef.current?.click()}
+                    >
+                      {docBusy ? 'Uploading…' : 'Upload signed copy'}
+                    </button>
+                  </div>
+                )}
+                {!canManageAgreements && (
+                  <p className="muted">Contact an administrator to create an agreement.</p>
+                )}
+              </div>
+            )}
+
+            <input
+              ref={replaceDocRef}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f && replaceTargetId) replaceSignedAgreement(replaceTargetId, f);
+              }}
+            />
           </div>
         </div>
       )}

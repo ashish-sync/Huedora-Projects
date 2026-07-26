@@ -9,6 +9,7 @@ import { computeDurationHours } from './utils/campSchedule';
 import { FormPageHeader } from './components/FormPageHeader';
 import { CampLifecycleForm } from './components/CampLifecycleForm';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
+import { CampCancelRefuseButton } from './components/CampCancelRefuseButton';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { buildClosureDetails } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
@@ -25,6 +26,7 @@ import {
   resolveCampSlot,
   hasReachedLifecycleStage,
   todayIsoDate,
+  isExecutionClosedOut,
 } from './constants/campLifecycle';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { validateRequestStageForm } from './utils/validateRequestStage';
@@ -37,7 +39,7 @@ const formStringFields = [
   'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state',
   'pincode', 'startTime', 'endTime', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
   'hq', 'zone', 'hcwCategory', 'hcwName', 'hcwContact', 'hcwContactId', 'cancellationReason', 'chargeableStatus',
-  'inTime', 'outTime', 'punctuality', 'attire', 'transactionId', 'paymentRemark',
+  'inTime', 'outTime', 'attire', 'labCoat', 'transactionId', 'paymentRemark',
   'assignmentStatus', 'assignmentDecision', 'assignmentRefusalReason', 'executionStatus', 'source', 'requestDate',
 ];
 
@@ -57,7 +59,7 @@ function filterApprovalBlockers(blockers, form, campNameOptions) {
 
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord, hasPermission, canRejectCamps, isSuperAdmin } = useAuth();
+  const { canEditCampRecord, hasPermission, canRejectCamps } = useAuth();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { workingStage } = useCampWorkingStage();
@@ -72,6 +74,8 @@ export default function CampFormPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [submitFinanceBusy, setSubmitFinanceBusy] = useState(false);
+  const [downloadFinanceBusy, setDownloadFinanceBusy] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
   const [showSourcePreview, setShowSourcePreview] = useState(false);
   const [hcwContacts, setHcwContacts] = useState([]);
@@ -127,7 +131,7 @@ export default function CampFormPage() {
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    api('/contacts?limit=500')
+    api('/contacts?contactCategory=Healthcare Worker&limit=500')
       .then((res) => {
         if (!cancelled) {
           setHcwContacts(res.data || []);
@@ -304,6 +308,52 @@ export default function CampFormPage() {
     setForm((prev) => ({ ...prev, ...patch }));
   }
 
+  async function handleSubmitToFinance() {
+    if (!id) return;
+    if (!form.paymentSubmitStatus) {
+      setError('Select Payment Confirmed, Payment Not Checked, or Payment Hold');
+      return;
+    }
+    setSubmitFinanceBusy(true);
+    setError('');
+    try {
+      const trimmed = trimFormStrings(form, formStringFields);
+      const payload = {
+        ...form,
+        ...trimmed,
+        clientId: form.clientId,
+        campDate: toApiDateValue(form.campDate),
+        durationHours: form.durationHours,
+        patientsCount: form.patientsCount,
+        editingStage: 'financial',
+        lifecycleStage: maxLifecycleStage(reachedLifecycleStage, 'financial'),
+        lifecycleOnly: true,
+        paymentSubmitStatus: form.paymentSubmitStatus,
+      };
+      const res = await campApi.submitToFinance(id, payload);
+      const camp = res.data?.data || res.data;
+      setForm(campToForm(camp));
+      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+    } catch (err) {
+      setError(err?.message || 'Failed to submit to Finance One');
+    } finally {
+      setSubmitFinanceBusy(false);
+    }
+  }
+
+  async function handleDownloadFinanceExport() {
+    if (!id) return;
+    setDownloadFinanceBusy(true);
+    setError('');
+    try {
+      await campApi.downloadFinanceExport(id, form.campId || id);
+    } catch (err) {
+      setError(err?.message || 'Failed to download finance Excel');
+    } finally {
+      setDownloadFinanceBusy(false);
+    }
+  }
+
   async function handleUploadDocuments(fileList, docType) {
     if (!id || !fileList?.length) return;
     setUploadBusy(true);
@@ -358,16 +408,9 @@ export default function CampFormPage() {
         closeCamp: campApi.close,
         reject: campApi.reject,
         requestInformation: campApi.requestInformation,
-        delete: campApi.delete,
       };
       const handler = handlers[action];
       if (!handler) throw new Error(`Unsupported camp action: ${action}`);
-
-      if (action === 'delete') {
-        await handler(id);
-        navigate('/camps/manage');
-        return;
-      }
 
       const { data } = await handler(id, payload);
       const camp = data.data;
@@ -429,23 +472,16 @@ export default function CampFormPage() {
       }
     }
 
-    if (activeStage === 'assignment') {
-      if (!form.assignmentDecision) {
-        setError('Select Assign or Refuse');
+    if (activeStage === 'assignment' && form.hcwContactId) {
+      if (!form.hcwCategory || !form.hcwName || !form.hcwContact) {
+        setError('HCW Category, Name, and Contact are required when assigning');
         return;
       }
-      if (form.assignmentDecision === 'assign') {
-        if (!form.hcwContactId) {
-          setError('Select an HCW from Contact Directory');
-          return;
-        }
-        if (!form.hcwCategory || !form.hcwName || !form.hcwContact) {
-          setError('HCW Category, Name, and Contact are required when assigning');
-          return;
-        }
-      }
-      if (form.assignmentDecision === 'refuse' && !String(form.assignmentRefusalReason || '').trim()) {
-        setError('Select a refusal reason');
+    }
+
+    if (activeStage === 'execution' && isExecutionClosedOut(form.executionStatus)) {
+      if (!String(form.cancellationReason || '').trim()) {
+        setError('Cancellation / Rejection Reason is required when execution status is Cancelled or Rejected');
         return;
       }
     }
@@ -454,6 +490,9 @@ export default function CampFormPage() {
     const payload = {
       ...form,
       ...trimmed,
+      ...(activeStage === 'assignment' && form.hcwContactId
+        ? { assignmentDecision: 'assign', assignmentRefusalReason: '' }
+        : {}),
       clientId: form.clientId,
       campDate: toApiDateValue(form.campDate),
       requestDate: isEdit
@@ -530,13 +569,19 @@ export default function CampFormPage() {
       <div className="camp-form-header-row">
         <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
         {isEdit && campMeta && (
-          <CampRowInfoMenu
-            camp={campMeta}
-            hasPermission={hasPermission}
-            canRejectCamps={canRejectCamps()}
-            isSuperAdmin={isSuperAdmin}
-            onAction={requestCampAction}
-          />
+          <div className="camp-form-header-actions">
+            <CampCancelRefuseButton
+              camp={campMeta}
+              hasPermission={hasPermission}
+              canRejectCamps={canRejectCamps()}
+              onAction={requestCampAction}
+            />
+            <CampRowInfoMenu
+              camp={campMeta}
+              hasPermission={hasPermission}
+              onAction={requestCampAction}
+            />
+          </div>
         )}
       </div>
 
@@ -597,9 +642,12 @@ export default function CampFormPage() {
         campId={isEdit ? id : null}
         onUploadDocuments={handleUploadDocuments}
         uploadBusy={uploadBusy}
+        onSubmitToFinance={isEdit ? handleSubmitToFinance : null}
+        submitFinanceBusy={submitFinanceBusy}
+        onDownloadFinanceExport={isEdit && form.submittedToFinanceAt ? handleDownloadFinanceExport : null}
+        downloadFinanceBusy={downloadFinanceBusy}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
-        clientName={campMeta?.clientName || ''}
         onValidationError={setError}
         reachedLifecycleStage={reachedLifecycleStage}
       />

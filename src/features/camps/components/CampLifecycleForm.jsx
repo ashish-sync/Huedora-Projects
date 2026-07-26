@@ -9,11 +9,15 @@ import {
   CHARGEABLE_STATUSES,
   EXECUTION_DOC_TYPES,
   EXECUTION_STATUSES,
-  QUALITY_RATINGS,
+  ATTIRE_CHECK_OPTIONS,
   computeLifecycleDerived,
   canEditLifecycleStage,
   hasReachedLifecycleStage,
   lifecycleStageIndex,
+  isExecutionClosedOut,
+  PAYMENT_SUBMIT_STATUSES,
+  financePaymentStatusLabel,
+  paymentSubmitStatusLabel,
 } from '../constants/campLifecycle';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
 
@@ -57,9 +61,12 @@ export function CampLifecycleForm({
   campId = null,
   onUploadDocuments,
   uploadBusy = false,
+  onSubmitToFinance,
+  submitFinanceBusy = false,
+  onDownloadFinanceExport,
+  downloadFinanceBusy = false,
   hcwContacts = [],
   contactsLoading = false,
-  clientName = '',
   onValidationError,
   reachedLifecycleStage = 'request',
 }) {
@@ -198,7 +205,6 @@ export function CampLifecycleForm({
         updateFields={updateFields}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
-        clientName={clientName}
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
       />
@@ -207,90 +213,140 @@ export function CampLifecycleForm({
 
   function renderExecutionStage() {
     const disabled = stageDisabled('execution');
+    const executionClosedOut = isExecutionClosedOut(form.executionStatus);
     const docs = Array.isArray(form.executionDocuments) ? form.executionDocuments : [];
     const doctorForms = docs.filter((d) => d.docType === 'doctor_form').length;
     const patientForms = docs.filter((d) => d.docType === 'patient_form').length;
 
+    function handleExecutionStatusChange(value) {
+      if (isExecutionClosedOut(value)) {
+        updateFields({
+          executionStatus: value,
+          chargeableStatus: '',
+          inTime: '',
+          outTime: '',
+          kmRoundTrip: 0,
+          attire: '',
+          labCoat: '',
+          patientsCount: 0,
+          rxCount: 0,
+        });
+        return;
+      }
+      updateField('executionStatus', value);
+    }
+
     return (
       <>
         <div className="form-grid">
-          <SelectField label="Execution Status" value={form.executionStatus} onChange={(v) => updateField('executionStatus', v)} options={EXECUTION_STATUSES} disabled={disabled} />
-          <label className="full">
-            Cancellation / Rejection Reason
-            <textarea rows={2} value={form.cancellationReason} onChange={(e) => updateField('cancellationReason', e.target.value)} disabled={disabled} />
-          </label>
-          <SelectField label="Chargeable Status" value={form.chargeableStatus} onChange={(v) => updateField('chargeableStatus', v)} options={CHARGEABLE_STATUSES} disabled={disabled} />
-          <label>
-            In Time
-            <input value={form.inTime} onChange={(e) => updateField('inTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
-          </label>
-          <label>
-            Out Time
-            <input value={form.outTime} onChange={(e) => updateField('outTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
-          </label>
-          <ReadOnlyField label="Total Hours (Auto)" value={derived.totalHours} />
-          <ReadOnlyField label="Extra Hours (Auto)" value={derived.extraHours} />
-          <label>
-            KM (Round Trip)
-            <input type="number" value={form.kmRoundTrip} onChange={(e) => updateField('kmRoundTrip', e.target.value)} disabled={disabled} />
-          </label>
-          <SelectField label="Punctuality" value={form.punctuality} onChange={(v) => updateField('punctuality', v)} options={QUALITY_RATINGS} disabled={disabled} />
-          <SelectField label="Attire" value={form.attire} onChange={(v) => updateField('attire', v)} options={QUALITY_RATINGS} disabled={disabled} />
-          <label>
-            Patients Count
-            <input type="number" value={form.patientsCount} onChange={(e) => updateField('patientsCount', Number(e.target.value))} disabled={disabled} />
-          </label>
-          <label>
-            Rx Count
-            <input type="number" value={form.rxCount} onChange={(e) => updateField('rxCount', Number(e.target.value))} disabled={disabled} />
-          </label>
+          <SelectField
+            label="Execution Status"
+            value={form.executionStatus}
+            onChange={handleExecutionStatusChange}
+            options={EXECUTION_STATUSES}
+            disabled={disabled}
+          />
+          {executionClosedOut ? (
+            <label className="full">
+              Cancellation / Rejection Reason
+              <textarea
+                rows={2}
+                value={form.cancellationReason}
+                onChange={(e) => updateField('cancellationReason', e.target.value)}
+                disabled={disabled}
+                required
+              />
+            </label>
+          ) : null}
         </div>
 
-        <section className="camp-lifecycle-docs">
-          <h3>Execution Documents</h3>
-          <p className="meta-text">Minimum 2 required: Doctor Form and Patient Form ({doctorForms} doctor, {patientForms} patient uploaded)</p>
-          {docs.length > 0 && (
-            <ul className="camp-lifecycle-doc-list">
-              {docs.map((doc) => (
-                <li key={doc.id || doc.storedName}>
-                  {doc.fileName || doc.storedName}
-                  {' — '}
-                  {EXECUTION_DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType}
-                  {doc.url && (
-                    <>
-                      {' '}
-                      <a href={doc.url} target="_blank" rel="noreferrer">View</a>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {campId && onUploadDocuments && (
-            <div className="camp-lifecycle-doc-upload">
-              <SelectField label="Document type" value={docType} onChange={setDocType} options={EXECUTION_DOC_TYPES} disabled={disabled || uploadBusy} />
+        {executionClosedOut ? (
+          <p className="meta-text camp-execution-closed-note">
+            Execution is cancelled or rejected. No further execution details or documents are required.
+          </p>
+        ) : (
+          <>
+            <div className="form-grid">
+              <SelectField label="Chargeable Status" value={form.chargeableStatus} onChange={(v) => updateField('chargeableStatus', v)} options={CHARGEABLE_STATUSES} disabled={disabled} />
               <label>
-                Upload files
-                <input
-                  type="file"
-                  multiple
-                  disabled={disabled || uploadBusy}
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files?.length) onUploadDocuments(files, docType);
-                    e.target.value = '';
-                  }}
-                />
+                In Time
+                <input value={form.inTime} onChange={(e) => updateField('inTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
+              </label>
+              <label>
+                Out Time
+                <input value={form.outTime} onChange={(e) => updateField('outTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
+              </label>
+              <ReadOnlyField label="Total Hours (Auto)" value={derived.totalHours} />
+              <ReadOnlyField label="Extra Hours (Auto)" value={derived.extraHours} />
+              <label>
+                KM (Round Trip)
+                <input type="number" value={form.kmRoundTrip} onChange={(e) => updateField('kmRoundTrip', e.target.value)} disabled={disabled} />
+              </label>
+              <ReadOnlyField label="Punctuality (Auto)" value={derived.punctuality} />
+              <SelectField label="Attire" value={form.attire} onChange={(v) => updateField('attire', v)} options={ATTIRE_CHECK_OPTIONS} disabled={disabled} />
+              <SelectField label="Lab Coat" value={form.labCoat} onChange={(v) => updateField('labCoat', v)} options={ATTIRE_CHECK_OPTIONS} disabled={disabled} />
+              <label>
+                Patients Count
+                <input type="number" value={form.patientsCount} onChange={(e) => updateField('patientsCount', Number(e.target.value))} disabled={disabled} />
+              </label>
+              <label>
+                Rx Count
+                <input type="number" value={form.rxCount} onChange={(e) => updateField('rxCount', Number(e.target.value))} disabled={disabled} />
               </label>
             </div>
-          )}
-        </section>
+
+            <section className="camp-lifecycle-docs">
+              <h3>Execution Documents</h3>
+              <p className="meta-text">Minimum 2 required: DF and PF ({doctorForms} doctor, {patientForms} patient uploaded)</p>
+              {docs.length > 0 && (
+                <ul className="camp-lifecycle-doc-list">
+                  {docs.map((doc) => (
+                    <li key={doc.id || doc.storedName}>
+                      {doc.fileName || doc.storedName}
+                      {' — '}
+                      {EXECUTION_DOC_TYPES.find((t) => t.value === doc.docType)?.label || doc.docType}
+                      {doc.url && (
+                        <>
+                          {' '}
+                          <a href={doc.url} target="_blank" rel="noreferrer">View</a>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {campId && onUploadDocuments && (
+                <div className="camp-lifecycle-doc-upload">
+                  <SelectField label="Document type" value={docType} onChange={setDocType} options={EXECUTION_DOC_TYPES} disabled={disabled || uploadBusy} />
+                  <label>
+                    Upload files
+                    <input
+                      type="file"
+                      multiple={docType !== 'gps_selfie'}
+                      accept={docType === 'gps_selfie' ? 'image/*' : undefined}
+                      disabled={disabled || uploadBusy}
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files?.length) onUploadDocuments(files, docType);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {docType === 'gps_selfie' && (
+                    <p className="meta-text">Image only. Attaches the GPS selfie next to In Time.</p>
+                  )}
+                </div>
+              )}
+            </section>
+          </>
+        )}
       </>
     );
   }
 
   function renderFinancialStage() {
     const disabled = stageDisabled('financial');
+    const submitted = Boolean(form.submittedToFinanceAt);
     return (
       <div className="form-grid">
         <label>
@@ -322,20 +378,66 @@ export function CampLifecycleForm({
           Other Expenses
           <input type="number" value={form.otherExpenses} onChange={(e) => updateField('otherExpenses', Number(e.target.value))} disabled={disabled} />
         </label>
-        <ReadOnlyField label="Total Payout (Auto)" value={derived.totalPayout} />
-        <label>
-          Paid Amount
-          <input type="number" value={form.paidAmount} onChange={(e) => updateField('paidAmount', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <ReadOnlyField label="Balance (Auto)" value={derived.balance} />
-        <label>
-          Transaction ID / UTR
-          <input value={form.transactionId} onChange={(e) => updateField('transactionId', e.target.value)} disabled={disabled} />
-        </label>
-        <label className="full">
-          Payment Remark
-          <textarea rows={2} value={form.paymentRemark} onChange={(e) => updateField('paymentRemark', e.target.value)} disabled={disabled} />
-        </label>
+
+        <div className="camp-payout-submit-row full">
+          <ReadOnlyField label="Total Payout (Auto)" value={derived.totalPayout} />
+          <SelectField
+            label="Payment check"
+            value={form.paymentSubmitStatus}
+            onChange={(v) => updateField('paymentSubmitStatus', v)}
+            options={PAYMENT_SUBMIT_STATUSES}
+            disabled={disabled || submitted}
+            required={!submitted}
+          />
+        </div>
+
+        {submitted && (
+          <div className="camp-finance-submitted full">
+            <p className="meta-text">
+              Submitted to Finance One
+              {form.submittedToFinanceAt ? ` on ${new Date(form.submittedToFinanceAt).toLocaleString()}` : ''}.
+              {' '}
+              Check: <strong>{paymentSubmitStatusLabel(form.paymentSubmitStatus)}</strong>
+              {' · '}
+              Finance status: <strong>{financePaymentStatusLabel(form.financePaymentStatus)}</strong>
+            </p>
+            {form.financePaymentStatus === 'paid' && (
+              <p className="meta-text">
+                Paid {form.paidAmount ?? 0}
+                {form.transactionId ? ` · UTR ${form.transactionId}` : ''}
+                {derived.balance != null && derived.balance !== '' ? ` · Balance ${derived.balance}` : ''}
+              </p>
+            )}
+            {campId && onDownloadFinanceExport && (
+              <div className="camp-finance-download-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact"
+                  disabled={downloadFinanceBusy}
+                  onClick={onDownloadFinanceExport}
+                >
+                  {downloadFinanceBusy ? 'Downloading…' : 'Download Excel'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {campId && onSubmitToFinance && !submitted && !disabled && (
+          <div className="camp-finance-submit-actions full">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={submitFinanceBusy || !form.paymentSubmitStatus}
+              onClick={onSubmitToFinance}
+            >
+              {submitFinanceBusy ? 'Submitting…' : 'Submit to Finance One'}
+            </button>
+            <p className="meta-text">
+              Save payout details and send to Finance One for payment processing.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

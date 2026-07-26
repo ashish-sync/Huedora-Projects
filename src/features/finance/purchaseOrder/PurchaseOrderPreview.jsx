@@ -53,17 +53,16 @@ export default function PurchaseOrderPreview({
 }) {
   const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
   const taxLabels = resolveTaxColumnLabels(form);
-  const { company, bank, vendor, po, terms, signature, vendorAcceptance, payment } = form;
+  const { company, vendor, po, terms, signature } = form;
   const displayTerms = (terms || []).length ? terms : editable ? ['', ''] : [];
   const hasLogo = Boolean(company?.logoDataUrl);
   const showTagline = Boolean(company?.brandLine) && !hasLogo;
   const companyAddress = company?.address || company?.registeredOffice || '';
-  const bankDisplay = [bank?.bankName, bank?.branchName].filter(Boolean).join(' · ');
   const lineTotals = totals?.lines || [];
 
   return (
     <div ref={previewRef} className="invoice-print-root">
-      <article className="tylo-invoice" aria-label="Purchase order">
+      <article className="tylo-invoice tylo-invoice--purchase-order" aria-label="Purchase order">
         <header className="ti-header">
           <div className="ti-header-brand">
             {hasLogo ? (
@@ -185,11 +184,23 @@ export default function PurchaseOrderPreview({
           </Card>
 
           <Card title="PO Details">
-            <Field label="Reference">
+            <Field label="Reference" full>
               {editable ? (
                 <InlineField value={po?.reference} onChange={(v) => onUpdate?.('po.reference', v)} placeholder="RFQ / quote ref." />
               ) : (
                 po?.reference || '—'
+              )}
+            </Field>
+            <Field label="Delivery Address" full>
+              {editable ? (
+                <InlineTextarea
+                  value={form.deliveryAddress}
+                  onChange={(v) => onUpdate?.('deliveryAddress', v)}
+                  placeholder="Ship-to / delivery location"
+                  rows={2}
+                />
+              ) : (
+                form.deliveryAddress || '—'
               )}
             </Field>
             <FieldRow>
@@ -223,50 +234,6 @@ export default function PurchaseOrderPreview({
                 <Prefill>{company?.gstin}</Prefill>
               </Field>
             </FieldRow>
-          </Card>
-
-          <Card title="Billing & Delivery" className="ti-card--payment">
-            <Field label="Billing Address" full>
-              {editable ? (
-                <InlineTextarea value={form.billingAddress} onChange={(v) => onUpdate?.('billingAddress', v)} placeholder="Billing address" rows={2} />
-              ) : (
-                form.billingAddress || companyAddress || '—'
-              )}
-            </Field>
-            <Field label="Delivery Address" full>
-              {editable ? (
-                <InlineTextarea value={form.deliveryAddress} onChange={(v) => onUpdate?.('deliveryAddress', v)} placeholder="Ship-to / delivery address" rows={2} />
-              ) : (
-                form.deliveryAddress || '—'
-              )}
-            </Field>
-            <div className="ti-payment-layout po-payment-compact">
-              <div className="ti-payment-fields">
-                <Field label="Payable to" full>
-                  <Prefill>{bank?.accountHolder || company?.legalName}</Prefill>
-                </Field>
-                <Field label="Bank" full>
-                  <Prefill>{bankDisplay || bank?.bankName}</Prefill>
-                </Field>
-                <FieldRow>
-                  <Field label="IFSC">
-                    <Prefill>{bank?.ifscCode}</Prefill>
-                  </Field>
-                  <Field label="Account">
-                    <Prefill>{bank?.accountNumber}</Prefill>
-                  </Field>
-                </FieldRow>
-              </div>
-              <aside className="ti-payment-qr" aria-label="Payment QR code">
-                {payment?.paymentQrDataUrl ? (
-                  <img src={payment.paymentQrDataUrl} alt="Scan to pay" className="ti-payment-qr-img" />
-                ) : (
-                  <div className="ti-payment-qr-placeholder">
-                    <span>QR</span>
-                  </div>
-                )}
-              </aside>
-            </div>
           </Card>
         </div>
 
@@ -493,74 +460,34 @@ export default function PurchaseOrderPreview({
             </div>
           </div>
 
-          <div className="po-signatures">
-            <div className="ti-signature">
-              {signature?.imageDataUrl ? (
-                <img src={signature.imageDataUrl} alt="" className="ti-signature-img" />
-              ) : (
-                <div className="ti-signature-line" aria-hidden="true" />
-              )}
-              <span className="ti-signature-label">Authorized Signatory</span>
-              {editable ? (
-                <>
-                  <InlineField
-                    value={signature?.signatoryName || ''}
-                    onChange={(v) => onUpdate?.('signature.signatoryName', v)}
-                    placeholder="Signatory name"
-                    className="ti-signature-name-input"
-                  />
-                  <InlineField
-                    value={signature?.companyLabel || company?.legalName || ''}
-                    onChange={(v) => onUpdate?.('signature.companyLabel', v)}
-                    placeholder="For company"
-                    className="ti-signature-company-input"
-                  />
-                </>
-              ) : (
-                <>
-                  {signature?.signatoryName ? <span className="ti-signature-name">{signature.signatoryName}</span> : null}
-                  <span className="ti-signature-company">{signature?.companyLabel || company?.legalName || ''}</span>
-                </>
-              )}
-            </div>
-
-            <div className="ti-signature po-vendor-acceptance">
+          <div className="ti-signature">
+            {signature?.imageDataUrl ? (
+              <img src={signature.imageDataUrl} alt="" className="ti-signature-img" />
+            ) : (
               <div className="ti-signature-line" aria-hidden="true" />
-              <span className="ti-signature-label">Vendor Acceptance</span>
-              {editable ? (
-                <>
-                  <InlineField
-                    value={vendorAcceptance?.signatoryName || ''}
-                    onChange={(v) => onUpdate?.('vendorAcceptance.signatoryName', v)}
-                    placeholder="Vendor signatory"
-                    className="ti-signature-name-input"
-                  />
-                  <InlineField
-                    type="date"
-                    value={vendorAcceptance?.acceptedDate || ''}
-                    onChange={(v) => onUpdate?.('vendorAcceptance.acceptedDate', v)}
-                    placeholder="Date"
-                    className="ti-signature-company-input"
-                  />
-                  <InlineField
-                    value={vendorAcceptance?.companyLabel || vendor?.name || ''}
-                    onChange={(v) => onUpdate?.('vendorAcceptance.companyLabel', v)}
-                    placeholder="For vendor"
-                    className="ti-signature-company-input"
-                  />
-                </>
-              ) : (
-                <>
-                  {vendorAcceptance?.signatoryName ? (
-                    <span className="ti-signature-name">{vendorAcceptance.signatoryName}</span>
-                  ) : null}
-                  {vendorAcceptance?.acceptedDate ? (
-                    <span className="ti-signature-company">Date: {formatDisplayDate(vendorAcceptance.acceptedDate)}</span>
-                  ) : null}
-                  <span className="ti-signature-company">{vendorAcceptance?.companyLabel || vendor?.name || ''}</span>
-                </>
-              )}
-            </div>
+            )}
+            <span className="ti-signature-label">Authorized Signatory</span>
+            {editable ? (
+              <>
+                <InlineField
+                  value={signature?.signatoryName || ''}
+                  onChange={(v) => onUpdate?.('signature.signatoryName', v)}
+                  placeholder="Signatory name"
+                  className="ti-signature-name-input"
+                />
+                <InlineField
+                  value={signature?.companyLabel || company?.legalName || ''}
+                  onChange={(v) => onUpdate?.('signature.companyLabel', v)}
+                  placeholder="For company"
+                  className="ti-signature-company-input"
+                />
+              </>
+            ) : (
+              <>
+                {signature?.signatoryName ? <span className="ti-signature-name">{signature.signatoryName}</span> : null}
+                <span className="ti-signature-company">{signature?.companyLabel || company?.legalName || ''}</span>
+              </>
+            )}
           </div>
         </footer>
       </article>

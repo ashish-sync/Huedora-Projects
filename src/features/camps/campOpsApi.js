@@ -96,6 +96,11 @@ export const campApi = {
     formData.append('docType', docType);
     return postForm(`${BASE}/camps/${id}/execution-documents`, formData);
   },
+  submitToFinance: (id, payload) => post(`${BASE}/camps/${id}/submit-to-finance`, payload),
+  downloadFinanceExport: (id, campId = 'camp') => downloadExcel(
+    `${BASE}/camps/${id}/finance-export`,
+    `Camp_Finance_${String(campId).replace(/[^\w.-]+/g, '_')}.xlsx`,
+  ),
 };
 
 export const clientApi = {

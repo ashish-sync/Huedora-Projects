@@ -21,7 +21,7 @@ export default {
       },
       fontFamily: {
         invoice: ['Segoe UI', 'Inter', 'system-ui', 'sans-serif'],
-        signature: ['"Segoe Script"', 'cursive'],
+        signature: ['"Great Vibes"', 'cursive'],
       },
     },
   },

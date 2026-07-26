@@ -43,6 +43,7 @@ import ProformaBuilderPage from '../features/finance/builder/ProformaBuilderPage
 import PurchaseOrderBuilderPage from '../features/finance/builder/PurchaseOrderBuilderPage.jsx';
 import CreditNoteBuilderPage from '../features/finance/builder/CreditNoteBuilderPage.jsx';
 import FinanceCommercialMasterPage from '../features/finance/FinanceCommercialMasterPage.jsx';
+import FinanceCampPayoutsPage from '../features/finance/FinanceCampPayoutsPage.jsx';
 import FinanceGeneratePage from '../features/finance/FinanceGeneratePage.jsx';
 
 function PrivateRoute({ children }) {
@@ -153,6 +154,7 @@ export default function App() {
                   <Route path="build/purchase-order" element={<PurchaseOrderBuilderPage />} />
                   <Route path="build/credit-note" element={<CreditNoteBuilderPage />} />
                   <Route path="master" element={<FinanceCommercialMasterPage />} />
+                  <Route path="camp-payouts" element={<FinanceCampPayoutsPage />} />
                   <Route path="generate" element={<FinanceGeneratePage />} />
                   <Route path="generate/:docSlug" element={<FinanceGeneratePage />} />
                   <Route path="expenses" element={<Navigate to="/finance" replace />} />

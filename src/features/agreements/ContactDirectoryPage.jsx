@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
@@ -14,10 +14,14 @@ import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
   CONTACT_CATEGORIES,
+  HCW_RESOURCE_TYPES,
   RESOURCE_TYPES,
   SUPPLY_CATEGORIES,
+  isHcwStaffResourceType,
+  isServiceProviderContact,
   professionsForCategory,
   professionPicklistKey,
+  resourceTypesForCategory,
 } from './contactPicklists.js';
 
 const empty = {
@@ -25,6 +29,7 @@ const empty = {
   email: '',
   contactCategory: '',
   resourceType: '',
+  serviceProviderContactId: '',
   profession: '',
   organization: '',
   supplyCategory: '',
@@ -57,17 +62,42 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
+  const [serviceProviders, setServiceProviders] = useState([]);
+  const [managedStaff, setManagedStaff] = useState([]);
 
   const isResource = form.contactCategory === 'Resource';
+  const isHcw = form.contactCategory === 'Healthcare Worker';
   const isClient = form.contactCategory === 'Client';
   const isVendor = form.contactCategory === 'Vendor';
+  const isHcwStaff = isHcw && isHcwStaffResourceType(form.resourceType);
+  const isHcwProvider = isHcw && form.resourceType === 'Service Provider';
+  const showResourceType = isResource || isHcw;
   const showBankAndAddress = !isClient && Boolean(form.contactCategory);
   const professionKey = professionPicklistKey(form.contactCategory);
   const professionFallback = professionsForCategory(form.contactCategory);
+  const categoryResourceTypes = resourceTypesForCategory(form.contactCategory);
   const { options: resourceTypeOptions } = usePicklistOptions(
     'contact.resourceType',
     RESOURCE_TYPES
   );
+  const { options: hcwResourceTypeOptions } = usePicklistOptions(
+    'contact.hcwResourceType',
+    HCW_RESOURCE_TYPES
+  );
+  const resourceTypeChoices = useMemo(() => {
+    const pool = isHcw ? hcwResourceTypeOptions : resourceTypeOptions;
+    return pool.filter((o) => categoryResourceTypes.includes(o));
+  }, [isHcw, hcwResourceTypeOptions, resourceTypeOptions, categoryResourceTypes]);
+  const staffCountByProvider = useMemo(() => {
+    const counts = {};
+    for (const row of rows) {
+      if (row.serviceProviderContactId) {
+        const id = String(row.serviceProviderContactId);
+        counts[id] = (counts[id] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [rows]);
   const { options: supplyCategoryOptions } = usePicklistOptions(
     'contact.supplyCategory',
     SUPPLY_CATEGORIES
@@ -94,12 +124,49 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit]);
 
+  useEffect(() => {
+    api(
+      '/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500'
+    )
+      .then((r) => setServiceProviders(r.data || []))
+      .catch(() => setServiceProviders([]));
+  }, []);
+
+  useEffect(() => {
+    if (!editId || !isHcwProvider) {
+      setManagedStaff([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api(`/contacts/${editId}/staff`)
+      .then((r) => {
+        if (!cancelled) setManagedStaff(r.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setManagedStaff([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [editId, isHcwProvider]);
+
   const onCategoryChange = (contactCategory) => {
     const nextProfessions = professionsForCategory(contactCategory);
-    setForm((f) => ({
-      ...f,
-      contactCategory,
-      resourceType: contactCategory === 'Resource' ? f.resourceType : '',
+    setForm((f) => {
+      const nextResourceType =
+        contactCategory === 'Resource' && RESOURCE_TYPES.includes(f.resourceType)
+          ? f.resourceType
+          : contactCategory === 'Healthcare Worker' && HCW_RESOURCE_TYPES.includes(f.resourceType)
+            ? f.resourceType
+            : '';
+      return {
+        ...f,
+        contactCategory,
+        resourceType: nextResourceType,
+        serviceProviderContactId:
+          contactCategory === 'Healthcare Worker' && isHcwStaffResourceType(nextResourceType)
+            ? f.serviceProviderContactId
+            : '',
       organization: contactCategory === 'Client' ? f.organization : '',
       supplyCategory:
         contactCategory === 'Vendor' && SUPPLY_CATEGORIES.includes(f.supplyCategory)
@@ -112,7 +179,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
       bankName: contactCategory === 'Client' ? '' : f.bankName,
       accountNumber: contactCategory === 'Client' ? '' : f.accountNumber,
-    }));
+      };
+    });
   };
 
   const save = async (e) => {
@@ -124,6 +192,10 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     }
     if (isResource && !form.resourceType) {
       setError('Resource Type is required for Resource contacts');
+      return;
+    }
+    if (isHcw && !form.resourceType) {
+      setError('Resource Type is required for Healthcare Worker contacts');
       return;
     }
     if (isClient && !String(form.organization || '').trim()) {
@@ -148,6 +220,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       setError('Email or phone is required for a contact');
       return;
     }
+    setBusy(true);
     try {
       const body = { ...form };
       if (isClient) {
@@ -158,7 +231,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         body.bankName = '';
         body.accountNumber = '';
       }
-      if (!isResource) body.resourceType = '';
+      if (!isResource && !isHcw) body.resourceType = '';
+      if (!isHcwStaff) body.serviceProviderContactId = '';
       if (!isClient) body.organization = '';
       if (!isVendor) body.supplyCategory = '';
 
@@ -172,6 +246,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -183,13 +259,17 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       else if (rt === 'client') contactCategory = 'Client';
       else if (c.resourceType) contactCategory = 'Resource';
     }
-    const resourceType = contactCategory === 'Resource' ? c.resourceType || '' : '';
+    const resourceType =
+      contactCategory === 'Resource' || contactCategory === 'Healthcare Worker'
+        ? c.resourceType || ''
+        : '';
     setEditId(c._id);
     setForm({
       name: c.name || '',
       email: c.email || '',
       contactCategory,
       resourceType,
+      serviceProviderContactId: c.serviceProviderContactId || '',
       profession: c.profession || '',
       organization: c.organization || '',
       supplyCategory: c.supplyCategory || '',
@@ -270,73 +350,99 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         </>
       }
     >
-      {error && <p className="error">{error}</p>}
-      {importMsg && <p className="muted">{importMsg}</p>}
+      {error && (
+        <div className="am-banner is-error" role="alert">
+          {error}
+        </div>
+      )}
+      {importMsg && (
+        <div className="am-banner is-info" role="status">
+          {importMsg}
+        </div>
+      )}
 
-      <div className="wizard-grid">
-        <div className="card card--flush table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Resource Type</th>
-                <th>Organization</th>
-                <th>Supply Category</th>
-                <th>Profession</th>
-                <th>Email</th>
-                <th>Contact</th>
-                <th>City</th>
-                <th>State</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((c) => (
-                <tr key={c._id}>
-                  <td>
-                    <strong>{c.name}</strong>
-                  </td>
-                  <td>
-                    {c.contactCategory ||
-                      (['Vendor', 'Supplier'].includes(c.resourceType)
-                        ? 'Vendor'
-                        : c.resourceType === 'Client'
-                          ? 'Client'
-                          : c.resourceType
-                            ? 'Resource'
-                            : '-')}
-                  </td>
-                  <td>
-                    {c.contactCategory === 'Resource' ||
-                    (!c.contactCategory &&
-                      c.resourceType &&
-                      !['Vendor', 'Supplier', 'Client'].includes(c.resourceType))
-                      ? c.resourceType || '-'
-                      : '-'}
-                  </td>
-                  <td>{c.organization || '-'}</td>
-                  <td>{c.supplyCategory || '-'}</td>
-                  <td>{c.profession || '-'}</td>
-                  <td>{c.email || '-'}</td>
-                  <td>{c.contact || c.mobile || '-'}</td>
-                  <td>{c.city || '-'}</td>
-                  <td>{c.state || '-'}</td>
-                  <td>
-                    {can('agreements:write') && (
-                      <button
-                        className="btn secondary btn-compact"
-                        type="button"
-                        onClick={() => startEdit(c)}
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </td>
+      <div className="cd-layout">
+        <div className="cd-list card card--flush">
+          <div className="table-wrap cd-table-wrap">
+            <table className="inv-table cd-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th className="cd-col-type">Resource Type</th>
+                  <th className="cd-col-provider">Service Provider</th>
+                  <th className="cd-col-org">Organization</th>
+                  <th className="cd-col-supply">Supply Category</th>
+                  <th className="cd-col-prof">Profession</th>
+                  <th className="cd-col-email">Email</th>
+                  <th>Contact</th>
+                  <th>City</th>
+                  <th className="cd-col-state">State</th>
+                  <th className="inv-col-actions">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((c) => (
+                  <tr key={c._id}>
+                    <td>
+                      <strong>{c.name}</strong>
+                    </td>
+                    <td>
+                      {c.contactCategory ||
+                        (['Vendor', 'Supplier'].includes(c.resourceType)
+                          ? 'Vendor'
+                          : c.resourceType === 'Client'
+                            ? 'Client'
+                            : c.resourceType
+                              ? 'Resource'
+                              : '—')}
+                    </td>
+                    <td className="cd-col-type">
+                      {c.contactCategory === 'Resource' ||
+                      c.contactCategory === 'Healthcare Worker' ||
+                      (!c.contactCategory &&
+                        c.resourceType &&
+                        !['Vendor', 'Supplier', 'Client'].includes(c.resourceType))
+                        ? c.resourceType || '—'
+                        : '—'}
+                    </td>
+                    <td className="cd-col-provider">
+                      {c.serviceProviderName
+                        ? c.serviceProviderName
+                        : isServiceProviderContact(c)
+                          ? `${staffCountByProvider[String(c._id)] || 0} staff`
+                          : '—'}
+                    </td>
+                    <td className="cd-col-org">{c.organization || '—'}</td>
+                    <td className="cd-col-supply">{c.supplyCategory || '—'}</td>
+                    <td className="cd-col-prof">{c.profession || '—'}</td>
+                    <td className="cd-col-email">{c.email || '—'}</td>
+                    <td>{c.contact || c.mobile || '—'}</td>
+                    <td>{c.city || '—'}</td>
+                    <td className="cd-col-state">{c.state || '—'}</td>
+                    <td className="inv-col-actions">
+                      {can('agreements:write') && (
+                        <button
+                          className="inv-link"
+                          type="button"
+                          onClick={() => startEdit(c)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!rows.length && !listLoading && (
+                  <tr>
+                    <td colSpan={12}>
+                      <p className="muted cd-empty">No contacts yet. Add one or import Excel.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
           <PaginationBar
             page={listMeta.page || page}
             limit={limit}
@@ -349,164 +455,244 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               setPage(1);
             }}
           />
-          {!rows.length && (
-            <p className="muted" style={{ padding: '1rem' }}>
-              No contacts yet. Add one or import Excel.
-            </p>
-          )}
         </div>
 
         {can('agreements:write') && (
-          <form className="card" onSubmit={save}>
-            <h3 style={{ marginTop: 0 }}>{editId ? 'Edit contact' : 'Create new contact'}</h3>
+          <form className="card cd-form" onSubmit={save}>
+            <header className="cd-form-head">
+              <h3>{editId ? 'Edit contact' : 'Create new contact'}</h3>
+            </header>
 
-            <div className="field">
-              <label>Contact Category *</label>
-              <AdaptiveSelect
-                required
-                value={form.contactCategory}
-                onChange={(e) => onCategoryChange(e.target.value)}
-              >
-                <option value="">Select…</option>
-                {CONTACT_CATEGORIES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </AdaptiveSelect>
-            </div>
+            <section className="cd-section">
+              <h4 className="cd-section-title">Classification</h4>
+              <div className="cd-form-grid">
+                <div className="field">
+                  <label>Contact Category *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.contactCategory}
+                    onChange={(e) => onCategoryChange(e.target.value)}
+                  >
+                    <option value="">Select…</option>
+                    {CONTACT_CATEGORIES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
 
-            {isResource && (
-              <div className="field">
-                <label>Resource Type *</label>
-                <OtherAwareSelect
-                  id="contact-resource-type"
-                  required
-                  picklistKey="contact.resourceType"
-                  source="contact-directory"
-                  options={resourceTypeOptions}
-                  value={form.resourceType}
-                  onChange={(e) => setForm({ ...form, resourceType: e.target.value })}
-                />
+                {showResourceType && (
+                  <div className="field">
+                    <label>Resource Type *</label>
+                    <OtherAwareSelect
+                      id="contact-resource-type"
+                      required
+                      picklistKey={isHcw ? 'contact.hcwResourceType' : 'contact.resourceType'}
+                      source="contact-directory"
+                      options={resourceTypeChoices}
+                      value={form.resourceType}
+                      onChange={(e) => {
+                        const nextType = e.target.value;
+                        setForm({
+                          ...form,
+                          resourceType: nextType,
+                          serviceProviderContactId: isHcwStaffResourceType(nextType)
+                            ? form.serviceProviderContactId
+                            : '',
+                        });
+                      }}
+                    />
+                  </div>
+                )}
+
+                {isHcwStaff && (
+                  <div className="field cd-span-2">
+                    <label>Service Provider (agency)</label>
+                    <AdaptiveSelect
+                      value={form.serviceProviderContactId}
+                      onChange={(e) =>
+                        setForm({ ...form, serviceProviderContactId: e.target.value })
+                      }
+                    >
+                      <option value="">None — direct engagement</option>
+                      {serviceProviders
+                        .filter((p) => p._id !== editId)
+                        .map((p) => (
+                          <option key={p._id} value={p._id}>
+                            {p.name}
+                            {p.city ? ` · ${p.city}` : ''}
+                          </option>
+                        ))}
+                    </AdaptiveSelect>
+                    <p className="cd-form-hint">
+                      Link this worker to a provider for camp assignments and billing roll-ups.
+                    </p>
+                  </div>
+                )}
+
+                {isClient && (
+                  <div className="field cd-span-2">
+                    <label>Organization Name *</label>
+                    <input
+                      required
+                      value={form.organization}
+                      onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                    />
+                  </div>
+                )}
+
+                {isVendor && (
+                  <div className="field">
+                    <label>Supply Category *</label>
+                    <OtherAwareSelect
+                      id="contact-supply-category"
+                      required
+                      picklistKey="contact.supplyCategory"
+                      source="contact-directory"
+                      options={supplyCategoryOptions}
+                      value={form.supplyCategory}
+                      onChange={(e) => setForm({ ...form, supplyCategory: e.target.value })}
+                    />
+                  </div>
+                )}
+
+                {form.contactCategory ? (
+                  <div className="field">
+                    <label>Profession / Role</label>
+                    <OtherAwareSelect
+                      id="contact-profession"
+                      picklistKey={professionKey}
+                      source="contact-directory"
+                      options={professionOptions}
+                      value={form.profession}
+                      onChange={(e) => setForm({ ...form, profession: e.target.value })}
+                    />
+                  </div>
+                ) : null}
               </div>
+            </section>
+
+            {isHcwProvider && (
+              <section className="cd-section">
+                <h4 className="cd-section-title">Managed staff</h4>
+                <p className="cd-form-hint">
+                  Workers with Resource Type Full-Time or Individual linked to this provider.
+                </p>
+                {managedStaff.length > 0 ? (
+                  <ul className="cd-staff-list">
+                    {managedStaff.map((member) => (
+                      <li key={member._id} className="cd-staff-item">
+                        <strong>{member.name}</strong>
+                        <span className="muted">
+                          {[member.profession, member.resourceType, member.city]
+                            .filter(Boolean)
+                            .join(' · ') || '—'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted cd-staff-empty">
+                    No staff linked yet. Edit each worker and assign this provider under Service
+                    Provider (agency).
+                  </p>
+                )}
+                {managedStaff.length > 0 ? (
+                  <p className="cd-staff-count">{managedStaff.length} staff linked</p>
+                ) : null}
+              </section>
             )}
 
-            {isClient && (
-              <div className="field">
-                <label>Organization Name *</label>
-                <input
-                  required
-                  value={form.organization}
-                  onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                />
+            <section className="cd-section">
+              <h4 className="cd-section-title">Identity</h4>
+              <div className="cd-form-grid">
+                <div className="field cd-span-2">
+                  <label>Name *</label>
+                  <input
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Contact</label>
+                  <input
+                    value={form.contact}
+                    onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                    placeholder="10-digit mobile"
+                  />
+                </div>
               </div>
-            )}
+              <p className="cd-form-hint">Email or contact number is required.</p>
+            </section>
 
-            {isVendor && (
-              <div className="field">
-                <label>Supply Category *</label>
-                <OtherAwareSelect
-                  id="contact-supply-category"
-                  required
-                  picklistKey="contact.supplyCategory"
-                  source="contact-directory"
-                  options={supplyCategoryOptions}
-                  value={form.supplyCategory}
-                  onChange={(e) => setForm({ ...form, supplyCategory: e.target.value })}
-                />
-              </div>
-            )}
-
-            <div className="field">
-              <label>Profession / Role</label>
-              <OtherAwareSelect
-                id="contact-profession"
-                picklistKey={professionKey}
-                source="contact-directory"
-                options={professionOptions}
-                value={form.profession}
-                onChange={(e) => setForm({ ...form, profession: e.target.value })}
+            <section className="cd-section">
+              <h4 className="cd-section-title">Location</h4>
+              <LocationCascade
+                value={form}
+                onChange={(loc) => setForm({ ...form, ...loc })}
+                showDistrict={false}
+                showPin={showBankAndAddress}
               />
-            </div>
-
-            <div className="field">
-              <label>Name *</label>
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-            <div className="field">
-              <label>Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </div>
-            <div className="field">
-              <label>Contact</label>
-              <input
-                value={form.contact}
-                onChange={(e) => setForm({ ...form, contact: e.target.value })}
-                placeholder="10-digit mobile"
-              />
-            </div>
-
-            <LocationCascade
-              value={form}
-              onChange={(loc) => setForm({ ...form, ...loc })}
-              showDistrict={false}
-              showPin={showBankAndAddress}
-            />
+            </section>
 
             {showBankAndAddress && (
-              <>
-                <div className="field">
-                  <label>Address</label>
-                  <textarea
-                    rows={2}
-                    value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  />
+              <section className="cd-section cd-section--last">
+                <h4 className="cd-section-title">Address &amp; banking</h4>
+                <div className="cd-form-grid">
+                  <div className="field cd-span-2">
+                    <label>Address</label>
+                    <textarea
+                      rows={2}
+                      value={form.address}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>PAN Number</label>
+                    <input
+                      value={form.panNumber}
+                      onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>IFSC Code</label>
+                    <input
+                      value={form.ifscCode}
+                      onChange={(e) => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Bank Name</label>
+                    <input
+                      value={form.bankName}
+                      onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Account Number</label>
+                    <input
+                      value={form.accountNumber}
+                      onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="field">
-                  <label>PAN Number</label>
-                  <input
-                    value={form.panNumber}
-                    onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
-                  />
-                </div>
-                <div className="field">
-                  <label>IFSC Code</label>
-                  <input
-                    value={form.ifscCode}
-                    onChange={(e) => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Bank Name</label>
-                  <input
-                    value={form.bankName}
-                    onChange={(e) => setForm({ ...form, bankName: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Account Number</label>
-                  <input
-                    value={form.accountNumber}
-                    onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
-                  />
-                </div>
-              </>
+              </section>
             )}
 
-            <p className="muted mono-sm">Email or Contact is required.</p>
-            <div className="wizard-actions">
+            <div className="cd-form-actions">
               {editId && (
                 <button
-                  className="btn secondary"
+                  className="btn btn-ghost"
                   type="button"
                   onClick={() => {
                     setEditId(null);
@@ -516,7 +702,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   Cancel edit
                 </button>
               )}
-              <button className="btn" type="submit">
+              <button className="btn" type="submit" disabled={busy}>
                 {editId ? 'Save changes' : 'Add to directory'}
               </button>
             </div>

@@ -5603,3 +5603,16 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
+
+.camp-ops-root .camp-assignment-copy-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.camp-ops-root .camp-assignment-copy-hint {
+  margin: 0;
+  font-size: 0.82rem;
+}

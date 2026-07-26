@@ -1,230 +1,567 @@
+import {
+  amountInWordsIndian,
+  formatDisplayDate,
+  formatGstRateDisplay,
+  formatInr,
+  getLineGstRateDisplay,
+  patchLineGstRate,
+  resolveTaxColumnLabels,
+  usesIgst,
+} from '../invoiceGenerator/invoiceCalculations.js';
 import { InlineField, InlineTableInput, InlineTextarea } from '../documentGenerator/inlineEdit.jsx';
 import '../documentGenerator/inline-edit.css';
+import '../invoiceGenerator/tylo-invoice-template.css';
 import { MAX_PO_LINE_ITEMS } from './purchaseOrderStorage.js';
 import './purchase-order.css';
 
-function formatInr(n) {
-  const num = Number(n);
-  if (!Number.isFinite(num)) return '0.00';
-  return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function Prefill({ children }) {
+  return <span className="ti-prefill">{children || '—'}</span>;
+}
+
+function Card({ title, children, className = '' }) {
+  return (
+    <section className={`ti-card ${className}`.trim()}>
+      <h3 className="ti-card-title">{title}</h3>
+      <div className="ti-card-body">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children, full = false }) {
+  return (
+    <div className={`ti-field${full ? ' ti-field--full' : ''}`}>
+      <span className="ti-field-label">{label}</span>
+      <div className="ti-field-value">{children}</div>
+    </div>
+  );
+}
+
+function FieldRow({ children }) {
+  return <div className="ti-field-row">{children}</div>;
 }
 
 export default function PurchaseOrderPreview({
   form,
   totals,
   previewRef,
-  editable = true,
+  editable = false,
   onUpdate,
   onUpdateLine,
   onAddLine,
+  onUpdateTerm,
+  onAddTerm,
 }) {
-  const company = form.company || {};
-  const companyName = company.legalName || 'Your company name';
-  const companyAddress = company.registeredOffice || '';
-  const hasLogo = Boolean(company.logoDataUrl);
+  const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+  const taxLabels = resolveTaxColumnLabels(form);
+  const { company, bank, vendor, po, terms, signature, vendorAcceptance, payment } = form;
+  const displayTerms = (terms || []).length ? terms : editable ? ['', ''] : [];
+  const hasLogo = Boolean(company?.logoDataUrl);
+  const showTagline = Boolean(company?.brandLine) && !hasLogo;
+  const companyAddress = company?.address || company?.registeredOffice || '';
+  const bankDisplay = [bank?.bankName, bank?.branchName].filter(Boolean).join(' · ');
+  const lineTotals = totals?.lines || [];
 
   return (
     <div ref={previewRef} className="invoice-print-root">
-      <article className="po-document" aria-label="Purchase order">
-        <header className="po-header">
-          <div>
+      <article className="tylo-invoice" aria-label="Purchase order">
+        <header className="ti-header">
+          <div className="ti-header-brand">
             {hasLogo ? (
-              <img src={company.logoDataUrl} alt="" className="po-logo" />
+              <img src={company.logoDataUrl} alt={company?.legalName || 'Company logo'} className="ti-logo" />
             ) : (
-              <div className="po-logo-placeholder">Add company logo</div>
+              <>
+                <span className="ti-logo-text">TYLO</span>
+                {showTagline ? <span className="ti-tagline">{company.brandLine}</span> : null}
+              </>
             )}
-            <div className="po-company-name">{companyName}</div>
-            {companyAddress ? <div className="po-company-address">{companyAddress}</div> : null}
           </div>
-          <div className="po-title-block">
-            <h1 className="po-title">PURCHASE ORDER</h1>
-            <div className="po-doc-no">
-              <span className="po-meta-label">PO No</span>
-              {editable ? (
-                <InlineField value={form.documentNumber} onChange={(v) => onUpdate?.('documentNumber', v)} placeholder="TCPO-26-07-001" />
-              ) : (
-                form.documentNumber || '—'
-              )}
+
+          <div className="ti-header-company">
+            <h1 className="ti-company-name">{company?.legalName || 'Company name'}</h1>
+            {companyAddress ? <p className="ti-company-address">{companyAddress}</p> : null}
+            <div className="ti-company-meta">
+              {company?.cin ? <span>CIN {company.cin}</span> : null}
+              {company?.phone ? <span>{company.phone}</span> : null}
+              {company?.email ? <span>{company.email}</span> : null}
+              {company?.website ? <span>{company.website}</span> : null}
+            </div>
+          </div>
+
+          <div className="ti-header-doc">
+            <span className="ti-doc-badge">PURCHASE ORDER</span>
+            <div className="ti-doc-meta">
+              <div className="ti-doc-meta-row">
+                <span className="ti-doc-meta-label">PO No</span>
+                {editable ? (
+                  <InlineField
+                    className="ti-doc-meta-value"
+                    value={po?.documentNumber}
+                    onChange={(v) => onUpdate?.('po.documentNumber', v)}
+                    placeholder="Auto"
+                    mono
+                  />
+                ) : (
+                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">{po?.documentNumber || '—'}</span>
+                )}
+              </div>
+              <div className="ti-doc-meta-row">
+                <span className="ti-doc-meta-label">PO Date</span>
+                <span className="ti-doc-meta-value">
+                  {editable ? (
+                    <InlineField type="date" value={po?.documentDate} onChange={(v) => onUpdate?.('po.documentDate', v)} />
+                  ) : (
+                    formatDisplayDate(po?.documentDate)
+                  )}
+                </span>
+              </div>
             </div>
           </div>
         </header>
 
-        <div className="po-vendor-block">
-          <div className="po-label">Vendor</div>
-          {editable ? (
-            <>
-              <InlineField
-                value={form.vendorName}
-                onChange={(v) => onUpdate?.('vendorName', v)}
-                placeholder="Vendor name or company"
-              />
-              <InlineTextarea
-                value={form.vendorAddress}
-                onChange={(v) => onUpdate?.('vendorAddress', v)}
-                placeholder="Vendor address"
-                rows={2}
-              />
-              <InlineField
-                value={form.vendorGstin}
-                onChange={(v) => onUpdate?.('vendorGstin', v)}
-                placeholder="Vendor GSTIN (optional)"
-              />
-            </>
-          ) : (
-            <>
-              <div className="po-vendor-name">{form.vendorName || '—'}</div>
-              <div>{form.vendorAddress}</div>
-              {form.vendorGstin ? <div>GSTIN: {form.vendorGstin}</div> : null}
-            </>
-          )}
+        <div className="ti-cards">
+          <Card title="Vendor Details">
+            <Field label="Vendor" full>
+              {editable ? (
+                <InlineField value={vendor?.name} onChange={(v) => onUpdate?.('vendor.name', v)} placeholder="Vendor name" />
+              ) : (
+                vendor?.name || '—'
+              )}
+            </Field>
+            <Field label="Address" full>
+              {editable ? (
+                <InlineTextarea value={vendor?.address} onChange={(v) => onUpdate?.('vendor.address', v)} placeholder="Vendor address" rows={2} />
+              ) : (
+                vendor?.address || '—'
+              )}
+            </Field>
+            <FieldRow>
+              <Field label="State">
+                {editable ? (
+                  <InlineField value={vendor?.stateName} onChange={(v) => onUpdate?.('vendor.stateName', v)} placeholder="State" />
+                ) : (
+                  vendor?.stateName || '—'
+                )}
+              </Field>
+              <Field label="Code">
+                {editable ? (
+                  <InlineField value={vendor?.stateCode} onChange={(v) => onUpdate?.('vendor.stateCode', v)} placeholder="27" />
+                ) : (
+                  vendor?.stateCode || '—'
+                )}
+              </Field>
+            </FieldRow>
+            <FieldRow>
+              <Field label="GSTIN">
+                {editable ? (
+                  <InlineField value={vendor?.gstin} onChange={(v) => onUpdate?.('vendor.gstin', v)} placeholder="GSTIN" />
+                ) : (
+                  vendor?.gstin || '—'
+                )}
+              </Field>
+              <Field label="PAN">
+                {editable ? (
+                  <InlineField value={vendor?.pan} onChange={(v) => onUpdate?.('vendor.pan', v)} placeholder="PAN" />
+                ) : (
+                  vendor?.pan || '—'
+                )}
+              </Field>
+            </FieldRow>
+            <FieldRow>
+              <Field label="Contact">
+                {editable ? (
+                  <InlineField value={vendor?.contactPerson} onChange={(v) => onUpdate?.('vendor.contactPerson', v)} placeholder="Contact person" />
+                ) : (
+                  vendor?.contactPerson || '—'
+                )}
+              </Field>
+              <Field label="Email">
+                {editable ? (
+                  <InlineField value={vendor?.email} onChange={(v) => onUpdate?.('vendor.email', v)} placeholder="Email" />
+                ) : (
+                  vendor?.email || '—'
+                )}
+              </Field>
+            </FieldRow>
+          </Card>
+
+          <Card title="PO Details">
+            <Field label="Reference">
+              {editable ? (
+                <InlineField value={po?.reference} onChange={(v) => onUpdate?.('po.reference', v)} placeholder="RFQ / quote ref." />
+              ) : (
+                po?.reference || '—'
+              )}
+            </Field>
+            <FieldRow>
+              <Field label="PO Date">
+                {editable ? (
+                  <InlineField type="date" value={po?.documentDate} onChange={(v) => onUpdate?.('po.documentDate', v)} />
+                ) : (
+                  formatDisplayDate(po?.documentDate) || '—'
+                )}
+              </Field>
+              <Field label="Delivery Date">
+                {editable ? (
+                  <InlineField type="date" value={po?.deliveryDate} onChange={(v) => onUpdate?.('po.deliveryDate', v)} />
+                ) : (
+                  formatDisplayDate(po?.deliveryDate) || '—'
+                )}
+              </Field>
+            </FieldRow>
+            <Field label="Payment Terms" full>
+              {editable ? (
+                <InlineTextarea value={po?.paymentTerms} onChange={(v) => onUpdate?.('po.paymentTerms', v)} placeholder="Net 30 days" rows={2} />
+              ) : (
+                po?.paymentTerms || '—'
+              )}
+            </Field>
+            <FieldRow>
+              <Field label="Buyer PAN">
+                <Prefill>{company?.pan}</Prefill>
+              </Field>
+              <Field label="Buyer GSTIN">
+                <Prefill>{company?.gstin}</Prefill>
+              </Field>
+            </FieldRow>
+          </Card>
+
+          <Card title="Billing & Delivery" className="ti-card--payment">
+            <Field label="Billing Address" full>
+              {editable ? (
+                <InlineTextarea value={form.billingAddress} onChange={(v) => onUpdate?.('billingAddress', v)} placeholder="Billing address" rows={2} />
+              ) : (
+                form.billingAddress || companyAddress || '—'
+              )}
+            </Field>
+            <Field label="Delivery Address" full>
+              {editable ? (
+                <InlineTextarea value={form.deliveryAddress} onChange={(v) => onUpdate?.('deliveryAddress', v)} placeholder="Ship-to / delivery address" rows={2} />
+              ) : (
+                form.deliveryAddress || '—'
+              )}
+            </Field>
+            <div className="ti-payment-layout po-payment-compact">
+              <div className="ti-payment-fields">
+                <Field label="Payable to" full>
+                  <Prefill>{bank?.accountHolder || company?.legalName}</Prefill>
+                </Field>
+                <Field label="Bank" full>
+                  <Prefill>{bankDisplay || bank?.bankName}</Prefill>
+                </Field>
+                <FieldRow>
+                  <Field label="IFSC">
+                    <Prefill>{bank?.ifscCode}</Prefill>
+                  </Field>
+                  <Field label="Account">
+                    <Prefill>{bank?.accountNumber}</Prefill>
+                  </Field>
+                </FieldRow>
+              </div>
+              <aside className="ti-payment-qr" aria-label="Payment QR code">
+                {payment?.paymentQrDataUrl ? (
+                  <img src={payment.paymentQrDataUrl} alt="Scan to pay" className="ti-payment-qr-img" />
+                ) : (
+                  <div className="ti-payment-qr-placeholder">
+                    <span>QR</span>
+                  </div>
+                )}
+              </aside>
+            </div>
+          </Card>
         </div>
 
-        <div className="po-meta-row">
-          <div>
-            <span className="po-meta-label">Order date</span>
-            {editable ? (
-              <InlineField type="date" value={form.documentDate} onChange={(v) => onUpdate?.('documentDate', v)} />
-            ) : (
-              form.documentDate
-            )}
-          </div>
-          <div>
-            <span className="po-meta-label">Delivery date</span>
-            {editable ? (
-              <InlineField type="date" value={form.dueDate} onChange={(v) => onUpdate?.('dueDate', v)} />
-            ) : (
-              form.dueDate || '—'
-            )}
-          </div>
-          <div>
-            <span className="po-meta-label">Tax %</span>
-            {editable ? (
-              <InlineField
-                value={form.purchaseTaxRate}
-                onChange={(v) => onUpdate?.('purchaseTaxRate', v)}
-                placeholder="18"
-              />
-            ) : (
-              `${form.purchaseTaxRate}%`
-            )}
-          </div>
-        </div>
-
-        <table className="po-table">
-          <thead>
-            <tr>
-              <th>Item description</th>
-              <th className="po-num">Qty</th>
-              <th className="po-num">Rate (₹)</th>
-              <th className="po-num">FOC</th>
-              <th className="po-num">Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {form.lineItems.map((line, index) => {
-              const qty = Number(line.qty) || 0;
-              const rate = line.isFoc ? 0 : Number(line.rate) || 0;
-              const amount = qty * rate;
-              return (
-                <tr key={line.id || index}>
-                  <td>
-                    {editable ? (
-                      <InlineTableInput
-                        value={line.description}
-                        onChange={(v) => onUpdateLine?.(index, { description: v })}
-                        placeholder="Item description"
-                      />
-                    ) : (
-                      line.description
-                    )}
-                  </td>
-                  <td className="po-num">
-                    {editable ? (
-                      <InlineTableInput
-                        value={line.qty}
-                        onChange={(v) => onUpdateLine?.(index, { qty: v })}
-                        placeholder="1"
-                        align="right"
-                      />
-                    ) : (
-                      qty
-                    )}
-                  </td>
-                  <td className="po-num">
-                    {editable ? (
-                      <InlineTableInput
-                        value={line.rate}
-                        onChange={(v) => onUpdateLine?.(index, { rate: v })}
-                        placeholder="0.00"
-                        align="right"
-                      />
-                    ) : (
-                      formatInr(rate)
-                    )}
-                  </td>
-                  <td className="po-num">
-                    {editable ? (
-                      <InlineTableInput
-                        value={line.isFoc ? 'Yes' : 'No'}
-                        onChange={(v) => onUpdateLine?.(index, { isFoc: String(v).toLowerCase().startsWith('y') })}
-                        align="center"
-                      />
-                    ) : (
-                      line.isFoc ? 'Yes' : 'No'
-                    )}
-                  </td>
-                  <td className="po-num">{formatInr(amount)}</td>
-                </tr>
-              );
-            })}
-            {editable && form.lineItems.length < MAX_PO_LINE_ITEMS ? (
-              <tr className="ei-add-line-row">
-                <td colSpan={5}>
-                  <button type="button" className="ei-add-line-btn" onClick={onAddLine}>
-                    + Add line item
-                  </button>
-                </td>
+        <div className="ti-lines-section">
+          <table className="ti-lines po-lines">
+            <colgroup>
+              <col className="ti-col-num" />
+              <col className="ti-col-sac" />
+              <col className="ti-col-desc" />
+              <col className="ti-col-qty" />
+              <col className="po-col-uom" />
+              <col className="ti-col-rate" />
+              <col className="ti-col-amt" />
+              <col className="ti-col-disc" />
+              <col className="ti-col-taxable" />
+              <col className="ti-col-taxpct" />
+              <col className="ti-col-tax" />
+              <col className="ti-col-total" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th className="ti-th-num">#</th>
+                <th className="ti-th-sac">Item Code</th>
+                <th className="ti-th-desc">Description</th>
+                <th className="ti-th-qty">Qty</th>
+                <th className="po-th-uom">Unit</th>
+                <th className="ti-th-r">Unit Price</th>
+                <th className="ti-th-r">Amount</th>
+                <th className="ti-th-r">Disc.</th>
+                <th className="ti-th-r">Taxable</th>
+                <th className="ti-th-r ti-th-tax">
+                  {editable ? (
+                    <InlineTableInput
+                      value={form.taxColumnLabels?.rateLabel ?? taxLabels.rateLabel}
+                      onChange={(v) => onUpdate?.('taxColumnLabels.rateLabel', v)}
+                      placeholder="GST %"
+                      align="right"
+                    />
+                  ) : (
+                    taxLabels.rateLabel
+                  )}
+                </th>
+                <th className="ti-th-r ti-th-tax">
+                  {editable ? (
+                    <InlineTableInput
+                      value={form.taxColumnLabels?.amountLabel ?? taxLabels.amountLabel}
+                      onChange={(v) => onUpdate?.('taxColumnLabels.amountLabel', v)}
+                      placeholder="GST"
+                      align="right"
+                    />
+                  ) : (
+                    taxLabels.amountLabel
+                  )}
+                </th>
+                <th className="ti-th-r ti-th-total">Total</th>
               </tr>
-            ) : null}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={4} className="po-num">
-                Subtotal
-              </td>
-              <td className="po-num">₹ {formatInr(totals.subtotal)}</td>
-            </tr>
-            <tr>
-              <td colSpan={4} className="po-num">
-                Tax
-              </td>
-              <td className="po-num">₹ {formatInr(totals.tax)}</td>
-            </tr>
-            <tr className="po-total-row">
-              <td colSpan={4} className="po-num">
-                <strong>Total</strong>
-              </td>
-              <td className="po-num">
-                <strong>₹ {formatInr(totals.total)}</strong>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody>
+              {lineTotals.map((line, idx) => {
+                const amount = (Number(line.qty) || 0) * (Number(line.rate) || 0);
+                const itemCode = form.lineItems[idx]?.itemCode || form.lineItems[idx]?.hsnSac || '';
+                return (
+                  <tr key={line.id || idx}>
+                    <td className="ti-num">{idx + 1}</td>
+                    <td className="ti-sac">
+                      {editable ? (
+                        <InlineTableInput
+                          value={itemCode}
+                          onChange={(v) => onUpdateLine?.(idx, { itemCode: v, hsnSac: v })}
+                          placeholder="Code"
+                          align="center"
+                        />
+                      ) : (
+                        itemCode || '—'
+                      )}
+                    </td>
+                    <td className="ti-desc">
+                      {editable ? (
+                        <InlineTableInput
+                          value={line.description}
+                          onChange={(v) => onUpdateLine?.(idx, { description: v })}
+                          placeholder="Item description"
+                        />
+                      ) : (
+                        <>
+                          {line.description || '—'}
+                          {form.lineItems[idx]?.isFoc ? <span className="po-foc-tag"> (FOC)</span> : null}
+                        </>
+                      )}
+                    </td>
+                    <td className="ti-qty">
+                      {editable ? (
+                        <InlineTableInput value={line.qty} onChange={(v) => onUpdateLine?.(idx, { qty: v })} align="center" />
+                      ) : (
+                        line.qty
+                      )}
+                    </td>
+                    <td className="po-uom">
+                      {editable ? (
+                        <InlineTableInput
+                          value={form.lineItems[idx]?.uom || 'Nos'}
+                          onChange={(v) => onUpdateLine?.(idx, { uom: v })}
+                          align="center"
+                        />
+                      ) : (
+                        form.lineItems[idx]?.uom || 'Nos'
+                      )}
+                    </td>
+                    <td className="ti-r">
+                      {editable ? (
+                        <InlineTableInput value={line.rate} onChange={(v) => onUpdateLine?.(idx, { rate: v })} align="right" />
+                      ) : (
+                        formatInr(line.rate)
+                      )}
+                    </td>
+                    <td className="ti-r">{formatInr(amount)}</td>
+                    <td className="ti-r">
+                      {editable ? (
+                        <InlineTableInput value={line.discount} onChange={(v) => onUpdateLine?.(idx, { discount: v })} align="right" />
+                      ) : line.discount ? (
+                        formatInr(line.discount)
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="ti-r">{formatInr(line.taxableAmount)}</td>
+                    <td className="ti-r ti-tax-rate">
+                      {editable ? (
+                        <InlineTableInput
+                          value={getLineGstRateDisplay(line, taxMode)}
+                          onChange={(v) => onUpdateLine?.(idx, patchLineGstRate(v, taxMode))}
+                          align="right"
+                          placeholder="0"
+                        />
+                      ) : (
+                        formatGstRateDisplay(line, taxMode)
+                      )}
+                    </td>
+                    <td className="ti-r">{formatInr(line.taxAmount)}</td>
+                    <td className="ti-r ti-r--strong">{formatInr(line.totalAmount)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {editable && form.lineItems.length < MAX_PO_LINE_ITEMS ? (
+            <button type="button" className="ti-add-line" onClick={onAddLine}>
+              + Add line item
+            </button>
+          ) : null}
+        </div>
 
-        <footer className="po-footer">
-          {editable ? (
-            <InlineTextarea
-              value={form.notes}
-              onChange={(v) => onUpdate?.('notes', v)}
-              placeholder="It was great doing business with you."
-              rows={2}
-            />
-          ) : (
-            form.notes
-          )}
-          <p className="po-terms">
-            Upon accepting this purchase order, you agree to the terms &amp; conditions.
-          </p>
+        <footer className="ti-footer">
+          <div className="ti-footer-notes">
+            <div className="ti-words">
+              <span className="ti-words-label">Amount in words</span>
+              <p className="ti-words-text">Indian Rupees {amountInWordsIndian(totals?.grandTotal)}</p>
+            </div>
+
+            <div className="po-shipping">
+              <h4 className="ti-terms-title">Shipping Instructions</h4>
+              {editable ? (
+                <InlineTextarea
+                  value={form.shippingInstructions}
+                  onChange={(v) => onUpdate?.('shippingInstructions', v)}
+                  placeholder="Delivery location, contact on site, packaging requirements…"
+                  rows={2}
+                />
+              ) : (
+                <p>{form.shippingInstructions || '—'}</p>
+              )}
+            </div>
+
+            {(displayTerms.length > 0 || editable) && (
+              <div className="ti-terms ti-terms--footer">
+                <h4 className="ti-terms-title">Terms &amp; Conditions</h4>
+                <ol>
+                  {displayTerms.map((t, i) => (
+                    <li key={i}>
+                      {editable ? (
+                        <InlineField value={t} onChange={(v) => onUpdateTerm?.(i, v)} placeholder={`Term ${i + 1}`} />
+                      ) : (
+                        t || '—'
+                      )}
+                    </li>
+                  ))}
+                </ol>
+                {editable ? (
+                  <button type="button" className="ti-add-line ti-add-term" onClick={onAddTerm}>
+                    + Add term
+                  </button>
+                ) : null}
+              </div>
+            )}
+
+            <div className="po-notes">
+              <h4 className="ti-terms-title">Notes</h4>
+              {editable ? (
+                <InlineTextarea value={form.notes} onChange={(v) => onUpdate?.('notes', v)} placeholder="Additional notes" rows={2} />
+              ) : (
+                <p>{form.notes || '—'}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="ti-totals">
+            <div className="ti-totals-rows">
+              <div className="ti-totals-row">
+                <span>Subtotal</span>
+                <span>{formatInr(totals?.subtotal)}</span>
+              </div>
+              <div className="ti-totals-row">
+                <span>{taxLabels.amountLabel}</span>
+                <span>{formatInr(totals?.taxAmount)}</span>
+              </div>
+              <div className="ti-totals-row">
+                <span>Round off</span>
+                <span>{formatInr(totals?.roundOff || 0)}</span>
+              </div>
+            </div>
+            <div className="ti-totals-grand">
+              <span className="ti-totals-grand-label">Total Amount</span>
+              <span className="ti-totals-grand-value">₹ {formatInr(totals?.grandTotal)}</span>
+            </div>
+          </div>
+
+          <div className="po-signatures">
+            <div className="ti-signature">
+              {signature?.imageDataUrl ? (
+                <img src={signature.imageDataUrl} alt="" className="ti-signature-img" />
+              ) : (
+                <div className="ti-signature-line" aria-hidden="true" />
+              )}
+              <span className="ti-signature-label">Authorized Signatory</span>
+              {editable ? (
+                <>
+                  <InlineField
+                    value={signature?.signatoryName || ''}
+                    onChange={(v) => onUpdate?.('signature.signatoryName', v)}
+                    placeholder="Signatory name"
+                    className="ti-signature-name-input"
+                  />
+                  <InlineField
+                    value={signature?.companyLabel || company?.legalName || ''}
+                    onChange={(v) => onUpdate?.('signature.companyLabel', v)}
+                    placeholder="For company"
+                    className="ti-signature-company-input"
+                  />
+                </>
+              ) : (
+                <>
+                  {signature?.signatoryName ? <span className="ti-signature-name">{signature.signatoryName}</span> : null}
+                  <span className="ti-signature-company">{signature?.companyLabel || company?.legalName || ''}</span>
+                </>
+              )}
+            </div>
+
+            <div className="ti-signature po-vendor-acceptance">
+              <div className="ti-signature-line" aria-hidden="true" />
+              <span className="ti-signature-label">Vendor Acceptance</span>
+              {editable ? (
+                <>
+                  <InlineField
+                    value={vendorAcceptance?.signatoryName || ''}
+                    onChange={(v) => onUpdate?.('vendorAcceptance.signatoryName', v)}
+                    placeholder="Vendor signatory"
+                    className="ti-signature-name-input"
+                  />
+                  <InlineField
+                    type="date"
+                    value={vendorAcceptance?.acceptedDate || ''}
+                    onChange={(v) => onUpdate?.('vendorAcceptance.acceptedDate', v)}
+                    placeholder="Date"
+                    className="ti-signature-company-input"
+                  />
+                  <InlineField
+                    value={vendorAcceptance?.companyLabel || vendor?.name || ''}
+                    onChange={(v) => onUpdate?.('vendorAcceptance.companyLabel', v)}
+                    placeholder="For vendor"
+                    className="ti-signature-company-input"
+                  />
+                </>
+              ) : (
+                <>
+                  {vendorAcceptance?.signatoryName ? (
+                    <span className="ti-signature-name">{vendorAcceptance.signatoryName}</span>
+                  ) : null}
+                  {vendorAcceptance?.acceptedDate ? (
+                    <span className="ti-signature-company">Date: {formatDisplayDate(vendorAcceptance.acceptedDate)}</span>
+                  ) : null}
+                  <span className="ti-signature-company">{vendorAcceptance?.companyLabel || vendor?.name || ''}</span>
+                </>
+              )}
+            </div>
+          </div>
         </footer>
       </article>
     </div>

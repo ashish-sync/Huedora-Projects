@@ -1,17 +1,22 @@
-export function computePurchaseOrderTotals(lineItems, taxRate) {
-  const rate = Number(taxRate) || 0;
-  const lines = (lineItems || []).map((line) => {
-    const qty = Number(line.qty) || 0;
-    const unitRate = line.isFoc ? 0 : Number(line.rate) || 0;
-    const amount = qty * unitRate;
-    return { amount };
+import {
+  amountInWordsIndian,
+  computeInvoiceTotals,
+  computeLineItem,
+  usesIgst,
+} from '../invoiceGenerator/invoiceCalculations.js';
+
+export { amountInWordsIndian, usesIgst, computeLineItem };
+
+export function computePurchaseOrderTotals(form) {
+  const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+  const lineItems = (form.lineItems || []).map((line) => {
+    if (!line.isFoc) return line;
+    return { ...line, rate: 0, discount: 0 };
   });
-  const subtotal = lines.reduce((sum, line) => sum + line.amount, 0);
-  const tax = (subtotal * rate) / 100;
+  const totals = computeInvoiceTotals(lineItems, taxMode, {});
   return {
-    subtotal,
-    tax,
-    total: subtotal + tax,
-    lines,
+    ...totals,
+    total: totals.grandTotal,
+    taxMode,
   };
 }

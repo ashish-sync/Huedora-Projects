@@ -1,17 +1,10 @@
+import { PRODUCT_TYPES } from '../../shared/productTypes.js';
+
 /** Product types that use Asset One register (agreements + custody). */
 export const ASSET_REGISTER_PRODUCT_TYPES = ['Medical Device', 'Non-Medical Device'];
 
 /** All Product Master types (inward via Movement One for every type). */
-export const ALL_PRODUCT_TYPES = [
-  'Medical Device',
-  'Non-Medical Device',
-  'Peripheral Device',
-  'Accessory',
-  'Spare Part',
-  'Consumable',
-  'Document',
-  'Other',
-];
+export const ALL_PRODUCT_TYPES = [...PRODUCT_TYPES];
 
 /** @deprecated Use ASSET_REGISTER_PRODUCT_TYPES or ALL_PRODUCT_TYPES */
 export const ASSET_PRODUCT_TYPES = ALL_PRODUCT_TYPES;

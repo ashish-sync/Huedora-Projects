@@ -1,15 +1,8 @@
 /** Shared helpers for Inward / Outward transaction forms */
 
-export const FALLBACK_PRODUCT = [
-  'Medical Device',
-  'Non-Medical Device',
-  'Peripheral Device',
-  'Accessory',
-  'Spare Part',
-  'Consumable',
-  'Document',
-  'Other',
-];
+import { PRODUCT_TYPES, resolveProductType } from '../../shared/productTypes.js';
+
+export const FALLBACK_PRODUCT = [...PRODUCT_TYPES];
 
 export const FALLBACK_DELIVERY = [
   'Hand Delivery',
@@ -36,45 +29,21 @@ export const GOODS_ISSUE_KINDS = ['Fresh Dispatch', 'Inter Transfer', 'Recall / 
 export const FALLBACK_CAT_DEFAULTS = {
   'Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
   'Non-Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
-  'Peripheral Device': { expiryApplicable: false, trackingKind: 'Serial' },
-  Accessory: { expiryApplicable: false, trackingKind: 'Serial' },
-  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
+  Peripheral: { expiryApplicable: false, trackingKind: 'Serial' },
   Consumable: { expiryApplicable: true, trackingKind: 'Batch' },
-  Document: { expiryApplicable: false, trackingKind: 'None' },
+  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
   Other: { expiryApplicable: false, trackingKind: 'None' },
   // Legacy keys still present on older stock / txn rows
   Device: { expiryApplicable: false, trackingKind: 'Serial' },
+  'Peripheral Device': { expiryApplicable: false, trackingKind: 'Serial' },
+  Accessory: { expiryApplicable: false, trackingKind: 'Serial' },
+  Document: { expiryApplicable: false, trackingKind: 'None' },
   Misc: { expiryApplicable: false, trackingKind: 'None' },
   'Spare Part / Accessory': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
   Miscellaneous: { expiryApplicable: false, trackingKind: 'None' },
 };
 
-/** Normalize legacy product types to the current Product Master set. */
-export function resolveProductType(raw) {
-  const v = String(raw || '').trim();
-  if (!v) return '';
-  const aliases = {
-    'Medical Device': 'Medical Device',
-    'Non-Medical Device': 'Non-Medical Device',
-    'Peripheral Device': 'Peripheral Device',
-    Accessory: 'Accessory',
-    'Spare Part': 'Spare Part',
-    Consumable: 'Consumable',
-    Consumables: 'Consumable',
-    Document: 'Document',
-    Other: 'Other',
-    Device: 'Medical Device',
-    Peripheral: 'Peripheral Device',
-    Misc: 'Other',
-    'Spare Part / Accessory': 'Spare Part',
-    Miscellaneous: 'Other',
-    Documents: 'Document',
-    Others: 'Other',
-  };
-  if (aliases[v]) return aliases[v];
-  const hit = Object.entries(aliases).find(([k]) => k.toLowerCase() === v.toLowerCase());
-  return hit?.[1] || v;
-}
+export { resolveProductType };
 
 export function nowLocal() {
   const d = new Date();

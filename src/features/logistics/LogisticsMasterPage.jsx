@@ -12,6 +12,7 @@ import LocationMasterPage from '../locations/LocationMasterPage.jsx';
 import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
+import { PRODUCT_TYPES } from '../../shared/productTypes.js';
 
 const MASTER_GROUPS = [
   {
@@ -157,17 +158,6 @@ const FIELD_LABELS = {
   direction: 'Direction',
   covers: 'Covers',
 };
-
-const PRODUCT_TYPES = [
-  'Medical Device',
-  'Non-Medical Device',
-  'Peripheral Device',
-  'Accessory',
-  'Spare Part',
-  'Consumable',
-  'Document',
-  'Other',
-];
 
 const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 

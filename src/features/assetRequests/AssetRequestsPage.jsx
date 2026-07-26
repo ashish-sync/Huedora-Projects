@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
+import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { FIELD, MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -317,9 +318,8 @@ function displayType(t) {
   return REQUEST_TYPES.find((x) => x.value === t)?.label || t;
 }
 
-function productOptionLabel(p) {
-  const name = p?.model || p?.partNumber || p?.name || p?.productName || '';
-  return name ? (p.code ? `${name} (${p.code})` : name) : p?._id || '';
+function productOptionLabelLocal(p) {
+  return productOptionLabel(p) || p?._id || '';
 }
 
 function normalizeLogisticsKind(raw) {
@@ -627,7 +627,7 @@ export default function AssetRequestsPage() {
       product
         ? {
             productId: String(product._id),
-            productName: productOptionLabel(product) || product.name || product.productName || '',
+            productName: productAssetName(product) || product.name || product.productName || '',
             productType: product.productType || form.logisticsProducts[index].productType,
           }
         : { productId: '', productName: '' }
@@ -1251,7 +1251,7 @@ export default function AssetRequestsPage() {
                               </option>
                               {matchingProducts.map((product) => (
                                 <option key={product._id} value={product._id}>
-                                  {productOptionLabel(product)}
+                                  {productOptionLabelLocal(product)}
                                 </option>
                               ))}
                             </AdaptiveSelect>

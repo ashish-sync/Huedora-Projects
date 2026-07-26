@@ -5,6 +5,7 @@ import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { api } from '../../shared/api.js';
+import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
@@ -478,7 +479,9 @@ export default function LogisticsOutwardPage() {
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
-  const productLabel = (p) => p?.model || p?.partNumber || p?.name || '';
+  const productLabel = productOptionLabel;
+
+  const productDisplayName = productAssetName;
 
   const openManual = () => {
     const base = emptyTxnForm(user, {
@@ -552,7 +555,7 @@ export default function LogisticsOutwardPage() {
       );
     if (match) {
       base.productId = match._id;
-      base.productName = productLabel(match) || match.name;
+      base.productName = productDisplayName(match) || match.name;
       base.productType = match.productType || base.productType;
       const meta = lineTrackingMeta(base.productType, match, categoryDefaults);
       base.trackingKind = meta.trackingKind;
@@ -623,7 +626,7 @@ export default function LogisticsOutwardPage() {
     const meta = lineTrackingMeta(type, product, categoryDefaults);
     updateIssueProduct(index, {
       productId: String(product._id),
-      productName: productLabel(product),
+      productName: productDisplayName(product),
       productType: type,
       trackingKind: meta.trackingKind,
       expiryApplicable: meta.expiryApplicable,
@@ -742,7 +745,7 @@ export default function LogisticsOutwardPage() {
     setForm((f) => ({
       ...f,
       productId: p._id,
-      productName: productLabel(p),
+      productName: productDisplayName(p),
       programProject: p.programProject || '',
       productType: p.productType || f.productType,
       expiryApplicable,
@@ -868,7 +871,7 @@ export default function LogisticsOutwardPage() {
         if (serialNumber) availParams.set('serialNumber', serialNumber);
         if (batchNumber) availParams.set('batchNumber', batchNumber);
         if (line.productName || product?.name) {
-          availParams.set('productName', line.productName || productLabel(product) || '');
+          availParams.set('productName', line.productName || productDisplayName(product) || '');
         }
         const availRes = await api(`/logistics/inventory/availability?${availParams}`);
         const availableQty = Number(availRes.data?.availableQty) || 0;
@@ -898,7 +901,7 @@ export default function LogisticsOutwardPage() {
             fromState: form.fromState || '',
             productId: line.productId || null,
             productType: line.productType || product?.productType || '',
-            productName: line.productName || productLabel(product) || '',
+            productName: line.productName || productDisplayName(product) || '',
             assetRequestId: fulfillingId || form.assetRequestId || null,
             assetRequestLineId: fulfillingId ? fulfillingLineId || null : null,
             assetRequestLineIndex: fulfillingId ? fulfillingLineIndex : null,

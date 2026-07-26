@@ -107,7 +107,7 @@ export default function AssetOverviewPage() {
       <section className="asset-register-block" aria-label="Other product types">
         <h3 className="asset-type-grid-title">Other product types</h3>
         <p className="muted" style={{ marginTop: 0 }}>
-          Peripheral Device, Accessory, Spare Part, Consumable, Document, and Other are received
+          Peripheral, Spare Part, Consumable, and Other are received
           and issued in {MODULE.LOGISTICS}. They do not use the agreement / custody register.
         </p>
         <Link className="btn secondary" to="/logistics/inward">

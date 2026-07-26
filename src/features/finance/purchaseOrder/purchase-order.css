@@ -1,160 +1,50 @@
-/* Purchase order — A4 landscape (297 × 210 mm, 9 mm margins) */
+/* Purchase order — extends tylo-invoice template (navy theme) */
 
-.po-document {
-  width: 297mm;
-  height: 210mm;
-  padding: 9mm;
-  background: #fff;
-  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
-  font-size: 9px;
-  color: #1e293b;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+.po-lines .po-col-uom,
+.po-lines .po-th-uom,
+.po-lines .po-uom {
+  width: 42px;
+  min-width: 42px;
+  text-align: center;
 }
 
-.po-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #047857;
-}
-
-.po-logo {
-  max-width: 120px;
-  max-height: 48px;
-  object-fit: contain;
-  margin-bottom: 8px;
-}
-
-.po-logo-placeholder {
-  font-size: 8px;
-  color: #94a3b8;
+.po-foc-tag {
+  font-size: 0.85em;
+  color: #64748b;
   font-style: italic;
-  margin-bottom: 8px;
 }
 
-.po-company-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: #047857;
+.po-payment-compact {
+  margin-top: 8px;
 }
 
-.po-company-address {
-  margin-top: 4px;
-  font-size: 8px;
-  color: #64748b;
-  max-width: 320px;
-  line-height: 1.4;
+.po-shipping,
+.po-notes {
+  margin-top: 10px;
 }
 
-.po-title-block {
-  text-align: right;
-}
-
-.po-title {
-  margin: 0 0 6px;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: #047857;
-}
-
-.po-doc-no {
+.po-shipping p,
+.po-notes p {
+  margin: 4px 0 0;
   font-size: 9px;
+  line-height: 1.45;
+  color: #334155;
 }
 
-.po-vendor-block {
-  margin-bottom: 12px;
-  padding: 10px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-
-.po-label {
-  font-size: 7px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #64748b;
-  margin-bottom: 6px;
-}
-
-.po-vendor-name {
-  font-weight: 600;
-  font-size: 10px;
-}
-
-.po-meta-row {
+.po-signatures {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  grid-column: 1 / -1;
+  margin-top: 4px;
 }
 
-.po-meta-label {
-  display: block;
-  font-size: 7px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #94a3b8;
-  margin-bottom: 4px;
-}
-
-.po-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 8.5px;
-}
-
-.po-table th {
-  background: #047857;
-  color: #fff;
-  padding: 8px 10px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 7.5px;
-  text-transform: uppercase;
-}
-
-.po-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e2e8f0;
-  vertical-align: top;
-}
-
-.po-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.po-total-row td {
-  background: #f0fdf4;
-  border-top: 2px solid #047857;
-}
-
-.po-footer {
-  margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px dashed #cbd5e1;
-  font-size: 8px;
-  color: #64748b;
-}
-
-.po-terms {
-  margin: 8px 0 0;
-  font-size: 7.5px;
-  font-style: italic;
+.po-vendor-acceptance .ti-signature-label {
+  color: #475569;
 }
 
 @media print {
-  .po-document {
-    width: 100%;
-    height: auto;
-    min-height: 0;
-    padding: 0;
+  .po-signatures {
+    break-inside: avoid;
   }
 }

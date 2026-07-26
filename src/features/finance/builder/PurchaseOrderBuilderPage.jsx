@@ -20,6 +20,8 @@ export default function PurchaseOrderBuilderPage() {
     updateLine,
     addLine,
     removeLine,
+    updateTerm,
+    addTerm,
     newPurchaseOrder,
   } = usePurchaseOrderBuilder();
 
@@ -42,8 +44,8 @@ export default function PurchaseOrderBuilderPage() {
       newDocShortcutLabel="New purchase order"
       panelAriaLabel="Purchase order fields"
       exportFilePrefix="purchase-order"
-      docNumber={form.documentNumber}
-      grandTotal={formatMoney(totals?.total)}
+      docNumber={form.po?.documentNumber}
+      grandTotal={formatMoney(totals?.grandTotal)}
       saveState={saveState}
       savedAt={savedAt}
       panelOpen={panelOpen}
@@ -63,6 +65,8 @@ export default function PurchaseOrderBuilderPage() {
           updateLine={updateLine}
           addLine={addLine}
           removeLine={removeLine}
+          updateTerm={updateTerm}
+          addTerm={addTerm}
         />
       }
     >
@@ -75,6 +79,8 @@ export default function PurchaseOrderBuilderPage() {
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}
+          onUpdateTerm={updateTerm}
+          onAddTerm={addTerm}
         />
       )}
     </InvoiceBuilderShell>

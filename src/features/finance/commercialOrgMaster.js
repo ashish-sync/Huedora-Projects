@@ -154,6 +154,7 @@ export function applyOrgMasterToProformaForm(form, master) {
 /** Apply org master onto purchase order generator form. */
 export function applyOrgMasterToPurchaseOrderForm(form, master) {
   const m = master || {};
+  const address = masterVal(m, 'registeredOffice', form.company?.address || form.company?.registeredOffice);
   return {
     ...form,
     company: {
@@ -161,11 +162,33 @@ export function applyOrgMasterToPurchaseOrderForm(form, master) {
       logoDataUrl: masterVal(m, 'logoDataUrl', form.company?.logoDataUrl || TYLO_LOGO_DATA_URL),
       legalName: masterVal(m, 'legalName', form.company?.legalName),
       brandLine: masterVal(m, 'brandLine', form.company?.brandLine),
-      registeredOffice: masterVal(m, 'registeredOffice', form.company?.registeredOffice),
+      address,
+      registeredOffice: address,
       email: masterVal(m, 'email', form.company?.email),
       phone: masterVal(m, 'phone', form.company?.phone),
       website: masterVal(m, 'website', form.company?.website),
       gstin: masterVal(m, 'gstin', form.company?.gstin),
+      pan: masterVal(m, 'pan', form.company?.pan),
+      cin: masterVal(m, 'cin', form.company?.cin),
+      stateCode: masterVal(m, 'stateCode', form.company?.stateCode),
+    },
+    bank: {
+      ...form.bank,
+      accountHolder: masterVal(m, 'accountHolder', m.legalName || form.bank?.accountHolder),
+      bankName: masterVal(m, 'bankName', form.bank?.bankName),
+      accountNumber: masterVal(m, 'accountNumber', form.bank?.accountNumber),
+      branchName: masterVal(m, 'bankBranch', form.bank?.branchName),
+      ifscCode: masterVal(m, 'ifscCode', form.bank?.ifscCode),
+    },
+    payment: {
+      ...form.payment,
+      upiId: masterVal(m, 'upiId', form.payment?.upiId),
+      paymentQrDataUrl: masterVal(m, 'paymentQrDataUrl', form.payment?.paymentQrDataUrl),
+    },
+    billingAddress: form.billingAddress || address || '',
+    signature: {
+      ...form.signature,
+      companyLabel: masterVal(m, 'legalName', form.signature?.companyLabel),
     },
   };
 }

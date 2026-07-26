@@ -59,6 +59,7 @@ export function CampLifecycleForm({
   uploadBusy = false,
   hcwContacts = [],
   contactsLoading = false,
+  clientName = '',
   onValidationError,
   reachedLifecycleStage = 'request',
 }) {
@@ -197,6 +198,7 @@ export function CampLifecycleForm({
         updateFields={updateFields}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        clientName={clientName}
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
       />

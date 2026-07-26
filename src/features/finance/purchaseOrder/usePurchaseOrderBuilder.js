@@ -34,10 +34,7 @@ export function usePurchaseOrderBuilder() {
     setForm((prev) => applyOrgMasterToPurchaseOrderForm(prev, orgMaster));
   }, [orgMaster]);
 
-  const totals = useMemo(
-    () => computePurchaseOrderTotals(form.lineItems, form.purchaseTaxRate),
-    [form.lineItems, form.purchaseTaxRate]
-  );
+  const totals = useMemo(() => computePurchaseOrderTotals(form), [form]);
 
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -88,9 +85,21 @@ export function usePurchaseOrderBuilder() {
     }));
   }, []);
 
+  const updateTerm = useCallback((index, value) => {
+    setForm((prev) => {
+      const terms = [...(prev.terms || [])];
+      terms[index] = value;
+      return { ...prev, terms };
+    });
+  }, []);
+
+  const addTerm = useCallback(() => {
+    setForm((prev) => ({ ...prev, terms: [...(prev.terms || []), ''] }));
+  }, []);
+
   const newPurchaseOrder = useCallback(() => {
     const fresh = defaultPurchaseOrderForm();
-    fresh.documentNumber = nextPONumber(fresh.documentDate);
+    fresh.po.documentNumber = nextPONumber(fresh.po.documentDate);
     const next = applyOrgMasterToPurchaseOrderForm(fresh, orgMaster);
     setForm(next);
     savePurchaseOrderDraft(next);
@@ -120,6 +129,8 @@ export function usePurchaseOrderBuilder() {
     updateLine,
     addLine,
     removeLine,
+    updateTerm,
+    addTerm,
     newPurchaseOrder,
     orgMaster,
   };

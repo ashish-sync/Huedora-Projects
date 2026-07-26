@@ -8,9 +8,16 @@ export const MAX_PO_LINE_ITEMS = 5;
 export function defaultPoLineItem(overrides = {}) {
   return {
     id: crypto.randomUUID(),
+    itemCode: '',
     description: '',
+    hsnSac: '',
+    uom: 'Nos',
     qty: 1,
     rate: 0,
+    discount: 0,
+    igstRate: 18,
+    cgstRate: 9,
+    sgstRate: 9,
     isFoc: false,
     ...overrides,
   };
@@ -23,21 +30,137 @@ export function defaultPurchaseOrderForm() {
       logoDataUrl: '',
       legalName: '',
       brandLine: '',
+      address: '',
       registeredOffice: '',
       email: '',
       phone: '',
       website: '',
       gstin: '',
+      pan: '',
+      cin: '',
+      stateCode: '',
     },
-    documentNumber: peekPONumber(today),
-    vendorName: '',
-    vendorAddress: '',
-    vendorGstin: '',
-    documentDate: today,
-    dueDate: today,
-    purchaseTaxRate: 18,
+    bank: {
+      accountHolder: '',
+      bankName: '',
+      accountNumber: '',
+      branchName: '',
+      ifscCode: '',
+    },
+    payment: {
+      upiId: '',
+      paymentQrDataUrl: '',
+    },
+    vendor: {
+      name: '',
+      address: '',
+      gstin: '',
+      pan: '',
+      stateName: '',
+      stateCode: '',
+      contactPerson: '',
+      email: '',
+    },
+    billingAddress: '',
+    deliveryAddress: '',
+    po: {
+      documentNumber: peekPONumber(today),
+      documentDate: today,
+      deliveryDate: today,
+      paymentTerms: 'Net 30 days from invoice date',
+      reference: '',
+    },
     lineItems: [defaultPoLineItem()],
-    notes: 'It was great doing business with you.',
+    terms: [
+      'Goods must match specifications and quality standards agreed upon.',
+      'Payment as per payment terms mentioned above.',
+      'Delivery must be completed by the delivery date unless agreed otherwise in writing.',
+    ],
+    shippingInstructions: '',
+    notes: '',
+    signature: {
+      imageDataUrl: '',
+      signatoryName: '',
+      companyLabel: '',
+    },
+    vendorAcceptance: {
+      signatoryName: '',
+      acceptedDate: '',
+      companyLabel: '',
+    },
+    taxColumnLabels: {
+      rateLabel: 'GST %',
+      amountLabel: 'GST',
+    },
+  };
+}
+
+function migratePurchaseOrderDraft(raw) {
+  if (!raw) return null;
+  const base = defaultPurchaseOrderForm();
+
+  const vendor = {
+    ...base.vendor,
+    ...(raw.vendor || {}),
+    name: raw.vendor?.name || raw.vendorName || '',
+    address: raw.vendor?.address || raw.vendorAddress || '',
+    gstin: raw.vendor?.gstin || raw.vendorGstin || '',
+  };
+
+  const po = {
+    ...base.po,
+    ...(raw.po || {}),
+    documentNumber: raw.po?.documentNumber || raw.documentNumber || base.po.documentNumber,
+    documentDate: raw.po?.documentDate || raw.documentDate || base.po.documentDate,
+    deliveryDate: raw.po?.deliveryDate || raw.dueDate || base.po.deliveryDate,
+    paymentTerms: raw.po?.paymentTerms || raw.paymentTerms || base.po.paymentTerms,
+    reference: raw.po?.reference || raw.reference || '',
+  };
+
+  const company = {
+    ...base.company,
+    ...(raw.company || {}),
+    address: raw.company?.address || raw.company?.registeredOffice || base.company.address,
+    registeredOffice: raw.company?.registeredOffice || raw.company?.address || base.company.registeredOffice,
+  };
+
+  const lineItems = (raw.lineItems || []).map((line) =>
+    defaultPoLineItem({
+      ...line,
+      itemCode: line.itemCode || line.hsnSac || '',
+      hsnSac: line.hsnSac || line.itemCode || '',
+      uom: line.uom || 'Nos',
+      discount: line.discount ?? 0,
+      igstRate: line.igstRate ?? raw.purchaseTaxRate ?? 18,
+      cgstRate: line.cgstRate ?? (Number(raw.purchaseTaxRate) || 18) / 2,
+      sgstRate: line.sgstRate ?? (Number(raw.purchaseTaxRate) || 18) / 2,
+      rate: line.isFoc ? 0 : line.rate,
+    })
+  );
+
+  const terms = Array.isArray(raw.terms)
+    ? raw.terms
+    : raw.notes && !Array.isArray(raw.terms)
+      ? base.terms
+      : base.terms;
+
+  return {
+    ...base,
+    ...raw,
+    company,
+    bank: { ...base.bank, ...(raw.bank || {}) },
+    payment: { ...base.payment, ...(raw.payment || {}) },
+    vendor,
+    po,
+    billingAddress: raw.billingAddress || company.address || company.registeredOffice || '',
+    deliveryAddress: raw.deliveryAddress || '',
+    lineItems: lineItems.length ? lineItems : base.lineItems,
+    terms,
+    shippingInstructions: raw.shippingInstructions || '',
+    notes: raw.notes || '',
+    signature: { ...base.signature, ...(raw.signature || {}) },
+    vendorAcceptance: { ...base.vendorAcceptance, ...(raw.vendorAcceptance || {}) },
+    taxColumnLabels: { ...base.taxColumnLabels, ...(raw.taxColumnLabels || {}) },
   };
 }
 
@@ -75,7 +198,7 @@ export function nextPONumber(dateIso) {
 export function loadPurchaseOrderDraft() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return raw ? migratePurchaseOrderDraft(JSON.parse(raw)) : null;
   } catch {
     return null;
   }

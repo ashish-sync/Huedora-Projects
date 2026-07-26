@@ -4,6 +4,7 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { api, apiUrl } from '../../shared/api.js';
+import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import {
@@ -184,7 +185,7 @@ export default function LogisticsInwardPage() {
     }));
   };
 
-  const productLabel = (p) => p?.model || p?.partNumber || p?.name || '';
+  const productLabel = productOptionLabel;
 
   const pickProduct = (productId) => {
     const p = products.find((x) => x._id === productId);
@@ -221,7 +222,7 @@ export default function LogisticsInwardPage() {
       return {
         ...f,
         productId: p._id,
-        productName: productLabel(p),
+        productName: productAssetName(p),
         programProject: p.programProject || '',
         productType: p.productType || f.productType,
         uomId: p.uomId || '',

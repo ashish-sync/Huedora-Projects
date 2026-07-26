@@ -1,5 +1,8 @@
 /** Shared catalog for Master One hub + Request One “Master One Request”. */
 import { emailError, phoneError } from '../../shared/validation.js';
+import { PRODUCT_TYPES } from '../../shared/productTypes.js';
+
+export { PRODUCT_TYPES };
 
 export const MASTER_MODULES = [
   { id: 'inventory', label: 'Inventory' },
@@ -8,22 +11,7 @@ export const MASTER_MODULES = [
   { id: 'camp', label: 'Camp One' },
 ];
 
-export const PRODUCT_TYPES = [
-  'Medical Device',
-  'Non-Medical Device',
-  'Peripheral Device',
-  'Accessory',
-  'Spare Part',
-  'Consumable',
-  'Document',
-  'Other',
-];
-export const PRODUCT_INVENTORY_TYPES = [
-  'Replacement Part for Asset',
-  'Accessory of Asset',
-  'Consumed by Device',
-  'Multi-use',
-];
+export const PRODUCT_INVENTORY_TYPES = ['Asset', 'Inventory'];
 export const GST_RATE_PRESETS = ['0', '5', '12', '18', '28'];
 export const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 export const DOCUMENT_TYPES = ['LEASE', 'TEMPORARY_OWNERSHIP', 'LETTER', 'OTHER'];
@@ -133,8 +121,6 @@ export const MASTER_ENTITIES = [
           'Contractual',
           'Freelancer',
           'Consultant',
-          'Service Provider',
-          'Individual',
           'Other',
         ],
       },
@@ -308,6 +294,9 @@ export function validateMasterPayload(entityId, payload = {}) {
     if (category === 'Resource' && !String(payload.resourceType || '').trim()) {
       return 'Resource Type is required for Resource contacts';
     }
+    if (category === 'Healthcare Worker' && !String(payload.resourceType || '').trim()) {
+      return 'Resource Type is required for Healthcare Worker contacts';
+    }
     if (category === 'Client' && !String(payload.organization || '').trim()) {
       return 'Organization Name is required for Client';
     }
@@ -334,7 +323,7 @@ export function emptyMasterPayload(entityId) {
     if (f.name === 'direction') out[f.name] = 'IN';
     else if (f.name === 'level') out[f.name] = 'Zone';
     else if (f.name === 'productType') out[f.name] = 'Medical Device';
-    else if (f.name === 'inventoryType') out[f.name] = 'Multi-use';
+    else if (f.name === 'inventoryType') out[f.name] = 'Asset';
     else if (f.name === 'partyType') out[f.name] = 'Supplier';
     else if (f.name === 'gstRate') out[f.name] = '18';
     else if (f.name === 'trackingKind') out[f.name] = 'Serial';

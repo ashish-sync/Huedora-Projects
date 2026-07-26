@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ASSIGNMENT_DECISIONS,
   ASSIGNMENT_REFUSAL_REASONS,
 } from '../constants/campLifecycle';
 import { contactToHcwFields, filterHcwContacts } from '../utils/campHcwContact';
+import { copyCampAssignmentDetails } from '../utils/campAssignmentCopy';
 
 function DecisionToggle({ value, onChange, disabled }) {
   return (
@@ -44,13 +45,24 @@ export function CampAssignmentStage({
   contactsLoading = false,
   disabled = false,
   campStatus = 'pending_review',
+  clientName = '',
 }) {
+  const [copyState, setCopyState] = useState('');
   const hcwOptions = useMemo(() => filterHcwContacts(hcwContacts), [hcwContacts]);
   const isTerminal = ['cancelled', 'rejected'].includes(campStatus);
   const isAssigned = form.assignmentDecision === 'assign'
     && (form.assignmentStatus === 'Assigned' || form.lifecycleStage === 'execution');
   const isRefused = form.assignmentDecision === 'refuse' && isTerminal;
   const fieldsDisabled = disabled || isTerminal;
+  const canCopyDetails =
+    form.assignmentDecision === 'assign' && Boolean(form.hcwName || form.hcwContactId);
+
+  async function handleCopyDetails() {
+    const didCopy = await copyCampAssignmentDetails(form, { clientName });
+    if (!didCopy) return;
+    setCopyState('copied');
+    window.setTimeout(() => setCopyState(''), 2000);
+  }
 
   if (campStatus !== 'approved' && !isTerminal) {
     return (
@@ -140,6 +152,20 @@ export function CampAssignmentStage({
             <p className="meta-text full">
               No healthcare workers found in Contact Directory. Add Resource or Healthcare Worker contacts first.
             </p>
+          ) : null}
+          {canCopyDetails ? (
+            <div className="camp-assignment-copy-wrap full">
+              <button
+                type="button"
+                className="btn btn-secondary btn-compact"
+                onClick={handleCopyDetails}
+              >
+                {copyState === 'copied' ? 'Copied' : 'Copy details'}
+              </button>
+              <p className="meta-text camp-assignment-copy-hint">
+                Copies client, clinic, contact, and HCW details for WhatsApp or email.
+              </p>
+            </div>
           ) : null}
         </div>
       )}

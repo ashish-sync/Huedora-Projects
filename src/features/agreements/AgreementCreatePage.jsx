@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
-import { CONTACT_CATEGORIES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey } from './contactPicklists.js';
+import { CONTACT_CATEGORIES, HCW_RESOURCE_TYPES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey, resourceTypesForCategory, isHcwStaffResourceType } from './contactPicklists.js';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { MODULE } from '../../shared/labels.js';
@@ -15,6 +15,7 @@ const emptyContact = {
   email: '',
   contactCategory: '',
   resourceType: '',
+  serviceProviderContactId: '',
   profession: '',
   organization: '',
   supplyCategory: '',
@@ -71,6 +72,15 @@ export default function AgreementCreatePage() {
   const { options: resourceTypeOptions } = usePicklistOptions(
     'contact.resourceType',
     RESOURCE_TYPES
+  );
+  const { options: hcwResourceTypeOptions } = usePicklistOptions(
+    'contact.hcwResourceType',
+    HCW_RESOURCE_TYPES
+  );
+  const isHcwContact = newContact.contactCategory === 'Healthcare Worker';
+  const categoryResourceTypes = resourceTypesForCategory(newContact.contactCategory);
+  const resourceTypeChoices = (isHcwContact ? hcwResourceTypeOptions : resourceTypeOptions).filter(
+    (o) => categoryResourceTypes.includes(o)
   );
   const { options: supplyCategoryOptions } = usePicklistOptions(
     'contact.supplyCategory',
@@ -151,6 +161,7 @@ export default function AgreementCreatePage() {
     if (!newContact.name || !(newContact.email || newContact.contact)) return false;
     if (!newContact.contactCategory) return false;
     if (newContact.contactCategory === 'Resource' && !newContact.resourceType) return false;
+    if (newContact.contactCategory === 'Healthcare Worker' && !newContact.resourceType) return false;
     if (newContact.contactCategory === 'Client' && !String(newContact.organization || '').trim()) {
       return false;
     }
@@ -476,7 +487,19 @@ export default function AgreementCreatePage() {
                       setNewContact({
                         ...newContact,
                         contactCategory,
-                        resourceType: contactCategory === 'Resource' ? newContact.resourceType : '',
+                        resourceType:
+                          contactCategory === 'Resource' &&
+                          RESOURCE_TYPES.includes(newContact.resourceType)
+                            ? newContact.resourceType
+                            : contactCategory === 'Healthcare Worker' &&
+                                HCW_RESOURCE_TYPES.includes(newContact.resourceType)
+                              ? newContact.resourceType
+                              : '',
+                        serviceProviderContactId:
+                          contactCategory === 'Healthcare Worker' &&
+                          isHcwStaffResourceType(newContact.resourceType)
+                            ? newContact.serviceProviderContactId
+                            : '',
                         organization: contactCategory === 'Client' ? newContact.organization : '',
                         supplyCategory:
                           contactCategory === 'Vendor' &&
@@ -497,16 +520,29 @@ export default function AgreementCreatePage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
-                {newContact.contactCategory === 'Resource' && (
+                {(newContact.contactCategory === 'Resource' ||
+                  newContact.contactCategory === 'Healthcare Worker') && (
                   <div className="field">
                     <label>Resource Type *</label>
                     <OtherAwareSelect
                       required
-                      picklistKey="contact.resourceType"
+                      picklistKey={
+                        newContact.contactCategory === 'Healthcare Worker'
+                          ? 'contact.hcwResourceType'
+                          : 'contact.resourceType'
+                      }
                       source="agreement-create"
-                      options={resourceTypeOptions}
+                      options={resourceTypeChoices}
                       value={newContact.resourceType}
-                      onChange={(e) => setNewContact({ ...newContact, resourceType: e.target.value })}
+                      onChange={(e) =>
+                        setNewContact({
+                          ...newContact,
+                          resourceType: e.target.value,
+                          serviceProviderContactId: isHcwStaffResourceType(e.target.value)
+                            ? newContact.serviceProviderContactId
+                            : '',
+                        })
+                      }
                     />
                   </div>
                 )}

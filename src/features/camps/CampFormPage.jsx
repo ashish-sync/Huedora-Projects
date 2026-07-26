@@ -599,6 +599,7 @@ export default function CampFormPage() {
         uploadBusy={uploadBusy}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        clientName={campMeta?.clientName || ''}
         onValidationError={setError}
         reachedLifecycleStage={reachedLifecycleStage}
       />

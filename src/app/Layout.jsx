@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import BrandLogo from '../components/BrandLogo.jsx';
 import { Link, useLocation } from 'react-router-dom';
 import { api } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
@@ -119,6 +119,7 @@ export default function Layout({ children }) {
       </a>
       <header className="app-header">
         <Link to="/" className="brand" aria-label="TYLO One home">
+          <BrandLogo size={36} />
           <strong className="brand-wordmark">
             TYLO <span>One</span>
           </strong>

@@ -119,6 +119,344 @@
   user-select: none;
 }
 
+.finance-generate-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finance-generate-picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.finance-doc-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.finance-doc-type-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-elevated);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.finance-doc-type-card:hover {
+  border-color: var(--brand, #0a5ac2);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--brand, #0a5ac2) 12%, transparent);
+}
+
+.finance-doc-type-card-prefix {
+  font-size: 0.85rem;
+  color: var(--brand, #0a5ac2);
+}
+
+.finance-doc-type-card-label {
+  font-size: 1.05rem;
+}
+
+.finance-doc-type-card-cta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Organisation master (shared across all commercial documents) */
+.finance-org-master-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.finance-org-master-intro {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+}
+
+.finance-org-master-heading {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+}
+
+.finance-org-master-lead {
+  margin: 0;
+  max-width: 56ch;
+  line-height: 1.5;
+}
+
+.finance-org-master-doc-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.finance-org-master-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand, #0a5ac2) 10%, transparent);
+  color: var(--brand, #0a5ac2);
+  border: 1px solid color-mix(in srgb, var(--brand, #0a5ac2) 20%, transparent);
+}
+
+.finance-org-master-form-wrap {
+  padding: 20px;
+}
+
+.finance-org-master-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.org-master-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.org-master-form-section-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.org-master-form-section-desc {
+  margin: 0 0 14px;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.org-master-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.org-master-form-span-2 {
+  grid-column: 1 / -1;
+}
+
+.org-master-field-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.org-master-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: var(--bg-elevated);
+}
+
+.org-master-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  padding: 14px;
+}
+
+.org-master-card--compact {
+  padding: 12px;
+}
+
+.org-master-card--empty {
+  background: color-mix(in srgb, var(--brand, #0a5ac2) 4%, var(--bg-elevated));
+}
+
+.org-master-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.org-master-card-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.org-master-card-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.org-master-card-tagline {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.org-master-card-edit,
+.org-master-card-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand, #0a5ac2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.org-master-card-edit:hover,
+.org-master-card-link:hover {
+  text-decoration: underline;
+}
+
+.org-master-card-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.org-master-card-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.org-master-card-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.org-master-read-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.org-master-read-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.org-master-read-value {
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.org-master-qr-preview {
+  margin-top: 10px;
+}
+
+.org-master-qr-preview img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.org-master-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  min-width: 0;
+}
+
+.org-master-banner--empty {
+  justify-content: space-between;
+}
+
+.org-master-banner-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.org-master-banner-name {
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.org-master-banner-sep {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.org-master-banner-hint {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.org-master-banner-link {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--brand, #0a5ac2);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.org-master-banner-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .org-master-form-grid,
+  .org-master-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1100px) {
   .finance-generate-split {
     grid-template-columns: 1fr;

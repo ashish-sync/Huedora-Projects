@@ -1,0 +1,380 @@
+/* Export + print — A4 landscape 297×210 mm, 9 mm margins */
+
+.ti-export-host {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 297mm;
+  background: #fff;
+  pointer-events: none;
+  z-index: -9999;
+  opacity: 0.001;
+  overflow: visible;
+}
+
+.tylo-invoice.tylo-invoice--export {
+  --ti-page-w: 297mm;
+  --ti-page-h: 210mm;
+  --ti-margin: 9mm;
+  --ti-ink: #0a0f1a;
+  --ti-muted: #334155;
+  --ti-line: rgba(15, 23, 42, 0.32);
+  --ti-line-soft: rgba(15, 23, 42, 0.2);
+  --ti-accent: #1e3a5f;
+  --ti-gap: 2.5mm;
+
+  width: var(--ti-page-w) !important;
+  height: var(--ti-page-h) !important;
+  min-height: var(--ti-page-h) !important;
+  max-height: var(--ti-page-h) !important;
+  padding: var(--ti-margin) !important;
+  gap: var(--ti-gap) !important;
+  font-size: 10.5px !important;
+  line-height: 1.4 !important;
+  color: var(--ti-ink) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  -webkit-font-smoothing: antialiased;
+  print-color-adjust: exact !important;
+  -webkit-print-color-adjust: exact !important;
+}
+
+.tylo-invoice--export .ti-header {
+  border-bottom: 1px solid var(--ti-line) !important;
+  padding-bottom: 2mm !important;
+}
+
+.tylo-invoice--export .ti-logo {
+  height: 15mm !important;
+  max-width: 38mm !important;
+}
+
+.tylo-invoice--export .ti-payment-qr-img {
+  width: 14mm !important;
+  height: 14mm !important;
+}
+
+.tylo-invoice--export .ti-doc-meta-label {
+  white-space: nowrap !important;
+}
+
+.tylo-invoice--export .ti-tagline {
+  font-size: 9.5px !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-company-name {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-company-address {
+  font-size: 10px !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-company-meta {
+  font-size: 9px !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-doc-badge {
+  font-size: 10.5px !important;
+  background: #1e3a5f !important;
+  color: #fff !important;
+}
+
+.tylo-invoice--export .ti-doc-meta-row {
+  font-size: 9.5px !important;
+}
+
+.tylo-invoice--export .ti-doc-meta-value {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-card {
+  background: #f8fafc !important;
+  border: 1px solid var(--ti-line) !important;
+}
+
+.tylo-invoice--export .ti-card-title {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: var(--ti-accent) !important;
+  background: #fff !important;
+  border-bottom: 1px solid var(--ti-line) !important;
+}
+
+.tylo-invoice--export .ti-field-label {
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-field-value,
+.tylo-invoice--export .ti-prefill {
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
+  color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-export-text {
+  display: inline-block;
+  width: 100%;
+  font-size: inherit !important;
+  font-weight: 500 !important;
+  color: var(--ti-ink) !important;
+  line-height: 1.4 !important;
+  word-break: break-word;
+}
+
+.tylo-invoice--export .ti-lines thead th {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: var(--ti-muted) !important;
+  border-bottom: 1.5px solid var(--ti-line) !important;
+}
+
+.tylo-invoice--export .ti-lines tbody td {
+  font-size: 10.5px !important;
+  color: var(--ti-ink) !important;
+  border-bottom: 1px solid var(--ti-line-soft) !important;
+}
+
+.tylo-invoice--export .ti-lines .ti-r {
+  font-weight: 500 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.tylo-invoice--export .ti-lines .ti-r--strong {
+  font-weight: 700 !important;
+}
+
+.tylo-invoice--export .ti-footer {
+  border-top: 1px solid var(--ti-line) !important;
+}
+
+.tylo-invoice--export .ti-words-label {
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-words-text {
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
+  color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-totals {
+  border: 1px solid var(--ti-line) !important;
+  background: #f8fafc !important;
+}
+
+.tylo-invoice--export .ti-totals-row {
+  font-size: 9.5px !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-totals-row span:last-child {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-totals-grand {
+  background: #1e3a5f !important;
+  color: #fff !important;
+}
+
+.tylo-invoice--export .ti-totals-grand-label {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+}
+
+.tylo-invoice--export .ti-totals-grand-value {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+}
+
+.tylo-invoice--export .ti-terms-title {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-terms ol {
+  font-size: 8.5px !important;
+  color: var(--ti-muted) !important;
+}
+
+.tylo-invoice--export .ti-signature-img {
+  max-width: 26mm !important;
+  max-height: 11mm !important;
+}
+
+.tylo-invoice--export .ti-signature-label {
+  font-size: 7.5px !important;
+}
+
+.tylo-invoice--export .ei-inline,
+.tylo-invoice--export .ti-add-line,
+.tylo-invoice--export .ti-add-term {
+  display: none !important;
+}
+
+@media print {
+  @page {
+    size: 297mm 210mm landscape;
+    margin: 9mm;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .ib-shell .ib-canvas,
+  .ib-shell .ib-canvas * {
+    visibility: visible !important;
+  }
+
+  .ib-toolbar,
+  .ib-panel,
+  .ib-zoom,
+  .ib-modal-backdrop,
+  .ib-toolbar-sub {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .ib-shell {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .ib-workspace {
+    display: block !important;
+  }
+
+  .ib-canvas {
+    display: block !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  .ib-page-stage {
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+  }
+
+  .ib-page-scaler {
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  .invoice-print-root {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  .tylo-invoice {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 192mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    gap: 2mm !important;
+    overflow: hidden !important;
+    --ti-line: rgba(15, 23, 42, 0.32);
+    --ti-line-soft: rgba(15, 23, 42, 0.2);
+  }
+
+  .tylo-invoice input,
+  .tylo-invoice textarea,
+  .tylo-invoice button {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .tylo-invoice input::placeholder,
+  .tylo-invoice textarea::placeholder {
+    color: transparent !important;
+  }
+
+  .ti-add-line,
+  .ti-add-term,
+  .ei-add-line-row {
+    display: none !important;
+  }
+
+  .po-document {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .po-document input,
+  .po-document textarea,
+  .po-document button {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ─── PO PDF export clone ─── */
+.po-document.po-document--export {
+  width: 297mm !important;
+  height: 210mm !important;
+  padding: 9mm !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  font-size: 9px !important;
+}
+
+.po-document--export .po-export-text,
+.po-document--export .ei-inline {
+  font-size: inherit;
+  line-height: 1.35;
+}

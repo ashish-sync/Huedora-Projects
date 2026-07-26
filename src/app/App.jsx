@@ -38,11 +38,12 @@ import AssetTypeStockPage from '../features/assets/AssetTypeStockPage.jsx';
 import MasterDataPage from '../features/masters/MasterDataPage.jsx';
 import FinanceLayout from '../features/finance/FinanceLayout.jsx';
 import FinanceOverviewPage from '../features/finance/FinanceOverviewPage.jsx';
-import FinanceExpensesPage from '../features/finance/FinanceExpensesPage.jsx';
-import FinanceInvoicesPage from '../features/finance/FinanceInvoicesPage.jsx';
-import FinanceGenerateInvoicePage from '../features/finance/FinanceGenerateInvoicePage.jsx';
-import FinanceProformaPage from '../features/finance/FinanceProformaPage.jsx';
-import FinancePurchaseOrdersPage from '../features/finance/FinancePurchaseOrdersPage.jsx';
+import InvoiceBuilderPage from '../features/finance/builder/InvoiceBuilderPage.jsx';
+import ProformaBuilderPage from '../features/finance/builder/ProformaBuilderPage.jsx';
+import PurchaseOrderBuilderPage from '../features/finance/builder/PurchaseOrderBuilderPage.jsx';
+import CreditNoteBuilderPage from '../features/finance/builder/CreditNoteBuilderPage.jsx';
+import FinanceCommercialMasterPage from '../features/finance/FinanceCommercialMasterPage.jsx';
+import FinanceGeneratePage from '../features/finance/FinanceGeneratePage.jsx';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -147,11 +148,18 @@ export default function App() {
                 </Route>
                 <Route path="/finance" element={<FinanceLayout />}>
                   <Route index element={<FinanceOverviewPage />} />
-                  <Route path="expenses" element={<FinanceExpensesPage />} />
-                  <Route path="invoices" element={<FinanceInvoicesPage />} />
-                  <Route path="proforma" element={<FinanceProformaPage />} />
-                  <Route path="purchase-orders" element={<FinancePurchaseOrdersPage />} />
-                  <Route path="generate-invoice" element={<FinanceGenerateInvoicePage />} />
+                  <Route path="build" element={<InvoiceBuilderPage />} />
+                  <Route path="build/proforma" element={<ProformaBuilderPage />} />
+                  <Route path="build/purchase-order" element={<PurchaseOrderBuilderPage />} />
+                  <Route path="build/credit-note" element={<CreditNoteBuilderPage />} />
+                  <Route path="master" element={<FinanceCommercialMasterPage />} />
+                  <Route path="generate" element={<FinanceGeneratePage />} />
+                  <Route path="generate/:docSlug" element={<FinanceGeneratePage />} />
+                  <Route path="expenses" element={<Navigate to="/finance" replace />} />
+                  <Route path="invoices" element={<Navigate to="/finance" replace />} />
+                  <Route path="proforma" element={<Navigate to="/finance" replace />} />
+                  <Route path="purchase-orders" element={<Navigate to="/finance" replace />} />
+                  <Route path="generate-invoice" element={<Navigate to="/finance/build" replace />} />
                 </Route>
                 <Route path="/asset-requests" element={<AssetRequestsPage />} />
                 <Route path="/movements" element={<Navigate to="/asset-requests" replace />} />

@@ -1,25 +1,28 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { MODULE, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 
+const EDITOR_ROUTES = ['/finance/build', '/finance/build/proforma', '/finance/build/purchase-order', '/finance/build/credit-note'];
+
 const NAV_ITEMS = [
   { to: '/finance', end: true, label: NAV.OVERVIEW },
-  { to: '/finance/expenses', end: false, label: NAV.EXPENSES },
-  { to: '/finance/invoices', end: false, label: NAV.INVOICES },
-  { to: '/finance/proforma', end: false, label: NAV.PROFORMA },
-  { to: '/finance/purchase-orders', end: false, label: NAV.PURCHASE_ORDERS },
-  { to: '/finance/generate-invoice', end: false, label: NAV.GENERATE_INVOICE },
+  { to: '/finance/build', end: true, label: 'Invoice Builder' },
+  { to: '/finance/master', end: true, label: NAV.ORG_MASTER },
 ];
 
+const EDITOR_ROUTE = /^\/finance\/build(\/[\w-]+)?$/;
+
 export default function FinanceLayout() {
+  const { pathname } = useLocation();
+  const isEditor = EDITOR_ROUTE.test(pathname);
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
   const allowed = can('finance:read') || canWrite;
 
   const navItems = NAV_ITEMS.filter((item) => {
     if (canWrite) return true;
-    return item.to !== '/finance/generate-invoice';
+    return !EDITOR_ROUTES.includes(item.to);
   });
 
   if (!allowed) {
@@ -33,12 +36,20 @@ export default function FinanceLayout() {
     );
   }
 
+  if (isEditor) {
+    return (
+      <div className="finance-shell finance-shell--editor">
+        <Outlet />
+      </div>
+    );
+  }
+
   return (
     <div className="finance-shell logistics-shell">
       <PageShell
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.FINANCE }]}
         title={MODULE.FINANCE}
-        description="Track expenses, vendor invoices, proforma, purchase orders, and client billing."
+        description="Create and manage commercial documents."
       >
         <nav className="logistics-nav" aria-label={`${MODULE.FINANCE} sections`}>
           {navItems.map((item) => (

@@ -16,6 +16,13 @@ import './styles/components/forms.css';
 import './styles/components/date-input.css';
 import './styles/patches/enterprise-polish.css';
 import './styles/design-system.css';
+import './features/finance/builder/builder.css';
+import './features/finance/builder/export-invoice.css';
+import './features/finance/invoiceGenerator/tylo-invoice-template.css';
+import './features/finance/documentGenerator/inline-edit.css';
+import { applyFinanceLocalResetIfNeeded } from './features/finance/clearFinanceLocalData.js';
+
+applyFinanceLocalResetIfNeeded();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

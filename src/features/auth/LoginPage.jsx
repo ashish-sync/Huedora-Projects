@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import BrandLogo from '../../components/BrandLogo.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
@@ -137,6 +138,7 @@ export default function LoginPage() {
     <div className="login-page">
       <aside className="login-hero">
         <div className="login-hero-top">
+          <BrandLogo className="login-hero-logo" size={72} />
           <p className="brand-wordmark brand-wordmark--hero">
             TYLO <span>One</span>
           </p>

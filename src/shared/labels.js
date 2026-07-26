@@ -37,7 +37,8 @@ export const NAV = {
   INVOICES: 'Invoices',
   PROFORMA: 'Proforma',
   PURCHASE_ORDERS: 'Purchase Orders',
-  GENERATE_INVOICE: 'Generate Invoice',
+  GENERATE: 'Generate',
+  ORG_MASTER: 'Organisation',
   CHARGESHEET: 'Chargesheet',
   PAYOUT: 'Payout',
   CAMP_HOME: 'Home',
@@ -57,7 +58,7 @@ export const MODULE_BLURB = {
     'Repair, maintenance, goods issue, training, reimbursement, hiring, and master data requests.',
   LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
   INVENTORY_LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
-  FINANCE: 'Expenses, proforma, invoices, and client billing.',
+  FINANCE: 'Expenses, invoices, purchase orders, proforma, and credit notes.',
   MASTER_DATA: 'Shared reference data for assets, inventory, movements, and documents.',
   DASHBOARD: 'Review cross-module activity by date range.',
 };

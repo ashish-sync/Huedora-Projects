@@ -1,0 +1,143 @@
+/* Zoho / Tally-style inline editing on the document canvas */
+
+.ei-inline {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  border-radius: 3px;
+  border-bottom: 1px dashed transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.ei-inline:hover,
+.ei-inline:focus {
+  background: rgba(22, 58, 112, 0.06);
+  border-bottom-color: rgba(22, 58, 112, 0.35);
+  outline: none;
+}
+
+.ei-inline::placeholder {
+  color: #64748b;
+  font-style: normal;
+  font-weight: 400;
+  opacity: 1;
+}
+
+.ei-inline--mono {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.95em;
+}
+
+.ei-inline--area {
+  resize: vertical;
+  min-height: 2.2em;
+  line-height: 1.35;
+}
+
+.ei-inline--cell {
+  text-align: inherit;
+  font-size: inherit;
+  padding: 2px 4px;
+  min-width: 0;
+}
+
+.ei-inline--right {
+  text-align: right;
+}
+
+.ei-inline--center {
+  text-align: center;
+}
+
+.ei-add-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 3px 8px;
+  font-size: 7px;
+  font-weight: 600;
+  color: #163a70;
+  background: rgba(22, 58, 112, 0.06);
+  border: 1px dashed rgba(22, 58, 112, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.ei-add-chip:hover {
+  background: rgba(22, 58, 112, 0.1);
+  border-color: rgba(22, 58, 112, 0.4);
+}
+
+.ei-add-chip-icon {
+  font-size: 9px;
+  line-height: 1;
+}
+
+.ei-add-line-row td {
+  padding: 6px 8px !important;
+  background: rgba(22, 58, 112, 0.03);
+}
+
+.ei-add-line-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #4f46e5;
+  background: #fff;
+  border: 1px dashed #635bff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ei-add-line-btn:hover {
+  background: rgba(22, 58, 112, 0.06);
+}
+
+.ei-tax-toggle {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 2px;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.ei-tax-toggle button {
+  padding: 3px 8px;
+  font-size: 6.5px;
+  font-weight: 600;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.ei-tax-toggle button.is-active {
+  background: #163a70;
+  color: #fff;
+}
+
+.invoice-print-root .ei-add-chip,
+.invoice-print-root .ei-add-line-btn,
+.invoice-print-root .ei-add-line-row,
+.invoice-print-root .ei-tax-toggle {
+  display: none !important;
+}
+
+@media print {
+  .ei-inline {
+    border: none !important;
+    background: transparent !important;
+  }
+}

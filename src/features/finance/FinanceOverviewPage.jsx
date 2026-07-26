@@ -1,127 +1,77 @@
-import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../shared/api.js';
-import { MODULE, NAV } from '../../shared/labels.js';
+import { useAuth } from '../../shared/auth.jsx';
+import FinanceDocumentsList from './FinanceDocumentsList.jsx';
 
-function formatMoney(n) {
-  const num = Number(n);
-  if (!Number.isFinite(num)) return '—';
-  return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-const QUICK_SECTIONS = [
+const BUILDERS = [
   {
-    title: 'Accounts payable',
-    items: [
-      {
-        to: '/finance/expenses',
-        name: NAV.EXPENSES,
-        meta: 'Record and approve operational spend',
-      },
-      {
-        to: '/finance/invoices',
-        name: NAV.INVOICES,
-        meta: 'Vendor bills and payment status',
-      },
-    ],
+    to: '/finance/build',
+    label: 'Tax Invoice',
+    code: 'INV',
+    desc: 'GST invoice',
   },
   {
-    title: 'Client billing',
-    items: [
-      {
-        to: '/finance/proforma',
-        name: NAV.PROFORMA,
-        meta: 'Create, upload, and download client proforma invoices',
-      },
-      {
-        to: '/finance/generate-invoice',
-        name: NAV.GENERATE_INVOICE,
-        meta: 'Create client invoices from camp chargesheets',
-      },
-    ],
+    to: '/finance/build/proforma',
+    label: 'Proforma',
+    code: 'PRO',
+    desc: 'Quote / estimate',
   },
   {
-    title: 'Procurement',
-    items: [
-      {
-        to: '/finance/purchase-orders',
-        name: NAV.PURCHASE_ORDERS,
-        meta: 'Create, issue, and download vendor purchase orders',
-      },
-    ],
+    to: '/finance/build/purchase-order',
+    label: 'Purchase Order',
+    code: 'PO',
+    desc: 'Vendor PO',
+  },
+  {
+    to: '/finance/build/credit-note',
+    label: 'Credit Note',
+    code: 'CN',
+    desc: 'GST credit',
   },
 ];
 
 export default function FinanceOverviewPage() {
-  const [summary, setSummary] = useState(null);
-  const [error, setError] = useState('');
-
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      const res = await api('/finance/summary');
-      setSummary(res.data || null);
-    } catch (e) {
-      setError(e.message);
-      setSummary(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const kpis = [
-    { label: 'Expenses', value: summary?.expenseCount ?? '—' },
-    { label: 'Expense total', value: formatMoney(summary?.expenseTotal) },
-    { label: 'Open expenses', value: summary?.expenseOpen ?? '—' },
-    { label: 'Invoices', value: summary?.invoiceCount ?? '—' },
-    { label: 'Invoice total', value: formatMoney(summary?.invoiceTotal) },
-    { label: 'Open invoices', value: summary?.invoiceOpen ?? '—' },
-    { label: 'Proforma', value: summary?.proformaCount ?? '—' },
-    { label: 'Proforma total', value: formatMoney(summary?.proformaTotal) },
-  ];
+  const { can } = useAuth();
+  const canWrite = can('finance:write') || can('*');
 
   return (
-    <div className="finance-overview">
-      <p className="muted" style={{ marginTop: 0 }}>
-        {MODULE.FINANCE} summary across expenses, invoices, proforma, and purchase orders.
-      </p>
-
-      {error && (
-        <div className="am-banner is-error" role="status">
-          {error}
-        </div>
-      )}
-
-      <div
-        className="module-dash-kpis"
-        data-count={kpis.length}
-        role="group"
-        aria-label="Finance overview"
-      >
-        {kpis.map((k) => (
-          <div key={k.label} className="module-kpi">
-            <strong>{k.value}</strong>
-            <span title={k.label}>{k.label}</span>
+    <div className="finance-hub">
+      <section className="finance-hub-panel card">
+        <header className="finance-hub-header">
+          <div className="finance-hub-header-text">
+            <h2 className="finance-hub-title">Finance</h2>
+            <p className="finance-hub-lead">
+              Create and manage GST invoices, proformas, purchase orders, and credit notes.
+            </p>
           </div>
-        ))}
-      </div>
+          <Link to="/finance/master" className="btn secondary btn-compact finance-hub-org-link">
+            Organisation master
+          </Link>
+        </header>
 
-      {QUICK_SECTIONS.map((section) => (
-        <section key={section.title} className="asset-type-grid" aria-label={section.title}>
-          <h3 className="asset-type-grid-title">{section.title}</h3>
-          <div className="asset-type-cards">
-            {section.items.map((item) => (
-              <Link key={item.to} to={item.to} className="asset-type-card">
-                <strong className="asset-type-card-name">{item.name}</strong>
-                <span className="asset-type-card-meta">{item.meta}</span>
-                <span className="asset-type-card-cta">Open →</span>
-              </Link>
-            ))}
+        {canWrite ? (
+          <div className="finance-hub-create">
+            <p className="finance-hub-section-label">Create document</p>
+            <div className="finance-hub-tiles">
+              {BUILDERS.map((item) => (
+                <Link key={item.to} to={item.to} className="finance-hub-tile">
+                  <span className="finance-hub-tile-code" aria-hidden="true">
+                    {item.code}
+                  </span>
+                  <span className="finance-hub-tile-body">
+                    <span className="finance-hub-tile-label">{item.label}</span>
+                    <span className="finance-hub-tile-desc">{item.desc}</span>
+                  </span>
+                  <span className="finance-hub-tile-arrow" aria-hidden="true">
+                    →
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
-        </section>
-      ))}
+        ) : null}
+
+        <FinanceDocumentsList embedded showCreateLink={!canWrite} />
+      </section>
     </div>
   );
 }

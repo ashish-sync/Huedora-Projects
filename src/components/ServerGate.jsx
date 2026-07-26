@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import BrandLogo from './BrandLogo.jsx';
 import { checkServerLive } from '../shared/api.js';
 
 /**
@@ -38,13 +38,7 @@ export default function ServerGate({ children }) {
   return (
     <div className="boot-gate" role="status" aria-live="polite" aria-busy={status === 'loading'}>
       <div className="boot-gate-card">
-        <img
-          className="boot-gate-logo"
-          src="/tylo-one-logo.png"
-          alt="TYLO One"
-          width="88"
-          height="88"
-        />
+        <BrandLogo className="boot-gate-logo" size={88} />
         <p className="brand-wordmark brand-wordmark--gate">
           TYLO <span>One</span>
         </p>

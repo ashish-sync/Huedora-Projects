@@ -134,7 +134,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       description={
         embedded
           ? undefined
-          : 'One row per PIN code with State, Zone, and District. Bulk import uses PIN Code, State, and District columns.'
+          : 'One row per PIN code with State, Zone, and District. Download Sample Format for columns: PIN Code, State, Zone, District.'
       }
       actions={
         embedded ? null : (
@@ -239,7 +239,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         </table>
         {!rows.length ? (
           <p className="muted" style={{ padding: '1rem' }}>
-            No PIN codes yet. Add mappings below or import an Excel file with PIN Code, State, and District columns.
+            No PIN codes yet. Add mappings below or import Excel with columns: PIN Code, State, Zone, District.
           </p>
         ) : null}
       </div>

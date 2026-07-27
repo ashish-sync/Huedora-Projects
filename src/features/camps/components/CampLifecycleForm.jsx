@@ -150,6 +150,14 @@ export function CampLifecycleForm({
           Doctor Code
           <input value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
         </label>
+        <label>
+          Doctor Speciality
+          <input value={form.speciality} onChange={(e) => updateField('speciality', e.target.value)} disabled={disabled} />
+        </label>
+        <label>
+          Clinic / Hospital Name
+          <input value={form.hospitalName} onChange={(e) => updateField('hospitalName', e.target.value)} disabled={disabled} />
+        </label>
         <label className="full">
           Camp Address
           <CampAddressAutocomplete
@@ -207,6 +215,10 @@ export function CampLifecycleForm({
         <label>
           Contact Person Number
           <input value={form.fieldPersonPhone} onChange={(e) => updateField('fieldPersonPhone', e.target.value)} disabled={disabled} required />
+        </label>
+        <label className="full">
+          Remarks
+          <textarea value={form.remarks} onChange={(e) => updateField('remarks', e.target.value)} disabled={disabled} rows={2} />
         </label>
       </div>
     );

@@ -190,9 +190,9 @@ export const MASTER_ENTITIES = [
     embedded: 'templates',
     docxUpload: true,
     fields: [
-      { name: 'name', label: 'Template name', required: true },
+      { name: 'name', label: 'Name of the template', required: true },
       { name: 'documentType', label: 'Document type', required: true, type: 'select', options: DOCUMENT_TYPES },
-      { name: 'signingType', label: 'Signing type', required: true, type: 'select', options: SIGNING_TYPES },
+      { name: 'signingType', label: 'Signing', required: true, type: 'select', options: SIGNING_TYPES },
     ],
   },
   {
@@ -203,8 +203,8 @@ export const MASTER_ENTITIES = [
     embedded: 'signatures',
     signatureTyped: true,
     fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'roleLabel', label: 'Role', required: true, type: 'select', options: SIGNATURE_ROLES },
+      { name: 'name', label: 'Person name', required: true },
+      { name: 'roleLabel', label: 'Role / designation', required: true, type: 'select', options: SIGNATURE_ROLES },
       { name: 'typedName', label: 'Typed signature', required: true },
       { name: 'email', label: 'Email' },
       { name: 'department', label: 'Department' },
@@ -218,7 +218,9 @@ export const MASTER_ENTITIES = [
     apiPath: '/geo/pin-codes',
     embedded: 'pin-codes',
     fields: [
-      { name: 'pinCode', label: 'PIN code', required: true },
+      { name: 'pinCode', label: 'PIN Code', required: true },
+      { name: 'state', label: 'State' },
+      { name: 'city', label: 'City' },
       { name: 'locality', label: 'Locality' },
       { name: 'notes', label: 'Notes', type: 'textarea' },
     ],

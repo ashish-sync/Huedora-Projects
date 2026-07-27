@@ -1,4 +1,6 @@
-/** Excel export/sample/import endpoints for Master One entities. */
+/** Excel export/sample/import endpoints for Master One entities.
+ *  Sample column headers are defined server-side in *.excel.js modules and must match manual form labels.
+ */
 export const MASTER_EXCEL = {
   parties: {
     exportPath: '/logistics/parties/export',

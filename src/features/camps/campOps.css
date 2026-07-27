@@ -2967,6 +2967,50 @@
   color: #64748b;
 }
 
+.camp-ops-root .paste-input-mode-tabs {
+  margin: 0 0 16px;
+}
+
+.camp-ops-root .paste-file-upload-zone {
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px dashed var(--border, #d7dce5);
+  border-radius: 8px;
+}
+
+.camp-ops-root .paste-column-mapper {
+  margin-top: 16px;
+}
+
+.camp-ops-root .paste-column-mapper-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.camp-ops-root .paste-column-mapper-table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.camp-ops-root .paste-column-mapper-table th,
+.camp-ops-root .paste-column-mapper-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.camp-ops-root .paste-map-status--mapped {
+  color: #15803d;
+}
+
+.camp-ops-root .paste-map-status--unmapped {
+  color: #b45309;
+}
+
 .camp-ops-root .form-actions {
   display: flex;
   gap: 12px;

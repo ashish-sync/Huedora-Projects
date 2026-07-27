@@ -157,6 +157,21 @@ export const communicationsApi = {
   restoreEmailMessage: (id) => post(`${BASE}/communications/email/messages/${id}/restore`),
   extractManualPaste: (payload) => post(`${BASE}/communications/paste/extract`, payload),
   processManualPaste: (payload) => post(`${BASE}/communications/paste/process`, payload),
+  parsePasteFile: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return postForm(`${BASE}/communications/paste/parse-file`, formData);
+  },
+  extractPasteFile: (file, payload = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (payload.clientName) formData.append('clientName', payload.clientName);
+    if (payload.campaignType) formData.append('campaignType', payload.campaignType);
+    if (payload.campaignName) formData.append('campaignName', payload.campaignName);
+    if (payload.mapping) formData.append('mapping', JSON.stringify(payload.mapping));
+    return postForm(`${BASE}/communications/paste/extract-file`, formData);
+  },
+  extractPasteRows: (payload) => post(`${BASE}/communications/paste/extract-rows`, payload),
 };
 
 export const userApi = {

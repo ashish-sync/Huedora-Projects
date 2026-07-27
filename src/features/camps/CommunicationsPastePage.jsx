@@ -5,6 +5,7 @@ import { EmailExtractionPanel } from './components/EmailExtractionPanel';
 import { CampCreatedBanner, extractCreatedCamps } from './components/CampCreatedBanner';
 import { PasteWorkflowStepper } from './components/PasteWorkflowStepper';
 import { PasteContextFields } from './components/PasteContextFields';
+import PasteColumnMapper from './components/PasteColumnMapper';
 import { IS_DEMO_SERVER } from './constants/roles';
 import {
   parseClientMasterDivisions,
@@ -146,6 +147,10 @@ export default function CommunicationsPastePage() {
   const [clientName, setClientName] = useState(storedDraft?.clientName || '');
   const [campaignType, setCampaignType] = useState(storedDraft?.campaignType || '');
   const [campaignName, setCampaignName] = useState(storedDraft?.campaignName || '');
+  const [inputMode, setInputMode] = useState('text');
+  const [fileParse, setFileParse] = useState(null);
+  const [fileMapping, setFileMapping] = useState({});
+  const [fileUploading, setFileUploading] = useState(false);
   const autoSaveTimerRef = useRef(null);
 
   const pasteDefaults = useMemo(() => ({
@@ -186,7 +191,8 @@ export default function CommunicationsPastePage() {
 
   const hasPasteContext = Object.keys(contextErrors).length === 0;
 
-  const hasPasteText = Boolean(pasteText.trim());
+  const hasPasteText = inputMode === 'text' && Boolean(pasteText.trim());
+  const hasFileReady = inputMode === 'file' && Boolean(fileParse?.rows?.length);
   const isEditMode = extractionMode === 'edit';
   const showReadablePaste = hasPasteText && (isEditMode || hasExtracted);
   const actionLoading = extracting || processing;
@@ -363,6 +369,16 @@ export default function CommunicationsPastePage() {
     setPreview(null);
     setHasExtracted(false);
     setSavedPreviewSnapshot('');
+    setFileParse(null);
+    setFileMapping({});
+  }
+
+  function handleInputModeChange(mode) {
+    if (mode === inputMode) return;
+    invalidateExtraction();
+    setPasteText('');
+    setInputMode(mode);
+    setError('');
   }
 
   function handleClientChange(nextClientId) {
@@ -476,31 +492,67 @@ export default function CommunicationsPastePage() {
   }
 
   async function handleExtract({ isReExtract = false } = {}) {
-    if (!hasPasteText || !hasPasteContext) return;
+    if (!hasPasteContext) return;
+    if (inputMode === 'text' && !hasPasteText) return;
+    if (inputMode === 'file' && !hasFileReady) return;
     if (hasExtracted && !IS_DEMO_SERVER) return;
 
     setExtracting(true);
     setError('');
     setSuccess('');
     try {
-      const { data } = await communicationsApi.extractManualPaste({
-        text: pasteText,
-        ...pasteDefaults,
-      });
-      setPreview(data.data);
+      let previewData;
+      if (inputMode === 'file') {
+        const response = await communicationsApi.extractPasteRows({
+          rows: fileParse.rows,
+          headers: fileParse.headers,
+          mapping: fileMapping,
+          fileName: fileParse.fileName,
+          sheetName: fileParse.sheetName,
+          ...pasteDefaults,
+        });
+        previewData = response.data?.data || response.data;
+      } else {
+        const response = await communicationsApi.extractManualPaste({
+          text: pasteText,
+          ...pasteDefaults,
+        });
+        previewData = response.data?.data || response.data;
+      }
+      setPreview(previewData);
       setHasExtracted(true);
-      setSavedPreviewSnapshot(JSON.stringify(data.data));
-      writeStoredDraft(buildDraftPayload({ preview: data.data, hasExtracted: true }));
+      setSavedPreviewSnapshot(JSON.stringify(previewData));
+      writeStoredDraft(buildDraftPayload({ preview: previewData, hasExtracted: true }));
       setConfirmAction(null);
       setSuccess(
         isReExtract
           ? 'Preview updated from pasted content.'
-          : 'Extraction complete — review parsed fields on the right.',
+          : inputMode === 'file'
+            ? 'File imported — review parsed camp rows on the right.'
+            : 'Extraction complete — review parsed fields on the right.',
       );
     } catch (err) {
-      setError(err?.message || 'Failed to extract pasted content');
+      setError(err?.message || 'Failed to extract camp data');
     } finally {
       setExtracting(false);
+    }
+  }
+
+  async function handleFileUpload(file) {
+    if (!file || !hasPasteContext) return;
+    setFileUploading(true);
+    setError('');
+    invalidateExtraction();
+    try {
+      const { data } = await communicationsApi.parsePasteFile(file);
+      const parsed = data.data || data;
+      setFileParse(parsed);
+      setFileMapping(parsed.mapping || {});
+      setSuccess(`Loaded ${parsed.totalRows || 0} row(s) from ${parsed.fileName || file.name}.`);
+    } catch (err) {
+      setError(err?.message || 'Failed to parse Excel/CSV file');
+    } finally {
+      setFileUploading(false);
     }
   }
 
@@ -570,9 +622,9 @@ export default function CommunicationsPastePage() {
   }
 
   const extractDisabled = actionLoading
-    || !hasPasteText
     || !hasPasteContext
     || isEditMode
+    || (inputMode === 'text' ? !hasPasteText : !hasFileReady)
     || (hasExtracted && !IS_DEMO_SERVER);
 
   const primaryLabel = !hasExtracted
@@ -648,6 +700,25 @@ export default function CommunicationsPastePage() {
           onCampNameChange={handleCampNameChange}
         />
 
+        <div className="paste-input-mode-tabs page-tabs">
+          <button
+            type="button"
+            className={`page-tab${inputMode === 'text' ? ' is-active' : ''}`}
+            onClick={() => handleInputModeChange('text')}
+            disabled={actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
+          >
+            Text paste
+          </button>
+          <button
+            type="button"
+            className={`page-tab${inputMode === 'file' ? ' is-active' : ''}`}
+            onClick={() => handleInputModeChange('file')}
+            disabled={actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
+          >
+            Excel / CSV
+          </button>
+        </div>
+
         <div className="paste-workflow-grid email-detail-layout">
           <section className="paste-workflow-column email-detail-panel email-detail-panel-message">
             <header className="paste-column-header">
@@ -671,40 +742,82 @@ export default function CommunicationsPastePage() {
 
             <ContextBanner tone={!hasPasteContext ? 'warning' : pasteStatusTone === 'ready' ? 'ready' : 'neutral'}>
               {!hasPasteContext && 'Complete camp context above before pasting.'}
-              {hasPasteContext && !hasPasteText && 'Paste camp details below.'}
-              {hasPasteContext && hasPasteText && !hasExtracted && `${pasteMeta.charCount} characters · ready to extract`}
+              {hasPasteContext && inputMode === 'text' && !hasPasteText && 'Paste camp details below.'}
+              {hasPasteContext && inputMode === 'text' && hasPasteText && !hasExtracted && `${pasteMeta.charCount} characters · ready to extract`}
+              {hasPasteContext && inputMode === 'file' && !hasFileReady && 'Upload an Excel or CSV file below.'}
+              {hasPasteContext && inputMode === 'file' && hasFileReady && !hasExtracted && `${fileParse.totalRows} row(s) loaded · map columns then extract`}
               {hasPasteContext && hasExtracted && 'Content locked after extract. Use Clear to start over.'}
             </ContextBanner>
 
-            <EmailPickBuffer
-              activeField={activeField}
-              pendingSelection={pendingSelection}
-              onApply={handleApplyPick}
-              onCancel={handleCancelPick}
-            />
+            {inputMode === 'file' ? (
+              <div className="paste-file-upload-zone">
+                <p><strong>Upload camp file</strong></p>
+                <p className="import-muted">Supported: .xlsx, .xls, .csv</p>
+                <label className="btn btn-secondary">
+                  Choose file
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    disabled={!hasPasteContext || actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
+                    onChange={(e) => {
+                      handleFileUpload(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {fileUploading ? <p className="muted">Parsing file…</p> : null}
+                {fileParse ? (
+                  <p className="muted">
+                    {fileParse.fileName} · {fileParse.totalRows} rows · sheet {fileParse.sheetName}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
-            <div
-              className={`communications-paste-editor${showReadablePaste ? ' is-pick-mode' : ''}${!hasPasteText ? ' is-empty' : ''}`}
-              onMouseUp={handleMouseUp}
-            >
-              {showReadablePaste ? (
-                <pre className="communications-paste-pre">{pasteText}</pre>
-              ) : (
-                <textarea
-                  className="communications-paste-textarea"
-                  value={pasteText}
-                  onChange={(e) => setPasteText(e.target.value)}
-                  disabled={(hasExtracted && !IS_DEMO_SERVER) || !hasPasteContext}
-                  placeholder={
-                    hasPasteContext
-                      ? 'DATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'
-                      : 'Select client, division / therapy, and method first'
-                  }
-                  spellCheck={false}
-                  aria-label="Camp details to paste"
+            {inputMode === 'file' && fileParse ? (
+              <PasteColumnMapper
+                fields={fileParse.fields || []}
+                headers={fileParse.headers || []}
+                mapping={fileMapping}
+                columnResults={fileParse.columnResults || []}
+                disabled={actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
+                onMappingChange={setFileMapping}
+              />
+            ) : null}
+
+            {inputMode === 'text' ? (
+              <>
+                <EmailPickBuffer
+                  activeField={activeField}
+                  pendingSelection={pendingSelection}
+                  onApply={handleApplyPick}
+                  onCancel={handleCancelPick}
                 />
-              )}
-            </div>
+
+                <div
+                  className={`communications-paste-editor${showReadablePaste ? ' is-pick-mode' : ''}${!hasPasteText ? ' is-empty' : ''}`}
+                  onMouseUp={handleMouseUp}
+                >
+                  {showReadablePaste ? (
+                    <pre className="communications-paste-pre">{pasteText}</pre>
+                  ) : (
+                    <textarea
+                      className="communications-paste-textarea"
+                      value={pasteText}
+                      onChange={(e) => setPasteText(e.target.value)}
+                      disabled={(hasExtracted && !IS_DEMO_SERVER) || !hasPasteContext}
+                      placeholder={
+                        hasPasteContext
+                          ? 'DATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'
+                          : 'Select client, division / therapy, and method first'
+                      }
+                      spellCheck={false}
+                      aria-label="Camp details to paste"
+                    />
+                  )}
+                </div>
+              </>
+            ) : null}
           </section>
 
           <section className="paste-workflow-column email-detail-panel email-detail-panel-extraction">

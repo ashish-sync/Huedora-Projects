@@ -36,7 +36,7 @@ const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One
 const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for this client and division.';
 
 const formStringFields = [
-  'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state',
+  'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state', 'district',
   'pincode', 'startTime', 'endTime', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
   'hq', 'zone', 'hcwCategory', 'hcwName', 'hcwContact', 'hcwContactId', 'cancellationReason', 'chargeableStatus',
   'inTime', 'outTime', 'attire', 'labCoat', 'transactionId', 'paymentRemark',

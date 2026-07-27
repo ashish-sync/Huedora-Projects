@@ -44,7 +44,7 @@ export function validateRequestStageForm(form = {}) {
   if (!hasText(form.doctorCode)) errors.push('Doctor code is required');
   if (!hasText(form.campAddress)) errors.push('Camp address is required');
   if (!hasText(form.state)) errors.push('State is required');
-  if (!hasText(form.city)) errors.push('City is required');
+  if (!hasText(form.district)) errors.push('District is required');
   if (!/^\d{6}$/.test(String(form.pincode || '').trim())) errors.push('Valid 6-digit pin code is required');
   if (!hasText(form.hq)) errors.push('HQ is required');
   const stateName = String(form.state || '').trim();

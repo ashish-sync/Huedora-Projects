@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { resolveZoneForState } from '../../constants/geoZones.js';
-import AdaptiveSelect from './AdaptiveSelect.jsx';
 
 const empty = {
   pinCode: '',
-  city: '',
   state: '',
   zone: '',
-  cityId: '',
+  district: '',
   stateId: '',
   districtId: '',
-  district: '',
 };
 
 function enrichWithZone(loc) {
@@ -20,55 +17,23 @@ function enrichWithZone(loc) {
 }
 
 /**
- * PIN-first location control: enter 6-digit PIN → city, state, and zone auto-fill from master.
+ * PIN-first location control: enter 6-digit PIN → state, zone, and district auto-fill from master.
  */
 export default function PinLocationLookup({
   value = empty,
   onChange,
   required = false,
   disabled = false,
-  allowCreateMapping = false,
   labels = {},
 }) {
   const v = { ...empty, ...value };
   const [lookupState, setLookupState] = useState('idle');
   const [lookupError, setLookupError] = useState('');
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
   const lastLookupPin = useRef('');
 
   const emit = (patch) => {
     onChange?.(enrichWithZone({ ...v, ...patch }));
   };
-
-  useEffect(() => {
-    if (!allowCreateMapping) return undefined;
-    let cancelled = false;
-    api('/geo/states')
-      .then((r) => {
-        if (!cancelled) setStates(r.data || []);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [allowCreateMapping]);
-
-  useEffect(() => {
-    if (!allowCreateMapping || !v.stateId) {
-      setCities([]);
-      return undefined;
-    }
-    let cancelled = false;
-    api(`/geo/cities?stateId=${encodeURIComponent(v.stateId)}`)
-      .then((r) => {
-        if (!cancelled) setCities(r.data || []);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [allowCreateMapping, v.stateId]);
 
   useEffect(() => {
     const pin = String(v.pinCode || '').replace(/\D+/g, '');
@@ -81,7 +46,7 @@ export default function PinLocationLookup({
       return undefined;
     }
 
-    if (lastLookupPin.current === pin && v.city && v.state) {
+    if (lastLookupPin.current === pin && v.state && v.district) {
       return undefined;
     }
 
@@ -96,29 +61,23 @@ export default function PinLocationLookup({
           lastLookupPin.current = pin;
           if (!resolved) {
             setLookupState('not-found');
-            if (!allowCreateMapping) {
-              emit({
-                city: '',
-                state: '',
-                zone: '',
-                cityId: '',
-                stateId: '',
-                districtId: '',
-                district: '',
-              });
-            }
+            emit({
+              state: '',
+              zone: '',
+              district: '',
+              stateId: '',
+              districtId: '',
+            });
             return;
           }
           setLookupState('found');
           emit({
             pinCode: pin,
-            city: resolved.cityName || '',
             state: resolved.stateName || '',
+            district: resolved.districtName || '',
             zone: resolved.zone || resolveZoneForState(resolved.stateName),
-            cityId: resolved.cityId || '',
             stateId: resolved.stateId || '',
             districtId: resolved.districtId || '',
-            district: resolved.districtName || '',
           });
         })
         .catch((e) => {
@@ -133,7 +92,7 @@ export default function PinLocationLookup({
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lookup on PIN change only
-  }, [v.pinCode, allowCreateMapping]);
+  }, [v.pinCode]);
 
   const onPinChange = (raw) => {
     const pinCode = String(raw).replace(/\D+/g, '').slice(0, 6);
@@ -141,42 +100,16 @@ export default function PinLocationLookup({
     if (pinCode.length < 6) {
       emit({
         pinCode,
-        city: '',
         state: '',
         zone: '',
-        cityId: '',
+        district: '',
         stateId: '',
         districtId: '',
-        district: '',
       });
     } else {
       emit({ pinCode });
     }
   };
-
-  const onStatePick = (stateId) => {
-    const st = states.find((s) => String(s._id) === String(stateId));
-    emit({
-      stateId: stateId || '',
-      state: st?.name || '',
-      cityId: '',
-      city: '',
-      districtId: '',
-      district: '',
-      zone: st?.name ? resolveZoneForState(st.name) : '',
-    });
-  };
-
-  const onCityPick = (cityId) => {
-    const c = cities.find((x) => String(x._id) === String(cityId));
-    emit({
-      cityId: cityId || '',
-      city: c?.name || '',
-      districtId: c?.districtId || '',
-    });
-  };
-
-  const showCreateMapping = allowCreateMapping && lookupState === 'not-found' && v.pinCode?.length === 6;
 
   return (
     <div className="pin-location-lookup location-cascade">
@@ -194,54 +127,23 @@ export default function PinLocationLookup({
           value={v.pinCode}
           onChange={(e) => onPinChange(e.target.value)}
         />
-        {lookupState === 'loading' ? <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>Looking up PIN…</p> : null}
-        {lookupState === 'not-found' && !allowCreateMapping ? (
-          <p className="error-text" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
-            PIN not found in master. Ask an admin to add this PIN.
+        {lookupState === 'loading' ? (
+          <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+            Looking up PIN…
           </p>
         ) : null}
-        {lookupError ? <p className="error-text" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>{lookupError}</p> : null}
-      </div>
-
-      {showCreateMapping ? (
-        <>
-          <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>
-            This PIN is not in the master yet. Select city and state once to create the mapping (zone is derived from state).
+        {lookupState === 'not-found' ? (
+          <p className="error-text" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+            PIN not found in master. Ask an admin to add this PIN in PIN Geography.
           </p>
-          <div className="field">
-            <label>State *</label>
-            <AdaptiveSelect required disabled={disabled} value={v.stateId} onChange={(e) => onStatePick(e.target.value)}>
-              <option value="">Select state</option>
-              {states.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </AdaptiveSelect>
-          </div>
-          <div className="field">
-            <label>City *</label>
-            <AdaptiveSelect
-              required
-              disabled={disabled || !v.stateId}
-              value={v.cityId}
-              onChange={(e) => onCityPick(e.target.value)}
-            >
-              <option value="">Select city</option>
-              {cities.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </AdaptiveSelect>
-          </div>
-        </>
-      ) : null}
-
-      <div className="field">
-        <label>{labels.city || 'City'}</label>
-        <input readOnly className="input-readonly" value={v.city || ''} placeholder="Auto-filled from PIN" />
+        ) : null}
+        {lookupError ? (
+          <p className="error-text" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+            {lookupError}
+          </p>
+        ) : null}
       </div>
+
       <div className="field">
         <label>{labels.state || 'State'}</label>
         <input readOnly className="input-readonly" value={v.state || ''} placeholder="Auto-filled from PIN" />
@@ -249,6 +151,10 @@ export default function PinLocationLookup({
       <div className="field">
         <label>{labels.zone || 'Zone'}</label>
         <input readOnly className="input-readonly" value={v.zone || ''} placeholder="Auto-filled from PIN" />
+      </div>
+      <div className="field">
+        <label>{labels.district || 'District'}</label>
+        <input readOnly className="input-readonly" value={v.district || ''} placeholder="Auto-filled from PIN" />
       </div>
     </div>
   );

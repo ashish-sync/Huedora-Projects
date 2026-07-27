@@ -12,7 +12,7 @@ export async function resolveGoogleMapsApiKey() {
   if (cachedKey) return cachedKey;
 
   if (!fetchPromise) {
-    fetchPromise = fetch(apiUrl('/config/public'))
+    fetchPromise = fetch(apiUrl('/config/public'), { credentials: 'omit' })
       .then(async (res) => {
         if (!res.ok) return '';
         const body = await res.json();

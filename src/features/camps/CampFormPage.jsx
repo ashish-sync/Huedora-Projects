@@ -37,7 +37,7 @@ const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for 
 
 const formStringFields = [
   'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state', 'district',
-  'pincode', 'startTime', 'endTime', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
+  'pincode', 'latitude', 'longitude', 'startTime', 'endTime', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
   'hq', 'zone', 'hcwCategory', 'hcwName', 'hcwContact', 'hcwContactId', 'cancellationReason', 'chargeableStatus',
   'inTime', 'outTime', 'attire', 'labCoat', 'transactionId', 'paymentRemark',
   'assignmentStatus', 'assignmentDecision', 'assignmentRefusalReason', 'executionStatus', 'source', 'requestDate',

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import PinLocationLookup from '../../../components/ui/PinLocationLookup.jsx';
+import CampAddressAutocomplete from './CampAddressAutocomplete.jsx';
+import CampLocationFields from './CampLocationFields.jsx';
+import { resolveZoneForState } from '../../../constants/geoZones.js';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
 import { CampAssignmentStage } from './CampAssignmentStage';
@@ -151,30 +153,51 @@ export function CampLifecycleForm({
         </label>
         <label className="full">
           Camp Address
-          <input value={form.campAddress} onChange={(e) => updateField('campAddress', e.target.value)} disabled={disabled} required />
-        </label>
-        <div className="full camp-location-grid">
-          <PinLocationLookup
+          <CampAddressAutocomplete
             disabled={disabled}
             required
-            labels={{ pinCode: 'PIN Code' }}
+            value={form.campAddress || ''}
+            onChange={(value) => updateField('campAddress', value)}
+            onPlaceSelected={(loc) => {
+              updateFields?.({
+                campAddress: loc.campAddress || form.campAddress,
+                city: loc.city || '',
+                state: loc.state || '',
+                district: loc.district || '',
+                pincode: loc.pincode || '',
+                zone: loc.zone || resolveZoneForState(loc.state) || '',
+                latitude: loc.latitude || '',
+                longitude: loc.longitude || '',
+              });
+            }}
+          />
+        </label>
+        <div className="full camp-location-grid">
+          <CampLocationFields
+            disabled={disabled}
+            required
             value={{
-              pinCode: form.pincode || '',
+              city: form.city || '',
               state: form.state || '',
               district: form.district || '',
+              pincode: form.pincode || '',
               zone: form.zone || '',
+              latitude: form.latitude ?? '',
+              longitude: form.longitude ?? '',
               stateId: form.stateId || '',
               districtId: form.districtId || '',
             }}
             onChange={(loc) => {
               updateFields?.({
-                pincode: loc.pinCode || '',
+                city: loc.city || '',
                 state: loc.state || '',
                 district: loc.district || '',
+                pincode: loc.pincode || '',
+                zone: loc.zone || '',
+                latitude: loc.latitude ?? '',
+                longitude: loc.longitude ?? '',
                 stateId: loc.stateId || '',
                 districtId: loc.districtId || '',
-                zone: loc.zone || '',
-                city: loc.district || '',
               });
             }}
           />

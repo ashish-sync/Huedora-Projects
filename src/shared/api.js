@@ -209,7 +209,7 @@ export async function checkServerLive({ signal } = {}) {
   const tryPath = async (path) => {
     const res = await fetch(apiUrl(path), {
       method: 'GET',
-      credentials: 'include',
+      credentials: 'omit',
       cache: 'no-store',
       signal,
     });

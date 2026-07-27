@@ -1833,14 +1833,15 @@ export default function AssetRequestsPage() {
                       pinRequired
                       districtRequired
                       showDistrict
+                      showCity={false}
+                      showZone
                       showMappedPinPreview
                       showPinCountsInOptions
                       value={{
                         pinCode: form.masterPayload?.pinCode || '',
-                        city: form.masterPayload?.city || '',
                         state: form.masterPayload?.state || '',
                         district: form.masterPayload?.district || '',
-                        cityId: form.masterPayload?.cityId || '',
+                        zone: form.masterPayload?.zone || '',
                         stateId: form.masterPayload?.stateId || '',
                         districtId: form.masterPayload?.districtId || '',
                       }}
@@ -1850,12 +1851,11 @@ export default function AssetRequestsPage() {
                           masterPayload: {
                             ...(prev.masterPayload || {}),
                             pinCode: loc.pinCode || '',
-                            cityId: loc.cityId || '',
                             stateId: loc.stateId || '',
                             districtId: loc.districtId || '',
-                            city: loc.city || '',
                             state: loc.state || '',
                             district: loc.district || '',
+                            zone: loc.zone || '',
                           },
                         }))
                       }

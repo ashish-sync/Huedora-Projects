@@ -12,22 +12,19 @@ import { masterExcelFor } from '../masters/masterExcelConfig.js';
 
 const emptyForm = {
   pinCode: '',
-  locality: '',
   stateId: '',
   districtId: '',
-  cityId: '',
   state: '',
   district: '',
-  city: '',
+  zone: '',
 };
 
 const emptyFilters = {
   stateId: '',
   districtId: '',
-  cityId: '',
   state: '',
   district: '',
-  city: '',
+  zone: '',
 };
 
 export default function LocationMasterPage({ embedded = false } = {}) {
@@ -52,7 +49,6 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     if (q) params.set('q', q);
     if (filters.stateId) params.set('stateId', filters.stateId);
     if (filters.districtId) params.set('districtId', filters.districtId);
-    if (filters.cityId) params.set('cityId', filters.cityId);
     setLoading(true);
     return api(`/geo/pin-codes?${params}`)
       .then((r) => {
@@ -66,7 +62,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on page/limit/filters
-  }, [page, limit, filters.stateId, filters.districtId, filters.cityId]);
+  }, [page, limit, filters.stateId, filters.districtId]);
 
   const save = async (e) => {
     e.preventDefault();
@@ -77,17 +73,15 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       setError('Enter a valid 6-digit PIN code.');
       return;
     }
-    if (!form.stateId || !form.districtId || !form.cityId) {
-      setError('Select state, district, and city.');
+    if (!form.stateId || !form.districtId) {
+      setError('Select state and district.');
       return;
     }
     try {
       const body = {
         pinCode,
-        cityId: form.cityId,
         stateId: form.stateId,
         districtId: form.districtId,
-        locality: form.locality || '',
       };
       if (editId) {
         await api(`/geo/pin-codes/${editId}`, { method: 'PATCH', body });
@@ -108,13 +102,11 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     setEditId(row._id);
     setForm({
       pinCode: row.pinCode || '',
-      locality: row.locality || '',
       stateId: row.stateId || '',
       districtId: row.districtId || '',
-      cityId: row.cityId || '',
       state: row.stateName || '',
       district: row.districtName || '',
-      city: row.cityName || '',
+      zone: row.zone || '',
     });
   };
 
@@ -142,7 +134,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       description={
         embedded
           ? undefined
-          : 'One row per PIN code, linked to state, district, and city masters. Import from Pin Code Master.xlsx or add rows below.'
+          : 'One row per PIN code with State, Zone, and District. Bulk import uses PIN Code, State, and District columns.'
       }
       actions={
         embedded ? null : (
@@ -157,7 +149,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
 
       <div className="toolbar toolbar--page">
         <input
-          placeholder="Search PIN, city, district, state…"
+          placeholder="Search PIN, state, zone, district…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           style={{ maxWidth: 280 }}
@@ -188,6 +180,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         <h3 className="pin-master-filters-title">Filter by geography</h3>
         <LocationCascade
           showPin={false}
+          showCity={false}
+          showZone
           showDistrict
           districtRequired={false}
           showPinCountsInOptions
@@ -197,12 +191,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
             setPage(1);
           }}
         />
-        <PinMappedPreview
-          stateId={filters.stateId}
-          districtId={filters.districtId}
-          cityId={filters.cityId}
-        />
-        {filters.stateId || filters.districtId || filters.cityId ? (
+        <PinMappedPreview stateId={filters.stateId} districtId={filters.districtId} />
+        {filters.stateId || filters.districtId ? (
           <button type="button" className="btn secondary btn-compact" onClick={clearFilters}>
             Clear filters
           </button>
@@ -215,9 +205,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
             <tr>
               <th>PIN Code</th>
               <th>State</th>
+              <th>Zone</th>
               <th>District</th>
-              <th>City</th>
-              <th>Locality</th>
               <th></th>
             </tr>
           </thead>
@@ -228,9 +217,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
                   <strong>{r.pinCode}</strong>
                 </td>
                 <td>{r.stateName || '-'}</td>
+                <td>{r.zone || '-'}</td>
                 <td>{r.districtName || '-'}</td>
-                <td>{r.cityName || '-'}</td>
-                <td>{r.locality || '-'}</td>
                 <td>
                   {canWrite ? (
                     <>
@@ -251,7 +239,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         </table>
         {!rows.length ? (
           <p className="muted" style={{ padding: '1rem' }}>
-            No PIN codes yet. Add mappings below or import from Excel.
+            No PIN codes yet. Add mappings below or import an Excel file with PIN Code, State, and District columns.
           </p>
         ) : null}
       </div>
@@ -266,19 +254,13 @@ export default function LocationMasterPage({ embedded = false } = {}) {
             pinRequired
             districtRequired
             showDistrict
+            showCity={false}
+            showZone
             showMappedPinPreview
             showPinCountsInOptions
             value={form}
             onChange={(loc) => setForm((prev) => ({ ...prev, ...loc }))}
           />
-          <div className="field" style={{ marginTop: '1rem' }}>
-            <label>Locality</label>
-            <input
-              value={form.locality}
-              onChange={(e) => setForm({ ...form, locality: e.target.value })}
-              placeholder="Optional area / post office"
-            />
-          </div>
           <div className="row" style={{ gap: '0.5rem', marginTop: '1rem' }}>
             <button className="btn" type="submit">
               {editId ? 'Save changes' : 'Add PIN'}

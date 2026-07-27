@@ -11,6 +11,7 @@ const empty = {
   state: '',
   district: '',
   city: '',
+  zone: '',
   pinCode: '',
 };
 
@@ -24,6 +25,7 @@ export default function LocationCascade({
   required = false,
   showDistrict = true,
   showCity = true,
+  showZone = false,
   showPin = true,
   pinRequired = false,
   pinInputOnly = false,
@@ -177,6 +179,8 @@ export default function LocationCascade({
   const optionSuffix = (item) =>
     showPinCountsInOptions && item.pinCount ? ` (${item.pinCount} PIN${item.pinCount === 1 ? '' : 's'})` : '';
 
+  const pinPrereqMet = showCity ? v.cityId : v.districtId;
+
   const pinField = showPin ? (
     <div className="field" key="pin">
       <label>{labels.pinCode || 'PIN Code'}{pinRequired ? ' *' : ''}</label>
@@ -199,14 +203,16 @@ export default function LocationCascade({
       ) : null}
       <input
         required={pinRequired}
-        disabled={disabled || (pinInputOnly && !pinFirst && !v.cityId)}
+        disabled={disabled || (pinInputOnly && !pinFirst && !pinPrereqMet)}
         inputMode="numeric"
         maxLength={6}
         placeholder={
           pinInputOnly
-            ? pinFirst || v.cityId
+            ? pinFirst || pinPrereqMet
               ? 'Enter 6-digit PIN'
-              : 'Select city first'
+              : showCity
+                ? 'Select city first'
+                : 'Select district first'
             : pins.length
               ? 'Or enter 6-digit PIN'
               : '6-digit PIN'
@@ -263,6 +269,19 @@ export default function LocationCascade({
     </div>
   ) : null;
 
+  const zoneField = showZone ? (
+    <div className="field" key="zone">
+      <label>{labels.zone || 'Zone'}</label>
+      <input
+        disabled
+        readOnly
+        value={v.zone || (v.state ? resolveZoneForState(v.state) : '')}
+        placeholder="Select state"
+        aria-label={labels.zone || 'Zone'}
+      />
+    </div>
+  ) : null;
+
   const cityField = showCity ? (
     <div className="field" key="city">
       <label>{labels.city || 'City'}{required ? ' *' : ''}</label>
@@ -284,9 +303,11 @@ export default function LocationCascade({
     </div>
   ) : null;
 
-  const orderedFields = pinFirst
-    ? [pinField, stateField, districtField, cityField]
-    : [stateField, districtField, cityField, pinField];
+  const geoFields = showCity
+    ? [stateField, zoneField, districtField, cityField].filter(Boolean)
+    : [stateField, zoneField, districtField].filter(Boolean);
+
+  const orderedFields = pinFirst ? [pinField, ...geoFields] : [...geoFields, pinField];
 
   return (
     <div className="location-cascade">

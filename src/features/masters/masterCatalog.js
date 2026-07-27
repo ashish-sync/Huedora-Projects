@@ -220,9 +220,8 @@ export const MASTER_ENTITIES = [
     fields: [
       { name: 'pinCode', label: 'PIN Code', required: true },
       { name: 'state', label: 'State', required: true },
+      { name: 'zone', label: 'Zone' },
       { name: 'district', label: 'District', required: true },
-      { name: 'city', label: 'City', required: true },
-      { name: 'locality', label: 'Locality' },
     ],
   },
   {
@@ -295,9 +294,6 @@ export function validateMasterPayload(entityId, payload = {}) {
     }
     if (!String(payload.districtId || '').trim() && !String(payload.district || '').trim()) {
       return 'District is required';
-    }
-    if (!String(payload.cityId || '').trim() && !String(payload.city || '').trim()) {
-      return 'City is required';
     }
   }
   if (entity.id === 'contacts') {

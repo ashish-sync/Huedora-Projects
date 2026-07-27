@@ -4,23 +4,19 @@ import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
-import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import PinLocationLookup from '../../components/ui/PinLocationLookup.jsx';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
-import { resolveZoneForState } from '../../constants/geoZones.js';
 
 const emptyForm = {
   pinCode: '',
-  locality: '',
-  notes: '',
   stateId: '',
+  districtId: '',
   cityId: '',
   state: '',
+  district: '',
   city: '',
-  zone: '',
-  isActive: true,
 };
 
 export default function LocationMasterPage({ embedded = false } = {}) {
@@ -61,18 +57,21 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     e.preventDefault();
     setError('');
     setMsg('');
-    if (!form.cityId || !form.stateId) {
-      setError('Enter a valid PIN or select city and state to create a new mapping.');
+    const pinCode = String(form.pinCode || '').replace(/\D+/g, '');
+    if (!/^\d{6}$/.test(pinCode)) {
+      setError('Enter a valid 6-digit PIN code.');
+      return;
+    }
+    if (!form.stateId || !form.districtId || !form.cityId) {
+      setError('Select state, district, and city.');
       return;
     }
     try {
       const body = {
-        pinCode: form.pinCode,
+        pinCode,
         cityId: form.cityId,
         stateId: form.stateId,
-        locality: form.locality,
-        notes: form.notes,
-        isActive: form.isActive,
+        districtId: form.districtId,
       };
       if (editId) {
         await api(`/geo/pin-codes/${editId}`, { method: 'PATCH', body });
@@ -93,14 +92,12 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     setEditId(row._id);
     setForm({
       pinCode: row.pinCode || '',
-      locality: row.locality || '',
-      notes: row.notes || '',
       stateId: row.stateId || '',
+      districtId: row.districtId || '',
       cityId: row.cityId || '',
       state: row.stateName || '',
+      district: row.districtName || '',
       city: row.cityName || '',
-      zone: row.zone || resolveZoneForState(row.stateName),
-      isActive: row.isActive !== false,
     });
   };
 
@@ -123,7 +120,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       description={
         embedded
           ? undefined
-          : 'Enter a PIN code to auto-fill city, state, and zone. Add new PINs when postal codes are not yet in the master.'
+          : 'Map PIN codes to state, district, and city. Import or add rows using the four master fields.'
       }
       actions={
         embedded ? null : (
@@ -138,7 +135,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
 
       <div className="toolbar toolbar--page">
         <input
-          placeholder="Search PIN, city, state…"
+          placeholder="Search PIN, city, district, state…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           style={{ maxWidth: 280 }}
@@ -169,12 +166,10 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         <table>
           <thead>
             <tr>
-              <th>PIN</th>
-              <th>City</th>
+              <th>PIN Code</th>
               <th>State</th>
-              <th>Zone</th>
-              <th>Locality</th>
-              <th>Active</th>
+              <th>District</th>
+              <th>City</th>
               <th></th>
             </tr>
           </thead>
@@ -184,11 +179,9 @@ export default function LocationMasterPage({ embedded = false } = {}) {
                 <td>
                   <strong>{r.pinCode}</strong>
                 </td>
-                <td>{r.cityName || '-'}</td>
                 <td>{r.stateName || '-'}</td>
-                <td>{r.zone || resolveZoneForState(r.stateName) || '-'}</td>
-                <td>{r.locality || '-'}</td>
-                <td>{r.isActive === false ? 'No' : 'Yes'}</td>
+                <td>{r.districtName || '-'}</td>
+                <td>{r.cityName || '-'}</td>
                 <td>
                   {canWrite ? (
                     <>
@@ -215,37 +208,19 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       </div>
 
       {canWrite ? (
-        <form className="card" onSubmit={save}>
+        <form className="card pin-master-form" onSubmit={save}>
           <h3 style={{ marginTop: 0 }}>{editId ? 'Edit PIN mapping' : 'Add PIN mapping'}</h3>
-          <PinLocationLookup
+          <LocationCascade
             required
-            allowCreateMapping={!editId}
+            pinFirst
+            pinInputOnly
+            pinRequired
+            districtRequired
+            showDistrict
             value={form}
             onChange={(loc) => setForm((prev) => ({ ...prev, ...loc }))}
           />
-          <div className="field">
-            <label>Locality</label>
-            <input
-              value={form.locality}
-              onChange={(e) => setForm({ ...form, locality: e.target.value })}
-              placeholder="Optional area / post office name"
-            />
-          </div>
-          <div className="field">
-            <label>Notes</label>
-            <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
-          <div className="field">
-            <label>Status</label>
-            <AdaptiveSelect
-              value={form.isActive ? '1' : '0'}
-              onChange={(e) => setForm({ ...form, isActive: e.target.value === '1' })}
-            >
-              <option value="1">Active</option>
-              <option value="0">Inactive</option>
-            </AdaptiveSelect>
-          </div>
-          <div className="row" style={{ gap: '0.5rem' }}>
+          <div className="row" style={{ gap: '0.5rem', marginTop: '1rem' }}>
             <button className="btn" type="submit">
               {editId ? 'Save changes' : 'Add PIN'}
             </button>

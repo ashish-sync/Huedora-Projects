@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
+import { resolveZoneForState } from '../../constants/geoZones.js';
 import AdaptiveSelect from './AdaptiveSelect.jsx';
 
 const empty = {
@@ -24,6 +25,9 @@ export default function LocationCascade({
   showCity = true,
   showPin = true,
   pinRequired = false,
+  pinInputOnly = false,
+  pinFirst = false,
+  districtRequired = false,
   disabled = false,
   labels = {},
 }) {
@@ -108,7 +112,7 @@ export default function LocationCascade({
   }, [v.stateId, v.districtId]);
 
   useEffect(() => {
-    if (!showPin || !v.cityId) {
+    if (!showPin || pinInputOnly || !v.cityId) {
       setPins([]);
       return undefined;
     }
@@ -123,18 +127,20 @@ export default function LocationCascade({
     return () => {
       cancelled = true;
     };
-  }, [v.cityId, showPin]);
+  }, [v.cityId, showPin, pinInputOnly]);
 
   const onState = (stateId) => {
     const st = states.find((s) => String(s._id) === String(stateId));
+    const stateName = st?.name || '';
     emit({
       stateId: stateId || '',
-      state: st?.name || '',
+      state: stateName,
       districtId: '',
       district: '',
       cityId: '',
       city: '',
       pinCode: '',
+      zone: stateName ? resolveZoneForState(stateName) : '',
     });
   };
 
@@ -164,98 +170,118 @@ export default function LocationCascade({
     });
   };
 
-  return (
-    <div className="location-cascade">
-      {error ? <p className="error-text">{error}</p> : null}
-      <div className="field">
-        <label>{labels.state || 'State'}{required ? ' *' : ''}</label>
+  const pinField = showPin ? (
+    <div className="field" key="pin">
+      <label>{labels.pinCode || 'PIN Code'}{pinRequired ? ' *' : ''}</label>
+      {!pinInputOnly && pins.length ? (
         <AdaptiveSelect
-          required={required}
+          required={pinRequired}
           disabled={disabled}
-          value={v.stateId}
-          onChange={(e) => onState(e.target.value)}
-          aria-label={labels.state || 'State'}
+          value={v.pinCode}
+          onChange={(e) => emit({ pinCode: e.target.value })}
+          aria-label={labels.pinCode || 'Pin code'}
         >
-          <option value="">Select state</option>
-          {states.map((s) => (
-            <option key={s._id} value={s._id}>
-              {s.name}
+          <option value="">Select or type below</option>
+          {pins.map((p) => (
+            <option key={p._id} value={p.pinCode}>
+              {p.pinCode}
+              {p.locality ? ` · ${p.locality}` : ''}
             </option>
           ))}
         </AdaptiveSelect>
-      </div>
-
-      {showDistrict ? (
-        <div className="field">
-          <label>{labels.district || 'District'}</label>
-          <AdaptiveSelect
-            disabled={disabled || !v.stateId}
-            value={v.districtId}
-            onChange={(e) => onDistrict(e.target.value)}
-            aria-label={labels.district || 'District'}
-          >
-            <option value="">All districts</option>
-            {districts.map((d) => (
-              <option key={d._id} value={d._id}>
-                {d.name}
-              </option>
-            ))}
-          </AdaptiveSelect>
-        </div>
       ) : null}
+      <input
+        required={pinRequired}
+        disabled={disabled || (pinInputOnly && !pinFirst && !v.cityId)}
+        inputMode="numeric"
+        maxLength={6}
+        placeholder={
+          pinInputOnly
+            ? pinFirst || v.cityId
+              ? 'Enter 6-digit PIN'
+              : 'Select city first'
+            : pins.length
+              ? 'Or enter 6-digit PIN'
+              : '6-digit PIN'
+        }
+        value={v.pinCode}
+        onChange={(e) => emit({ pinCode: e.target.value.replace(/\D+/g, '').slice(0, 6) })}
+        style={!pinInputOnly && pins.length ? { marginTop: '0.5rem' } : undefined}
+      />
+    </div>
+  ) : null;
 
-      {showCity ? (
-        <div className="field">
-          <label>{labels.city || 'City'}{required ? ' *' : ''}</label>
-          <AdaptiveSelect
-            required={required}
-            disabled={disabled || !v.stateId}
-            value={v.cityId}
-            onChange={(e) => onCity(e.target.value)}
-            aria-label={labels.city || 'City'}
-          >
-            <option value="">Select city</option>
-            {cities.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </AdaptiveSelect>
-        </div>
-      ) : null}
+  const stateField = (
+    <div className="field" key="state">
+      <label>{labels.state || 'State'}{required ? ' *' : ''}</label>
+      <AdaptiveSelect
+        required={required}
+        disabled={disabled}
+        value={v.stateId}
+        onChange={(e) => onState(e.target.value)}
+        aria-label={labels.state || 'State'}
+      >
+        <option value="">Select state</option>
+        {states.map((s) => (
+          <option key={s._id} value={s._id}>
+            {s.name}
+          </option>
+        ))}
+      </AdaptiveSelect>
+    </div>
+  );
 
-      {showPin ? (
-        <div className="field">
-          <label>{labels.pinCode || 'Pin code'}{pinRequired ? ' *' : ''}</label>
-          {pins.length ? (
-            <AdaptiveSelect
-              required={pinRequired}
-              disabled={disabled}
-              value={v.pinCode}
-              onChange={(e) => emit({ pinCode: e.target.value })}
-              aria-label={labels.pinCode || 'Pin code'}
-            >
-              <option value="">Select or type below</option>
-              {pins.map((p) => (
-                <option key={p._id} value={p.pinCode}>
-                  {p.pinCode}
-                  {p.locality ? ` · ${p.locality}` : ''}
-                </option>
-              ))}
-            </AdaptiveSelect>
-          ) : null}
-          <input
-            required={pinRequired}
-            disabled={disabled}
-            inputMode="numeric"
-            maxLength={6}
-            placeholder={pins.length ? 'Or enter 6-digit PIN' : '6-digit PIN'}
-            value={v.pinCode}
-            onChange={(e) => emit({ pinCode: e.target.value.replace(/\D+/g, '').slice(0, 6) })}
-            style={pins.length ? { marginTop: '0.5rem' } : undefined}
-          />
-        </div>
-      ) : null}
+  const districtField = showDistrict ? (
+    <div className="field" key="district">
+      <label>
+        {labels.district || 'District'}
+        {districtRequired ? ' *' : ''}
+      </label>
+      <AdaptiveSelect
+        required={districtRequired}
+        disabled={disabled || !v.stateId}
+        value={v.districtId}
+        onChange={(e) => onDistrict(e.target.value)}
+        aria-label={labels.district || 'District'}
+      >
+        <option value="">{districtRequired ? 'Select district' : 'All districts'}</option>
+        {districts.map((d) => (
+          <option key={d._id} value={d._id}>
+            {d.name}
+          </option>
+        ))}
+      </AdaptiveSelect>
+    </div>
+  ) : null;
+
+  const cityField = showCity ? (
+    <div className="field" key="city">
+      <label>{labels.city || 'City'}{required ? ' *' : ''}</label>
+      <AdaptiveSelect
+        required={required}
+        disabled={disabled || !v.stateId || (showDistrict && districtRequired && !v.districtId)}
+        value={v.cityId}
+        onChange={(e) => onCity(e.target.value)}
+        aria-label={labels.city || 'City'}
+      >
+        <option value="">Select city</option>
+        {cities.map((c) => (
+          <option key={c._id} value={c._id}>
+            {c.name}
+          </option>
+        ))}
+      </AdaptiveSelect>
+    </div>
+  ) : null;
+
+  const orderedFields = pinFirst
+    ? [pinField, stateField, districtField, cityField]
+    : [stateField, districtField, cityField, pinField];
+
+  return (
+    <div className="location-cascade">
+      {error ? <p className="error-text">{error}</p> : null}
+      {orderedFields.filter(Boolean)}
     </div>
   );
 }

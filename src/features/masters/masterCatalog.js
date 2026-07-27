@@ -219,10 +219,9 @@ export const MASTER_ENTITIES = [
     embedded: 'pin-codes',
     fields: [
       { name: 'pinCode', label: 'PIN Code', required: true },
-      { name: 'state', label: 'State' },
-      { name: 'city', label: 'City' },
-      { name: 'locality', label: 'Locality' },
-      { name: 'notes', label: 'Notes', type: 'textarea' },
+      { name: 'state', label: 'State', required: true },
+      { name: 'district', label: 'District', required: true },
+      { name: 'city', label: 'City', required: true },
     ],
   },
   {
@@ -285,6 +284,19 @@ export function validateMasterPayload(entityId, payload = {}) {
     const v = payload[field.name];
     if (v == null || String(v).trim() === '') {
       return `${field.label} is required`;
+    }
+  }
+  if (entity.id === 'pin-codes') {
+    const pin = String(payload.pinCode || '').replace(/\D+/g, '');
+    if (!/^\d{6}$/.test(pin)) return 'PIN Code must be 6 digits';
+    if (!String(payload.stateId || '').trim() && !String(payload.state || '').trim()) {
+      return 'State is required';
+    }
+    if (!String(payload.districtId || '').trim() && !String(payload.district || '').trim()) {
+      return 'District is required';
+    }
+    if (!String(payload.cityId || '').trim() && !String(payload.city || '').trim()) {
+      return 'City is required';
     }
   }
   if (entity.id === 'contacts') {

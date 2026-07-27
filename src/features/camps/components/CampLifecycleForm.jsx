@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import PinLocationLookup from '../../../components/ui/PinLocationLookup.jsx';
+import LocationCascade from '../../../components/ui/LocationCascade.jsx';
+import { resolveZoneForState } from '../../../constants/geoZones.js';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
 import { CampAssignmentStage } from './CampAssignmentStage';
@@ -154,28 +155,33 @@ export function CampLifecycleForm({
           <input value={form.campAddress} onChange={(e) => updateField('campAddress', e.target.value)} disabled={disabled} required />
         </label>
         <div className="full camp-location-grid">
-          <PinLocationLookup
+          <LocationCascade
             disabled={disabled}
             required
+            showDistrict={false}
+            pinInputOnly
+            pinRequired
+            labels={{ pinCode: 'PIN Code' }}
             value={{
               pinCode: form.pincode || '',
               city: form.city,
               state: form.state,
-              zone: form.zone || '',
               stateId: form.stateId || '',
               cityId: form.cityId || '',
             }}
             onChange={(loc) => {
+              const stateName = loc.state || '';
               updateFields?.({
                 pincode: loc.pinCode || '',
                 city: loc.city || '',
-                state: loc.state || '',
+                state: stateName,
                 stateId: loc.stateId || '',
                 cityId: loc.cityId || '',
-                zone: loc.zone || '',
+                zone: loc.zone || (stateName ? resolveZoneForState(stateName) : ''),
               });
             }}
           />
+          <ReadOnlyField label="Zone" value={form.zone || ''} />
           <label className="camp-location-hq">
             HQ
             <input value={form.hq} onChange={(e) => updateField('hq', e.target.value)} disabled={disabled} required />

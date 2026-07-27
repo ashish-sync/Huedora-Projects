@@ -9,7 +9,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
-import PinLocationLookup from '../../components/ui/PinLocationLookup.jsx';
+import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
@@ -1827,16 +1827,21 @@ export default function AssetRequestsPage() {
                 )}
                 {form.masterEntity === 'pin-codes' && (
                   <div className="field arq-span">
-                    <PinLocationLookup
+                    <LocationCascade
                       required
-                      allowCreateMapping
+                      pinFirst
+                      pinInputOnly
+                      pinRequired
+                      districtRequired
+                      showDistrict
                       value={{
                         pinCode: form.masterPayload?.pinCode || '',
                         city: form.masterPayload?.city || '',
                         state: form.masterPayload?.state || '',
-                        zone: form.masterPayload?.zone || '',
+                        district: form.masterPayload?.district || '',
                         cityId: form.masterPayload?.cityId || '',
                         stateId: form.masterPayload?.stateId || '',
+                        districtId: form.masterPayload?.districtId || '',
                       }}
                       onChange={(loc) =>
                         setForm((prev) => ({
@@ -1846,48 +1851,15 @@ export default function AssetRequestsPage() {
                             pinCode: loc.pinCode || '',
                             cityId: loc.cityId || '',
                             stateId: loc.stateId || '',
+                            districtId: loc.districtId || '',
                             city: loc.city || '',
                             state: loc.state || '',
-                            zone: loc.zone || '',
+                            district: loc.district || '',
                           },
                         }))
                       }
                     />
                   </div>
-                )}
-                {form.masterEntity === 'pin-codes' && (
-                  <>
-                    <div className="field">
-                      <label>Locality</label>
-                      <input
-                        value={form.masterPayload?.locality || ''}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            masterPayload: {
-                              ...(prev.masterPayload || {}),
-                              locality: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Notes</label>
-                      <input
-                        value={form.masterPayload?.notes || ''}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            masterPayload: {
-                              ...(prev.masterPayload || {}),
-                              notes: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                  </>
                 )}
                 {getMasterEntity(form.masterEntity)?.docxUpload ? (
                   <div className="field arq-span">

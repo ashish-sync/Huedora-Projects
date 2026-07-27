@@ -1,40 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { useGoogleMapsPlaces } from '../../../shared/googleMaps/useGoogleMapsPlaces.js';
-import { parseGooglePlace } from '../../../shared/googleMaps/parseGooglePlace.js';
+import { useEffect, useId, useRef, useState } from 'react';
+import { api } from '../../../shared/api.js';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
 
-function emitPlaceSelection(place, onChange, onPlaceSelected) {
-  const parsed = parseGooglePlace(place);
-  if (!parsed) return;
-  const zone = resolveZoneForState(parsed.state) || '';
-  onChange?.(parsed.campAddress);
-  onPlaceSelected?.({
-    ...parsed,
-    zone,
-    city: parsed.city || parsed.district || '',
-  });
-}
-
-async function resolvePlaceFromSelectEvent(event) {
-  if (event?.place) return event.place;
-  if (event?.placePrediction?.toPlace) {
-    return event.placePrediction.toPlace();
-  }
-  return null;
-}
-
-async function loadPlaceDetails(place) {
-  if (!place) return null;
-  if (typeof place.fetchFields === 'function') {
-    await place.fetchFields({
-      fields: ['addressComponents', 'formattedAddress', 'location', 'displayName'],
-    });
-  }
-  return place;
-}
+const MIN_QUERY_LEN = 3;
+const DEBOUNCE_MS = 300;
 
 /**
- * Camp address search with Google Places (legacy Autocomplete + new widget fallback).
+ * Camp address search using server-side Google Places (New) autocomplete.
+ * Avoids loading Maps JavaScript in the browser (referrer/key restrictions).
  */
 export default function CampAddressAutocomplete({
   value = '',
@@ -44,156 +17,159 @@ export default function CampAddressAutocomplete({
   required = false,
   placeholder = 'Start typing address…',
 }) {
-  const inputRef = useRef(null);
-  const widgetHostRef = useRef(null);
-  const onChangeRef = useRef(onChange);
-  const onPlaceSelectedRef = useRef(onPlaceSelected);
-  onChangeRef.current = onChange;
-  onPlaceSelectedRef.current = onPlaceSelected;
-
-  const { isReady, isDisabled, isResolving, hasError } = useGoogleMapsPlaces();
-  const [mode, setMode] = useState('idle'); // idle | legacy | widget | manual
+  const listId = useId();
+  const rootRef = useRef(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [status, setStatus] = useState('ready'); // ready | unavailable | not_configured
+  const debounceRef = useRef(null);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
-    if (isDisabled || hasError) {
-      setMode('manual');
+    const q = String(value || '').trim();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (q.length < MIN_QUERY_LEN) {
+      setSuggestions([]);
+      setOpen(false);
+      setActiveIndex(-1);
+      setLoading(false);
       return undefined;
     }
-    if (!isReady || disabled) {
-      return undefined;
-    }
 
-    let cancelled = false;
-    let legacyAutocomplete = null;
-    let legacyListener = null;
-    let widget = null;
-    let widgetSelectHandler = null;
-    let widgetLegacySelectHandler = null;
-
-    const cleanup = () => {
-      if (legacyListener && window.google?.maps?.event) {
-        window.google.maps.event.removeListener(legacyListener);
-      }
-      legacyListener = null;
-      legacyAutocomplete = null;
-
-      if (widget) {
-        if (widgetSelectHandler) {
-          widget.removeEventListener('gmp-select', widgetSelectHandler);
-        }
-        if (widgetLegacySelectHandler) {
-          widget.removeEventListener('gmp-placeselect', widgetLegacySelectHandler);
-        }
-        if (widget.parentNode) widget.parentNode.removeChild(widget);
-      }
-      widget = null;
-      if (widgetHostRef.current) widgetHostRef.current.innerHTML = '';
-    };
-
-    const attachLegacy = () => {
-      if (cancelled || !inputRef.current) return false;
+    debounceRef.current = setTimeout(async () => {
+      const seq = ++requestSeq.current;
+      setLoading(true);
       try {
-        legacyAutocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          componentRestrictions: { country: 'in' },
-          fields: ['address_components', 'formatted_address', 'geometry', 'name'],
-        });
-        legacyListener = legacyAutocomplete.addListener('place_changed', () => {
-          const place = legacyAutocomplete.getPlace();
-          emitPlaceSelection(place, onChangeRef.current, onPlaceSelectedRef.current);
-        });
-        if (!cancelled) setMode('legacy');
-        return true;
-      } catch {
-        return false;
+        const json = await api(`/geo/places/autocomplete?input=${encodeURIComponent(q)}`);
+        if (seq !== requestSeq.current) return;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        setSuggestions(rows);
+        setOpen(rows.length > 0);
+        setActiveIndex(-1);
+        setStatus('ready');
+      } catch (err) {
+        if (seq !== requestSeq.current) return;
+        setSuggestions([]);
+        setOpen(false);
+        if (err?.code === 'PLACES_NOT_CONFIGURED') {
+          setStatus('not_configured');
+        } else {
+          setStatus('unavailable');
+        }
+      } finally {
+        if (seq === requestSeq.current) setLoading(false);
       }
-    };
-
-    const attachWidget = async () => {
-      if (cancelled || !widgetHostRef.current) return false;
-      try {
-        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary('places');
-        if (cancelled || !widgetHostRef.current) return false;
-
-        widget = new PlaceAutocompleteElement({
-          includedRegionCodes: ['in'],
-          requestedLanguage: 'en',
-        });
-        widget.classList.add('camp-place-autocomplete-widget');
-        widget.placeholder = placeholder;
-        widgetHostRef.current.appendChild(widget);
-
-        const onSelect = async (event) => {
-          try {
-            const place = await loadPlaceDetails(await resolvePlaceFromSelectEvent(event));
-            emitPlaceSelection(place, onChangeRef.current, onPlaceSelectedRef.current);
-          } catch {
-            /* keep manual fields editable */
-          }
-        };
-
-        widgetSelectHandler = onSelect;
-        widgetLegacySelectHandler = onSelect;
-        widget.addEventListener('gmp-select', widgetSelectHandler);
-        widget.addEventListener('gmp-placeselect', widgetLegacySelectHandler);
-
-        if (!cancelled) setMode('widget');
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
-    (async () => {
-      if (attachLegacy()) return;
-      if (await attachWidget()) return;
-      if (!cancelled) setMode('manual');
-    })();
+    }, DEBOUNCE_MS);
 
     return () => {
-      cancelled = true;
-      cleanup();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [isReady, isDisabled, hasError, disabled, placeholder]);
+  }, [value]);
 
-  const showWidget = mode === 'widget';
+  useEffect(() => {
+    function onDocClick(event) {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  async function selectSuggestion(item) {
+    if (!item?.placeId) return;
+    setOpen(false);
+    setSuggestions([]);
+    try {
+      const json = await api(`/geo/places/details?placeId=${encodeURIComponent(item.placeId)}`);
+      const loc = json.data || {};
+      const zone = resolveZoneForState(loc.state) || '';
+      onChange?.(loc.campAddress || item.label || value);
+      onPlaceSelected?.({
+        ...loc,
+        zone,
+        city: loc.city || loc.district || '',
+      });
+      setStatus('ready');
+    } catch {
+      onChange?.(item.label || value);
+      setStatus('unavailable');
+    }
+  }
+
+  function onKeyDown(event) {
+    if (!open || !suggestions.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((i) => (i + 1) % suggestions.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+    } else if (event.key === 'Enter' && activeIndex >= 0) {
+      event.preventDefault();
+      selectSuggestion(suggestions[activeIndex]);
+    } else if (event.key === 'Escape') {
+      setOpen(false);
+    }
+  }
 
   return (
-    <div className="camp-address-autocomplete">
-      <div
-        ref={widgetHostRef}
-        className="camp-address-autocomplete-host"
-        style={{ display: showWidget ? 'block' : 'none' }}
-        aria-hidden={!showWidget}
-      />
+    <div className="camp-address-autocomplete" ref={rootRef}>
       <input
-        ref={inputRef}
         className="camp-address-legacy-input"
-        style={{ display: showWidget ? 'none' : 'block' }}
-        required={!showWidget && required}
+        required={required}
         disabled={disabled}
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
+        onFocus={() => {
+          if (suggestions.length) setOpen(true);
+        }}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         autoComplete="off"
-        aria-hidden={showWidget}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
       />
-      {showWidget ? (
-        <input type="hidden" value={value} required={required} readOnly tabIndex={-1} aria-hidden="true" />
+      {loading ? (
+        <p className="muted camp-address-autocomplete-hint">Searching addresses…</p>
       ) : null}
-      {isResolving ? (
-        <p className="muted camp-address-autocomplete-hint">Loading address search…</p>
+      {open && suggestions.length ? (
+        <ul id={listId} className="camp-address-suggestions" role="listbox">
+          {suggestions.map((item, index) => (
+            <li key={item.placeId}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={index === activeIndex}
+                className={index === activeIndex ? 'is-active' : ''}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectSuggestion(item)}
+              >
+                <span className="camp-address-suggestion-main">{item.label}</span>
+                {item.secondaryText ? (
+                  <span className="camp-address-suggestion-sub">{item.secondaryText}</span>
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
-      {isDisabled ? (
+      {status === 'not_configured' ? (
         <p className="muted camp-address-autocomplete-hint">
           Google Places is not configured — enter the address manually.
         </p>
       ) : null}
-      {hasError ? (
+      {status === 'unavailable' ? (
         <p className="muted camp-address-autocomplete-hint">
           Address suggestions unavailable — you can still type the address manually.
         </p>
       ) : null}
-      {mode === 'legacy' || mode === 'widget' ? (
+      {status === 'ready' && !loading ? (
         <p className="muted camp-address-autocomplete-hint">Search an address, then edit the fields below if needed.</p>
       ) : null}
     </div>

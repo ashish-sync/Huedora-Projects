@@ -2918,6 +2918,55 @@
   box-sizing: border-box;
 }
 
+.camp-ops-root .camp-address-autocomplete {
+  position: relative;
+}
+
+.camp-ops-root .camp-address-suggestions {
+  position: absolute;
+  z-index: 10001;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #d7dce5;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.camp-ops-root .camp-address-suggestions button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.camp-ops-root .camp-address-suggestions button:hover,
+.camp-ops-root .camp-address-suggestions button.is-active {
+  background: #f1f5f9;
+}
+
+.camp-ops-root .camp-address-suggestion-main {
+  display: block;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.camp-ops-root .camp-address-suggestion-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
 .camp-ops-root .form-actions {
   display: flex;
   gap: 12px;

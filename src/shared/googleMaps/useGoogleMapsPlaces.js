@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { resolveGoogleMapsApiKey } from './resolveGoogleMapsApiKey.js';
 
 const SCRIPT_ID = 'tylo-google-maps-js';
 let loadPromise = null;
@@ -61,14 +62,32 @@ function loadGoogleMapsScript(apiKey) {
  * Load the Google Maps JavaScript API with the Places library.
  */
 export function useGoogleMapsPlaces() {
-  const apiKey = String(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '').trim();
-  const [status, setStatus] = useState(apiKey ? 'loading' : 'disabled');
+  const buildTimeKey = String(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '').trim();
+  const [apiKey, setApiKey] = useState(buildTimeKey);
+  const [status, setStatus] = useState(buildTimeKey ? 'loading' : 'resolving');
 
   useEffect(() => {
-    if (!apiKey) {
-      setStatus('disabled');
-      return undefined;
-    }
+    if (apiKey) return undefined;
+
+    let cancelled = false;
+    setStatus('resolving');
+    resolveGoogleMapsApiKey().then((key) => {
+      if (cancelled) return;
+      if (key) {
+        setApiKey(key);
+        setStatus('loading');
+      } else {
+        setStatus('disabled');
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiKey]);
+
+  useEffect(() => {
+    if (!apiKey) return undefined;
 
     let cancelled = false;
     setStatus('loading');
@@ -89,6 +108,7 @@ export function useGoogleMapsPlaces() {
     apiKey,
     status,
     isReady: status === 'ready',
+    isResolving: status === 'resolving',
     isDisabled: status === 'disabled',
     hasError: status === 'error',
   };

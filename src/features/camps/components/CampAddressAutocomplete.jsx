@@ -33,7 +33,7 @@ export default function CampAddressAutocomplete({
   onChangeRef.current = onChange;
   onPlaceSelectedRef.current = onPlaceSelected;
 
-  const { isReady, isDisabled, hasError } = useGoogleMapsPlaces();
+  const { isReady, isDisabled, isResolving, hasError } = useGoogleMapsPlaces();
   const [mode, setMode] = useState('loading'); // loading | widget | legacy | manual
 
   useEffect(() => {
@@ -166,6 +166,9 @@ export default function CampAddressAutocomplete({
       ) : (
         <input type="hidden" value={value} required={required} readOnly tabIndex={-1} aria-hidden="true" />
       )}
+      {isResolving ? (
+        <p className="muted camp-address-autocomplete-hint">Loading address search…</p>
+      ) : null}
       {isDisabled ? (
         <p className="muted camp-address-autocomplete-hint">
           Google Places is not configured — enter the address manually.

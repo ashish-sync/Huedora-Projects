@@ -1,4 +1,4 @@
-import { CAMP_NAME_OPTIONS } from '../constants/campNames';
+import { isValidCampMethod } from '../constants/campNames';
 
 const DURATION_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
 
@@ -47,8 +47,10 @@ export function validateClientMasterForm(form) {
   });
 
   const campName = String(form.campName || '').trim();
-  if (campName && !CAMP_NAME_OPTIONS.includes(campName)) {
-    errors.campName = 'Select a valid method';
+  if (!campName) {
+    errors.campName = 'Method is required';
+  } else if (!isValidCampMethod(campName)) {
+    errors.campName = 'Select a valid method or specify Others';
   }
 
   const campDuration = String(form.campDuration || '').trim();

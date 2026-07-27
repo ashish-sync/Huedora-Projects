@@ -23,10 +23,10 @@ export const GST_RATE_PRESETS = [0, 5, 12, 18, 28];
 /** Medical Device categories align with camp / hiring methods. */
 export const MEDICAL_DEVICE_PRODUCT_CATEGORIES = [
   'BMD',
-  'Diagnostics',
-  'Uroflow',
-  'Dietician',
   'Neuro & Physio',
+  'Uroflowmetery',
+  'Diagnostics',
+  'Dietician',
   'Others',
 ];
 
@@ -35,7 +35,9 @@ const MEDICAL_DEVICE_CATEGORY_ALIASES = {
   Diagnostics: 'Diagnostics',
   Diagnostic: 'Diagnostics',
   Daignostics: 'Diagnostics',
-  Uroflow: 'Uroflow',
+  Uroflowmetery: 'Uroflowmetery',
+  Uroflowmetry: 'Uroflowmetery',
+  Uroflow: 'Uroflowmetery',
   Dietician: 'Dietician',
   Dietitian: 'Dietician',
   'Neuro & Physio': 'Neuro & Physio',

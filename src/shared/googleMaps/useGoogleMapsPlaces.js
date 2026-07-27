@@ -3,36 +3,51 @@ import { useEffect, useState } from 'react';
 const SCRIPT_ID = 'tylo-google-maps-js';
 let loadPromise = null;
 
+async function ensurePlacesLibrary() {
+  if (!window.google?.maps?.importLibrary) {
+    throw new Error('Google Maps importLibrary is unavailable');
+  }
+  await window.google.maps.importLibrary('places');
+  return window.google;
+}
+
 function loadGoogleMapsScript(apiKey) {
   if (typeof window === 'undefined') {
     return Promise.reject(new Error('Google Maps is only available in the browser'));
   }
-  if (window.google?.maps?.places) {
-    return Promise.resolve(window.google);
+
+  if (window.google?.maps?.importLibrary) {
+    return ensurePlacesLibrary();
   }
+
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise((resolve, reject) => {
     const existing = document.getElementById(SCRIPT_ID);
     if (existing) {
-      existing.addEventListener('load', () => resolve(window.google), { once: true });
-      existing.addEventListener('error', () => reject(new Error('Failed to load Google Maps')), { once: true });
+      if (window.google?.maps?.importLibrary) {
+        ensurePlacesLibrary().then(resolve).catch(reject);
+        return;
+      }
+      existing.addEventListener(
+        'load',
+        () => ensurePlacesLibrary().then(resolve).catch(reject),
+        { once: true }
+      );
+      existing.addEventListener('error', () => reject(new Error('Failed to load Google Maps')), {
+        once: true,
+      });
       return;
     }
-
-    const callbackName = '__tyloGoogleMapsInit';
-    window[callbackName] = () => {
-      delete window[callbackName];
-      resolve(window.google);
-    };
 
     const script = document.createElement('script');
     script.id = SCRIPT_ID;
     script.async = true;
-    script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=${callbackName}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async`;
+    script.onload = () => {
+      ensurePlacesLibrary().then(resolve).catch(reject);
+    };
     script.onerror = () => {
-      delete window[callbackName];
       loadPromise = null;
       reject(new Error('Failed to load Google Maps'));
     };
@@ -44,7 +59,6 @@ function loadGoogleMapsScript(apiKey) {
 
 /**
  * Load the Google Maps JavaScript API with the Places library.
- * Returns status: disabled (no key), loading, ready, or error.
  */
 export function useGoogleMapsPlaces() {
   const apiKey = String(import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '').trim();

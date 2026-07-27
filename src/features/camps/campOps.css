@@ -2903,6 +2903,21 @@
   z-index: 10000 !important;
 }
 
+.camp-ops-root .camp-address-autocomplete-host {
+  width: 100%;
+}
+
+.camp-ops-root .camp-address-autocomplete-host .camp-place-autocomplete-widget,
+.camp-ops-root .camp-address-autocomplete-host gmp-place-autocomplete {
+  display: block;
+  width: 100%;
+}
+
+.camp-ops-root .camp-address-legacy-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .camp-ops-root .form-actions {
   display: flex;
   gap: 12px;

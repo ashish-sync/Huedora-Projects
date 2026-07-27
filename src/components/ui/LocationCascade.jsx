@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { resolveZoneForState } from '../../constants/geoZones.js';
 import AdaptiveSelect from './AdaptiveSelect.jsx';
+import PinMappedPreview from './PinMappedPreview.jsx';
 
 const empty = {
   stateId: '',
@@ -28,6 +29,8 @@ export default function LocationCascade({
   pinInputOnly = false,
   pinFirst = false,
   districtRequired = false,
+  showMappedPinPreview = false,
+  showPinCountsInOptions = false,
   disabled = false,
   labels = {},
 }) {
@@ -44,10 +47,10 @@ export default function LocationCascade({
   };
 
   useEffect(() => {
-    api('/geo/states')
+    api(`/geo/states${showPinCountsInOptions ? '?includePinStats=true' : ''}`)
       .then((r) => setStates(r.data || []))
       .catch((e) => setError(e.message));
-  }, []);
+  }, [showPinCountsInOptions]);
 
   // Resolve legacy free-text state/city names to master IDs when editing older rows
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function LocationCascade({
       return undefined;
     }
     let cancelled = false;
-    api(`/geo/districts?stateId=${encodeURIComponent(v.stateId)}`)
+    api(`/geo/districts?stateId=${encodeURIComponent(v.stateId)}${showPinCountsInOptions ? '&includePinStats=true' : ''}`)
       .then((r) => {
         if (!cancelled) setDistricts(r.data || []);
       })
@@ -89,7 +92,7 @@ export default function LocationCascade({
     return () => {
       cancelled = true;
     };
-  }, [v.stateId]);
+  }, [v.stateId, showPinCountsInOptions]);
 
   useEffect(() => {
     if (!v.stateId) {
@@ -99,6 +102,7 @@ export default function LocationCascade({
     let cancelled = false;
     const params = new URLSearchParams({ stateId: v.stateId });
     if (v.districtId) params.set('districtId', v.districtId);
+    if (showPinCountsInOptions) params.set('includePinStats', 'true');
     api(`/geo/cities?${params}`)
       .then((r) => {
         if (!cancelled) setCities(r.data || []);
@@ -109,7 +113,7 @@ export default function LocationCascade({
     return () => {
       cancelled = true;
     };
-  }, [v.stateId, v.districtId]);
+  }, [v.stateId, v.districtId, showPinCountsInOptions]);
 
   useEffect(() => {
     if (!showPin || pinInputOnly || !v.cityId) {
@@ -170,6 +174,9 @@ export default function LocationCascade({
     });
   };
 
+  const optionSuffix = (item) =>
+    showPinCountsInOptions && item.pinCount ? ` (${item.pinCount} PIN${item.pinCount === 1 ? '' : 's'})` : '';
+
   const pinField = showPin ? (
     <div className="field" key="pin">
       <label>{labels.pinCode || 'PIN Code'}{pinRequired ? ' *' : ''}</label>
@@ -222,11 +229,12 @@ export default function LocationCascade({
         aria-label={labels.state || 'State'}
       >
         <option value="">Select state</option>
-        {states.map((s) => (
-          <option key={s._id} value={s._id}>
-            {s.name}
-          </option>
-        ))}
+          {states.map((s) => (
+            <option key={s._id} value={s._id}>
+              {s.name}
+              {optionSuffix(s)}
+            </option>
+          ))}
       </AdaptiveSelect>
     </div>
   );
@@ -248,6 +256,7 @@ export default function LocationCascade({
         {districts.map((d) => (
           <option key={d._id} value={d._id}>
             {d.name}
+            {optionSuffix(d)}
           </option>
         ))}
       </AdaptiveSelect>
@@ -268,6 +277,7 @@ export default function LocationCascade({
         {cities.map((c) => (
           <option key={c._id} value={c._id}>
             {c.name}
+            {optionSuffix(c)}
           </option>
         ))}
       </AdaptiveSelect>
@@ -282,6 +292,14 @@ export default function LocationCascade({
     <div className="location-cascade">
       {error ? <p className="error-text">{error}</p> : null}
       {orderedFields.filter(Boolean)}
+      {showMappedPinPreview ? (
+        <PinMappedPreview
+          className="full"
+          stateId={v.stateId}
+          districtId={v.districtId}
+          cityId={v.cityId}
+        />
+      ) : null}
     </div>
   );
 }

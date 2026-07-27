@@ -1834,6 +1834,8 @@ export default function AssetRequestsPage() {
                       pinRequired
                       districtRequired
                       showDistrict
+                      showMappedPinPreview
+                      showPinCountsInOptions
                       value={{
                         pinCode: form.masterPayload?.pinCode || '',
                         city: form.masterPayload?.city || '',

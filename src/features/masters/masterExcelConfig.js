@@ -48,8 +48,8 @@ export const MASTER_EXCEL = {
     exportPath: '/geo/pin-codes/export',
     samplePath: '/geo/pin-codes/sample',
     importPath: '/geo/pin-codes/import',
-    downloadFilename: 'Geography_PIN_Codes.xlsx',
-    sampleFilename: 'Geography_PIN_Codes_Sample.xlsx',
+    downloadFilename: 'Pin_Code_Master.xlsx',
+    sampleFilename: 'Pin_Code_Master_Sample.xlsx',
   },
   'client-masters': {
     exportPath: '/camp-ops/client-masters/export',

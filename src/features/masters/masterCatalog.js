@@ -222,6 +222,7 @@ export const MASTER_ENTITIES = [
       { name: 'state', label: 'State', required: true },
       { name: 'district', label: 'District', required: true },
       { name: 'city', label: 'City', required: true },
+      { name: 'locality', label: 'Locality' },
     ],
   },
   {

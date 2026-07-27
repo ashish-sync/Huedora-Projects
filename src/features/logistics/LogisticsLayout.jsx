@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { MODULE, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 
 const NAV_ITEMS = [
   { to: '/logistics', end: true, label: NAV.OVERVIEW },
@@ -34,18 +35,10 @@ export default function LogisticsLayout() {
         title={MODULE.LOGISTICS}
         description="Goods receipt for all product types, plus goods issue, consumption, and production output. Agreements and custody for Medical / Non-Medical Devices are in Asset One."
       >
-        <nav className="logistics-nav" aria-label={`${MODULE.LOGISTICS} sections`}>
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `logistics-nav-link${isActive ? ' is-active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <ModuleSubNav
+          ariaLabel={`${MODULE.LOGISTICS} sections`}
+          items={NAV_ITEMS}
+        />
         <Outlet />
       </PageShell>
     </div>

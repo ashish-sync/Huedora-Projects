@@ -261,16 +261,10 @@
   color: var(--brand) !important;
 }
 
-/* ── Sub-page tabs (Program Configuration / Clients, etc.) ── */
+/* ── Sub-page tabs — aligned with module-sub-nav--segmented ─ */
 .camp-ops-root .page-tabs {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0;
-  padding: 4px;
-  border: 1px solid var(--line) !important;
-  border-radius: var(--radius) !important;
-  background: var(--surface-muted) !important;
+  gap: var(--space-1);
+  padding: var(--space-1);
 }
 
 .camp-ops-root .communications-hub {
@@ -292,41 +286,15 @@
 }
 
 .camp-ops-root .page-tab {
-  border: 1px solid transparent !important;
-  border-radius: var(--radius-button) !important;
-  padding: 5px 12px !important;
-  background: transparent !important;
-  color: var(--muted) !important;
-  font-size: 0.78rem !important;
-  font-weight: 600 !important;
-  cursor: pointer;
-  line-height: 1.2;
-  height: var(--control-h-sm);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  text-decoration: none !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.camp-ops-root .page-tab:hover {
-  color: var(--ink) !important;
-  background: color-mix(in srgb, var(--brand-soft) 70%, var(--bg-elevated)) !important;
-}
-
-.camp-ops-root .page-tab.is-active {
-  background: var(--bg-elevated) !important;
-  color: var(--brand) !important;
-  border-color: color-mix(in srgb, var(--brand) 28%, var(--line)) !important;
-  box-shadow: none !important;
+  padding: 0 var(--space-3) !important;
+  font-size: var(--text-body-sm-size) !important;
 }
 
 /* ── Toolbars (match Finance / Logistics inv-toolbar) ── */
 .camp-ops-root .inv-toolbar.camp-ops-toolbar,
 .camp-ops-root .camps-filter-panel.camp-ops-toolbar {
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-elevated);
@@ -400,33 +368,7 @@
   border-collapse: collapse;
 }
 
-/* ── Pagination ── */
-.camp-ops-root .pagination-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-muted);
-}
-
-.camp-ops-root .pagination-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.camp-ops-root .page-size-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--muted);
-}
+/* ── Pagination — use shared inv-pagination via PaginationBar ── */
 
 /* ── Date quick filters & chips ── */
 .camp-ops-root .date-quick-btn.is-active {

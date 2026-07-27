@@ -34,15 +34,17 @@
 
 .topbar-title {
   margin: 0 !important;
-  font-size: 1.35rem !important;
-  font-weight: 650 !important;
-  line-height: 1.25 !important;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: var(--text-h2-size) !important;
+  font-weight: var(--text-h2-weight) !important;
+  line-height: var(--text-h2-leading) !important;
+  letter-spacing: var(--text-h2-tracking);
 }
 
 .topbar-desc {
-  margin: 4px 0 0 !important;
-  font-size: 0.84rem !important;
+  margin: var(--space-1) 0 0 !important;
+  font-size: var(--text-body-sm-size) !important;
+  line-height: var(--text-body-sm-leading);
 }
 
 .page-actions {
@@ -153,7 +155,7 @@ input.esign-search,
 .btn,
 .btn.secondary,
 .btn.danger {
-  padding: 0 14px !important;
+  padding: 0 var(--space-4) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -165,8 +167,8 @@ input.esign-search,
   height: var(--control-h-sm) !important;
   min-height: var(--control-h-sm) !important;
   max-height: var(--control-h-sm) !important;
-  padding: 0 10px !important;
-  font-size: 0.75rem !important;
+  padding: 0 var(--space-3) !important;
+  font-size: var(--text-label-size) !important;
 }
 
 .btn.secondary {
@@ -217,8 +219,8 @@ input.esign-search,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 8px 10px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   border: 1px solid var(--line);
@@ -265,7 +267,7 @@ button.module-kpi.is-clickable:hover {
 }
 
 .ilog-dash-kpi {
-  padding: 8px 10px !important;
+  padding: var(--space-2) var(--space-3) !important;
   border-radius: var(--radius-button) !important;
   min-height: 52px;
   box-sizing: border-box;
@@ -486,22 +488,22 @@ button.module-kpi.is-clickable:hover {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-bottom: 10px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .field label {
-  font-size: 0.72rem;
-  font-weight: 650;
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
   color: var(--ink-soft);
 }
 
 .field textarea {
   height: auto !important;
-  min-height: 88px !important;
+  min-height: 96px !important;
   max-height: none !important;
-  padding: 10px 12px !important;
-  line-height: 1.4 !important;
+  padding: var(--space-3) !important;
+  line-height: var(--text-body-leading) !important;
 }
 
 /* ── Tables ────────────────────────────────────────────────── */
@@ -547,9 +549,9 @@ tbody tr:hover {
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.68rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-caption-size);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.35;
@@ -567,7 +569,7 @@ tbody tr:hover {
 .vf-empty,
 .ilog-dash-empty {
   text-align: center;
-  padding: 24px 16px;
+  padding: var(--space-5) var(--space-4);
 }
 
 /* ── Module stacks ─────────────────────────────────────────── */
@@ -583,42 +585,21 @@ tbody tr:hover {
   min-width: 0;
 }
 
-.logistics-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0 0 var(--stack-sm);
-  padding-bottom: var(--stack-sm);
-  border-bottom: 1px solid var(--line);
-}
-
-.logistics-nav-link {
-  display: inline-flex;
-  align-items: center;
-  height: var(--control-h-sm);
-  padding: 0 10px;
-  border-radius: var(--radius-button);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-decoration: none;
-  border: 1px solid transparent;
-  box-sizing: border-box;
-}
+/* Module sub-nav: see styles/components/module-sub-nav.css */
 
 .asset-type-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .asset-type-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   text-decoration: none;
   color: inherit;
@@ -642,11 +623,11 @@ tbody tr:hover {
   font-size: 0.95rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .asset-type-card-cta {
-  margin-top: 6px;
+  margin-top: var(--space-2);
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--brand);
@@ -657,11 +638,11 @@ tbody tr:hover {
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px 16px;
+  gap: var(--space-3) var(--space-4);
   margin: 0 0 var(--stack);
-  padding: 14px 16px;
+  padding: var(--space-4);
   border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line));
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--brand) 6%, var(--bg-elevated));
 }
 

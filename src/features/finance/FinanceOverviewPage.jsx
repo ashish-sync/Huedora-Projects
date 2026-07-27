@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import FinanceDocumentsList from './FinanceDocumentsList.jsx';
+import './finance-commercial.css';
 
 const BUILDERS = [
   {
@@ -36,20 +37,14 @@ export default function FinanceOverviewPage() {
   return (
     <div className="finance-hub">
       <section className="finance-hub-panel card">
-        <header className="finance-hub-header">
-          <div className="finance-hub-header-text">
-            <h2 className="finance-hub-title">Finance</h2>
-            <p className="finance-hub-lead">
-              Create and manage GST invoices, proformas, purchase orders, and credit notes.
-            </p>
-          </div>
-          <Link to="/finance/master" className="btn secondary btn-compact finance-hub-org-link">
+        <div className="finance-hub-actions">
+          <Link to="/finance/master" className="btn secondary btn-compact">
             Organisation master
           </Link>
           <Link to="/finance/camp-payouts" className="btn secondary btn-compact">
             Camp payouts
           </Link>
-        </header>
+        </div>
 
         {canWrite ? (
           <div className="finance-hub-create">

@@ -4,6 +4,7 @@ import { usePreviewScale } from '../documentGenerator/usePreviewScale.js';
 import { A4_LANDSCAPE_PX } from '../shared/a4Landscape.js';
 import { exportDocumentPdf } from './exportInvoicePdf.js';
 import './export-invoice.css';
+import './builder.css';
 
 function SaveIndicator({ state, savedAt }) {
   if (state === 'saving') {

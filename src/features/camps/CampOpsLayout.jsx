@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { CampManageHeaderActions } from './components/CampManageHeaderActions.jsx';
 import { CampWorkingStageSelect } from './components/CampWorkingStageSelect.jsx';
 import { CampWorkingStageProvider } from './CampWorkingStageContext.jsx';
 import { useCampOpsAuth } from './useCampOpsAuth.js';
 import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
+import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
 import './campOps.css';
 import './campOps.theme.css';
@@ -46,18 +47,11 @@ function CampOpsLayoutBody({
             <div className="camp-ops-strip__title-row">
               <h2 className="topbar-title">{meta.title}</h2>
               {navItems.length > 0 && (
-                <nav className="camp-ops-inline-nav" aria-label={`${MODULE.CAMP_MANAGEMENT} sections`}>
-                  {navItems.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      end={item.end}
-                      className={({ isActive }) => `camp-ops-inline-nav-link${isActive ? ' is-active' : ''}`}
-                    >
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </nav>
+                <ModuleSubNav
+                  variant="segmented"
+                  ariaLabel={`${MODULE.CAMP_MANAGEMENT} sections`}
+                  items={navItems}
+                />
               )}
             </div>
             {showSubtitle && (

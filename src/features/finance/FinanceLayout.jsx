@@ -1,7 +1,8 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { MODULE, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 
 const EDITOR_ROUTES = ['/finance/build', '/finance/build/proforma', '/finance/build/purchase-order', '/finance/build/credit-note'];
 
@@ -52,18 +53,10 @@ export default function FinanceLayout() {
         title={MODULE.FINANCE}
         description="Create and manage commercial documents."
       >
-        <nav className="logistics-nav" aria-label={`${MODULE.FINANCE} sections`}>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `logistics-nav-link${isActive ? ' is-active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <ModuleSubNav
+          ariaLabel={`${MODULE.FINANCE} sections`}
+          items={navItems}
+        />
         <Outlet />
       </PageShell>
     </div>

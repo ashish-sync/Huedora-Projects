@@ -2,6 +2,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 const STORAGE_KEY = 'tylo-one-theme';
 const LEGACY_STORAGE_KEY = 'dhub-theme';
+const THEME_META_COLORS = {
+  light: '#0A5AC2',
+  dark: '#111827',
+};
+
+function applyThemeToDocument(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute('content', THEME_META_COLORS[theme] || THEME_META_COLORS.light);
+  }
+}
 const ThemeContext = createContext({
   theme: 'light',
   setTheme: () => {},
@@ -38,7 +50,7 @@ export function ThemeProvider({ children }) {
   const setTheme = useCallback((next) => {
     const value = next === 'dark' ? 'dark' : 'light';
     setThemeState(value);
-    document.documentElement.setAttribute('data-theme', value);
+    applyThemeToDocument(value);
     try {
       localStorage.setItem(STORAGE_KEY, value);
     } catch {
@@ -51,7 +63,7 @@ export function ThemeProvider({ children }) {
   }, [setTheme, theme]);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    applyThemeToDocument(theme);
   }, [theme]);
 
   const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme]);

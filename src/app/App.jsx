@@ -1,56 +1,62 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { useAuth } from '../shared/auth.jsx';
 import Layout from './Layout.jsx';
 import LoginPage from '../features/auth/LoginPage.jsx';
-import ModulesHomePage from '../features/dashboards/DashboardPage.jsx';
-import TrackingDashboardPage from '../features/dashboards/TrackingDashboardPage.jsx';
-import RecipientSignPage from '../features/agreements/RecipientSignPage.jsx';
-import SelfVerifyPage from '../features/verifications/SelfVerifyPage.jsx';
-import AssetDetailPage from '../features/assets/AssetDetailPage.jsx';
-import AgreementsPage from '../features/agreements/AgreementsPage.jsx';
-import AgreementCreatePage from '../features/agreements/AgreementCreatePage.jsx';
-import AgreementDetailPage from '../features/agreements/AgreementDetailPage.jsx';
-import RolePermissionMasterPage from '../features/users/RolePermissionMasterPage.jsx';
-import VerificationsPage from '../features/verifications/VerificationsPage.jsx';
-import AssetRequestsPage from '../features/assetRequests/AssetRequestsPage.jsx';
-import RequestProductUploadPage from '../features/assetRequests/RequestProductUploadPage.jsx';
-import ImportsPage from '../features/imports/ImportsPage.jsx';
-import AuditPage from '../features/audit/AuditPage.jsx';
-import NotificationsPage from '../features/notifications/NotificationsPage.jsx';
-import CampOpsLayout from '../features/camps/CampOpsLayout.jsx';
-import CampManagePage from '../features/camps/CampManagePage.jsx';
-import CampFormPage from '../features/camps/CampFormPage.jsx';
-import ClientMasterFormRoute from '../features/camps/ClientMasterFormRoute.jsx';
 import { CLIENT_MASTER_ENTITY, CLIENT_MASTER_SCOPE } from '../features/camps/clientMasterPaths.js';
-import CampImportPage from '../features/camps/CampImportPage.jsx';
-import CommunicationsLayout from '../features/camps/CommunicationsLayout.jsx';
-import CommunicationsEmailPage from '../features/camps/CommunicationsEmailPage.jsx';
-import CommunicationsPastePage from '../features/camps/CommunicationsPastePage.jsx';
-import LogisticsLayout from '../features/logistics/LogisticsLayout.jsx';
-import LogisticsHubPage from '../features/logistics/LogisticsHubPage.jsx';
-import LogisticsInwardPage from '../features/logistics/LogisticsInwardPage.jsx';
-import LogisticsOutwardPage from '../features/logistics/LogisticsOutwardPage.jsx';
-import LogisticsUsagePage from '../features/logistics/LogisticsUsagePage.jsx';
-import LogisticsOutputPage from '../features/logistics/LogisticsOutputPage.jsx';
-import AssetInventoryLayout from '../features/assets/AssetInventoryLayout.jsx';
-import AssetOverviewPage from '../features/assets/AssetOverviewPage.jsx';
-import AssetTypeStockPage from '../features/assets/AssetTypeStockPage.jsx';
-import MasterDataPage from '../features/masters/MasterDataPage.jsx';
-import FinanceLayout from '../features/finance/FinanceLayout.jsx';
-import FinanceOverviewPage from '../features/finance/FinanceOverviewPage.jsx';
-import InvoiceBuilderPage from '../features/finance/builder/InvoiceBuilderPage.jsx';
-import ProformaBuilderPage from '../features/finance/builder/ProformaBuilderPage.jsx';
-import PurchaseOrderBuilderPage from '../features/finance/builder/PurchaseOrderBuilderPage.jsx';
-import CreditNoteBuilderPage from '../features/finance/builder/CreditNoteBuilderPage.jsx';
-import FinanceCommercialMasterPage from '../features/finance/FinanceCommercialMasterPage.jsx';
-import FinanceCampPayoutsPage from '../features/finance/FinanceCampPayoutsPage.jsx';
-import FinanceGeneratePage from '../features/finance/FinanceGeneratePage.jsx';
+
+const ModulesHomePage = lazy(() => import('../features/dashboards/DashboardPage.jsx'));
+const TrackingDashboardPage = lazy(() => import('../features/dashboards/TrackingDashboardPage.jsx'));
+const RecipientSignPage = lazy(() => import('../features/agreements/RecipientSignPage.jsx'));
+const SelfVerifyPage = lazy(() => import('../features/verifications/SelfVerifyPage.jsx'));
+const AssetDetailPage = lazy(() => import('../features/assets/AssetDetailPage.jsx'));
+const AgreementsPage = lazy(() => import('../features/agreements/AgreementsPage.jsx'));
+const AgreementCreatePage = lazy(() => import('../features/agreements/AgreementCreatePage.jsx'));
+const AgreementDetailPage = lazy(() => import('../features/agreements/AgreementDetailPage.jsx'));
+const RolePermissionMasterPage = lazy(() => import('../features/users/RolePermissionMasterPage.jsx'));
+const VerificationsPage = lazy(() => import('../features/verifications/VerificationsPage.jsx'));
+const AssetRequestsPage = lazy(() => import('../features/assetRequests/AssetRequestsPage.jsx'));
+const RequestProductUploadPage = lazy(() => import('../features/assetRequests/RequestProductUploadPage.jsx'));
+const ImportsPage = lazy(() => import('../features/imports/ImportsPage.jsx'));
+const AuditPage = lazy(() => import('../features/audit/AuditPage.jsx'));
+const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage.jsx'));
+const CampOpsLayout = lazy(() => import('../features/camps/CampOpsLayout.jsx'));
+const CampManagePage = lazy(() => import('../features/camps/CampManagePage.jsx'));
+const CampFormPage = lazy(() => import('../features/camps/CampFormPage.jsx'));
+const ClientMasterFormRoute = lazy(() => import('../features/camps/ClientMasterFormRoute.jsx'));
+const CampImportPage = lazy(() => import('../features/camps/CampImportPage.jsx'));
+const CommunicationsLayout = lazy(() => import('../features/camps/CommunicationsLayout.jsx'));
+const CommunicationsEmailPage = lazy(() => import('../features/camps/CommunicationsEmailPage.jsx'));
+const CommunicationsPastePage = lazy(() => import('../features/camps/CommunicationsPastePage.jsx'));
+const LogisticsLayout = lazy(() => import('../features/logistics/LogisticsLayout.jsx'));
+const LogisticsHubPage = lazy(() => import('../features/logistics/LogisticsHubPage.jsx'));
+const LogisticsInwardPage = lazy(() => import('../features/logistics/LogisticsInwardPage.jsx'));
+const LogisticsOutwardPage = lazy(() => import('../features/logistics/LogisticsOutwardPage.jsx'));
+const LogisticsUsagePage = lazy(() => import('../features/logistics/LogisticsUsagePage.jsx'));
+const LogisticsOutputPage = lazy(() => import('../features/logistics/LogisticsOutputPage.jsx'));
+const AssetInventoryLayout = lazy(() => import('../features/assets/AssetInventoryLayout.jsx'));
+const AssetOverviewPage = lazy(() => import('../features/assets/AssetOverviewPage.jsx'));
+const AssetTypeStockPage = lazy(() => import('../features/assets/AssetTypeStockPage.jsx'));
+const MasterDataPage = lazy(() => import('../features/masters/MasterDataPage.jsx'));
+const FinanceLayout = lazy(() => import('../features/finance/FinanceLayout.jsx'));
+const FinanceOverviewPage = lazy(() => import('../features/finance/FinanceOverviewPage.jsx'));
+const InvoiceBuilderPage = lazy(() => import('../features/finance/builder/InvoiceBuilderPage.jsx'));
+const ProformaBuilderPage = lazy(() => import('../features/finance/builder/ProformaBuilderPage.jsx'));
+const PurchaseOrderBuilderPage = lazy(() => import('../features/finance/builder/PurchaseOrderBuilderPage.jsx'));
+const CreditNoteBuilderPage = lazy(() => import('../features/finance/builder/CreditNoteBuilderPage.jsx'));
+const FinanceCommercialMasterPage = lazy(() => import('../features/finance/FinanceCommercialMasterPage.jsx'));
+const FinanceCampPayoutsPage = lazy(() => import('../features/finance/FinanceCampPayoutsPage.jsx'));
+const FinanceGeneratePage = lazy(() => import('../features/finance/FinanceGeneratePage.jsx'));
+
+function PageLoader() {
+  return <div className="login-page">Loading…</div>;
+}
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="login-page">Loading…</div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
-  return children;
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
 function CampClientMasterEditRedirect() {
@@ -62,11 +68,11 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/v/:token" element={<SelfVerifyPage />} />
-      <Route path="/verify/:token" element={<SelfVerifyPage />} />
-      <Route path="/s/:token" element={<RecipientSignPage />} />
-      <Route path="/sign/:token" element={<RecipientSignPage />} />
-      <Route path="/request-upload/:token" element={<RequestProductUploadPage />} />
+      <Route path="/v/:token" element={<Suspense fallback={<PageLoader />}><SelfVerifyPage /></Suspense>} />
+      <Route path="/verify/:token" element={<Suspense fallback={<PageLoader />}><SelfVerifyPage /></Suspense>} />
+      <Route path="/s/:token" element={<Suspense fallback={<PageLoader />}><RecipientSignPage /></Suspense>} />
+      <Route path="/sign/:token" element={<Suspense fallback={<PageLoader />}><RecipientSignPage /></Suspense>} />
+      <Route path="/request-upload/:token" element={<Suspense fallback={<PageLoader />}><RequestProductUploadPage /></Suspense>} />
       <Route
         path="/*"
         element={

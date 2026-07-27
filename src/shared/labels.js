@@ -66,7 +66,7 @@ export const MODULE_BLURB = {
 
 export const FIELD = {
   ASSET_NAME: 'Asset Name',
-  ASSET_TYPE: 'Asset Type',
+  OWNERSHIP_TYPE: 'Ownership Type',
   ASSET_VALUE: 'Asset Value',
   ASSET_STATUS: 'Asset Status',
   ASSET_CUSTODY: 'Asset Custody',

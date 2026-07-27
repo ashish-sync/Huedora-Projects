@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { MODULE, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 import { ASSET_REGISTER_PRODUCT_TYPES, productTypeToSlug } from './assetProductTypes.js';
 
 const NAV_ITEMS = [
@@ -43,18 +44,11 @@ export default function AssetInventoryLayout() {
         title={MODULE.ASSET_INVENTORY}
         description="Agreements and custody for Medical and Non-Medical Devices. Record inward for every product type in Movement One → Goods Receipt."
       >
-        <nav className="logistics-nav asset-one-nav" aria-label={`${MODULE.ASSET_INVENTORY} sections`}>
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) => `logistics-nav-link${isActive ? ' is-active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <ModuleSubNav
+          className="asset-one-nav"
+          ariaLabel={`${MODULE.ASSET_INVENTORY} sections`}
+          items={NAV_ITEMS}
+        />
         <Outlet />
       </PageShell>
     </div>

@@ -9,9 +9,10 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import {
-  ASSET_TYPE_OPTIONS,
+  OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
   ASSET_CUSTODY_OPTIONS,
+  formatOwnershipType,
 } from '../devices/assetMasterOptions.js';
 import { phoneOrEmailError, PAGE_SIZES } from '../../shared/validation.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
@@ -737,14 +738,14 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             <h3 className="am-form-section-title">Registration</h3>
             <div className="am-form-section-grid">
               <div className="field">
-                <label>{FIELD.ASSET_TYPE} *</label>
+                <label>{FIELD.OWNERSHIP_TYPE} *</label>
                 <AdaptiveSelect
                   required
                   value={form.assetType}
                   onChange={(e) => setForm({ ...form, assetType: e.target.value })}
                 >
-                  <option value="">Select type</option>
-                  {ASSET_TYPE_OPTIONS.map((o) => (
+                  <option value="">Select ownership type</option>
+                  {OWNERSHIP_TYPE_OPTIONS.map((o) => (
                     <option key={o} value={o}>
                       {o}
                     </option>
@@ -924,7 +925,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             <thead>
               <tr>
                 <th>{FIELD.ASSET_NAME}</th>
-                <th>{FIELD.ASSET_TYPE}</th>
+                <th>{FIELD.OWNERSHIP_TYPE}</th>
                 <th>Serial No.</th>
                 <th>{FIELD.ASSET_STATUS}</th>
                 <th>{FIELD.ASSET_CUSTODY}</th>
@@ -940,7 +941,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     <strong className="inv-device">{a.deviceNameSnapshot || '-'}</strong>
                   </td>
                   <td className="inv-muted-cell">
-                    {a.assetType || a.deviceMasterId?.assetType || '-'}
+                    {formatOwnershipType(a.assetType || a.deviceMasterId?.assetType) || '-'}
                   </td>
                   <td className="mono-sm">{a.serialNumber || '-'}</td>
                   <td>

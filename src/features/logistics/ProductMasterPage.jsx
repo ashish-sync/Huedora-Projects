@@ -307,9 +307,10 @@ export default function ProductMasterPage() {
           </div>
         )}
 
-        <div className="pm-filter-bar logistics-filter-bar">
+        <div className="pm-filter-bar logistics-filter-bar inv-toolbar">
           <input
             type="search"
+            className="inv-search esign-search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search code, name, brand, model…"

@@ -29,7 +29,7 @@ export default function PaginationBar({
           {safePages > 0 ? ` · ${safePages.toLocaleString()} page${safePages === 1 ? '' : 's'}` : ''}
         </span>
         <label className="inv-page-size">
-          Records per page
+          <span className="inv-page-size-label">Records per page</span>
           <AdaptiveSelect
             value={safeLimit}
             onChange={(e) => onLimitChange?.(Number(e.target.value))}

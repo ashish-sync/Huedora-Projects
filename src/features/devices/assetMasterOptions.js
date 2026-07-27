@@ -1,7 +1,28 @@
-export const ASSET_TYPE_OPTIONS = ['Rented', 'Owned', 'Hybrid'];
+export const OWNERSHIP_TYPE_OPTIONS = [
+  'Company Owned',
+  'Rented',
+  'Client Owned',
+  'Hybrid',
+];
 
-/** Sheet: Asset Status. 8 inventory types */
-export const AGREEMENT_STATUS_OPTIONS = [
+const OWNERSHIP_TYPE_ALIASES = {
+  owned: 'Company Owned',
+  'company owned': 'Company Owned',
+  rented: 'Rented',
+  'client owned': 'Client Owned',
+  hybrid: 'Hybrid',
+};
+
+export function formatOwnershipType(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const alias = OWNERSHIP_TYPE_ALIASES[raw.toLowerCase()];
+  if (alias) return alias;
+  const hit = OWNERSHIP_TYPE_OPTIONS.find((o) => o.toLowerCase() === raw.toLowerCase());
+  return hit || raw;
+}
+
+export const ASSET_STATUS_OPTIONS = [
   'With TCPL',
   'Not Applicable',
   'Lost/Stolen',
@@ -12,63 +33,10 @@ export const AGREEMENT_STATUS_OPTIONS = [
   'End of Life',
 ];
 
-export const ASSET_STATUS_OPTIONS = AGREEMENT_STATUS_OPTIONS;
-
-/** Medical Device statuses tracked on Verification One (monthly rounds). */
-export const VERIFICATION_ONE_ELIGIBLE_STATUSES = [
-  'With TCPL',
-  'Not Applicable',
-  'Agreement Signed',
-  'Not Initiated',
-];
-
-/** Sheet: Asset Custody */
-export const DEVICE_CUSTODY_OPTIONS = [
+export const ASSET_CUSTODY_OPTIONS = [
   'Client / Rented',
   'TCPL - Head Office',
   'TPCL - Warehouse',
   'Individual',
   'Service Provider',
-];
-
-export const ASSET_CUSTODY_OPTIONS = DEVICE_CUSTODY_OPTIONS;
-
-/** 28 Indian states + 8 union territories */
-export const INDIAN_STATES_AND_UTS = [
-  'Andaman and Nicobar Islands',
-  'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chandigarh',
-  'Chhattisgarh',
-  'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi',
-  'Goa',
-  'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jammu and Kashmir',
-  'Jharkhand',
-  'Karnataka',
-  'Kerala',
-  'Ladakh',
-  'Lakshadweep',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Puducherry',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
-  'Tamil Nadu',
-  'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
 ];

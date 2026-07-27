@@ -22,9 +22,18 @@
           var t = localStorage.getItem('tylo-one-theme') || localStorage.getItem('dhub-theme');
           if (t === 'dark' || t === 'light') {
             document.documentElement.setAttribute('data-theme', t);
-            try { localStorage.setItem('tylo-one-theme', t); localStorage.removeItem('dhub-theme'); } catch (e) {}
+            try {
+              localStorage.setItem('tylo-one-theme', t);
+              localStorage.removeItem('dhub-theme');
+              var meta = document.querySelector('meta[name="theme-color"]');
+              if (meta) meta.setAttribute('content', t === 'dark' ? '#111827' : '#0A5AC2');
+            } catch (e) {}
           } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.setAttribute('data-theme', 'dark');
+            try {
+              var m = document.querySelector('meta[name="theme-color"]');
+              if (m) m.setAttribute('content', '#111827');
+            } catch (e2) {}
           } else {
             document.documentElement.setAttribute('data-theme', 'light');
           }

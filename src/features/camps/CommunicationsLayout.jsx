@@ -1,26 +1,21 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
+
+const NAV_ITEMS = [
+  { to: '/camps/communications/paste', end: true, label: 'Manual Paste', role: 'tab' },
+  { to: '/camps/communications/email', end: true, label: 'Email', role: 'tab' },
+];
 
 export default function CommunicationsLayout() {
   return (
     <div className="communications-hub">
-      <div className="page-tabs" role="tablist" aria-label="Manual paste and email">
-        <NavLink
-          to="/camps/communications/paste"
-          end
-          role="tab"
-          className={({ isActive }) => `page-tab${isActive ? ' is-active' : ''}`}
-        >
-          Manual Paste
-        </NavLink>
-        <NavLink
-          to="/camps/communications/email"
-          end
-          role="tab"
-          className={({ isActive }) => `page-tab${isActive ? ' is-active' : ''}`}
-        >
-          Email
-        </NavLink>
-      </div>
+      <ModuleSubNav
+        variant="segmented"
+        role="tablist"
+        ariaLabel="Manual paste and email"
+        items={NAV_ITEMS}
+        className="communications-hub-tabs"
+      />
       <Outlet />
     </div>
   );

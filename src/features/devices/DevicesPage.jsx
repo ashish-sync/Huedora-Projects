@@ -7,9 +7,10 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import {
-  ASSET_TYPE_OPTIONS,
+  OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
   ASSET_CUSTODY_OPTIONS,
+  formatOwnershipType,
 } from './assetMasterOptions.js';
 
 const emptyForm = {
@@ -99,7 +100,7 @@ export default function DevicesPage() {
     return rows.filter((d) => {
       if (filterStatus && d.agreementStatus !== filterStatus) return false;
       if (filterCustody && d.custody !== filterCustody) return false;
-      if (filterType && d.assetType !== filterType) return false;
+      if (filterType && formatOwnershipType(d.assetType) !== filterType) return false;
       return true;
     });
   }, [rows, filterStatus, filterCustody, filterType]);
@@ -349,14 +350,14 @@ export default function DevicesPage() {
               />
             </div>
             <div className="field">
-              <label>Asset Type *</label>
+              <label>{FIELD.OWNERSHIP_TYPE} *</label>
               <AdaptiveSelect
                 required
                 value={form.assetType}
                 onChange={(e) => setForm({ ...form, assetType: e.target.value })}
               >
-                <option value="">Select type</option>
-                {ASSET_TYPE_OPTIONS.map((o) => (
+                <option value="">Select ownership type</option>
+                {OWNERSHIP_TYPE_OPTIONS.map((o) => (
                   <option key={o} value={o}>
                     {o}
                   </option>
@@ -500,10 +501,10 @@ export default function DevicesPage() {
           <AdaptiveSelect
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            aria-label="Filter by asset type"
+            aria-label="Filter by ownership type"
           >
-            <option value="">All types</option>
-            {ASSET_TYPE_OPTIONS.map((o) => (
+            <option value="">All ownership types</option>
+            {OWNERSHIP_TYPE_OPTIONS.map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>
@@ -557,7 +558,7 @@ export default function DevicesPage() {
             <thead>
               <tr>
                 <th>Asset Name</th>
-                <th>Type</th>
+                <th>{FIELD.OWNERSHIP_TYPE}</th>
                 <th>Serial</th>
                 <th>Value</th>
                 <th>Purchase</th>
@@ -577,7 +578,7 @@ export default function DevicesPage() {
                   <td>
                     <strong>{d.name}</strong>
                   </td>
-                  <td>{d.assetType || '-'}</td>
+                  <td>{formatOwnershipType(d.assetType) || '-'}</td>
                   <td className="mono-sm am-serial">{d.serialNumber || '-'}</td>
                   <td className="am-cost">{formatMoney(d.cost)}</td>
                   <td className="mono-sm">{d.purchaseMonth || '-'}</td>

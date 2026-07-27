@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../shared/api.js';
+import { api } from '../../shared/api.js';
 
 export default function PinMappedPreview({ stateId, districtId, cityId, className = '' }) {
   const [preview, setPreview] = useState({ count: 0, label: '' });

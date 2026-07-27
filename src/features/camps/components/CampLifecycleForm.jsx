@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import CampAddressAutocomplete from './CampAddressAutocomplete.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
-import { resolveZoneForState } from '../../../constants/geoZones.js';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
 import { CampAssignmentStage } from './CampAssignmentStage';
@@ -161,13 +160,8 @@ export function CampLifecycleForm({
             onPlaceSelected={(loc) => {
               updateFields?.({
                 campAddress: loc.campAddress || form.campAddress,
-                city: loc.city || '',
-                state: loc.state || '',
-                district: loc.district || '',
-                pincode: loc.pincode || '',
-                zone: loc.zone || resolveZoneForState(loc.state) || '',
-                latitude: loc.latitude || '',
-                longitude: loc.longitude || '',
+                city: loc.city || form.city || '',
+                pincode: loc.pincode || form.pincode || '',
               });
             }}
           />
@@ -182,8 +176,6 @@ export function CampLifecycleForm({
               district: form.district || '',
               pincode: form.pincode || '',
               zone: form.zone || '',
-              latitude: form.latitude ?? '',
-              longitude: form.longitude ?? '',
               stateId: form.stateId || '',
               districtId: form.districtId || '',
             }}
@@ -194,8 +186,6 @@ export function CampLifecycleForm({
                 district: loc.district || '',
                 pincode: loc.pincode || '',
                 zone: loc.zone || '',
-                latitude: loc.latitude ?? '',
-                longitude: loc.longitude ?? '',
                 stateId: loc.stateId || '',
                 districtId: loc.districtId || '',
               });

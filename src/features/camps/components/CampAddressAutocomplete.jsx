@@ -169,9 +169,6 @@ export default function CampAddressAutocomplete({
           Address suggestions unavailable — you can still type the address manually.
         </p>
       ) : null}
-      {status === 'ready' && !loading ? (
-        <p className="muted camp-address-autocomplete-hint">Search an address, then edit the fields below if needed.</p>
-      ) : null}
     </div>
   );
 }

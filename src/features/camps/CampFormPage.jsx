@@ -30,6 +30,7 @@ import {
 } from './constants/campLifecycle';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { validateRequestStageForm } from './utils/validateRequestStage';
+import { confirmCampDurationIfNeeded } from './utils/campDurationWarning';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
 const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
@@ -279,6 +280,12 @@ export default function CampFormPage() {
   function updateField(field, value) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
+      if (field === 'hq') {
+        next.hqManuallyEdited = true;
+      }
+      if (field === 'city' && !prev.hqManuallyEdited) {
+        next.hq = value;
+      }
       if (field === 'clientId') {
         next.campaignType = '';
         next.campaignName = '';
@@ -305,7 +312,13 @@ export default function CampFormPage() {
   }
 
   function updateFields(patch) {
-    setForm((prev) => ({ ...prev, ...patch }));
+    setForm((prev) => {
+      const next = { ...prev, ...patch };
+      if (patch.city && !prev.hqManuallyEdited && patch.hq === undefined) {
+        next.hq = patch.city;
+      }
+      return next;
+    });
   }
 
   async function handleSubmitToFinance() {
@@ -457,6 +470,8 @@ export default function CampFormPage() {
         setError(requestErrors[0]);
         return;
       }
+      const duration = Number(form.durationHours);
+      if (!confirmCampDurationIfNeeded(duration)) return;
       if (!divisionOptions.length) {
         setError(NO_DIVISION_MESSAGE);
         return;
@@ -495,9 +510,7 @@ export default function CampFormPage() {
         : {}),
       clientId: form.clientId,
       campDate: toApiDateValue(form.campDate),
-      requestDate: isEdit
-        ? (toApiDateValue(form.requestDate) || form.requestDate)
-        : todayIsoDate(),
+      requestDate: toApiDateValue(form.requestDate) || todayIsoDate(),
       durationHours: form.durationHours,
       expectedPatients: form.expectedPatients,
       patientsCount: form.patientsCount,
@@ -507,6 +520,7 @@ export default function CampFormPage() {
         : activeStage,
       lifecycleOnly: isEdit && activeStage !== 'request',
     };
+    delete payload.hqManuallyEdited;
 
     setLoading(true);
     setError('');

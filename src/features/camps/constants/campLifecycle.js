@@ -233,6 +233,7 @@ export function emptyLifecycleForm() {
     districtId: '',
     cityId: '',
     hq: '',
+    hqManuallyEdited: false,
     zone: '',
     latitude: '',
     longitude: '',

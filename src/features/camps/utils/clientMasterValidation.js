@@ -63,6 +63,15 @@ export function validateClientMasterForm(form) {
     errors.spocNumber = 'SPOC number must be 6–15 digits';
   }
 
+  const assignedUserEmails = String(form.assignedUserEmails || '').trim();
+  if (assignedUserEmails) {
+    const emails = assignedUserEmails.split(/[;,\n]/).map((email) => email.trim()).filter(Boolean);
+    const invalid = emails.find((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    if (invalid) {
+      errors.assignedUserEmails = `Invalid email: ${invalid}`;
+    }
+  }
+
   const nonNegativeNumbers = [
     'poAmount',
     'executedCampUnit',
@@ -116,6 +125,9 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     spocName: record.spocName || '',
     spocNumber: record.spocNumber || '',
     requestTimeline: record.requestTimeline || '',
+    assignedUserEmails: Array.isArray(record.assignedUserEmails)
+      ? record.assignedUserEmails.join(', ')
+      : (record.assignedUserEmails || ''),
     executedCampUnit: String(record.executedCampUnit ?? ''),
     cancelledCampUnit: String(record.cancelledCampUnit ?? ''),
     otUnit: String(record.otUnit ?? ''),

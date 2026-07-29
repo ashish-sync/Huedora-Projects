@@ -3,6 +3,8 @@ import CampAddressAutocomplete from './CampAddressAutocomplete.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
+import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
+import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import { CampAssignmentStage } from './CampAssignmentStage';
 import { CampLifecycleStepper } from './CampLifecycleStepper';
 import {
@@ -21,6 +23,7 @@ import {
   paymentSubmitStatusLabel,
 } from '../constants/campLifecycle';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
+import { DOCTOR_SPECIALTY_OPTIONS, isRequestDateFarFromToday } from '../constants/doctorSpecialty';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -73,6 +76,8 @@ export function CampLifecycleForm({
 }) {
   const [docType, setDocType] = useState('doctor_form');
   const derived = useMemo(() => computeLifecycleDerived(form), [form]);
+  const { options: specialtyOptions } = usePicklistOptions('camp.doctorSpecialty', DOCTOR_SPECIALTY_OPTIONS);
+  const requestDateWarning = isRequestDateFarFromToday(form.requestDate);
 
   const stageDisabled = (stage) => stageReadOnly[stage] ?? false;
 
@@ -125,10 +130,20 @@ export function CampLifecycleForm({
           Camp Date
           <DateInput hideLabel value={form.campDate} onChange={(v) => updateField('campDate', v)} disabled={disabled} required />
         </label>
-        <ReadOnlyField
-          label="Request Date"
-          value={form.requestDate || ''}
-        />
+        <label>
+          Request Date
+          <DateInput
+            hideLabel
+            value={form.requestDate}
+            onChange={(v) => updateField('requestDate', v)}
+            disabled={disabled}
+          />
+        </label>
+        {requestDateWarning && (
+          <p className="meta-text full camp-request-date-warning">
+            Request date is more than 2 days from today. Confirm this is intentional.
+          </p>
+        )}
         <label>
           Camp Start Time
           <input type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} disabled={disabled} required />
@@ -151,15 +166,19 @@ export function CampLifecycleForm({
           <input value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
         </label>
         <label>
-          Doctor Speciality
-          <input value={form.speciality} onChange={(e) => updateField('speciality', e.target.value)} disabled={disabled} />
-        </label>
-        <label>
-          Clinic / Hospital Name
-          <input value={form.hospitalName} onChange={(e) => updateField('hospitalName', e.target.value)} disabled={disabled} />
+          Doctor Type / Specialty
+          <OtherAwareSelect
+            options={specialtyOptions}
+            value={form.speciality}
+            onChange={(e) => updateField('speciality', e.target.value)}
+            picklistKey="camp.doctorSpecialty"
+            otherLabel="Other (Specify Others)"
+            source="camp.request"
+            disabled={disabled}
+          />
         </label>
         <label className="full">
-          Camp Address
+          Camp / Clinic Address
           <CampAddressAutocomplete
             disabled={disabled}
             required
@@ -170,6 +189,7 @@ export function CampLifecycleForm({
                 campAddress: loc.campAddress || form.campAddress,
                 city: loc.city || form.city || '',
                 pincode: loc.pincode || form.pincode || '',
+                ...(form.hqManuallyEdited ? {} : { hq: loc.city || form.city || '' }),
               });
             }}
           />
@@ -196,12 +216,18 @@ export function CampLifecycleForm({
                 zone: loc.zone || '',
                 stateId: loc.stateId || '',
                 districtId: loc.districtId || '',
+                ...(form.hqManuallyEdited ? {} : { hq: loc.city || '' }),
               });
             }}
           />
           <label className="camp-location-hq">
             HQ
-            <input value={form.hq} onChange={(e) => updateField('hq', e.target.value)} disabled={disabled} required />
+            <input
+              value={form.hq}
+              onChange={(e) => updateFields?.({ hq: e.target.value, hqManuallyEdited: true })}
+              disabled={disabled}
+              required
+            />
           </label>
         </div>
         <label>

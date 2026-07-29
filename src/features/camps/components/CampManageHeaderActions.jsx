@@ -4,23 +4,36 @@ import { downloadExcel } from '../../../shared/api.js';
 import { useCampOpsAuth } from '../useCampOpsAuth.js';
 import { useCampWorkingStage } from '../CampWorkingStageContext.jsx';
 import { downloadCampSampleFile } from '../utils/campSampleDownload.js';
+import { DateInput } from './DateInput';
 
-export function CampManageHeaderActions() {
+export function CampManageHeaderActions({
+  exportAllStages = false,
+  showDateFilter = false,
+  hideNewCamp = false,
+}) {
   const { hasPermission } = useCampOpsAuth();
   const { workingStage } = useCampWorkingStage();
   const [searchParams] = useSearchParams();
   const [exportBusy, setExportBusy] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const canCreateCamp = hasPermission('camps:create') || hasPermission('camps:update');
   const canImport = hasPermission('import:create');
   const canDownload = hasPermission('camps:read');
 
   async function handleDownloadCamps() {
+    if (showDateFilter && !dateFrom && !dateTo) {
+      window.alert('Select a date range before downloading camps.');
+      return;
+    }
     setExportBusy(true);
     try {
       const params = new URLSearchParams(searchParams);
-      if (workingStage) params.set('lifecycleStage', workingStage);
+      if (!exportAllStages && workingStage) params.set('lifecycleStage', workingStage);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
       const qs = params.toString();
       const path = qs ? `/camp-ops/camps/export?${qs}` : '/camp-ops/camps/export';
       await downloadExcel(path, 'Camps_Export.xlsx');
@@ -44,6 +57,18 @@ export function CampManageHeaderActions() {
 
   return (
     <div className="inv-header-actions">
+      {showDateFilter && canDownload && (
+        <>
+          <label className="camp-export-date-label">
+            From
+            <DateInput hideLabel value={dateFrom} onChange={setDateFrom} />
+          </label>
+          <label className="camp-export-date-label">
+            To
+            <DateInput hideLabel value={dateTo} onChange={setDateTo} />
+          </label>
+        </>
+      )}
       {canDownload && (
         <button
           className="btn secondary btn-compact"
@@ -69,7 +94,7 @@ export function CampManageHeaderActions() {
           Excel Import
         </Link>
       )}
-      {canCreateCamp && (
+      {canCreateCamp && !hideNewCamp && (
         <Link className="btn btn-compact" to="/camps/manage/new">
           + New Camp
         </Link>

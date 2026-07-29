@@ -12,6 +12,7 @@ import {
   pickSingleOption,
   resolveCampNameOptions,
 } from './utils/clientMasterCascade';
+import { confirmPastePreviewDurations } from './utils/campDurationWarning';
 
 const PASTE_AUTO_SAVE_KEY = 'connectorsManualPasteAutoSave';
 const PASTE_DRAFT_KEY = 'connectorsManualPasteDraft';
@@ -205,26 +206,28 @@ export default function CommunicationsPastePage() {
   const previewSummary = useMemo(() => {
     if (!preview?.summary) return null;
     const validBodyRows = preview.summary.validBodyRows || 0;
+    const partialBodyRows = preview.summary.partialBodyRows || 0;
     const invalidBodyRows = preview.summary.invalidBodyRows || 0;
     const duplicateBodyRows = preview.summary.duplicateBodyRows
       ?? preview.bodyPreview?.filter((entry) => entry.duplicateOf).length
       ?? 0;
-    const firstValidRow = preview.bodyPreview?.find((entry) => entry.valid)?.row;
+    const firstValidRow = preview.bodyPreview?.find((entry) => entry.valid || entry.partial)?.row;
     const sampleLabel = firstValidRow
       ? [firstValidRow.clientName, firstValidRow.campaignName].filter(Boolean).join(' · ') || '—'
       : null;
 
     return {
-      validBodyRows,
+      validBodyRows: validBodyRows + partialBodyRows,
       invalidBodyRows,
+      partialBodyRows,
       duplicateBodyRows,
       sampleLabel,
-      label: `${validBodyRows} valid · ${invalidBodyRows} invalid${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}`,
+      label: `${validBodyRows + partialBodyRows} importable · ${invalidBodyRows} invalid${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}${partialBodyRows ? ` · ${partialBodyRows} partial` : ''}`,
     };
   }, [preview]);
 
   const hasCreatableRows = useMemo(
-    () => preview?.bodyPreview?.some((entry) => entry.valid && !entry.duplicateOf) ?? false,
+    () => preview?.bodyPreview?.some((entry) => (entry.valid || entry.partial) && !entry.duplicateOf) ?? false,
     [preview],
   );
 
@@ -640,6 +643,7 @@ export default function CommunicationsPastePage() {
       handleExtractClick();
       return;
     }
+    if (!confirmPastePreviewDurations(preview?.bodyPreview || [])) return;
     setConfirmAction('process');
   }
 

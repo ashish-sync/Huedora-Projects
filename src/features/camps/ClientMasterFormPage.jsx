@@ -33,6 +33,7 @@ const formStringFields = [
   'spocName',
   'spocNumber',
   'requestTimeline',
+  'assignedUserEmails',
 ];
 
 const formNumberFields = [
@@ -60,6 +61,7 @@ const emptyForm = {
   spocName: '',
   spocNumber: '',
   requestTimeline: '',
+  assignedUserEmails: '',
   executedCampUnit: '',
   cancelledCampUnit: '',
   otUnit: '',
@@ -240,6 +242,10 @@ export default function ClientMasterFormPage() {
       ...trimmed,
       clientId: form.clientId || undefined,
       isActive: form.isActive,
+      assignedUserEmails: String(form.assignedUserEmails || '')
+        .split(/[;,\n]/)
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
     };
     formNumberFields.forEach((field) => {
       payload[field] = trimmed[field] === '' ? 0 : Number(form[field]) || 0;
@@ -412,6 +418,20 @@ export default function ClientMasterFormPage() {
             className={fieldErrors.requestTimeline ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors.requestTimeline} />
+        </label>
+        <label className="full">
+          Assigned user login emails
+          <textarea
+            rows={2}
+            value={form.assignedUserEmails}
+            onChange={(e) => updateField('assignedUserEmails', e.target.value)}
+            placeholder="user@client.com, ops@client.com"
+            className={fieldErrors.assignedUserEmails ? 'input-invalid' : ''}
+          />
+          <small className="meta-text">
+            Comma-separated login emails. These users only see camps for this client.
+          </small>
+          <FieldError message={fieldErrors.assignedUserEmails} />
         </label>
         <label>
           Executed Camp Unit

@@ -31,10 +31,20 @@ function isCampsListRoute(pathname) {
   return pathname === '/camps/manage';
 }
 
+function isPasteRoute(pathname) {
+  return pathname.startsWith('/camps/communications/paste');
+}
+
+function isImportRoute(pathname) {
+  return pathname === '/camps/import';
+}
+
 function CampOpsLayoutBody({
   breadcrumbs,
   meta,
   isCampsList,
+  showCampToolbar,
+  showStageSelect,
   navItems,
   showSubtitle,
 }) {
@@ -60,8 +70,14 @@ function CampOpsLayoutBody({
           </div>
           <div className="camp-ops-strip__actions">
             <div className="camp-ops-header-actions">
-              <CampWorkingStageSelect compact />
-              {isCampsList ? <CampManageHeaderActions /> : null}
+              {showStageSelect ? <CampWorkingStageSelect compact /> : null}
+              {showCampToolbar ? (
+                <CampManageHeaderActions
+                  exportAllStages={!isCampsList}
+                  showDateFilter={!isCampsList}
+                  hideNewCamp={!isCampsList}
+                />
+              ) : null}
             </div>
           </div>
         </header>
@@ -78,6 +94,8 @@ export default function CampOpsLayout() {
   const { pathname } = useLocation();
   const meta = getPageMeta(pathname);
   const isCampsList = isCampsListRoute(pathname);
+  const showCampToolbar = isCampsList || isPasteRoute(pathname) || isImportRoute(pathname);
+  const showStageSelect = !isPasteRoute(pathname) && !isImportRoute(pathname);
 
   const allowed =
     hasPermission('camps:read')
@@ -131,6 +149,8 @@ export default function CampOpsLayout() {
         breadcrumbs={breadcrumbs}
         meta={meta}
         isCampsList={isCampsList}
+        showCampToolbar={showCampToolbar}
+        showStageSelect={showStageSelect}
         navItems={navItems}
         showSubtitle={!isCampsList && Boolean(meta.subtitle)}
       />

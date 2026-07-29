@@ -281,6 +281,13 @@
   min-height: 0;
 }
 
+.camp-ops-root .communications-hub > .communications-hub-tabs,
+.camp-ops-root .communications-email-page > .page-tabs,
+.camp-ops-root .communications-email-page > .module-sub-nav--segmented,
+.camp-ops-root .client-masters-page > .page-tabs {
+  align-self: flex-start;
+}
+
 .camp-ops-root .communications-hub > .page-tabs {
   margin-bottom: 0;
 }

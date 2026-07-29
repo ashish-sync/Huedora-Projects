@@ -116,14 +116,18 @@ function getBodyRowStatus(entry) {
       label: `Duplicate of ${entry.duplicateOf.campId}`,
     };
   }
+  if (entry.partial) {
+    const pct = entry.completionPercent ? `${entry.completionPercent}%` : 'partial';
+    return {
+      className: 'status-pill-warning',
+      label: `Partial import (${pct}) — complete before approval`,
+    };
+  }
   if (!entry.valid) {
     return {
       className: 'status-pill-muted',
       label: entry.errors?.join(', ') || 'Invalid',
     };
-  }
-  if (entry.partial) {
-    return { className: 'status-pill-success', label: 'Needs review' };
   }
   return { className: 'status-pill-success', label: 'Ready' };
 }

@@ -21,13 +21,15 @@ export function PasteWorkflowStepper({ currentStep }) {
             className={`paste-workflow-step paste-workflow-step--${state}`}
             aria-current={state === 'active' ? 'step' : undefined}
           >
-            <span className="paste-workflow-step-marker" aria-hidden="true">
-              {state === 'complete' ? '✓' : step.id}
-            </span>
-            <span className="paste-workflow-step-copy">
-              <strong>{step.label}</strong>
-              <span className="paste-workflow-step-short">{step.short}</span>
-            </span>
+            <div className="paste-workflow-step-body">
+              <span className="paste-workflow-step-marker" aria-hidden="true">
+                {state === 'complete' ? '✓' : step.id}
+              </span>
+              <span className="paste-workflow-step-copy">
+                <strong>{step.label}</strong>
+                <span className="paste-workflow-step-short">{step.short}</span>
+              </span>
+            </div>
             {index < STEPS.length - 1 && (
               <span className="paste-workflow-step-connector" aria-hidden="true" />
             )}

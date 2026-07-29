@@ -30,10 +30,18 @@ export function CampManageHeaderActions({
     }
     setExportBusy(true);
     try {
-      const params = new URLSearchParams(searchParams);
-      if (!exportAllStages && workingStage) params.set('lifecycleStage', workingStage);
-      if (dateFrom) params.set('dateFrom', dateFrom);
-      if (dateTo) params.set('dateTo', dateTo);
+      const params = new URLSearchParams();
+      if (exportAllStages) {
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
+      } else {
+        searchParams.forEach((value, key) => {
+          params.set(key, value);
+        });
+        if (workingStage) params.set('lifecycleStage', workingStage);
+        if (dateFrom) params.set('dateFrom', dateFrom);
+        if (dateTo) params.set('dateTo', dateTo);
+      }
       const qs = params.toString();
       const path = qs ? `/camp-ops/camps/export?${qs}` : '/camp-ops/camps/export';
       await downloadExcel(path, 'Camps_Export.xlsx');
@@ -56,49 +64,51 @@ export function CampManageHeaderActions({
   }
 
   return (
-    <div className="inv-header-actions">
+    <div className="inv-header-actions camp-header-toolbar">
       {showDateFilter && canDownload && (
-        <>
+        <div className="camp-export-date-range" role="group" aria-label="Export date range">
           <label className="camp-export-date-label">
-            From
-            <DateInput hideLabel value={dateFrom} onChange={setDateFrom} />
+            <span className="camp-export-date-label-text">From</span>
+            <DateInput hideLabel value={dateFrom} onChange={setDateFrom} aria-label="Export from date" />
           </label>
           <label className="camp-export-date-label">
-            To
-            <DateInput hideLabel value={dateTo} onChange={setDateTo} />
+            <span className="camp-export-date-label-text">To</span>
+            <DateInput hideLabel value={dateTo} onChange={setDateTo} aria-label="Export to date" />
           </label>
-        </>
+        </div>
       )}
-      {canDownload && (
-        <button
-          className="btn secondary btn-compact"
-          type="button"
-          disabled={exportBusy}
-          onClick={handleDownloadCamps}
-        >
-          {exportBusy ? 'Downloading…' : 'Download Camps'}
-        </button>
-      )}
-      {canDownload && (
-        <button
-          className="btn secondary btn-compact"
-          type="button"
-          disabled={sampleBusy}
-          onClick={handleDownloadSample}
-        >
-          {sampleBusy ? 'Downloading…' : 'Sample Format'}
-        </button>
-      )}
-      {canImport && (
-        <Link className="btn secondary btn-compact" to="/camps/import">
-          Excel Import
-        </Link>
-      )}
-      {canCreateCamp && !hideNewCamp && (
-        <Link className="btn btn-compact" to="/camps/manage/new">
-          + New Camp
-        </Link>
-      )}
+      <div className="camp-export-actions">
+        {canDownload && (
+          <button
+            className="btn secondary btn-compact"
+            type="button"
+            disabled={exportBusy}
+            onClick={handleDownloadCamps}
+          >
+            {exportBusy ? 'Downloading…' : exportAllStages ? 'Download All Camps' : 'Download Camps'}
+          </button>
+        )}
+        {canDownload && (
+          <button
+            className="btn secondary btn-compact"
+            type="button"
+            disabled={sampleBusy}
+            onClick={handleDownloadSample}
+          >
+            {sampleBusy ? 'Downloading…' : 'Sample Format'}
+          </button>
+        )}
+        {canImport && (
+          <Link className="btn secondary btn-compact" to="/camps/import">
+            Excel Import
+          </Link>
+        )}
+        {canCreateCamp && !hideNewCamp && (
+          <Link className="btn btn-compact" to="/camps/manage/new">
+            + New Camp
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

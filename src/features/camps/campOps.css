@@ -1238,7 +1238,7 @@
 
 .camp-ops-root .paste-workflow-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
@@ -1254,6 +1254,10 @@
   color: var(--text);
 }
 
+.camp-ops-root .paste-workflow-header-copy {
+  min-width: 0;
+}
+
 .camp-ops-root .paste-workflow-lead {
   margin: 2px 0 0;
   font-size: 0.84rem;
@@ -1262,6 +1266,7 @@
 }
 
 .camp-ops-root .paste-workflow-draft-badge {
+  align-self: center;
   flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
@@ -1275,7 +1280,7 @@
 
 .camp-ops-root .paste-workflow-stepper {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 0;
   margin: 0;
   padding: 10px 18px;
@@ -1288,10 +1293,17 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   flex: 1 1 0;
   min-width: 0;
-  padding-right: 12px;
+}
+
+.camp-ops-root .paste-workflow-step-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .camp-ops-root .paste-workflow-step-marker {
@@ -1330,13 +1342,12 @@
 }
 
 .camp-ops-root .paste-workflow-step-connector {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  width: 12px;
+  flex: 1 1 auto;
   height: 2px;
+  min-width: 20px;
+  margin: 0 12px;
   background: var(--border);
-  transform: translateY(-50%);
+  align-self: center;
 }
 
 .camp-ops-root .paste-workflow-step--active .paste-workflow-step-marker {
@@ -1369,7 +1380,7 @@
 
 .camp-ops-root .paste-context-fields {
   flex-shrink: 0;
-  margin: 0 18px;
+  margin: 0 18px 12px;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -1378,7 +1389,7 @@
 
 .camp-ops-root .paste-context-fields-heading {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 10px;
@@ -1425,6 +1436,17 @@
   background: var(--bg-elevated);
   color: var(--text);
   font-size: 0.86rem;
+}
+
+.camp-ops-root .paste-context-field .other-aware-select,
+.camp-ops-root .paste-context-field .other-aware-select__control,
+.camp-ops-root .paste-context-field .adaptive-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.camp-ops-root .paste-context-field .adaptive-select__control {
+  min-height: 36px !important;
 }
 
 .camp-ops-root .paste-context-field .field-error {
@@ -2937,7 +2959,8 @@
 }
 
 .camp-ops-root .paste-input-mode-tabs {
-  margin: 0 0 var(--stack);
+  margin: 0 18px 12px;
+  align-self: flex-start;
 }
 
 .camp-ops-root .paste-file-upload-zone {
@@ -5332,6 +5355,58 @@
   gap: 0.4rem;
 }
 
+.camp-ops-root .camp-header-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.55rem 0.75rem;
+}
+
+.camp-ops-root .camp-export-date-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.65rem;
+}
+
+.camp-ops-root .camp-export-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  min-width: 9.5rem;
+}
+
+.camp-ops-root .camp-export-date-label-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+  line-height: 1.2;
+}
+
+.camp-ops-root .camp-export-date-label .date-input-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.camp-ops-root .camp-export-date-label .date-input-display {
+  min-height: var(--control-h-sm, 34px);
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0.84rem;
+}
+
+.camp-ops-root .camp-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
 .camp-ops-root .camp-working-stage-field {
   display: flex;
   flex-direction: column;
@@ -5381,7 +5456,7 @@
 .camp-ops-root .camp-ops-strip {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 0.65rem 1rem;
   padding-bottom: 0.55rem;
@@ -5398,7 +5473,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
 }
 
 .camp-ops-root .camp-ops-strip__title-row .topbar-title {
@@ -5416,7 +5491,7 @@
 .camp-ops-root .camp-ops-strip__actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
   gap: var(--space-2);
   flex: 0 1 auto;

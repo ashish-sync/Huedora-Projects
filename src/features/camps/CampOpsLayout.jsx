@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { CampManageHeaderActions } from './components/CampManageHeaderActions.jsx';
 import { CampWorkingStageSelect } from './components/CampWorkingStageSelect.jsx';
-import { CampWorkingStageProvider } from './CampWorkingStageContext.jsx';
+import { CampWorkingStageProvider, useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { useCampOpsAuth } from './useCampOpsAuth.js';
 import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
@@ -35,6 +35,10 @@ function isPasteRoute(pathname) {
   return pathname.startsWith('/camps/communications/paste');
 }
 
+function isCommunicationsRoute(pathname) {
+  return pathname.startsWith('/camps/communications');
+}
+
 function isImportRoute(pathname) {
   return pathname === '/camps/import';
 }
@@ -48,6 +52,11 @@ function CampOpsLayoutBody({
   navItems,
   showSubtitle,
 }) {
+  const { workingStage } = useCampWorkingStage();
+  const isRequestStage = workingStage === 'request';
+  // Camp creation tools only apply at Request stage on the main camps list.
+  const showRequestToolbar = showCampToolbar && (isRequestStage || !isCampsList);
+
   return (
     <div className="camp-ops-root logistics-shell">
       <PageShell hideChrome className="camp-ops-page-shell">
@@ -71,7 +80,7 @@ function CampOpsLayoutBody({
           <div className="camp-ops-strip__actions">
             <div className="camp-ops-header-actions">
               {showStageSelect ? <CampWorkingStageSelect compact /> : null}
-              {showCampToolbar ? (
+              {showRequestToolbar ? (
                 <CampManageHeaderActions
                   exportAllStages={!isCampsList}
                   showDateFilter={!isCampsList}
@@ -95,7 +104,7 @@ export default function CampOpsLayout() {
   const meta = getPageMeta(pathname);
   const isCampsList = isCampsListRoute(pathname);
   const showCampToolbar = isCampsList || isPasteRoute(pathname) || isImportRoute(pathname);
-  const showStageSelect = !isPasteRoute(pathname) && !isImportRoute(pathname);
+  const showStageSelect = !isCommunicationsRoute(pathname) && !isImportRoute(pathname);
 
   const allowed =
     hasPermission('camps:read')

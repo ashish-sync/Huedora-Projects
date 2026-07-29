@@ -351,7 +351,8 @@ html[data-theme='dark'] button.page-tab.is-active {
 /* ── Paste workflow spacing ────────────────────────────────── */
 
 .camp-ops-root .paste-input-mode-tabs {
-  margin: 0 0 var(--stack);
+  margin: 0 18px var(--stack);
+  align-self: flex-start;
 }
 
 .camp-ops-root .paste-workflow-header {

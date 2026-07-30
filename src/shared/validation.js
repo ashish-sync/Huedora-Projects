@@ -1,11 +1,13 @@
 /** Shared client-side field validators (mirror server identityNormalize rules). */
 
+import { cleanSpaces } from './textFormat.js';
+
 export function normalizeEmail(value) {
-  return String(value || '').toLowerCase().trim();
+  return cleanSpaces(value).toLowerCase();
 }
 
 export function normalizePhone(value) {
-  const raw = String(value || '').trim();
+  const raw = cleanSpaces(value);
   if (!raw) return '';
   const digits = raw.replace(/\D+/g, '');
   if (!digits) return '';
@@ -63,7 +65,7 @@ export function phoneOrEmailError(value, label = 'Contact') {
 export function parseEmailList(value) {
   return String(value || '')
     .split(/[;,\n]/)
-    .map((email) => email.trim())
+    .map((email) => cleanSpaces(email).toLowerCase())
     .filter(Boolean);
 }
 

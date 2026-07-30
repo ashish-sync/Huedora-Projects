@@ -134,7 +134,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       description={
         embedded
           ? undefined
-          : 'One row per PIN code with State, Zone, and District. Download Sample Format for columns: PIN Code, State, Zone, District.'
+          : `One row per PIN code with State, Zone, and District. Use Sample format for columns: PIN Code, State, Zone, District.`
       }
       actions={
         embedded ? null : (

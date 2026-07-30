@@ -6,7 +6,7 @@ import {
   EXECUTION_STAGE_FILTER_OPTIONS,
   FINANCIAL_STAGE_FILTER_OPTIONS,
 } from '../constants/campStageFilters.js';
-import { REQUEST_REVIEW_FILTER_OPTIONS } from '../constants/requestReviewStatus.js';
+import { ACTION } from '../../../shared/labels.js';
 import { CAMP_LIFECYCLE_STAGES } from '../constants/campLifecycle.js';
 import {
   EXPORT_PRESET_TEMPLATES,
@@ -546,7 +546,7 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
           disabled={!canExport}
           onClick={handleExport}
         >
-          {exportBusy ? 'Exporting…' : `Download ${format === 'csv' ? 'CSV' : 'Excel'}`}
+          {exportBusy ? ACTION.EXPORTING : format === 'csv' ? 'Download CSV' : ACTION.DOWNLOAD_EXCEL}
         </button>
       </div>
     </div>

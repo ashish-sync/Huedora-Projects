@@ -13,7 +13,7 @@ export function CampWorkingStageSelect({ compact = false }) {
     >
       {compact ? null : <span className="camp-working-stage-label">Working view</span>}
       <select
-        className="camp-working-stage-select"
+        className="camp-working-stage-select tylo-select"
         value={workingStage}
         onChange={(event) => setWorkingStage(event.target.value)}
         aria-label="Select camp lifecycle view"

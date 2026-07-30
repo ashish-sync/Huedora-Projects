@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -701,7 +701,7 @@ export default function RolePermissionMasterPage() {
             disabled={exportBusy || (tab === 'users' && !canViewUsers)}
             onClick={downloadMaster}
           >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
+            {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
           </button>
           {canWrite && tab === 'users' && (
             <button className="btn" type="button" onClick={startCreateUser}>

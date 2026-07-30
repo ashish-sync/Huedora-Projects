@@ -5,6 +5,7 @@ import { useAuth } from './useCampOpsAuth.js';
 import { ClientPaginatedTable } from './components/ClientPaginatedTable';
 import { dashboardApi, importApi } from './campOpsApi.js';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
+import { ACTION } from '../../shared/labels.js';
 import { trimString } from './utils/trimInput';
 import { formatDateDDMMYYYY } from './utils/dateFormat';
 
@@ -280,7 +281,7 @@ export default function ImportPage() {
               <p>Download the sample file with the correct column headers and 15 example rows. Only fields shown on Client Master and Create Camp are included.</p>
             </div>
             <button type="button" className="btn secondary" onClick={handleDownloadSample}>
-              Download Sample Excel
+              {ACTION.SAMPLE_FORMAT}
             </button>
           </div>
 

@@ -1460,7 +1460,7 @@ button.module-kpi.is-clickable:hover {
 .toolbar select,
 .toolbar .filter-select {
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-button);
   height: var(--control-h);
   padding: 0 32px 0 12px;
   background-color: var(--bg-elevated);
@@ -2138,7 +2138,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 .adaptive-select__control {
   min-height: var(--control-h) !important;
   border: 1px solid var(--line) !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-button) !important;
   background: var(--bg-elevated) !important;
   color: var(--ink) !important;
   box-shadow: none !important;
@@ -5185,16 +5185,12 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 }
 
 .inv-toolbar select {
-  height: var(--control-h);
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  padding: 0 12px;
-  background: var(--bg-elevated);
-  max-width: 200px;
+  max-width: var(--control-w);
 }
 
 .inv-toolbar > .adaptive-select {
-  width: min(200px, 100%);
+  width: var(--control-w);
+  max-width: var(--control-w);
 }
 
 .inv-table-wrap {

@@ -1,0 +1,83 @@
+/**
+ * Unified dropdown / select appearance — native <select> and react-select (AdaptiveSelect).
+ * Loaded after design-system and consistency patches.
+ */
+
+:root {
+  --tylo-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239aa8b8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+}
+
+/* Native single-value selects */
+select.tylo-select,
+select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-elevated);
+  background-image: var(--tylo-select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px !important;
+  font-weight: 600;
+  cursor: pointer;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: var(--line) !important;
+  border-radius: var(--radius-button) !important;
+  color: var(--ink);
+  transition:
+    border-color var(--duration-fast, 120ms) var(--ease-standard, ease),
+    box-shadow var(--duration-fast, 120ms) var(--ease-standard, ease),
+    background-color var(--duration-fast, 120ms) var(--ease-standard, ease);
+}
+
+select.tylo-select:hover,
+select:not([multiple]):not([size]):hover {
+  border-color: var(--line-strong) !important;
+  background-color: var(--surface);
+}
+
+select.tylo-select:focus,
+select:not([multiple]):not([size]):focus {
+  outline: none;
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent);
+  background-color: var(--bg-elevated);
+}
+
+/* react-select control matches native toolbar selects */
+.adaptive-select__control {
+  border-radius: var(--radius-button) !important;
+}
+
+.adaptive-select__value-container {
+  padding: 0 12px !important;
+}
+
+.adaptive-select__single-value,
+.adaptive-select__placeholder {
+  font-weight: 600 !important;
+}
+
+.adaptive-select__dropdown-indicator {
+  color: var(--muted) !important;
+  padding-right: 10px !important;
+}
+
+/* Toolbar / filter widths — override legacy min(200px) rules */
+.inv-toolbar > select,
+.inv-toolbar > .adaptive-select,
+.am-toolbar > select,
+.am-toolbar > .adaptive-select,
+.esign-toolbar > select,
+.esign-toolbar > .adaptive-select,
+.logistics-toolbar > select,
+.logistics-toolbar > .adaptive-select,
+.toolbar > select,
+.toolbar > .adaptive-select,
+.agreements-filters > select,
+.agreements-filters > .adaptive-select {
+  flex: 0 0 var(--control-w) !important;
+  width: var(--control-w) !important;
+  min-width: var(--control-w) !important;
+  max-width: var(--control-w) !important;
+}

@@ -30,6 +30,7 @@ import {
   financePaymentStatusLabel,
   paymentSubmitStatusLabel,
 } from '../constants/campLifecycle';
+import { ACTION } from '../../../shared/labels.js';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
 import { DOCTOR_SPECIALTY_OPTIONS, isRequestDateFarFromToday } from '../constants/doctorSpecialty';
 import { computeDurationHours } from '../utils/campSchedule';
@@ -635,7 +636,7 @@ export function CampLifecycleForm({
                   disabled={downloadFinanceBusy}
                   onClick={onDownloadFinanceExport}
                 >
-                  {downloadFinanceBusy ? 'Downloading…' : 'Download Excel'}
+                  {downloadFinanceBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
                 </button>
               </div>
             )}

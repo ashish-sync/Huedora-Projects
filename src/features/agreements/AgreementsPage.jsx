@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, FILTER, ACTION } from '../../shared/labels.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -109,7 +109,7 @@ export default function AgreementsPage() {
             disabled={exportBusy}
             onClick={downloadMaster}
           >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
+            {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
           </button>
           {can('agreements:write') ? (
             <button className="btn" type="button" onClick={() => navigate('/agreements/new')}>
@@ -141,7 +141,7 @@ export default function AgreementsPage() {
             onChange={(e) => setFilter(e.target.value)}
             aria-label="Filter by status"
           >
-            <option value="">All statuses</option>
+            <option value="">{FILTER.ALL_STATUSES}</option>
             <option value="DRAFT">Drafts</option>
             <option value="SENT,PARTIALLY_SIGNED">Pending signature</option>
             <option value="TERMINATED">Terminated</option>

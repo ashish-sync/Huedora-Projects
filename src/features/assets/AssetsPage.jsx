@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 
-import { MODULE, FIELD, NAV } from '../../shared/labels.js';
+import { MODULE, FIELD, NAV, ACTION } from '../../shared/labels.js';
+import { formatTextValue } from '../../shared/textFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -35,7 +36,7 @@ const emptyForm = {
   custodianCity: '',
   custodianState: '',
   custodianStateId: '',
-  assetValue: '',
+  peripheralRemarks: '',
   contactId: '',
 };
 
@@ -65,12 +66,6 @@ function contactToCustodianForm(contact) {
     custodianDistrictId: contact.districtId || '',
     custodianCityId: contact.cityId || '',
   };
-}
-
-function productCostValue(product) {
-  if (!product) return '';
-  const raw = product.purchaseCost ?? product.standardCost ?? product.defaultPerUnitCost;
-  return raw != null && raw !== '' ? String(raw) : '';
 }
 
 function contactOptionLabel(c) {
@@ -374,7 +369,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       productId: p._id,
       name: productAssetName(p),
       productType: p.productType || f.productType,
-      assetValue: productCostValue(p) || f.assetValue,
     }));
   };
 
@@ -413,12 +407,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       custodianCity: row.location?.city || row.contactId?.city || '',
       custodianState: row.location?.state || row.contactId?.state || row.custodianState || '',
       custodianStateId: row.contactId?.stateId || '',
-      assetValue:
-        row.deviceValue != null
-          ? String(row.deviceValue)
-          : master?.cost != null
-            ? String(master.cost)
-            : '',
+      peripheralRemarks: row.remarks || master?.description || '',
       contactId: row.contactId?._id || row.contactId || '',
     });
     setFormOpen(true);
@@ -470,7 +459,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           custodianContact: form.custodianContact.trim(),
           custodianCity: form.custodianCity.trim(),
           custodianState: form.custodianState,
-          assetValue: form.assetValue === '' ? undefined : Number(form.assetValue),
+          description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
           contactId: form.contactId || null,
         };
         await api(`/assets/${editingId}`, { method: 'PATCH', body });
@@ -490,7 +479,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           custodianContact: form.custodianContact.trim(),
           custodianCity: form.custodianCity.trim(),
           custodianState: form.custodianState,
-          assetValue: form.assetValue === '' ? undefined : Number(form.assetValue),
+          description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
         };
         const { data } = await api('/devices', { method: 'POST', body: payload });
         setMsg(`Added “${data.name}” with serial ${data.serialNumber}.`);
@@ -630,17 +619,17 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const headerActions = (
         <div className="inv-header-actions">
           <button
-            className="btn secondary btn-compact"
+            className="btn btn-compact"
             type="button"
             disabled={exportBusy}
             onClick={downloadInventory}
           >
-            {exportBusy ? 'Downloading…' : 'Download'}
+            {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD}
           </button>
           {canWrite ? (
             <>
               <button className="btn secondary btn-compact" type="button" onClick={downloadSample}>
-                Sample
+                {ACTION.SAMPLE_FORMAT}
               </button>
               <input
                 ref={fileRef}
@@ -658,7 +647,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                 disabled={importBusy}
                 onClick={() => fileRef.current?.click()}
               >
-                {importBusy ? 'Importing…' : 'Import'}
+                {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
               </button>
               <button className="btn btn-compact" type="button" onClick={openCreate}>
                 + Add asset
@@ -837,15 +826,13 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   </AdaptiveSelect>
                 </div>
                 <div className="field">
-                  <label htmlFor="asset-value">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
+                  <label htmlFor="asset-peripheral-remarks">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
                   <input
-                    id="asset-value"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.assetValue}
-                    onChange={(e) => setForm({ ...form, assetValue: e.target.value })}
-                    placeholder="From Product Master or enter value"
+                    id="asset-peripheral-remarks"
+                    type="text"
+                    value={form.peripheralRemarks}
+                    onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
+                    placeholder="Optional remarks about peripherals, accessories, or configuration"
                   />
                 </div>
               </div>
@@ -883,7 +870,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     value={form.custodianStateId}
                     onChange={(e) => pickCustodianState(e.target.value)}
                   >
-                    <option value="">All states</option>
+                    <option value="">All States</option>
                     {geoStates.map((s) => (
                       <option key={s._id} value={s._id}>
                         {s.name}
@@ -926,14 +913,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             onKeyDown={(e) => e.key === 'Enter' && runSearch()}
           />
           <AdaptiveSelect
+            className="filter-select"
             value={agreementStatus}
             onChange={(e) => {
               setAgreementStatus(e.target.value);
               setPage(1);
             }}
-            aria-label="Asset status"
+            aria-label={FIELD.ASSET_STATUS}
           >
-            <option value="">All asset statuses</option>
+            <option value="">{FIELD.ALL_ASSET_STATUSES}</option>
             {ASSET_STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -941,14 +929,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             ))}
           </AdaptiveSelect>
           <AdaptiveSelect
+            className="filter-select"
             value={custody}
             onChange={(e) => {
               setCustody(e.target.value);
               setPage(1);
             }}
-            aria-label="Asset custody"
+            aria-label={FIELD.ASSET_CUSTODY}
           >
-            <option value="">All custody</option>
+            <option value="">{FIELD.ALL_ASSET_CUSTODY}</option>
             {ASSET_CUSTODY_OPTIONS.map((c) => (
               <option key={c} value={c}>
                 {c}

@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
+import { ACTION } from '../../shared/labels.js';
 
 /**
- * Standard master actions: Download, Sample Format, Excel Import.
+ * Standard master actions: Download, Sample format, Import.
+ * Download uses primary styling; sample and import use secondary.
  */
 export default function MasterExcelToolbar({
   exportPath,
@@ -14,13 +16,19 @@ export default function MasterExcelToolbar({
   onImportComplete,
   onError,
   className = '',
+  toolbarClassName = '',
   compact = false,
+  downloadLabel = ACTION.DOWNLOAD,
 }) {
   const fileRef = useRef(null);
   const [exportBusy, setExportBusy] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
   const [msg, setMsg] = useState('');
+
+  const compactClass = compact ? ' btn-compact' : '';
+  const downloadBtnClass = `btn${compactClass}`;
+  const secondaryBtnClass = `btn secondary${compactClass}`;
 
   const reportError = (err) => {
     const message = err?.message || 'Request failed';
@@ -83,27 +91,31 @@ export default function MasterExcelToolbar({
 
   return (
     <div
-      className={`master-excel-toolbar row${className ? ` ${className}` : ''}`}
-      style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+      className={[
+        'master-excel-toolbar',
+        toolbarClassName,
+        className,
+      ].filter(Boolean).join(' ')}
+      style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center', display: 'flex' }}
     >
       {exportPath ? (
         <button
-          className={`btn secondary${compact ? ' btn-compact' : ''}`}
+          className={downloadBtnClass}
           type="button"
           disabled={exportBusy}
           onClick={handleDownload}
         >
-          {exportBusy ? 'Downloading…' : 'Download'}
+          {exportBusy ? ACTION.DOWNLOADING : downloadLabel}
         </button>
       ) : null}
       {samplePath ? (
         <button
-          className={`btn secondary${compact ? ' btn-compact' : ''}`}
+          className={secondaryBtnClass}
           type="button"
           disabled={sampleBusy}
           onClick={handleSample}
         >
-          {sampleBusy ? 'Downloading…' : 'Sample Format'}
+          {sampleBusy ? ACTION.DOWNLOADING : ACTION.SAMPLE_FORMAT}
         </button>
       ) : null}
       {canImport && importPath ? (
@@ -119,12 +131,12 @@ export default function MasterExcelToolbar({
             }}
           />
           <button
-            className={`btn secondary${compact ? ' btn-compact' : ''}`}
+            className={secondaryBtnClass}
             type="button"
             disabled={importBusy}
             onClick={() => fileRef.current?.click()}
           >
-            {importBusy ? 'Importing…' : 'Excel Import'}
+            {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
           </button>
         </>
       ) : null}

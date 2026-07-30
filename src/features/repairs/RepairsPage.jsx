@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, ACTION } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 
@@ -52,7 +52,7 @@ export default function RepairsPage() {
           disabled={exportBusy}
           onClick={downloadMaster}
         >
-          {exportBusy ? 'Downloading…' : 'Download Excel'}
+            {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
         </button>
       }
       kpis={[

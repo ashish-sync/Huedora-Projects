@@ -19,6 +19,7 @@ import './styles/components/module-sub-nav.css';
 import './styles/patches/enterprise-polish.css';
 import './styles/design-system.css';
 import './styles/patches/consistency.css';
+import './styles/components/select.css';
 import { applyFinanceLocalResetIfNeeded } from './features/finance/clearFinanceLocalData.js';
 
 applyFinanceLocalResetIfNeeded();

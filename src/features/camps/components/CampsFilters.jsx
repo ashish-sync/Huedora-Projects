@@ -1,4 +1,5 @@
 import { DateInput } from './DateInput';
+import { FILTER } from '../../../shared/labels.js';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
 import { REQUEST_REVIEW_FILTER_OPTIONS } from '../constants/requestReviewStatus';
 import {
@@ -115,7 +116,7 @@ export function CampsFilters({
 
         <select
           id="camps-status-filter"
-          className="camps-filter-control camps-filter-status"
+          className="camps-filter-control camps-filter-status tylo-select"
           aria-label={filterAriaLabel}
           value={filterValue}
           onChange={(e) => onFilterChange(e.target.value)}
@@ -126,7 +127,7 @@ export function CampsFilters({
             ))
           ) : (
             <>
-              <option value="">All camps</option>
+              <option value="">{FILTER.ALL_CAMPS}</option>
               {alertOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}

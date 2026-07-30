@@ -85,6 +85,8 @@ export const FIELD = {
   ASSET_VALUE: 'Asset Value',
   ASSET_STATUS: 'Asset Status',
   ASSET_CUSTODY: 'Asset Custody',
+  ALL_ASSET_STATUSES: 'All Asset Statuses',
+  ALL_ASSET_CUSTODY: 'All Asset Custody',
   CUSTODY: 'Asset Custody',
   CUSTODIAN: 'Custodian',
   CUSTODIAN_NAME: 'Custodian Name',
@@ -93,3 +95,27 @@ export const FIELD = {
   CUSTODIAN_STATE: 'Custodian State',
   CUSTODIAN_ID: 'Custodian ID',
 };
+
+/** Shared filter / toolbar dropdown labels (Title Case). */
+export const FILTER = {
+  ALL_STATUSES: 'All Statuses',
+  ALL_TYPES: 'All Types',
+  ALL_CAMPS: 'All Camps',
+};
+
+/** Standard toolbar / header action labels (Excel export, sample, import). */
+export const ACTION = {
+  DOWNLOAD: 'Download',
+  DOWNLOAD_EXCEL: 'Download Excel',
+  DOWNLOADING: 'Downloading…',
+  SAMPLE_FORMAT: 'Sample format',
+  IMPORT: 'Import',
+  IMPORTING: 'Importing…',
+  EXPORTING: 'Exporting…',
+};
+
+/** Contextual bulk export label, e.g. "Download all camps". */
+export function downloadAllLabel(noun) {
+  const trimmed = String(noun || '').trim();
+  return trimmed ? `Download all ${trimmed}` : ACTION.DOWNLOAD;
+}

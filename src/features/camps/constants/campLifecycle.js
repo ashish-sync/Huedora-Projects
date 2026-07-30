@@ -143,7 +143,7 @@ export const CAMP_SOURCE_OPTIONS = [
   { value: 'dashboard', label: 'Dashboard' },
   { value: 'email', label: 'Email' },
   { value: 'whatsapp', label: 'WhatsApp' },
-  { value: 'excel', label: 'Excel Import' },
+  { value: 'excel', label: 'Import' },
   { value: 'paste', label: 'Manual Paste' },
   { value: 'api', label: 'API' },
 ];

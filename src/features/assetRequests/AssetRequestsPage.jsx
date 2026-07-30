@@ -3,7 +3,7 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
-import { FIELD, MODULE } from '../../shared/labels.js';
+import { FIELD, MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -1016,7 +1016,7 @@ export default function AssetRequestsPage() {
       description="Submit repair, maintenance, logistics, training, reimbursement, hiring, and other requests."
       actions={
         <button className="btn secondary" type="button" disabled={exportBusy} onClick={downloadMaster}>
-          {exportBusy ? 'Downloading…' : 'Download Excel'}
+          {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
         </button>
       }
       kpis={[

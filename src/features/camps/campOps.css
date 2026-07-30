@@ -7122,20 +7122,17 @@
 }
 
 .camp-ops-root .camp-working-stage-select {
-  min-height: 2.15rem;
-  padding: 0.35rem 2rem 0.35rem 0.65rem;
-  border: 1px solid var(--border, #cbd5e1);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text, #0f172a);
-  cursor: pointer;
+  width: 100%;
+  min-height: var(--control-h);
+  height: var(--control-h);
+  max-height: var(--control-h);
+  padding: 0 36px 0 12px;
+  font-size: 0.8125rem;
+  box-sizing: border-box;
 }
 
 .camp-ops-root .camp-working-stage-select:focus {
-  outline: 2px solid rgba(15, 118, 110, 0.35);
-  outline-offset: 1px;
+  outline: none;
 }
 
 /* Compact Camp One shell */
@@ -7237,9 +7234,9 @@
   height: var(--control-h-sm);
   min-height: var(--control-h-sm);
   max-height: var(--control-h-sm);
-  min-width: 11.5rem;
-  max-width: 14rem;
-  padding: 0 1.75rem 0 0.65rem;
+  min-width: var(--control-w);
+  max-width: var(--control-w);
+  padding: 0 36px 0 12px;
   font-size: 0.8125rem;
   line-height: 1.2;
   box-sizing: border-box;
@@ -7327,9 +7324,9 @@
 .camp-ops-root .camps-filter-status {
   flex: 0 0 auto;
   width: auto;
-  min-width: 10.75rem;
-  max-width: 13rem;
-  padding: 0 1.75rem 0 0.65rem;
+  min-width: var(--control-w);
+  max-width: var(--control-w);
+  padding: 0 36px 0 12px;
   font-weight: 600;
   cursor: pointer;
 }

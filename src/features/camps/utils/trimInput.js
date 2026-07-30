@@ -1,22 +1,23 @@
+import { cleanSpaces, formatFormFields, formatTextValue } from '../../../shared/textFormat.js';
+
 export function trimString(value) {
-  return typeof value === 'string' ? value.trim() : value;
+  return typeof value === 'string' ? cleanSpaces(value) : value;
 }
 
 export function trimParams(params = {}) {
   return Object.fromEntries(
     Object.entries(params).map(([key, value]) => [
       key,
-      typeof value === 'string' ? value.trim() : value,
+      typeof value === 'string' ? formatTextValue(value, key) : value,
     ])
   );
 }
 
+/** @deprecated Use formatFormStrings */
 export function trimFormStrings(form, keys) {
-  const next = { ...form };
-  keys.forEach((key) => {
-    if (typeof next[key] === 'string') {
-      next[key] = next[key].trim();
-    }
-  });
-  return next;
+  return formatFormStrings(form, keys);
+}
+
+export function formatFormStrings(form, keys) {
+  return formatFormFields(form, keys);
 }

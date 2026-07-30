@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { downloadExcel } from '../../shared/api.js';
 import { useCampOpsAuth } from './useCampOpsAuth.js';
 import { downloadCampExportSampleFile } from './utils/campExportSampleDownload.js';
+import { ACTION, downloadAllLabel } from '../../shared/labels.js';
 import { DateInput } from './components/DateInput';
 import { CampAdvancedExport } from './components/CampAdvancedExport.jsx';
 
@@ -118,7 +119,7 @@ export default function CampDownloadPage() {
               disabled={exportBusy || !hasDateRange}
               onClick={handleDownloadCamps}
             >
-              {exportBusy ? 'Downloading…' : 'Download all camps'}
+              {exportBusy ? ACTION.DOWNLOADING : downloadAllLabel('camps')}
             </button>
             <button
               className="btn secondary btn-compact"
@@ -126,7 +127,7 @@ export default function CampDownloadPage() {
               disabled={sampleBusy}
               onClick={handleDownloadSample}
             >
-              {sampleBusy ? 'Downloading…' : 'Sample format'}
+              {sampleBusy ? ACTION.DOWNLOADING : ACTION.SAMPLE_FORMAT}
             </button>
           </div>
         )}

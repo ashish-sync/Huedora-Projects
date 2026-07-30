@@ -3,7 +3,7 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateRangeLabel } from '../../shared/dateFormat.js';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -216,7 +216,7 @@ export default function TrackingDashboardPage() {
               disabled={exportBusy || loading}
               onClick={downloadReview}
             >
-              {exportBusy ? 'Downloading…' : 'Download Excel'}
+              {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
             </button>
           ) : null}
         </>

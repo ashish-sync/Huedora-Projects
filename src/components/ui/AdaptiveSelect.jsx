@@ -49,7 +49,7 @@ export default function AdaptiveSelect({
         id={id}
         name={name}
         aria-label={ariaLabel}
-        className={className}
+        className={['tylo-select', className].filter(Boolean).join(' ')}
         style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', ...style }}
         value={value}
         onChange={onChange}

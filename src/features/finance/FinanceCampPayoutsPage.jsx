@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
-import { MODULE } from '../../shared/labels.js';
+import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import './finance-commercial.css';
 import {
@@ -184,7 +184,7 @@ export default function FinanceCampPayoutsPage() {
           onClick={downloadAllPayouts}
           disabled={exportBusy || loading}
         >
-          {exportBusy ? 'Downloading…' : 'Download Excel'}
+          {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
         </button>
       </div>
 
@@ -263,7 +263,7 @@ export default function FinanceCampPayoutsPage() {
                   disabled={rowExportBusy}
                   onClick={downloadSelectedPayout}
                 >
-                  {rowExportBusy ? 'Downloading…' : 'Download Excel'}
+                  {rowExportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
                 </button>
               </div>
 

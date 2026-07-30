@@ -152,12 +152,22 @@
   font-size: var(--text-body-sm-size);
 }
 
+/* Uppercase column headers — all modules */
+table th,
 .am-table th,
 .inv-table th,
 .vf-table th,
-.data-table th {
-  font-size: var(--text-caption-size);
-  letter-spacing: 0.06em;
+.data-table th,
+.track-table th,
+.logistics-inout-table th,
+.camps-table th {
+  font-size: var(--text-caption-size, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft, var(--muted));
+  background: var(--bg-sunken, color-mix(in srgb, var(--surface) 82%, var(--bg-elevated)));
+  white-space: nowrap;
 }
 
 /* ── Compact buttons ───────────────────────────────────────── */
@@ -177,6 +187,11 @@ html[data-theme='dark'] .page-tab.is-active,
 html[data-theme='dark'] .module-sub-nav--segmented .module-sub-nav__link.is-active,
 html[data-theme='dark'] button.page-tab.is-active {
   box-shadow: none;
+}
+
+html[data-theme='dark'] table th {
+  background: var(--surface);
+  color: var(--muted);
 }
 
 /* ── Pagination footer ─────────────────────────────────────── */
@@ -423,7 +438,21 @@ html[data-theme='dark'] .camp-ops-root .dashboard-filter-panel {
   border-color: var(--color-border-default);
 }
 
-/* ── Responsive pagination ─────────────────────────────────── */
+/* ── Excel toolbar actions (Download / Sample format / Import) ─ */
+
+.inv-header-actions,
+.master-excel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--stack-sm);
+  align-items: center;
+}
+
+.inv-header-actions .btn,
+.master-excel-toolbar .btn {
+  white-space: nowrap;
+}
+
 
 @media (max-width: var(--bp-sm)) {
   .inv-pagination {

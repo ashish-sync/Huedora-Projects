@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 
-import { MODULE, FIELD } from '../../shared/labels.js';
+import { MODULE, FIELD, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -279,17 +279,17 @@ export default function DevicesPage() {
       actions={
         <>
           <button
-            className="btn secondary"
+            className="btn"
             type="button"
             disabled={exportBusy}
             onClick={downloadMaster}
           >
-            {exportBusy ? 'Downloading…' : 'Download Excel'}
+            {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD}
           </button>
           {canWrite ? (
             <>
               <button className="btn secondary" type="button" onClick={downloadSample}>
-                Sample Excel
+                {ACTION.SAMPLE_FORMAT}
               </button>
               <input
                 ref={fileRef}
@@ -307,7 +307,7 @@ export default function DevicesPage() {
                 disabled={importBusy}
                 onClick={() => fileRef.current?.click()}
               >
-                {importBusy ? 'Importing…' : 'Import Excel'}
+                {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
               </button>
               <button className="btn" type="button" onClick={openCreate}>
                 + Add asset

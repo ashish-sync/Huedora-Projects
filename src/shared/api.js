@@ -1,4 +1,5 @@
 import { apiUrl } from './config.js';
+import { LEGACY_ACCESS_STORAGE_KEY } from './legacyMigration.js';
 
 export { BACKEND_URL, API_BASE, apiUrl } from './config.js';
 
@@ -7,7 +8,7 @@ let accessToken = null;
 let refreshPromise = null;
 
 const ACCESS_KEY = 'tylo_one_access';
-const LEGACY_ACCESS_KEY = 'dhub_access';
+const LEGACY_ACCESS_KEY = LEGACY_ACCESS_STORAGE_KEY;
 
 export function setAccessToken(token) {
   accessToken = token;

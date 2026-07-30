@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo.jsx';
+import HealthcareInsightBanner from '../../components/HealthcareInsightBanner.jsx';
 import { api } from '../../shared/api.js';
+import { requestAppFullscreen } from '../../shared/fullscreen.js';
+import { loginExperience } from '../../shared/loginExperienceConfig.js';
 import { useAuth } from '../../shared/auth.jsx';
 
 function PasswordField({
@@ -89,6 +92,10 @@ export default function LoginPage() {
 
   const onSignIn = async (e) => {
     e.preventDefault();
+    // Must run in the same click gesture as Sign in (Chrome fullscreen policy).
+    if (loginExperience.fullscreenOnSignIn) {
+      requestAppFullscreen();
+    }
     setBusy(true);
     setError('');
     setSuccess('');
@@ -146,6 +153,7 @@ export default function LoginPage() {
         <div className="login-hero-inner">
           <h1>One workspace for all healthcare activation operations.</h1>
           <p>Manage assets, documents, camps, requests, logistics, and more.</p>
+          {loginExperience.healthcareInsights ? <HealthcareInsightBanner variant="login" /> : null}
         </div>
       </aside>
 
@@ -191,7 +199,7 @@ export default function LoginPage() {
             )}
 
             <button className="btn" disabled={busy} type="submit">
-              {busy ? 'Signing in…' : 'Continue'}
+              {busy ? 'Signing in…' : 'Sign in'}
             </button>
 
             <p className="login-switch">

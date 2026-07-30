@@ -1,18 +1,31 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { LEGACY_THEME_STORAGE_KEY } from './legacyMigration.js';
 
 const STORAGE_KEY = 'tylo-one-theme';
-const LEGACY_STORAGE_KEY = 'dhub-theme';
+const LEGACY_STORAGE_KEY = LEGACY_THEME_STORAGE_KEY;
 const THEME_META_COLORS = {
   light: '#0A5AC2',
   dark: '#111827',
 };
 
-function applyThemeToDocument(theme) {
+export function applyThemeToDocument(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
     meta.setAttribute('content', THEME_META_COLORS[theme] || THEME_META_COLORS.light);
   }
+}
+
+/** Persist and apply theme (usable outside React context, e.g. after login boot). */
+export function persistTheme(theme) {
+  const value = theme === 'dark' ? 'dark' : 'light';
+  applyThemeToDocument(value);
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    /* ignore */
+  }
+  return value;
 }
 const ThemeContext = createContext({
   theme: 'light',

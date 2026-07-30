@@ -20,12 +20,11 @@
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('tylo-one-theme') || localStorage.getItem('dhub-theme');
+          var t = localStorage.getItem('tylo-one-theme');
           if (t === 'dark' || t === 'light') {
             document.documentElement.setAttribute('data-theme', t);
             try {
               localStorage.setItem('tylo-one-theme', t);
-              localStorage.removeItem('dhub-theme');
               var meta = document.querySelector('meta[name="theme-color"]');
               if (meta) meta.setAttribute('content', t === 'dark' ? '#111827' : '#0A5AC2');
             } catch (e) {}

@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
+import HealthcareInsightBanner from '../../components/HealthcareInsightBanner.jsx';
 import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
 import { MESSAGES } from '../../shared/messages.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { loginExperience } from '../../shared/loginExperienceConfig.js';
 
 /** Shared stroke props for home module marks */
 const iconProps = {
@@ -197,6 +199,14 @@ export default function DashboardPage() {
           </div>
         )}
       </header>
+
+      {loginExperience.healthcareInsights ? (
+        <HealthcareInsightBanner
+          variant="home"
+          userId={user?.id || user?._id || ''}
+          allowShuffle
+        />
+      ) : null}
 
       <section className="tylo-home-modules" aria-labelledby="tylo-modules-heading">
         <div className="tylo-home-section-head">

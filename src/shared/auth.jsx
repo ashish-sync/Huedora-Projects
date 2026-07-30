@@ -1,11 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, loadStoredToken, setAccessToken } from './api.js';
+import { beginInsightSession, clearInsightSession } from './pickHealthcareInsight.js';
+import { exitAppFullscreen } from './fullscreen.js';
+import { isBootSequenceEnabled, loginExperience } from './loginExperienceConfig.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [bootSessionActive, setBootSessionActive] = useState(false);
 
   const refreshMe = useCallback(async () => {
     loadStoredToken();
@@ -28,9 +32,20 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const { data } = await api('/auth/login', { method: 'POST', body: { email, password } });
     setAccessToken(data.accessToken);
-    setUser(data.user);
-    return data.user;
+    const { data: me } = await api('/auth/me');
+    setUser(me);
+    if (loginExperience.healthcareInsights) {
+      beginInsightSession();
+    }
+    if (isBootSequenceEnabled()) {
+      setBootSessionActive(true);
+    }
+    return me;
   };
+
+  const completeLoginBoot = useCallback(() => {
+    setBootSessionActive(false);
+  }, []);
 
   const logout = async () => {
     try {
@@ -40,6 +55,9 @@ export function AuthProvider({ children }) {
     }
     setAccessToken(null);
     setUser(null);
+    setBootSessionActive(false);
+    clearInsightSession();
+    exitAppFullscreen();
   };
 
   const can = (permission) => {
@@ -51,8 +69,19 @@ export function AuthProvider({ children }) {
   const canDelete = () => isAdmin();
 
   const value = useMemo(
-    () => ({ user, loading, login, logout, can, isAdmin, canDelete, refreshMe }),
-    [user, loading, refreshMe]
+    () => ({
+      user,
+      loading,
+      login,
+      logout,
+      can,
+      isAdmin,
+      canDelete,
+      refreshMe,
+      bootSessionActive,
+      completeLoginBoot,
+    }),
+    [user, loading, refreshMe, bootSessionActive, completeLoginBoot]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

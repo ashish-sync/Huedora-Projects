@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
@@ -396,9 +397,7 @@ export default function LogisticsHubPage({
         </header>
 
         {error && (
-          <div className="am-banner is-error" role="status">
-            {error}
-          </div>
+          <FeedbackBanner variant="error">{error}</FeedbackBanner>
         )}
 
         <div className="ilog-filter-panel">

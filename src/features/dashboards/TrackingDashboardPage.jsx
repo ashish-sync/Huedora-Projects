@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateRangeLabel } from '../../shared/dateFormat.js';
@@ -237,6 +238,7 @@ export default function TrackingDashboardPage() {
         </div>
 
         <DateRangeFilter
+          className="date-range-filter--panel"
           from={from}
           to={to}
           onFromChange={(next) => {
@@ -273,9 +275,7 @@ export default function TrackingDashboardPage() {
       </div>
 
       {error ? (
-        <div className="am-banner is-error" role="alert">
-          {error}
-        </div>
+        <FeedbackBanner variant="error">{error}</FeedbackBanner>
       ) : null}
 
       {!submitted && !data ? (

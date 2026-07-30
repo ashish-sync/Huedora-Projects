@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CampsFilters } from './components/CampsFilters';
-import { CampActionConfirmModal } from './components/CampActionConfirmModal';
+import { CampTimeFrame } from './components/CampTimeFrame';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
 import { CampCancelRefuseButton } from './components/CampCancelRefuseButton';
 import { CampRequestRowActions } from './components/CampRequestRowActions';
@@ -9,6 +10,7 @@ import { CampAssignmentRowActions } from './components/CampAssignmentRowActions'
 import { CampExecutionRowActions } from './components/CampExecutionRowActions';
 import { CampFinancialRowActions } from './components/CampFinancialRowActions';
 import { CampAssignModal } from './components/CampAssignModal';
+import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { api } from '../../shared/api.js';
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
@@ -30,7 +32,8 @@ import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { REQUEST_REVIEW_LABELS } from './constants/requestReviewStatus';
-import { buildClosureDetails } from './constants/campClosure';
+import { stageFilterLabel } from './constants/campStageFilters';
+import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 
 function buildReasonDetails() {
   return { reason: '' };
@@ -43,22 +46,6 @@ function buildCancelDetails() {
 function cellText(value) {
   const text = String(value || '').trim();
   return text || <span className="camps-cell-empty">—</span>;
-}
-
-function renderRequestTimeFrame(camp) {
-  const start = camp.startTime || '';
-  const end = camp.endTime || '';
-  const timeRange = start && end ? `${start} – ${end}` : camp.timeFrame || '—';
-
-  return (
-    <div className="camps-cell-timeframe">
-      {camp.campSlot ? <span className="camps-cell-timeframe-slot">{camp.campSlot}</span> : null}
-      <span className="camps-cell-timeframe-time">{timeRange}</span>
-      {camp.durationHours ? (
-        <span className="camps-cell-timeframe-meta">{camp.durationHours} hr</span>
-      ) : null}
-    </div>
-  );
 }
 
 export default function CampsPage() {
@@ -84,7 +71,9 @@ export default function CampsPage() {
   const [clientFilter, setClientFilter] = useState(searchParams.get('client') || '');
   const [campaignFilter, setCampaignFilter] = useState(searchParams.get('campaign') || '');
   const [campTypeFilter, setCampTypeFilter] = useState(searchParams.get('campaignType') || '');
-  const [assignmentFilter, setAssignmentFilter] = useState(searchParams.get('assignmentFilter') || 'unassigned');
+  const [assignmentFilter, setAssignmentFilter] = useState(searchParams.get('assignmentFilter') || '');
+  const [executionFilter, setExecutionFilter] = useState(searchParams.get('executionFilter') || '');
+  const [financialFilter, setFinancialFilter] = useState(searchParams.get('financialFilter') || '');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -113,9 +102,10 @@ export default function CampsPage() {
       mode: 'single',
       action,
       camp,
+      stage: workingStage,
     });
     setConfirmCancelDetails(action === 'cancel' ? buildCancelDetails() : null);
-    setConfirmClosureDetails(action === 'closeCamp' ? buildClosureDetails() : null);
+    setConfirmClosureDetails(action === 'closeCamp' ? buildClosureDetails(camp, workingStage) : null);
     setConfirmReasonDetails(['reject', 'requestInformation'].includes(action) ? buildReasonDetails() : null);
     setError('');
   }
@@ -193,10 +183,7 @@ export default function CampsPage() {
             remarks: confirmCancelDetails.remarks.trim(),
           }
           : action === 'closeCamp'
-            ? {
-              closureType: confirmClosureDetails.closureType,
-              reasonCode: confirmClosureDetails.reasonCode,
-            }
+            ? buildClosurePayload(confirmClosureDetails)
             : action === 'reject'
             ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
             : action === 'requestInformation'
@@ -257,10 +244,17 @@ export default function CampsPage() {
       if (campaignFilter) params.campaign = campaignFilter;
       if (campTypeFilter) params.campaignType = campTypeFilter;
       if (workingStage === 'assignment') {
-        params.assignmentFilter = assignmentFilter || 'unassigned';
-      } else if (workingStage === 'request' && requestReviewStatus) {
-        params.requestReviewStatus = requestReviewStatus;
-        if (workingStage) params.lifecycleStage = workingStage;
+        if (assignmentFilter) params.assignmentFilter = assignmentFilter;
+        params.lifecycleStage = workingStage;
+      } else if (workingStage === 'request') {
+        if (requestReviewStatus) params.requestReviewStatus = requestReviewStatus;
+        params.lifecycleStage = workingStage;
+      } else if (workingStage === 'execution') {
+        if (executionFilter) params.executionFilter = executionFilter;
+        params.lifecycleStage = workingStage;
+      } else if (workingStage === 'financial') {
+        if (financialFilter) params.financialFilter = financialFilter;
+        params.lifecycleStage = workingStage;
       } else {
         if (reactionRequired) {
           params.reactionRequired = '1';
@@ -312,13 +306,43 @@ export default function CampsPage() {
     setClientFilter(searchParams.get('client') || '');
     setCampaignFilter(searchParams.get('campaign') || '');
     setCampTypeFilter(searchParams.get('campaignType') || '');
-    setAssignmentFilter(searchParams.get('assignmentFilter') || 'unassigned');
+    setAssignmentFilter(searchParams.get('assignmentFilter') || '');
+    setExecutionFilter(searchParams.get('executionFilter') || '');
+    setFinancialFilter(searchParams.get('financialFilter') || '');
   }, [searchParams]);
+
+  const previousWorkingStageRef = useRef(workingStage);
+  useEffect(() => {
+    if (previousWorkingStageRef.current === workingStage) return;
+    previousWorkingStageRef.current = workingStage;
+    setAssignmentFilter('');
+    setRequestReviewStatus('');
+    setExecutionFilter('');
+    setFinancialFilter('');
+    setStatus('');
+    setOverdueOnly(false);
+    setReactionRequired(false);
+    setOffHoursOnly(false);
+    setWeekendAttentionOnly(false);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('assignmentFilter');
+      next.delete('requestReviewStatus');
+      next.delete('executionFilter');
+      next.delete('financialFilter');
+      next.delete('status');
+      next.delete('overdue');
+      next.delete('reactionRequired');
+      next.delete('offHours');
+      next.delete('weekendAttention');
+      return next;
+    });
+  }, [workingStage, setSearchParams]);
 
   useEffect(() => {
     setPage(1);
     loadCamps(1, pageSize);
-  }, [status, requestReviewStatus, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignmentFilter, workingStage]);
+  }, [status, requestReviewStatus, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignmentFilter, executionFilter, financialFilter, workingStage]);
 
   useEffect(() => {
     if (workingStage !== 'assignment') return undefined;
@@ -367,11 +391,17 @@ export default function CampsPage() {
     const nextCampType = overrides.campaignType ?? campTypeFilter;
     const nextAssignmentFilter = overrides.assignmentFilter ?? assignmentFilter;
     const nextRequestReviewStatus = overrides.requestReviewStatus ?? requestReviewStatus;
+    const nextExecutionFilter = overrides.executionFilter ?? executionFilter;
+    const nextFinancialFilter = overrides.financialFilter ?? financialFilter;
 
     if (workingStage === 'assignment') {
       if (nextAssignmentFilter) params.set('assignmentFilter', nextAssignmentFilter);
     } else if (workingStage === 'request') {
       if (nextRequestReviewStatus) params.set('requestReviewStatus', nextRequestReviewStatus);
+    } else if (workingStage === 'execution') {
+      if (nextExecutionFilter) params.set('executionFilter', nextExecutionFilter);
+    } else if (workingStage === 'financial') {
+      if (nextFinancialFilter) params.set('financialFilter', nextFinancialFilter);
     } else if (nextReactionRequired) params.set('reactionRequired', '1');
     else if (nextOffHours) params.set('offHours', '1');
     else if (nextWeekendAttention) params.set('weekendAttention', '1');
@@ -430,7 +460,9 @@ export default function CampsPage() {
     setClientFilter('');
     setCampaignFilter('');
     setCampTypeFilter('');
-    setAssignmentFilter('unassigned');
+    setAssignmentFilter('');
+    setExecutionFilter('');
+    setFinancialFilter('');
     setSearch('');
     setSearchParams({});
   }
@@ -444,6 +476,30 @@ export default function CampsPage() {
       setAssignmentFilter(value);
       updateFilters({
         assignmentFilter: value,
+        status: '',
+        overdue: false,
+        reactionRequired: false,
+        offHours: false,
+        weekendAttention: false,
+      });
+      return;
+    }
+    if (workingStage === 'execution') {
+      setExecutionFilter(value);
+      updateFilters({
+        executionFilter: value,
+        status: '',
+        overdue: false,
+        reactionRequired: false,
+        offHours: false,
+        weekendAttention: false,
+      });
+      return;
+    }
+    if (workingStage === 'financial') {
+      setFinancialFilter(value);
+      updateFilters({
+        financialFilter: value,
         status: '',
         overdue: false,
         reactionRequired: false,
@@ -496,10 +552,14 @@ export default function CampsPage() {
   }
 
   const filterValue = workingStage === 'assignment'
-    ? (assignmentFilter || 'unassigned')
+    ? (assignmentFilter || '')
     : workingStage === 'request'
       ? (requestReviewStatus || '')
-      : reactionRequired
+      : workingStage === 'execution'
+        ? (executionFilter || '')
+        : workingStage === 'financial'
+          ? (financialFilter || '')
+          : reactionRequired
     ? 'reaction_required'
     : offHoursOnly
       ? 'off_hours'
@@ -538,6 +598,24 @@ export default function CampsPage() {
     activeChips.push({
       key: 'requestReviewStatus',
       label: REQUEST_REVIEW_LABELS[requestReviewStatus] || requestReviewStatus.replaceAll('_', ' '),
+      onRemove: () => handleFilterChange(''),
+    });
+  } else if (assignmentFilter) {
+    activeChips.push({
+      key: 'assignmentFilter',
+      label: stageFilterLabel('assignment', assignmentFilter),
+      onRemove: () => handleFilterChange(''),
+    });
+  } else if (executionFilter) {
+    activeChips.push({
+      key: 'executionFilter',
+      label: stageFilterLabel('execution', executionFilter),
+      onRemove: () => handleFilterChange(''),
+    });
+  } else if (financialFilter) {
+    activeChips.push({
+      key: 'financialFilter',
+      label: stageFilterLabel('financial', financialFilter),
       onRemove: () => handleFilterChange(''),
     });
   } else if (status) {
@@ -669,13 +747,13 @@ export default function CampsPage() {
     return (
       <div className="actions camp-row-actions">
         {canEditCampRecord(camp) && (
-          <Link to={`/camps/manage/${camp._id}/edit`} className="btn btn-secondary btn-sm">
+          <Link to={`/camps/manage/${camp._id}/edit`} className="btn secondary btn-compact">
             Edit
           </Link>
         )}
         {camp.status === 'pending_review' && canApproveCamps() && (
           <button
-            className="btn btn-primary btn-sm"
+            className="btn btn-compact"
             disabled={camp.canApprove === false}
             title={camp.canApprove === false ? (camp.approvalBlockers || []).join(' ') : undefined}
             onClick={() => openCampActionConfirm('approve', camp)}
@@ -684,7 +762,7 @@ export default function CampsPage() {
           </button>
         )}
         {camp.status === 'approved' && hasPermission('camps:execute') && (
-          <button className="btn btn-primary btn-sm" onClick={() => openCampActionConfirm('execute', camp)}>
+          <button className="btn btn-compact" onClick={() => openCampActionConfirm('execute', camp)}>
             Mark Executed
           </button>
         )}
@@ -717,10 +795,13 @@ export default function CampsPage() {
   return (
     <>
       {(bulkMessage || error) && (
-        <div className="page-alerts page-alerts--compact">
-          {bulkMessage && <div className="success-banner">{bulkMessage}</div>}
-          {error && <div className="error-banner">{error}</div>}
-        </div>
+        <PageAlerts
+          className="page-alerts--compact"
+          items={[
+            bulkMessage && { variant: 'success', message: bulkMessage },
+            error && { variant: 'error', message: error },
+          ].filter(Boolean)}
+        />
       )}
 
       <div className="card card--flush table-wrap camps-manage-card">
@@ -738,6 +819,8 @@ export default function CampsPage() {
           onFilterChange={handleFilterChange}
           assignmentStage={workingStage === 'assignment'}
           requestStage={workingStage === 'request'}
+          executionStage={workingStage === 'execution'}
+          financialStage={workingStage === 'financial'}
           activeChips={activeChips}
           onClearAll={clearFilters}
         />
@@ -747,7 +830,7 @@ export default function CampsPage() {
           <span>{selectedIds.length} selected</span>
           {canApproveCamps() && (
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkApproveValidation.ok}
               title={!bulkApproveValidation.ok ? bulkApproveValidation.message : undefined}
               onClick={() => handleBulk('approve')}
@@ -757,17 +840,17 @@ export default function CampsPage() {
           )}
           {canRejectCamps() && (
             <button
-              className="btn btn-danger btn-sm"
+              className="btn danger btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkRejectValidation.ok}
               title={!bulkRejectValidation.ok ? bulkRejectValidation.message : undefined}
               onClick={() => handleBulk('reject')}
             >
-              Reject Selected
+              Refuse Selected
             </button>
           )}
           {hasPermission('camps:execute') && (
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkExecuteValidation.ok}
               title={!bulkExecuteValidation.ok ? bulkExecuteValidation.message : undefined}
               onClick={() => handleBulk('execute')}
@@ -781,16 +864,20 @@ export default function CampsPage() {
         {!workingStage ? (
           <EmptyState
             title="Select your working stage"
-            description="Choose a lifecycle stage from the Stage dropdown in the header."
+            description="Choose a lifecycle view from the dropdown in the header."
           />
         ) : loading ? (
           <EmptyState title="Loading…" description="Fetching camps." />
         ) : camps.length === 0 ? (
           <EmptyState
             title={`No camps in ${workingStageMeta?.label || 'this stage'}`}
-            description="Create a camp or import from Excel to see records here."
+            description={
+              isRequestStage
+                ? 'Create a camp or import from Excel to see records here.'
+                : 'Camps appear here as they progress from Request. Switch to Request to add a new camp.'
+            }
             action={
-              (hasPermission('camps:create') || hasPermission('camps:update')) ? (
+              isRequestStage && (hasPermission('camps:create') || hasPermission('camps:update')) ? (
                 <Link to="/camps/manage/new" className="btn">New Camp</Link>
               ) : null
             }
@@ -853,14 +940,16 @@ export default function CampsPage() {
                     {isRequestStage ? (
                       <>
                         <td className="col-date date-cell">{formatDateDDMMYYYY(camp.campDate) || '—'}</td>
-                        <td className="col-timeframe">{renderRequestTimeFrame(camp)}</td>
+                        <td className="col-timeframe">
+                          <CampTimeFrame camp={camp} compact />
+                        </td>
                         <td className="col-state">{cellText(camp.state)}</td>
                         <td className="col-city">{cellText(camp.city)}</td>
                       </>
                     ) : (
                       <>
                         <td className="col-timeframe">
-                          <div>{camp.timeFrame}</div>
+                          <CampTimeFrame camp={camp} compact />
                         </td>
                         <td>{camp.doctorName}</td>
                         <td className="col-city">{cellText(camp.city)}</td>

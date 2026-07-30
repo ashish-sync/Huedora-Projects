@@ -1,4 +1,5 @@
 import { isValidCampMethod } from '../constants/campNames';
+import { emailListError, emailError, isValidPhone, phoneError } from '../../../shared/validation.js';
 
 const DURATION_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
 
@@ -36,6 +37,7 @@ export function validateClientMasterForm(form) {
     coordinatorName: 80,
     healthcareWorker: 80,
     spocName: 80,
+    spocEmail: 120,
     requestTimeline: 80,
   };
 
@@ -59,17 +61,19 @@ export function validateClientMasterForm(form) {
   }
 
   const spocNumber = String(form.spocNumber || '').trim();
-  if (spocNumber && !/^\d{6,15}$/.test(spocNumber)) {
-    errors.spocNumber = 'SPOC number must be 6–15 digits';
+  const spocPhoneError = phoneError(spocNumber, 'SPOC mobile number');
+  if (spocPhoneError) {
+    errors.spocNumber = spocPhoneError;
   }
 
-  const assignedUserEmails = String(form.assignedUserEmails || '').trim();
-  if (assignedUserEmails) {
-    const emails = assignedUserEmails.split(/[;,\n]/).map((email) => email.trim()).filter(Boolean);
-    const invalid = emails.find((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-    if (invalid) {
-      errors.assignedUserEmails = `Invalid email: ${invalid}`;
-    }
+  const spocEmailError = emailError(form.spocEmail, 'SPOC email address');
+  if (spocEmailError) {
+    errors.spocEmail = spocEmailError;
+  }
+
+  const assignedEmailError = emailListError(form.assignedUserEmails, 'Assigned user email');
+  if (assignedEmailError) {
+    errors.assignedUserEmails = assignedEmailError;
   }
 
   const nonNegativeNumbers = [
@@ -124,6 +128,7 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     campDuration: record.campDuration || '4:00',
     spocName: record.spocName || '',
     spocNumber: record.spocNumber || '',
+    spocEmail: record.spocEmail || '',
     requestTimeline: record.requestTimeline || '',
     assignedUserEmails: Array.isArray(record.assignedUserEmails)
       ? record.assignedUserEmails.join(', ')
@@ -135,6 +140,7 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     minimumKmsCovered: String(record.minimumKmsCovered ?? ''),
     extPatientUnit: String(record.extPatientUnit ?? ''),
     kmsUnit: String(record.kmsUnit ?? ''),
+    mappedConsumables: Array.isArray(record.mappedConsumables) ? record.mappedConsumables : [],
     isActive: record.isActive !== false,
   };
 }

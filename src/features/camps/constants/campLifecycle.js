@@ -1,5 +1,19 @@
-import { computeDurationHours } from '../utils/campSchedule.js';
+import {
+  computeDurationHours,
+  getCampEndDateTime,
+  getCampStartDateTime,
+} from '../utils/campSchedule.js';
+import { DEFAULT_DOCTOR_SPECIALTY } from './doctorSpecialty.js';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
+import {
+  normalizeContactPersons,
+  syncPrimaryContactFields,
+  DEFAULT_CONTACT_PERSON_LEVEL,
+  CONTACT_PERSON_LEVEL_OPTIONS,
+} from '../utils/campContactPersons.js';
+import { getConsumablesCompletionBlockers } from '../utils/campConsumables.js';
+
+export { CONTACT_PERSON_LEVEL_OPTIONS };
 
 export const CAMP_LIFECYCLE_STAGES = [
   { id: 'request', label: 'Request Stage', short: 'Request' },
@@ -8,15 +22,117 @@ export const CAMP_LIFECYCLE_STAGES = [
   { id: 'financial', label: 'Finance & Settlement', short: 'Financial' },
 ];
 
+const LIFECYCLE_STAGE_ALIASES = {
+  request: 'request',
+  assignment: 'assignment',
+  execution: 'execution',
+  financial: 'financial',
+  'camp execution': 'execution',
+  'finance & settlement': 'financial',
+  'finance and settlement': 'financial',
+};
+
+export function normalizeLifecycleStage(stage, fallback = 'request') {
+  const raw = String(stage || '').trim().toLowerCase();
+  if (!raw) return fallback;
+  if (LIFECYCLE_STAGE_ALIASES[raw]) return LIFECYCLE_STAGE_ALIASES[raw];
+  const byId = CAMP_LIFECYCLE_STAGES.find((item) => item.id === raw);
+  if (byId) return byId.id;
+  const byLabel = CAMP_LIFECYCLE_STAGES.find((item) => item.label.toLowerCase() === raw);
+  if (byLabel) return byLabel.id;
+  const byShort = CAMP_LIFECYCLE_STAGES.find((item) => item.short.toLowerCase() === raw);
+  if (byShort) return byShort.id;
+  return fallback;
+}
+
+export const CAMP_STATUS_LABELS = {
+  pending_review: 'Pending review',
+  approved: 'Approved',
+  executed: 'Executed',
+  rejected: 'Refused',
+  cancelled: 'Cancelled',
+};
+
+export function campStatusLabel(status) {
+  const key = String(status || '').trim();
+  return CAMP_STATUS_LABELS[key] || key.replaceAll('_', ' ');
+}
+
 export function lifecycleStageIndex(stage) {
-  return CAMP_LIFECYCLE_STAGES.findIndex((s) => s.id === stage);
+  return CAMP_LIFECYCLE_STAGES.findIndex((s) => s.id === normalizeLifecycleStage(stage, ''));
 }
 
 export function hasReachedLifecycleStage(reachedStage, targetStage) {
-  const reached = lifecycleStageIndex(reachedStage || 'request');
-  const target = lifecycleStageIndex(targetStage);
+  const reached = lifecycleStageIndex(normalizeLifecycleStage(reachedStage, 'request'));
+  const target = lifecycleStageIndex(normalizeLifecycleStage(targetStage, ''));
   if (reached < 0 || target < 0) return false;
   return target <= reached;
+}
+
+/** Financial opens once execution stage has been reached (not only after lifecycle is already financial). */
+export function canVisitLifecycleStage(reachedStage, targetStage) {
+  const target = normalizeLifecycleStage(targetStage, '');
+  if (!target) return false;
+  if (target === 'financial') {
+    return hasReachedLifecycleStage(reachedStage, 'execution');
+  }
+  return hasReachedLifecycleStage(reachedStage, target);
+}
+
+export function normalizeExecutionDocType(docType) {
+  const raw = String(docType || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (raw === 'doctor_form' || raw === 'df' || raw.includes('doctor')) return 'doctor_form';
+  if (raw === 'patient_form' || raw === 'pf' || raw.includes('patient')) return 'patient_form';
+  return raw;
+}
+
+function hasExecutionDocType(docs, targetType) {
+  return (docs || []).some((doc) => normalizeExecutionDocType(doc?.docType) === targetType);
+}
+
+export function getExecutionFinanceBlockers(camp = {}, mappedConsumables = []) {
+  const blockers = [];
+  if (isExecutionClosedOut(camp.executionStatus)) {
+    blockers.push('Execution is cancelled or refused');
+    return blockers;
+  }
+  if (normalizeExecutionStatus(camp.executionStatus) !== EXECUTION_STATUS.CAMP_COMPLETED) {
+    blockers.push('Set execution status to Camp Completed');
+  }
+  if (!String(camp.chargeableStatus || '').trim()) {
+    blockers.push('Select chargeable status');
+  }
+  if (!String(camp.inTime || '').trim()) {
+    blockers.push('Enter in time on the execution form');
+  }
+  if (!String(camp.outTime || '').trim()) {
+    blockers.push('Enter out time on the execution form');
+  }
+  const docs = Array.isArray(camp.executionDocuments) ? camp.executionDocuments : [];
+  if (!hasExecutionDocType(docs, 'doctor_form')) {
+    blockers.push('Upload at least one DF (doctor form) document');
+  }
+  if (!hasExecutionDocType(docs, 'patient_form')) {
+    blockers.push('Upload at least one PF (patient form) document');
+  }
+  blockers.push(...getExecutionConsumablesBlockers(camp, mappedConsumables));
+  return blockers;
+}
+
+export function getExecutionConsumablesBlockers(camp = {}, mappedConsumables = []) {
+  if (!Array.isArray(mappedConsumables) || !mappedConsumables.length) return [];
+  const normalized = normalizeExecutionStatus(camp.executionStatus);
+  const effective = normalized === EXECUTION_STATUS.CAMP_COMPLETED
+    ? EXECUTION_STATUS.CAMP_COMPLETED
+    : isExecutionClosedOut(normalized)
+      ? normalized
+      : resolveScheduledExecutionStatus(camp);
+  if (effective === EXECUTION_STATUS.CAMP_SCHEDULED) return [];
+  return getConsumablesCompletionBlockers(mappedConsumables, camp.consumablesUsed);
+}
+
+export function isExecutionReadyForFinance(camp = {}, mappedConsumables = []) {
+  return getExecutionFinanceBlockers(camp, mappedConsumables).length === 0;
 }
 
 export function maxLifecycleStage(a, b) {
@@ -43,21 +159,83 @@ export const ASSIGNMENT_REFUSAL_REASONS = [
   'Cancelled by Client',
 ];
 export const ASSIGNMENT_STATUSES = ['Pending', 'Assigned', 'Reassigned', 'Unassigned'];
-export const EXECUTION_STATUSES = ['Pending', 'In Progress', 'Completed', 'Cancelled', 'Rejected'];
-export const EXECUTION_CLOSED_STATUSES = ['Cancelled', 'Rejected'];
+
+export const EXECUTION_STATUS = {
+  CAMP_SCHEDULED: 'Camp Scheduled',
+  CAMP_ONGOING: 'Camp Ongoing',
+  CAMP_COMPLETED: 'Camp Completed',
+  MARKED_EXECUTED: 'Marked Executed',
+};
+
+export const EXECUTION_STATUSES = [
+  EXECUTION_STATUS.CAMP_SCHEDULED,
+  EXECUTION_STATUS.CAMP_ONGOING,
+  EXECUTION_STATUS.MARKED_EXECUTED,
+  EXECUTION_STATUS.CAMP_COMPLETED,
+];
+
+export const LEGACY_EXECUTION_CLOSED_STATUSES = ['Cancelled', 'Refused'];
+
+const LEGACY_EXECUTION_STATUS_ALIASES = {
+  Pending: EXECUTION_STATUS.CAMP_SCHEDULED,
+  'Yet to Start': EXECUTION_STATUS.CAMP_SCHEDULED,
+  'In Progress': EXECUTION_STATUS.CAMP_ONGOING,
+  Ongoing: EXECUTION_STATUS.CAMP_ONGOING,
+  Executed: EXECUTION_STATUS.MARKED_EXECUTED,
+  Completed: EXECUTION_STATUS.CAMP_COMPLETED,
+};
+
+export function normalizeExecutionStatus(executionStatus) {
+  const value = String(executionStatus || '').trim();
+  if (value === 'Rejected') return 'Refused';
+  if (LEGACY_EXECUTION_STATUS_ALIASES[value]) return LEGACY_EXECUTION_STATUS_ALIASES[value];
+  return value;
+}
 
 export function isExecutionClosedOut(executionStatus) {
-  return EXECUTION_CLOSED_STATUSES.includes(String(executionStatus || '').trim());
+  return LEGACY_EXECUTION_CLOSED_STATUSES.includes(normalizeExecutionStatus(executionStatus));
+}
+
+export function resolveScheduledExecutionStatus(camp = {}, now = new Date()) {
+  const start = getCampStartDateTime(camp);
+  const end = getCampEndDateTime(camp);
+  if (!start || !end) return EXECUTION_STATUS.CAMP_SCHEDULED;
+
+  const ts = now.getTime();
+  if (ts < start.getTime()) return EXECUTION_STATUS.CAMP_SCHEDULED;
+  if (ts <= end.getTime()) return EXECUTION_STATUS.CAMP_ONGOING;
+  return EXECUTION_STATUS.MARKED_EXECUTED;
+}
+
+export function resolveEffectiveExecutionStatus(camp = {}, now = new Date()) {
+  const normalized = normalizeExecutionStatus(camp.executionStatus);
+  if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
+  if (isExecutionClosedOut(normalized)) return normalized;
+  return resolveScheduledExecutionStatus(camp, now);
+}
+
+export function executionStatusClass(status) {
+  return `execution-${String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')}`;
+}
+
+export function syncExecutionStatusForSave(camp = {}, now = new Date()) {
+  const normalized = normalizeExecutionStatus(camp.executionStatus);
+  if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
+  if (isExecutionClosedOut(normalized)) return normalized;
+  return resolveScheduledExecutionStatus(camp, now);
 }
 export const CHARGEABLE_STATUSES = ['Chargeable', 'Non-Chargeable', 'Partial'];
 export const QUALITY_RATINGS = ['Good', 'Average', 'Poor'];
 export const ATTIRE_CHECK_OPTIONS = ['No Issues', 'Issues'];
 export const HCW_CATEGORIES = ['Technician', 'Phlebotomist', 'Dietician', 'Other'];
 export const EXECUTION_DOC_TYPES = [
-  { value: 'doctor_form', label: 'DF (Doctor Form)' },
-  { value: 'patient_form', label: 'PF (Patient Form)' },
-  { value: 'other', label: 'Others' },
+  { value: 'doctor_form', label: 'Doctor Form' },
+  { value: 'patient_form', label: 'Patient Form' },
   { value: 'gps_selfie', label: 'GPS Selfie' },
+  { value: 'other', label: 'Other document' },
 ];
 
 export const PAYMENT_SUBMIT_STATUSES = [
@@ -118,17 +296,41 @@ export function resolveCampSlot(startTime) {
 }
 
 /**
- * Punctuality from camp start vs in time:
- * on time / early through 5 min late → Good; 5–15 min late → Average; 15+ min late → Poor.
+ * Minutes late (positive), early (negative), or on time (0) from camp start vs in time.
  */
-export function resolvePunctuality(campStartTime, inTime) {
+export function computePunctualityLateness(campStartTime, inTime) {
   const startMins = parseTimeToMinutes(campStartTime);
   const inMins = parseTimeToMinutes(inTime);
-  if (startMins == null || inMins == null) return '';
+  if (startMins == null || inMins == null) return null;
 
   let lateMinutes = inMins - startMins;
   if (lateMinutes < -12 * 60) lateMinutes += 24 * 60;
   if (lateMinutes > 12 * 60) lateMinutes -= 24 * 60;
+  return lateMinutes;
+}
+
+export function formatLatenessHhMm(lateMinutes) {
+  if (lateMinutes == null || Number.isNaN(lateMinutes)) return '';
+  const abs = Math.abs(lateMinutes);
+  const hours = Math.floor(abs / 60);
+  const minutes = abs % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+export function punctualityLatenessText(campStartTime, inTime) {
+  const lateMinutes = computePunctualityLateness(campStartTime, inTime);
+  if (lateMinutes == null) return '';
+  if (lateMinutes <= 0) return '00:00';
+  return formatLatenessHhMm(lateMinutes);
+}
+
+/**
+ * Punctuality from camp start vs in time:
+ * on time / early through 5 min late → Good; 5–15 min late → Average; 15+ min late → Poor.
+ */
+export function resolvePunctuality(campStartTime, inTime) {
+  const lateMinutes = computePunctualityLateness(campStartTime, inTime);
+  if (lateMinutes == null) return '';
 
   if (lateMinutes <= 5) return 'Good';
   if (lateMinutes <= 15) return 'Average';
@@ -222,9 +424,12 @@ export function emptyLifecycleForm() {
     campSlot: 'Morning',
     doctorName: '',
     doctorCode: '',
-    speciality: '',
+    speciality: DEFAULT_DOCTOR_SPECIALTY,
     hospitalName: '',
     campAddress: '',
+    googlePlaceId: '',
+    addressManualEntry: true,
+    addressPlacesAvailable: false,
     pincode: '',
     city: '',
     state: '',
@@ -238,6 +443,8 @@ export function emptyLifecycleForm() {
     latitude: '',
     longitude: '',
     expectedPatients: 50,
+    contactPersons: [{ level: DEFAULT_CONTACT_PERSON_LEVEL, name: '', phone: '' }],
+    contactPersonLevel: DEFAULT_CONTACT_PERSON_LEVEL,
     fieldPersonName: '',
     fieldPersonPhone: '',
     assignmentStatus: 'Pending',
@@ -247,7 +454,7 @@ export function emptyLifecycleForm() {
     hcwCategory: '',
     hcwName: '',
     hcwContact: '',
-    executionStatus: 'Pending',
+    executionStatus: EXECUTION_STATUS.CAMP_SCHEDULED,
     cancellationReason: '',
     chargeableStatus: '',
     inTime: '',
@@ -262,6 +469,7 @@ export function emptyLifecycleForm() {
     patientsCount: 0,
     rxCount: 0,
     executionDocuments: [],
+    consumablesUsed: [],
     campRevenue: 0,
     overtimeRevenue: 0,
     otherRevenue: 0,
@@ -304,9 +512,12 @@ export function campToForm(camp) {
     campSlot: resolveCampSlot(startTime),
     doctorName: camp.doctorName || '',
     doctorCode: camp.doctorCode || '',
-    speciality: camp.speciality || '',
+    speciality: camp.speciality || DEFAULT_DOCTOR_SPECIALTY,
     hospitalName: camp.hospitalName || '',
     campAddress: camp.campAddress || '',
+    googlePlaceId: camp.googlePlaceId || '',
+    addressManualEntry: camp.addressManualEntry !== false,
+    addressPlacesAvailable: false,
     pincode: camp.pincode || '',
     city: camp.city || camp.district || '',
     state: camp.state || '',
@@ -319,8 +530,7 @@ export function campToForm(camp) {
     latitude: camp.latitude ?? '',
     longitude: camp.longitude ?? '',
     expectedPatients: camp.expectedPatients ?? 50,
-    fieldPersonName: camp.fieldPersonName || '',
-    fieldPersonPhone: camp.fieldPersonPhone || '',
+    ...syncPrimaryContactFields(normalizeContactPersons(camp)),
     assignmentStatus: camp.assignmentStatus || 'Pending',
     assignmentDecision: camp.assignmentDecision
       || (camp.assignmentRefusalReason ? 'refuse' : (camp.hcwContactId ? 'assign' : '')),
@@ -329,7 +539,7 @@ export function campToForm(camp) {
     hcwCategory: camp.hcwCategory || '',
     hcwName: camp.hcwName || '',
     hcwContact: camp.hcwContact || '',
-    executionStatus: camp.executionStatus || 'Pending',
+    executionStatus: normalizeExecutionStatus(camp.executionStatus) || EXECUTION_STATUS.CAMP_SCHEDULED,
     cancellationReason: camp.cancellationReason || camp.remarks || '',
     chargeableStatus: camp.chargeableStatus || '',
     inTime: camp.inTime || '',
@@ -344,6 +554,7 @@ export function campToForm(camp) {
     patientsCount: camp.patientsCount ?? camp.actualPatients ?? 0,
     rxCount: camp.rxCount ?? 0,
     executionDocuments: Array.isArray(camp.executionDocuments) ? camp.executionDocuments : [],
+    consumablesUsed: Array.isArray(camp.consumablesUsed) ? camp.consumablesUsed : [],
     campRevenue: camp.campRevenue ?? 0,
     overtimeRevenue: camp.overtimeRevenue ?? 0,
     otherRevenue: camp.otherRevenue ?? 0,
@@ -361,6 +572,6 @@ export function campToForm(camp) {
     financePaymentStatus: camp.financePaymentStatus || '',
     submittedToFinanceAt: camp.submittedToFinanceAt || '',
     remarks: camp.remarks || '',
-    lifecycleStage: camp.lifecycleStage || 'request',
+    lifecycleStage: normalizeLifecycleStage(camp.lifecycleStage, 'request'),
   };
 }

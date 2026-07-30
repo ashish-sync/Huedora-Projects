@@ -17,7 +17,7 @@ export function FormPageHeader({ title, backTo, onBack }) {
 
   return (
     <div className="form-page-header">
-      <button type="button" className="btn btn-secondary btn-sm form-back-btn" onClick={handleBack}>
+      <button type="button" className="btn secondary btn-compact form-back-btn" onClick={handleBack}>
         ← Back
       </button>
       {title && <h3>{title}</h3>}

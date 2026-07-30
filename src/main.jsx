@@ -6,6 +6,7 @@ import { AuthProvider } from './shared/auth.jsx';
 import { ThemeProvider } from './shared/theme.jsx';
 import ServerGate from './components/ServerGate.jsx';
 import './styles/global.css';
+import './styles/foundations/viewport-chrome.css';
 import './styles/foundations/typography-base.css';
 import './styles/foundations/focus-visible.css';
 import './styles/components/button.css';

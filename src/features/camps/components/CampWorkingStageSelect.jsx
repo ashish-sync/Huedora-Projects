@@ -9,23 +9,18 @@ export function CampWorkingStageSelect({ compact = false }) {
       className={[
         'camp-working-stage-field',
         compact ? 'camp-working-stage-field--compact' : '',
-        workingStage ? '' : 'is-pending',
       ].filter(Boolean).join(' ')}
     >
-      <span className="camp-working-stage-label">{compact ? 'Stage' : 'Working stage'}</span>
+      {compact ? null : <span className="camp-working-stage-label">Working view</span>}
       <select
         className="camp-working-stage-select"
-        value={workingStage || ''}
-        onChange={(event) => setWorkingStage(event.target.value || null)}
-        aria-label="Select which camp lifecycle stage you are working on"
-        aria-required="true"
+        value={workingStage}
+        onChange={(event) => setWorkingStage(event.target.value)}
+        aria-label="Select camp lifecycle view"
       >
-        <option value="" disabled>
-          Select stage…
-        </option>
-        {CAMP_LIFECYCLE_STAGES.map((stage, index) => (
+        {CAMP_LIFECYCLE_STAGES.map((stage) => (
           <option key={stage.id} value={stage.id}>
-            {index + 1}. {stage.label}
+            {compact ? stage.short : stage.label}
           </option>
         ))}
       </select>

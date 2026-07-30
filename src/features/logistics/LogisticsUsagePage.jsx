@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
@@ -58,11 +59,7 @@ export default function LogisticsUsagePage() {
         = Goods Issue − Used − Wastage.
       </p>
 
-      {(error || msg) && (
-        <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-          {error || msg}
-        </div>
-      )}
+      {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       <div className="module-dash-kpis" data-count="3" role="group" aria-label="Usage totals">
         <div className="module-kpi">

@@ -90,17 +90,56 @@ export const campApi = {
   execute: (id, payload = {}) => post(`${BASE}/camps/${id}/execute`, payload),
   delete: (id) => del(`${BASE}/camps/${id}`),
   bulkAction: (payload) => post(`${BASE}/camps/bulk-action`, payload),
-  uploadExecutionDocuments: (id, files, docType) => {
+  uploadExecutionDocuments: (id, files, docType, docNote = '') => {
     const formData = new FormData();
     for (const file of files) formData.append('documents', file);
     formData.append('docType', docType);
+    if (docNote) formData.append('docNote', docNote);
     return postForm(`${BASE}/camps/${id}/execution-documents`, formData);
   },
+  consumableOptions: () => get(`${BASE}/consumables/options`),
+  consumablesForCamp: (clientId, params = {}) => get(`${BASE}/consumables/for-camp`, {
+    clientId,
+    ...params,
+  }),
   submitToFinance: (id, payload) => post(`${BASE}/camps/${id}/submit-to-finance`, payload),
   downloadFinanceExport: (id, campId = 'camp') => downloadExcel(
     `${BASE}/camps/${id}/finance-export`,
     `Camp_Finance_${String(campId).replace(/[^\w.-]+/g, '_')}.xlsx`,
   ),
+  downloadExportSample: async () => ({ data: await getBlob(`${BASE}/camps/export/sample`) }),
+};
+
+export const exportApi = {
+  fields: () => get(`${BASE}/camps/export/fields`),
+  templates: () => get(`${BASE}/camps/export/templates`),
+  saveTemplate: (payload) => post(`${BASE}/camps/export/templates`, payload),
+  deleteTemplate: (id) => del(`${BASE}/camps/export/templates/${id}`),
+  download: async (payload) => {
+    const res = await apiFetch(`${BASE}/camps/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      let message = `Download failed (${res.status})`;
+      try {
+        const json = await res.json();
+        if (json?.error?.message) message = json.error.message;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(message);
+    }
+    const blob = await res.blob();
+    const filename = payload?.format === 'csv' ? 'Camps_Export.csv' : 'Camps_Export.xlsx';
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
 };
 
 export const clientApi = {

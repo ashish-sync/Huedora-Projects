@@ -7,27 +7,49 @@ const DEBOUNCE_MS = 300;
 
 /**
  * Camp address search using server-side Google Places (New) autocomplete.
- * Avoids loading Maps JavaScript in the browser (referrer/key restrictions).
  */
 export default function CampAddressAutocomplete({
   value = '',
+  selectedPlaceId = '',
+  manualOnly = false,
+  placesAvailable = false,
   onChange,
   onPlaceSelected,
+  onPlaceCleared,
   disabled = false,
   required = false,
-  placeholder = 'Start typing address…',
 }) {
   const listId = useId();
   const rootRef = useRef(null);
+  const lastSelectedAddressRef = useRef('');
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [status, setStatus] = useState('ready'); // ready | unavailable | not_configured
+  const [serviceDown, setServiceDown] = useState(false);
   const debounceRef = useRef(null);
   const requestSeq = useRef(0);
 
+  const useAutocomplete = placesAvailable && !manualOnly;
+  const placeholder = manualOnly
+    ? 'Enter camp / clinic address'
+    : 'Search address — pick from suggestions';
+
   useEffect(() => {
+    if (selectedPlaceId && value) {
+      lastSelectedAddressRef.current = value;
+    }
+  }, [selectedPlaceId, value]);
+
+  useEffect(() => {
+    if (!useAutocomplete) {
+      setSuggestions([]);
+      setOpen(false);
+      setLoading(false);
+      setServiceDown(false);
+      return undefined;
+    }
+
     const q = String(value || '').trim();
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -36,6 +58,7 @@ export default function CampAddressAutocomplete({
       setOpen(false);
       setActiveIndex(-1);
       setLoading(false);
+      setServiceDown(false);
       return undefined;
     }
 
@@ -49,16 +72,12 @@ export default function CampAddressAutocomplete({
         setSuggestions(rows);
         setOpen(rows.length > 0);
         setActiveIndex(-1);
-        setStatus('ready');
+        setServiceDown(false);
       } catch (err) {
         if (seq !== requestSeq.current) return;
         setSuggestions([]);
         setOpen(false);
-        if (err?.code === 'PLACES_NOT_CONFIGURED') {
-          setStatus('not_configured');
-        } else {
-          setStatus('unavailable');
-        }
+        setServiceDown(err?.code === 'PLACES_NOT_CONFIGURED' || err?.code === 'PLACES_AUTOCOMPLETE_FAILED');
       } finally {
         if (seq === requestSeq.current) setLoading(false);
       }
@@ -67,7 +86,7 @@ export default function CampAddressAutocomplete({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [value]);
+  }, [value, useAutocomplete]);
 
   useEffect(() => {
     function onDocClick(event) {
@@ -87,16 +106,19 @@ export default function CampAddressAutocomplete({
       const json = await api(`/geo/places/details?placeId=${encodeURIComponent(item.placeId)}`);
       const loc = json.data || {};
       const zone = resolveZoneForState(loc.state) || '';
-      onChange?.(loc.campAddress || item.label || value);
+      const address = loc.campAddress || item.label || value;
+      lastSelectedAddressRef.current = address;
+      onChange?.(address);
       onPlaceSelected?.({
         ...loc,
+        googlePlaceId: loc.googlePlaceId || item.placeId,
         zone,
         city: loc.city || loc.district || '',
       });
-      setStatus('ready');
+      setServiceDown(false);
     } catch {
       onChange?.(item.label || value);
-      setStatus('unavailable');
+      setServiceDown(true);
     }
   }
 
@@ -116,6 +138,13 @@ export default function CampAddressAutocomplete({
     }
   }
 
+  function onInputChange(nextValue) {
+    if (selectedPlaceId && nextValue !== lastSelectedAddressRef.current) {
+      onPlaceCleared?.();
+    }
+    onChange?.(nextValue);
+  }
+
   return (
     <div className="camp-address-autocomplete" ref={rootRef}>
       <input
@@ -123,22 +152,24 @@ export default function CampAddressAutocomplete({
         required={required}
         disabled={disabled}
         value={value}
-        onChange={(e) => onChange?.(e.target.value)}
+        onChange={(e) => onInputChange(e.target.value)}
         onFocus={() => {
           if (suggestions.length) setOpen(true);
         }}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         autoComplete="off"
-        role="combobox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
+        {...(useAutocomplete ? {
+          role: 'combobox',
+          'aria-expanded': open,
+          'aria-controls': listId,
+          'aria-autocomplete': 'list',
+        } : {})}
       />
-      {loading ? (
+      {useAutocomplete && loading ? (
         <p className="muted camp-address-autocomplete-hint">Searching addresses…</p>
       ) : null}
-      {open && suggestions.length ? (
+      {useAutocomplete && open && suggestions.length ? (
         <ul id={listId} className="camp-address-suggestions" role="listbox">
           {suggestions.map((item, index) => (
             <li key={item.placeId}>
@@ -159,14 +190,9 @@ export default function CampAddressAutocomplete({
           ))}
         </ul>
       ) : null}
-      {status === 'not_configured' ? (
+      {useAutocomplete && serviceDown ? (
         <p className="muted camp-address-autocomplete-hint">
-          Google Places is not configured — enter the address manually.
-        </p>
-      ) : null}
-      {status === 'unavailable' ? (
-        <p className="muted camp-address-autocomplete-hint">
-          Address suggestions unavailable — you can still type the address manually.
+          Suggestions unavailable right now — use manual entry below if needed.
         </p>
       ) : null}
     </div>

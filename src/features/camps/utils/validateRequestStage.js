@@ -2,13 +2,12 @@ import { toApiDateValue } from './dateFormat';
 import { computeDurationHours } from './campSchedule';
 import { resolveCampSlot } from '../constants/campLifecycle';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
+import { isValidPhone } from '../../../shared/validation.js';
+import { CONTACT_PERSON_LEVEL_OPTIONS } from '../constants/campLifecycle.js';
+import { normalizeContactPersons } from './campContactPersons.js';
 
 function hasText(value) {
   return Boolean(String(value ?? '').trim());
-}
-
-function phoneDigits(value) {
-  return String(value ?? '').replace(/\D/g, '');
 }
 
 /**
@@ -59,17 +58,25 @@ export function validateRequestStageForm(form = {}) {
     }
   }
 
-  const expectedPatients = Number(form.expectedPatients);
-  if (!Number.isFinite(expectedPatients) || expectedPatients <= 0) {
-    errors.push('Expected patients must be greater than zero');
+  const expectedPatientsRaw = String(form.expectedPatients ?? '').trim();
+  if (!expectedPatientsRaw) {
+    errors.push('Expected patients is required');
+  } else if (!/^\d+$/.test(expectedPatientsRaw)) {
+    errors.push('Expected patients must be a whole number');
   }
 
-  if (!hasText(form.fieldPersonName)) errors.push('Contact person name is required');
-
-  const phone = phoneDigits(form.fieldPersonPhone);
-  if (phone.length < 6 || phone.length > 15) {
-    errors.push('Contact person number must be 6–15 digits');
-  }
+  const contacts = normalizeContactPersons(form);
+  contacts.forEach((contact, index) => {
+    const label = contacts.length > 1 ? `Contact person ${index + 1}` : 'Contact person';
+    const level = String(contact.level || '').trim();
+    if (!CONTACT_PERSON_LEVEL_OPTIONS.some((opt) => opt.value === level)) {
+      errors.push(`${label} level is required`);
+    }
+    if (!hasText(contact.name)) errors.push(`${label} name is required`);
+    if (!isValidPhone(contact.phone)) {
+      errors.push(`${label} number must be exactly 10 digits`);
+    }
+  });
 
   return errors;
 }

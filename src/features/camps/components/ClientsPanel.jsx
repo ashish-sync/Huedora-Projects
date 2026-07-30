@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { clientApi } from '../campOpsApi.js';
 import { trimFormStrings, trimString } from '../utils/trimInput';
 import { Pagination } from './Pagination';
@@ -147,11 +148,7 @@ export function ClientsPanel({
         onClearAll={clearAllFilters}
       />
 
-      {error && (
-        <div className="page-alerts">
-          <div className="error-banner">{error}</div>
-        </div>
-      )}
+      {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
 
       {editingId && (
         <form className="form-card" onSubmit={handleSave} style={{ marginBottom: '1rem' }}>

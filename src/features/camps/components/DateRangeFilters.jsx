@@ -42,7 +42,7 @@ export function DateRangeFilters({
             <button
               key={key}
               type="button"
-              className={`btn btn-secondary btn-sm date-quick-btn${activePreset === key ? ' is-active' : ''}`}
+              className={`btn secondary btn-compact date-quick-btn${activePreset === key ? ' is-active' : ''}`}
               onClick={() => handleQuickSelect(key)}
             >
               {label}
@@ -72,12 +72,12 @@ export function DateRangeFilters({
 
       <div className="date-range-actions">
         {showApply && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={onApply}>
+          <button type="button" className="btn btn-compact" onClick={onApply}>
             Apply
           </button>
         )}
         {showClear && (
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onClear}>
+          <button type="button" className="btn secondary btn-compact" onClick={onClear}>
             Clear dates
           </button>
         )}

@@ -44,8 +44,12 @@
   --table-cell-y: var(--space-3);
   --table-cell-x: var(--space-4);
 
+  --bp-xs: 560px;
   --bp-sm: 640px;
   --bp-md: 768px;
   --bp-lg: 1024px;
   --bp-xl: 1280px;
+
+  /* Default UI density (~95% browser zoom) — tuned for desktop Chrome */
+  --app-ui-zoom: 0.95;
 }

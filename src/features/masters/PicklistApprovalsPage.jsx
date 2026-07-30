@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
@@ -82,11 +83,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
         Custom values entered via “Other” appear here. Approve to add them to the shared dropdown.
       </p>
 
-      {(error || msg) && (
-        <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-          {error || msg}
-        </div>
-      )}
+      {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       <div className="toolbar" style={{ marginBottom: 12, gap: 8, display: 'flex', flexWrap: 'wrap' }}>
         <div className="field" style={{ margin: 0, minWidth: 160 }}>

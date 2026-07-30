@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -388,11 +389,7 @@ export default function LogisticsInwardPage() {
         Devices stay in Asset One.
       </p>
 
-      {(error || msg) && (
-        <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-          {error || msg}
-        </div>
-      )}
+      {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       <div className="ilog-source-tabs" role="tablist" aria-label="Inward source">
         {SOURCES.map((s) => (

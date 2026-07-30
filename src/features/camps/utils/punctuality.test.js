@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePunctuality } from '../constants/campLifecycle.js';
+import {
+  computePunctualityLateness,
+  formatLatenessHhMm,
+  punctualityLatenessText,
+  resolvePunctuality,
+} from '../constants/campLifecycle.js';
 
 describe('resolvePunctuality', () => {
   it('marks on-time and early arrivals as Good', () => {
@@ -21,5 +26,20 @@ describe('resolvePunctuality', () => {
   it('returns empty when times are missing', () => {
     expect(resolvePunctuality('09:00', '')).toBe('');
     expect(resolvePunctuality('', '09:10')).toBe('');
+  });
+});
+
+describe('punctuality lateness formatting', () => {
+  it('formats late duration as hh:mm', () => {
+    expect(computePunctualityLateness('09:00', '09:16')).toBe(16);
+    expect(formatLatenessHhMm(16)).toBe('00:16');
+    expect(formatLatenessHhMm(66)).toBe('01:06');
+    expect(punctualityLatenessText('09:00', '10:06')).toBe('01:06');
+  });
+
+  it('shows 00:00 only when on time or early', () => {
+    expect(punctualityLatenessText('09:00', '08:50')).toBe('00:00');
+    expect(punctualityLatenessText('09:00', '09:00')).toBe('00:00');
+    expect(punctualityLatenessText('09:00', '09:05')).toBe('00:05');
   });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
@@ -44,6 +45,8 @@ const empty = {
   ifscCode: '',
   bankName: '',
   accountNumber: '',
+  passbookCopyUrl: '',
+  panCardCopyUrl: '',
   stateId: '',
   districtId: '',
   cityId: '',
@@ -65,6 +68,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
   const [serviceProviders, setServiceProviders] = useState([]);
+  const [kycUploadBusy, setKycUploadBusy] = useState('');
 
   const loadServiceProviders = () => {
     api('/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500')
@@ -273,6 +277,29 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     }
   };
 
+  async function uploadKycDocument(docType, file) {
+    if (!editId || !file) return;
+    setKycUploadBusy(docType);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('docType', docType);
+      const res = await api(`/contacts/${editId}/kyc-document`, { method: 'POST', body: formData });
+      const contact = res.data || {};
+      setForm((current) => ({
+        ...current,
+        passbookCopyUrl: contact.passbookCopyUrl || '',
+        panCardCopyUrl: contact.panCardCopyUrl || '',
+      }));
+      load();
+    } catch (err) {
+      setError(err.message || 'Failed to upload document');
+    } finally {
+      setKycUploadBusy('');
+    }
+  }
+
   const startEdit = (c) => {
     let contactCategory = c.contactCategory || '';
     if (!contactCategory) {
@@ -305,6 +332,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       ifscCode: c.ifscCode || '',
       bankName: c.bankName || '',
       accountNumber: c.accountNumber || '',
+      passbookCopyUrl: c.passbookCopyUrl || '',
+      panCardCopyUrl: c.panCardCopyUrl || '',
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
@@ -374,14 +403,10 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
     >
       {error && (
-        <div className="am-banner is-error" role="alert">
-          {error}
-        </div>
+        <FeedbackBanner variant="error">{error}</FeedbackBanner>
       )}
       {importMsg && (
-        <div className="am-banner is-info" role="status">
-          {importMsg}
-        </div>
+        <FeedbackBanner variant="info">{importMsg}</FeedbackBanner>
       )}
 
       <div className="cd-layout">
@@ -694,6 +719,62 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       value={form.accountNumber}
                       onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
                     />
+                  </div>
+                  <div className="field">
+                    <label>Passbook Copy</label>
+                    {editId ? (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          disabled={Boolean(kycUploadBusy)}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadKycDocument('passbook', file);
+                            e.target.value = '';
+                          }}
+                        />
+                        {form.passbookCopyUrl ? (
+                          <p className="cd-form-hint">
+                            Uploaded
+                            {' · '}
+                            <a href={form.passbookCopyUrl} target="_blank" rel="noreferrer">View</a>
+                          </p>
+                        ) : (
+                          <p className="cd-form-hint">Image or PDF required for Finance payout.</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="cd-form-hint">Save the contact first, then upload passbook copy.</p>
+                    )}
+                  </div>
+                  <div className="field">
+                    <label>PAN Card Copy</label>
+                    {editId ? (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          disabled={Boolean(kycUploadBusy)}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadKycDocument('pan_card', file);
+                            e.target.value = '';
+                          }}
+                        />
+                        {form.panCardCopyUrl ? (
+                          <p className="cd-form-hint">
+                            Uploaded
+                            {' · '}
+                            <a href={form.panCardCopyUrl} target="_blank" rel="noreferrer">View</a>
+                          </p>
+                        ) : (
+                          <p className="cd-form-hint">Image or PDF required for Finance payout.</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="cd-form-hint">Save the contact first, then upload PAN card copy.</p>
+                    )}
                   </div>
                 </div>
               </section>

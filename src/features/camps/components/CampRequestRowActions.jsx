@@ -9,6 +9,8 @@ import {
   resolveCancelOrRefuseAction,
 } from '../utils/campCancelRefuse';
 
+const STAGE = 'request';
+
 export function CampRequestRowActions({
   camp,
   canEdit,
@@ -22,16 +24,20 @@ export function CampRequestRowActions({
   const isPendingReview = camp.status === 'pending_review';
   const blockers = Array.isArray(camp.approvalBlockers) ? camp.approvalBlockers : [];
   const approveDisabled = camp.canApprove === false;
-  const showApprove = isPendingReview && canApprove;
-  const showIssues = isPendingReview && canApprove && approveDisabled;
-  const showRefuse = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps });
-  const refuseAction = resolveCancelOrRefuseAction(camp);
-  const refuseLabel = cancelOrRefuseLabel(camp);
+  const showTick = isPendingReview && canApprove;
+  const showEye = showTick && approveDisabled;
+  const showCross = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps }, STAGE);
+  const closeAction = resolveCancelOrRefuseAction(camp, STAGE);
+  const closeLabel = cancelOrRefuseLabel(camp, STAGE);
+
+  if (!showTick && !showCross && !canEdit) {
+    return <span className="camps-cell-empty">—</span>;
+  }
 
   return (
     <>
       <div className="actions camp-row-actions camp-row-icon-actions">
-        {showApprove && (
+        {showTick && (
           <CampRowIconButton
             icon={Check}
             label={approveDisabled ? 'Cannot approve yet' : 'Approve camp'}
@@ -40,7 +46,7 @@ export function CampRequestRowActions({
             onClick={onApprove}
           />
         )}
-        {showIssues && (
+        {showEye && (
           <CampRowIconButton
             icon={Eye}
             label="View approval issues"
@@ -48,12 +54,12 @@ export function CampRequestRowActions({
             onClick={() => setIssuesOpen(true)}
           />
         )}
-        {showRefuse && (
+        {showCross && (
           <CampRowIconButton
             icon={X}
-            label={refuseLabel}
+            label={closeLabel}
             variant="refuse"
-            onClick={() => onAction(camp._id, refuseAction)}
+            onClick={() => onAction(camp._id, closeAction)}
           />
         )}
         {canEdit && (

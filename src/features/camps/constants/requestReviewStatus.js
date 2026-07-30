@@ -11,7 +11,7 @@ export const REQUEST_REVIEW_LABELS = {
   review_overdue: 'Review Overdue',
   information_requested: 'Information Requested',
   request_approved: 'Request Approved',
-  request_rejected: 'Request Rejected',
+  request_rejected: 'Request Refused',
 };
 
 const WORK_START_HOUR = 9;
@@ -70,10 +70,10 @@ export function resolveRequestReviewStatus(camp = {}, now = new Date()) {
 }
 
 export const REQUEST_REVIEW_FILTER_OPTIONS = [
-  { value: '', label: 'All request statuses' },
+  { value: '', label: 'Camps in Request' },
   { value: 'review_pending', label: 'Review Pending' },
   { value: 'review_overdue', label: 'Review Overdue' },
   { value: 'information_requested', label: 'Information Requested' },
   { value: 'request_approved', label: 'Request Approved' },
-  { value: 'request_rejected', label: 'Request Rejected' },
+  { value: 'request_rejected', label: 'Request Refused' },
 ];

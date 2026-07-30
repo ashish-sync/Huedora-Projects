@@ -1,6 +1,11 @@
 import { DateInput } from './DateInput';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
 import { REQUEST_REVIEW_FILTER_OPTIONS } from '../constants/requestReviewStatus';
+import {
+  ASSIGNMENT_STAGE_FILTER_OPTIONS,
+  EXECUTION_STAGE_FILTER_OPTIONS,
+  FINANCIAL_STAGE_FILTER_OPTIONS,
+} from '../constants/campStageFilters';
 
 const quickPresets = [
   { key: 'today', label: 'Today' },
@@ -19,14 +24,35 @@ const statusOptions = [
   { value: 'pending_review', label: 'Pending review' },
   { value: 'approved', label: 'Approved' },
   { value: 'executed', label: 'Executed' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'rejected', label: 'Refused' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const assignmentFilterOptions = [
-  { value: 'unassigned', label: 'Unassigned' },
-  { value: 'assigned', label: 'Assigned' },
-];
+function stageFilterOptions({
+  assignmentStage,
+  requestStage,
+  executionStage,
+  financialStage,
+}) {
+  if (assignmentStage) return ASSIGNMENT_STAGE_FILTER_OPTIONS;
+  if (requestStage) return REQUEST_REVIEW_FILTER_OPTIONS;
+  if (executionStage) return EXECUTION_STAGE_FILTER_OPTIONS;
+  if (financialStage) return FINANCIAL_STAGE_FILTER_OPTIONS;
+  return null;
+}
+
+function stageFilterAriaLabel({
+  assignmentStage,
+  requestStage,
+  executionStage,
+  financialStage,
+}) {
+  if (assignmentStage) return 'Assignment status';
+  if (requestStage) return 'Request review status';
+  if (executionStage) return 'Execution status';
+  if (financialStage) return 'Finance payment status';
+  return 'Status and alerts';
+}
 
 export function CampsFilters({
   search,
@@ -44,8 +70,22 @@ export function CampsFilters({
   onClearAll,
   assignmentStage = false,
   requestStage = false,
+  executionStage = false,
+  financialStage = false,
 }) {
   const activePreset = matchQuickPreset(dateFrom, dateTo);
+  const stageOptions = stageFilterOptions({
+    assignmentStage,
+    requestStage,
+    executionStage,
+    financialStage,
+  });
+  const filterAriaLabel = stageFilterAriaLabel({
+    assignmentStage,
+    requestStage,
+    executionStage,
+    financialStage,
+  });
 
   function handleQuickSelect(preset) {
     const range = getQuickDateRange(preset);
@@ -76,16 +116,12 @@ export function CampsFilters({
         <select
           id="camps-status-filter"
           className="camps-filter-control camps-filter-status"
-          aria-label={assignmentStage ? 'Assignment status' : requestStage ? 'Request review status' : 'Status and alerts'}
+          aria-label={filterAriaLabel}
           value={filterValue}
           onChange={(e) => onFilterChange(e.target.value)}
         >
-          {assignmentStage ? (
-            assignmentFilterOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))
-          ) : requestStage ? (
-            REQUEST_REVIEW_FILTER_OPTIONS.map((option) => (
+          {stageOptions ? (
+            stageOptions.map((option) => (
               <option key={option.value || 'all'} value={option.value}>{option.label}</option>
             ))
           ) : (

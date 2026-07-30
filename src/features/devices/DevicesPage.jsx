@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 
 import { MODULE, FIELD } from '../../shared/labels.js';
@@ -317,11 +318,7 @@ export default function DevicesPage() {
       }
       kpis={[{ label: 'Catalog assets', value: rows.length }]}
     >
-      {(error || msg) && (
-        <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-          {error || msg}
-        </div>
-      )}
+      {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       {canWrite && formOpen && (
         <form ref={formRef} className="am-form card" onSubmit={save}>

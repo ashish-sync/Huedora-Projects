@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
 import { api } from '../../shared/api.js';
@@ -301,11 +302,7 @@ export default function ProductMasterPage() {
           )}
         </header>
 
-        {(error || msg) && (
-          <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-            {error || msg}
-          </div>
-        )}
+        {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
         <div className="pm-filter-bar logistics-filter-bar inv-toolbar">
           <input
@@ -483,11 +480,7 @@ export default function ProductMasterPage() {
           ← Catalog
         </button>
 
-        {(error || msg) && (
-          <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-            {error || msg}
-          </div>
-        )}
+        {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
         <form className="card pm-form" onSubmit={save}>
           <header className="pm-form-head">

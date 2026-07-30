@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
@@ -1024,7 +1025,7 @@ export default function AssetRequestsPage() {
       ]}
     >
       {error && <p className="error">{error}</p>}
-      {msg && <p className="rp-toast">{msg}</p>}
+      {msg && <FeedbackBanner variant="success">{msg}</FeedbackBanner>}
 
       {canRequest && (
         <form className="card arq-form" onSubmit={submit}>

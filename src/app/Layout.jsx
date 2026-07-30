@@ -191,7 +191,13 @@ export default function Layout({ children }) {
                 <div className="header-profile-menu-label">My profile</div>
                 <div className="header-profile-menu-user">
                   <strong>{user?.fullName || 'User'}</strong>
+                  {user?.designation ? <span className="header-profile-designation">{user.designation}</span> : null}
                   <span>{user?.email}</span>
+                  {user?.reportingManager?.fullName ? (
+                    <span className="header-profile-manager">
+                      Reports to {user.reportingManager.fullName}
+                    </span>
+                  ) : null}
                 </div>
                 {(can('users:write') || can('*')) && (
                   <Link

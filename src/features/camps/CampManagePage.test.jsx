@@ -59,6 +59,6 @@ describe('CampManagePage', () => {
 
   it('renders camps table without crashing', async () => {
     renderPage();
-    expect(await screen.findByText('CAMP-001')).toBeTruthy();
+    expect(await screen.findByText('Demo')).toBeTruthy();
   });
 });

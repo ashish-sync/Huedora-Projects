@@ -13,7 +13,8 @@
   --border: var(--line);
   --success: var(--ok);
   --warning: var(--warn);
-  --danger: var(--danger);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-subtle);
   --shadow: none;
 
   font-family: var(--font) !important;

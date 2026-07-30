@@ -139,7 +139,8 @@
 }
 
 .empty-state-desc {
-  margin: 0 0 var(--space-4);
+  margin: 0 auto var(--space-4);
+  max-width: 42ch;
 }
 
 /* ── Tables ──────────────────────────────────────────────────── */
@@ -393,9 +394,38 @@ html[data-theme='dark'] button.page-tab.is-active {
   background: var(--bg-elevated);
 }
 
+/* ── Form input consistency ─────────────────────────────────── */
+
+input[inputmode='numeric'],
+input[type='tel'] {
+  font-variant-numeric: tabular-nums;
+}
+
+.page-shell input::placeholder,
+.camp-ops-root input::placeholder,
+.page-shell textarea::placeholder,
+.camp-ops-root textarea::placeholder {
+  color: var(--color-text-tertiary, var(--muted));
+  opacity: 1;
+}
+
+html[data-theme='dark'] .camp-ops-root input,
+html[data-theme='dark'] .camp-ops-root select,
+html[data-theme='dark'] .camp-ops-root textarea {
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+html[data-theme='dark'] .camp-ops-root .panel,
+html[data-theme='dark'] .camp-ops-root .dashboard-filter-panel {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-default);
+}
+
 /* ── Responsive pagination ─────────────────────────────────── */
 
-@media (max-width: 640px) {
+@media (max-width: var(--bp-sm)) {
   .inv-pagination {
     flex-direction: column;
     align-items: stretch;

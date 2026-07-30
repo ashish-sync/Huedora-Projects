@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { REQUEST_REVIEW_LABELS } from '../constants/requestReviewStatus.js';
-import { financePaymentStatusLabel } from '../constants/campLifecycle.js';
+import { campStatusLabel, financePaymentStatusLabel, EXECUTION_STATUS, normalizeExecutionStatus, resolveEffectiveExecutionStatus, executionStatusClass, isExecutionClosedOut } from '../constants/campLifecycle.js';
 
 export function ChartsEyeToggle({ showCharts, onToggle }) {
   const label = showCharts ? 'Hide charts' : 'Show charts';
@@ -102,7 +102,7 @@ export function HierarchyCard({
             <div className="hierarchy-pagination">
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="btn secondary btn-compact"
                 disabled={page <= 1}
                 onClick={() => setPage((current) => current - 1)}
               >
@@ -113,7 +113,7 @@ export function HierarchyCard({
               </span>
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="btn secondary btn-compact"
                 disabled={page >= totalPages}
                 onClick={() => setPage((current) => current + 1)}
               >
@@ -187,6 +187,10 @@ export function getCampRowClassName(camp) {
   if (camp.alertLevel === 'weekend_attention') return 'camp-row-weekend';
   if (camp.alertLevel === 'off_hours') return 'camp-row-off-hours';
   if (camp.isReviewOverdue || camp.requestReviewStatus === 'review_overdue') return 'camp-row-overdue';
+  const executionStatus = resolveEffectiveExecutionStatus(camp);
+  if (camp.lifecycleStage === 'execution' && executionStatus === EXECUTION_STATUS.MARKED_EXECUTED) {
+    return 'camp-row-execution-action';
+  }
   if (camp.isOverdue) return 'camp-row-overdue';
   return '';
 }
@@ -199,7 +203,7 @@ export function RequestReviewStatusBadge({ camp }) {
 }
 
 export function StatusBadge({ status }) {
-  return <span className={`status-pill status-${status}`}>{status.replaceAll('_', ' ')}</span>;
+  return <span className={`status-pill status-${status}`}>{campStatusLabel(status)}</span>;
 }
 
 export function isCampAssigned(camp) {
@@ -219,16 +223,20 @@ export function AssignmentStatusBadge({ camp }) {
 }
 
 export function ExecutionStatusBadge({ camp }) {
-  if (camp?.executionStatus === 'Cancelled' || camp?.executionStatus === 'Rejected') {
-    return <span className={`status-pill status-${camp.executionStatus.toLowerCase()}`}>{camp.executionStatus}</span>;
-  }
-  if (camp?.status === 'executed') {
-    return <span className="status-pill status-executed">Executed</span>;
+  const executionStatus = resolveEffectiveExecutionStatus(camp);
+  if (isExecutionClosedOut(camp?.executionStatus)) {
+    const normalized = normalizeExecutionStatus(camp.executionStatus);
+    const statusClass = normalized === 'Refused' ? 'rejected' : 'cancelled';
+    return <span className={`status-pill status-${statusClass}`}>{normalized}</span>;
   }
   if (['cancelled', 'rejected'].includes(camp?.status)) {
     return <StatusBadge status={camp.status} />;
   }
-  return <span className="status-pill status-pending-execution">Pending execution</span>;
+  return (
+    <span className={`status-pill ${executionStatusClass(executionStatus)}`} title={executionStatus}>
+      {executionStatus}
+    </span>
+  );
 }
 
 export function FinanceSettlementStatusBadge({ camp }) {

@@ -6,15 +6,16 @@ import { CampWorkingStageProvider, useCampWorkingStage } from './CampWorkingStag
 import { useCampOpsAuth } from './useCampOpsAuth.js';
 import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
-import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
+import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import './campOps.css';
 import './campOps.theme.css';
 
 const pageTitles = {
-  '/camps/manage': { title: 'Camps', subtitle: 'Review, approve, execute and manage camps' },
-  '/camps/import': { title: 'Excel Import', subtitle: 'Upload, map headers, preview and import camps' },
-  '/camps/communications/paste': { title: 'Manual Paste', subtitle: 'Paste camp details, extract fields, and create camps' },
-  '/camps/communications/email': { title: 'Manual Paste', subtitle: 'Review inbox, extract camps, and manage email rules' },
+  '/camps/manage': { title: NAV.CAMP_MANAGE, subtitle: 'Review, approve, execute, and manage camps' },
+  '/camps/communications/paste': { title: NAV.CAMP_CREATE, subtitle: 'Paste camp details, extract fields, and create camps' },
+  '/camps/communications/email': { title: NAV.CAMP_CREATE, subtitle: 'Review inbox, extract camps, and manage email rules' },
+  '/camps/communications/upload': { title: NAV.CAMP_CREATE, subtitle: 'Upload Excel or CSV, map columns, and import camps' },
+  '/camps/communications/download': { title: NAV.CAMP_CREATE, subtitle: 'Download camp exports and sample import templates' },
 };
 
 function getPageMeta(pathname) {
@@ -31,16 +32,8 @@ function isCampsListRoute(pathname) {
   return pathname === '/camps/manage';
 }
 
-function isPasteRoute(pathname) {
-  return pathname.startsWith('/camps/communications/paste');
-}
-
-function isCommunicationsRoute(pathname) {
+function isCreateCampsRoute(pathname) {
   return pathname.startsWith('/camps/communications');
-}
-
-function isImportRoute(pathname) {
-  return pathname === '/camps/import';
 }
 
 function CampOpsLayoutBody({
@@ -54,8 +47,8 @@ function CampOpsLayoutBody({
 }) {
   const { workingStage } = useCampWorkingStage();
   const isRequestStage = workingStage === 'request';
-  // Camp creation tools only apply at Request stage on the main camps list.
-  const showRequestToolbar = showCampToolbar && (isRequestStage || !isCampsList);
+  // Camps are only added at Request; other stages are progression views.
+  const showRequestToolbar = showCampToolbar && isRequestStage;
 
   return (
     <div className="camp-ops-root logistics-shell">
@@ -63,30 +56,30 @@ function CampOpsLayoutBody({
         <header className="camp-ops-strip">
           <div className="camp-ops-strip__main">
             <Breadcrumbs items={breadcrumbs} />
-            <div className="camp-ops-strip__title-row">
-              <h2 className="topbar-title">{meta.title}</h2>
-              {navItems.length > 0 && (
-                <ModuleSubNav
-                  variant="segmented"
-                  ariaLabel={`${MODULE.CAMP_MANAGEMENT} sections`}
-                  items={navItems}
-                />
+            <div className="camp-ops-strip__headline">
+              <div className="camp-ops-strip__title-block">
+                <div className="camp-ops-strip__title-row">
+                  <h2 className="topbar-title">{meta.title}</h2>
+                  {navItems.length > 0 && (
+                    <ModuleSubNav
+                      variant="segmented"
+                      ariaLabel={`${MODULE.CAMP_MANAGEMENT} sections`}
+                      items={navItems}
+                    />
+                  )}
+                </div>
+                {showSubtitle && (
+                  <p className="muted topbar-desc camp-ops-strip__desc">{meta.subtitle}</p>
+                )}
+              </div>
+              {(showStageSelect || showRequestToolbar) && (
+                <div className="camp-ops-strip__actions">
+                  <div className="camp-ops-header-actions">
+                    {showRequestToolbar ? <CampManageHeaderActions /> : null}
+                    {showStageSelect ? <CampWorkingStageSelect compact /> : null}
+                  </div>
+                </div>
               )}
-            </div>
-            {showSubtitle && (
-              <p className="muted topbar-desc camp-ops-strip__desc">{meta.subtitle}</p>
-            )}
-          </div>
-          <div className="camp-ops-strip__actions">
-            <div className="camp-ops-header-actions">
-              {showStageSelect ? <CampWorkingStageSelect compact /> : null}
-              {showRequestToolbar ? (
-                <CampManageHeaderActions
-                  exportAllStages={!isCampsList}
-                  showDateFilter={!isCampsList}
-                  hideNewCamp={!isCampsList}
-                />
-              ) : null}
             </div>
           </div>
         </header>
@@ -103,8 +96,8 @@ export default function CampOpsLayout() {
   const { pathname } = useLocation();
   const meta = getPageMeta(pathname);
   const isCampsList = isCampsListRoute(pathname);
-  const showCampToolbar = isCampsList || isPasteRoute(pathname) || isImportRoute(pathname);
-  const showStageSelect = !isCommunicationsRoute(pathname) && !isImportRoute(pathname);
+  const showCampToolbar = isCampsList;
+  const showStageSelect = !isCreateCampsRoute(pathname);
 
   const allowed =
     hasPermission('camps:read')
@@ -127,13 +120,13 @@ export default function CampOpsLayout() {
 
   const navItems = useMemo(() => {
     const items = [
-      { to: '/camps/manage', end: false, label: 'Camps', show: hasPermission('camps:read') },
       {
         to: '/camps/communications',
         end: false,
-        label: 'Manual Paste',
+        label: NAV.CAMP_CREATE,
         show: hasPermission('communications:read'),
       },
+      { to: '/camps/manage', end: false, label: NAV.CAMP_MANAGE, show: hasPermission('camps:read') },
     ];
     return items.filter((item) => item.show);
   }, [hasPermission]);

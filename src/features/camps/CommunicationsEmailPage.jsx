@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { communicationsApi } from './campOpsApi.js';
 import { CommunicationsEmailFilters } from './components/CommunicationsEmailFilters';
@@ -30,13 +31,13 @@ const CONFIRM_COPY = {
     title: 'Create camps from email',
     message: 'This will create camp record(s) from the extracted preview. Continue?',
     confirmLabel: 'Create camps',
-    confirmClass: 'btn-primary',
+    confirmClass: '',
   },
   archive: {
     title: 'Not a campaign email',
     message: 'Mark this email as not a campaign and move it to archive?',
     confirmLabel: 'Move to archive',
-    confirmClass: 'btn-danger',
+    confirmClass: 'danger',
   },
 };
 
@@ -110,7 +111,7 @@ function EmailRulesPanel({ config, onSaved, setError }) {
         </label>
       </div>
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary" disabled={saving}>
+        <button type="submit" className="btn" disabled={saving}>
           {saving ? 'Saving...' : 'Save rules'}
         </button>
       </div>
@@ -129,7 +130,7 @@ function ConfirmDialog({ action, onCancel, onConfirm, loading }) {
         <h2>{copy.title}</h2>
         <p className="modal-message">{copy.message}</p>
         <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>
+          <button type="button" className="btn secondary" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
           <button type="button" className={`btn ${copy.confirmClass}`} onClick={onConfirm} disabled={loading}>
@@ -565,8 +566,8 @@ export default function CommunicationsEmailPage() {
     <div className="communications-email-page">
       {(error || success || createdCamps.length > 0) && (
         <div className="page-alerts">
-          {error && <div className="error-banner">{error}</div>}
-          {success && <div className="success-banner">{success}</div>}
+          {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
+          {success && <FeedbackBanner variant="success">{success}</FeedbackBanner>}
           <CampCreatedBanner
             camps={createdCamps}
             onDismiss={() => setCreatedCamps([])}
@@ -676,16 +677,16 @@ export default function CommunicationsEmailPage() {
                         </td>
                         <td>
                           <div className="communications-row-actions">
-                            <button type="button" className="btn btn-primary btn-sm" onClick={() => openEmail(message.id)}>
+                            <button type="button" className="btn btn-compact" onClick={() => openEmail(message.id)}>
                               View email
                             </button>
                             {tab === 'inbox' && (
-                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleArchive(message.id)}>
+                              <button type="button" className="btn secondary btn-compact" onClick={() => handleArchive(message.id)}>
                                 Archive
                               </button>
                             )}
                             {tab === 'archive' && (
-                              <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleRestore(message.id)}>
+                              <button type="button" className="btn secondary btn-compact" onClick={() => handleRestore(message.id)}>
                                 Restore
                               </button>
                             )}
@@ -742,7 +743,7 @@ export default function CommunicationsEmailPage() {
             </div>
 
             {selectedEmail.matchSummary && (
-              <div className="info-banner email-detail-banner">{selectedEmail.matchSummary}</div>
+              <FeedbackBanner variant="info" className="email-detail-banner">{selectedEmail.matchSummary}</FeedbackBanner>
             )}
 
             <div className="email-detail-layout">
@@ -795,7 +796,7 @@ export default function CommunicationsEmailPage() {
                 <div className="email-detail-actions-primary">
                   <button
                     type="button"
-                    className="btn btn-primary"
+                    className="btn"
                     onClick={handleExtract}
                     disabled={actionLoading || (hasExtractedPreview && !IS_DEMO_SERVER)}
                     title={
@@ -815,7 +816,7 @@ export default function CommunicationsEmailPage() {
                   {canCreateCamps && (
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className="btn"
                       onClick={() => setConfirmAction('process')}
                       disabled={actionLoading || !preview}
                     >
@@ -828,7 +829,7 @@ export default function CommunicationsEmailPage() {
                 {tab === 'inbox' && (
                   <button
                     type="button"
-                    className="btn btn-secondary"
+                    className="btn secondary"
                     onClick={() => setConfirmAction('archive')}
                     disabled={actionLoading}
                   >
@@ -836,11 +837,11 @@ export default function CommunicationsEmailPage() {
                   </button>
                 )}
                 {tab === 'archive' && (
-                  <button type="button" className="btn btn-secondary" onClick={() => handleRestore(selectedId)} disabled={actionLoading}>
+                  <button type="button" className="btn secondary" onClick={() => handleRestore(selectedId)} disabled={actionLoading}>
                     Restore to inbox
                   </button>
                 )}
-                <button type="button" className="btn btn-secondary" onClick={closeEmail}>Close</button>
+                <button type="button" className="btn secondary" onClick={closeEmail}>Close</button>
               </div>
             </div>
 

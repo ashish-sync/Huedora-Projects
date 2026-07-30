@@ -10,6 +10,8 @@ import {
 } from '../utils/campCancelRefuse';
 import { canMarkCampExecuted, getExecutionBlockers } from '../utils/campExecutionActions';
 
+const STAGE = 'execution';
+
 export function CampExecutionRowActions({
   camp,
   canEdit,
@@ -24,16 +26,20 @@ export function CampExecutionRowActions({
   const executeDisabled = !canMarkCampExecuted(camp);
   const isTerminal = ['cancelled', 'rejected'].includes(camp.status);
   const isExecuted = camp.status === 'executed';
-  const showExecute = !isTerminal && !isExecuted && canExecute;
-  const showIssues = showExecute && executeDisabled;
-  const showRefuse = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps });
-  const refuseAction = resolveCancelOrRefuseAction(camp);
-  const refuseLabel = cancelOrRefuseLabel(camp);
+  const showTick = !isTerminal && !isExecuted && canExecute;
+  const showEye = showTick && executeDisabled;
+  const showCross = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps }, STAGE);
+  const closeAction = resolveCancelOrRefuseAction(camp, STAGE);
+  const closeLabel = cancelOrRefuseLabel(camp, STAGE);
+
+  if (!showTick && !showCross && !canEdit) {
+    return <span className="camps-cell-empty">—</span>;
+  }
 
   return (
     <>
       <div className="actions camp-row-actions camp-row-icon-actions">
-        {showExecute && (
+        {showTick && (
           <CampRowIconButton
             icon={Check}
             label={executeDisabled ? 'Cannot mark executed yet' : 'Mark executed'}
@@ -42,7 +48,7 @@ export function CampExecutionRowActions({
             onClick={onExecute}
           />
         )}
-        {showIssues && (
+        {showEye && (
           <CampRowIconButton
             icon={Eye}
             label="View execution issues"
@@ -50,12 +56,12 @@ export function CampExecutionRowActions({
             onClick={() => setIssuesOpen(true)}
           />
         )}
-        {showRefuse && (
+        {showCross && (
           <CampRowIconButton
             icon={X}
-            label={refuseLabel}
+            label={closeLabel}
             variant="refuse"
-            onClick={() => onAction(camp._id, refuseAction)}
+            onClick={() => onAction(camp._id, closeAction)}
           />
         )}
         {canEdit && (

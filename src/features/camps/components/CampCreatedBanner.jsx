@@ -74,7 +74,7 @@ export function CampCreatedBanner({ camps = [], onDismiss }) {
           {camps.length > 1 && (
             <button
               type="button"
-              className="btn btn-secondary btn-sm camp-created-copy-all-btn"
+              className="btn secondary btn-compact camp-created-copy-all-btn"
               onClick={handleCopyAll}
             >
               {copiedKey === 'all' ? 'Copied' : 'Copy all'}

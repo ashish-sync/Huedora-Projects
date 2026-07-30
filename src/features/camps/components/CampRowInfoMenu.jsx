@@ -134,7 +134,7 @@ export function CampRowInfoMenu({
                     <DetailRow label="Info requested">{camp.informationRequestNote}</DetailRow>
                   )}
                   {camp.rejectionReason && (
-                    <DetailRow label="Rejection reason">{camp.rejectionReason}</DetailRow>
+                    <DetailRow label="Refusal reason">{camp.rejectionReason}</DetailRow>
                   )}
                   {closureSummary && (
                     <DetailRow label="Closure">{closureSummary}</DetailRow>
@@ -171,7 +171,7 @@ export function CampRowInfoMenu({
             <footer className="camp-info-modal-footer">
               <div className="camp-info-actions">
                 {showRequestInformation && (
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => runAction('requestInformation')}>
+                  <button type="button" className="btn secondary btn-compact" onClick={() => runAction('requestInformation')}>
                     Request more information
                   </button>
                 )}

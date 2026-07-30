@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
@@ -188,7 +189,7 @@ export default function FinanceCampPayoutsPage() {
       </div>
 
       {error && <p className="error">{error}</p>}
-      {msg && <p className="am-banner is-info">{msg}</p>}
+      {msg && <FeedbackBanner variant="info">{msg}</FeedbackBanner>}
 
       <div className="finance-camp-payouts-layout">
         <section className="card finance-camp-payouts-list">
@@ -329,7 +330,7 @@ export default function FinanceCampPayoutsPage() {
                   <div className="full">
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className="btn"
                       disabled={busy}
                       onClick={savePayout}
                     >

@@ -67,6 +67,21 @@
   border-color: color-mix(in srgb, var(--color-text-on-primary) 36%, transparent);
 }
 
+.btn.ghost,
+.btn.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+.btn.ghost:hover:not(:disabled),
+.btn.btn-ghost:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
+}
+
 .btn.is-loading {
   position: relative;
   opacity: 0.85;

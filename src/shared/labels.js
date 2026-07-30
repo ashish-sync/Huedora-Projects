@@ -22,6 +22,12 @@ export const MODULE = {
   LOCATION_MASTER: 'PIN Geography',
   DOCUMENT_MASTER: 'Document Templates',
   DIGITAL_SIGNATURE_MASTER: 'Signatures',
+  /** Standard field labels */
+  MOBILE_NUMBER: 'Mobile number',
+  EMAIL: 'Email',
+  METHOD: 'Method',
+  DIVISION_THERAPY: 'Division / Therapy',
+  SERVICE_MODEL: 'Service Model',
 };
 
 /** Sub-navigation and operational screen labels */
@@ -29,6 +35,7 @@ export const NAV = {
   ASSET_REGISTER: 'Asset Register',
   STOCK_OVERVIEW: 'Stock Overview',
   OVERVIEW: 'Overview',
+  ASSETS_OVERVIEW: 'Assets Overview',
   GOODS_RECEIPT: 'Goods Receipt',
   GOODS_ISSUE: 'Goods Issue',
   CONSUMPTION: 'Consumption',
@@ -43,6 +50,12 @@ export const NAV = {
   CHARGESHEET: 'Chargesheet',
   PAYOUT: 'Payout',
   CAMP_HOME: 'Home',
+  CAMP_CREATE: 'Create Camps',
+  CAMP_CREATE_MANUAL_PASTE: 'Manual Paste',
+  CAMP_CREATE_EMAIL: 'Email',
+  CAMP_CREATE_UPLOAD: 'Camp Upload',
+  CAMP_CREATE_DOWNLOAD: 'Camp Download',
+  CAMP_MANAGE: 'Manage Camps',
   CAMP_REQUESTS: 'Requests',
   CAMP_SCHEDULE: 'Schedule',
   CAMP_REPORTS: 'Reports',
@@ -65,7 +78,9 @@ export const MODULE_BLURB = {
 };
 
 export const FIELD = {
+  ASSET_TYPE: 'Asset Type (Product Type)',
   ASSET_NAME: 'Asset Name',
+  ASSET_PERIPHERAL_DETAILS: 'Asset / Peripheral Details',
   OWNERSHIP_TYPE: 'Ownership Type',
   ASSET_VALUE: 'Asset Value',
   ASSET_STATUS: 'Asset Status',

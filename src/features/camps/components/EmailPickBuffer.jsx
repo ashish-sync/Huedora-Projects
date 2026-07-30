@@ -41,7 +41,7 @@ export function EmailPickBuffer({ activeField, pendingSelection, onApply, onCanc
           →
         </button>
         {onCancel && (
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onCancel}>
+          <button type="button" className="btn secondary btn-compact" onClick={onCancel}>
             Cancel
           </button>
         )}

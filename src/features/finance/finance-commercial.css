@@ -53,7 +53,7 @@
   border: 1px dashed var(--line);
   border-radius: var(--radius-md, 10px);
   padding: 12px;
-  background: color-mix(in srgb, var(--brand, #0a5ac2) 4%, transparent);
+  background: color-mix(in srgb, var(--brand) 4%, transparent);
 }
 
 .finance-numbering-list {
@@ -63,7 +63,7 @@
   font-size: 0.8rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: var(--bp-sm)) {
   .finance-proforma-grid,
   .finance-line-item-grid {
     grid-template-columns: 1fr;
@@ -155,13 +155,13 @@
 }
 
 .finance-doc-type-card:hover {
-  border-color: var(--brand, #0a5ac2);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--brand, #0a5ac2) 12%, transparent);
+  border-color: var(--brand);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--brand) 12%, transparent);
 }
 
 .finance-doc-type-card-prefix {
   font-size: 0.85rem;
-  color: var(--brand, #0a5ac2);
+  color: var(--brand);
 }
 
 .finance-doc-type-card-label {
@@ -211,9 +211,9 @@
   font-weight: 600;
   padding: 5px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--brand, #0a5ac2) 10%, transparent);
-  color: var(--brand, #0a5ac2);
-  border: 1px solid color-mix(in srgb, var(--brand, #0a5ac2) 20%, transparent);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--brand);
+  border: 1px solid color-mix(in srgb, var(--brand) 20%, transparent);
 }
 
 .finance-org-master-form-wrap {
@@ -279,7 +279,7 @@
 .org-master-card {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-sunken) 100%);
   padding: 14px;
 }
 
@@ -288,7 +288,7 @@
 }
 
 .org-master-card--empty {
-  background: color-mix(in srgb, var(--brand, #0a5ac2) 4%, var(--bg-elevated));
+  background: color-mix(in srgb, var(--brand) 4%, var(--bg-elevated));
 }
 
 .org-master-card-head {
@@ -324,7 +324,7 @@
 .org-master-card-link {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--brand, #0a5ac2);
+  color: var(--brand);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -396,7 +396,7 @@
   gap: 8px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--bg-sunken);
   border: 1px solid var(--line);
   font-size: 0.75rem;
   min-width: 0;
@@ -441,7 +441,7 @@
   margin-left: auto;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--brand, #0a5ac2);
+  color: var(--brand);
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
@@ -451,7 +451,7 @@
   text-decoration: underline;
 }
 
-@media (max-width: 640px) {
+@media (max-width: var(--bp-sm)) {
   .org-master-form-grid,
   .org-master-card-grid {
     grid-template-columns: 1fr;

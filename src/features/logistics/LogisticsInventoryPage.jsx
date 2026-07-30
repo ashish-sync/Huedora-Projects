@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
@@ -181,11 +182,7 @@ export default function LogisticsInventoryPage({ productType = '' } = {}) {
           : 'Current stock on hand by warehouse and status.'}
       </p>
 
-      {(error || msg) && (
-        <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-          {error || msg}
-        </div>
-      )}
+      {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       <div className="module-dash-kpis" data-count={kpis.length} role="group" aria-label="Inventory summary">
         {kpis.map((k) => (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -105,7 +106,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
         </AdaptiveSelect>
       </div>
 
-      {error ? <p className="am-banner is-error">{error}</p> : null}
+      {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
 
       <div className="table-wrap">
         <table className="data-table">

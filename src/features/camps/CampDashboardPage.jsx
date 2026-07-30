@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { DateRangeFilters } from './components/DateRangeFilters';
 import { ChartPanel, HierarchyCard, StatWidget } from './components/DashboardWidgets';
@@ -41,7 +42,7 @@ const statusCards = [
   { key: 'pending_review', label: 'Pending Review' },
   { key: 'approved', label: 'Approved' },
   { key: 'executed', label: 'Executed' },
-  { key: 'rejected', label: 'Rejected' },
+  { key: 'rejected', label: 'Refused' },
   { key: 'cancelled', label: 'Cancelled' },
   { key: 'overdue_not_executed', label: 'Overdue', overdue: true },
 ];
@@ -114,7 +115,7 @@ export default function DashboardPage() {
     dateTo: appliedRange.dateTo || undefined,
   };
 
-  if (error && !stats) return <div className="error-banner">{error}</div>;
+  if (error && !stats) return <FeedbackBanner variant="error">{error}</FeedbackBanner>;
   if (!stats) return <div className="empty-state">Loading dashboard...</div>;
 
   return (
@@ -137,11 +138,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="page-alerts">
-          <div className="error-banner">{error}</div>
-        </div>
-      )}
+      {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
 
       <div className="dashboard-hierarchy-note">
         Brand → Campaign / Division → Camp

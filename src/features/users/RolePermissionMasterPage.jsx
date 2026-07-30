@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
+import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
 
 const EMPTY_USER = {
   email: '',
   username: '',
   fullName: '',
   phone: '',
+  designation: '',
+  reportingManagerId: '',
   password: '',
   passwordConfirm: '',
   moduleIds: [],
@@ -198,6 +202,7 @@ export default function RolePermissionMasterPage() {
   const [userDraft, setUserDraft] = useState(EMPTY_USER);
   const [editingUserId, setEditingUserId] = useState('');
   const [creatingUser, setCreatingUser] = useState(false);
+  const [designations, setDesignations] = useState([]);
 
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -218,7 +223,14 @@ export default function RolePermissionMasterPage() {
     const q = userQ.trim().toLowerCase();
     if (!q) return users;
     return users.filter((u) => {
-      const hay = [u.fullName, u.email, u.username, ...(u.roles || []).map((r) => r.name)]
+      const hay = [
+        u.fullName,
+        u.email,
+        u.username,
+        u.designation,
+        u.reportingManager?.fullName,
+        ...(u.roles || []).map((r) => r.name),
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -254,7 +266,7 @@ export default function RolePermissionMasterPage() {
     });
 
   const loadUsers = () =>
-    api('/users')
+    api('/users?limit=200')
       .then((r) => {
         const rows = r.data || [];
         setUsers(rows);
@@ -271,6 +283,11 @@ export default function RolePermissionMasterPage() {
 
   useEffect(() => {
     load();
+    if (canViewUsers) {
+      api('/users/designations')
+        .then((res) => setDesignations(res.data || []))
+        .catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -299,6 +316,10 @@ export default function RolePermissionMasterPage() {
       username: editingUser.username || '',
       fullName: editingUser.fullName || '',
       phone: editingUser.phone || '',
+      designation: editingUser.designation || '',
+      reportingManagerId: editingUser.reportingManagerId
+        ? String(editingUser.reportingManagerId)
+        : '',
       password: '',
       passwordConfirm: '',
       moduleIds: modulesCoveredByPermissions(unionPerms, modules),
@@ -491,6 +512,22 @@ export default function RolePermissionMasterPage() {
     setUserDraft(EMPTY_USER);
   };
 
+  const openPersonFromHierarchy = (userId) => {
+    if (!userId) return;
+    setTab('users');
+    setCreatingUser(false);
+    setEditingUserId(String(userId));
+    setMsg('');
+    setError('');
+  };
+
+  const managerOptions = useMemo(() => {
+    const excludeId = creatingUser ? '' : String(editingUserId || '');
+    return users
+      .filter((u) => u.isActive !== false && String(u.id) !== excludeId)
+      .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
+  }, [users, creatingUser, editingUserId]);
+
   const saveUser = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
@@ -525,6 +562,8 @@ export default function RolePermissionMasterPage() {
             username: userDraft.username,
             fullName: userDraft.fullName,
             phone: userDraft.phone,
+            designation: userDraft.designation,
+            reportingManagerId: userDraft.reportingManagerId || null,
             password: pwd,
             roleIds: userDraft.roleIds,
           },
@@ -537,6 +576,8 @@ export default function RolePermissionMasterPage() {
         const body = {
           fullName: userDraft.fullName,
           phone: userDraft.phone,
+          designation: userDraft.designation,
+          reportingManagerId: userDraft.reportingManagerId || null,
           roleIds: userDraft.roleIds,
           isActive: userDraft.isActive,
         };
@@ -694,10 +735,21 @@ export default function RolePermissionMasterPage() {
         >
           Roles <span className="rp-tab-count">{roles.length}</span>
         </button>
+        {canViewUsers && (
+          <button
+            type="button"
+            role="tab"
+            className={`rp-tab ${tab === 'hierarchy' ? 'is-active' : ''}`}
+            aria-selected={tab === 'hierarchy'}
+            onClick={() => setTab('hierarchy')}
+          >
+            Org hierarchy
+          </button>
+        )}
       </div>
 
       {error && <p className="error">{error}</p>}
-      {msg && <p className="rp-toast">{msg}</p>}
+      {msg && <FeedbackBanner variant="success">{msg}</FeedbackBanner>}
 
       {tab === 'users' && (
         <div className="rp-layout">
@@ -736,7 +788,9 @@ export default function RolePermissionMasterPage() {
                     {String(u.id) === String(me?.id) ? ' (you)' : ''}
                   </strong>
                   <span className="muted mono-sm">
-                    {(u.roles || []).map((r) => r.name).filter(Boolean).join(', ') || 'No roles'}
+                    {[u.designation, (u.roles || []).map((r) => r.name).filter(Boolean).join(', ')]
+                      .filter(Boolean)
+                      .join(' · ') || 'No roles'}
                     {u.isActive === false ? ' · Inactive' : ''}
                   </span>
                 </button>
@@ -802,6 +856,39 @@ export default function RolePermissionMasterPage() {
                         autoComplete="off"
                         onChange={(e) => setUserDraft({ ...userDraft, phone: e.target.value })}
                       />
+                    </div>
+                    <div className="field">
+                      <label>Designation</label>
+                      <input
+                        list="user-designation-options"
+                        value={userDraft.designation}
+                        disabled={!canWrite}
+                        placeholder="e.g. Team Lead, Manager"
+                        onChange={(e) => setUserDraft({ ...userDraft, designation: e.target.value })}
+                      />
+                      <datalist id="user-designation-options">
+                        {designations.map((title) => (
+                          <option key={title} value={title} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div className="field">
+                      <label>Reporting manager</label>
+                      <select
+                        value={userDraft.reportingManagerId}
+                        disabled={!canWrite}
+                        onChange={(e) =>
+                          setUserDraft({ ...userDraft, reportingManagerId: e.target.value })
+                        }
+                      >
+                        <option value="">— None (top level) —</option>
+                        {managerOptions.map((person) => (
+                          <option key={person.id} value={person.id}>
+                            {person.fullName || person.email}
+                            {person.designation ? ` · ${person.designation}` : ''}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </section>
@@ -1086,6 +1173,10 @@ export default function RolePermissionMasterPage() {
             )}
           </form>
         </div>
+      )}
+
+      {tab === 'hierarchy' && canViewUsers && (
+        <OrgHierarchyPanel canWrite={canWrite} onEditPerson={openPersonFromHierarchy} />
       )}
     </PageShell>
   );

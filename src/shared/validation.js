@@ -59,4 +59,22 @@ export function phoneOrEmailError(value, label = 'Contact') {
   return '';
 }
 
+/** Split comma/semicolon/newline-separated email lists. */
+export function parseEmailList(value) {
+  return String(value || '')
+    .split(/[;,\n]/)
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
+export function emailListError(value, label = 'Email') {
+  const emails = parseEmailList(value);
+  if (!emails.length) return '';
+  const invalid = emails.find((email) => !isValidEmail(email));
+  if (invalid) {
+    return `${label} “${invalid}” is invalid. Use a full address with @ and domain (e.g. .com, .in).`;
+  }
+  return '';
+}
+
 export const PAGE_SIZES = [10, 25, 50, 100];

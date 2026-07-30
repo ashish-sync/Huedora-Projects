@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import FeedbackBanner, { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { ClientPaginatedTable } from './components/ClientPaginatedTable';
@@ -249,14 +250,15 @@ export default function ImportPage() {
       </div>
 
       {(error || result) && (
-        <div className="page-alerts">
-          {error && <div className="error-banner">{error}</div>}
-          {result && (
-            <div className="success-banner">
-              Import complete: {result.summary.created} created, {result.summary.skipped} skipped, {result.summary.invalid} invalid.
-            </div>
-          )}
-        </div>
+        <PageAlerts
+          items={[
+            error && { variant: 'error', message: error },
+            result && {
+              variant: 'success',
+              message: `Import complete: ${result.summary.created} created, ${result.summary.skipped} skipped, ${result.summary.invalid} invalid.`,
+            },
+          ].filter(Boolean)}
+        />
       )}
 
       {step === 0 && (
@@ -277,7 +279,7 @@ export default function ImportPage() {
               <strong>{isAdminImport ? 'Standard import format' : 'Step 1: Use the standard format'}</strong>
               <p>Download the sample file with the correct column headers and 15 example rows. Only fields shown on Client Master and Create Camp are included.</p>
             </div>
-            <button type="button" className="btn btn-secondary" onClick={handleDownloadSample}>
+            <button type="button" className="btn secondary" onClick={handleDownloadSample}>
               Download Sample Excel
             </button>
           </div>
@@ -285,7 +287,7 @@ export default function ImportPage() {
           <div className="upload-zone">
             <p><strong>{isAdminImport ? 'Upload your file' : 'Step 2: Upload your completed file'}</strong></p>
             <p className="import-muted">Supported: .xlsx, .xls, .csv</p>
-            <label className="btn btn-primary">
+            <label className="btn">
               Choose File
               <input
                 type="file"
@@ -301,9 +303,9 @@ export default function ImportPage() {
       {isAdminImport && step >= 1 && fileMeta && (
         <div className="import-card">
           <h3>Header Mapping</h3>
-          <div className="info-banner">
+          <FeedbackBanner variant="info">
             File: <strong>{fileMeta.fileName}</strong> | Sheet: <strong>{fileMeta.sheetName}</strong> | Rows: <strong>{fileMeta.totalRows}</strong>
-          </div>
+          </FeedbackBanner>
 
           <div className="template-bar">
             <div className="field field-fixed">
@@ -332,10 +334,10 @@ export default function ImportPage() {
                 onBlur={(e) => setTemplateName(trimString(e.target.value))}
               />
             </div>
-            <button className="btn btn-secondary" onClick={saveTemplateOnly} disabled={loading}>
+            <button className="btn secondary" onClick={saveTemplateOnly} disabled={loading}>
               Save Template
             </button>
-            <button className="btn btn-primary" onClick={handlePreview} disabled={loading}>
+            <button className="btn" onClick={handlePreview} disabled={loading}>
               Preview Import
             </button>
           </div>
@@ -393,9 +395,9 @@ export default function ImportPage() {
         <div className="import-card">
           <h3>Preview & Validation</h3>
           {!isAdminImport && fileMeta && (
-            <div className="info-banner">
+            <FeedbackBanner variant="info">
               File: <strong>{fileMeta.fileName}</strong> | Sheet: <strong>{fileMeta.sheetName}</strong> | Rows: <strong>{fileMeta.totalRows}</strong>
-            </div>
+            </FeedbackBanner>
           )}
           <div className="summary-grid">
             <div className="summary-card">
@@ -495,15 +497,15 @@ export default function ImportPage() {
           )}
 
           <div className="form-actions">
-            <button className="btn btn-primary" onClick={handleImport} disabled={loading || preview.summary.valid === 0}>
+            <button className="btn" onClick={handleImport} disabled={loading || preview.summary.valid === 0}>
               {loading ? 'Importing...' : `Import ${preview.summary.valid} Camps`}
             </button>
             {isAdminImport ? (
-              <button className="btn btn-secondary" onClick={() => setStep(1)}>
+              <button className="btn secondary" onClick={() => setStep(1)}>
                 Back to Mapping
               </button>
             ) : (
-              <button className="btn btn-secondary" onClick={resetImport}>
+              <button className="btn secondary" onClick={resetImport}>
                 Upload Another File
               </button>
             )}
@@ -520,13 +522,13 @@ export default function ImportPage() {
             <div className="summary-card"><span>Invalid</span><strong>{result.summary.invalid}</strong></div>
           </div>
           {result.skipped?.length > 0 && (
-            <div className="info-banner">
+            <FeedbackBanner variant="info">
               Some rows were skipped because the client name did not match existing clients.
-            </div>
+            </FeedbackBanner>
           )}
           <div className="form-actions">
-            <Link className="btn btn-primary" to="/camps/manage">View Imported Camps</Link>
-            <button className="btn btn-secondary" onClick={resetImport}>
+            <Link className="btn" to="/camps/manage">View Imported Camps</Link>
+            <button className="btn secondary" onClick={resetImport}>
               Import Another File
             </button>
           </div>

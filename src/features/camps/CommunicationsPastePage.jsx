@@ -23,13 +23,13 @@ const CONFIRM_COPY = {
     title: 'Re-extract pasted content',
     message: 'This will run extraction again and replace the current preview. Manual edits that were not saved will be lost. Continue?',
     confirmLabel: 'Re-extract',
-    confirmClass: 'btn-primary',
+    confirmClass: '',
   },
   process: {
     title: 'Create camps from paste',
     message: 'This will create camp record(s) from the extracted preview below. Continue?',
     confirmLabel: 'Create camps',
-    confirmClass: 'btn-primary',
+    confirmClass: '',
   },
 };
 
@@ -62,7 +62,7 @@ function ConfirmDialog({ action, previewSummary, onCancel, onConfirm, loading })
           </div>
         )}
         <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>
+          <button type="button" className="btn secondary" onClick={onCancel} disabled={loading}>
             Cancel
           </button>
           <button type="button" className={`btn ${copy.confirmClass}`} onClick={onConfirm} disabled={loading}>
@@ -670,7 +670,7 @@ export default function CommunicationsPastePage() {
       <div className="communications-paste-shell paste-workflow-shell panel">
         <header className="paste-workflow-header">
           <div className="paste-workflow-header-copy">
-            <h2 className="paste-workflow-title">Manual paste</h2>
+            <h2 className="paste-workflow-title">Manual Paste</h2>
             <p className="paste-workflow-lead">
               Paste once, verify extracted fields, then import camps.
             </p>
@@ -757,7 +757,7 @@ export default function CommunicationsPastePage() {
               <div className="paste-file-upload-zone">
                 <p><strong>Upload camp file</strong></p>
                 <p className="import-muted">Supported: .xlsx, .xls, .csv</p>
-                <label className="btn btn-secondary">
+                <label className="btn secondary">
                   Choose file
                   <input
                     type="file"
@@ -875,7 +875,7 @@ export default function CommunicationsPastePage() {
           <div className="paste-workflow-footer-actions">
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn secondary"
               onClick={handleClear}
               disabled={actionLoading || (!hasPasteText && !preview)}
             >
@@ -884,7 +884,7 @@ export default function CommunicationsPastePage() {
             {hasExtracted && IS_DEMO_SERVER && (
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn secondary"
                 onClick={handleExtractClick}
                 disabled={actionLoading || !hasPasteText || isEditMode}
               >
@@ -893,7 +893,7 @@ export default function CommunicationsPastePage() {
             )}
             <button
               type="button"
-              className="btn btn-primary paste-workflow-primary-cta"
+              className="btn paste-workflow-primary-cta"
               onClick={handlePrimaryAction}
               disabled={primaryDisabled}
               aria-describedby="paste-workflow-primary-hint"

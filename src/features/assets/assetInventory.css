@@ -1,0 +1,236 @@
+/* Asset One — form layout aligned with Camp Request patterns */
+
+.asset-inventory-shell {
+  --asset-form-row-gap: 18px;
+  --asset-form-col-gap: 18px;
+  --asset-form-field-gap: 5px;
+}
+
+.asset-inventory-shell .asset-form-card {
+  padding: 18px 20px;
+  width: 100%;
+  max-width: none;
+  margin-bottom: 16px;
+  border: 1px solid var(--line, var(--border));
+  border-radius: var(--radius, 12px);
+  background: var(--bg-elevated, var(--surface));
+}
+
+.asset-inventory-shell .asset-form-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line, var(--border));
+}
+
+.asset-inventory-shell .asset-form-page-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--ink, var(--text));
+}
+
+.asset-inventory-shell .asset-form-page-header .meta-text {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.asset-inventory-shell .asset-form-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.asset-inventory-shell .asset-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.asset-inventory-shell .asset-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 1.1rem;
+}
+
+.asset-inventory-shell .asset-form-section + .asset-form-section {
+  border-top: 1px solid var(--line, var(--border));
+  padding-top: 1.25rem;
+}
+
+.asset-inventory-shell .asset-form-section-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+}
+
+.asset-inventory-shell .asset-form-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px dashed color-mix(in srgb, var(--line, var(--border)) 80%, transparent);
+}
+
+.asset-inventory-shell .asset-form-subsection-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft, var(--text-muted));
+}
+
+.asset-inventory-shell .asset-form-row {
+  display: grid;
+  gap: 10px var(--asset-form-col-gap);
+  align-items: start;
+}
+
+.asset-inventory-shell .asset-form-row-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.asset-inventory-shell .asset-form-row-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.asset-inventory-shell .asset-form-row-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.asset-inventory-shell .asset-form-row .field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--asset-form-field-gap);
+  min-width: 0;
+  margin: 0;
+}
+
+.asset-inventory-shell .asset-form-row .field > label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted, var(--text-muted));
+}
+
+.asset-inventory-shell .asset-form-row .field input,
+.asset-inventory-shell .asset-form-row .field select,
+.asset-inventory-shell .asset-form-row .field textarea,
+.asset-inventory-shell .asset-form-row .field .adaptive-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.asset-inventory-shell .asset-form-row .field input,
+.asset-inventory-shell .asset-form-row .field select,
+.asset-inventory-shell .asset-form-row .field .adaptive-select {
+  height: var(--control-h-sm);
+  min-height: var(--control-h-sm);
+  max-height: var(--control-h-sm);
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.asset-inventory-shell .asset-form-row .field textarea {
+  min-height: 72px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.asset-inventory-shell .asset-form-row .field input[readonly] {
+  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--line));
+  color: var(--muted, var(--text-muted));
+  cursor: default;
+}
+
+.asset-inventory-shell .asset-custodian-summary {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--line));
+  border: 1px solid var(--line, var(--border));
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-soft, var(--text-muted));
+}
+
+.asset-inventory-shell .asset-custodian-summary strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+}
+
+.asset-inventory-shell .asset-product-images-field .product-images-panel {
+  margin-top: 2px;
+}
+
+.asset-inventory-shell .asset-form-card .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line, var(--border));
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .asset-inventory-shell .asset-form-row-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .asset-inventory-shell .asset-form-row-3 .field:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .asset-inventory-shell .asset-form-row-2,
+  .asset-inventory-shell .asset-form-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .asset-inventory-shell .asset-form-card {
+    padding: 14px 14px 12px;
+  }
+
+  .asset-inventory-shell .asset-form-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .asset-inventory-shell .asset-form-header-actions {
+    justify-content: flex-end;
+  }
+}
+
+html[data-theme='dark'] .asset-inventory-shell .asset-form-card {
+  background: var(--bg-elevated);
+  border-color: var(--line);
+}
+
+html[data-theme='dark'] .asset-inventory-shell .asset-custodian-summary {
+  background: color-mix(in srgb, var(--bg-elevated) 80%, var(--line));
+}

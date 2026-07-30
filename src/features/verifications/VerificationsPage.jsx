@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { formatDateTime, todayIso } from '../../shared/dateFormat.js';
@@ -476,14 +477,10 @@ export default function VerificationsPage() {
       }
     >
       {error && !active && (
-        <div className="am-banner is-error" role="alert">
-          {error}
-        </div>
+        <FeedbackBanner variant="error">{error}</FeedbackBanner>
       )}
       {msg && !active && (
-        <div className="am-banner is-info" role="status">
-          {msg}
-        </div>
+        <FeedbackBanner variant="info">{msg}</FeedbackBanner>
       )}
 
       {active && canWrite && (

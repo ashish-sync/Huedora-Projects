@@ -11,14 +11,15 @@ export function CampCancelRefuseButton({
   hasPermission,
   canRejectCamps,
   onAction,
+  stage = '',
   className = '',
 }) {
-  if (!canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps })) {
+  if (!canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps }, stage)) {
     return null;
   }
 
-  const action = resolveCancelOrRefuseAction(camp);
-  const label = cancelOrRefuseLabel(camp);
+  const action = resolveCancelOrRefuseAction(camp, stage);
+  const label = cancelOrRefuseLabel(camp, stage);
 
   return (
     <CampRowIconButton

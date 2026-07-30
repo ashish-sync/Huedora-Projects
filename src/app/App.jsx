@@ -25,6 +25,7 @@ const CampManagePage = lazy(() => import('../features/camps/CampManagePage.jsx')
 const CampFormPage = lazy(() => import('../features/camps/CampFormPage.jsx'));
 const ClientMasterFormRoute = lazy(() => import('../features/camps/ClientMasterFormRoute.jsx'));
 const CampImportPage = lazy(() => import('../features/camps/CampImportPage.jsx'));
+const CampDownloadPage = lazy(() => import('../features/camps/CampDownloadPage.jsx'));
 const CommunicationsLayout = lazy(() => import('../features/camps/CommunicationsLayout.jsx'));
 const CommunicationsEmailPage = lazy(() => import('../features/camps/CommunicationsEmailPage.jsx'));
 const CommunicationsPastePage = lazy(() => import('../features/camps/CommunicationsPastePage.jsx'));
@@ -36,7 +37,6 @@ const LogisticsUsagePage = lazy(() => import('../features/logistics/LogisticsUsa
 const LogisticsOutputPage = lazy(() => import('../features/logistics/LogisticsOutputPage.jsx'));
 const AssetInventoryLayout = lazy(() => import('../features/assets/AssetInventoryLayout.jsx'));
 const AssetOverviewPage = lazy(() => import('../features/assets/AssetOverviewPage.jsx'));
-const AssetTypeStockPage = lazy(() => import('../features/assets/AssetTypeStockPage.jsx'));
 const MasterDataPage = lazy(() => import('../features/masters/MasterDataPage.jsx'));
 const FinanceLayout = lazy(() => import('../features/finance/FinanceLayout.jsx'));
 const FinanceOverviewPage = lazy(() => import('../features/finance/FinanceOverviewPage.jsx'));
@@ -91,7 +91,7 @@ export default function App() {
                 <Route path="/master-data/client-masters/:id/edit" element={<ClientMasterFormRoute />} />
                 <Route path="/asset-inventory" element={<AssetInventoryLayout />}>
                   <Route index element={<AssetOverviewPage />} />
-                  <Route path="types/:typeSlug" element={<AssetTypeStockPage />} />
+                  <Route path="types/:typeSlug" element={<Navigate to="/asset-inventory" replace />} />
                   <Route path="balance" element={<Navigate to="/asset-inventory" replace />} />
                   <Route
                     path="masters"
@@ -139,13 +139,15 @@ export default function App() {
                   <Route path="manage" element={<CampManagePage />} />
                   <Route path="manage/new" element={<CampFormPage />} />
                   <Route path="manage/:id/edit" element={<CampFormPage />} />
-                  <Route path="import" element={<CampImportPage />} />
+                  <Route path="import" element={<Navigate to="/camps/communications/upload" replace />} />
                   <Route path="chargesheet" element={<Navigate to="/camps/manage" replace />} />
                   <Route path="payout" element={<Navigate to="/camps/manage" replace />} />
                   <Route path="communications" element={<CommunicationsLayout />}>
                     <Route index element={<Navigate to="paste" replace />} />
                     <Route path="paste" element={<CommunicationsPastePage />} />
                     <Route path="email" element={<CommunicationsEmailPage />} />
+                    <Route path="upload" element={<CampImportPage />} />
+                    <Route path="download" element={<CampDownloadPage />} />
                   </Route>
                   <Route path="communications/whatsapp" element={<Navigate to="/camps/communications/paste" replace />} />
                   <Route path="client-masters" element={<Navigate to={`/master-data?scope=${CLIENT_MASTER_SCOPE}&entity=${CLIENT_MASTER_ENTITY}`} replace />} />

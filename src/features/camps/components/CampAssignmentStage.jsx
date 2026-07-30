@@ -64,7 +64,7 @@ export function CampAssignmentStage({
             <div className="camp-assignment-copy-wrap full">
               <button
                 type="button"
-                className="btn btn-secondary btn-compact"
+                className="btn secondary btn-compact"
                 onClick={handleCopyDetails}
               >
                 {copyState === 'copied' ? 'Copied' : 'Copy details'}
@@ -88,7 +88,7 @@ export function CampAssignmentStage({
     <div className="camp-assignment-stage">
       <p className="meta-text camp-assignment-intro">
         Filter Healthcare Worker contacts by resource type and profession, then pick the person to assign.
-        You can also cancel or refuse from the camp sheet.
+        Before assignment you can refuse the camp. After assignment, only cancel by TCPL or Client is allowed.
       </p>
       <CampHcwAssignPicker
         hcwContacts={hcwContacts}

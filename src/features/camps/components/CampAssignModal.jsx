@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { createPortal } from 'react-dom';
 import { contactToHcwFields } from '../utils/campHcwContact';
 import { campApi } from '../campOpsApi';
@@ -87,7 +88,7 @@ export function CampAssignModal({
           </header>
 
           <div className="camp-assign-modal-body">
-            {error && <div className="error-banner camp-assign-modal-error">{error}</div>}
+            {error && <FeedbackBanner variant="error" className="camp-assign-modal-error">{error}</FeedbackBanner>}
             <p className="camp-approval-issues-lead">
               Filter Healthcare Worker contacts by resource type and profession, then pick the person to assign.
               The camp moves to Execution after assignment.
@@ -105,10 +106,10 @@ export function CampAssignModal({
           </div>
 
           <footer className="camp-assign-modal-footer">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={saving}>
+            <button type="button" className="btn secondary btn-compact" onClick={onClose} disabled={saving}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving || contactsLoading}>
+            <button type="submit" className="btn btn-compact" disabled={saving || contactsLoading}>
               {saving ? 'Assigning…' : 'Assign'}
             </button>
           </footer>

@@ -49,11 +49,11 @@ function LinkedCampsBanner({ linkedCamps = [] }) {
               <span className="status-pill status-pill-muted">{camp.status?.replaceAll('_', ' ')}</span>
             </div>
             {camp.editable ? (
-              <Link to={`/camps/manage/${camp.id}/edit`} className="btn btn-secondary btn-sm">
+              <Link to={`/camps/manage/${camp.id}/edit`} className="btn secondary btn-compact">
                 Edit camp
               </Link>
             ) : (
-              <Link to={`/camps/manage/${camp.id}/edit`} className="btn btn-secondary btn-sm">
+              <Link to={`/camps/manage/${camp.id}/edit`} className="btn secondary btn-compact">
                 View camp
               </Link>
             )}
@@ -298,7 +298,7 @@ export function EmailExtractionPanel({
           {previewDirty && !autoSavePreview && onSavePreview && (
             <button
               type="button"
-              className="btn btn-primary btn-sm"
+              className="btn btn-compact"
               onClick={onSavePreview}
               disabled={savingPreview}
             >

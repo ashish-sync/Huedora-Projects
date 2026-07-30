@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
+import { MESSAGES } from '../../shared/messages.js';
 import { useAuth } from '../../shared/auth.jsx';
 
 /** Shared stroke props for home module marks */
@@ -178,7 +179,7 @@ export default function DashboardPage() {
         <div className="tylo-home-hero-copy">
           <p className="tylo-home-kicker">TYLO One</p>
           <h1 id="tylo-modules-heading" className="tylo-home-prompt">
-            {firstName ? `Welcome back, ${firstName}.` : 'Welcome back.'}
+            {MESSAGES.welcome(firstName)}
           </h1>
           <p className="tylo-home-lead">
             Open an application area to continue: Asset One, Document One, Verification One,

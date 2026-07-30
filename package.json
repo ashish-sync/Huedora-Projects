@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "brand:assets": "node scripts/generate-brand-assets.mjs",
+    "lint": "eslint .",
+    "lint:actions": "eslint src/features/camps/utils/campExecutionActions.js src/features/camps/utils/campAssignmentActions.js src/features/camps/utils/campBulkActions.js src/features/camps/utils/campCancelRefuse.js src/features/camps/components/CampExecutionRowActions.jsx src/features/camps/components/CampAssignmentRowActions.jsx src/features/camps/constants/campLifecycle.js",
+    "lint:camps": "eslint src/features/camps",
     "test": "vitest run",
+    "test:camps": "vitest run src/features/camps",
+    "verify": "npm run lint && npm run test",
+    "verify:camps": "npm run lint:actions && npm run test:camps",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -21,10 +27,13 @@
     "react-select": "^5.10.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.5.4",
+    "eslint": "^9.39.2",
+    "globals": "^16.5.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.49.0",
     "postcss": "^8.5.23",

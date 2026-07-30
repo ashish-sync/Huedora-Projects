@@ -1,7 +1,15 @@
+import { campStatusLabel } from '../constants/campLifecycle.js';
+
 const PERMISSION_MESSAGES = {
   approve: 'You do not have permission to approve camps',
-  reject: 'You do not have permission to reject camps',
+  reject: 'You do not have permission to refuse camps',
   execute: 'You do not have permission to mark camps as executed',
+};
+
+const BULK_ACTION_PAST_TENSE = {
+  approve: 'approved',
+  reject: 'refused',
+  execute: 'executed',
 };
 
 function campLabel(camp) {
@@ -9,7 +17,7 @@ function campLabel(camp) {
 }
 
 function statusLabel(status) {
-  return String(status || '').replaceAll('_', ' ');
+  return campStatusLabel(status);
 }
 
 function getCampBulkIssue(action, camp, auth) {
@@ -26,7 +34,7 @@ function getCampBulkIssue(action, camp, auth) {
 
   if (action === 'reject') {
     if (camp.status !== 'pending_review') {
-      return `${campLabel(camp)} is ${statusLabel(camp.status)} and cannot be rejected`;
+      return `${campLabel(camp)} is ${statusLabel(camp.status)} and cannot be refused`;
     }
     return null;
   }
@@ -74,14 +82,14 @@ export function validateBulkCampAction(action, selectedCamps, auth) {
       ok: false,
       message: issues.length === 1
         ? issues[0]
-        : `None of the selected camps can be ${action}d: ${issues.join(' | ')}`,
+        : `None of the selected camps can be ${BULK_ACTION_PAST_TENSE[action] || action}: ${issues.join(' | ')}`,
     };
   }
 
   if (issues.length) {
     return {
       ok: false,
-      message: `${issues.length} selected camp${issues.length === 1 ? '' : 's'} cannot be ${action}d: ${issues.join(' | ')}`,
+      message: `${issues.length} selected camp${issues.length === 1 ? '' : 's'} cannot be ${BULK_ACTION_PAST_TENSE[action] || action}: ${issues.join(' | ')}`,
     };
   }
 

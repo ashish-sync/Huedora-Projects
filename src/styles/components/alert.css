@@ -1,31 +1,67 @@
-.error-banner {
+/**
+ * Inline feedback banners — unified styling for errors, success, info, and warnings.
+ * Legacy classes (.error-banner, .success-banner, .am-banner) alias to these tokens.
+ */
+
+.feedback-banner,
+.error-banner,
+.success-banner,
+.info-banner,
+.warning-banner {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  background: var(--color-danger-subtle);
-  color: var(--color-danger);
-  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, transparent);
   font-size: var(--text-body-sm-size);
   line-height: var(--text-body-sm-leading);
+  border: 1px solid transparent;
 }
 
+.feedback-banner.is-error,
+.error-banner,
+.am-banner.is-error {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+}
+
+.feedback-banner.is-success,
 .success-banner {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+}
+
+.feedback-banner.is-info,
+.info-banner,
+.am-banner.is-info {
+  background: var(--color-info-subtle);
+  color: var(--color-info);
+  border-color: color-mix(in srgb, var(--color-info) 24%, transparent);
+}
+
+.feedback-banner.is-warning,
+.warning-banner {
+  background: var(--color-warning-subtle, color-mix(in srgb, var(--color-warning, #d97706) 12%, transparent));
+  color: var(--color-warning, #b45309);
+  border-color: color-mix(in srgb, var(--color-warning, #d97706) 28%, transparent);
+}
+
+.am-banner {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-leading);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+.rp-toast {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
   background: var(--color-success-subtle);
   color: var(--color-success);
   border: 1px solid color-mix(in srgb, var(--color-success) 24%, transparent);
   font-size: var(--text-body-sm-size);
-  line-height: var(--text-body-sm-leading);
-}
-
-.info-banner {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-info-subtle);
-  color: var(--color-info);
-  border: 1px solid color-mix(in srgb, var(--color-info) 24%, transparent);
-  font-size: var(--text-body-sm-size);
-  line-height: var(--text-body-sm-leading);
 }
 
 .page-alerts {
@@ -38,14 +74,24 @@
   margin: 0;
 }
 
-.am-banner.is-error {
-  background: var(--color-danger-subtle);
-  color: var(--color-danger);
-  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+html[data-theme='dark'] .feedback-banner.is-error,
+html[data-theme='dark'] .error-banner,
+html[data-theme='dark'] .am-banner.is-error {
+  color: color-mix(in srgb, var(--color-danger) 88%, #fff);
 }
 
-.am-banner.is-info {
-  background: var(--color-info-subtle);
-  color: var(--color-info);
-  border-color: color-mix(in srgb, var(--color-info) 24%, transparent);
+html[data-theme='dark'] .feedback-banner.is-success,
+html[data-theme='dark'] .success-banner {
+  color: color-mix(in srgb, var(--color-success) 88%, #fff);
+}
+
+html[data-theme='dark'] .feedback-banner.is-info,
+html[data-theme='dark'] .info-banner,
+html[data-theme='dark'] .am-banner.is-info {
+  color: color-mix(in srgb, var(--color-info) 88%, #fff);
+}
+
+html[data-theme='dark'] .feedback-banner.is-warning,
+html[data-theme='dark'] .warning-banner {
+  color: color-mix(in srgb, var(--color-warning, #f59e0b) 90%, #fff);
 }

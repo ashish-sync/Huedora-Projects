@@ -9,6 +9,8 @@ import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import { openProgramDocument } from './utils/programDocument';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import { MESSAGES, formatApiError } from '../../shared/messages.js';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
@@ -51,7 +53,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
       setPageSize(nextPageSize);
       setError('');
     } catch (err) {
-      setError(err?.message || 'Failed to load client master records');
+      setError(formatApiError(err, MESSAGES.loadFailed('client master records')));
     } finally {
       setLoading(false);
     }
@@ -87,7 +89,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
       await clientMasterApi.remove(id);
       await loadRecords(page);
     } catch (err) {
-      setError(err?.message || 'Failed to archive record');
+      setError(formatApiError(err, MESSAGES.actionFailed('archive this record')));
     }
   }
 
@@ -110,7 +112,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
       await openProgramDocument(recordId);
       setError('');
     } catch (err) {
-      setError(err.message || 'Failed to open program document');
+      setError(formatApiError(err, MESSAGES.actionFailed('open the program document')));
       if (err.documentCleared) {
         await loadRecords(page);
       }
@@ -189,7 +191,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
 
           {error && (
             <div className="page-alerts">
-              <div className="error-banner">{error}</div>
+          {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
             </div>
           )}
 
@@ -240,6 +242,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                         <td>
                           <div>{record.spocName || '—'}</div>
                           {record.spocNumber && <small className="meta-text">{record.spocNumber}</small>}
+                          {record.spocEmail && <small className="meta-text">{record.spocEmail}</small>}
                         </td>
                         <td>{record.requestTimeline || '—'}</td>
                         <td>{record.isActive ? 'Active' : 'Inactive'}</td>

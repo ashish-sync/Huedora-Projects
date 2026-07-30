@@ -26,7 +26,7 @@ export const ROLE_LABELS = {
 export const SIGNUP_STATUS_LABELS = {
   approved: 'Approved',
   pending: 'Pending approval',
-  rejected: 'Rejected',
+  rejected: 'Refused',
 };
 
 export const ROLE_DESCRIPTIONS = {
@@ -106,10 +106,10 @@ export const PERMISSION_LABELS = {
   'communications:read': 'View communications inbox',
   'communications:manage': 'Sync, extract, and process communications',
   'communications:configure': 'Configure email campaign rules',
-  'client-masters:read': 'View client master',
-  'client-masters:create': 'Create client master',
-  'client-masters:update': 'Edit client master',
-  'client-masters:delete': 'Archive client master',
+  'client-masters:read': 'View Client Master',
+  'client-masters:create': 'Create Client Master',
+  'client-masters:update': 'Edit Client Master',
+  'client-masters:delete': 'Archive Client Master',
   'users:read': 'View users',
   'users:create': 'Create users',
   'users:update': 'Manage users',

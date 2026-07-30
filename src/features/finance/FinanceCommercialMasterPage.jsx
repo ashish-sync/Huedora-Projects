@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import { emptyOrgMasterForm, orgMasterToPayload } from './commercialOrgMaster.js';
@@ -58,11 +59,7 @@ export default function FinanceCommercialMasterPage() {
         </div>
       </div>
 
-      {(error || msg) && (
-        <div className={`am-banner ${error ? 'is-error' : 'is-info'}`} role="status">
-          {error || msg}
-        </div>
-      )}
+      {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       <form className="card finance-org-master-form-wrap" onSubmit={handleSave}>
         <CommercialOrgMasterForm form={form} setForm={setForm} disabled={!canWrite || busy} />

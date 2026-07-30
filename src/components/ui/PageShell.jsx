@@ -74,6 +74,8 @@ export function EmptyState({ title, description, action }) {
   );
 }
 
+export { default as FeedbackBanner, PageAlerts, FeedbackAlerts } from './FeedbackBanner.jsx';
+
 export default function PageShell({
   breadcrumbs = [],
   title,

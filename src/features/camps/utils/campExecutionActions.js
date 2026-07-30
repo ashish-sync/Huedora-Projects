@@ -1,3 +1,5 @@
+import { campStatusLabel, isExecutionClosedOut } from '../constants/campLifecycle.js';
+
 function isCampAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
   if (camp.lifecycleStage === 'execution' && camp.assignmentDecision === 'assign') return true;
@@ -8,12 +10,12 @@ export function getExecutionBlockers(camp = {}) {
   const blockers = [];
 
   if (['cancelled', 'rejected'].includes(camp.status)) {
-    blockers.push(`Camp is ${String(camp.status).replaceAll('_', ' ')} and cannot be marked executed.`);
+    blockers.push(`Camp is ${campStatusLabel(camp.status)} and cannot be marked executed.`);
     return blockers;
   }
 
-  if (camp.executionStatus === 'Cancelled' || camp.executionStatus === 'Rejected') {
-    blockers.push('Camp execution is cancelled or rejected.');
+  if (camp.executionStatus === 'Cancelled' || isExecutionClosedOut(camp.executionStatus)) {
+    blockers.push('Camp execution is cancelled or refused.');
     return blockers;
   }
 

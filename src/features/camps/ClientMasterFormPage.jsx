@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import FieldError from '../../components/ui/FieldError.jsx';
+import { EmailField } from '../../components/ui/EmailField.jsx';
+import { PhoneField } from '../../components/ui/PhoneField.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { CampNameSelect } from './components/CampNameSelect';
 import { ClientNameSearchInput } from './components/ClientNameSearchInput';
 import { SearchableOptionsInput } from './components/SearchableOptionsInput';
+import { ClientMasterConsumablesField } from './components/ClientMasterConsumablesField.jsx';
 import { clientMasterApi } from './campOpsApi.js';
 import { clientMasterListPath } from './clientMasterPaths.js';
 import { trimFormStrings } from './utils/trimInput';
@@ -32,6 +37,7 @@ const formStringFields = [
   'campDuration',
   'spocName',
   'spocNumber',
+  'spocEmail',
   'requestTimeline',
   'assignedUserEmails',
 ];
@@ -60,6 +66,7 @@ const emptyForm = {
   campDuration: '4:00',
   spocName: '',
   spocNumber: '',
+  spocEmail: '',
   requestTimeline: '',
   assignedUserEmails: '',
   executedCampUnit: '',
@@ -69,13 +76,9 @@ const emptyForm = {
   minimumKmsCovered: '',
   extPatientUnit: '',
   kmsUnit: '',
+  mappedConsumables: [],
   isActive: true,
 };
-
-function FieldError({ message }) {
-  if (!message) return null;
-  return <small className="field-error">{message}</small>;
-}
 
 function numberInputProps(field, form, updateField, fieldErrors) {
   return {
@@ -246,6 +249,7 @@ export default function ClientMasterFormPage() {
         .split(/[;,\n]/)
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean),
+      mappedConsumables: form.mappedConsumables || [],
     };
     formNumberFields.forEach((field) => {
       payload[field] = trimmed[field] === '' ? 0 : Number(form[field]) || 0;
@@ -287,11 +291,7 @@ export default function ClientMasterFormPage() {
 
   return (
     <form className="form-card" onSubmit={handleSubmit} noValidate>
-      {error && (
-        <div className="page-alerts">
-          <div className="error-banner">{error}</div>
-        </div>
-      )}
+      {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
 
       <div className="form-grid">
         <label>
@@ -398,17 +398,18 @@ export default function ClientMasterFormPage() {
           />
           <FieldError message={fieldErrors.spocName} />
         </label>
-        <label>
-          SPOC Number
-          <input
-            type="text"
-            inputMode="numeric"
-            value={form.spocNumber}
-            onChange={(e) => updateField('spocNumber', e.target.value.replace(/[^\d]/g, ''))}
-            className={fieldErrors.spocNumber ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.spocNumber} />
-        </label>
+        <PhoneField
+          label="SPOC Number"
+          value={form.spocNumber}
+          onChange={(value) => updateField('spocNumber', value)}
+          error={fieldErrors.spocNumber}
+        />
+        <EmailField
+          label="SPOC Email Address"
+          value={form.spocEmail}
+          onChange={(value) => updateField('spocEmail', value)}
+          error={fieldErrors.spocEmail}
+        />
         <label>
           Request Timeline
           <input
@@ -419,18 +420,15 @@ export default function ClientMasterFormPage() {
           />
           <FieldError message={fieldErrors.requestTimeline} />
         </label>
-        <label className="full">
+        <label>
           Assigned user login emails
-          <textarea
-            rows={2}
+          <input
             value={form.assignedUserEmails}
             onChange={(e) => updateField('assignedUserEmails', e.target.value)}
             placeholder="user@client.com, ops@client.com"
+            title="Comma-separated login emails. These users only see camps for this client."
             className={fieldErrors.assignedUserEmails ? 'input-invalid' : ''}
           />
-          <small className="meta-text">
-            Comma-separated login emails. These users only see camps for this client.
-          </small>
           <FieldError message={fieldErrors.assignedUserEmails} />
         </label>
         <label>
@@ -468,59 +466,59 @@ export default function ClientMasterFormPage() {
           <input {...numberInputProps('kmsUnit', form, updateField, fieldErrors)} />
           <FieldError message={fieldErrors.kmsUnit} />
         </label>
-      </div>
-
-      <div className="form-card program-document-section">
-        <h3>Program Document (PDF)</h3>
-        <p className="meta-text">One PDF per program configuration. Max 5 MB. Uploading a new file replaces the previous document.</p>
-        {documentError && <div className="error-banner">{documentError}</div>}
-
-        {documentMeta && (
-          <div className="program-document-current">
-            <div>
-              <strong>{documentMeta.fileName}</strong>
-              {documentMeta.fileSize > 0 && (
-                <small className="meta-text"> ({Math.round(documentMeta.fileSize / 1024)} KB)</small>
-              )}
-            </div>
-            <div className="actions">
-              <button type="button" className="btn btn-secondary btn-sm" onClick={handlePreviewDocument}>
-                Preview PDF
-              </button>
-              {isSuperAdmin() && (
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  onClick={handleDeleteDocument}
-                  disabled={documentLoading}
-                >
-                  {documentLoading ? 'Deleting...' : 'Delete PDF'}
+        <ClientMasterConsumablesField
+          value={form.mappedConsumables}
+          onChange={(value) => updateField('mappedConsumables', value)}
+        />
+        <div className="client-master-program-document">
+          <span className="client-master-field-label">Program Document (PDF)</span>
+          <p className="meta-text client-master-program-document-hint">Max 5 MB. Upload replaces the previous file.</p>
+          {documentError ? <FeedbackBanner variant="error">{documentError}</FeedbackBanner> : null}
+          {documentMeta ? (
+            <div className="client-master-program-document-current">
+              <span className="client-master-program-document-name" title={documentMeta.fileName}>
+                {documentMeta.fileName}
+              </span>
+              <div className="client-master-program-document-actions">
+                <button type="button" className="btn secondary btn-sm" onClick={handlePreviewDocument}>
+                  Preview
                 </button>
-              )}
+                {isSuperAdmin() ? (
+                  <button
+                    type="button"
+                    className="btn danger btn-sm"
+                    onClick={handleDeleteDocument}
+                    disabled={documentLoading}
+                  >
+                    {documentLoading ? 'Deleting…' : 'Delete'}
+                  </button>
+                ) : null}
+              </div>
             </div>
+          ) : null}
+          <div className="client-master-program-document-upload">
+            <label htmlFor="program-pdf-upload" className="btn secondary btn-sm client-master-program-document-upload-btn">
+              {documentLoading ? 'Uploading…' : documentMeta || pendingPdfFile ? 'Replace PDF' : 'Upload PDF'}
+              <input
+                id="program-pdf-upload"
+                type="file"
+                accept="application/pdf,.pdf"
+                disabled={documentLoading}
+                onChange={(e) => handlePdfSelect(e.target.files?.[0] || null)}
+              />
+            </label>
+            {pendingPdfFile ? (
+              <small className="meta-text client-master-program-document-pending">
+                {pendingPdfFile.name} ({Math.round(pendingPdfFile.size / 1024)} KB)
+              </small>
+            ) : null}
           </div>
-        )}
-
-        <div className="upload-zone" style={{ marginTop: '0.75rem' }}>
-          <label htmlFor="program-pdf-upload">
-            {documentLoading ? 'Uploading...' : documentMeta || pendingPdfFile ? 'Replace PDF' : 'Upload PDF'}
-            <input
-              id="program-pdf-upload"
-              type="file"
-              accept="application/pdf,.pdf"
-              disabled={documentLoading}
-              onChange={(e) => handlePdfSelect(e.target.files?.[0] || null)}
-            />
-          </label>
-          {pendingPdfFile && (
-            <small className="meta-text">Selected: {pendingPdfFile.name} ({Math.round(pendingPdfFile.size / 1024)} KB)</small>
-          )}
         </div>
       </div>
 
       <div className="form-actions">
         <button type="button" className="btn secondary" onClick={() => navigate(clientMasterListPath())}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={loading}>
+        <button type="submit" className="btn" disabled={loading}>
           {loading ? 'Saving...' : isEdit ? 'Update Configuration' : 'Create Configuration'}
         </button>
       </div>

@@ -1,6 +1,8 @@
 /**
  * Manual column mapping for Camp One paste Excel/CSV import.
  */
+import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
+
 export default function PasteColumnMapper({
   fields = [],
   headers = [],
@@ -21,9 +23,9 @@ export default function PasteColumnMapper({
       </p>
 
       {unmappedHeaders.length ? (
-        <div className="info-banner">
+        <FeedbackBanner variant="info">
           Unmapped file columns: {unmappedHeaders.join(', ')}
-        </div>
+        </FeedbackBanner>
       ) : null}
 
       <div className="paste-column-mapper-grid">

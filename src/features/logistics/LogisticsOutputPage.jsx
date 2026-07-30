@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { api } from '../../shared/api.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 
@@ -60,9 +61,7 @@ export default function LogisticsOutputPage() {
       </p>
 
       {error ? (
-        <div className="am-banner is-error" role="status">
-          {error}
-        </div>
+        <FeedbackBanner variant="error">{error}</FeedbackBanner>
       ) : null}
 
       <div className="module-dash-kpis" data-count="3" role="group" aria-label="Field output snapshot">

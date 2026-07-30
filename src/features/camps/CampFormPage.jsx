@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
@@ -6,12 +7,13 @@ import { api } from '../../shared/api.js';
 import { trimFormStrings } from './utils/trimInput';
 import { toApiDateValue } from './utils/dateFormat';
 import { computeDurationHours } from './utils/campSchedule';
+import { X } from 'lucide-react';
 import { FormPageHeader } from './components/FormPageHeader';
 import { CampLifecycleForm } from './components/CampLifecycleForm';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
-import { CampCancelRefuseButton } from './components/CampCancelRefuseButton';
+import { CampRowIconButton } from './components/CampRowIconButton';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
-import { buildClosureDetails } from './constants/campClosure';
+import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
 import {
   parseClientMasterDivisions,
@@ -25,12 +27,23 @@ import {
   maxLifecycleStage,
   resolveCampSlot,
   hasReachedLifecycleStage,
+  canVisitLifecycleStage,
+  isExecutionReadyForFinance,
+  getExecutionFinanceBlockers,
+  getExecutionConsumablesBlockers,
   todayIsoDate,
-  isExecutionClosedOut,
+  syncExecutionStatusForSave,
+  EXECUTION_STATUS,
+  normalizeExecutionStatus,
+  normalizeLifecycleStage,
 } from './constants/campLifecycle';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { validateRequestStageForm } from './utils/validateRequestStage';
 import { confirmCampDurationIfNeeded } from './utils/campDurationWarning';
+import { syncPrimaryContactFields, normalizeContactPersons } from './utils/campContactPersons.js';
+import { mergeConsumablesWithTemplate, normalizeConsumablesUsed } from './utils/campConsumables.js';
+import { getHcwFinanceBlockers, isHcwReadyForFinance } from './utils/hcwFinanceReadiness.js';
+import { findAssignableHealthcareWorker } from './utils/campHcwContact.js';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
 const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
@@ -38,7 +51,7 @@ const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for 
 
 const formStringFields = [
   'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state', 'district',
-  'pincode', 'latitude', 'longitude', 'startTime', 'endTime', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
+  'pincode', 'latitude', 'longitude', 'googlePlaceId', 'startTime', 'endTime', 'contactPersonLevel', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
   'hq', 'zone', 'hcwCategory', 'hcwName', 'hcwContact', 'hcwContactId', 'cancellationReason', 'chargeableStatus',
   'inTime', 'outTime', 'attire', 'labCoat', 'transactionId', 'paymentRemark',
   'assignmentStatus', 'assignmentDecision', 'assignmentRefusalReason', 'executionStatus', 'source', 'requestDate',
@@ -60,7 +73,7 @@ function filterApprovalBlockers(blockers, form, campNameOptions) {
 
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord, hasPermission, canRejectCamps } = useAuth();
+  const { canEditCampRecord, hasPermission } = useAuth();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { workingStage } = useCampWorkingStage();
@@ -81,18 +94,21 @@ export default function CampFormPage() {
   const [showSourcePreview, setShowSourcePreview] = useState(false);
   const [hcwContacts, setHcwContacts] = useState([]);
   const [contactsLoading, setContactsLoading] = useState(false);
+  const [assignedHcwContact, setAssignedHcwContact] = useState(null);
+  const [assignedHcwLoading, setAssignedHcwLoading] = useState(false);
   const [confirmRequest, setConfirmRequest] = useState(null);
   const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
   const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [mappedConsumables, setMappedConsumables] = useState([]);
   const hcwContactsLoadedRef = useRef(false);
 
   const campStatus = campMeta?.status || 'pending_review';
 
   function applyCampAccess(camp) {
-    const loadedStage = camp.lifecycleStage || 'request';
-    const preferredStage = workingStage && hasReachedLifecycleStage(loadedStage, workingStage)
-      ? workingStage
+    const loadedStage = normalizeLifecycleStage(camp.lifecycleStage, 'request');
+    const preferredStage = workingStage && canVisitLifecycleStage(loadedStage, workingStage)
+      ? normalizeLifecycleStage(workingStage, loadedStage)
       : loadedStage;
     setActiveStage(preferredStage);
 
@@ -112,20 +128,17 @@ export default function CampFormPage() {
     );
   }
 
-  const reachedLifecycleStage = campMeta?.lifecycleStage || form.lifecycleStage || 'request';
+  const reachedLifecycleStage = normalizeLifecycleStage(
+    campMeta?.lifecycleStage || form.lifecycleStage,
+    'request',
+  );
 
   useEffect(() => {
     if (!isEdit) {
-      setForm((prev) => ({ ...prev, requestDate: todayIsoDate() }));
+      setForm((prev) => ({ ...prev, requestDate: todayIsoDate(), lifecycleStage: 'request' }));
+      setActiveStage('request');
     }
   }, [isEdit]);
-
-  useEffect(() => {
-    if (!isEdit && workingStage) {
-      setActiveStage(workingStage);
-      setForm((prev) => ({ ...prev, lifecycleStage: workingStage }));
-    }
-  }, [isEdit, workingStage]);
 
   useEffect(() => {
     if (activeStage !== 'assignment' && workingStage !== 'assignment') return undefined;
@@ -149,6 +162,36 @@ export default function CampFormPage() {
       cancelled = true;
     };
   }, [activeStage, workingStage]);
+
+  useEffect(() => {
+    if (!isEdit || activeStage !== 'financial' || !form.hcwContactId) {
+      setAssignedHcwContact(null);
+      return undefined;
+    }
+
+    const cached = findAssignableHealthcareWorker(hcwContacts, form.hcwContactId);
+    if (cached) {
+      setAssignedHcwContact(cached);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setAssignedHcwLoading(true);
+    api(`/contacts/${form.hcwContactId}`)
+      .then((res) => {
+        if (!cancelled) setAssignedHcwContact(res.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setAssignedHcwContact(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAssignedHcwLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, activeStage, form.hcwContactId, hcwContacts]);
 
   useEffect(() => {
     Promise.all([
@@ -212,6 +255,37 @@ export default function CampFormPage() {
   }, [form.clientId, isEdit]);
 
   useEffect(() => {
+    if (!form.clientId) {
+      setMappedConsumables([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    campApi.consumablesForCamp(form.clientId, {
+      campaignType: form.campaignType,
+      campaignName: form.campaignName,
+    })
+      .then(({ data }) => {
+        if (!cancelled) setMappedConsumables(data?.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setMappedConsumables([]);
+      });
+
+    return () => { cancelled = true; };
+  }, [form.clientId, form.campaignType, form.campaignName]);
+
+  useEffect(() => {
+    if (!mappedConsumables.length) return undefined;
+    setForm((prev) => {
+      const merged = mergeConsumablesWithTemplate(mappedConsumables, prev.consumablesUsed);
+      if (JSON.stringify(merged) === JSON.stringify(prev.consumablesUsed)) return prev;
+      return { ...prev, consumablesUsed: merged };
+    });
+    return undefined;
+  }, [mappedConsumables]);
+
+  useEffect(() => {
     if (!isEdit || !id) return undefined;
 
     let cancelled = false;
@@ -237,7 +311,7 @@ export default function CampFormPage() {
           requestReviewStatus: camp.requestReviewStatus || '',
           requestReviewStatusLabel: camp.requestReviewStatusLabel || '',
           informationRequestNote: camp.informationRequestNote || '',
-          lifecycleStage: camp.lifecycleStage || 'request',
+          lifecycleStage: normalizeLifecycleStage(camp.lifecycleStage, 'request'),
           rejectionReason: camp.rejectionReason || '',
           cancellationReason: camp.cancellationReason || '',
           closureReasonCode: camp.closureReasonCode || '',
@@ -327,6 +401,11 @@ export default function CampFormPage() {
       setError('Select Payment Confirmed, Payment Not Checked, or Payment Hold');
       return;
     }
+    const hcwBlockers = getHcwFinanceBlockers(assignedHcwContact);
+    if (hcwBlockers.length) {
+      setError(`Complete assigned HCW profile before Finance submit: ${hcwBlockers.join('; ')}`);
+      return;
+    }
     setSubmitFinanceBusy(true);
     setError('');
     try {
@@ -367,13 +446,20 @@ export default function CampFormPage() {
     }
   }
 
-  async function handleUploadDocuments(fileList, docType) {
+  async function handleUploadDocuments(fileList, docType, docNote = '') {
     if (!id || !fileList?.length) return;
     setUploadBusy(true);
     setError('');
     try {
-      const { data } = await campApi.uploadExecutionDocuments(id, fileList, docType);
-      setForm(campToForm(data.data));
+      const { data } = await campApi.uploadExecutionDocuments(id, fileList, docType, docNote);
+      const camp = data?.data?.data || data?.data || data;
+      const fromServer = campToForm(camp);
+      setForm((prev) => ({
+        ...prev,
+        executionDocuments: fromServer.executionDocuments,
+        inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+      }));
+      setCampMeta((prev) => (prev ? { ...prev, executionDocuments: fromServer.executionDocuments } : prev));
     } catch (err) {
       setError(err?.message || 'Failed to upload documents');
     } finally {
@@ -386,8 +472,9 @@ export default function CampFormPage() {
       mode: 'single',
       action,
       camp: campMeta,
+      stage: activeStage,
     });
-    setConfirmClosureDetails(action === 'closeCamp' ? buildClosureDetails() : null);
+    setConfirmClosureDetails(action === 'closeCamp' ? buildClosureDetails(campMeta, activeStage) : null);
     setConfirmReasonDetails(['reject', 'requestInformation'].includes(action) ? { reason: '' } : null);
     setError('');
   }
@@ -407,10 +494,7 @@ export default function CampFormPage() {
     try {
       const { action } = confirmRequest;
       const payload = action === 'closeCamp'
-        ? {
-          closureType: confirmClosureDetails.closureType,
-          reasonCode: confirmClosureDetails.reasonCode,
-        }
+        ? buildClosurePayload(confirmClosureDetails)
         : action === 'reject'
           ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
           : action === 'requestInformation'
@@ -463,6 +547,12 @@ export default function CampFormPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (readOnly && campStatus === 'cancelled') return;
+    if (activeStage === 'financial') return;
+
+    if (!isEdit && activeStage !== 'request') {
+      setError('New camps can only be created at the Request stage.');
+      return;
+    }
 
     if (activeStage === 'request' || !isEdit) {
       const requestErrors = validateRequestStageForm(form);
@@ -494,17 +584,38 @@ export default function CampFormPage() {
       }
     }
 
-    if (activeStage === 'execution' && isExecutionClosedOut(form.executionStatus)) {
-      if (!String(form.cancellationReason || '').trim()) {
-        setError('Cancellation / Rejection Reason is required when execution status is Cancelled or Rejected');
+    if (activeStage === 'execution') {
+      const consumableBlockers = getExecutionConsumablesBlockers(form, mappedConsumables);
+      if (consumableBlockers.length) {
+        setError(consumableBlockers[0]);
+        return;
+      }
+    }
+
+    if (activeStage === 'execution' && normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED) {
+      const blockers = getExecutionFinanceBlockers(form, mappedConsumables);
+      if (blockers.length) {
+        setError(`Complete execution before Finance: ${blockers.join('; ')}.`);
         return;
       }
     }
 
     const trimmed = trimFormStrings(form, formStringFields);
+    const contactFields = syncPrimaryContactFields(normalizeContactPersons(form));
+    const executionComplete = activeStage === 'execution' && isExecutionReadyForFinance(form, mappedConsumables);
+    const executionStatus = activeStage === 'execution'
+      ? syncExecutionStatusForSave(form)
+      : form.executionStatus;
+    const requiredProductIds = mappedConsumables.map((item) => item.productId);
+    const consumablesUsed = activeStage === 'execution'
+      ? normalizeConsumablesUsed(form.consumablesUsed, { requiredProductIds })
+      : form.consumablesUsed;
     const payload = {
       ...form,
       ...trimmed,
+      ...contactFields,
+      executionStatus,
+      consumablesUsed,
       ...(activeStage === 'assignment' && form.hcwContactId
         ? { assignmentDecision: 'assign', assignmentRefusalReason: '' }
         : {}),
@@ -512,21 +623,34 @@ export default function CampFormPage() {
       campDate: toApiDateValue(form.campDate),
       requestDate: toApiDateValue(form.requestDate) || todayIsoDate(),
       durationHours: form.durationHours,
-      expectedPatients: form.expectedPatients,
+      expectedPatients: Number(String(form.expectedPatients ?? '').trim() || 0),
       patientsCount: form.patientsCount,
-      editingStage: activeStage,
+      editingStage: isEdit ? activeStage : 'request',
       lifecycleStage: isEdit
-        ? maxLifecycleStage(reachedLifecycleStage, activeStage)
-        : activeStage,
+        ? executionComplete
+          ? maxLifecycleStage(reachedLifecycleStage, 'financial')
+          : maxLifecycleStage(reachedLifecycleStage, activeStage)
+        : 'request',
       lifecycleOnly: isEdit && activeStage !== 'request',
     };
     delete payload.hqManuallyEdited;
+    delete payload.addressPlacesAvailable;
 
     setLoading(true);
     setError('');
     try {
       if (isEdit) {
-        await campApi.update(id, payload);
+        const res = await campApi.update(id, payload);
+        if (executionComplete) {
+          const camp = res.data?.data || res.data;
+          if (camp) {
+            setForm(campToForm(camp));
+            setCampMeta((prev) => ({ ...prev, ...camp }));
+            setActiveStage('financial');
+            setError('');
+            return;
+          }
+        }
       } else {
         await campApi.create(payload);
       }
@@ -565,14 +689,40 @@ export default function CampFormPage() {
     );
   }
 
+  if (!isEdit && workingStage !== 'request') {
+    return (
+      <div className="empty-state">
+        <p>New camps can only be added at the Request stage. Switch to Request to create a camp.</p>
+        <button type="button" className="btn secondary" onClick={() => navigate('/camps/manage')}>
+          Back to camps
+        </button>
+      </div>
+    );
+  }
+
   const visibleApprovalBlockers = campMeta?.status === 'pending_review' && campMeta.canApprove === false
     ? filterApprovalBlockers(campMeta.approvalBlockers, form, campNameOptions)
     : [];
 
   const hasNoDivisions = Boolean(form.clientId) && !programsLoading && divisionOptions.length === 0;
   const hasNoMethods = Boolean(form.clientId) && Boolean(form.campaignType) && !programsLoading && campNameOptions.length === 0;
+  const financeSubmitted = Boolean(form.submittedToFinanceAt);
+  const hcwFinanceBlockers = activeStage === 'financial' && !financeSubmitted
+    ? getHcwFinanceBlockers(assignedHcwContact)
+    : [];
+  const showFinanceSubmit = isEdit
+    && activeStage === 'financial'
+    && !financeSubmitted
+    && canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage)
+    && !readOnly;
+  const canSubmitFinance = showFinanceSubmit
+    && Boolean(form.paymentSubmitStatus)
+    && isHcwReadyForFinance(assignedHcwContact)
+    && !assignedHcwLoading
+    && !submitFinanceBusy;
   const canSubmit = campStatus !== 'cancelled'
     && campStatus !== 'rejected'
+    && activeStage !== 'financial'
     && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage)
     && (!hasNoDivisions || activeStage !== 'request')
     && (!hasNoMethods || activeStage !== 'request')
@@ -584,11 +734,11 @@ export default function CampFormPage() {
         <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
         {isEdit && campMeta && (
           <div className="camp-form-header-actions">
-            <CampCancelRefuseButton
-              camp={campMeta}
-              hasPermission={hasPermission}
-              canRejectCamps={canRejectCamps()}
-              onAction={requestCampAction}
+            <CampRowIconButton
+              icon={X}
+              label="Close"
+              variant="neutral"
+              onClick={() => navigate('/camps/manage')}
             />
             <CampRowInfoMenu
               camp={campMeta}
@@ -606,31 +756,26 @@ export default function CampFormPage() {
         </div>
       )}
 
-      <div className="camp-form-alerts">
-        {campMeta?.requestReviewStatus === 'information_requested' && (
-          <div className="error-banner">
-            Reviewer requested more information
-            {campMeta.informationRequestNote ? `: ${campMeta.informationRequestNote}` : '.'}
-            {' '}Update the request and save to resubmit for review.
-          </div>
-        )}
-        {visibleApprovalBlockers.length > 0 && (
-          <div className="error-banner">
-            Cannot approve until resolved: {visibleApprovalBlockers.join(' ')}
-          </div>
-        )}
-        {hasNoDivisions && activeStage === 'request' && (
-          <div className="error-banner">{NO_DIVISION_MESSAGE}</div>
-        )}
-        {hasNoMethods && activeStage === 'request' && (
-          <div className="error-banner">{NO_METHOD_MESSAGE}</div>
-        )}
-        {error && <div className="error-banner">{error}</div>}
-      </div>
+      <PageAlerts
+        className="camp-form-alerts"
+        items={[
+          campMeta?.requestReviewStatus === 'information_requested' && {
+            variant: 'warning',
+            message: `Reviewer requested more information${campMeta.informationRequestNote ? `: ${campMeta.informationRequestNote}` : '.'} Update the request and save to resubmit for review.`,
+          },
+          visibleApprovalBlockers.length > 0 && {
+            variant: 'error',
+            message: `Cannot approve until resolved: ${visibleApprovalBlockers.join(' ')}`,
+          },
+          hasNoDivisions && activeStage === 'request' && { variant: 'error', message: NO_DIVISION_MESSAGE },
+          hasNoMethods && activeStage === 'request' && { variant: 'error', message: NO_METHOD_MESSAGE },
+          error && { variant: 'error', message: error },
+        ].filter(Boolean)}
+      />
 
       {isEdit && campMeta && (campMeta.source === 'email' || campMeta.source === 'whatsapp') && (
         <div className="camp-form-source-section">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowSourcePreview((o) => !o)}>
+          <button type="button" className="btn secondary btn-compact" onClick={() => setShowSourcePreview((o) => !o)}>
             {showSourcePreview ? 'Hide' : 'View'} original {campMeta.source}
           </button>
           {showSourcePreview && (
@@ -646,7 +791,10 @@ export default function CampFormPage() {
         updateField={updateField}
         updateFields={updateFields}
         activeStage={activeStage}
-        onStageChange={setActiveStage}
+        onStageChange={(stage) => {
+          if (!isEdit) return;
+          setActiveStage(normalizeLifecycleStage(stage, activeStage));
+        }}
         campStatus={campStatus}
         clients={clients}
         divisionOptions={divisionOptions}
@@ -656,23 +804,38 @@ export default function CampFormPage() {
         campId={isEdit ? id : null}
         onUploadDocuments={handleUploadDocuments}
         uploadBusy={uploadBusy}
-        onSubmitToFinance={isEdit ? handleSubmitToFinance : null}
-        submitFinanceBusy={submitFinanceBusy}
         onDownloadFinanceExport={isEdit && form.submittedToFinanceAt ? handleDownloadFinanceExport : null}
         downloadFinanceBusy={downloadFinanceBusy}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
         onValidationError={setError}
         reachedLifecycleStage={reachedLifecycleStage}
+        assignedHcwContact={assignedHcwContact}
+        assignedHcwLoading={assignedHcwLoading}
+        hcwFinanceBlockers={hcwFinanceBlockers}
+        mappedConsumables={mappedConsumables}
       />
 
       <div className="form-actions">
+        {showFinanceSubmit ? (
+          <button
+            className="btn"
+            type="button"
+            disabled={!canSubmitFinance}
+            title={!canSubmitFinance && hcwFinanceBlockers.length
+              ? hcwFinanceBlockers.join(' ')
+              : (!form.paymentSubmitStatus ? 'Select a payment check status' : undefined)}
+            onClick={handleSubmitToFinance}
+          >
+            {submitFinanceBusy ? 'Submitting…' : 'Submit to Finance One'}
+          </button>
+        ) : null}
         {canSubmit && (
-          <button className="btn btn-primary" type="submit" disabled={loading || uploadBusy}>
+          <button className="btn" type="submit" disabled={loading || uploadBusy}>
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Camp'}
           </button>
         )}
-        <button type="button" className="btn btn-secondary" onClick={() => navigate('/camps/manage')}>
+        <button type="button" className="btn secondary" onClick={() => navigate('/camps/manage')}>
           Cancel
         </button>
       </div>

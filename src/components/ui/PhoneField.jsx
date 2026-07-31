@@ -31,11 +31,9 @@ export function PhoneField({
     <input
       id={inputId}
       name={name}
-      type="tel"
+      type="text"
       inputMode="numeric"
       maxLength={10}
-      autoComplete="off"
-      {...PASSWORD_MANAGER_IGNORE}
       placeholder={placeholder}
       value={value}
       onChange={handleChange}
@@ -44,6 +42,7 @@ export function PhoneField({
       aria-invalid={invalid || undefined}
       aria-label={hideLabel ? ariaLabel || label : undefined}
       className={[invalid ? 'input-invalid' : '', inputClassName].filter(Boolean).join(' ')}
+      {...PASSWORD_MANAGER_IGNORE}
     />
   );
 

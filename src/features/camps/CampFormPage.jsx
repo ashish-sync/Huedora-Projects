@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
+import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
 import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
 import { api } from '../../shared/api.js';
 import { trimFormStrings } from './utils/trimInput';
@@ -99,6 +100,8 @@ export default function CampFormPage() {
   const [confirmRequest, setConfirmRequest] = useState(null);
   const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
   const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
+  const formRef = useRef(null);
+  useSuppressBrowserAutofill(formRef);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [mappedConsumables, setMappedConsumables] = useState([]);
   const hcwContactsLoadedRef = useRef(false);
@@ -729,7 +732,7 @@ export default function CampFormPage() {
     && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus));
 
   return (
-    <form className="form-card camp-lifecycle-page" onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
+    <form ref={formRef} className="form-card camp-lifecycle-page" onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
       <div className="camp-form-header-row">
         <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
         {isEdit && campMeta && (

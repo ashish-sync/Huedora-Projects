@@ -56,7 +56,7 @@ export default function CampsPage() {
     canRejectCamps,
     canEditCampRecord,
   } = useAuth();
-  const { workingStage, workingStageMeta } = useCampWorkingStage();
+  const { workingStage, workingStageMeta, setWorkingStage } = useCampWorkingStage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [camps, setCamps] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -192,11 +192,22 @@ export default function CampsPage() {
         await runCampAction(action, camp, payload);
       }
 
+      const executedAction = confirmRequest.action === 'execute';
+      const executedBulk = confirmRequest.mode === 'bulk';
       setConfirmRequest(null);
       setConfirmCancelDetails(null);
       setConfirmClosureDetails(null);
       setConfirmReasonDetails(null);
-      await loadCamps();
+      if (executedAction) {
+        setWorkingStage('financial');
+        setBulkMessage(
+          executedBulk
+            ? 'Camps marked executed. They are now in Finance & Settlement.'
+            : 'Camp marked executed. It is now in Finance & Settlement — complete payout details there.'
+        );
+      } else {
+        await loadCamps();
+      }
     } catch (err) {
       setError(err?.message || 'Action failed');
     } finally {

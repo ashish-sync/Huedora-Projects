@@ -42,9 +42,29 @@ export function EmailField({
   };
 
   const control = isList ? (
-    <textarea rows={rows} autoComplete="off" {...sharedProps} {...PASSWORD_MANAGER_IGNORE} />
+    <textarea
+      rows={rows}
+      autoComplete={PASSWORD_MANAGER_IGNORE.autoComplete}
+      readOnly
+      onFocus={(event) => {
+        event.currentTarget.removeAttribute('readonly');
+      }}
+      {...sharedProps}
+      {...PASSWORD_MANAGER_IGNORE}
+    />
   ) : (
-    <input type="email" autoComplete={autoComplete} {...sharedProps} {...PASSWORD_MANAGER_IGNORE} />
+    <input
+      type="text"
+      inputMode="email"
+      autoCapitalize="none"
+      autoComplete={autoComplete === 'off' ? PASSWORD_MANAGER_IGNORE.autoComplete : autoComplete}
+      readOnly={autoComplete === 'off'}
+      onFocus={(event) => {
+        if (autoComplete === 'off') event.currentTarget.removeAttribute('readonly');
+      }}
+      {...sharedProps}
+      {...(autoComplete === 'off' ? PASSWORD_MANAGER_IGNORE : {})}
+    />
   );
 
   if (hideLabel) {

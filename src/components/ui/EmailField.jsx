@@ -1,4 +1,5 @@
 import FieldError from './FieldError.jsx';
+import { PASSWORD_MANAGER_IGNORE } from '../../shared/suppressBrowserAutofill.js';
 
 /**
  * Single email or comma-separated email list (textarea) with shared validation styling.
@@ -19,6 +20,7 @@ export function EmailField({
   rows = 2,
   placeholder,
   hint,
+  autoComplete = 'off',
   'aria-label': ariaLabel,
 }) {
   const inputId = id || name;
@@ -40,9 +42,9 @@ export function EmailField({
   };
 
   const control = isList ? (
-    <textarea rows={rows} {...sharedProps} />
+    <textarea rows={rows} autoComplete="off" {...sharedProps} {...PASSWORD_MANAGER_IGNORE} />
   ) : (
-    <input type="email" autoComplete="email" {...sharedProps} />
+    <input type="email" autoComplete={autoComplete} {...sharedProps} {...PASSWORD_MANAGER_IGNORE} />
   );
 
   if (hideLabel) {

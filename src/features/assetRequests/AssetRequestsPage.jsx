@@ -1028,7 +1028,7 @@ export default function AssetRequestsPage() {
       {msg && <FeedbackBanner variant="success">{msg}</FeedbackBanner>}
 
       {canRequest && (
-        <form className="card arq-form" onSubmit={submit}>
+        <form className="card arq-form" onSubmit={submit} autoComplete="off" data-form-type="other">
           <h3>New request</h3>
           <div className="arq-grid">
             <div className="field">

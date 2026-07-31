@@ -71,6 +71,8 @@ export default function MovementsPage() {
       {can('movements:request') && (
         <form
           className="card"
+          autoComplete="off"
+          data-form-type="other"
           onSubmit={async (e) => {
             e.preventDefault();
             try {

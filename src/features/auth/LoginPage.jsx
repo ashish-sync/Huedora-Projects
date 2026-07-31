@@ -159,7 +159,13 @@ export default function LoginPage() {
 
       <div className="login-panel">
         {mode === 'signin' ? (
-          <form className="card login-card" onSubmit={onSignIn} aria-labelledby="login-heading">
+          <form
+            className="card login-card"
+            onSubmit={onSignIn}
+            aria-labelledby="login-heading"
+            data-allow-autocomplete="login"
+            autoComplete="on"
+          >
             <p className="login-kicker">Welcome back</p>
             <h2 id="login-heading">Sign in</h2>
             <p>Enter your work email and password.</p>
@@ -209,7 +215,13 @@ export default function LoginPage() {
             </p>
           </form>
         ) : (
-          <form className="card login-card" onSubmit={onReset} aria-labelledby="reset-heading">
+          <form
+            className="card login-card"
+            onSubmit={onReset}
+            aria-labelledby="reset-heading"
+            data-allow-autocomplete="login"
+            autoComplete="on"
+          >
             <p className="login-kicker">Account security</p>
             <h2 id="reset-heading">Reset password</h2>
             <p>Confirm your current password, then choose a new one (at least 12 characters).</p>

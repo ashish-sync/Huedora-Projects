@@ -1,4 +1,5 @@
 import FieldError from './FieldError.jsx';
+import { PASSWORD_MANAGER_IGNORE } from '../../shared/suppressBrowserAutofill.js';
 
 /**
  * Standard 10-digit Indian mobile input with digit-only normalization.
@@ -33,7 +34,8 @@ export function PhoneField({
       type="tel"
       inputMode="numeric"
       maxLength={10}
-      autoComplete="tel"
+      autoComplete="off"
+      {...PASSWORD_MANAGER_IGNORE}
       placeholder={placeholder}
       value={value}
       onChange={handleChange}

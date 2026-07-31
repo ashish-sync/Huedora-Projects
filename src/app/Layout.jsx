@@ -5,6 +5,7 @@ import { api } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
 import { useTheme } from '../shared/theme.jsx';
 import { MODULE } from '../shared/labels.js';
+import { useSuppressBrowserAutofill } from '../shared/suppressBrowserAutofill.js';
 import {
   emitNotificationsChanged,
   NOTIFICATIONS_CHANGED_EVENT,
@@ -29,8 +30,11 @@ export default function Layout({ children }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef(null);
+  const mainRef = useRef(null);
   const knownUnreadIdsRef = useRef(null);
   const canSeeNotifications = can('notifications:read') || can('dashboards:read') || can('*');
+
+  useSuppressBrowserAutofill(mainRef);
 
   const refreshUnread = useCallback(async () => {
     if (!canSeeNotifications) {
@@ -218,7 +222,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main id="main-content" className={`main${isHome ? ' main--home' : ''}`} tabIndex={-1}>
+      <main id="main-content" ref={mainRef} className={`main${isHome ? ' main--home' : ''}`} tabIndex={-1}>
         {children}
       </main>
 

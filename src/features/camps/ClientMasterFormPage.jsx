@@ -290,7 +290,7 @@ export default function ClientMasterFormPage() {
   }
 
   return (
-    <form className="form-card" onSubmit={handleSubmit} noValidate>
+    <form className="form-card" onSubmit={handleSubmit} noValidate autoComplete="off" data-form-type="other">
       {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
 
       <div className="form-grid">

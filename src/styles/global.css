@@ -7358,6 +7358,26 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   border-bottom: none;
 }
 
+.rp-module-row.is-active {
+  background: color-mix(in srgb, var(--brand, var(--brand)) 5%, var(--bg-elevated));
+}
+
+.rp-module-row.is-muted {
+  opacity: 0.55;
+}
+
+.rp-module-row--admin {
+  background: color-mix(in srgb, var(--brand, var(--brand)) 6%, var(--bg-elevated));
+}
+
+.rp-module-grid--compact {
+  margin-bottom: 12px;
+}
+
+.rp-action-grid tbody tr.is-active {
+  background: color-mix(in srgb, var(--brand, var(--brand)) 5%, var(--bg-elevated));
+}
+
 .rp-module-card-copy {
   display: flex;
   flex-direction: column;
@@ -7411,9 +7431,29 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   color: var(--brand-hover, var(--brand-hover));
 }
 
+.access-toggle--all {
+  font-weight: 700;
+  border-style: dashed;
+}
+
+.access-toggle--all.is-on {
+  border-style: solid;
+}
+
 .access-toggle:has(input:disabled) {
   opacity: 0.55;
   cursor: default;
+}
+
+.rp-module-row.is-locked {
+  border-color: var(--teal-200, #b8e0dc);
+  background: color-mix(in srgb, var(--teal-50, #eef8f7) 60%, transparent);
+}
+
+.access-toggle--preset {
+  cursor: default;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .access-na {

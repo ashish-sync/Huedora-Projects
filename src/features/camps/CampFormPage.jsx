@@ -729,7 +729,7 @@ export default function CampFormPage() {
     && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus));
 
   return (
-    <form className="form-card camp-lifecycle-page" onSubmit={handleSubmit}>
+    <form className="form-card camp-lifecycle-page" onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
       <div className="camp-form-header-row">
         <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
         {isEdit && campMeta && (

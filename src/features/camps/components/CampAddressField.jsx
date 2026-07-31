@@ -23,7 +23,8 @@ export default function CampAddressField({
       placeholder="Enter camp / clinic address"
       required={required}
       disabled={disabled}
-      autoComplete="street-address"
+      autoComplete="off"
+      data-form-type="other"
     />
   );
 }

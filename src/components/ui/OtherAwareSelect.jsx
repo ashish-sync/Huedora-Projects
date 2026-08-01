@@ -36,7 +36,7 @@ export default function OtherAwareSelect({
   id,
   className = '',
   placeholder = 'Select…',
-  threshold = 10,
+  threshold = 0,
 }) {
   const known = useMemo(() => {
     const list = (options || []).map((o) => String(o).trim()).filter(Boolean);

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+import { bindAutofillBlock, bindAutofillBlockSelect } from '../../../shared/suppressBrowserAutofill.js';
 import CampAddressField from './CampAddressField.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
+import { CampFormInput } from './CampFormInput.jsx';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import { CampLifecycleStepper } from './CampLifecycleStepper';
 import {
@@ -32,7 +34,8 @@ import {
 } from '../constants/campLifecycle';
 import { ACTION } from '../../../shared/labels.js';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
-import { DOCTOR_SPECIALTY_OPTIONS, isRequestDateFarFromToday } from '../constants/doctorSpecialty';
+import { DOCTOR_SPECIALTY_OPTIONS, isRequestDateFarFromToday, isHistoricalCampDate } from '../constants/doctorSpecialty';
+import { minAllowedCampDateIso } from '../utils/campDatePolicy';
 import { computeDurationHours } from '../utils/campSchedule';
 import { CampAssignmentStage } from './CampAssignmentStage';
 import CampConsumablesUsed from './CampConsumablesUsed.jsx';
@@ -42,6 +45,7 @@ import {
   emptyContactPerson,
   syncPrimaryContactFields,
 } from '../utils/campContactPersons';
+import { formatDoctorName, formatContactPersonName } from '../../../shared/textFormat.js';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -136,14 +140,21 @@ export function CampLifecycleForm({
   hcwFinanceBlockers = [],
   hcwContacts = [],
   contactsLoading = false,
+  clientMasterProfession = '',
+  clientMasterLoading = false,
   onValidationError,
   reachedLifecycleStage = 'request',
   mappedConsumables = [],
+  canSetHistoricalCampDates = false,
 }) {
   const resolvedActiveStage = normalizeLifecycleStage(activeStage, 'request');
   const derived = useMemo(() => computeLifecycleDerived(form), [form]);
   const { options: specialtyOptions } = usePicklistOptions('camp.doctorSpecialty', DOCTOR_SPECIALTY_OPTIONS);
-  const requestDateWarning = isRequestDateFarFromToday(form.requestDate);
+  const requestDateWarning = isRequestDateFarFromToday(form.requestDate)
+    && !isHistoricalCampDate(form.requestDate);
+  const campDateHistorical = isHistoricalCampDate(form.campDate);
+  const requestDateHistorical = isHistoricalCampDate(form.requestDate);
+  const earliestAllowedDate = canSetHistoricalCampDates ? undefined : minAllowedCampDateIso();
 
   const stageDisabled = (stage) => stageReadOnly[stage] ?? false;
 
@@ -156,6 +167,8 @@ export function CampLifecycleForm({
     const contactPersons = Array.isArray(form.contactPersons) && form.contactPersons.length
       ? form.contactPersons
       : [emptyContactPerson(form.contactPersonLevel || DEFAULT_CONTACT_PERSON_LEVEL)];
+    const singleDivisionOption = divisionOptions.length === 1;
+    const singleMethodOption = campNameOptions.length === 1;
 
     const updateContactPerson = (index, patch) => {
       const next = contactPersons.map((contact, i) => (
@@ -202,10 +215,10 @@ export function CampLifecycleForm({
               <select
                 value={form.campaignType}
                 onChange={(e) => updateField('campaignType', e.target.value)}
-                disabled={disabled || programsLoading || !form.clientId || !divisionOptions.length}
+                disabled={disabled || programsLoading || !form.clientId || !divisionOptions.length || singleDivisionOption}
                 required
               >
-                <option value="">{programsLoading ? 'Loading…' : 'Select division / therapy'}</option>
+                <option value="">{programsLoading ? 'Loading…' : singleDivisionOption ? form.campaignType : 'Select division / therapy'}</option>
                 {divisionOptions.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </label>
@@ -214,17 +227,24 @@ export function CampLifecycleForm({
               <CampNameSelect
                 value={form.campaignName}
                 onChange={(v) => updateField('campaignName', v)}
-                disabled={disabled || programsLoading || !form.clientId || !form.campaignType || !campNameOptions.length}
+                disabled={disabled || programsLoading || !form.clientId || !form.campaignType || !campNameOptions.length || singleMethodOption}
                 required
                 options={campNameOptions}
-                emptyLabel={!form.clientId ? 'Select client first' : !form.campaignType ? 'Select division first' : 'Select method'}
+                emptyLabel={!form.clientId ? 'Select client first' : !form.campaignType ? 'Select division first' : singleMethodOption ? form.campaignName : 'Select method'}
               />
             </label>
           </div>
           <div className="camp-request-dates-row full">
             <label>
               Camp Date
-              <DateInput hideLabel value={form.campDate} onChange={(v) => updateField('campDate', v)} disabled={disabled} required />
+              <DateInput
+                hideLabel
+                value={form.campDate}
+                onChange={(v) => updateField('campDate', v)}
+                disabled={disabled}
+                required
+                min={earliestAllowedDate}
+              />
             </label>
             <label>
               Request Date
@@ -233,9 +253,20 @@ export function CampLifecycleForm({
                 value={form.requestDate}
                 onChange={(v) => updateField('requestDate', v)}
                 disabled={disabled}
+                min={earliestAllowedDate}
               />
             </label>
           </div>
+          {campDateHistorical && !canSetHistoricalCampDates ? (
+            <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
+              Camp date is more than 2 days before today. Only Team Leaders can use this date.
+            </p>
+          ) : null}
+          {requestDateHistorical && !canSetHistoricalCampDates ? (
+            <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
+              Request date is more than 2 days before today. Only Team Leaders can use this date.
+            </p>
+          ) : null}
           {requestDateWarning ? (
             <p className="meta-text full camp-request-date-warning">
               Request date is more than 2 days from today. Confirm this is intentional.
@@ -244,11 +275,11 @@ export function CampLifecycleForm({
           <div className="camp-request-times full">
             <label>
               Camp Start Time
-              <input type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} disabled={disabled} required />
+              <CampFormInput type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} disabled={disabled} required />
             </label>
             <label>
               Camp End Time
-              <input type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} disabled={disabled} required />
+              <CampFormInput type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} disabled={disabled} required />
             </label>
             <ReadOnlyField label="Camp Duration" value={durationLabel} />
             <ReadOnlyField label="Camp Slot" value={derived.campSlot} />
@@ -256,11 +287,20 @@ export function CampLifecycleForm({
           <div className="camp-request-doctor-row full">
             <label>
               Doctor Name
-              <input value={form.doctorName} onChange={(e) => updateField('doctorName', e.target.value)} disabled={disabled} required />
+              <CampFormInput
+                value={form.doctorName}
+                onChange={(e) => updateField('doctorName', e.target.value)}
+                onBlur={(e) => updateField('doctorName', formatDoctorName(e.target.value))}
+                disabled={disabled}
+                required
+              />
+              {!disabled ? (
+                <span className="meta-text">Title Case, no Dr or Dr. prefix</span>
+              ) : null}
             </label>
             <label>
               Doctor Code
-              <input value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
+              <CampFormInput value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
             </label>
             <label>
               Doctor Type / Specialty
@@ -346,6 +386,7 @@ export function CampLifecycleForm({
                     ) : null}
                   </span>
                   <select
+                    {...bindAutofillBlockSelect()}
                     value={contact.level || DEFAULT_CONTACT_PERSON_LEVEL}
                     onChange={(e) => updateContactPerson(index, { level: e.target.value })}
                     disabled={disabled}
@@ -359,9 +400,10 @@ export function CampLifecycleForm({
                 </label>
                 <label>
                   Contact Person Name
-                  <input
+                  <CampFormInput
                     value={contact.name || ''}
                     onChange={(e) => updateContactPerson(index, { name: e.target.value })}
+                    onBlur={(e) => updateContactPerson(index, { name: formatContactPersonName(e.target.value) })}
                     disabled={disabled}
                     required
                   />
@@ -391,7 +433,7 @@ export function CampLifecycleForm({
           <div className="camp-request-footer-row full">
             <label>
               HQ
-              <input
+              <CampFormInput
                 value={form.hq}
                 onChange={(e) => updateFields?.({ hq: e.target.value, hqManuallyEdited: true })}
                 disabled={disabled}
@@ -400,7 +442,7 @@ export function CampLifecycleForm({
             </label>
             <label>
               Expected Patients
-              <input
+              <CampFormInput
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -412,7 +454,7 @@ export function CampLifecycleForm({
             </label>
             <label>
               Remarks
-              <input
+              <CampFormInput
                 type="text"
                 value={form.remarks}
                 onChange={(e) => updateField('remarks', e.target.value)}
@@ -433,6 +475,8 @@ export function CampLifecycleForm({
         updateFields={updateFields}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        clientMasterProfession={clientMasterProfession}
+        clientMasterLoading={clientMasterLoading}
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
       />
@@ -493,17 +537,17 @@ export function CampLifecycleForm({
         <div className="form-grid camp-execution-fields-grid">
           <label>
             In Time
-            <input value={form.inTime} onChange={(e) => updateField('inTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
+            <CampFormInput value={form.inTime} onChange={(e) => updateField('inTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
           </label>
           <label>
             Out Time
-            <input value={form.outTime} onChange={(e) => updateField('outTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
+            <CampFormInput value={form.outTime} onChange={(e) => updateField('outTime', e.target.value)} disabled={disabled} placeholder="HH:MM" />
           </label>
           <ReadOnlyField label="Total Hours" value={derived.totalHours} />
           <ReadOnlyField label="Extra hours" value={derived.extraHours} />
           <label>
             Travelled Kms (Round Trip)
-            <input type="number" value={form.kmRoundTrip} onChange={(e) => updateField('kmRoundTrip', e.target.value)} disabled={disabled} />
+            <CampFormInput type="number" value={form.kmRoundTrip} onChange={(e) => updateField('kmRoundTrip', e.target.value)} disabled={disabled} />
           </label>
           <PunctualityField
             value={derived.punctuality}
@@ -513,11 +557,11 @@ export function CampLifecycleForm({
           <SelectField label="Attire" value={form.attire} onChange={(v) => updateField('attire', v)} options={ATTIRE_CHECK_OPTIONS} disabled={disabled} />
           <label>
             Patients Screened
-            <input type="number" value={form.patientsCount} onChange={(e) => updateField('patientsCount', Number(e.target.value))} disabled={disabled} />
+            <CampFormInput type="number" value={form.patientsCount} onChange={(e) => updateField('patientsCount', Number(e.target.value))} disabled={disabled} />
           </label>
           <label>
             Product Count
-            <input type="number" value={form.rxCount} onChange={(e) => updateField('rxCount', Number(e.target.value))} disabled={disabled} />
+            <CampFormInput type="number" value={form.rxCount} onChange={(e) => updateField('rxCount', Number(e.target.value))} disabled={disabled} />
           </label>
         </div>
 
@@ -571,32 +615,32 @@ export function CampLifecycleForm({
         ) : null}
         <label>
           Camp Revenue
-          <input type="number" value={form.campRevenue} onChange={(e) => updateField('campRevenue', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.campRevenue} onChange={(e) => updateField('campRevenue', Number(e.target.value))} disabled={disabled} />
         </label>
         <label>
           Overtime Revenue
-          <input type="number" value={form.overtimeRevenue} onChange={(e) => updateField('overtimeRevenue', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.overtimeRevenue} onChange={(e) => updateField('overtimeRevenue', Number(e.target.value))} disabled={disabled} />
         </label>
         <label>
           Other Revenue
-          <input type="number" value={form.otherRevenue} onChange={(e) => updateField('otherRevenue', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.otherRevenue} onChange={(e) => updateField('otherRevenue', Number(e.target.value))} disabled={disabled} />
         </label>
         <ReadOnlyField label="Total Revenue (Auto)" value={derived.totalRevenue} />
         <label>
           Camp Amount
-          <input type="number" value={form.campAmount} onChange={(e) => updateField('campAmount', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.campAmount} onChange={(e) => updateField('campAmount', Number(e.target.value))} disabled={disabled} />
         </label>
         <label>
           Travelling
-          <input type="number" value={form.travelling} onChange={(e) => updateField('travelling', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.travelling} onChange={(e) => updateField('travelling', Number(e.target.value))} disabled={disabled} />
         </label>
         <label>
           Overtime
-          <input type="number" value={form.overtimeExpense} onChange={(e) => updateField('overtimeExpense', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.overtimeExpense} onChange={(e) => updateField('overtimeExpense', Number(e.target.value))} disabled={disabled} />
         </label>
         <label>
           Other Expenses
-          <input type="number" value={form.otherExpenses} onChange={(e) => updateField('otherExpenses', Number(e.target.value))} disabled={disabled} />
+          <CampFormInput type="number" value={form.otherExpenses} onChange={(e) => updateField('otherExpenses', Number(e.target.value))} disabled={disabled} />
         </label>
 
         <div className="camp-payout-submit-row full">

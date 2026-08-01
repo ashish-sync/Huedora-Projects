@@ -32,9 +32,25 @@
   --control-h-sm: var(--control-height-sm);
   --touch-target-min: 44px;
 
-  --control-w: 10rem;
+  --control-w: 11.25rem;
+  --control-w-min: 180px;
   --control-w-date: 9.5rem;
   --control-w-btn: 5.25rem;
+  --filter-toolbar-gap: var(--space-3);
+  --filter-control-min-w: var(--control-w-min);
+  --filter-control-h: var(--control-h);
+  --control-pad-inline-start: var(--space-3);
+  --control-pad-inline-end: var(--space-3);
+
+  /* Dropdown menus (panels + options) */
+  --dropdown-radius: 8px;
+  --dropdown-menu-shadow: 0 8px 24px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.05);
+  --dropdown-menu-pad: 4px;
+  --dropdown-option-pad-y: 10px;
+  --dropdown-option-pad-x: var(--space-3);
+  --dropdown-option-line-height: 1.45;
+  --dropdown-focus-ring: 0 0 0 2px color-mix(in srgb, var(--brand, #0f766e) 16%, transparent);
+  --dropdown-transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease, color 140ms ease;
 
   --kpi-min: 5.5rem;
   --kpi-pad-y: var(--space-3);

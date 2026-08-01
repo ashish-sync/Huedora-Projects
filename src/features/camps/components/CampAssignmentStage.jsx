@@ -17,13 +17,17 @@ export function CampAssignmentStage({
   updateFields,
   hcwContacts = [],
   contactsLoading = false,
+  clientMasterProfession = '',
+  clientMasterLoading = false,
   disabled = false,
   campStatus = 'pending_review',
 }) {
   const [copyState, setCopyState] = useState('');
   const isTerminal = ['cancelled', 'rejected'].includes(campStatus);
   const isAssigned = form.assignmentDecision === 'assign'
-    && (form.assignmentStatus === 'Assigned' || form.lifecycleStage === 'execution');
+    && (form.assignmentStatus === 'Assigned'
+      || Boolean(form.hcwContactId)
+      || form.lifecycleStage === 'execution');
   const fieldsDisabled = disabled || isTerminal;
   const canCopyDetails = Boolean(form.hcwName || form.hcwContactId);
 
@@ -87,7 +91,7 @@ export function CampAssignmentStage({
   return (
     <div className="camp-assignment-stage">
       <p className="meta-text camp-assignment-intro">
-        Filter Healthcare Worker contacts by resource type and profession, then pick the person to assign.
+        Select resource type, state, and city to find the healthcare worker configured for this client in Client Master.
         Before assignment you can refuse the camp. After assignment, only cancel by TCPL or Client is allowed.
       </p>
       <CampHcwAssignPicker
@@ -95,6 +99,8 @@ export function CampAssignmentStage({
         contactsLoading={contactsLoading}
         disabled={fieldsDisabled}
         selectedContactId={form.hcwContactId || ''}
+        clientMasterProfession={clientMasterProfession}
+        clientMasterLoading={clientMasterLoading}
         onSelect={handleSelect}
       />
     </div>

@@ -23,7 +23,9 @@ export function CampFinancialRowActions({ camp, canEdit }) {
             title="Edit camp"
             aria-label="Edit camp"
           >
-            <Pencil size={17} strokeWidth={2} aria-hidden="true" />
+            <span className="camp-row-icon-btn__glyph" aria-hidden="true">
+              <Pencil size={17} strokeWidth={2} />
+            </span>
           </Link>
         )}
       </div>

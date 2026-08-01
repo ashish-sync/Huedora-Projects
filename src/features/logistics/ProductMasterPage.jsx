@@ -296,7 +296,7 @@ export default function ProductMasterPage() {
             </p>
           </div>
           {canWrite && (
-            <button type="button" className="btn" onClick={startCreate}>
+            <button type="button" className="btn btn-compact" onClick={startCreate}>
               + New product
             </button>
           )}
@@ -314,6 +314,7 @@ export default function ProductMasterPage() {
             aria-label="Search products"
           />
           <AdaptiveSelect
+            className="tylo-select"
             value={typeFilter}
             onChange={(e) => {
               setTypeFilter(e.target.value);
@@ -329,6 +330,7 @@ export default function ProductMasterPage() {
             ))}
           </AdaptiveSelect>
           <AdaptiveSelect
+            className="tylo-select"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             disabled={!typeFilter}
@@ -342,6 +344,7 @@ export default function ProductMasterPage() {
             ))}
           </AdaptiveSelect>
           <AdaptiveSelect
+            className="tylo-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filter by status"
@@ -350,7 +353,7 @@ export default function ProductMasterPage() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </AdaptiveSelect>
-          <button type="button" className="btn btn-ghost" onClick={load}>
+          <button type="button" className="btn btn-ghost btn-compact" onClick={load}>
             Refresh
           </button>
           {excelConfig ? (

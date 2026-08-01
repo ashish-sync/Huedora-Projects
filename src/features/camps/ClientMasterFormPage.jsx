@@ -3,7 +3,7 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import FieldError from '../../components/ui/FieldError.jsx';
 import { EmailField } from '../../components/ui/EmailField.jsx';
 import { PhoneField } from '../../components/ui/PhoneField.jsx';
-import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
+import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { CampNameSelect } from './components/CampNameSelect';
@@ -294,6 +294,7 @@ export default function ClientMasterFormPage() {
 
   return (
     <form ref={formRef} className="form-card" onSubmit={handleSubmit} noValidate autoComplete="off" data-form-type="other">
+      <AutofillDecoyFields />
       {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
 
       <div className="form-grid">

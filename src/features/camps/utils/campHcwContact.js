@@ -10,10 +10,29 @@ export function isHealthcareWorkerCategory(contact) {
   return String(contact?.contactCategory || '').trim() === HCW_CONTACT_CATEGORY;
 }
 
-/** Assignable camp HCW: Healthcare Worker category, not a Service Provider org record. */
+/** Assignable camp HCW staff: Healthcare Worker category, not a Service Provider org record. */
 export function isAssignableHealthcareWorker(contact) {
   if (!isHealthcareWorkerCategory(contact)) return false;
   return String(contact.resourceType || '').trim() !== 'Service Provider';
+}
+
+/** Service Provider organisation row in Contact Directory (assignable when resource type is Service Provider). */
+export function isAssignableHealthcareWorkerOrg(contact) {
+  if (!isHealthcareWorkerCategory(contact)) return false;
+  return String(contact.resourceType || '').trim() === 'Service Provider';
+}
+
+function assignableContactsForResourceType(contacts = [], resourceType = '') {
+  const hcw = contacts.filter(isHealthcareWorkerCategory);
+  const rt = String(resourceType || '').trim();
+  if (!rt) return hcw.filter((contact) => !isAssignableHealthcareWorkerOrg(contact));
+  if (rt === 'Service Provider') {
+    return hcw.filter(isAssignableHealthcareWorkerOrg);
+  }
+  return hcw.filter((contact) => {
+    if (isAssignableHealthcareWorkerOrg(contact)) return false;
+    return String(contact.resourceType || '').trim() === rt;
+  });
 }
 
 /** @deprecated Use isAssignableHealthcareWorker — kept for legacy Resource contacts in old data. */
@@ -73,35 +92,53 @@ function uniqueSorted(values = []) {
 }
 
 export function buildHcwAssignCascade(contacts = [], filters = {}) {
-  const assignable = filterAssignableHealthcareWorkers(contacts);
   const resourceType = String(filters.resourceType || '').trim();
   const profession = String(filters.profession || '').trim();
+  const state = String(filters.state || '').trim();
   const city = String(filters.city || '').trim();
 
+  const assignable = assignableContactsForResourceType(contacts, resourceType);
+  const staffAssignable = filterAssignableHealthcareWorkers(contacts);
+
   const byResourceType = resourceType
-    ? assignable.filter((contact) => String(contact.resourceType || '').trim() === resourceType)
-    : assignable;
+    ? assignable
+    : staffAssignable;
 
   const byProfession = profession
-    ? byResourceType.filter((contact) => String(contact.profession || '').trim() === profession)
+    ? byResourceType.filter((contact) => {
+        if (isAssignableHealthcareWorkerOrg(contact)) return true;
+        return String(contact.profession || '').trim() === profession;
+      })
     : byResourceType;
 
-  const people = city
-    ? byProfession.filter((contact) => String(contact.city || '').trim() === city)
+  const byState = state
+    ? byProfession.filter((contact) => String(contact.state || '').trim() === state)
     : byProfession;
 
+  const people = city
+    ? byState.filter((contact) => String(contact.city || '').trim() === city)
+    : byState;
+
   return {
-    assignable,
-    resourceTypes: uniqueSorted(assignable.map((contact) => contact.resourceType)),
+    assignable: resourceType ? assignable : staffAssignable,
+    resourceTypes: uniqueSorted(
+      contacts
+        .filter(isHealthcareWorkerCategory)
+        .map((contact) => contact.resourceType),
+    ),
     professions: uniqueSorted(byResourceType.map((contact) => contact.profession)),
-    cities: uniqueSorted(byProfession.map((contact) => contact.city)),
+    states: uniqueSorted(byProfession.map((contact) => contact.state)),
+    cities: uniqueSorted(byState.map((contact) => contact.city)),
     people: [...people].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))),
   };
 }
 
 export function findAssignableHealthcareWorker(contacts = [], contactId) {
   if (!contactId) return null;
-  return filterAssignableHealthcareWorkers(contacts).find(
-    (contact) => String(contact._id) === String(contactId),
-  ) || null;
+  return (
+    contacts.find(
+      (contact) =>
+        isHealthcareWorkerCategory(contact) && String(contact._id) === String(contactId),
+    ) || null
+  );
 }

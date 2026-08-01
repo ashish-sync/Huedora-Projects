@@ -24,3 +24,40 @@ export function isValidCampMethod(value) {
   if (isKnownCampMethod(trimmed)) return true;
   return trimmed.length >= 2;
 }
+
+const LEGACY_CAMP_METHOD_ALIASES = {
+  bmd: 'BMD',
+  classic: 'BMD',
+  diet: 'Dietician',
+  dieit: 'Dietician',
+  dietician: 'Dietician',
+  dietitian: 'Dietician',
+  physio: 'Neuro & Physio',
+  nuero: 'Neuro & Physio',
+  neuro: 'Neuro & Physio',
+  diagnostic: 'Diagnostics',
+  diagnostics: 'Diagnostics',
+  daignostic: 'Diagnostics',
+  uro: 'Uroflowmetery',
+  uroflowmetery: 'Uroflowmetery',
+};
+
+/** Align camp / client-master method values (mirrors server normalizeCampName). */
+export function normalizeCampMethodKey(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return '';
+  if (KNOWN_METHODS.has(trimmed)) return trimmed;
+
+  const lower = trimmed.toLowerCase();
+  if (LEGACY_CAMP_METHOD_ALIASES[lower]) return LEGACY_CAMP_METHOD_ALIASES[lower];
+
+  if (lower.includes('bmd') || lower.includes('classic')) return 'BMD';
+  if (lower.includes('diet') || lower.includes('dieit')) return 'Dietician';
+  if (lower.includes('physio') || lower.includes('nuero') || lower.includes('neuro')) {
+    return 'Neuro & Physio';
+  }
+  if (lower.includes('diagnostic') || lower.includes('daignostic')) return 'Diagnostics';
+  if (lower.includes('uro')) return 'Uroflowmetery';
+
+  return trimmed;
+}

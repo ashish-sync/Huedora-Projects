@@ -1,8 +1,9 @@
 import { formatDate } from '../../../shared/dateFormat.js';
+import { campToForm } from '../constants/campLifecycle.js';
 
 function detailLine(label, value) {
   const text = String(value ?? '').trim() || '—';
-  return `*${label}:* ${text}`;
+  return `${label}: ${text}`;
 }
 
 function formatClinicTiming(form = {}) {
@@ -27,6 +28,10 @@ export function formatCampAssignmentDetails(form = {}) {
   return `${lines.join('\n')}\n`;
 }
 
+export function assignmentCopySourceFromCamp(camp = {}) {
+  return campToForm(camp);
+}
+
 export async function copyTextToClipboard(value) {
   if (!value) return false;
   try {
@@ -48,4 +53,8 @@ export async function copyTextToClipboard(value) {
 
 export async function copyCampAssignmentDetails(form, options = {}) {
   return copyTextToClipboard(formatCampAssignmentDetails(form, options));
+}
+
+export async function copyCampAssignmentDetailsFromRecord(camp, options = {}) {
+  return copyCampAssignmentDetails(assignmentCopySourceFromCamp(camp), options);
 }

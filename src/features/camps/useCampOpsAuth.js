@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useAuth as useTyloAuth } from '../../shared/auth.jsx';
+import { canSetHistoricalCampDates as canSetHistoricalCampDatesForUser } from './utils/campDatePolicy.js';
 
 /** TYLO role names that grant full camp-ops access (same as HueDora admin / super_admin). */
 const ADMIN_ROLE_NAMES = new Set(['admin', 'administrator']);
@@ -88,6 +89,11 @@ export function useCampOpsAuth() {
     return false;
   }, [isAdmin, can]);
 
+  const canSetHistoricalCampDates = useCallback(
+    () => canSetHistoricalCampDatesForUser(user),
+    [user],
+  );
+
   return {
     user: user
       ? {
@@ -104,6 +110,7 @@ export function useCampOpsAuth() {
     canApproveCamps,
     canRejectCamps,
     canEditCampRecord,
+    canSetHistoricalCampDates,
     primaryRoleLabel,
   };
 }

@@ -15,6 +15,9 @@ export function PasteContextFields({
   onDivisionChange,
   onCampNameChange,
 }) {
+  const singleDivisionOption = divisionOptions.length === 1;
+  const singleMethodOption = campNameOptions.length === 1;
+
   return (
     <div className="paste-context-fields" aria-label="Camp context before paste">
       <div className="paste-context-fields-heading">
@@ -46,7 +49,7 @@ export function PasteContextFields({
             id="paste-context-division"
             value={campaignType}
             onChange={(e) => onDivisionChange(e.target.value)}
-            disabled={disabled || programsLoading || !clientId || !divisionOptions.length}
+            disabled={disabled || programsLoading || !clientId || !divisionOptions.length || singleDivisionOption}
             className={errors.campaignType ? 'input-invalid' : ''}
             required
           >
@@ -55,9 +58,11 @@ export function PasteContextFields({
                 ? 'Loading divisions…'
                 : !clientId
                   ? 'Select client first'
-                  : divisionOptions.length
-                    ? 'Select division / therapy'
-                    : 'No division configured'}
+                  : singleDivisionOption
+                    ? campaignType
+                    : divisionOptions.length
+                      ? 'Select division / therapy'
+                      : 'No division configured'}
             </option>
             {divisionOptions.map((division) => (
               <option key={division} value={division}>{division}</option>
@@ -72,7 +77,7 @@ export function PasteContextFields({
             id="paste-context-camp-name"
             value={campaignName}
             onChange={onCampNameChange}
-            disabled={disabled || programsLoading || !clientId || !campaignType || !campNameOptions.length}
+            disabled={disabled || programsLoading || !clientId || !campaignType || !campNameOptions.length || singleMethodOption}
             required
             error={errors.campaignName || ''}
             options={campNameOptions}
@@ -85,7 +90,7 @@ export function PasteContextFields({
                   : programsLoading
                     ? 'Loading methods…'
                     : campNameOptions.length
-                      ? 'Select method'
+                      ? (singleMethodOption ? campaignName : 'Select method')
                       : 'No method configured'
             }
           />

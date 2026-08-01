@@ -21,7 +21,7 @@
 .field textarea {
   width: 100%;
   min-height: var(--control-h);
-  padding: 0 var(--space-3);
+  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
   background: var(--color-bg-elevated);
@@ -36,7 +36,7 @@
 
 .field textarea {
   min-height: 96px;
-  padding: var(--space-3);
+  padding: var(--control-pad-inline-start);
   resize: vertical;
 }
 
@@ -49,8 +49,9 @@
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px var(--color-brand-primary-subtle);
+  outline: none;
+  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line));
+  box-shadow: var(--dropdown-focus-ring);
 }
 
 .field input:disabled,

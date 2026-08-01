@@ -1,4 +1,4 @@
-function isCampAssigned(camp = {}) {
+export function isCampAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
   if (camp.lifecycleStage === 'execution' && camp.assignmentDecision === 'assign') return true;
   return false;

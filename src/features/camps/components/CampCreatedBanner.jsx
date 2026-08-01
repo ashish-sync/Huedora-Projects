@@ -4,14 +4,28 @@ import { Link } from 'react-router-dom';
 export function extractCreatedCamps(responseData) {
   const results = responseData?.results || [];
   const fromResults = results
-    .filter((item) => item.status === 'created' && item.campId)
-    .map((item) => ({ campId: item.campId, id: item.id || null }));
+    .filter(
+      (item) =>
+        (item.status === 'created' || item.status === 'created_partial') && item.campId
+    )
+    .map((item) => ({
+      campId: item.campId,
+      id: item.id || null,
+      partial: item.status === 'created_partial' || Boolean(item.partial),
+    }));
 
   if (fromResults.length) {
     return fromResults;
   }
 
-  return (responseData?.campIds || []).map((campId) => ({ campId, id: null }));
+  return (responseData?.campIds || []).map((campId) => ({ campId, id: null, partial: false }));
+}
+
+export function campManageListHref(camp) {
+  const params = new URLSearchParams();
+  if (camp?.campId) params.set('findCampId', camp.campId);
+  const query = params.toString();
+  return query ? `/camps/manage?${query}` : '/camps/manage';
 }
 
 async function copyText(value) {
@@ -95,13 +109,22 @@ export function CampCreatedBanner({ camps = [], onDismiss }) {
       <ul className="camp-created-list">
         {camps.map((camp) => (
           <li key={camp.campId} className="camp-created-item">
-            {camp.id ? (
-              <Link to={`/camps/manage/${camp.id}/edit`} className="camp-created-id-link">
-                {camp.campId}
+            <div className="camp-created-item-main">
+              {camp.id ? (
+                <Link to={`/camps/manage/${camp.id}/edit`} className="camp-created-id-link">
+                  {camp.campId}
+                  {camp.partial ? ' (incomplete)' : ''}
+                </Link>
+              ) : (
+                <span className="camp-created-id">
+                  {camp.campId}
+                  {camp.partial ? ' (incomplete)' : ''}
+                </span>
+              )}
+              <Link to={campManageListHref(camp)} className="camp-created-list-link">
+                View in list
               </Link>
-            ) : (
-              <span className="camp-created-id">{camp.campId}</span>
-            )}
+            </div>
             <button
               type="button"
               className="camp-created-copy-btn"

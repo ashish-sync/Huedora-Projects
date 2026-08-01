@@ -1,5 +1,5 @@
 import FieldError from './FieldError.jsx';
-import { PASSWORD_MANAGER_IGNORE } from '../../shared/suppressBrowserAutofill.js';
+import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 
 /**
  * Standard 10-digit Indian mobile input with digit-only normalization.
@@ -42,7 +42,7 @@ export function PhoneField({
       aria-invalid={invalid || undefined}
       aria-label={hideLabel ? ariaLabel || label : undefined}
       className={[invalid ? 'input-invalid' : '', inputClassName].filter(Boolean).join(' ')}
-      {...PASSWORD_MANAGER_IGNORE}
+      {...bindAutofillBlock()}
     />
   );
 

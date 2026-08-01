@@ -1,6 +1,8 @@
 /**
  * Camp / clinic address — plain text entry (no map preview or Places autocomplete).
  */
+import { bindAutofillBlock } from '../../../shared/suppressBrowserAutofill.js';
+
 export default function CampAddressField({
   value = {},
   onChange,
@@ -23,8 +25,7 @@ export default function CampAddressField({
       placeholder="Enter camp / clinic address"
       required={required}
       disabled={disabled}
-      autoComplete="off"
-      data-form-type="other"
+      {...bindAutofillBlock()}
     />
   );
 }

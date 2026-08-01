@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { bindAutofillBlock } from '../../../shared/suppressBrowserAutofill.js';
 import { clientApi, clientMasterApi } from '../campOpsApi.js';
 import { useSearchDropdownKeyboard } from '../hooks/useSearchDropdownKeyboard';
 import { trimString } from '../utils/trimInput';
@@ -155,23 +156,25 @@ export function ClientNameSearchInput({
   });
 
   return (
-    <div className="client-search-field" ref={wrapperRef}>
+    <div className="client-search-field tylo-combobox-field" ref={wrapperRef}>
       <input
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
           openDropdown();
         }}
-        onFocus={openDropdown}
         onKeyDown={handleKeyDown}
         placeholder={requireExistingClient ? 'Search and select an existing company' : 'Search or type client name, e.g. Intas'}
-        autoComplete="off"
         disabled={disabled}
+        {...bindAutofillBlock({
+          onFocus: openDropdown,
+        })}
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
         className={error ? 'input-invalid' : ''}
       />
+      <span className="tylo-dropdown-chevron tylo-combobox-chevron" aria-hidden="true" />
       {error && <small className="field-error">{error}</small>}
       {open && value.trim().length >= 2 && (
         <div className="client-search-dropdown" role="listbox">

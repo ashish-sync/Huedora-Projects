@@ -1,0 +1,207 @@
+/**
+ * Enterprise filter toolbar — single-baseline rows with fixed control height,
+ * 180px minimum filter width, no label wrapping, 12px gaps.
+ * Loaded last so it wins over legacy global/toolbar rules.
+ */
+
+/* ── Toolbar row layout ────────────────────────────────────── */
+
+.catalog-toolbar,
+.inv-toolbar,
+.am-toolbar,
+.vf-toolbar,
+.esign-toolbar,
+.logistics-toolbar,
+.filter-bar,
+.agreements-filters,
+.page-metrics-toolbar,
+.pm-filter-bar,
+.logistics-filter-bar,
+.camp-ops-root .camps-filter-toolbar,
+.camp-ops-root .camps-filter-toolbar__filters,
+.camp-ops-root .communications-filter-panel {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: var(--filter-toolbar-gap) !important;
+}
+
+.camp-ops-root .camps-filter-group {
+  align-items: center !important;
+  gap: var(--filter-toolbar-gap) !important;
+}
+
+/* ── Shared filter control sizing ──────────────────────────── */
+
+.catalog-toolbar > select,
+.catalog-toolbar > .adaptive-select-host,
+.inv-toolbar > select,
+.inv-toolbar > .adaptive-select-host,
+.am-toolbar > select,
+.am-toolbar > .adaptive-select-host,
+.vf-toolbar > select,
+.vf-toolbar > .adaptive-select-host,
+.esign-toolbar > select,
+.esign-toolbar > .adaptive-select-host,
+.logistics-toolbar > select,
+.logistics-toolbar > .adaptive-select-host,
+.filter-bar > select,
+.filter-bar > .adaptive-select-host,
+.agreements-filters > select,
+.agreements-filters > .adaptive-select-host,
+.page-metrics-toolbar > select,
+.page-metrics-toolbar > .adaptive-select-host,
+.pm-filter-bar > select,
+.pm-filter-bar > .adaptive-select-host,
+.logistics-filter-bar > select,
+.logistics-filter-bar > .adaptive-select-host,
+.toolbar > select,
+.toolbar > .adaptive-select-host {
+  flex: 0 0 var(--filter-control-min-w) !important;
+  width: var(--filter-control-min-w) !important;
+  min-width: var(--filter-control-min-w) !important;
+  max-width: var(--filter-control-min-w) !important;
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+  box-sizing: border-box !important;
+}
+
+.catalog-toolbar > .adaptive-select-host .adaptive-select__control,
+.inv-toolbar > .adaptive-select-host .adaptive-select__control,
+.am-toolbar > .adaptive-select-host .adaptive-select__control,
+.vf-toolbar > .adaptive-select-host .adaptive-select__control,
+.esign-toolbar > .adaptive-select-host .adaptive-select__control,
+.logistics-toolbar > .adaptive-select-host .adaptive-select__control,
+.filter-bar > .adaptive-select-host .adaptive-select__control,
+.agreements-filters > .adaptive-select-host .adaptive-select__control,
+.page-metrics-toolbar > .adaptive-select-host .adaptive-select__control,
+.pm-filter-bar > .adaptive-select-host .adaptive-select__control,
+.logistics-filter-bar > .adaptive-select-host .adaptive-select__control,
+.toolbar > .adaptive-select-host .adaptive-select__control {
+  min-height: var(--filter-control-h) !important;
+  height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+}
+
+.catalog-toolbar > select,
+.inv-toolbar > select,
+.am-toolbar > select,
+.vf-toolbar > select,
+.esign-toolbar > select,
+.logistics-toolbar > select,
+.filter-bar > select,
+.agreements-filters > select,
+.page-metrics-toolbar > select,
+.pm-filter-bar > select,
+.logistics-filter-bar > select,
+.toolbar > select,
+.camp-ops-root .camps-filter-control,
+.camp-ops-root .camps-filter-status {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ── Search inputs ─────────────────────────────────────────── */
+
+.catalog-toolbar > .esign-search,
+.inv-toolbar > .esign-search,
+.inv-toolbar > .inv-search,
+.am-toolbar > .am-search,
+.am-toolbar > .esign-search,
+.vf-toolbar > .esign-search,
+.esign-toolbar > .esign-search,
+.logistics-toolbar > .esign-search,
+.filter-bar > .esign-search,
+.agreements-filters > .esign-search,
+.page-metrics-toolbar > .esign-search,
+.pm-filter-bar > .esign-search,
+.pm-filter-bar > .inv-search,
+.logistics-filter-bar > .esign-search,
+.logistics-filter-bar > .inv-search,
+.camp-ops-root .camps-filter-search {
+  flex: 1 1 0% !important;
+  min-width: var(--filter-control-min-w) !important;
+  width: auto !important;
+  max-width: none !important;
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Toolbar buttons (Search, Apply, etc.) ─────────────────── */
+
+.catalog-toolbar > .btn,
+.inv-toolbar > .btn,
+.am-toolbar > .btn,
+.vf-toolbar > .btn,
+.esign-toolbar > .btn,
+.logistics-toolbar > .btn,
+.filter-bar > .btn,
+.agreements-filters > .btn,
+.page-metrics-toolbar > .btn,
+.pm-filter-bar > .btn,
+.logistics-filter-bar > .btn,
+.camp-ops-root .camps-filter-toolbar > .btn,
+.camp-ops-root .camps-filter-toolbar .btn.btn-compact {
+  flex: 0 0 auto !important;
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Camps filter specifics ────────────────────────────────── */
+
+.camp-ops-root .camps-filter-toolbar {
+  --camps-filter-h: var(--filter-control-h);
+  --camps-filter-gap: var(--filter-toolbar-gap);
+}
+
+.camp-ops-root .camps-filter-status {
+  min-width: var(--filter-control-min-w) !important;
+}
+
+.camp-ops-root .camps-filter-control {
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+}
+
+.camp-ops-root .camps-filter-date-sep {
+  height: var(--filter-control-h) !important;
+}
+
+.camp-ops-root .camps-filter-toolbar .date-input-control,
+.camp-ops-root .camps-filter-toolbar .date-input-display {
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+}
+
+/* ── Responsive: wrap only when space is tight ──────────────── */
+
+@media (max-width: 960px) {
+  .catalog-toolbar,
+  .inv-toolbar,
+  .am-toolbar,
+  .vf-toolbar,
+  .esign-toolbar,
+  .logistics-toolbar,
+  .filter-bar,
+  .agreements-filters,
+  .page-metrics-toolbar,
+  .pm-filter-bar,
+  .logistics-filter-bar,
+  .camp-ops-root .camps-filter-toolbar {
+    flex-wrap: wrap !important;
+  }
+}

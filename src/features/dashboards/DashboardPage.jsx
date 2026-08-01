@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import HealthcareInsightBanner from '../../components/HealthcareInsightBanner.jsx';
 import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
 import { MESSAGES } from '../../shared/messages.js';
+import { WHY_WORK_COUNTS_INSIGHTS } from '../../shared/pickHealthcareInsight.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { loginExperience } from '../../shared/loginExperienceConfig.js';
 
@@ -178,44 +179,45 @@ export default function DashboardPage() {
       <div className="tylo-home-atmosphere" aria-hidden="true" />
 
       <header className="tylo-home-hero">
-        <div className="tylo-home-hero-copy">
-          <p className="tylo-home-kicker">TYLO One</p>
-          <h1 id="tylo-modules-heading" className="tylo-home-prompt">
-            {MESSAGES.welcome(firstName)}
-          </h1>
-          <p className="tylo-home-lead">
-            Open an application area to continue: Asset One, Document One, Verification One,
-            Camp One, Request One, Master One, Movement One, or Finance One.
-          </p>
+        <div className="tylo-home-hero-top">
+          <h1 className="tylo-home-prompt">{MESSAGES.welcome(firstName)}</h1>
+
+          {canSeeDashboard ? (
+            <div className="tylo-home-dash-action">
+              <Link className="btn tylo-home-dash-btn" to="/dashboard">
+                {MODULE.DASHBOARD}
+                <span aria-hidden="true"> →</span>
+              </Link>
+              <p className="tylo-home-dash-hint">Review any module by date range</p>
+            </div>
+          ) : null}
         </div>
 
-        {canSeeDashboard && (
-          <div className="tylo-home-dash-action">
-            <Link className="btn tylo-home-dash-btn" to="/dashboard">
-              {MODULE.DASHBOARD}
-              <span aria-hidden="true"> →</span>
-            </Link>
-            <p className="tylo-home-dash-hint">Review any module by date range</p>
-          </div>
-        )}
+        {loginExperience.healthcareInsights ? (
+          <HealthcareInsightBanner
+            variant="home"
+            userId={user?.id || user?._id || ''}
+            allowShuffle
+            sectionTitle="Why your work counts"
+            insightPool={WHY_WORK_COUNTS_INSIGHTS}
+          />
+        ) : null}
       </header>
 
-      {loginExperience.healthcareInsights ? (
-        <HealthcareInsightBanner
-          variant="home"
-          userId={user?.id || user?._id || ''}
-          allowShuffle
-        />
-      ) : null}
-
-      <section className="tylo-home-modules" aria-labelledby="tylo-modules-heading">
+      <section className="tylo-home-modules" aria-labelledby="tylo-home-modules-title">
         <div className="tylo-home-section-head">
-          <h2 className="tylo-home-section-title">Modules</h2>
-          <p className="muted tylo-home-section-note">
-            {modules.length
-              ? `${modules.length} available for your role`
-              : 'No modules available for your role'}
-          </p>
+          <h2 id="tylo-home-modules-title" className="tylo-home-section-title">
+            Modules
+          </h2>
+          {modules.length > 0 ? (
+            <span className="tylo-home-section-badge">
+              {modules.length} available for your role
+            </span>
+          ) : (
+            <span className="tylo-home-section-badge tylo-home-section-badge--muted">
+              No modules available
+            </span>
+          )}
         </div>
 
         {!modules.length ? (

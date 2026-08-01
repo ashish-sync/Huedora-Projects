@@ -9,10 +9,12 @@ import PasteColumnMapper from './components/PasteColumnMapper';
 import { IS_DEMO_SERVER } from './constants/roles';
 import {
   parseClientMasterDivisions,
+  applyClientMasterCascade,
   pickSingleOption,
   resolveCampNameOptions,
 } from './utils/clientMasterCascade';
 import { confirmPastePreviewDurations } from './utils/campDurationWarning';
+import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 
 const PASTE_AUTO_SAVE_KEY = 'connectorsManualPasteAutoSave';
 const PASTE_DRAFT_KEY = 'connectorsManualPasteDraft';
@@ -276,21 +278,16 @@ export default function CommunicationsPastePage() {
         setDivisionPrograms(programs);
         setDivisionOptions(divisions);
 
-        if (campaignType && !divisions.includes(campaignType)) {
-          setCampaignType('');
-          setCampaignName('');
-        } else if (!campaignType && divisions.length === 1) {
-          const nextDivision = divisions[0];
-          setCampaignType(nextDivision);
-          const names = resolveCampNameOptions(programs, nextDivision);
-          if (!campaignName) setCampaignName(pickSingleOption(names));
-        } else if (campaignType) {
-          const names = resolveCampNameOptions(programs, campaignType, campaignName);
-          if (campaignName && !names.includes(campaignName)) {
-            setCampaignName(pickSingleOption(names));
-          } else if (!campaignName) {
-            setCampaignName(pickSingleOption(names));
-          }
+        const cascaded = applyClientMasterCascade({
+          programs,
+          currentDivision: campaignType,
+          currentMethod: campaignName,
+        });
+        if (cascaded.campaignType !== campaignType) {
+          setCampaignType(cascaded.campaignType);
+        }
+        if (cascaded.campaignName !== campaignName) {
+          setCampaignName(cascaded.campaignName);
         }
       })
       .catch(() => {
@@ -578,7 +575,11 @@ export default function CommunicationsPastePage() {
         text: pasteText,
         ...pasteDefaults,
       });
-      setCreatedCamps(extractCreatedCamps(data.data));
+      const created = extractCreatedCamps(data.data);
+      setCreatedCamps(created);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('campOps:refreshList', '1');
+      }
       if (data.data?.duplicates) {
         const duplicateIds = (data.data.duplicateCampIds || []).join(', ');
         setDuplicateNotice(
@@ -588,6 +589,11 @@ export default function CommunicationsPastePage() {
         setDuplicateNotice('');
       }
       setConfirmAction(null);
+      setSuccess(
+        created.length === 1
+          ? `Camp ${created[0].campId} created. Open it below or use View in list on the Request stage.`
+          : `${created.length} camps created. Open them below or use View in list on the Request stage.`,
+      );
       resetPasteForm();
     } catch (err) {
       setError(err?.message || 'Failed to create camps from pasted content');
@@ -810,6 +816,7 @@ export default function CommunicationsPastePage() {
                       value={pasteText}
                       onChange={(e) => setPasteText(e.target.value)}
                       disabled={(hasExtracted && !IS_DEMO_SERVER) || !hasPasteContext}
+                      {...bindAutofillBlock()}
                       placeholder={
                         hasPasteContext
                           ? 'DATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'

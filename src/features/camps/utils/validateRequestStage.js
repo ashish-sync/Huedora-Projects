@@ -3,6 +3,8 @@ import { computeDurationHours } from './campSchedule';
 import { resolveCampSlot } from '../constants/campLifecycle';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
 import { isValidPhone } from '../../../shared/validation.js';
+import { getDoctorNameFormatError } from '../../../shared/textFormat.js';
+import { getHistoricalCampDateErrors } from './campDatePolicy.js';
 import { CONTACT_PERSON_LEVEL_OPTIONS } from '../constants/campLifecycle.js';
 import { normalizeContactPersons } from './campContactPersons.js';
 
@@ -14,7 +16,7 @@ function hasText(value) {
  * Returns human-readable validation messages for the Request stage.
  * Empty array means the camp can proceed to Resource Assignment / approval.
  */
-export function validateRequestStageForm(form = {}) {
+export function validateRequestStageForm(form = {}, options = {}) {
   const errors = [];
 
   if (!hasText(form.source)) errors.push('Source of request is required');
@@ -39,7 +41,8 @@ export function validateRequestStageForm(form = {}) {
     errors.push('Camp start time must fall within Morning, Noon, or Evening slot hours');
   }
 
-  if (!hasText(form.doctorName)) errors.push('Doctor name is required');
+  const doctorNameError = getDoctorNameFormatError(form.doctorName);
+  if (doctorNameError) errors.push(doctorNameError);
   if (!hasText(form.doctorCode)) errors.push('Doctor code is required');
   if (!hasText(form.campAddress)) errors.push('Camp address is required');
   if (!hasText(form.state)) errors.push('State is required');
@@ -77,6 +80,14 @@ export function validateRequestStageForm(form = {}) {
       errors.push(`${label} number must be exactly 10 digits`);
     }
   });
+
+  errors.push(...getHistoricalCampDateErrors(
+    { campDate: form.campDate, requestDate: form.requestDate },
+    {
+      canSetHistorical: options.canSetHistorical === true,
+      existing: options.existing || null,
+    },
+  ));
 
   return errors;
 }

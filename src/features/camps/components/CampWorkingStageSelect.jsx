@@ -1,3 +1,4 @@
+import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import { CAMP_LIFECYCLE_STAGES } from '../constants/campLifecycle.js';
 import { useCampWorkingStage } from '../CampWorkingStageContext.jsx';
 
@@ -12,8 +13,9 @@ export function CampWorkingStageSelect({ compact = false }) {
       ].filter(Boolean).join(' ')}
     >
       {compact ? null : <span className="camp-working-stage-label">Working view</span>}
-      <select
+      <AdaptiveSelect
         className="camp-working-stage-select tylo-select"
+        threshold={10}
         value={workingStage}
         onChange={(event) => setWorkingStage(event.target.value)}
         aria-label="Select camp lifecycle view"
@@ -23,7 +25,7 @@ export function CampWorkingStageSelect({ compact = false }) {
             {compact ? stage.short : stage.label}
           </option>
         ))}
-      </select>
+      </AdaptiveSelect>
     </label>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
-import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
+import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
 import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
 import { api } from '../../shared/api.js';
 import { trimFormStrings } from './utils/trimInput';
@@ -18,8 +18,11 @@ import { buildClosureDetails, buildClosurePayload } from './constants/campClosur
 import { buildSourcePreview } from './utils/formatSourceMessage';
 import {
   parseClientMasterDivisions,
+  applyClientMasterCascade,
   pickSingleOption,
   resolveCampNameOptions,
+  resolveClientMasterHealthcareWorker,
+  parseClientMasterListResponse,
 } from './utils/clientMasterCascade';
 import {
   canEditLifecycleStage,
@@ -74,7 +77,7 @@ function filterApprovalBlockers(blockers, form, campNameOptions) {
 
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord, hasPermission } = useAuth();
+  const { canEditCampRecord, hasPermission, canSetHistoricalCampDates } = useAuth();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { workingStage } = useCampWorkingStage();
@@ -101,9 +104,10 @@ export default function CampFormPage() {
   const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
   const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
   const formRef = useRef(null);
-  useSuppressBrowserAutofill(formRef);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [mappedConsumables, setMappedConsumables] = useState([]);
+  const [clientMasterRecords, setClientMasterRecords] = useState([]);
+  const [clientMasterLoading, setClientMasterLoading] = useState(false);
   const hcwContactsLoadedRef = useRef(false);
 
   const campStatus = campMeta?.status || 'pending_review';
@@ -231,18 +235,24 @@ export default function CampFormPage() {
         const { programs, divisions } = parseClientMasterDivisions(data);
         setDivisionPrograms(programs);
         setDivisionOptions(divisions);
-        if (!isEdit) {
-          setForm((prev) => {
-            const nextDivision = prev.campaignType && divisions.includes(prev.campaignType)
-              ? prev.campaignType
-              : pickSingleOption(divisions);
-            const campNames = resolveCampNameOptions(programs, nextDivision);
-            const nextCampName = prev.campaignName && campNames.includes(prev.campaignName)
-              ? prev.campaignName
-              : pickSingleOption(campNames);
-            return { ...prev, campaignType: nextDivision, campaignName: nextCampName };
+        setForm((prev) => {
+          const cascaded = applyClientMasterCascade({
+            programs,
+            currentDivision: prev.campaignType,
+            currentMethod: prev.campaignName,
           });
-        }
+          if (
+            cascaded.campaignType === prev.campaignType
+            && cascaded.campaignName === prev.campaignName
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            campaignType: cascaded.campaignType,
+            campaignName: cascaded.campaignName,
+          };
+        });
       })
       .catch(() => {
         if (!cancelled) {
@@ -255,15 +265,18 @@ export default function CampFormPage() {
       });
 
     return () => { cancelled = true; };
-  }, [form.clientId, isEdit]);
+  }, [form.clientId]);
 
   useEffect(() => {
     if (!form.clientId) {
       setMappedConsumables([]);
+      setClientMasterRecords([]);
+      setClientMasterLoading(false);
       return undefined;
     }
 
     let cancelled = false;
+    setClientMasterLoading(true);
     campApi.consumablesForCamp(form.clientId, {
       campaignType: form.campaignType,
       campaignName: form.campaignName,
@@ -273,6 +286,17 @@ export default function CampFormPage() {
       })
       .catch(() => {
         if (!cancelled) setMappedConsumables([]);
+      });
+
+    clientMasterApi.listByClient(form.clientId)
+      .then((response) => {
+        if (!cancelled) setClientMasterRecords(parseClientMasterListResponse(response));
+      })
+      .catch(() => {
+        if (!cancelled) setClientMasterRecords([]);
+      })
+      .finally(() => {
+        if (!cancelled) setClientMasterLoading(false);
       });
 
     return () => { cancelled = true; };
@@ -558,7 +582,10 @@ export default function CampFormPage() {
     }
 
     if (activeStage === 'request' || !isEdit) {
-      const requestErrors = validateRequestStageForm(form);
+      const requestErrors = validateRequestStageForm(form, {
+        canSetHistorical: canSetHistoricalCampDates(),
+        existing: isEdit ? campMeta : null,
+      });
       if (requestErrors.length) {
         setError(requestErrors[0]);
         return;
@@ -670,6 +697,14 @@ export default function CampFormPage() {
     [divisionPrograms, form.campaignType, form.campaignName],
   );
 
+  const clientMasterProfession = useMemo(
+    () => resolveClientMasterHealthcareWorker(clientMasterRecords, {
+      campaignType: form.campaignType,
+      campaignName: form.campaignName,
+    }),
+    [clientMasterRecords, form.campaignType, form.campaignName],
+  );
+
   const stageReadOnly = useMemo(() => ({
     request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage),
     assignment: readOnly || !canEditLifecycleStage(campStatus, 'assignment', reachedLifecycleStage),
@@ -733,6 +768,7 @@ export default function CampFormPage() {
 
   return (
     <form ref={formRef} className="form-card camp-lifecycle-page" onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
+      <AutofillDecoyFields />
       <div className="camp-form-header-row">
         <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
         {isEdit && campMeta && (
@@ -811,12 +847,15 @@ export default function CampFormPage() {
         downloadFinanceBusy={downloadFinanceBusy}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        clientMasterProfession={clientMasterProfession}
+        clientMasterLoading={clientMasterLoading}
         onValidationError={setError}
         reachedLifecycleStage={reachedLifecycleStage}
         assignedHcwContact={assignedHcwContact}
         assignedHcwLoading={assignedHcwLoading}
         hcwFinanceBlockers={hcwFinanceBlockers}
         mappedConsumables={mappedConsumables}
+        canSetHistoricalCampDates={canSetHistoricalCampDates()}
       />
 
       <div className="form-actions">

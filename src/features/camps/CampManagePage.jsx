@@ -31,8 +31,6 @@ import { useAutoDismiss } from './hooks/useAutoDismiss';
 import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
-import { REQUEST_REVIEW_LABELS } from './constants/requestReviewStatus';
-import { stageFilterLabel } from './constants/campStageFilters';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 
 function buildReasonDetails() {
@@ -60,7 +58,6 @@ export default function CampsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [camps, setCamps] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [requestReviewStatus, setRequestReviewStatus] = useState(searchParams.get('requestReviewStatus') || '');
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [overdueOnly, setOverdueOnly] = useState(searchParams.get('overdue') === '1');
   const [reactionRequired, setReactionRequired] = useState(searchParams.get('reactionRequired') === '1');
@@ -71,10 +68,7 @@ export default function CampsPage() {
   const [clientFilter, setClientFilter] = useState(searchParams.get('client') || '');
   const [campaignFilter, setCampaignFilter] = useState(searchParams.get('campaign') || '');
   const [campTypeFilter, setCampTypeFilter] = useState(searchParams.get('campaignType') || '');
-  const [assignmentFilter, setAssignmentFilter] = useState(searchParams.get('assignmentFilter') || '');
-  const [executionFilter, setExecutionFilter] = useState(searchParams.get('executionFilter') || '');
-  const [financialFilter, setFinancialFilter] = useState(searchParams.get('financialFilter') || '');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('findCampId') || searchParams.get('q') || '');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [pagination, setPagination] = useState(null);
@@ -96,6 +90,37 @@ export default function CampsPage() {
 
   useAutoDismiss(error, dismissError);
   useAutoDismiss(bulkMessage, dismissBulkMessage);
+
+  const findCampFromUrlRef = useRef('');
+
+  useEffect(() => {
+    const findCampId = searchParams.get('findCampId') || searchParams.get('q') || '';
+    if (!findCampId) return;
+    findCampFromUrlRef.current = findCampId;
+    setWorkingStage('request');
+    setStatus('');
+    setOverdueOnly(false);
+    setReactionRequired(false);
+    setOffHoursOnly(false);
+    setWeekendAttentionOnly(false);
+    setSearch(findCampId);
+    setPage(1);
+    loadCamps(1, pageSize, findCampId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (typeof window === 'undefined') return;
+      if (!window.sessionStorage.getItem('campOps:refreshList')) return;
+      window.sessionStorage.removeItem('campOps:refreshList');
+      loadCamps(page, pageSize);
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openCampActionConfirm(action, camp) {
     setConfirmRequest({
@@ -243,9 +268,9 @@ export default function CampsPage() {
     await handler(camp._id, payload);
   }
 
-  async function loadCamps(nextPage = page, nextLimit = pageSize) {
+  async function loadCamps(nextPage = page, nextLimit = pageSize, searchOverride) {
     setLoading(true);
-    const trimmedSearch = trimString(search);
+    const trimmedSearch = trimString(searchOverride ?? search);
     setSearch(trimmedSearch);
     try {
       const params = { search: trimmedSearch, page: nextPage, limit: nextLimit };
@@ -254,17 +279,7 @@ export default function CampsPage() {
       if (clientFilter) params.client = clientFilter;
       if (campaignFilter) params.campaign = campaignFilter;
       if (campTypeFilter) params.campaignType = campTypeFilter;
-      if (workingStage === 'assignment') {
-        if (assignmentFilter) params.assignmentFilter = assignmentFilter;
-        params.lifecycleStage = workingStage;
-      } else if (workingStage === 'request') {
-        if (requestReviewStatus) params.requestReviewStatus = requestReviewStatus;
-        params.lifecycleStage = workingStage;
-      } else if (workingStage === 'execution') {
-        if (executionFilter) params.executionFilter = executionFilter;
-        params.lifecycleStage = workingStage;
-      } else if (workingStage === 'financial') {
-        if (financialFilter) params.financialFilter = financialFilter;
+      if (workingStage === 'request' || workingStage === 'assignment' || workingStage === 'execution' || workingStage === 'financial') {
         params.lifecycleStage = workingStage;
       } else {
         if (reactionRequired) {
@@ -306,7 +321,6 @@ export default function CampsPage() {
     const nextOffHours = searchParams.get('offHours') === '1';
     const nextWeekendAttention = searchParams.get('weekendAttention') === '1';
     const hasAlertFilter = nextReactionRequired || nextOffHours || nextWeekendAttention;
-    setRequestReviewStatus(searchParams.get('requestReviewStatus') || '');
     setStatus(hasAlertFilter || nextOverdue ? '' : (searchParams.get('status') || ''));
     setOverdueOnly(nextOverdue);
     setReactionRequired(nextReactionRequired);
@@ -317,19 +331,12 @@ export default function CampsPage() {
     setClientFilter(searchParams.get('client') || '');
     setCampaignFilter(searchParams.get('campaign') || '');
     setCampTypeFilter(searchParams.get('campaignType') || '');
-    setAssignmentFilter(searchParams.get('assignmentFilter') || '');
-    setExecutionFilter(searchParams.get('executionFilter') || '');
-    setFinancialFilter(searchParams.get('financialFilter') || '');
   }, [searchParams]);
 
   const previousWorkingStageRef = useRef(workingStage);
   useEffect(() => {
     if (previousWorkingStageRef.current === workingStage) return;
     previousWorkingStageRef.current = workingStage;
-    setAssignmentFilter('');
-    setRequestReviewStatus('');
-    setExecutionFilter('');
-    setFinancialFilter('');
     setStatus('');
     setOverdueOnly(false);
     setReactionRequired(false);
@@ -351,9 +358,28 @@ export default function CampsPage() {
   }, [workingStage, setSearchParams]);
 
   useEffect(() => {
+    if (!workingStage) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      let changed = false;
+      ['assignmentFilter', 'requestReviewStatus', 'executionFilter', 'financialFilter'].forEach((key) => {
+        if (next.has(key)) {
+          next.delete(key);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [workingStage, setSearchParams]);
+
+  useEffect(() => {
+    if (findCampFromUrlRef.current) {
+      findCampFromUrlRef.current = '';
+      return;
+    }
     setPage(1);
     loadCamps(1, pageSize);
-  }, [status, requestReviewStatus, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignmentFilter, executionFilter, financialFilter, workingStage]);
+  }, [status, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
 
   useEffect(() => {
     if (workingStage !== 'assignment') return undefined;
@@ -400,24 +426,14 @@ export default function CampsPage() {
     const nextClient = overrides.client ?? clientFilter;
     const nextCampaign = overrides.campaign ?? campaignFilter;
     const nextCampType = overrides.campaignType ?? campTypeFilter;
-    const nextAssignmentFilter = overrides.assignmentFilter ?? assignmentFilter;
-    const nextRequestReviewStatus = overrides.requestReviewStatus ?? requestReviewStatus;
-    const nextExecutionFilter = overrides.executionFilter ?? executionFilter;
-    const nextFinancialFilter = overrides.financialFilter ?? financialFilter;
 
-    if (workingStage === 'assignment') {
-      if (nextAssignmentFilter) params.set('assignmentFilter', nextAssignmentFilter);
-    } else if (workingStage === 'request') {
-      if (nextRequestReviewStatus) params.set('requestReviewStatus', nextRequestReviewStatus);
-    } else if (workingStage === 'execution') {
-      if (nextExecutionFilter) params.set('executionFilter', nextExecutionFilter);
-    } else if (workingStage === 'financial') {
-      if (nextFinancialFilter) params.set('financialFilter', nextFinancialFilter);
-    } else if (nextReactionRequired) params.set('reactionRequired', '1');
-    else if (nextOffHours) params.set('offHours', '1');
-    else if (nextWeekendAttention) params.set('weekendAttention', '1');
-    else if (nextOverdue) params.set('overdue', '1');
-    else if (nextStatus) params.set('status', nextStatus);
+    if (!['request', 'assignment', 'execution', 'financial'].includes(workingStage)) {
+      if (nextReactionRequired) params.set('reactionRequired', '1');
+      else if (nextOffHours) params.set('offHours', '1');
+      else if (nextWeekendAttention) params.set('weekendAttention', '1');
+      else if (nextOverdue) params.set('overdue', '1');
+      else if (nextStatus) params.set('status', nextStatus);
+    }
     if (nextDateFrom) params.set('dateFrom', nextDateFrom);
     if (nextDateTo) params.set('dateTo', nextDateTo);
     if (nextClient) params.set('client', nextClient);
@@ -439,11 +455,6 @@ export default function CampsPage() {
     setSearchParams(buildFilterParams(overrides));
   }
 
-  function handleRequestReviewStatusChange(value) {
-    setRequestReviewStatus(value);
-    updateFilters({ requestReviewStatus: value, status: '' });
-  }
-
   function handleStatusChange(value) {
     setOverdueOnly(false);
     setReactionRequired(false);
@@ -460,7 +471,6 @@ export default function CampsPage() {
   }
 
   function clearFilters() {
-    setRequestReviewStatus('');
     setStatus('');
     setOverdueOnly(false);
     setReactionRequired(false);
@@ -471,54 +481,11 @@ export default function CampsPage() {
     setClientFilter('');
     setCampaignFilter('');
     setCampTypeFilter('');
-    setAssignmentFilter('');
-    setExecutionFilter('');
-    setFinancialFilter('');
     setSearch('');
     setSearchParams({});
   }
 
   function handleFilterChange(value) {
-    if (workingStage === 'request') {
-      handleRequestReviewStatusChange(value);
-      return;
-    }
-    if (workingStage === 'assignment') {
-      setAssignmentFilter(value);
-      updateFilters({
-        assignmentFilter: value,
-        status: '',
-        overdue: false,
-        reactionRequired: false,
-        offHours: false,
-        weekendAttention: false,
-      });
-      return;
-    }
-    if (workingStage === 'execution') {
-      setExecutionFilter(value);
-      updateFilters({
-        executionFilter: value,
-        status: '',
-        overdue: false,
-        reactionRequired: false,
-        offHours: false,
-        weekendAttention: false,
-      });
-      return;
-    }
-    if (workingStage === 'financial') {
-      setFinancialFilter(value);
-      updateFilters({
-        financialFilter: value,
-        status: '',
-        overdue: false,
-        reactionRequired: false,
-        offHours: false,
-        weekendAttention: false,
-      });
-      return;
-    }
     if (value === 'reaction_required') {
       updateFilters({
         status: '',
@@ -562,15 +529,7 @@ export default function CampsPage() {
     handleStatusChange(value);
   }
 
-  const filterValue = workingStage === 'assignment'
-    ? (assignmentFilter || '')
-    : workingStage === 'request'
-      ? (requestReviewStatus || '')
-      : workingStage === 'execution'
-        ? (executionFilter || '')
-        : workingStage === 'financial'
-          ? (financialFilter || '')
-          : reactionRequired
+  const filterValue = reactionRequired
     ? 'reaction_required'
     : offHoursOnly
       ? 'off_hours'
@@ -603,30 +562,6 @@ export default function CampsPage() {
     activeChips.push({
       key: 'overdue',
       label: 'Overdue — not executed',
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (requestReviewStatus) {
-    activeChips.push({
-      key: 'requestReviewStatus',
-      label: REQUEST_REVIEW_LABELS[requestReviewStatus] || requestReviewStatus.replaceAll('_', ' '),
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (assignmentFilter) {
-    activeChips.push({
-      key: 'assignmentFilter',
-      label: stageFilterLabel('assignment', assignmentFilter),
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (executionFilter) {
-    activeChips.push({
-      key: 'executionFilter',
-      label: stageFilterLabel('execution', executionFilter),
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (financialFilter) {
-    activeChips.push({
-      key: 'financialFilter',
-      label: stageFilterLabel('financial', financialFilter),
       onRemove: () => handleFilterChange(''),
     });
   } else if (status) {
@@ -724,10 +659,10 @@ export default function CampsPage() {
       return (
         <CampAssignmentRowActions
           camp={camp}
+          canEdit={canEditCampRecord(camp)}
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
           onAction={requestCampAction}
-          onAssign={setAssignCamp}
         />
       );
     }
@@ -828,10 +763,7 @@ export default function CampsPage() {
           onClearDates={() => applyQuickRange({ dateFrom: '', dateTo: '' })}
           filterValue={filterValue}
           onFilterChange={handleFilterChange}
-          assignmentStage={workingStage === 'assignment'}
-          requestStage={workingStage === 'request'}
-          executionStage={workingStage === 'execution'}
-          financialStage={workingStage === 'financial'}
+          showStatusFilter={!workingStage}
           activeChips={activeChips}
           onClearAll={clearFilters}
         />

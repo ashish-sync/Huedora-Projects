@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { api } from '../../../shared/api.js';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
+import { bindAutofillBlock } from '../../../shared/suppressBrowserAutofill.js';
 
 const MIN_QUERY_LEN = 3;
 const DEBOUNCE_MS = 300;
@@ -153,12 +154,13 @@ export default function CampAddressAutocomplete({
         disabled={disabled}
         value={value}
         onChange={(e) => onInputChange(e.target.value)}
-        onFocus={() => {
-          if (suggestions.length) setOpen(true);
-        }}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
-        autoComplete="off"
+        {...bindAutofillBlock({
+          onFocus: () => {
+            if (suggestions.length) setOpen(true);
+          },
+        })}
         {...(useAutocomplete ? {
           role: 'combobox',
           'aria-expanded': open,

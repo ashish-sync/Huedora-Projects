@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { CampManageHeaderActions } from './components/CampManageHeaderActions.jsx';
 import { CampWorkingStageSelect } from './components/CampWorkingStageSelect.jsx';
@@ -7,6 +7,7 @@ import { useCampOpsAuth } from './useCampOpsAuth.js';
 import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
+import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
 import './campOps.css';
 import './campOps.theme.css';
 
@@ -46,12 +47,14 @@ function CampOpsLayoutBody({
   showSubtitle,
 }) {
   const { workingStage } = useCampWorkingStage();
+  const campRootRef = useRef(null);
+  useSuppressBrowserAutofill(campRootRef);
   const isRequestStage = workingStage === 'request';
   // Camps are only added at Request; other stages are progression views.
   const showRequestToolbar = showCampToolbar && isRequestStage;
 
   return (
-    <div className="camp-ops-root logistics-shell">
+    <div ref={campRootRef} className="camp-ops-root logistics-shell" data-suppress-autofill="true">
       <PageShell hideChrome className="camp-ops-page-shell">
         <header className="camp-ops-strip">
           <div className="camp-ops-strip__main">

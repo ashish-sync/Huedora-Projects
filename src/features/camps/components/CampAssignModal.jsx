@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { createPortal } from 'react-dom';
+import { AutofillDecoyFields, patchAutofillContainer } from '../../../shared/suppressBrowserAutofill.js';
 import { contactToHcwFields } from '../utils/campHcwContact';
-import { campApi } from '../campOpsApi';
+import { campApi, clientMasterApi } from '../campOpsApi';
+import { resolveClientMasterHealthcareWorker, parseClientMasterListResponse } from '../utils/clientMasterCascade';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
+import {
+  assignmentCopySourceFromCamp,
+  copyCampAssignmentDetailsFromRecord,
+  formatCampAssignmentDetails,
+} from '../utils/campAssignmentCopy';
 
 export function CampAssignModal({
   camp,
@@ -15,6 +22,10 @@ export function CampAssignModal({
   const [fields, setFields] = useState(() => contactToHcwFields(
     hcwContacts.find((c) => String(c._id) === String(camp?.hcwContactId)),
   ));
+  const [clientMasterProfession, setClientMasterProfession] = useState('');
+  const [clientMasterLoading, setClientMasterLoading] = useState(false);
+  const [savedCamp, setSavedCamp] = useState(null);
+  const [copyState, setCopyState] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,6 +43,40 @@ export function CampAssignModal({
       document.body.style.overflow = previousOverflow;
     };
   }, [onClose, saving]);
+
+  useEffect(() => {
+    const root = document.querySelector('.camp-assign-modal');
+    if (root) patchAutofillContainer(root);
+  }, [savedCamp]);
+
+  useEffect(() => {
+    const clientId = camp?.client?._id || camp?.client || camp?.clientId || '';
+    if (!clientId) {
+      setClientMasterProfession('');
+      setClientMasterLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setClientMasterLoading(true);
+    clientMasterApi.listByClient(clientId)
+      .then((response) => {
+        if (cancelled) return;
+        const records = parseClientMasterListResponse(response);
+        setClientMasterProfession(resolveClientMasterHealthcareWorker(records, {
+          campaignType: camp?.campaignType,
+          campaignName: camp?.campaignName,
+        }));
+      })
+      .catch(() => {
+        if (!cancelled) setClientMasterProfession('');
+      })
+      .finally(() => {
+        if (!cancelled) setClientMasterLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [camp?.client, camp?.clientId, camp?.campaignType, camp?.campaignName]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -58,7 +103,7 @@ export function CampAssignModal({
         lifecycleStage: 'assignment',
         lifecycleOnly: true,
       });
-      onSaved?.(data?.data || data);
+      setSavedCamp(data?.data || data);
     } catch (err) {
       setError(err?.message || 'Failed to assign resource');
     } finally {
@@ -66,52 +111,104 @@ export function CampAssignModal({
     }
   }
 
+  async function handleCopyDetails() {
+    const source = savedCamp || camp;
+    const didCopy = await copyCampAssignmentDetailsFromRecord(source);
+    if (!didCopy) return;
+    setCopyState('copied');
+    window.setTimeout(() => setCopyState(''), 2000);
+  }
+
+  function handleDone() {
+    onSaved?.(savedCamp);
+    onClose?.();
+  }
+
+  const copyPreview = formatCampAssignmentDetails(
+    assignmentCopySourceFromCamp(savedCamp || { ...camp, ...fields }),
+  );
+
   return createPortal(
     <div className="camp-ops-root camp-info-portal-root">
-      <div className="modal-overlay camp-info-modal-overlay" onClick={onClose}>
+      <div className="modal-overlay camp-info-modal-overlay" onClick={savedCamp ? undefined : onClose}>
         <form
           className="modal-card camp-assign-modal"
           role="dialog"
           aria-modal="true"
           aria-labelledby="camp-assign-modal-title"
           onClick={(event) => event.stopPropagation()}
-          onSubmit={handleSubmit}
+          onSubmit={savedCamp ? (event) => event.preventDefault() : handleSubmit}
+          autoComplete="off"
+          data-form-type="other"
         >
+          <AutofillDecoyFields />
           <header className="camp-approval-issues-header">
             <div>
-              <h2 id="camp-assign-modal-title">Assign resource</h2>
+              <h2 id="camp-assign-modal-title">
+                {savedCamp ? 'Resource assigned' : 'Assign resource'}
+              </h2>
               {camp?.campId && <p className="camp-approval-issues-subtitle">{camp.campId}</p>}
             </div>
-            <button type="button" className="camp-info-modal-close" aria-label="Close" onClick={onClose}>
+            <button type="button" className="camp-info-modal-close" aria-label="Close" onClick={handleDone}>
               ×
             </button>
           </header>
 
           <div className="camp-assign-modal-body">
             {error && <FeedbackBanner variant="error" className="camp-assign-modal-error">{error}</FeedbackBanner>}
-            <p className="camp-approval-issues-lead">
-              Filter Healthcare Worker contacts by resource type and profession, then pick the person to assign.
-              The camp moves to Execution after assignment.
-            </p>
-            <CampHcwAssignPicker
-              hcwContacts={hcwContacts}
-              contactsLoading={contactsLoading}
-              disabled={saving}
-              selectedContactId={fields.hcwContactId}
-              onSelect={(nextFields) => {
-                setFields(nextFields);
-                setError('');
-              }}
-            />
+            {savedCamp ? (
+              <>
+                <p className="camp-approval-issues-lead">
+                  Healthcare worker assigned. Copy the clinic details below to share with the field team.
+                </p>
+                <pre className="camp-assignment-copy-preview">{copyPreview}</pre>
+                <div className="camp-assignment-copy-wrap">
+                  <button
+                    type="button"
+                    className="btn secondary btn-compact"
+                    onClick={handleCopyDetails}
+                  >
+                    {copyState === 'copied' ? 'Copied' : 'Copy details'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="camp-approval-issues-lead">
+                  Select resource type, state, and city to find the healthcare worker configured for this client in Client Master.
+                  The camp moves to Execution after assignment.
+                </p>
+                <CampHcwAssignPicker
+                  hcwContacts={hcwContacts}
+                  contactsLoading={contactsLoading}
+                  disabled={saving}
+                  selectedContactId={fields.hcwContactId}
+                  clientMasterProfession={clientMasterProfession}
+                  clientMasterLoading={clientMasterLoading}
+                  onSelect={(nextFields) => {
+                    setFields(nextFields);
+                    setError('');
+                  }}
+                />
+              </>
+            )}
           </div>
 
           <footer className="camp-assign-modal-footer">
-            <button type="button" className="btn secondary btn-compact" onClick={onClose} disabled={saving}>
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-compact" disabled={saving || contactsLoading}>
-              {saving ? 'Assigning…' : 'Assign'}
-            </button>
+            {savedCamp ? (
+              <button type="button" className="btn btn-compact" onClick={handleDone}>
+                Done
+              </button>
+            ) : (
+              <>
+                <button type="button" className="btn secondary btn-compact" onClick={onClose} disabled={saving}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-compact" disabled={saving || contactsLoading}>
+                  {saving ? 'Assigning…' : 'Assign'}
+                </button>
+              </>
+            )}
           </footer>
         </form>
       </div>

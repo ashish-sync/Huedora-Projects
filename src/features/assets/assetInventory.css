@@ -140,7 +140,7 @@
   height: var(--control-h-sm);
   min-height: var(--control-h-sm);
   max-height: var(--control-h-sm);
-  padding: 0 10px;
+  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
   border-radius: 8px;
   font-size: 0.8125rem;
   line-height: 1.2;
@@ -148,7 +148,7 @@
 
 .asset-inventory-shell .asset-form-row .field textarea {
   min-height: 72px;
-  padding: 8px 10px;
+  padding: var(--control-pad-inline-start) var(--control-pad-inline-end);
   border-radius: 8px;
   font-size: 0.8125rem;
   line-height: 1.45;

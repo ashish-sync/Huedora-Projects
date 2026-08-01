@@ -260,44 +260,99 @@ html[data-theme='dark'] table th {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--stack-sm);
+  gap: 0.5rem;
   margin-bottom: var(--stack-sm);
 }
 
 .pm-filter-bar.inv-toolbar,
 .logistics-filter-bar.inv-toolbar {
+  --pm-filter-h: var(--filter-control-h);
   margin-bottom: var(--stack-sm);
+  padding: 0.625rem 0.75rem;
   border-radius: var(--radius-sm);
+  align-items: center;
+  gap: var(--filter-toolbar-gap) !important;
 }
 
-.pm-filter-bar input[type='search'],
-.pm-filter-bar .inv-search {
-  flex: 1 1 12rem;
-  min-width: 12rem;
-  max-width: none;
-  height: var(--control-h) !important;
-  min-height: var(--control-h) !important;
-  padding: 0 var(--space-3) !important;
+.pm-filter-bar.inv-toolbar input[type='search'],
+.pm-filter-bar.inv-toolbar .inv-search,
+.pm-filter-bar.inv-toolbar .esign-search,
+.logistics-filter-bar.inv-toolbar input[type='search'],
+.logistics-filter-bar.inv-toolbar .inv-search,
+.logistics-filter-bar.inv-toolbar .esign-search {
+  flex: 1 1 14rem !important;
+  min-width: 14rem !important;
+  max-width: 28rem !important;
+  width: auto !important;
+  height: var(--pm-filter-h) !important;
+  min-height: var(--pm-filter-h) !important;
+  max-height: var(--pm-filter-h) !important;
+  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start) !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-button) !important;
   background: var(--bg-elevated) !important;
   color: var(--ink) !important;
-  font-size: var(--text-body-sm-size) !important;
+  font-size: var(--text-label-size, 0.8125rem) !important;
+  line-height: 1.2 !important;
   box-sizing: border-box !important;
 }
 
-.pm-filter-bar > .adaptive-select,
-.logistics-filter-bar > .adaptive-select,
-.pm-filter-bar > select,
-.logistics-filter-bar > select {
-  flex: 0 0 var(--control-w);
-  width: var(--control-w);
-  min-width: var(--control-w);
-  max-width: var(--control-w);
+.pm-filter-bar.inv-toolbar > .adaptive-select,
+.logistics-filter-bar.inv-toolbar > .adaptive-select,
+.pm-filter-bar.inv-toolbar > .adaptive-select-host,
+.logistics-filter-bar.inv-toolbar > .adaptive-select-host,
+.pm-filter-bar.inv-toolbar > select,
+.logistics-filter-bar.inv-toolbar > select {
+  flex: 0 0 var(--filter-control-min-w) !important;
+  width: var(--filter-control-min-w) !important;
+  min-width: var(--filter-control-min-w) !important;
+  max-width: var(--filter-control-min-w) !important;
+  height: var(--pm-filter-h) !important;
+  min-height: var(--pm-filter-h) !important;
+  max-height: var(--pm-filter-h) !important;
+  box-sizing: border-box !important;
+}
+
+.pm-filter-bar.inv-toolbar > .adaptive-select .adaptive-select__control,
+.logistics-filter-bar.inv-toolbar > .adaptive-select .adaptive-select__control {
+  min-height: var(--pm-filter-h) !important;
+  height: var(--pm-filter-h) !important;
+  max-height: var(--pm-filter-h) !important;
+}
+
+.pm-filter-bar.inv-toolbar > .btn,
+.logistics-filter-bar.inv-toolbar > .btn,
+.pm-filter-bar.inv-toolbar .master-excel-toolbar .btn,
+.logistics-filter-bar.inv-toolbar .master-excel-toolbar .btn {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  height: var(--pm-filter-h) !important;
+  min-height: var(--pm-filter-h) !important;
+  max-height: var(--pm-filter-h) !important;
+  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start) !important;
+  font-size: var(--text-label-size, 0.8125rem) !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.pm-filter-bar.inv-toolbar > .btn.btn-ghost,
+.logistics-filter-bar.inv-toolbar > .btn.btn-ghost {
+  border-radius: var(--radius-button) !important;
 }
 
 .pm-filter-bar .btn,
 .logistics-filter-bar .btn {
+  flex: 0 0 auto;
+}
+
+.pm-filter-bar .master-excel-toolbar,
+.logistics-filter-bar .master-excel-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   flex: 0 0 auto;
 }
 
@@ -451,6 +506,30 @@ html[data-theme='dark'] .camp-ops-root .dashboard-filter-panel {
 .inv-header-actions .btn,
 .master-excel-toolbar .btn {
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .pm-filter-bar.inv-toolbar input[type='search'],
+  .pm-filter-bar.inv-toolbar .inv-search,
+  .pm-filter-bar.inv-toolbar .esign-search,
+  .logistics-filter-bar.inv-toolbar input[type='search'],
+  .logistics-filter-bar.inv-toolbar .inv-search,
+  .logistics-filter-bar.inv-toolbar .esign-search {
+    flex: 1 1 100% !important;
+    max-width: none !important;
+  }
+
+  .pm-filter-bar.inv-toolbar > .adaptive-select,
+  .logistics-filter-bar.inv-toolbar > .adaptive-select,
+  .pm-filter-bar.inv-toolbar > .adaptive-select-host,
+  .logistics-filter-bar.inv-toolbar > .adaptive-select-host,
+  .pm-filter-bar.inv-toolbar > select,
+  .logistics-filter-bar.inv-toolbar > select {
+    flex: 1 1 calc(50% - 0.375rem) !important;
+    width: auto !important;
+    min-width: min(100%, var(--filter-control-min-w)) !important;
+    max-width: none !important;
+  }
 }
 
 

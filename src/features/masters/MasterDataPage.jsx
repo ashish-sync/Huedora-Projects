@@ -23,18 +23,18 @@ export default function MasterDataPage() {
 
   const description = useMemo(() => {
     if (scope === 'inventory') {
-      return 'Products.';
+      return 'Products — shared catalog for assets, inventory, and movements.';
     }
     if (scope === 'movement' || scope === 'logistics') {
-      return 'Suppliers & vendors, and expense categories.';
+      return 'Expense Master — categories and sub-categories for Finance One Requests.';
     }
     if (scope === 'document') {
-      return 'Contact Directory, document templates, and signatures.';
+      return 'Contact Directory, Document Templates, Signatures, and Picklist approvals.';
     }
     if (scope === 'camp') {
-      return 'Client programs, pricing, and camp configuration for Camp One.';
+      return 'Client Master and PIN Geography for Camp One.';
     }
-    return 'Enterprise reference data used across Asset One, Movement One, Document One, and Camp One.';
+    return 'Shared enterprise reference data for Asset One, Movement One, Document One, Finance One, and Camp One.';
   }, [scope]);
 
   if (!allowed) {

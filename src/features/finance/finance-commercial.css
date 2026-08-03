@@ -276,6 +276,73 @@
   background: var(--bg-elevated);
 }
 
+.org-master-form .doc-file-drop-label {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.org-master-form .doc-file-drop-label:not(.has-preview) {
+  align-items: center;
+  justify-content: center;
+  min-width: 240px;
+  padding: 20px 24px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  text-align: center;
+}
+
+.org-master-form .doc-file-drop-label.has-preview {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+}
+
+.org-master-form .doc-file-drop-preview {
+  display: block;
+  max-width: min(220px, 100%);
+  max-height: 72px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.org-master-form .doc-file-drop--qr .doc-file-drop-preview {
+  max-width: 88px;
+  max-height: 88px;
+}
+
+.org-master-form .doc-file-drop-replace-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.org-master-form .doc-file-drop-placeholder {
+  font-size: 0.84rem;
+  color: var(--ink);
+}
+
+.org-master-form .doc-file-drop-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.org-master-form .doc-file-drop-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
 .org-master-card {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -473,36 +540,107 @@
 }
 
 .finance-camp-payouts {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  padding: 0;
+  overflow: hidden;
 }
 
-.finance-camp-payouts-head {
+.finance-camp-payouts-toolbar {
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--line);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.finance-camp-payouts .page-alerts {
+  padding: 0 var(--space-5) var(--space-4);
 }
 
 .finance-camp-payouts-filters {
+  margin-bottom: 0;
+}
+
+.finance-camp-payouts-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
   align-items: center;
+  gap: var(--stack-sm);
 }
 
 .finance-camp-payouts-layout {
   display: grid;
-  grid-template-columns: minmax(240px, 320px) 1fr;
-  gap: 1rem;
-  align-items: start;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  min-height: 420px;
+  align-items: stretch;
+}
+
+.finance-camp-payouts-list,
+.finance-camp-payouts-detail {
+  padding: var(--space-5);
+  min-height: 0;
+}
+
+.finance-camp-payouts-list {
+  border-right: 1px solid var(--line);
+  background: var(--bg-sunken);
+  overflow: auto;
+}
+
+.finance-camp-payouts-detail {
+  background: var(--bg-elevated);
+  overflow: auto;
+}
+
+.finance-camp-payouts-detail--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.finance-camp-payouts-section-label {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-caption-size);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.finance-camp-payouts-empty {
+  margin: var(--space-6) 0;
+  text-align: center;
+}
+
+.finance-camp-payouts-detail h3 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
 }
 
 @media (max-width: 900px) {
   .finance-camp-payouts-layout {
     grid-template-columns: 1fr;
+  }
+
+  .finance-camp-payouts-list {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    max-height: 280px;
+  }
+
+  .finance-camp-payouts-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-camp-payouts-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 901px) {
+  .finance-camp-payouts-filters {
+    grid-template-columns: minmax(0, 1fr) var(--control-w-min) auto;
   }
 }
 
@@ -519,13 +657,18 @@
   width: 100%;
   text-align: left;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
   background: var(--bg-elevated);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: var(--space-1);
+  font: inherit;
+  color: inherit;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .finance-camp-payout-item.is-active {
@@ -570,16 +713,6 @@
   overflow: hidden;
 }
 
-.finance-hub-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-5) var(--space-3);
-  border-bottom: 1px solid var(--line);
-}
-
 .finance-hub-title {
   margin: 0 0 var(--space-1);
   font-size: var(--text-h2-size);
@@ -598,6 +731,20 @@
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--line);
   background: var(--bg-sunken);
+}
+
+.finance-hub-create--standalone,
+.finance-hub-panel--picker .finance-hub-create {
+  border-bottom: none;
+  background: var(--bg-elevated);
+  padding-bottom: var(--space-5);
+}
+
+.finance-hub-picker-lead {
+  margin: calc(var(--space-1) * -1) 0 var(--space-4);
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-leading);
+  max-width: 52ch;
 }
 
 .finance-hub-section-label {
@@ -685,11 +832,11 @@
 }
 
 .finance-docs-embedded {
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--space-5);
 }
 
 .finance-docs-head--embedded {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .finance-docs-head {
@@ -735,7 +882,6 @@
 }
 
 @media (max-width: 520px) {
-  .finance-hub-actions,
   .finance-hub-create,
   .finance-docs-embedded {
     padding-left: var(--space-4);

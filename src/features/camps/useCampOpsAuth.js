@@ -46,7 +46,7 @@ export function useCampOpsAuth() {
     const aliases = {
       'camps:create': ['camps:request'],
       'camps:update': ['camps:request', 'camps:approve'],
-      'camps:execute': ['camps:approve', 'camps:request'],
+      'camps:execute': ['camps:approve'],
       'camps:cancel': ['camps:approve'],
       'camps:review': ['camps:approve'],
       'camps:edit-pending': ['camps:approve', 'camps:request'],

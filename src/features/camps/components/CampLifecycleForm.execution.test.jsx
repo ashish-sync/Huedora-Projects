@@ -23,7 +23,7 @@ vi.mock('../campOpsApi.js', () => ({
 function renderExecutionForm(overrides = {}) {
   const form = {
     ...emptyLifecycleForm(),
-    campDate: '2026-08-01',
+    campDate: '2099-08-01',
     startTime: '09:00',
     endTime: '12:00',
     lifecycleStage: 'execution',
@@ -71,7 +71,7 @@ describe('CampLifecycleForm execution stage', () => {
       <CampLifecycleForm
         form={{
           ...emptyLifecycleForm(),
-          campDate: '2026-08-01',
+          campDate: '2099-08-01',
           startTime: '09:00',
           endTime: '12:00',
           lifecycleStage: 'execution',

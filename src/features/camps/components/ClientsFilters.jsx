@@ -1,3 +1,6 @@
+import MasterFilterShell from '../../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../../components/masters/MasterSearchField.jsx';
+
 export function ClientsFilters({
   search,
   onSearchChange,
@@ -9,24 +12,29 @@ export function ClientsFilters({
 }) {
   return (
     <>
-      <div className="inv-toolbar logistics-toolbar camp-ops-toolbar">
-        <input
+      <MasterFilterShell
+        actions={
+          <>
+            <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
+              Search
+            </button>
+            {canCreate ? (
+              <button type="button" className="btn btn-compact" onClick={onCreate}>
+                New Client
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        <MasterSearchField
           id="clients-search"
-          className="esign-search inv-search"
-          placeholder="Client name or code…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+          placeholder="Client name or code…"
+          aria-label="Search clients"
         />
-        <button type="button" className="btn secondary" onClick={onSearchSubmit}>
-          Search
-        </button>
-        {canCreate && (
-          <button type="button" className="btn" onClick={onCreate}>
-            New Client
-          </button>
-        )}
-      </div>
+      </MasterFilterShell>
 
       {activeChips.length > 0 && (
         <div className="camps-filter-chips">

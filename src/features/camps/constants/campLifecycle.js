@@ -145,6 +145,7 @@ export const CAMP_SOURCE_OPTIONS = [
   { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'excel', label: 'Import' },
   { value: 'paste', label: 'Manual Paste' },
+  { value: 'parser', label: 'Request Parser' },
   { value: 'api', label: 'API' },
 ];
 

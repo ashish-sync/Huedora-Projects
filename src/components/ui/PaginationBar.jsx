@@ -1,4 +1,3 @@
-import AdaptiveSelect from './AdaptiveSelect.jsx';
 import { PAGE_SIZES } from '../../shared/validation.js';
 
 /**
@@ -30,17 +29,19 @@ export default function PaginationBar({
         </span>
         <label className="inv-page-size">
           <span className="inv-page-size-label">Records per page</span>
-          <AdaptiveSelect
+          <select
+            className="tylo-select inv-page-size-select"
             value={safeLimit}
             onChange={(e) => onLimitChange?.(Number(e.target.value))}
             disabled={loading}
+            aria-label="Records per page"
           >
             {pageSizes.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
             ))}
-          </AdaptiveSelect>
+          </select>
         </label>
       </div>
       <div className="inv-pagination-controls">
@@ -53,7 +54,7 @@ export default function PaginationBar({
           Previous
         </button>
         <span className="inv-page-indicator">
-          Page {safeTotal === 0 ? 0 : safePage} of {Math.max(safePages, 1)}
+          Page {safePage} of {Math.max(safePages, 1)}
         </span>
         <button
           type="button"

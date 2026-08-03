@@ -8,6 +8,8 @@ import { api, apiUrl } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import {
   FALLBACK_CAT_DEFAULTS,
   FALLBACK_PRODUCT,
@@ -411,33 +413,38 @@ export default function LogisticsInwardPage() {
       </div>
       <p className="muted ilog-source-hint">{source.blurb}</p>
 
-      <div className="inv-toolbar logistics-toolbar">
-        <input
-          className="esign-search inv-search"
-          placeholder="Search TXN, product…"
+      <MasterFilterShell
+        actions={
+          <>
+            <button className="btn secondary btn-compact" type="button" onClick={load}>
+              Refresh
+            </button>
+            {canWrite ? (
+              <button
+                className="btn btn-compact"
+                type="button"
+                onClick={() => {
+                  if (formOpen) {
+                    setFormOpen(false);
+                    return;
+                  }
+                  openCreate();
+                }}
+              >
+                {formOpen ? 'Close form' : '+ Record goods receipt'}
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        <MasterSearchField
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search TXN, product…"
+          aria-label="Search goods receipts"
         />
-        <button className="btn secondary" type="button" onClick={load}>
-          Search
-        </button>
-        {canWrite && (
-          <button
-            className="btn"
-            type="button"
-            onClick={() => {
-              if (formOpen) {
-                setFormOpen(false);
-                return;
-              }
-              openCreate();
-            }}
-          >
-            {formOpen ? 'Close form' : '+ Record goods receipt'}
-          </button>
-        )}
-      </div>
+      </MasterFilterShell>
 
       {canWrite && formOpen && (
         <form className="card logistics-form logistics-txn-form" onSubmit={save}>

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 
 import { CLIENT_MASTER_NEW_PATH } from '../clientMasterPaths.js';
+import MasterFilterShell from '../../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../../components/masters/MasterSearchField.jsx';
 
 export function ClientMasterProgramsFilters({
   search,
@@ -12,24 +14,29 @@ export function ClientMasterProgramsFilters({
 }) {
   return (
     <>
-      <div className="inv-toolbar logistics-toolbar camp-ops-toolbar">
-        <input
+      <MasterFilterShell
+        actions={
+          <>
+            <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
+              Search
+            </button>
+            {showCreateLink ? (
+              <Link to={CLIENT_MASTER_NEW_PATH} className="btn btn-compact">
+                New Program Config
+              </Link>
+            ) : null}
+          </>
+        }
+      >
+        <MasterSearchField
           id="client-master-search"
-          className="esign-search inv-search"
-          placeholder="Client name, program, camp, SPOC…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+          placeholder="Client name, program, camp, SPOC…"
+          aria-label="Search program configs"
         />
-        <button type="button" className="btn secondary" onClick={onSearchSubmit}>
-          Search
-        </button>
-        {showCreateLink && (
-          <Link to={CLIENT_MASTER_NEW_PATH} className="btn">
-            New Program Config
-          </Link>
-        )}
-      </div>
+      </MasterFilterShell>
 
       {activeChips.length > 0 && (
         <div className="camps-filter-chips">

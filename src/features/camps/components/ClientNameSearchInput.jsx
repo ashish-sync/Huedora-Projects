@@ -112,7 +112,18 @@ export function ClientNameSearchInput({
     onSelectRecord({
       clientId: client._id,
       clientName: client.name,
+      clientCode: client.code || '',
       client: { code: client.code },
+      billing: {
+        address: client.address || '',
+        gstin: client.gstin || '',
+        pan: client.pan || '',
+        stateName: client.stateName || '',
+        stateCode: client.stateCode || '',
+        contactPerson: client.contactPerson || '',
+        email: client.email || '',
+        phone: client.phone || '',
+      },
       programName: '',
       campName: '',
       campType: '',

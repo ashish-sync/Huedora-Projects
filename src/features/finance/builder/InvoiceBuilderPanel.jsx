@@ -8,6 +8,7 @@ import {
   usesIgst,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_INVOICE_LINE_ITEMS } from '../invoiceGenerator/invoiceStorage.js';
+import ClientMasterRecipientPicker from './ClientMasterRecipientPicker.jsx';
 
 function Section({ id, title, badge, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -43,6 +44,8 @@ export default function InvoiceBuilderPanel({
   removeLine,
   updateTerm,
   addTerm,
+  applyClientMasterRecipient,
+  clearClientMasterRecipient,
   panelConfig = {},
 }) {
   const {
@@ -68,6 +71,17 @@ export default function InvoiceBuilderPanel({
       </div>
 
       <Section id="recipient" title="Recipient" defaultOpen>
+        {applyClientMasterRecipient ? (
+          <div className="ib-grid" style={{ marginBottom: 12 }}>
+            <Field label="Client Master" span={2}>
+              <ClientMasterRecipientPicker
+                value={form.clientMasterId || ''}
+                onPick={(_row, patch) => applyClientMasterRecipient(patch)}
+                onClear={() => clearClientMasterRecipient?.()}
+              />
+            </Field>
+          </div>
+        ) : null}
         <div className="ib-grid">
           <Field label="Name" span={2}>
             <input className={inputCls} value={form.billTo.name} onChange={(e) => update('billTo.name', e.target.value)} />

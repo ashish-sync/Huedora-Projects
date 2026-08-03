@@ -62,24 +62,25 @@ export default function HealthcareInsightBanner({
         </svg>
       </div>
       <div className="health-insight-body">
-        <p className="health-insight-tag">{heading}</p>
+        <div className="health-insight-head">
+          <p className="health-insight-tag">{heading}</p>
+          {variant === 'home' && allowShuffle ? (
+            <button type="button" className="health-insight-shuffle" onClick={shuffle}>
+              Another fact
+            </button>
+          ) : null}
+        </div>
         <p className="health-insight-text">{insight.text}</p>
-        {variant === 'home' ? (
+        {variant === 'home' && !sectionTitle ? (
           <p className="health-insight-foot">
-            {allowShuffle ? (
-              <button type="button" className="health-insight-shuffle" onClick={shuffle}>
-                Show another fact
-              </button>
-            ) : null}
-            {!sectionTitle ? (
-              <span className="health-insight-note">Fresh insight each time you sign in</span>
-            ) : null}
+            <span className="health-insight-note">Fresh insight each time you sign in</span>
           </p>
-        ) : (
+        ) : null}
+        {variant === 'login' ? (
           <p className="health-insight-foot">
             <span className="health-insight-note">A new fact every day on this screen</span>
           </p>
-        )}
+        ) : null}
       </div>
     </aside>
   );

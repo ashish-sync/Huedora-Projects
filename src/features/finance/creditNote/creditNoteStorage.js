@@ -42,6 +42,8 @@ export function defaultCreditNoteForm() {
       qrEnabled: false,
       paymentQrDataUrl: '',
     },
+    clientMasterId: '',
+    clientId: '',
     billTo: {
       name: '',
       contactPerson: '',

@@ -22,7 +22,19 @@ export default function ProformaBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    applyClientMasterRecipient,
+    clearClientMasterRecipient,
     newProforma,
+    status,
+    error,
+    busyAction,
+    readOnly,
+    loadingDoc,
+    submitDocument,
+    approveDocument,
+    rejectDocument,
+    issueDocument,
+    exportServerPdf,
   } = useProformaBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -45,13 +57,23 @@ export default function ProformaBuilderPage() {
       panelAriaLabel="Proforma fields"
       exportFilePrefix="proforma"
       docNumber={form.document.documentNumber}
+      status={status}
       grandTotal={formatMoney(totals?.grandTotal)}
       saveState={saveState}
       savedAt={savedAt}
+      error={error}
+      busyAction={busyAction}
+      readOnly={readOnly}
+      loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
       onPrint={handlePrint}
       onSaveNow={saveNow}
+      onExportPdf={exportServerPdf}
+      onSubmit={submitDocument}
+      onApprove={approveDocument}
+      onReject={rejectDocument}
+      onIssue={issueDocument}
       onNewInvoice={newProforma}
       shortcutsOpen={shortcutsOpen}
       onShortcutsClose={() => setShortcutsOpen(false)}
@@ -67,6 +89,8 @@ export default function ProformaBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          applyClientMasterRecipient={applyClientMasterRecipient}
+          clearClientMasterRecipient={clearClientMasterRecipient}
         />
       }
     >
@@ -74,7 +98,7 @@ export default function ProformaBuilderPage() {
         <ProformaPreview
           form={form}
           previewRef={previewRef}
-          editable
+          editable={!readOnly}
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}

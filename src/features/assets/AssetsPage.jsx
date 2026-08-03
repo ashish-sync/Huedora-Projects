@@ -9,6 +9,8 @@ import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import {
   OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -903,52 +905,55 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         </form>
       )}
 
-      <section className="inv-catalog card card--flush">
-        <div className="inv-toolbar">
-          <input
-            className="esign-search inv-search"
-            placeholder="Search asset name, serial, custodian, city…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-          />
-          <AdaptiveSelect
-            className="filter-select"
-            value={agreementStatus}
-            onChange={(e) => {
-              setAgreementStatus(e.target.value);
-              setPage(1);
-            }}
-            aria-label={FIELD.ASSET_STATUS}
-          >
-            <option value="">{FIELD.ALL_ASSET_STATUSES}</option>
-            {ASSET_STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <AdaptiveSelect
-            className="filter-select"
-            value={custody}
-            onChange={(e) => {
-              setCustody(e.target.value);
-              setPage(1);
-            }}
-            aria-label={FIELD.ASSET_CUSTODY}
-          >
-            <option value="">{FIELD.ALL_ASSET_CUSTODY}</option>
-            {ASSET_CUSTODY_OPTIONS.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <button className="btn secondary" type="button" onClick={runSearch}>
-            Search
+      <MasterFilterShell
+        actions={
+          <button className="btn secondary btn-compact" type="button" onClick={runSearch}>
+            Refresh
           </button>
-        </div>
+        }
+      >
+        <MasterSearchField
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+          placeholder="Search asset name, serial, custodian, city…"
+          aria-label="Search assets"
+        />
+        <AdaptiveSelect
+          className="filter-select"
+          value={agreementStatus}
+          onChange={(e) => {
+            setAgreementStatus(e.target.value);
+            setPage(1);
+          }}
+          aria-label={FIELD.ASSET_STATUS}
+        >
+          <option value="">{FIELD.ALL_ASSET_STATUSES}</option>
+          {ASSET_STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          className="filter-select"
+          value={custody}
+          onChange={(e) => {
+            setCustody(e.target.value);
+            setPage(1);
+          }}
+          aria-label={FIELD.ASSET_CUSTODY}
+        >
+          <option value="">{FIELD.ALL_ASSET_CUSTODY}</option>
+          {ASSET_CUSTODY_OPTIONS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </AdaptiveSelect>
+      </MasterFilterShell>
 
+      <section className="inv-catalog card card--flush">
         <div className="inv-table-wrap">
           <table className="inv-table">
             <thead>

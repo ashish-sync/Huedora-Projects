@@ -1,11 +1,19 @@
 /**
- * Enterprise filter toolbar — single-baseline rows with fixed control height,
- * 180px minimum filter width, no label wrapping, 12px gaps.
+ * Enterprise filter toolbar — neat single-baseline rows matching MasterFilterShell.
+ * Search grows; filters share a fixed width; actions sit on the right.
  * Loaded last so it wins over legacy global/toolbar rules.
  */
 
-/* ── Toolbar row layout ────────────────────────────────────── */
+:root {
+  --filter-toolbar-gap: 0.625rem;
+  --filter-control-h: var(--control-h, 2.25rem);
+  --filter-control-min-w: 10.5rem;
+}
 
+/* ── Shell look for every list filter bar ──────────────────── */
+
+.master-filter-shell,
+.pm-filter-shell,
 .catalog-toolbar,
 .inv-toolbar,
 .am-toolbar,
@@ -17,22 +25,73 @@
 .page-metrics-toolbar,
 .pm-filter-bar,
 .logistics-filter-bar,
-.camp-ops-root .camps-filter-toolbar,
-.camp-ops-root .camps-filter-toolbar__filters,
+.finance-docs-filters,
+.camp-ops-root .camps-filter-card,
 .camp-ops-root .communications-filter-panel {
   display: flex !important;
   flex-wrap: nowrap !important;
   align-items: center !important;
   gap: var(--filter-toolbar-gap) !important;
+  box-sizing: border-box !important;
 }
 
+.master-filter-shell,
+.pm-filter-shell,
+.catalog-toolbar,
+.inv-toolbar,
+.am-toolbar,
+.vf-toolbar,
+.esign-toolbar,
+.logistics-toolbar,
+.filter-bar,
+.agreements-filters,
+.page-metrics-toolbar,
+.pm-filter-bar,
+.logistics-filter-bar,
+.finance-docs-filters,
+.camp-ops-root .camps-filter-card,
+.camp-ops-root .communications-filter-panel {
+  margin-bottom: var(--space-3, 0.75rem) !important;
+  padding: 0.625rem 0.75rem !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm, 10px) !important;
+  background: var(--bg-elevated) !important;
+}
+
+.master-filter-main,
+.pm-filter-main,
+.camp-ops-root .camps-filter-toolbar,
+.camp-ops-root .camps-filter-toolbar__filters,
 .camp-ops-root .camps-filter-group {
+  display: flex !important;
+  flex-wrap: nowrap !important;
   align-items: center !important;
   gap: var(--filter-toolbar-gap) !important;
+  min-width: 0 !important;
+}
+
+.master-filter-main,
+.pm-filter-main {
+  flex: 1 1 auto !important;
+}
+
+.master-filter-actions,
+.pm-filter-actions {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: var(--filter-toolbar-gap) !important;
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
 }
 
 /* ── Shared filter control sizing ──────────────────────────── */
 
+.master-filter-main > select,
+.master-filter-main > .adaptive-select-host,
+.pm-filter-main > select,
+.pm-filter-main > .adaptive-select-host,
 .catalog-toolbar > select,
 .catalog-toolbar > .adaptive-select-host,
 .inv-toolbar > select,
@@ -55,8 +114,12 @@
 .pm-filter-bar > .adaptive-select-host,
 .logistics-filter-bar > select,
 .logistics-filter-bar > .adaptive-select-host,
+.finance-docs-filters > select,
+.finance-docs-filters > .adaptive-select-host,
 .toolbar > select,
-.toolbar > .adaptive-select-host {
+.toolbar > .adaptive-select-host,
+.camp-ops-root .camps-filter-status,
+.camp-ops-root .camps-filter-control.tylo-select {
   flex: 0 0 var(--filter-control-min-w) !important;
   width: var(--filter-control-min-w) !important;
   min-width: var(--filter-control-min-w) !important;
@@ -67,6 +130,8 @@
   box-sizing: border-box !important;
 }
 
+.master-filter-main > .adaptive-select-host .adaptive-select__control,
+.pm-filter-main > .adaptive-select-host .adaptive-select__control,
 .catalog-toolbar > .adaptive-select-host .adaptive-select__control,
 .inv-toolbar > .adaptive-select-host .adaptive-select__control,
 .am-toolbar > .adaptive-select-host .adaptive-select__control,
@@ -78,12 +143,15 @@
 .page-metrics-toolbar > .adaptive-select-host .adaptive-select__control,
 .pm-filter-bar > .adaptive-select-host .adaptive-select__control,
 .logistics-filter-bar > .adaptive-select-host .adaptive-select__control,
+.finance-docs-filters > .adaptive-select-host .adaptive-select__control,
 .toolbar > .adaptive-select-host .adaptive-select__control {
   min-height: var(--filter-control-h) !important;
   height: var(--filter-control-h) !important;
   max-height: var(--filter-control-h) !important;
 }
 
+.master-filter-main > select,
+.pm-filter-main > select,
 .catalog-toolbar > select,
 .inv-toolbar > select,
 .am-toolbar > select,
@@ -95,6 +163,7 @@
 .page-metrics-toolbar > select,
 .pm-filter-bar > select,
 .logistics-filter-bar > select,
+.finance-docs-filters > select,
 .toolbar > select,
 .camp-ops-root .camps-filter-control,
 .camp-ops-root .camps-filter-status {
@@ -105,6 +174,9 @@
 
 /* ── Search inputs ─────────────────────────────────────────── */
 
+.master-filter-main > .master-search-field,
+.pm-filter-main > .pm-search-field,
+.master-filter-main > .esign-search,
 .catalog-toolbar > .esign-search,
 .inv-toolbar > .esign-search,
 .inv-toolbar > .inv-search,
@@ -120,9 +192,13 @@
 .pm-filter-bar > .inv-search,
 .logistics-filter-bar > .esign-search,
 .logistics-filter-bar > .inv-search,
-.camp-ops-root .camps-filter-search {
-  flex: 1 1 0% !important;
-  min-width: var(--filter-control-min-w) !important;
+.finance-docs-filters > .master-search-field,
+.finance-docs-filters > .finance-docs-search,
+.finance-docs-filters > .input,
+.camp-ops-root .camps-filter-search,
+.camp-ops-root .communications-search-field {
+  flex: 1 1 16rem !important;
+  min-width: 14rem !important;
   width: auto !important;
   max-width: none !important;
   height: var(--filter-control-h) !important;
@@ -131,8 +207,34 @@
   box-sizing: border-box !important;
 }
 
-/* ── Toolbar buttons (Search, Apply, etc.) ─────────────────── */
+/* Plain search inputs (legacy) get control chrome when not using MasterSearchField */
+.vf-toolbar > .esign-search,
+.esign-toolbar > .esign-search,
+.inv-toolbar > .esign-search,
+.inv-toolbar > .inv-search,
+.am-toolbar > .esign-search,
+.am-toolbar > .am-search,
+.logistics-toolbar > .esign-search,
+.finance-docs-filters > .finance-docs-search,
+.finance-docs-filters > .input,
+.camp-ops-root input.camps-filter-search {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--dropdown-radius, var(--radius-sm)) !important;
+  background: var(--bg-elevated) !important;
+  padding: 0 0.75rem !important;
+  font-size: 0.8125rem !important;
+  color: var(--ink) !important;
+}
 
+/* MasterSearchField wrapper already has its own chrome — don't double-border it */
+.camp-ops-root .camps-filter-search.master-search-field {
+  padding: 0 !important;
+}
+
+/* ── Toolbar buttons ───────────────────────────────────────── */
+
+.master-filter-actions > .btn,
+.pm-filter-actions > .btn,
 .catalog-toolbar > .btn,
 .inv-toolbar > .btn,
 .am-toolbar > .btn,
@@ -144,8 +246,11 @@
 .page-metrics-toolbar > .btn,
 .pm-filter-bar > .btn,
 .logistics-filter-bar > .btn,
+.finance-docs-filters > .btn,
+.finance-docs-filters .finance-camp-payouts-actions > .btn,
 .camp-ops-root .camps-filter-toolbar > .btn,
-.camp-ops-root .camps-filter-toolbar .btn.btn-compact {
+.camp-ops-root .camps-filter-toolbar .btn.btn-compact,
+.camp-ops-root .camps-filter-group > .btn {
   flex: 0 0 auto !important;
   height: var(--filter-control-h) !important;
   min-height: var(--filter-control-h) !important;
@@ -159,25 +264,28 @@
   box-sizing: border-box !important;
 }
 
-/* ── Camps filter specifics ────────────────────────────────── */
+.vf-toolbar > .filter-chip {
+  flex: 0 0 auto !important;
+  height: var(--filter-control-h) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
 
 .camp-ops-root .camps-filter-toolbar {
   --camps-filter-h: var(--filter-control-h);
   --camps-filter-gap: var(--filter-toolbar-gap);
+  width: 100% !important;
 }
 
-.camp-ops-root .camps-filter-status {
-  min-width: var(--filter-control-min-w) !important;
-}
-
-.camp-ops-root .camps-filter-control {
-  height: var(--filter-control-h) !important;
-  min-height: var(--filter-control-h) !important;
-  max-height: var(--filter-control-h) !important;
+.camp-ops-root .camps-filter-group--search {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
 }
 
 .camp-ops-root .camps-filter-date-sep {
   height: var(--filter-control-h) !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
 .camp-ops-root .camps-filter-toolbar .date-input-control,
@@ -190,6 +298,8 @@
 /* ── Responsive: wrap only when space is tight ──────────────── */
 
 @media (max-width: 960px) {
+  .master-filter-shell,
+  .pm-filter-shell,
   .catalog-toolbar,
   .inv-toolbar,
   .am-toolbar,
@@ -201,7 +311,23 @@
   .page-metrics-toolbar,
   .pm-filter-bar,
   .logistics-filter-bar,
-  .camp-ops-root .camps-filter-toolbar {
+  .finance-docs-filters,
+  .camp-ops-root .camps-filter-card,
+  .camp-ops-root .camps-filter-toolbar,
+  .master-filter-main,
+  .pm-filter-main {
     flex-wrap: wrap !important;
+  }
+
+  .master-filter-main > .master-search-field,
+  .pm-filter-main > .pm-search-field,
+  .vf-toolbar > .esign-search,
+  .esign-toolbar > .esign-search,
+  .finance-docs-filters > .master-search-field,
+  .finance-docs-filters > .finance-docs-search,
+  .camp-ops-root .camps-filter-search {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+    max-width: none !important;
   }
 }

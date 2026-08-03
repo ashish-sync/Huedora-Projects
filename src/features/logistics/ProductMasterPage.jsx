@@ -5,6 +5,9 @@ import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
   GST_RATE_PRESETS,
@@ -288,90 +291,88 @@ export default function ProductMasterPage() {
   if (mode === 'list') {
     return (
       <div className="product-master pm-enterprise">
-        <header className="product-master-toolbar pm-header">
-          <div>
-            <h3 className="product-master-title">Product Master</h3>
-            <p className="muted pm-subtitle">
-              Unified catalog for assets, inventory, procurement, and movements.
-            </p>
-          </div>
-          {canWrite && (
-            <button type="button" className="btn btn-compact" onClick={startCreate}>
-              + New product
-            </button>
-          )}
-        </header>
+        <MasterListHeader
+          title="Products"
+          subtitle="Unified catalog for assets, inventory, procurement, and movements."
+          actions={
+            <>
+              {excelConfig ? (
+                <MasterExcelToolbar
+                  {...excelConfig}
+                  canImport={canWrite}
+                  onImportComplete={() => {
+                    load();
+                    loadLookups();
+                  }}
+                  onError={(message) => setError(message)}
+                  compact
+                />
+              ) : null}
+              {canWrite ? (
+                <button type="button" className="btn btn-compact" onClick={startCreate}>
+                  + New product
+                </button>
+              ) : null}
+            </>
+          }
+        />
 
         {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
-        <div className="pm-filter-bar logistics-filter-bar inv-toolbar">
-          <input
-            type="search"
-            className="inv-search esign-search"
+        <MasterFilterShell
+          actions={
+            <button type="button" className="btn secondary btn-compact" onClick={load} disabled={busy}>
+              Refresh
+            </button>
+          }
+        >
+          <MasterSearchField
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search code, name, brand, model…"
             aria-label="Search products"
           />
-          <AdaptiveSelect
-            className="tylo-select"
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setCategoryFilter('');
-            }}
-            aria-label="Filter by product type"
-          >
-            <option value="">All types</option>
-            {PRODUCT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <AdaptiveSelect
-            className="tylo-select"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            disabled={!typeFilter}
-            aria-label="Filter by category"
-          >
-            <option value="">All categories</option>
-            {categoryOptions.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <AdaptiveSelect
-            className="tylo-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </AdaptiveSelect>
-          <button type="button" className="btn btn-ghost btn-compact" onClick={load}>
-            Refresh
-          </button>
-          {excelConfig ? (
-            <MasterExcelToolbar
-              {...excelConfig}
-              canImport={canWrite}
-              onImportComplete={() => {
-                load();
-                loadLookups();
+            <AdaptiveSelect
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setCategoryFilter('');
               }}
-              onError={(message) => setError(message)}
-              compact
-            />
-          ) : null}
-        </div>
+              aria-label="Filter by product type"
+            >
+              <option value="">All types</option>
+              {PRODUCT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </AdaptiveSelect>
+            <AdaptiveSelect
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              disabled={!typeFilter}
+              aria-label="Filter by category"
+            >
+              <option value="">All categories</option>
+              {categoryOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </AdaptiveSelect>
+            <AdaptiveSelect
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter by status"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </AdaptiveSelect>
+        </MasterFilterShell>
 
         {canWrite && selected.size > 0 && (
-          <div className="pm-bulk-bar">
+          <div className="master-bulk-bar">
             <span>{selected.size} selected</span>
             <button type="button" className="btn btn-ghost" onClick={() => runBulk('activate')}>
               Activate

@@ -279,22 +279,35 @@ export default function CampsPage() {
       if (clientFilter) params.client = clientFilter;
       if (campaignFilter) params.campaign = campaignFilter;
       if (campTypeFilter) params.campaignType = campTypeFilter;
-      if (workingStage === 'request' || workingStage === 'assignment' || workingStage === 'execution' || workingStage === 'financial') {
+      if (
+        workingStage === 'request' ||
+        workingStage === 'assignment' ||
+        workingStage === 'execution' ||
+        workingStage === 'financial'
+      ) {
         params.lifecycleStage = workingStage;
-      } else {
-        if (reactionRequired) {
-          params.reactionRequired = '1';
-        } else if (offHoursOnly) {
-          params.offHours = '1';
-        } else if (weekendAttentionOnly) {
-          params.weekendAttention = '1';
-        } else if (overdueOnly) {
-          params.overdue = '1';
-        } else if (status) {
+      } else if (workingStage) {
+        params.lifecycleStage = workingStage;
+      }
+      if (reactionRequired) {
+        params.reactionRequired = '1';
+      } else if (offHoursOnly) {
+        params.offHours = '1';
+      } else if (weekendAttentionOnly) {
+        params.weekendAttention = '1';
+      } else if (overdueOnly) {
+        params.overdue = '1';
+      } else if (status) {
+        if (workingStage === 'assignment') {
+          params.assignmentFilter = status;
+        } else if (workingStage === 'execution') {
+          params.executionFilter = status;
+        } else if (workingStage === 'financial') {
+          params.financialFilter = status;
+        } else if (status === 'information_requested') {
+          params.requestReviewStatus = 'information_requested';
+        } else {
           params.status = status;
-        }
-        if (workingStage) {
-          params.lifecycleStage = workingStage;
         }
       }
       const { data } = await campApi.list(params);
@@ -358,21 +371,6 @@ export default function CampsPage() {
   }, [workingStage, setSearchParams]);
 
   useEffect(() => {
-    if (!workingStage) return;
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      let changed = false;
-      ['assignmentFilter', 'requestReviewStatus', 'executionFilter', 'financialFilter'].forEach((key) => {
-        if (next.has(key)) {
-          next.delete(key);
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [workingStage, setSearchParams]);
-
-  useEffect(() => {
     if (findCampFromUrlRef.current) {
       findCampFromUrlRef.current = '';
       return;
@@ -427,13 +425,11 @@ export default function CampsPage() {
     const nextCampaign = overrides.campaign ?? campaignFilter;
     const nextCampType = overrides.campaignType ?? campTypeFilter;
 
-    if (!['request', 'assignment', 'execution', 'financial'].includes(workingStage)) {
-      if (nextReactionRequired) params.set('reactionRequired', '1');
-      else if (nextOffHours) params.set('offHours', '1');
-      else if (nextWeekendAttention) params.set('weekendAttention', '1');
-      else if (nextOverdue) params.set('overdue', '1');
-      else if (nextStatus) params.set('status', nextStatus);
-    }
+    if (nextReactionRequired) params.set('reactionRequired', '1');
+    else if (nextOffHours) params.set('offHours', '1');
+    else if (nextWeekendAttention) params.set('weekendAttention', '1');
+    else if (nextOverdue) params.set('overdue', '1');
+    else if (nextStatus) params.set('status', nextStatus);
     if (nextDateFrom) params.set('dateFrom', nextDateFrom);
     if (nextDateTo) params.set('dateTo', nextDateTo);
     if (nextClient) params.set('client', nextClient);
@@ -763,7 +759,8 @@ export default function CampsPage() {
           onClearDates={() => applyQuickRange({ dateFrom: '', dateTo: '' })}
           filterValue={filterValue}
           onFilterChange={handleFilterChange}
-          showStatusFilter={!workingStage}
+          showStatusFilter
+          workingStage={workingStage}
           activeChips={activeChips}
           onClearAll={clearFilters}
         />

@@ -310,9 +310,9 @@ export default function LocationCascade({
   const orderedFields = pinFirst ? [pinField, ...geoFields] : [...geoFields, pinField];
 
   return (
-    <div className="location-cascade">
-      {error ? <p className="error-text">{error}</p> : null}
+    <div className={`location-cascade${error ? ' has-error' : ''}`}>
       {orderedFields.filter(Boolean)}
+      {error ? <p className="error-text location-cascade-error">{error}</p> : null}
       {showMappedPinPreview ? (
         <PinMappedPreview
           className="full"

@@ -1,7 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom';
 
 const BUILDER_ROUTES = {
-  invoice: '/finance/build',
+  invoice: '/finance/build/invoice',
   proforma: '/finance/build/proforma',
   'purchase-order': '/finance/build/purchase-order',
   'credit-note': '/finance/build/credit-note',

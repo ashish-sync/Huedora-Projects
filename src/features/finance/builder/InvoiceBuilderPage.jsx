@@ -22,7 +22,19 @@ export default function InvoiceBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    applyClientMasterRecipient,
+    clearClientMasterRecipient,
     newInvoice,
+    status,
+    error,
+    busyAction,
+    readOnly,
+    loadingDoc,
+    submitDocument,
+    approveDocument,
+    rejectDocument,
+    issueDocument,
+    exportServerPdf,
   } = useInvoiceBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -44,13 +56,23 @@ export default function InvoiceBuilderPage() {
       newDocShortcutLabel="New invoice"
       exportFilePrefix="invoice"
       docNumber={form.invoice.documentNumber}
+      status={status}
       grandTotal={formatMoney(totals?.grandTotal)}
       saveState={saveState}
       savedAt={savedAt}
+      error={error}
+      busyAction={busyAction}
+      readOnly={readOnly}
+      loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
       onPrint={handlePrint}
       onSaveNow={saveNow}
+      onExportPdf={exportServerPdf}
+      onSubmit={submitDocument}
+      onApprove={approveDocument}
+      onReject={rejectDocument}
+      onIssue={issueDocument}
       onNewInvoice={newInvoice}
       shortcutsOpen={shortcutsOpen}
       onShortcutsClose={() => setShortcutsOpen(false)}
@@ -66,6 +88,8 @@ export default function InvoiceBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          applyClientMasterRecipient={applyClientMasterRecipient}
+          clearClientMasterRecipient={clearClientMasterRecipient}
         />
       }
     >
@@ -73,7 +97,7 @@ export default function InvoiceBuilderPage() {
         <TaxInvoicePreview
           form={form}
           previewRef={previewRef}
-          editable
+          editable={!readOnly}
           documentTitle="INVOICE"
           onUpdate={update}
           onUpdateLine={updateLine}

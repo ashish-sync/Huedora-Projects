@@ -10,6 +10,8 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 function currentPeriod() {
   return new Date().toISOString().slice(0, 7);
@@ -861,24 +863,26 @@ export default function VerificationsPage() {
       )}
 
       <section className="vf-catalog card card--flush">
-        <div className="vf-toolbar">
-          <input
-            className="esign-search"
-            placeholder="Search asset, serial, custodian, city…"
+        <MasterFilterShell
+          actions={
+            <button className="btn secondary btn-compact" type="button" onClick={load} disabled={loading}>
+              {loading ? 'Loading…' : 'Refresh'}
+            </button>
+          }
+        >
+          <MasterSearchField
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            placeholder="Search asset, serial, custodian, city…"
             aria-label="Search verification board"
           />
-          {filter && (
+          {filter ? (
             <button type="button" className="filter-chip" onClick={() => setFilter('')}>
               {labelFor(filter)}
               <span aria-hidden="true">×</span>
             </button>
-          )}
-          <button className="btn secondary" type="button" onClick={load} disabled={loading}>
-            {loading ? 'Loading…' : 'Refresh'}
-          </button>
-        </div>
+          ) : null}
+        </MasterFilterShell>
 
         <div className="vf-table-wrap">
           <table className="vf-table">

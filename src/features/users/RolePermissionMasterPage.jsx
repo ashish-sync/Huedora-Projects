@@ -5,6 +5,8 @@ import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
 import {
   DESIGNATION_ACCESS_TEMPLATES,
@@ -514,15 +516,17 @@ export default function RolePermissionMasterPage() {
           <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
               <h3>People</h3>
-              {canViewUsers && (
-                <input
-                  className="rp-search"
-                  placeholder="Search name, email, role…"
+            </div>
+            {canViewUsers ? (
+              <MasterFilterShell>
+                <MasterSearchField
                   value={userQ}
                   onChange={(e) => setUserQ(e.target.value)}
+                  placeholder="Search name, email, role…"
+                  aria-label="Search people"
                 />
-              )}
-            </div>
+              </MasterFilterShell>
+            ) : null}
             {!canViewUsers && (
               <p className="muted">You need users:read or users:write to list users.</p>
             )}

@@ -30,6 +30,14 @@ const HEALTHCARE_WORKER_OPTIONS = ['Technician', 'Phlebotomist', 'Dietician'];
 const formStringFields = [
   'clientName',
   'clientCode',
+  'billingAddress',
+  'billingGstin',
+  'billingPan',
+  'billingStateName',
+  'billingStateCode',
+  'billingContactPerson',
+  'billingEmail',
+  'billingPhone',
   'programName',
   'campName',
   'campType',
@@ -58,6 +66,14 @@ const emptyForm = {
   clientId: '',
   clientName: '',
   clientCode: '',
+  billingAddress: '',
+  billingGstin: '',
+  billingPan: '',
+  billingStateName: '',
+  billingStateCode: '',
+  billingContactPerson: '',
+  billingEmail: '',
+  billingPhone: '',
   programName: '',
   campName: 'BMD',
   campType: '',
@@ -248,6 +264,16 @@ export default function ClientMasterFormPage() {
       ...trimmed,
       clientId: form.clientId || undefined,
       isActive: form.isActive,
+      billing: {
+        address: trimmed.billingAddress || '',
+        gstin: trimmed.billingGstin || '',
+        pan: trimmed.billingPan || '',
+        stateName: trimmed.billingStateName || '',
+        stateCode: trimmed.billingStateCode || '',
+        contactPerson: trimmed.billingContactPerson || '',
+        email: trimmed.billingEmail || '',
+        phone: trimmed.billingPhone || '',
+      },
       assignedUserEmails: String(form.assignedUserEmails || '')
         .split(/[;,\n]/)
         .map((email) => email.trim().toLowerCase())
@@ -329,6 +355,84 @@ export default function ClientMasterFormPage() {
             <option value="inactive">Inactive</option>
           </select>
         </label>
+      </div>
+
+      <h3 className="client-master-section-title">Billing details (Invoice recipient)</h3>
+      <p className="meta-text" style={{ marginTop: 0 }}>
+        Stored on the company and reused by Invoice Builder when this Client Master is selected.
+      </p>
+      <div className="form-grid">
+        <label className="full">
+          Billing address
+          <textarea
+            rows={2}
+            value={form.billingAddress}
+            onChange={(e) => updateField('billingAddress', e.target.value)}
+            placeholder="Registered / billing address for GST invoices"
+          />
+        </label>
+        <label>
+          State
+          <input
+            value={form.billingStateName}
+            onChange={(e) => updateField('billingStateName', e.target.value)}
+            placeholder="Maharashtra"
+          />
+        </label>
+        <label>
+          State code
+          <input
+            value={form.billingStateCode}
+            onChange={(e) => updateField('billingStateCode', e.target.value)}
+            placeholder="27"
+            maxLength={2}
+          />
+        </label>
+        <label>
+          GSTIN
+          <input
+            value={form.billingGstin}
+            onChange={(e) => updateField('billingGstin', e.target.value.toUpperCase())}
+            placeholder="15-character GSTIN"
+            maxLength={15}
+          />
+        </label>
+        <label>
+          PAN
+          <input
+            value={form.billingPan}
+            onChange={(e) => updateField('billingPan', e.target.value.toUpperCase())}
+            placeholder="AAAAA0000A"
+            maxLength={10}
+          />
+        </label>
+        <label>
+          Billing contact
+          <input
+            value={form.billingContactPerson}
+            onChange={(e) => updateField('billingContactPerson', e.target.value)}
+            placeholder="Defaults to SPOC if empty on invoice"
+          />
+        </label>
+        <label>
+          Billing email
+          <input
+            type="email"
+            value={form.billingEmail}
+            onChange={(e) => updateField('billingEmail', e.target.value)}
+          />
+        </label>
+        <label>
+          Billing phone
+          <input
+            value={form.billingPhone}
+            onChange={(e) => updateField('billingPhone', e.target.value)}
+          />
+        </label>
+      </div>
+
+      <h3 className="client-master-section-title">Program</h3>
+      <div className="form-grid">
         <label>
           Division / Therapy
           <input

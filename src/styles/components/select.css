@@ -462,14 +462,15 @@ select:not([multiple]):not([size]),
 .date-range-filter-field select,
 .table-inline-select,
 .am-custody-select,
-.inv-page-size select {
+.inv-page-size select,
+.inv-page-size-select {
   appearance: none !important;
   -webkit-appearance: none !important;
   background-image: var(--tylo-select-chevron) !important;
   background-repeat: no-repeat !important;
-  background-position: right 12px center !important;
+  background-position: right 10px center !important;
   background-size: 10px 6px !important;
-  padding-right: 2.25rem !important;
+  padding-right: 1.75rem !important;
 }
 
 select:not([multiple]):not([size]):focus,

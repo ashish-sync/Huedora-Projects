@@ -133,7 +133,7 @@ export default function OtherAwareSelect({
   };
 
   return (
-    <div className={`other-aware-select ${className}`.trim()}>
+    <div className={`other-aware-select${otherMode ? ' is-other-mode' : ''} ${className}`.trim()}>
       <AdaptiveSelect
         id={id}
         name={name}
@@ -154,25 +154,26 @@ export default function OtherAwareSelect({
       </AdaptiveSelect>
 
       {otherMode && (
-        <div className="field" style={{ marginTop: 8, marginBottom: 0 }}>
-          <label htmlFor={id ? `${id}-other` : undefined}>Specify {otherLabel.toLowerCase()} *</label>
+        <>
           <input
             id={id ? `${id}-other` : undefined}
+            className="other-aware-select__other"
             type="text"
             value={otherText}
             disabled={disabled}
             required={required}
-            placeholder="Enter new value"
+            aria-label={`Specify ${otherLabel.toLowerCase()}`}
+            placeholder={`Specify ${otherLabel.toLowerCase()}`}
             onChange={(e) => {
               setOtherText(e.target.value);
               emit(e.target.value);
             }}
             onBlur={() => commitOtherText(otherText)}
           />
-          {suggestBusy && <p className="muted mono-sm">Submitting for approval…</p>}
-          {hint && !suggestError && <p className="muted mono-sm">{hint}</p>}
-          {suggestError && <p className="error mono-sm">{suggestError}</p>}
-        </div>
+          {suggestBusy && <p className="muted mono-sm other-aware-select__hint">Submitting for approval…</p>}
+          {hint && !suggestError && <p className="muted mono-sm other-aware-select__hint">{hint}</p>}
+          {suggestError && <p className="error mono-sm other-aware-select__hint">{suggestError}</p>}
+        </>
       )}
     </div>
   );

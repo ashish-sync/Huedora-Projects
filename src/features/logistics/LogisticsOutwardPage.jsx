@@ -9,6 +9,8 @@ import { api } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
   FALLBACK_CAT_DEFAULTS,
@@ -960,7 +962,7 @@ export default function LogisticsOutwardPage() {
         if (progress?.allFulfilled && canCompleteRequest) {
           try {
             await api(`/asset-requests/${fulfillingId}/complete`, { method: 'POST', body: {} });
-            setMsg('Final product line issued and linked goods issue request completed.');
+            setMsg('Final product line issued and linked Goods Issuance Request completed.');
           } catch (reqErr) {
             setError(
               `All product lines were issued, but request completion failed: ${reqErr.message}`
@@ -1033,13 +1035,39 @@ export default function LogisticsOutwardPage() {
 
       {mode === 'manual' && (
         <>
-          <div className="inv-toolbar logistics-toolbar">
-            <input
-              className="esign-search inv-search"
-              placeholder="Search TXN, product, recipient, AWB…"
+          <MasterFilterShell
+            actions={
+              <>
+                <button className="btn secondary btn-compact" type="button" onClick={loadRows}>
+                  Refresh
+                </button>
+                {canWrite ? (
+                  <button
+                    className="btn btn-compact"
+                    type="button"
+                    onClick={() => {
+                      if (formOpen && !fulfillingId) {
+                        setFormOpen(false);
+                        return;
+                      }
+                      openManual();
+                    }}
+                  >
+                    {formOpen && !fulfillingId ? 'Close form' : '+ Manual goods issue'}
+                  </button>
+                ) : null}
+                <Link className="btn secondary btn-compact" to="/asset-requests?type=LOGISTICS">
+                  Create Goods Issuance Request
+                </Link>
+              </>
+            }
+          >
+            <MasterSearchField
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && loadRows()}
+              placeholder="Search TXN, product, recipient, AWB…"
+              aria-label="Search goods issues"
             />
             <AdaptiveSelect
               value={statusFilter}
@@ -1055,28 +1083,7 @@ export default function LogisticsOutwardPage() {
               <option value="Closed">Closed</option>
               <option value="All">All</option>
             </AdaptiveSelect>
-            <button className="btn secondary" type="button" onClick={loadRows}>
-              Search
-            </button>
-            {canWrite && (
-              <button
-                className="btn"
-                type="button"
-                onClick={() => {
-                  if (formOpen && !fulfillingId) {
-                    setFormOpen(false);
-                    return;
-                  }
-                  openManual();
-                }}
-              >
-                {formOpen && !fulfillingId ? 'Close form' : '+ Manual goods issue'}
-              </button>
-            )}
-            <Link className="btn secondary" to="/asset-requests?type=LOGISTICS">
-              Create goods issue request
-            </Link>
-          </div>
+          </MasterFilterShell>
 
           {canWrite && formOpen && (
             <form className="card logistics-form logistics-txn-form" onSubmit={save}>
@@ -1605,14 +1612,18 @@ export default function LogisticsOutwardPage() {
 
       {mode === 'requests' && (
         <>
-          <div className="inv-toolbar logistics-toolbar">
-            <button className="btn secondary" type="button" onClick={loadRequests}>
-              Refresh
-            </button>
-            <Link className="btn" to="/asset-requests?type=LOGISTICS">
-              + New goods issue request
-            </Link>
-          </div>
+          <MasterFilterShell
+            actions={
+              <>
+                <button className="btn secondary btn-compact" type="button" onClick={loadRequests}>
+                  Refresh
+                </button>
+                <Link className="btn btn-compact" to="/asset-requests?type=LOGISTICS">
+                  + New Goods Issuance Request
+                </Link>
+              </>
+            }
+          />
           <div className="card card--flush table-wrap">
             <table className="inv-table">
               <thead>
@@ -1683,7 +1694,7 @@ export default function LogisticsOutwardPage() {
                 {!requests.length && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No open goods issue requests. Create one in Request One.
+                      No open Goods Issuance Requests. Create one in Request One.
                     </td>
                   </tr>
                 )}

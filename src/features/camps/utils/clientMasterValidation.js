@@ -115,10 +115,19 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     ? clientRef._id
     : (clientRef || '');
 
+  const billing = record.billing || record.client || {};
   return {
     clientId: clientId ? String(clientId) : '',
     clientName: keepClientName ? (record.clientName || '') : '',
-    clientCode: record.client?.code || '',
+    clientCode: record.clientCode || record.client?.code || '',
+    billingAddress: billing.address || '',
+    billingGstin: billing.gstin || '',
+    billingPan: billing.pan || '',
+    billingStateName: billing.stateName || '',
+    billingStateCode: billing.stateCode || '',
+    billingContactPerson: billing.contactPerson || '',
+    billingEmail: billing.email || '',
+    billingPhone: billing.phone || '',
     programName: record.programName || '',
     campName: record.campName || 'BMD',
     campType: record.campType || '',

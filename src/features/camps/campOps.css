@@ -2256,6 +2256,12 @@
   min-width: 0;
 }
 
+.camp-ops-root .client-master-section-title {
+  margin: 1.25rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 .camp-ops-root .panel h3, .camp-ops-root .import-card h3, .camp-ops-root .form-card h3 {
   margin: 0 0 16px;
 }
@@ -3165,7 +3171,7 @@
   color: var(--text-muted);
 }
 
-.camp-ops-root input:not([type='file']):not(.adaptive-select__input),
+.camp-ops-root input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.date-input-display):not(.date-input-native),
 .camp-ops-root select,
 .camp-ops-root textarea {
   width: 100%;
@@ -3176,14 +3182,21 @@
 }
 
 .camp-ops-root .adaptive-select__input,
-.camp-ops-root .adaptive-select input {
+.camp-ops-root .adaptive-select input,
+.camp-ops-root .master-search-input {
   width: auto !important;
   min-width: 2px;
   border: 0 !important;
   border-radius: 0 !important;
-  padding: 0 !important;
+  padding: 0 var(--control-pad-inline-end, 0.75rem) 0 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+.camp-ops-root .master-search-input {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
 }
 
 .camp-ops-root .form-card {
@@ -7292,14 +7305,17 @@
   color: var(--ink, #0f172a);
 }
 
-.camp-ops-root .camps-filter-search {
+.camp-ops-root .camps-filter-search.master-search-field {
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
+  padding: 0;
+  height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
+  min-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
+  max-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
 }
 
-.camp-ops-root .camps-filter-search:focus {
+.camp-ops-root .camps-filter-search.master-search-field:focus-within {
   outline: none;
   border-color: color-mix(in srgb, var(--brand, #0f766e) 45%, var(--line, #e2e8f0));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand, #0f766e) 14%, transparent);

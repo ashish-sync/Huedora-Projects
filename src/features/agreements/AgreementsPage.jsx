@@ -7,6 +7,8 @@ import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -125,43 +127,45 @@ export default function AgreementsPage() {
         active: status === p.key,
         onClick: () => setFilter(status === p.key ? '' : p.key),
       }))}
-      toolbar={
-        <div className="filter-bar agreements-filters">
-          <input
-            className="esign-search"
-            placeholder="Search title, party, agreement #"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && load()}
-            aria-label="Search agreements"
-          />
-          <AdaptiveSelect
-            className="filter-select"
-            value={status}
-            onChange={(e) => setFilter(e.target.value)}
-            aria-label="Filter by status"
-          >
-            <option value="">{FILTER.ALL_STATUSES}</option>
-            <option value="DRAFT">Drafts</option>
-            <option value="SENT,PARTIALLY_SIGNED">Pending signature</option>
-            <option value="TERMINATED">Terminated</option>
-            <option value="ACTIVE">Active</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="DECLINED">Declined</option>
-          </AdaptiveSelect>
-          <button className="btn secondary" type="button" onClick={load}>
-            Search
-          </button>
-          {status && (
-            <button type="button" className="filter-chip" onClick={() => setFilter('')}>
-              Clear
-              <span aria-hidden="true">×</span>
-            </button>
-          )}
-        </div>
-      }
     >
       {error && <p className="error">{error}</p>}
+
+      <MasterFilterShell
+        actions={
+          <>
+            <button className="btn secondary btn-compact" type="button" onClick={load}>
+              Refresh
+            </button>
+            {status ? (
+              <button type="button" className="btn btn-ghost btn-compact" onClick={() => setFilter('')}>
+                Clear filter
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        <MasterSearchField
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search title, party, agreement #"
+          aria-label="Search agreements"
+        />
+        <AdaptiveSelect
+          className="filter-select"
+          value={status}
+          onChange={(e) => setFilter(e.target.value)}
+          aria-label="Filter by status"
+        >
+          <option value="">{FILTER.ALL_STATUSES}</option>
+          <option value="DRAFT">Drafts</option>
+          <option value="SENT,PARTIALLY_SIGNED">Pending signature</option>
+          <option value="TERMINATED">Terminated</option>
+          <option value="ACTIVE">Active</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="DECLINED">Declined</option>
+        </AdaptiveSelect>
+      </MasterFilterShell>
 
       <div className="card card--flush table-wrap esign-table">
         <table>

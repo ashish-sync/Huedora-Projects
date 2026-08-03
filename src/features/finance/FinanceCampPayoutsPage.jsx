@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
-import { MODULE, ACTION } from '../../shared/labels.js';
+import { MODULE, ACTION, FILTER } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import './finance-commercial.css';
 import {
@@ -86,9 +89,20 @@ export default function FinanceCampPayoutsPage() {
 
   async function savePayout() {
     if (!selected || !canWrite) return;
-    setBusy(true);
     setError('');
     setMsg('');
+    if (draft.financePaymentStatus === 'paid') {
+      const amount = Number(draft.paidAmount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        setError('Enter a valid paid amount greater than zero.');
+        return;
+      }
+      if (!String(draft.transactionId || '').trim()) {
+        setError('UTR / Transaction ID is required when status is Paid.');
+        return;
+      }
+    }
+    setBusy(true);
     try {
       const body = {
         financePaymentStatus: draft.financePaymentStatus,
@@ -146,83 +160,97 @@ export default function FinanceCampPayoutsPage() {
   }
 
   return (
-    <div className="finance-camp-payouts">
-      <header className="finance-camp-payouts-head">
-        <div>
-          <h2 className="finance-hub-title">Camp payouts</h2>
-          <p className="muted finance-hub-lead">
-            Process camp payouts submitted from {MODULE.CAMP_MANAGEMENT}. Update status and record
-            payment when settled.
-          </p>
-        </div>
-        <Link to="/camps/manage" className="btn secondary btn-compact">
-          Open {MODULE.CAMP_MANAGEMENT}
-        </Link>
-      </header>
+    <div className="finance-hub">
+      <section className="finance-hub-panel card finance-camp-payouts">
+        <div className="finance-camp-payouts-toolbar">
+          <div className="finance-docs-head finance-docs-head--embedded">
+            <h3 className="finance-docs-title">Camp payouts</h3>
+            <Link to="/camps/manage" className="btn secondary btn-compact">
+              Open {MODULE.CAMP_MANAGEMENT}
+            </Link>
+          </div>
 
-      <div className="finance-camp-payouts-filters">
-        <input
-          className="input finance-docs-search"
-          placeholder="Search camp ID, client, HCW, UTR…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          {FINANCE_PAYMENT_STATUSES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <button type="button" className="btn secondary btn-compact" onClick={load} disabled={loading}>
-          {loading ? 'Loading…' : 'Refresh'}
-        </button>
-        <button
-          type="button"
-          className="btn secondary btn-compact"
-          onClick={downloadAllPayouts}
-          disabled={exportBusy || loading}
-        >
-          {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
-        </button>
-      </div>
-
-      {error && <p className="error">{error}</p>}
-      {msg && <FeedbackBanner variant="info">{msg}</FeedbackBanner>}
-
-      <div className="finance-camp-payouts-layout">
-        <section className="card finance-camp-payouts-list">
-          <h3>Queue</h3>
-          {loading && !rows.length ? <p className="muted">Loading…</p> : null}
-          {!loading && !rows.length ? (
-            <p className="muted">No camp payouts submitted yet.</p>
-          ) : (
-            <ul className="finance-camp-payouts-items">
-              {rows.map((row) => (
-                <li key={row._id}>
-                  <button
-                    type="button"
-                    className={`finance-camp-payout-item${String(selectedId) === String(row._id) ? ' is-active' : ''}`}
-                    onClick={() => setSelectedId(row._id)}
-                  >
-                    <strong>{row.campId || row._id}</strong>
-                    <span>{row.clientName}</span>
-                    <span className="muted">
-                      {row.campDate} · ₹{row.totalPayout ?? 0} ·{' '}
-                      {financePaymentStatusLabel(row.financePaymentStatus)}
-                    </span>
-                  </button>
-                </li>
+          <MasterFilterShell
+            className="finance-camp-payouts-filters"
+            actions={
+              <>
+                <button type="button" className="btn secondary btn-compact" onClick={load} disabled={loading}>
+                  {loading ? 'Loading…' : 'Refresh'}
+                </button>
+                <button
+                  type="button"
+                  className="btn secondary btn-compact"
+                  onClick={downloadAllPayouts}
+                  disabled={exportBusy || loading}
+                >
+                  {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
+                </button>
+              </>
+            }
+          >
+            <MasterSearchField
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search camp ID, client, HCW, UTR…"
+              aria-label="Search camp payouts"
+            />
+            <AdaptiveSelect
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Payout status"
+            >
+              <option value="">{FILTER.ALL_STATUSES}</option>
+              {FINANCE_PAYMENT_STATUSES.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
-            </ul>
-          )}
-        </section>
+            </AdaptiveSelect>
+          </MasterFilterShell>
+        </div>
 
-        <section className="card finance-camp-payouts-detail">
-          {!selected ? (
-            <p className="muted">Select a camp payout to process payment.</p>
-          ) : (
+        <PageAlerts
+          items={[
+            error && { variant: 'error', message: error },
+            msg && { variant: 'success', message: msg },
+          ].filter(Boolean)}
+        />
+
+        <div className="finance-camp-payouts-layout">
+          <aside className="finance-camp-payouts-list" aria-label="Payout queue">
+            <p className="finance-camp-payouts-section-label">Queue</p>
+            {loading && !rows.length ? <p className="muted finance-camp-payouts-empty">Loading…</p> : null}
+            {!loading && !rows.length ? (
+              <p className="muted finance-camp-payouts-empty">No camp payouts submitted yet.</p>
+            ) : (
+              <ul className="finance-camp-payouts-items">
+                {rows.map((row) => (
+                  <li key={row._id}>
+                    <button
+                      type="button"
+                      className={`finance-camp-payout-item${String(selectedId) === String(row._id) ? ' is-active' : ''}`}
+                      onClick={() => setSelectedId(row._id)}
+                    >
+                      <strong>{row.campId || row._id}</strong>
+                      <span>{row.clientName}</span>
+                      <span className="muted">
+                        {row.campDate} · ₹{row.totalPayout ?? 0} ·{' '}
+                        {financePaymentStatusLabel(row.financePaymentStatus)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+
+          <section
+            className={`finance-camp-payouts-detail${selected ? '' : ' finance-camp-payouts-detail--empty'}`}
+            aria-label="Payout details"
+          >
+            {!selected ? (
+              <p className="muted finance-camp-payouts-empty">Select a camp payout to process payment.</p>
+            ) : (
             <>
               <h3>{selected.campId || 'Camp payout'}</h3>
               <dl className="finance-camp-payout-meta">
@@ -343,8 +371,9 @@ export default function FinanceCampPayoutsPage() {
               )}
             </>
           )}
-        </section>
-      </div>
+          </section>
+        </div>
+      </section>
     </div>
   );
 }

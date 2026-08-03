@@ -2,8 +2,13 @@
  * Viewport density + Chrome / Chromium rendering polish
  */
 
+@media (min-width: 641px) {
+  html[data-ua-chrome='1'] {
+    zoom: var(--app-ui-zoom, 0.95);
+  }
+}
+
 html {
-  zoom: var(--app-ui-zoom);
   color-scheme: light;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -16,8 +21,10 @@ html[data-theme='dark'] {
 }
 
 @supports not (zoom: 1) {
-  html {
-    font-size: calc(100% * var(--app-ui-zoom));
+  @media (min-width: 641px) {
+    html[data-ua-chrome='1'] {
+      font-size: calc(100% * var(--app-ui-zoom, 0.95));
+    }
   }
 }
 

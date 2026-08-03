@@ -9,6 +9,8 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 const ROLES_FALLBACK = [
   'HR',
@@ -292,18 +294,21 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
 
       <div className="esign-detail-grid">
         <section className="card">
-          <div className="row" style={{ marginBottom: 12 }}>
-            <input
-              className="esign-search"
-              placeholder="Search name, role, email…"
+          <MasterFilterShell
+            actions={
+              <button className="btn secondary btn-compact" type="button" onClick={load}>
+                Refresh
+              </button>
+            }
+          >
+            <MasterSearchField
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && load()}
+              placeholder="Search name, role, email…"
+              aria-label="Search signatures"
             />
-            <button className="btn secondary" type="button" onClick={load}>
-              Search
-            </button>
-          </div>
+          </MasterFilterShell>
 
           <div className="sig-master-grid">
             {rows.map((row) => (

@@ -1,6 +1,7 @@
 import { DateInput } from './DateInput';
 import { FILTER } from '../../../shared/labels.js';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
+import MasterSearchField from '../../../components/masters/MasterSearchField.jsx';
 
 const quickPresets = [
   { key: 'today', label: 'Today' },
@@ -15,13 +16,43 @@ const alertOptions = [
   { value: 'overdue', label: 'Overdue — not executed' },
 ];
 
-const statusOptions = [
+const REQUEST_STATUS_OPTIONS = [
   { value: 'pending_review', label: 'Pending review' },
+  { value: 'information_requested', label: 'Information requested' },
   { value: 'approved', label: 'Approved' },
-  { value: 'executed', label: 'Executed' },
   { value: 'rejected', label: 'Refused' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
+
+const ASSIGNMENT_STATUS_OPTIONS = [
+  { value: 'unassigned', label: 'Unassigned' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'cancelled_by_tcpl', label: 'Cancelled by TCPL' },
+  { value: 'cancelled_by_client', label: 'Cancelled by client' },
+];
+
+const EXECUTION_STATUS_OPTIONS = [
+  { value: 'yet_to_start', label: 'Yet to start' },
+  { value: 'ongoing', label: 'Ongoing' },
+  { value: 'executed', label: 'Marked executed' },
+  { value: 'completed', label: 'Camp completed' },
+  { value: 'cancelled_by_tcpl', label: 'Cancelled by TCPL' },
+  { value: 'cancelled_by_client', label: 'Cancelled by client' },
+];
+
+const FINANCIAL_STATUS_OPTIONS = [
+  { value: 'payment_not_checked', label: 'Payment not checked' },
+  { value: 'payment_confirmed', label: 'Payment confirmed' },
+  { value: 'payment_hold', label: 'Payment hold' },
+  { value: 'payment_completed', label: 'Paid (Finance)' },
+];
+
+function statusOptionsForStage(stage) {
+  if (stage === 'assignment') return ASSIGNMENT_STATUS_OPTIONS;
+  if (stage === 'execution') return EXECUTION_STATUS_OPTIONS;
+  if (stage === 'financial') return FINANCIAL_STATUS_OPTIONS;
+  return REQUEST_STATUS_OPTIONS;
+}
 
 export function CampsFilters({
   search,
@@ -38,8 +69,11 @@ export function CampsFilters({
   activeChips,
   onClearAll,
   showStatusFilter = true,
+  workingStage = 'request',
 }) {
   const activePreset = matchQuickPreset(dateFrom, dateTo);
+  const statusOptions = statusOptionsForStage(workingStage);
+  const showAlerts = workingStage === 'request' || workingStage === 'execution';
 
   function handleQuickSelect(preset) {
     const range = getQuickDateRange(preset);
@@ -52,13 +86,14 @@ export function CampsFilters({
     <div className="camps-filter-card">
       <div className="camps-filter-toolbar">
         <div className="camps-filter-group camps-filter-group--search">
-          <input
+          <MasterSearchField
             id="camps-search"
-            className="camps-filter-control camps-filter-search"
+            className="camps-filter-search"
             placeholder="Search camp ID, doctor, city…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+            aria-label="Search camps"
           />
           <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
             Search
@@ -74,8 +109,8 @@ export function CampsFilters({
               value={filterValue}
               onChange={(e) => onFilterChange(e.target.value)}
             >
-              <option value="">{FILTER.ALL_CAMPS}</option>
-              {alertOptions.map((option) => (
+              <option value="">{FILTER.ALL_STATUSES}</option>
+              {showAlerts && alertOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
               {statusOptions.map((option) => (

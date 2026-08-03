@@ -22,7 +22,19 @@ export default function CreditNoteBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    applyClientMasterRecipient,
+    clearClientMasterRecipient,
     newCreditNote,
+    status,
+    error,
+    busyAction,
+    readOnly,
+    loadingDoc,
+    submitDocument,
+    approveDocument,
+    rejectDocument,
+    issueDocument,
+    exportServerPdf,
   } = useCreditNoteBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -45,13 +57,23 @@ export default function CreditNoteBuilderPage() {
       panelAriaLabel="Credit note fields"
       exportFilePrefix="credit-note"
       docNumber={form.invoice.documentNumber}
+      status={status}
       grandTotal={formatMoney(totals?.grandTotal)}
       saveState={saveState}
       savedAt={savedAt}
+      error={error}
+      busyAction={busyAction}
+      readOnly={readOnly}
+      loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
       onPrint={handlePrint}
       onSaveNow={saveNow}
+      onExportPdf={exportServerPdf}
+      onSubmit={submitDocument}
+      onApprove={approveDocument}
+      onReject={rejectDocument}
+      onIssue={issueDocument}
       onNewInvoice={newCreditNote}
       shortcutsOpen={shortcutsOpen}
       onShortcutsClose={() => setShortcutsOpen(false)}
@@ -67,6 +89,8 @@ export default function CreditNoteBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          applyClientMasterRecipient={applyClientMasterRecipient}
+          clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
             docSectionTitle: 'Credit note',
             docNoLabel: 'Credit note no.',
@@ -80,7 +104,7 @@ export default function CreditNoteBuilderPage() {
         <TaxInvoicePreview
           form={form}
           previewRef={previewRef}
-          editable
+          editable={!readOnly}
           documentTitle="CREDIT NOTE"
           totalAmountLabel="Total Credit Amount"
           detailsCardTitle="Credit Note Details"

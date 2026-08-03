@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import ProductMasterPage from './ProductMasterPage.jsx';
+import ExpenseMasterPage from './ExpenseMasterPage.jsx';
 import ContactDirectoryPage from '../agreements/ContactDirectoryPage.jsx';
 import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
 import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
@@ -12,6 +14,8 @@ import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
 import LocationMasterPage from '../locations/LocationMasterPage.jsx';
 import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import { PRODUCT_TYPES } from '../../shared/productTypes.js';
 
@@ -31,40 +35,16 @@ const MASTER_GROUPS = [
     ],
   },
   {
-    id: 'business-partners',
-    label: 'Partners',
-    scope: 'logistics',
-    entities: [
-      {
-        id: 'parties',
-        label: 'Suppliers & Vendors',
-        path: '/logistics/parties',
-        fields: [
-          'partyType',
-          'code',
-          'name',
-          'contactName',
-          'email',
-          'phone',
-          'city',
-          'state',
-          'gstin',
-          'panCard',
-        ],
-        fromContacts: true,
-      },
-    ],
-  },
-  {
     id: 'finance-masters',
     label: 'Finance',
-    scope: 'logistics',
+    scope: 'movement',
     entities: [
       {
         id: 'expense-categories',
-        label: 'Expense Categories',
+        label: 'Expense Master',
         path: '/logistics/expense-categories',
-        fields: ['code', 'name', 'covers'],
+        dedicated: 'expense-master',
+        fields: [],
       },
     ],
   },
@@ -102,7 +82,7 @@ const MASTER_GROUPS = [
 
 function groupsForScope(scope) {
   if (!scope || scope === 'all') return MASTER_GROUPS;
-  const mapped = scope === 'movement' ? 'logistics' : scope;
+  const mapped = scope === 'logistics' ? 'movement' : scope;
   return MASTER_GROUPS.filter((g) => g.scope === mapped);
 }
 
@@ -122,7 +102,7 @@ function entitySingular(label) {
     Suppliers: 'Supplier',
     Vendors: 'Vendor',
     'Suppliers & Vendors': 'Supplier / Vendor',
-    'Expense Categories': 'Expense Category',
+    'Expense Master': 'Expense',
     'Contact Directory': 'Contact',
     'Document Templates': 'Document Template',
     Signatures: 'Signature',
@@ -163,6 +143,11 @@ const FIELD_LABELS = {
 const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 
 const LOCATION_LEVELS = ['Zone', 'Room', 'Rack', 'Shelf', 'Bin'];
+const TEXTAREA_FIELDS = new Set(['description', 'address', 'covers']);
+
+function isTextareaField(field) {
+  return TEXTAREA_FIELDS.has(field);
+}
 
 function emptyFor(fields) {
   return Object.fromEntries(
@@ -185,29 +170,41 @@ function emptyFor(fields) {
   );
 }
 
+function canonicalScope(raw) {
+  const s = String(raw || '').toLowerCase();
+  if (s === 'logistics') return 'movement';
+  return s || 'all';
+}
+
 export default function LogisticsMasterPage({
-  scope = 'logistics',
+  scope = 'all',
   title = 'Master One',
-  description = 'Business partners, process types, and expense categories.',
+  description = 'Shared reference masters across Products, Finance, Document One, and Camp One.',
   initialEntity = '',
 } = {}) {
   const { can } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const canWriteLogistics = can('logistics:master') || can('logistics:write') || can('*');
   const canDelete = can('*');
   const canWriteDocs = can('agreements:write') || can('*');
   const canReadDocs = can('agreements:read') || canWriteDocs;
   const canReadCamps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
+  const canWriteCamps = can('camps:request') || can('camps:approve') || can('*');
+  const resolvedScope = canonicalScope(scope);
   const visibleGroups = useMemo(() => {
-    const groups = groupsForScope(scope);
+    const groups = groupsForScope(resolvedScope);
     return groups.filter((g) => {
       if (g.scope === 'document') return canReadDocs;
       if (g.scope === 'camp') return canReadCamps;
+      if (g.scope === 'movement' || g.scope === 'logistics') {
+        return canWriteLogistics || can('logistics:read') || can('finance:read') || can('*');
+      }
       return canWriteLogistics || can('logistics:read') || can('*');
     });
-  }, [scope, can, canWriteLogistics, canReadDocs, canReadCamps]);
+  }, [resolvedScope, can, canWriteLogistics, canReadDocs, canReadCamps]);
   const entities = useMemo(() => visibleGroups.flatMap((g) => g.entities), [visibleGroups]);
   const [entityId, setEntityId] = useState(
-    () => initialEntity || entities[0]?.id || 'parties'
+    () => initialEntity || entities[0]?.id || 'products'
   );
   const entity = entities.find((e) => e.id === entityId) || entities[0];
   const activeGroup = visibleGroups.find((g) => g.entities.some((e) => e.id === entityId));
@@ -215,12 +212,26 @@ export default function LogisticsMasterPage({
     activeGroup?.scope === 'document'
       ? canWriteDocs
       : activeGroup?.scope === 'camp'
-        ? canReadCamps
+        ? canWriteCamps
         : canWriteLogistics;
+
+  const selectEntity = (id) => {
+    setEntityId(id);
+    const group = visibleGroups.find((g) => g.entities.some((e) => e.id === id));
+    const nextScope = canonicalScope(group?.scope || resolvedScope);
+    const next = new URLSearchParams(searchParams);
+    if (nextScope && nextScope !== 'all') next.set('scope', nextScope);
+    else next.delete('scope');
+    if (id) next.set('entity', id);
+    else next.delete('entity');
+    setSearchParams(next, { replace: true });
+  };
   const formFields = useMemo(
     () => (entity?.fields || []).filter((f) => f !== 'code' && f !== 'sku'),
     [entity?.fields]
   );
+  const useCompactForm = formFields.length <= 3;
+  const usePairFormLayout = useCompactForm && formFields.length === 2;
   const [rows, setRows] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -476,7 +487,7 @@ export default function LogisticsMasterPage({
                       type="button"
                       className={`logistics-master-item${entityId === e.id ? ' is-active' : ''}`}
                       aria-current={entityId === e.id ? 'page' : undefined}
-                      onClick={() => setEntityId(e.id)}
+                      onClick={() => selectEntity(e.id)}
                     >
                       {e.label}
                     </button>
@@ -494,7 +505,9 @@ export default function LogisticsMasterPage({
             <span className="logistics-master-crumb-current">{entity.label}</span>
           </div>
 
-          {entity.dedicated ? (
+          {entity.dedicated === 'expense-master' ? (
+            <ExpenseMasterPage />
+          ) : entity.dedicated ? (
             <ProductMasterPage />
           ) : entity.embedded ? (
             <EmbeddedMaster kind={entity.embedded} />
@@ -503,14 +516,14 @@ export default function LogisticsMasterPage({
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
       {canWrite && entity.fromContacts && (
-        <div className="card logistics-form" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Add from Contact Directory</h3>
-          <p className="muted" style={{ marginTop: 0 }}>
+        <div className="card logistics-form logistics-contact-pick-card">
+          <h3>Add from Contact Directory</h3>
+          <p className="muted logistics-contact-pick-lead">
             Pick a partner (preferably Resource Type = {activePartyType}). Creates a master record linked to that
             partner.
           </p>
-          <div className="logistics-form-grid">
-            <div className="field">
+          <div className="logistics-contact-pick">
+            <div className="field logistics-contact-pick__type">
               <label htmlFor="lm-party-type-pick">Type</label>
               <AdaptiveSelect
                 id="lm-party-type-pick"
@@ -521,7 +534,7 @@ export default function LogisticsMasterPage({
                 <option value="Vendor">Vendor</option>
               </AdaptiveSelect>
             </div>
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <div className="field logistics-contact-pick__contact">
               <label htmlFor="lm-contact-pick">Contact</label>
               <AdaptiveSelect
                 id="lm-contact-pick"
@@ -556,10 +569,13 @@ export default function LogisticsMasterPage({
       )}
 
       {canWrite && (
-        <form className="card logistics-form" onSubmit={save}>
+        <form
+          className={`card logistics-form${useCompactForm ? ' logistics-form--compact' : ''}`}
+          onSubmit={save}
+        >
           <h3>{editingId ? `Edit ${entitySingular(entity.label)}` : `New ${entitySingular(entity.label)}`}</h3>
           {editingId ? (
-            <div className="logistics-form-grid" style={{ marginBottom: 12 }}>
+            <div className="logistics-form-grid logistics-form-grid--meta">
               <div className="field">
                 <label htmlFor="lm-code">Code</label>
                 <input id="lm-code" value={editingRow?.code || ''} readOnly disabled />
@@ -570,12 +586,12 @@ export default function LogisticsMasterPage({
                   <input id="lm-sku" value={editingRow?.sku || ''} readOnly disabled />
                 </div>
               ) : null}
-              <p className="muted" style={{ margin: 0, fontSize: '0.8rem', gridColumn: '1 / -1' }}>
+              <p className="muted logistics-form-hint">
                 Assigned automatically and cannot be changed.
               </p>
             </div>
           ) : (
-            <p className="muted" style={{ marginTop: 0 }}>
+            <p className="muted logistics-form-hint">
               {entity.fields.includes('sku')
                 ? 'Code and SKU are assigned automatically on save.'
                 : 'Code is assigned automatically on save.'}
@@ -607,9 +623,22 @@ export default function LogisticsMasterPage({
               </AdaptiveSelect>
             </div>
           ) : null}
-          <div className="logistics-form-grid">
+          <div
+            className={`logistics-form-grid${
+              usePairFormLayout
+                ? ' logistics-form-grid--pair logistics-form-grid--pair-actions'
+                : useCompactForm
+                  ? ' logistics-form-grid--stacked'
+                  : ''
+            }`}
+          >
             {formFields.map((field) => (
-              <div className="field" key={field}>
+              <div
+                className={`field${
+                  isTextareaField(field) && !useCompactForm ? ' logistics-form-field--full' : ''
+                }${field === 'covers' ? ' logistics-form-field--covers' : ''}`}
+                key={field}
+              >
                 <label htmlFor={`lm-${field}`}>{FIELD_LABELS[field] || field}</label>
                 {field === 'level' ? (
                   <AdaptiveSelect
@@ -698,10 +727,10 @@ export default function LogisticsMasterPage({
                     onChange={(e) => setForm({ ...form, parentId: e.target.value })}
                     placeholder="Optional parent location id"
                   />
-                ) : field === 'description' || field === 'address' || field === 'covers' ? (
+                ) : isTextareaField(field) ? (
                   <textarea
                     id={`lm-${field}`}
-                    rows={2}
+                    rows={field === 'covers' && usePairFormLayout ? 1 : field === 'covers' ? 3 : 2}
                     value={form[field]}
                     onChange={(e) => setForm({ ...form, [field]: e.target.value })}
                   />
@@ -715,7 +744,20 @@ export default function LogisticsMasterPage({
                 )}
               </div>
             ))}
+            {usePairFormLayout ? (
+              <div className="logistics-form-actions logistics-form-actions--inline">
+                <button className="btn" type="submit" disabled={busy}>
+                  {busy ? 'Saving…' : editingId ? 'Save changes' : 'Add'}
+                </button>
+                {editingId ? (
+                  <button className="btn secondary" type="button" onClick={cancelEdit}>
+                    Cancel
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
+          {!usePairFormLayout ? (
           <div className="logistics-form-actions">
             <button className="btn" type="submit" disabled={busy}>
               {busy ? 'Saving…' : editingId ? 'Save changes' : 'Add'}
@@ -726,30 +768,36 @@ export default function LogisticsMasterPage({
               </button>
             ) : null}
           </div>
+          ) : null}
         </form>
       )}
 
-      <div className="inv-toolbar logistics-toolbar">
-        <input
-          className="esign-search inv-search"
-          placeholder={`Search ${entity.label.toLowerCase()}…`}
+      <MasterFilterShell
+        actions={
+          <>
+            {excelConfig ? (
+              <MasterExcelToolbar
+                {...excelConfig}
+                canImport={canWrite}
+                onImportComplete={() => load()}
+                onError={(message) => setError(message)}
+                compact
+              />
+            ) : null}
+            <button className="btn secondary btn-compact" type="button" onClick={load} disabled={listLoading}>
+              Refresh
+            </button>
+          </>
+        }
+      >
+        <MasterSearchField
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder={`Search ${entity.label.toLowerCase()}…`}
+          aria-label={`Search ${entity.label.toLowerCase()}`}
         />
-        <button className="btn secondary" type="button" onClick={load}>
-          Search
-        </button>
-        {excelConfig ? (
-          <MasterExcelToolbar
-            {...excelConfig}
-            canImport={canWrite}
-            onImportComplete={() => load()}
-            onError={(message) => setError(message)}
-            compact
-          />
-        ) : null}
-      </div>
+      </MasterFilterShell>
 
       <div className="card card--flush table-wrap">
         <table className="inv-table">

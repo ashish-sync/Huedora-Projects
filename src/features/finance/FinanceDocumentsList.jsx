@@ -3,10 +3,14 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api, apiFetch } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { FILTER } from '../../shared/labels.js';
 import { COMMERCIAL_DOC_TYPES, docTypeLabel } from './commercialDocumentConfig.js';
+import { buildEditPath, deleteCommercialDocument } from './builder/builderPersistence.js';
 
 function formatMoney(n) {
   const num = Number(n);
@@ -74,37 +78,54 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     <>
       <div className={`finance-docs-head${embedded ? ' finance-docs-head--embedded' : ''}`}>
         <h3 className="finance-docs-title">Saved documents</h3>
-        {!embedded && showCreateLink && canWrite ? (
-          <Link to="/finance/build" className="btn btn-compact">
-            + New invoice
+        {showCreateLink && canWrite ? (
+          <Link to="/finance/build" className="btn secondary btn-compact">
+            + New document
           </Link>
         ) : null}
       </div>
 
-      <div className="finance-docs-filters">
-        <input
-          className="input finance-docs-search"
-          placeholder="Search recipient, number…"
+      <MasterFilterShell>
+        <MasterSearchField
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
             setPage(1);
           }}
+          placeholder="Search recipient, number…"
+          aria-label="Search documents"
         />
-        <AdaptiveSelect value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-          <option value="">All statuses</option>
+        <AdaptiveSelect
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filter by status"
+        >
+          <option value="">{FILTER.ALL_STATUSES}</option>
           <option value="Draft">Draft</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Approved">Approved</option>
           <option value="Issued">Issued</option>
+          <option value="Cancelled">Cancelled</option>
         </AdaptiveSelect>
-        <AdaptiveSelect value={documentType} onChange={(e) => { setDocumentType(e.target.value); setPage(1); }}>
-          <option value="">All types</option>
+        <AdaptiveSelect
+          value={documentType}
+          onChange={(e) => {
+            setDocumentType(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filter by type"
+        >
+          <option value="">{FILTER.ALL_TYPES}</option>
           {COMMERCIAL_DOC_TYPES.map((t) => (
             <option key={t.key} value={t.key}>
               {t.label}
             </option>
           ))}
         </AdaptiveSelect>
-      </div>
+      </MasterFilterShell>
 
       {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
 
@@ -135,7 +156,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                   {showCreateLink && canWrite ? (
                     <>
                       {' '}
-                      Use the create options above to start a new document.
+                      Open <strong>Invoice Builder</strong> to create a new document.
                     </>
                   ) : null}
                 </td>
@@ -154,9 +175,38 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                     </span>
                   </td>
                   <td>
-                    <button type="button" className="btn-link" onClick={() => downloadPdf(row).catch((e) => setError(e.message))}>
-                      PDF
-                    </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {canWrite && ['Draft', 'Uploaded', 'Submitted', 'Approved'].includes(row.status) ? (
+                        <Link className="btn-link" to={buildEditPath(row.documentType, row._id)}>
+                          {row.status === 'Draft' || row.status === 'Uploaded' ? 'Edit' : 'Open'}
+                        </Link>
+                      ) : (
+                        <Link className="btn-link" to={buildEditPath(row.documentType, row._id)}>
+                          View
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() => downloadPdf(row).catch((e) => setError(e.message))}
+                      >
+                        PDF
+                      </button>
+                      {canWrite && ['Draft', 'Uploaded', 'Cancelled'].includes(row.status) ? (
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => {
+                            if (!window.confirm('Delete this document?')) return;
+                            deleteCommercialDocument(row._id)
+                              .then(() => load())
+                              .catch((e) => setError(e.message));
+                          }}
+                        >
+                          Delete
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))

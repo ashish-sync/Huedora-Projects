@@ -118,7 +118,13 @@ const MODULES = [
     canShow: (can) =>
       can('logistics:master') ||
       can('logistics:write') ||
+      can('logistics:read') ||
       can('agreements:write') ||
+      can('agreements:read') ||
+      can('camps:read') ||
+      can('camps:request') ||
+      can('camps:approve') ||
+      can('finance:read') ||
       can('*'),
     icon: (
       <svg {...iconProps}>
@@ -179,47 +185,46 @@ export default function DashboardPage() {
       <div className="tylo-home-atmosphere" aria-hidden="true" />
 
       <header className="tylo-home-hero">
-        <div className="tylo-home-hero-top">
+        <div className="tylo-home-hero-copy">
           <h1 className="tylo-home-prompt">{MESSAGES.welcome(firstName)}</h1>
-
-          {canSeeDashboard ? (
-            <div className="tylo-home-dash-action">
-              <Link className="btn tylo-home-dash-btn" to="/dashboard">
-                {MODULE.DASHBOARD}
-                <span aria-hidden="true"> →</span>
-              </Link>
-              <p className="tylo-home-dash-hint">Review any module by date range</p>
-            </div>
-          ) : null}
+          <p className="tylo-home-lead">Choose a module below to get started.</p>
         </div>
 
-        {loginExperience.healthcareInsights ? (
-          <HealthcareInsightBanner
-            variant="home"
-            userId={user?.id || user?._id || ''}
-            allowShuffle
-            sectionTitle="Why your work counts"
-            insightPool={WHY_WORK_COUNTS_INSIGHTS}
-          />
-        ) : null}
+        {(loginExperience.healthcareInsights || canSeeDashboard) && (
+          <div
+            className={`tylo-home-hero-rail${
+              loginExperience.healthcareInsights && canSeeDashboard
+                ? ''
+                : ' tylo-home-hero-rail--solo'
+            }`}
+          >
+            {loginExperience.healthcareInsights ? (
+              <HealthcareInsightBanner
+                variant="home"
+                userId={user?.id || user?._id || ''}
+                allowShuffle
+                sectionTitle="Why your work counts"
+                insightPool={WHY_WORK_COUNTS_INSIGHTS}
+              />
+            ) : null}
+
+            {canSeeDashboard ? (
+              <Link className="tylo-home-dash-panel" to="/dashboard">
+                <span className="tylo-home-dash-panel-copy">
+                  <span className="tylo-home-dash-panel-kicker">Cross-module</span>
+                  <span className="tylo-home-dash-panel-title">{MODULE.DASHBOARD}</span>
+                  <span className="tylo-home-dash-panel-hint">Review any module by date range</span>
+                </span>
+                <span className="tylo-home-dash-panel-arrow" aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            ) : null}
+          </div>
+        )}
       </header>
 
-      <section className="tylo-home-modules" aria-labelledby="tylo-home-modules-title">
-        <div className="tylo-home-section-head">
-          <h2 id="tylo-home-modules-title" className="tylo-home-section-title">
-            Modules
-          </h2>
-          {modules.length > 0 ? (
-            <span className="tylo-home-section-badge">
-              {modules.length} available for your role
-            </span>
-          ) : (
-            <span className="tylo-home-section-badge tylo-home-section-badge--muted">
-              No modules available
-            </span>
-          )}
-        </div>
-
+      <section className="tylo-home-modules" aria-label="Modules">
         {!modules.length ? (
           <p className="tylo-home-empty muted">Ask an administrator to grant module access.</p>
         ) : (

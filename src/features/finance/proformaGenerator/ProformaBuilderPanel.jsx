@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
+import ClientMasterRecipientPicker from '../builder/ClientMasterRecipientPicker.jsx';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
@@ -44,6 +45,8 @@ export default function ProformaBuilderPanel({
   removeLine,
   updateTerm,
   addTerm,
+  applyClientMasterRecipient,
+  clearClientMasterRecipient,
 }) {
   const invoiceView = useMemo(() => proformaToInvoiceView(form), [form]);
   const lineRows = (form.rows || []).filter((r) => r.type === 'line');
@@ -63,6 +66,17 @@ export default function ProformaBuilderPanel({
       </div>
 
       <Section title="Recipient" defaultOpen>
+        {applyClientMasterRecipient ? (
+          <div className="ib-grid" style={{ marginBottom: 12 }}>
+            <Field label="Client Master" span={2}>
+              <ClientMasterRecipientPicker
+                value={form.clientMasterId || ''}
+                onPick={(_row, patch) => applyClientMasterRecipient(patch)}
+                onClear={() => clearClientMasterRecipient?.()}
+              />
+            </Field>
+          </div>
+        ) : null}
         <div className="ib-grid">
           <Field label="Name" span={2}>
             <input className={inputCls} value={form.recipient.name} onChange={(e) => update('recipient.name', e.target.value)} />

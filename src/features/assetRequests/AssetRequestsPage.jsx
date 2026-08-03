@@ -15,7 +15,6 @@ import DateInput from '../../components/ui/DateInput.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
-import { isVendorContact } from '../agreements/contactPicklists.js';
 import {
   MASTER_MODULES,
   entitiesForModule,
@@ -25,36 +24,46 @@ import {
 } from '../masters/masterCatalog.js';
 
 const REQUEST_TYPES = [
-  { value: 'SERVICE', label: 'Repair & Maintenance', needsAsset: true },
-  { value: 'LOGISTICS', label: 'Goods Issue', needsAsset: true },
-  { value: 'TRAINING', label: 'Training', needsAsset: false },
-  { value: 'REIMBURSEMENT', label: 'Reimbursement', needsAsset: false },
-  { value: 'HIRING', label: 'Hiring', needsAsset: false },
+  { value: 'SERVICE', label: 'Repair & Service Request', needsAsset: true },
+  { value: 'LOGISTICS', label: 'Goods Issuance Request', needsAsset: true },
+  { value: 'TRAINING', label: 'Training Request', needsAsset: false },
+  { value: 'REIMBURSEMENT', label: 'Finance One Request', needsAsset: false },
+  { value: 'HIRING', label: 'Hiring Request', needsAsset: false },
   { value: 'MASTER_ADD', label: 'Master One Request', needsAsset: false },
-  { value: 'OTHER', label: 'Others', needsAsset: false },
+  { value: 'OTHER', label: 'Other Requests', needsAsset: false },
 ];
 
-const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 const SERVICE_TYPES = ['Hardware', 'Software', 'Calibration', 'Power', 'Cosmetic', 'Maintenance'];
 const LOGISTICS_KINDS = ['Fresh Dispatch', 'Inter Transfer', 'Recall / Pickup'];
 const TRANSPORT_MODES = [
-  'Hand Delivery',
-  'Regular Courier',
-  'Apex',
+  'Fragile',
+  'Air Delivery',
   'Porter',
-  'Other',
+  'Hand Delivery',
   'Blue Dart',
   'DTDC',
-  'Other Courier',
 ];
 const TRAINING_TYPES = [
   'Fresh Training',
   'Refresher Device',
-  'Refresher Non Device',
+  'Non Device Refresher',
   'L1 Troubleshooting',
   'FTE onboarding',
 ];
+const NON_DEVICE_REFRESHER = 'Non Device Refresher';
+const NON_DEVICE_TRAINING_NAMES = [
+  'Compliance & SOPs',
+  'Software & Systems',
+  'Attendance & Discipline',
+  'Operations & Process',
+  'All Other Training',
+];
 const TRAINING_MODES = ['Virtual', 'Physical'];
+
+function isNonDeviceRefresher(trainingType) {
+  const value = String(trainingType || '').trim().toLowerCase();
+  return value === 'non device refresher' || value === 'refresher non device';
+}
 const HIRING_TYPES = ['Full Timer', 'Freelancer'];
 const HCW_TYPES = ['Phlebotomist', 'Technician', 'Dietitian', 'Physio', 'Others'];
 const CAMP_TYPES = ['No Device', 'Light Device (1-5 KG)', 'Heavy Device (5-12 KG)'];
@@ -99,7 +108,17 @@ function todayLocal() {
 }
 
 function emptyLogisticsProduct() {
-  return { productType: '', productId: '', productName: '', qty: '1' };
+  return { productType: '', productId: '', productName: '', qty: '' };
+}
+
+function isLogisticsProductRowComplete(item) {
+  return Boolean(
+    item?.productType &&
+      item?.productId &&
+      item?.productName &&
+      Number.isFinite(Number(item.qty)) &&
+      Number(item.qty) > 0
+  );
 }
 
 const EMPTY_FORM = {
@@ -114,7 +133,6 @@ const EMPTY_FORM = {
   custodianCity: '',
   contactId: '',
   reason: '',
-  priority: 'Medium',
   issueCategory: '',
   maintenanceKind: '',
   logisticsKind: '',
@@ -143,6 +161,8 @@ const EMPTY_FORM = {
   toAddress: '',
   transportMode: '',
   trainingTopic: '',
+  trainingName: '',
+  trainingProductId: '',
   trainingMode: '',
   traineeContactId: '',
   traineeName: '',
@@ -150,7 +170,17 @@ const EMPTY_FORM = {
   amount: '',
   currency: 'INR',
   expenseCategory: '',
+  expenseSubCategory: '',
+  expenseSubCategoryId: '',
   payeeName: '',
+  raisedFor: 'SELF',
+  raisedForContactId: '',
+  associateWithClient: 'NO',
+  clientMasterId: '',
+  clientId: '',
+  clientName: '',
+  clientCode: '',
+  divisionTherapy: '',
   expenseDate: '',
   hiringType: '',
   hcwType: '',
@@ -313,8 +343,8 @@ function typeMeta(value) {
 }
 
 function displayType(t) {
-  if (t === 'MOVEMENT' || t === 'LOGISTICS') return 'Goods Issue';
-  if (t === 'REPAIR' || t === 'MAINTENANCE') return 'Repair & Maintenance';
+  if (t === 'MOVEMENT' || t === 'LOGISTICS') return 'Goods Issuance Request';
+  if (t === 'REPAIR' || t === 'MAINTENANCE') return 'Repair & Service Request';
   return REQUEST_TYPES.find((x) => x.value === t)?.label || t;
 }
 
@@ -347,14 +377,24 @@ function detailSummary(r) {
       : r.requestType === 'MAINTENANCE'
         ? 'Maintenance'
         : '',
-    r.priority,
     r.issueCategory ||
       r.maintenanceKind ||
       normalizeLogisticsKind(r.logisticsKind) ||
-      r.expenseCategory ||
+      (r.requestType === 'REIMBURSEMENT'
+        ? [r.expenseCategory, r.expenseSubCategory].filter(Boolean).join(' · ')
+        : r.expenseCategory) ||
       r.otherCategory,
     r.otherSubcategory,
+    r.requestType === 'REIMBURSEMENT'
+      ? r.raisedFor === 'OTHER' || (r.payeeName && r.payeeName !== 'Self')
+        ? `Raised for: ${r.payeeName || 'Other'}`
+        : 'Raised for: Self'
+      : '',
+    r.requestType === 'REIMBURSEMENT' && r.associateWithClient
+      ? `Client: ${[r.clientCode, r.divisionTherapy || r.clientName].filter(Boolean).join(' · ') || '—'}`
+      : '',
     r.trainingTopic,
+    r.trainingName || r.assetName,
     r.traineeName,
     r.hiringType,
     r.hcwType,
@@ -372,10 +412,6 @@ function detailSummary(r) {
 
 export default function AssetRequestsPage() {
   const { can, user } = useAuth();
-  const { options: transportModeOptions } = usePicklistOptions(
-    'logistics.deliveryMode',
-    TRANSPORT_MODES
-  );
   const { options: hcwTypeOptions } = usePicklistOptions('hiring.hcwType', HCW_TYPES);
   const { options: hiringMethodOptions } = usePicklistOptions('hiring.method', HIRING_METHODS);
   const [searchParams] = useSearchParams();
@@ -392,6 +428,9 @@ export default function AssetRequestsPage() {
   const [assets, setAssets] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [logisticsMeta, setLogisticsMeta] = useState(null);
+  const [expenseMaster, setExpenseMaster] = useState({ expenseCategories: [], expenseSubCategories: [] });
+  const [clients, setClients] = useState([]);
+  const [clientMasters, setClientMasters] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -402,14 +441,16 @@ export default function AssetRequestsPage() {
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
-  const [productPhoto, setProductPhoto] = useState(null);
   const [reimbursementBill, setReimbursementBill] = useState(null);
   const [otherAttachment, setOtherAttachment] = useState(null);
+  const [jdUploadPrompt, setJdUploadPrompt] = useState(null);
+  const [jdFile, setJdFile] = useState(null);
+  const [jdBusy, setJdBusy] = useState(false);
   const [generatedLinks, setGeneratedLinks] = useState({});
   const [linkBusyId, setLinkBusyId] = useState('');
-  const productPhotoRef = useRef(null);
   const reimbursementBillRef = useRef(null);
   const otherAttachmentRef = useRef(null);
+  const jdFileRef = useRef(null);
 
   useEffect(() => {
     const raw = String(searchParams.get('type') || '').toUpperCase();
@@ -423,6 +464,10 @@ export default function AssetRequestsPage() {
       serviceType: raw === 'MAINTENANCE' ? 'Maintenance' : prev.serviceType,
     }));
     setTypeFilter(isService ? 'SERVICE' : raw);
+    if (raw === 'REIMBURSEMENT') {
+      loadExpenseMaster();
+      loadClientMasterOptions();
+    }
   }, [searchParams]);
 
   const contactsById = useMemo(() => {
@@ -430,19 +475,185 @@ export default function AssetRequestsPage() {
     for (const c of contacts) map.set(String(c._id), c);
     return map;
   }, [contacts]);
-  const vendorContacts = useMemo(
-    () => contacts.filter((contact) => isVendorContact(contact)),
-    [contacts]
-  );
   const logisticsConfig = logisticsMeta?.inOut || {};
   const logisticsProductTypes = logisticsConfig.productTypes || FALLBACK_PRODUCT;
   const logisticsProducts = logisticsMeta?.products || [];
-  const expenseCategories = logisticsMeta?.expenseCategories || [];
-
-  const custodyOptions = useMemo(
-    () => uniqueSorted(assets.map((a) => a.custody)),
-    [assets]
+  const trainingDeviceProducts = useMemo(
+    () =>
+      logisticsProducts.filter(
+        (product) =>
+          product?.isActive !== false && ASSET_PRODUCT_TYPES.has(String(product.productType || ''))
+      ),
+    [logisticsProducts]
   );
+  const expenseCategories = expenseMaster.expenseCategories || [];
+  const expenseSubCategories = expenseMaster.expenseSubCategories || [];
+
+  const activeExpenseSubCategories = useMemo(
+    () => expenseSubCategories.filter((row) => row.isActive !== false),
+    [expenseSubCategories]
+  );
+
+  const expenseSubCategoryNames = useMemo(() => {
+    const names = new Set();
+    for (const row of activeExpenseSubCategories) {
+      const name = String(row.name || '').trim();
+      if (name) names.add(name);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [activeExpenseSubCategories]);
+
+  const categoriesForSelectedSub = useMemo(() => {
+    const selectedName = String(form.expenseSubCategory || '').trim();
+    if (!selectedName) return [];
+    const matches = activeExpenseSubCategories.filter(
+      (row) => String(row.name || '').trim() === selectedName
+    );
+    const seen = new Set();
+    const categories = [];
+    for (const match of matches) {
+      const categoryId = String(match.categoryId || '');
+      if (!categoryId || seen.has(categoryId)) continue;
+      seen.add(categoryId);
+      const fromMaster = expenseCategories.find((category) => String(category._id) === categoryId);
+      categories.push(
+        fromMaster || {
+          _id: match.categoryId,
+          name: match.categoryName || '',
+        }
+      );
+    }
+    return categories.filter((category) => category.name);
+  }, [activeExpenseSubCategories, expenseCategories, form.expenseSubCategory]);
+
+  const expenseCategoryLocked = categoriesForSelectedSub.length === 1;
+
+  const resolveExpenseSubCategoryId = (subCategoryName, categoryName) => {
+    const selectedName = String(subCategoryName || '').trim();
+    const selectedCategory = String(categoryName || '').trim();
+    if (!selectedName || !selectedCategory) return '';
+    const category = expenseCategories.find(
+      (row) => String(row.name || '').trim() === selectedCategory
+    );
+    const match = activeExpenseSubCategories.find((row) => {
+      const sameName = String(row.name || '').trim() === selectedName;
+      if (!sameName) return false;
+      if (category?._id) return String(row.categoryId) === String(category._id);
+      return String(row.categoryName || '').trim() === selectedCategory;
+    });
+    return match?._id ? String(match._id) : '';
+  };
+
+  const pickExpenseSubCategory = (subCategoryName) => {
+    const selectedName = String(subCategoryName || '').trim();
+    if (!selectedName) {
+      setForm((prev) => ({
+        ...prev,
+        expenseSubCategoryId: '',
+        expenseSubCategory: '',
+        expenseCategory: '',
+      }));
+      return;
+    }
+    const matches = activeExpenseSubCategories.filter(
+      (row) => String(row.name || '').trim() === selectedName
+    );
+    const categoryIds = [
+      ...new Set(matches.map((row) => String(row.categoryId || '')).filter(Boolean)),
+    ];
+    if (categoryIds.length === 1) {
+      const category =
+        expenseCategories.find((row) => String(row._id) === categoryIds[0]) || null;
+      const categoryName = category?.name || matches[0]?.categoryName || '';
+      setForm((prev) => ({
+        ...prev,
+        expenseSubCategory: selectedName,
+        expenseCategory: categoryName,
+        expenseSubCategoryId: resolveExpenseSubCategoryId(selectedName, categoryName),
+      }));
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      expenseSubCategory: selectedName,
+      expenseCategory: '',
+      expenseSubCategoryId: '',
+    }));
+  };
+
+  const pickExpenseCategory = (categoryName) => {
+    const selectedCategory = String(categoryName || '').trim();
+    setForm((prev) => ({
+      ...prev,
+      expenseCategory: selectedCategory,
+      expenseSubCategoryId: resolveExpenseSubCategoryId(prev.expenseSubCategory, selectedCategory),
+    }));
+  };
+
+  const pickRaisedForContact = (contactId) => {
+    const contact = contactsById.get(String(contactId));
+    setForm((prev) => ({
+      ...prev,
+      raisedForContactId: contactId,
+      payeeName: contact?.name || '',
+    }));
+  };
+
+  const clientsById = useMemo(() => {
+    const map = new Map();
+    for (const client of clients) map.set(String(client._id), client);
+    return map;
+  }, [clients]);
+
+  const activeClientMasters = useMemo(
+    () =>
+      clientMasters
+        .filter((row) => row.isActive !== false)
+        .map((row) => {
+          const client = clientsById.get(String(row.clientId || ''));
+          const code = client?.code || '';
+          const division = row.programName || row.drugTherapyName || '';
+          return {
+            ...row,
+            clientCode: code,
+            divisionTherapy: division,
+            optionLabel: [code || '—', division || '—'].join(' · '),
+          };
+        }),
+    [clientMasters, clientsById]
+  );
+
+  const pickExpenseClientMaster = (clientMasterId) => {
+    const row = activeClientMasters.find((item) => String(item._id) === String(clientMasterId));
+    setForm((prev) => ({
+      ...prev,
+      clientMasterId,
+      clientId: row?.clientId ? String(row.clientId) : '',
+      clientName: row?.clientName || '',
+      clientCode: row?.clientCode || '',
+      divisionTherapy: row?.divisionTherapy || '',
+    }));
+  };
+
+  const loadExpenseMaster = () =>
+    api('/logistics/expense-master')
+      .then((r) =>
+        setExpenseMaster({
+          expenseCategories: r.data?.expenseCategories || [],
+          expenseSubCategories: r.data?.expenseSubCategories || [],
+        })
+      )
+      .catch(() => setExpenseMaster({ expenseCategories: [], expenseSubCategories: [] }));
+
+  const loadClientMasterOptions = () =>
+    Promise.all([
+      api('/camp-ops/clients?limit=500').then((r) => r.data || []).catch(() => []),
+      api('/camp-ops/client-masters?limit=500').then((r) => r.data || []).catch(() => []),
+    ]).then(([clientRows, masterRows]) => {
+      setClients(clientRows);
+      setClientMasters(masterRows);
+    });
+
   const assetNameOptions = useMemo(
     () =>
       assets.map((a) => ({
@@ -460,24 +671,18 @@ export default function AssetRequestsPage() {
       ]),
     [assets, contacts]
   );
-  const sourceCustodianOptions = useMemo(
-    () =>
-      uniqueSorted(
-        assets
-          .filter(
-            (asset) =>
-              !form.assetCustody || String(asset.custody || '') === String(form.assetCustody)
-          )
-          .map((asset) => asset.custodianName || asset.contactId?.name)
-      ),
-    [assets, form.assetCustody]
-  );
-
   const logisticsNeedsAsset =
     form.requestType === 'LOGISTICS' &&
     form.logisticsProducts.some((item) => ASSET_PRODUCT_TYPES.has(item.productType));
   const needsAsset =
     form.requestType === 'LOGISTICS' ? logisticsNeedsAsset : typeMeta(form.requestType).needsAsset;
+  const logisticsContextReady = Boolean(
+    (normalizeLogisticsKind(form.logisticsKind) || form.logisticsKind) && form.transportMode
+  );
+  const canAddLogisticsProduct =
+    logisticsContextReady &&
+    form.logisticsProducts.length > 0 &&
+    form.logisticsProducts.every((item) => isLogisticsProductRowComplete(item));
   const filteredRows = rows;
 
   const load = () => {
@@ -498,12 +703,14 @@ export default function AssetRequestsPage() {
     api('/assets?limit=200')
       .then((r) => setAssets(r.data || []))
       .catch(() => {});
-    api('/contacts?limit=200')
+    api('/contacts?limit=500')
       .then((r) => setContacts(r.data || []))
       .catch(() => {});
     api('/logistics/meta')
       .then((r) => setLogisticsMeta(r.data || null))
       .catch(() => setLogisticsMeta(null));
+    loadExpenseMaster();
+    loadClientMasterOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, typeFilter]);
 
@@ -518,19 +725,6 @@ export default function AssetRequestsPage() {
       return;
     }
     applyLinked(snapshotFromAsset(asset, contactsById));
-  };
-
-  const linkFromCustody = (custody) => {
-    const matches = assets.filter((a) => String(a.custody || '') === String(custody));
-    if (matches.length === 1) {
-      applyLinked(snapshotFromAsset(matches[0], contactsById));
-      return;
-    }
-    applyLinked({
-      assetCustody: custody,
-      assetId: matches.some((a) => String(a._id) === form.assetId) ? form.assetId : '',
-      assetName: '',
-    });
   };
 
   const linkFromCustodianName = (name) => {
@@ -564,6 +758,9 @@ export default function AssetRequestsPage() {
     if (requestType !== 'REIMBURSEMENT') {
       setReimbursementBill(null);
       if (reimbursementBillRef.current) reimbursementBillRef.current.value = '';
+    } else {
+      loadExpenseMaster();
+      loadClientMasterOptions();
     }
     if (requestType !== 'OTHER' && requestType !== 'MASTER_ADD') {
       setOtherAttachment(null);
@@ -586,9 +783,26 @@ export default function AssetRequestsPage() {
             contactId: '',
           }
         : {}),
-      ...(['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(requestType)
-        ? { reason: '' }
+      ...(requestType === 'REIMBURSEMENT'
+        ? {
+            expenseCategory: '',
+            expenseSubCategory: '',
+            expenseSubCategoryId: '',
+            expenseDate: '',
+            amount: '',
+            reason: '',
+            raisedFor: 'SELF',
+            raisedForContactId: '',
+            payeeName: '',
+            associateWithClient: 'NO',
+            clientMasterId: '',
+            clientId: '',
+            clientName: '',
+            clientCode: '',
+            divisionTherapy: '',
+          }
         : {}),
+      ...(['TRAINING', 'HIRING', 'MASTER_ADD'].includes(requestType) ? { reason: '' } : {}),
       ...(requestType === 'MASTER_ADD'
         ? {
             masterModule: 'inventory',
@@ -635,6 +849,12 @@ export default function AssetRequestsPage() {
   };
 
   const addLogisticsProduct = () => {
+    const incomplete = form.logisticsProducts.some((item) => !isLogisticsProductRowComplete(item));
+    if (incomplete) {
+      setError('Fill Product category, Model/Variant/Name, and Qty before adding another product.');
+      return;
+    }
+    setError('');
     setForm((prev) => ({
       ...prev,
       logisticsProductsConfirmed: false,
@@ -654,14 +874,14 @@ export default function AssetRequestsPage() {
   };
 
   const confirmLogisticsProducts = () => {
-    const invalid = form.logisticsProducts.some(
-      (item) =>
-        !item.productType ||
-        !item.productId ||
-        !item.productName ||
-        !Number.isFinite(Number(item.qty)) ||
-        Number(item.qty) <= 0
-    );
+    if (
+      !(normalizeLogisticsKind(form.logisticsKind) || form.logisticsKind) ||
+      !form.transportMode
+    ) {
+      setError('Select Issue kind and Delivery mode before confirming products.');
+      return;
+    }
+    const invalid = form.logisticsProducts.some((item) => !isLogisticsProductRowComplete(item));
     if (invalid) {
       setError('Complete every goods issue product row and enter a positive quantity.');
       return;
@@ -677,32 +897,36 @@ export default function AssetRequestsPage() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (
-      form.requestType === 'TRAINING' &&
-      form.trainingMode === 'Physical' &&
-      (!form.traineeContactId || !form.venue)
-    ) {
-      setError('Physical training requires a trainee with a city in Contact Directory.');
-      return;
+    if (form.requestType === 'TRAINING') {
+      if (!form.trainingTopic) {
+        setError('Select a training type.');
+        return;
+      }
+      if (isNonDeviceRefresher(form.trainingTopic)) {
+        if (!form.trainingName) {
+          setError('Select a training name.');
+          return;
+        }
+      } else if (!form.trainingProductId) {
+        setError('Select an asset / device name from Product Master.');
+        return;
+      }
+      if (form.trainingMode === 'Physical' && (!form.traineeContactId || !form.venue)) {
+        setError('Physical training requires a trainee with a city in Contact Directory.');
+        return;
+      }
     }
     if (needsAsset && !form.assetId) {
       setError(
         form.requestType === 'LOGISTICS'
-          ? 'Select a linked asset for Medical Device or Non-Medical Device products.'
-          : 'Select a linked asset for this request type.'
+          ? 'Select an asset name for Medical Device or Non-Medical Device products.'
+          : 'Select an asset name for this request type.'
       );
       return;
     }
     if (
       form.requestType === 'LOGISTICS' &&
-      form.logisticsProducts.some(
-        (item) =>
-          !item.productType ||
-          !item.productId ||
-          !item.productName ||
-          !Number.isFinite(Number(item.qty)) ||
-          Number(item.qty) <= 0
-      )
+      form.logisticsProducts.some((item) => !isLogisticsProductRowComplete(item))
     ) {
       setError('Complete every goods issue product row and enter a positive quantity.');
       return;
@@ -712,8 +936,34 @@ export default function AssetRequestsPage() {
       return;
     }
     if (form.requestType === 'REIMBURSEMENT' && !reimbursementBill) {
-      setError('Upload the expense bill before submitting the Reimbursement request.');
+      setError('Upload the expense bill before submitting the Finance One Request.');
       return;
+    }
+    if (form.requestType === 'REIMBURSEMENT') {
+      if (!form.expenseSubCategoryId || !form.expenseSubCategory) {
+        setError('Select an expense sub-category from Expense Master.');
+        return;
+      }
+      if (!form.expenseCategory) {
+        setError('Expense category could not be determined for the selected sub-category.');
+        return;
+      }
+      if (form.raisedFor === 'OTHER' && !form.raisedForContactId) {
+        setError('Select who this expense is raised for from Contact Directory.');
+        return;
+      }
+      if (form.associateWithClient === 'YES' && !form.clientMasterId) {
+        setError('Select Code and Division / Therapy from Client Master.');
+        return;
+      }
+      if (!form.expenseDate) {
+        setError('Expense date is required.');
+        return;
+      }
+      if (!form.amount || Number(form.amount) <= 0) {
+        setError('Enter a valid expense amount.');
+        return;
+      }
     }
     if (
       form.requestType === 'HIRING' &&
@@ -747,9 +997,7 @@ export default function AssetRequestsPage() {
       const omitSource = ['TRAINING', 'REIMBURSEMENT', 'HIRING', 'OTHER', 'MASTER_ADD'].includes(
         form.requestType
       );
-      const omitReason = ['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(
-        form.requestType
-      );
+      const omitReason = ['TRAINING', 'MASTER_ADD'].includes(form.requestType);
       const body = {
         requestType: persistedRequestType,
         assetId: omitSource ? undefined : form.assetId || undefined,
@@ -761,10 +1009,6 @@ export default function AssetRequestsPage() {
         custodianCity: omitSource ? '' : form.custodianCity,
         contactId: omitSource ? undefined : form.contactId || undefined,
         reason: omitReason ? '' : form.reason,
-        priority:
-          ['REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType)
-            ? undefined
-            : form.priority || undefined,
       };
 
       if (persistedRequestType === 'REPAIR') {
@@ -804,7 +1048,11 @@ export default function AssetRequestsPage() {
         }));
       }
       if (form.requestType === 'TRAINING') {
+        const nonDevice = isNonDeviceRefresher(form.trainingTopic);
         body.trainingTopic = form.trainingTopic;
+        body.trainingName = nonDevice ? form.trainingName : form.trainingName || undefined;
+        body.trainingProductId = nonDevice ? undefined : form.trainingProductId || undefined;
+        body.assetName = nonDevice ? '' : form.trainingName || '';
         body.trainingMode = form.trainingMode || undefined;
         body.traineeContactId = form.traineeContactId || undefined;
         body.traineeName = form.traineeName || undefined;
@@ -815,19 +1063,33 @@ export default function AssetRequestsPage() {
         body.amount = form.amount;
         body.currency = 'INR';
         body.expenseCategory = form.expenseCategory;
+        body.expenseSubCategory = form.expenseSubCategory;
         body.expenseDate = form.expenseDate || undefined;
+        body.reason = form.reason || '';
+        body.raisedFor = form.raisedFor === 'OTHER' ? 'OTHER' : 'SELF';
+        body.raisedForContactId =
+          form.raisedFor === 'OTHER' ? form.raisedForContactId || undefined : undefined;
+        body.payeeName =
+          form.raisedFor === 'OTHER' ? form.payeeName || undefined : 'Self';
+        body.associateWithClient = form.associateWithClient === 'YES';
+        body.clientMasterId =
+          form.associateWithClient === 'YES' ? form.clientMasterId || undefined : undefined;
+        body.clientId =
+          form.associateWithClient === 'YES' ? form.clientId || undefined : undefined;
+        body.clientName =
+          form.associateWithClient === 'YES' ? form.clientName || undefined : undefined;
+        body.clientCode =
+          form.associateWithClient === 'YES' ? form.clientCode || undefined : undefined;
+        body.divisionTherapy =
+          form.associateWithClient === 'YES' ? form.divisionTherapy || undefined : undefined;
       }
       if (form.requestType === 'HIRING') {
         body.hiringType = form.hiringType;
         body.hcwType = form.hcwType;
         body.campType = form.campType;
         body.hiringMethod = form.hiringMethod;
-        body.engagementDateTime = form.engagementDateTime;
-        body.hiringAddress = form.hiringAddress;
         body.hiringState = form.hiringState;
         body.hiringCity = form.hiringCity;
-        body.hiringName = form.hiringName;
-        body.hiringPinCode = form.hiringPinCode;
         body.budgetMin = Number(form.budgetMin);
         body.budgetMax = Number(form.budgetMax);
       }
@@ -844,18 +1106,6 @@ export default function AssetRequestsPage() {
 
       const created = await api('/asset-requests', { method: 'POST', body });
       let savedMessage = 'Request submitted. Designated approvers have been notified.';
-      if (productPhoto && (persistedRequestType === 'REPAIR' || persistedRequestType === 'MAINTENANCE')) {
-        try {
-          const imageBody = new FormData();
-          imageBody.append('productPhoto', productPhoto);
-          await api(`/asset-requests/${created?.data?._id}/product-image`, {
-            method: 'POST',
-            body: imageBody,
-          });
-        } catch (uploadError) {
-          savedMessage = `Request saved, but the product image could not be uploaded: ${uploadError.message}`;
-        }
-      }
       if (reimbursementBill && persistedRequestType === 'REIMBURSEMENT') {
         try {
           const billBody = new FormData();
@@ -892,13 +1142,19 @@ export default function AssetRequestsPage() {
         logisticsProducts: [emptyLogisticsProduct()],
         logisticsProductsConfirmed: false,
       });
-      setProductPhoto(null);
       setReimbursementBill(null);
       setOtherAttachment(null);
-      if (productPhotoRef.current) productPhotoRef.current.value = '';
       if (reimbursementBillRef.current) reimbursementBillRef.current.value = '';
       if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
       setMsg(savedMessage);
+      if (form.requestType === 'HIRING' && created?.data?._id) {
+        setJdFile(null);
+        if (jdFileRef.current) jdFileRef.current.value = '';
+        setJdUploadPrompt({
+          id: created.data._id,
+          requestNumber: created.data.requestNumber || created.data._id,
+        });
+      }
       await load();
     } catch (err) {
       setError(err.message);
@@ -943,6 +1199,47 @@ export default function AssetRequestsPage() {
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const openJd = async (request) => {
+    setError('');
+    try {
+      const response = await apiFetch(`/asset-requests/${request._id}/jd`);
+      if (!response.ok) throw new Error(`Could not load job description (${response.status})`);
+      const blobUrl = URL.createObjectURL(await response.blob());
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const closeJdPrompt = () => {
+    setJdUploadPrompt(null);
+    setJdFile(null);
+    if (jdFileRef.current) jdFileRef.current.value = '';
+  };
+
+  const uploadHiringJd = async (requestId, { closePrompt = true } = {}) => {
+    if (!jdFile || !requestId) return;
+    setJdBusy(true);
+    setError('');
+    try {
+      const body = new FormData();
+      body.append('attachment', jdFile);
+      await api(`/asset-requests/${requestId}/jd`, { method: 'POST', body });
+      setMsg('Job description uploaded.');
+      if (closePrompt) closeJdPrompt();
+      else {
+        setJdFile(null);
+        if (jdFileRef.current) jdFileRef.current.value = '';
+      }
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setJdBusy(false);
     }
   };
 
@@ -999,7 +1296,7 @@ export default function AssetRequestsPage() {
     setError('');
     setExportBusy(true);
     try {
-      await downloadExcel('/asset-requests/export', 'Request_Center.xlsx');
+      await downloadExcel('/asset-requests/export', 'Request_One.xlsx');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1013,7 +1310,7 @@ export default function AssetRequestsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_REQUESTS }]}
       title={MODULE.ASSET_REQUESTS}
-      description="Submit repair, maintenance, logistics, training, reimbursement, hiring, and other requests."
+      description="Submit Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests."
       actions={
         <button className="btn secondary" type="button" disabled={exportBusy} onClick={downloadMaster}>
           {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
@@ -1027,76 +1324,97 @@ export default function AssetRequestsPage() {
       {error && <p className="error">{error}</p>}
       {msg && <FeedbackBanner variant="success">{msg}</FeedbackBanner>}
 
+      {jdUploadPrompt && (
+        <div className="card arq-jd-prompt" role="dialog" aria-labelledby="arq-jd-prompt-title">
+          <h3 id="arq-jd-prompt-title">Upload job description (optional)</h3>
+          <p className="muted" style={{ margin: '0 0 10px' }}>
+            Request <strong>{jdUploadPrompt.requestNumber}</strong> was submitted. Attach a JD
+            now, or skip and continue.
+          </p>
+          <div className="field">
+            <label htmlFor="hiring-jd-upload">Job description</label>
+            <FilePicker
+              ref={jdFileRef}
+              id="hiring-jd-upload"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              onChange={(e) => setJdFile(e.target.files?.[0] || null)}
+            />
+            <span className="muted mono-sm">Image, PDF, Word, Excel, or text file.</span>
+          </div>
+          <div className="arq-actions" style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              className="btn"
+              disabled={!jdFile || jdBusy}
+              onClick={() => uploadHiringJd(jdUploadPrompt.id)}
+            >
+              {jdBusy ? 'Uploading…' : 'Upload JD'}
+            </button>
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={jdBusy}
+              onClick={closeJdPrompt}
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
+
       {canRequest && (
         <form className="card arq-form" onSubmit={submit} autoComplete="off" data-form-type="other">
           <h3>New request</h3>
           <div className="arq-grid">
-            <div className="field">
-              <label>Request Type *</label>
-              <AdaptiveSelect required value={form.requestType} onChange={(e) => setType(e.target.value)}>
-                {REQUEST_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </AdaptiveSelect>
-            </div>
-
-            {form.requestType === 'SERVICE' && (
-              <div className="field">
-                <label>Service type *</label>
-                <AdaptiveSelect
-                  required
-                  value={form.serviceType}
-                  onChange={(e) => setForm({ ...form, serviceType: e.target.value })}
-                >
-                  {SERVICE_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </AdaptiveSelect>
-              </div>
-            )}
-
-            {!['REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) && (
-              <div className="field">
-                <label>Priority</label>
-                <AdaptiveSelect
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                >
-                  {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </AdaptiveSelect>
-              </div>
-            )}
-
-            {/* -- Repair -- */}
-            {form.requestType === 'SERVICE' && form.serviceType !== 'Maintenance' && (
-              <>
+            {form.requestType === 'SERVICE' && form.serviceType !== 'Maintenance' ? (
+              <div className="arq-service-top-row arq-span">
+                <div className="field">
+                  <label>Request Type *</label>
+                  <AdaptiveSelect required value={form.requestType} onChange={(e) => setType(e.target.value)}>
+                    {REQUEST_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>Service type *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.serviceType}
+                    onChange={(e) => setForm({ ...form, serviceType: e.target.value })}
+                  >
+                    {SERVICE_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
                 <div className="field">
                   <label>Preferred vendor</label>
                   <AdaptiveSelect
+                    threshold={1}
+                    placeholder="Optional — search Contact Directory…"
                     value={form.preferredVendorContactId}
                     onChange={(e) => {
                       const id = e.target.value;
-                      const vendor = contactsById.get(id);
+                      const contact = contactsById.get(id);
                       setForm((prev) => ({
                         ...prev,
                         preferredVendorContactId: id,
-                        preferredVendor: vendor?.organization || vendor?.name || '',
+                        preferredVendor: contact
+                          ? contact.organization || contact.name || ''
+                          : '',
                       }));
                     }}
                   >
-                    <option value="">No preference</option>
-                    {vendorContacts.map((vendor) => (
-                      <option key={vendor._id} value={vendor._id}>
-                        {vendor.organization || vendor.name}
-                        {vendor.city ? `: ${vendor.city}` : ''}
+                    <option value="">Leave blank</option>
+                    {contacts.map((contact) => (
+                      <option key={contact._id} value={contact._id}>
+                        {contact.organization || contact.name || 'Unnamed'}
+                        {contact.city ? `: ${contact.city}` : ''}
                       </option>
                     ))}
                   </AdaptiveSelect>
@@ -1106,43 +1424,19 @@ export default function AssetRequestsPage() {
                   value={form.expectedDate}
                   onChange={(value) => setForm({ ...form, expectedDate: value })}
                 />
-              </>
-            )}
-
-            {form.requestType === 'SERVICE' && (
-              <div className="field arq-span">
-                <label>Product image</label>
-                <FilePicker
-                  ref={productPhotoRef}
-                  accept="image/*"
-                  onChange={(e) => setProductPhoto(e.target.files?.[0] || null)}
-                />
-                <span className="muted mono-sm">Optional. It uploads after the request is saved.</span>
               </div>
-            )}
-
-            {/* -- Maintenance -- */}
-            {form.requestType === 'SERVICE' && form.serviceType === 'Maintenance' && (
-              <>
+            ) : form.requestType === 'LOGISTICS' ? (
+              <div className="arq-service-top-row arq-span">
                 <div className="field">
-                  <label>Service provider</label>
-                  <input
-                    value={form.serviceProvider}
-                    onChange={(e) => setForm({ ...form, serviceProvider: e.target.value })}
-                    placeholder="Optional"
-                  />
+                  <label>Request Type *</label>
+                  <AdaptiveSelect required value={form.requestType} onChange={(e) => setType(e.target.value)}>
+                    {REQUEST_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
                 </div>
-                <DateInput
-                  label="Scheduled date"
-                  value={form.scheduledDate}
-                  onChange={(value) => setForm({ ...form, scheduledDate: value })}
-                />
-              </>
-            )}
-
-            {/* -- Goods Issue (aligned with Movement One manual dispatch) -- */}
-            {form.requestType === 'LOGISTICS' && (
-              <>
                 <div className="field">
                   <label>Issue kind *</label>
                   <AdaptiveSelect
@@ -1179,14 +1473,18 @@ export default function AssetRequestsPage() {
                 </div>
                 <div className="field">
                   <label>Delivery mode *</label>
-                  <OtherAwareSelect
+                  <AdaptiveSelect
                     required
-                    picklistKey="logistics.deliveryMode"
-                    source="asset-request"
-                    options={transportModeOptions.length ? transportModeOptions : TRANSPORT_MODES}
                     value={form.transportMode}
                     onChange={(e) => setForm({ ...form, transportMode: e.target.value })}
-                  />
+                  >
+                    <option value="">Select delivery mode</option>
+                    {TRANSPORT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
                 </div>
                 <DateInput
                   label="Preferred date"
@@ -1195,8 +1493,127 @@ export default function AssetRequestsPage() {
                     setForm({ ...form, logisticsPreferredDate: value })
                   }
                 />
-                <fieldset className="arq-product-group arq-span">
+              </div>
+            ) : form.requestType === 'HIRING' ? (
+              <div className="arq-service-top-row arq-span">
+                <div className="field">
+                  <label>Request Type *</label>
+                  <AdaptiveSelect required value={form.requestType} onChange={(e) => setType(e.target.value)}>
+                    {REQUEST_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>Hiring type *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.hiringType}
+                    onChange={(e) => setForm({ ...form, hiringType: e.target.value })}
+                  >
+                    <option value="">Select hiring type</option>
+                    {HIRING_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>HCW type *</label>
+                  <OtherAwareSelect
+                    required
+                    picklistKey="hiring.hcwType"
+                    otherLabel="Others"
+                    source="asset-request-hiring"
+                    options={hcwTypeOptions.length ? hcwTypeOptions : HCW_TYPES}
+                    value={form.hcwType}
+                    onChange={(e) => setForm({ ...form, hcwType: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Camp type *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.campType}
+                    onChange={(e) => setForm({ ...form, campType: e.target.value })}
+                  >
+                    <option value="">Select camp type</option>
+                    {CAMP_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="field">
+                  <label>Request Type *</label>
+                  <AdaptiveSelect required value={form.requestType} onChange={(e) => setType(e.target.value)}>
+                    {REQUEST_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+
+                {form.requestType === 'SERVICE' && (
+                  <div className="field">
+                    <label>Service type *</label>
+                    <AdaptiveSelect
+                      required
+                      value={form.serviceType}
+                      onChange={(e) => setForm({ ...form, serviceType: e.target.value })}
+                    >
+                      {SERVICE_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* -- Maintenance -- */}
+            {form.requestType === 'SERVICE' && form.serviceType === 'Maintenance' && (
+              <>
+                <div className="field">
+                  <label>Service provider</label>
+                  <input
+                    value={form.serviceProvider}
+                    onChange={(e) => setForm({ ...form, serviceProvider: e.target.value })}
+                    placeholder="Optional"
+                  />
+                </div>
+                <DateInput
+                  label="Scheduled date"
+                  value={form.scheduledDate}
+                  onChange={(value) => setForm({ ...form, scheduledDate: value })}
+                />
+              </>
+            )}
+
+            {/* -- Goods Issue (aligned with Movement One manual dispatch) -- */}
+            {form.requestType === 'LOGISTICS' && (
+              <>
+                <fieldset
+                  className={`arq-product-group arq-span${!logisticsContextReady ? ' is-locked' : ''}`}
+                  disabled={!logisticsContextReady}
+                  aria-disabled={!logisticsContextReady}
+                >
                   <legend>Products *</legend>
+                  {!logisticsContextReady ? (
+                    <p className="muted arq-product-lock-hint">
+                      Select Issue kind and Delivery mode to add products.
+                    </p>
+                  ) : null}
                   <div className="arq-product-list">
                     {form.logisticsProducts.map((item, index) => {
                       const selectedElsewhere = new Set(
@@ -1210,14 +1627,16 @@ export default function AssetRequestsPage() {
                           (!item.productType || product.productType === item.productType) &&
                           !selectedElsewhere.has(String(product._id))
                       );
+                      const productsLocked =
+                        !logisticsContextReady || form.logisticsProductsConfirmed;
                       return (
                         <div className="arq-product-row" key={`logistics-product-${index}`}>
-                          <div className="field">
+                          <div className="arq-product-cell">
                             <label>Product category *</label>
                             <AdaptiveSelect
-                              required
+                              required={logisticsContextReady}
                               value={item.productType}
-                              disabled={form.logisticsProductsConfirmed}
+                              disabled={productsLocked}
                               onChange={(event) =>
                                 updateLogisticsProduct(index, {
                                   productType: event.target.value,
@@ -1234,12 +1653,12 @@ export default function AssetRequestsPage() {
                               ))}
                             </AdaptiveSelect>
                           </div>
-                          <div className="field">
+                          <div className="arq-product-cell">
                             <label>Model/Variant/Name *</label>
                             <AdaptiveSelect
-                              required
+                              required={logisticsContextReady}
                               value={item.productId}
-                              disabled={!item.productType || form.logisticsProductsConfirmed}
+                              disabled={!item.productType || productsLocked}
                               onChange={(event) =>
                                 selectLogisticsProduct(index, event.target.value)
                               }
@@ -1256,28 +1675,33 @@ export default function AssetRequestsPage() {
                               ))}
                             </AdaptiveSelect>
                           </div>
-                          <div className="field">
-                            <label>Qty *</label>
+                          <div className="arq-product-cell">
+                            <label htmlFor={`arq-product-qty-${index}`}>Qty *</label>
                             <input
-                              required
+                              id={`arq-product-qty-${index}`}
+                              required={logisticsContextReady}
                               type="number"
-                              disabled={form.logisticsProductsConfirmed}
+                              inputMode="decimal"
+                              disabled={productsLocked}
                               min="0.01"
                               step="any"
                               value={item.qty}
+                              placeholder=""
                               onChange={(event) =>
                                 updateLogisticsProduct(index, { qty: event.target.value })
                               }
                             />
                           </div>
-                          <button
-                            className="btn secondary btn-compact arq-product-remove"
-                            type="button"
-                            disabled={form.logisticsProductsConfirmed}
-                            onClick={() => removeLogisticsProduct(index)}
-                          >
-                            Remove
-                          </button>
+                          <div className="arq-product-cell arq-product-remove-cell">
+                            <button
+                              className="btn secondary arq-product-remove"
+                              type="button"
+                              disabled={productsLocked}
+                              onClick={() => removeLogisticsProduct(index)}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -1285,7 +1709,14 @@ export default function AssetRequestsPage() {
                   <button
                     className="btn secondary btn-compact"
                     type="button"
-                    disabled={form.logisticsProductsConfirmed}
+                    disabled={form.logisticsProductsConfirmed || !canAddLogisticsProduct}
+                    title={
+                      !logisticsContextReady
+                        ? 'Select Issue kind and Delivery mode first'
+                        : canAddLogisticsProduct
+                          ? 'Add another product'
+                          : 'Complete category, model/variant/name, and qty first'
+                    }
                     onClick={addLogisticsProduct}
                   >
                     + Add product
@@ -1293,6 +1724,7 @@ export default function AssetRequestsPage() {
                   <button
                     className="btn btn-compact"
                     type="button"
+                    disabled={!logisticsContextReady && !form.logisticsProductsConfirmed}
                     onClick={() =>
                       form.logisticsProductsConfirmed
                         ? setForm((prev) => ({ ...prev, logisticsProductsConfirmed: false }))
@@ -1336,7 +1768,17 @@ export default function AssetRequestsPage() {
                   <AdaptiveSelect
                     required
                     value={form.trainingTopic}
-                    onChange={(e) => setForm({ ...form, trainingTopic: e.target.value })}
+                    onChange={(e) => {
+                      const trainingTopic = e.target.value;
+                      const nonDevice = isNonDeviceRefresher(trainingTopic);
+                      setForm((prev) => ({
+                        ...prev,
+                        trainingTopic,
+                        trainingName: '',
+                        trainingProductId: '',
+                        assetName: nonDevice ? '' : prev.assetName,
+                      }));
+                    }}
                   >
                     <option value="">Select training type</option>
                     {TRAINING_TYPES.map((type) => (
@@ -1346,6 +1788,58 @@ export default function AssetRequestsPage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
+                {form.trainingTopic && isNonDeviceRefresher(form.trainingTopic) ? (
+                  <div className="field">
+                    <label>Training Name *</label>
+                    <AdaptiveSelect
+                      required
+                      value={form.trainingName}
+                      onChange={(e) => setForm({ ...form, trainingName: e.target.value })}
+                    >
+                      <option value="">Select training name</option>
+                      {NON_DEVICE_TRAINING_NAMES.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                  </div>
+                ) : null}
+                {form.trainingTopic && !isNonDeviceRefresher(form.trainingTopic) ? (
+                  <div className="field">
+                    <label>Asset / Device name *</label>
+                    <AdaptiveSelect
+                      required
+                      threshold={1}
+                      placeholder="Search Product Master…"
+                      value={form.trainingProductId}
+                      onChange={(e) => {
+                        const productId = e.target.value;
+                        const product = trainingDeviceProducts.find(
+                          (row) => String(row._id) === String(productId)
+                        );
+                        setForm((prev) => ({
+                          ...prev,
+                          trainingProductId: productId,
+                          trainingName: product
+                            ? productAssetName(product) || product.name || product.productName || ''
+                            : '',
+                        }));
+                      }}
+                    >
+                      <option value="">
+                        {trainingDeviceProducts.length
+                          ? 'Select from Product Master'
+                          : 'No devices in Product Master'}
+                      </option>
+                      {trainingDeviceProducts.map((product) => (
+                        <option key={product._id} value={product._id}>
+                          {productOptionLabelLocal(product)}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                  </div>
+                ) : null}
                 <div className="field">
                   <label>Mode</label>
                   <AdaptiveSelect
@@ -1413,39 +1907,162 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {/* -- Reimbursement -- */}
+            {/* -- Finance One Request -- */}
             {form.requestType === 'REIMBURSEMENT' && (
               <>
+                <div className="field">
+                  <label>Expense Sub-Category *</label>
+                  <AdaptiveSelect
+                    required
+                    threshold={1}
+                    placeholder="Search expense sub-category…"
+                    value={form.expenseSubCategory}
+                    onChange={(e) => pickExpenseSubCategory(e.target.value)}
+                  >
+                    <option value="">
+                      {expenseSubCategoryNames.length
+                        ? 'Search or select sub-category'
+                        : 'No sub-categories in Expense Master'}
+                    </option>
+                    {expenseSubCategoryNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>Expense Category *</label>
+                  {expenseCategoryLocked ? (
+                    <input
+                      readOnly
+                      required
+                      value={form.expenseCategory}
+                      placeholder="Auto-filled from sub-category"
+                    />
+                  ) : (
+                    <AdaptiveSelect
+                      required
+                      threshold={1}
+                      disabled={!form.expenseSubCategory}
+                      placeholder="Select expense category…"
+                      value={form.expenseCategory}
+                      onChange={(e) => pickExpenseCategory(e.target.value)}
+                    >
+                      <option value="">
+                        {!form.expenseSubCategory
+                          ? 'Select a sub-category first'
+                          : categoriesForSelectedSub.length
+                            ? 'Select expense category'
+                            : 'No categories for this sub-category'}
+                      </option>
+                      {categoriesForSelectedSub.map((category) => (
+                        <option key={category._id} value={category.name}>
+                          {category.code ? `${category.code} · ${category.name}` : category.name}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                  )}
+                </div>
+                <div className="field">
+                  <label>Raised For *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.raisedFor}
+                    onChange={(e) => {
+                      const raisedFor = e.target.value === 'OTHER' ? 'OTHER' : 'SELF';
+                      setForm((prev) => ({
+                        ...prev,
+                        raisedFor,
+                        raisedForContactId: raisedFor === 'SELF' ? '' : prev.raisedForContactId,
+                        payeeName: raisedFor === 'SELF' ? '' : prev.payeeName,
+                      }));
+                    }}
+                  >
+                    <option value="SELF">Self</option>
+                    <option value="OTHER">Another person</option>
+                  </AdaptiveSelect>
+                </div>
+                {form.raisedFor === 'OTHER' ? (
+                  <div className="field">
+                    <label>Person (Contact Directory) *</label>
+                    <AdaptiveSelect
+                      required
+                      threshold={1}
+                      placeholder="Search contact…"
+                      value={form.raisedForContactId}
+                      onChange={(e) => pickRaisedForContact(e.target.value)}
+                    >
+                      <option value="">Search or select from Contact Directory</option>
+                      {contacts.map((contact) => (
+                        <option key={contact._id} value={contact._id}>
+                          {contact.name || 'Unnamed'}
+                          {contact.city ? `: ${contact.city}` : ''}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                  </div>
+                ) : null}
+                <div className="field">
+                  <label>Associate this expense with a client?</label>
+                  <AdaptiveSelect
+                    value={form.associateWithClient}
+                    onChange={(e) => {
+                      const associateWithClient = e.target.value === 'YES' ? 'YES' : 'NO';
+                      setForm((prev) => ({
+                        ...prev,
+                        associateWithClient,
+                        clientMasterId: associateWithClient === 'NO' ? '' : prev.clientMasterId,
+                        clientId: associateWithClient === 'NO' ? '' : prev.clientId,
+                        clientName: associateWithClient === 'NO' ? '' : prev.clientName,
+                        clientCode: associateWithClient === 'NO' ? '' : prev.clientCode,
+                        divisionTherapy: associateWithClient === 'NO' ? '' : prev.divisionTherapy,
+                      }));
+                    }}
+                  >
+                    <option value="NO">No</option>
+                    <option value="YES">Yes</option>
+                  </AdaptiveSelect>
+                </div>
+                {form.associateWithClient === 'YES' ? (
+                  <div className="field">
+                    <label>Code and Division / Therapy *</label>
+                    <AdaptiveSelect
+                      required
+                      threshold={1}
+                      placeholder="Search by code or division / therapy…"
+                      value={form.clientMasterId}
+                      onChange={(e) => pickExpenseClientMaster(e.target.value)}
+                    >
+                      <option value="">
+                        {activeClientMasters.length
+                          ? 'Search or select Code · Division / Therapy'
+                          : 'No Client Master records available'}
+                      </option>
+                      {activeClientMasters.map((row) => (
+                        <option key={row._id} value={row._id}>
+                          {row.optionLabel}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                  </div>
+                ) : null}
+                <div className="field arq-span">
+                  <label htmlFor="reimbursement-remarks">Remarks</label>
+                  <textarea
+                    id="reimbursement-remarks"
+                    rows={3}
+                    value={form.reason}
+                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                    placeholder="Optional notes about this expense"
+                  />
+                </div>
                 <DateInput
                   label="Expense date *"
                   required
                   value={form.expenseDate}
                   onChange={(value) => setForm({ ...form, expenseDate: value })}
                 />
-                <div className="field">
-                  <label>Expense category *</label>
-                  <AdaptiveSelect
-                    required
-                    value={form.expenseCategory}
-                    onChange={(e) => setForm({ ...form, expenseCategory: e.target.value })}
-                  >
-                    <option value="">Select from Expense Categories Master</option>
-                    {expenseCategories.map((category) => (
-                      <option key={category._id} value={category.name}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                  {(() => {
-                    const selected = expenseCategories.find((c) => c.name === form.expenseCategory);
-                    if (!selected?.covers) return null;
-                    return (
-                      <p className="muted" style={{ margin: '6px 0 0', fontSize: '0.85rem' }}>
-                        Covers: {selected.covers}
-                      </p>
-                    );
-                  })()}
-                </div>
                 <div className="field">
                   <label>Expense amount (INR) *</label>
                   <input
@@ -1473,133 +2090,76 @@ export default function AssetRequestsPage() {
             {/* -- Hiring -- */}
             {form.requestType === 'HIRING' && (
               <>
-                <div className="field">
-                  <label>Hiring type *</label>
-                  <AdaptiveSelect
+                <div className="arq-service-top-row arq-span arq-hiring-loc-row">
+                  <div className="field">
+                    <label>Method *</label>
+                    <OtherAwareSelect
+                      required
+                      picklistKey="hiring.method"
+                      otherLabel="Others"
+                      source="asset-request-hiring"
+                      options={hiringMethodOptions.length ? hiringMethodOptions : HIRING_METHODS}
+                      value={form.hiringMethod}
+                      onChange={(e) => setForm({ ...form, hiringMethod: e.target.value })}
+                    />
+                  </div>
+                  <LocationCascade
                     required
-                    value={form.hiringType}
-                    onChange={(e) => setForm({ ...form, hiringType: e.target.value })}
-                  >
-                    <option value="">Select hiring type</option>
-                    {HIRING_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label>HCW type *</label>
-                  <OtherAwareSelect
-                    required
-                    picklistKey="hiring.hcwType"
-                    otherLabel="Others"
-                    source="asset-request-hiring"
-                    options={hcwTypeOptions.length ? hcwTypeOptions : HCW_TYPES}
-                    value={form.hcwType}
-                    onChange={(e) => setForm({ ...form, hcwType: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Camp type *</label>
-                  <AdaptiveSelect
-                    required
-                    value={form.campType}
-                    onChange={(e) => setForm({ ...form, campType: e.target.value })}
-                  >
-                    <option value="">Select camp type</option>
-                    {CAMP_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label>Method *</label>
-                  <OtherAwareSelect
-                    required
-                    picklistKey="hiring.method"
-                    otherLabel="Others"
-                    source="asset-request-hiring"
-                    options={hiringMethodOptions.length ? hiringMethodOptions : HIRING_METHODS}
-                    value={form.hiringMethod}
-                    onChange={(e) => setForm({ ...form, hiringMethod: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Engagement date &amp; time *</label>
-                  <input
-                    required
-                    type="datetime-local"
-                    value={form.engagementDateTime}
-                    onChange={(e) =>
-                      setForm({ ...form, engagementDateTime: e.target.value })
+                    showPin={false}
+                    value={{
+                      state: form.hiringState,
+                      city: form.hiringCity,
+                      district: form.hiringDistrict || '',
+                      stateId: form.hiringStateId || '',
+                      districtId: form.hiringDistrictId || '',
+                      cityId: form.hiringCityId || '',
+                    }}
+                    onChange={(loc) =>
+                      setForm({
+                        ...form,
+                        hiringState: loc.state || '',
+                        hiringCity: loc.city || '',
+                        hiringDistrict: loc.district || '',
+                        hiringStateId: loc.stateId || '',
+                        hiringDistrictId: loc.districtId || '',
+                        hiringCityId: loc.cityId || '',
+                      })
                     }
                   />
                 </div>
-                <div className="field">
-                  <label>Name *</label>
-                  <input
-                    required
-                    value={form.hiringName}
-                    onChange={(e) => setForm({ ...form, hiringName: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Address *</label>
-                  <input
-                    required
-                    value={form.hiringAddress}
-                    onChange={(e) => setForm({ ...form, hiringAddress: e.target.value })}
-                  />
-                </div>
-                <LocationCascade
-                  required
-                  pinRequired
-                  value={{
-                    state: form.hiringState,
-                    city: form.hiringCity,
-                    district: form.hiringDistrict || '',
-                    pinCode: form.hiringPinCode || '',
-                    stateId: form.hiringStateId || '',
-                    districtId: form.hiringDistrictId || '',
-                    cityId: form.hiringCityId || '',
-                  }}
-                  onChange={(loc) =>
-                    setForm({
-                      ...form,
-                      hiringState: loc.state || '',
-                      hiringCity: loc.city || '',
-                      hiringDistrict: loc.district || '',
-                      hiringPinCode: loc.pinCode || '',
-                      hiringStateId: loc.stateId || '',
-                      hiringDistrictId: loc.districtId || '',
-                      hiringCityId: loc.cityId || '',
-                    })
-                  }
-                />
-                <div className="field">
-                  <label>Budget minimum (₹) *</label>
-                  <input
-                    required
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={form.budgetMin}
-                    onChange={(e) => setForm({ ...form, budgetMin: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label>Budget maximum (₹) *</label>
-                  <input
-                    required
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={form.budgetMax}
-                    onChange={(e) => setForm({ ...form, budgetMax: e.target.value })}
-                  />
+                <div className="arq-asset-reason-row arq-span">
+                  <div className="field">
+                    <label>Budget minimum (INR) *</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.budgetMin}
+                      onChange={(e) => setForm({ ...form, budgetMin: e.target.value })}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Budget maximum (INR) *</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={form.budgetMax}
+                      onChange={(e) => setForm({ ...form, budgetMax: e.target.value })}
+                    />
+                  </div>
+                  <div className="field arq-reason-field">
+                    <label htmlFor="hiring-remarks">Remarks</label>
+                    <input
+                      id="hiring-remarks"
+                      type="text"
+                      value={form.reason}
+                      onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                      placeholder="Optional notes about this hiring request"
+                    />
+                  </div>
                 </div>
               </>
             )}
@@ -1942,86 +2502,14 @@ export default function AssetRequestsPage() {
               </>
             )}
 
-            {!needsAsset &&
-              form.requestType !== 'LOGISTICS' &&
-              !['TRAINING', 'REIMBURSEMENT', 'HIRING', 'OTHER'].includes(
-                form.requestType
-              ) && (
-              <>
+            {needsAsset ? (
+              <div className="arq-asset-reason-row arq-span">
                 <div className="field">
-                  <label>Source (Asset Custody)</label>
+                  <label>{FIELD.ASSET_NAME} *</label>
                   <AdaptiveSelect
-                    value={form.assetCustody}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        assetId: '',
-                        contactId: '',
-                        assetCustody: e.target.value,
-                        custodianName: '',
-                      }))
-                    }
-                  >
-                    <option value="">Select source</option>
-                    {custodyOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label>Custodian name</label>
-                  <AdaptiveSelect
-                    value={form.custodianName}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        assetId: '',
-                        contactId: '',
-                        custodianName: e.target.value,
-                      }))
-                    }
-                >
-                    <option value="">Select custodian</option>
-                    {sourceCustodianOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-              </>
-            )}
-
-            {needsAsset && (
-              <>
-                {/* Asset details are only relevant to Logistics requests containing devices. */}
-                <div className="field arq-span">
-                  <h4 className="arq-section-title">
-                    {needsAsset ? 'Linked asset *' : 'Linked asset (optional)'}
-                  </h4>
-                </div>
-
-                <div className="field">
-                  <label>Source ({FIELD.ASSET_CUSTODY})</label>
-                  <AdaptiveSelect value={form.assetCustody} onChange={(e) => linkFromCustody(e.target.value)}>
-                    <option value="">Select</option>
-                    {custodyOptions.map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-
-                <div className="field">
-                  <label>
-                    {FIELD.ASSET_NAME}
-                    {needsAsset ? ' *' : ''}
-                  </label>
-                  <AdaptiveSelect
-                    required={needsAsset}
+                    required
+                    threshold={1}
+                    placeholder="Search asset name…"
                     value={form.assetId}
                     onChange={(e) => linkFromAssetId(e.target.value)}
                   >
@@ -2034,10 +2522,14 @@ export default function AssetRequestsPage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
-
                 <div className="field">
                   <label>{FIELD.CUSTODIAN_NAME}</label>
-                  <AdaptiveSelect value={form.custodianName} onChange={(e) => linkFromCustodianName(e.target.value)}>
+                  <AdaptiveSelect
+                    threshold={1}
+                    placeholder="Search custodian…"
+                    value={form.custodianName}
+                    onChange={(e) => linkFromCustodianName(e.target.value)}
+                  >
                     <option value="">Select</option>
                     {custodianNameOptions.map((v) => (
                       <option key={v} value={v}>
@@ -2046,25 +2538,37 @@ export default function AssetRequestsPage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
-              </>
-            )}
-
-            {!['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) && (
-              <div className="field">
-                <label>Reason / description (optional)</label>
+                {!['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) ? (
+                  <div className="field arq-reason-field">
+                    <label>Remarks</label>
+                    <input
+                      type="text"
+                      value={form.reason}
+                      onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                      placeholder="Add a short note"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : !['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) ? (
+              <div className="field arq-reason-field">
+                <label>Remarks</label>
                 <input
+                  type="text"
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
                   placeholder="Add a short note"
                 />
               </div>
-            )}
+            ) : null}
           </div>
-          <p className="muted arq-hint">
-            Linked Asset Register and Contact Directory fields auto-fill when a unique match is found.
-            Asset is required for Repair &amp; Maintenance, and for Goods Issue rows categorized as
-            Medical Device or Non-Medical Device.
-          </p>
+          {form.requestType === 'MASTER_ADD' || needsAsset ? (
+            <p className="muted arq-hint">
+              {form.requestType === 'MASTER_ADD'
+                ? 'On approval, the requested master record is created automatically in Master One.'
+                : 'Custodian details auto-fill when a unique asset match is found.'}
+            </p>
+          ) : null}
           <button className="btn" type="submit" disabled={busy}>
             {busy ? 'Submitting…' : 'Submit request'}
           </button>
@@ -2101,13 +2605,13 @@ export default function AssetRequestsPage() {
         <table>
           <thead>
             <tr>
-              <th>Number</th>
+              <th>Request Number</th>
               <th>Type</th>
               <th>Status</th>
               <th>Details</th>
               <th>Asset</th>
               <th>Requestor</th>
-              <th>Reason</th>
+              <th>Remarks</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2224,6 +2728,34 @@ export default function AssetRequestsPage() {
                           View attachment
                         </button>
                       )}
+                      {r.requestType === 'HIRING' && r.jdAttachment && (
+                        <button
+                          type="button"
+                          className="btn secondary btn-compact"
+                          onClick={() => openJd(r)}
+                        >
+                          View JD
+                        </button>
+                      )}
+                      {r.requestType === 'HIRING' &&
+                        !r.jdAttachment &&
+                        isActive &&
+                        (canApprove || (canRequest && isMine)) && (
+                          <button
+                            type="button"
+                            className="btn secondary btn-compact"
+                            onClick={() => {
+                              setJdFile(null);
+                              if (jdFileRef.current) jdFileRef.current.value = '';
+                              setJdUploadPrompt({
+                                id: r._id,
+                                requestNumber: r.requestNumber || r._id,
+                              });
+                            }}
+                          >
+                            Upload JD
+                          </button>
+                        )}
                       {isServiceRequest &&
                         isActive &&
                         (canApprove || (canRequest && isMine)) && (

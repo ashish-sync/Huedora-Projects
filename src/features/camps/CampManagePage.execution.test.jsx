@@ -37,7 +37,8 @@ vi.mock('./campOpsApi.js', () => ({
             lifecycleStage: 'execution',
             assignmentStatus: 'Assigned',
             executionStatus: 'Ongoing',
-            campDate: '2026-08-01',
+            // Future date so effective status stays scheduled in badge logic
+            campDate: '2099-08-01',
             startTime: '09:00',
             endTime: '12:00',
           },

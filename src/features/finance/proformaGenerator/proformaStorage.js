@@ -46,6 +46,8 @@ export function defaultProformaForm() {
       website: '',
       stateCode: '',
     },
+    clientMasterId: '',
+    clientId: '',
     recipient: {
       name: '',
       projectName: '',

@@ -49,7 +49,7 @@ export function PasteContextFields({
             id="paste-context-division"
             value={campaignType}
             onChange={(e) => onDivisionChange(e.target.value)}
-            disabled={disabled || programsLoading || !clientId || !divisionOptions.length || singleDivisionOption}
+            disabled={disabled || programsLoading || !clientId || !divisionOptions.length}
             className={errors.campaignType ? 'input-invalid' : ''}
             required
           >
@@ -77,8 +77,9 @@ export function PasteContextFields({
             id="paste-context-camp-name"
             value={campaignName}
             onChange={onCampNameChange}
-            disabled={disabled || programsLoading || !clientId || !campaignType || !campNameOptions.length || singleMethodOption}
+            disabled={disabled || programsLoading || !clientId || !campaignType || !campNameOptions.length}
             required
+            allowOther={false}
             error={errors.campaignName || ''}
             options={campNameOptions}
             placeholder="Select method"

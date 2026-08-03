@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { contactToHcwFields } from '../utils/campHcwContact';
 import { copyCampAssignmentDetails } from '../utils/campAssignmentCopy';
+import { isCampDateDueForExecution } from '../utils/campAssignmentActions.js';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
+import { CampHireRequestButton } from './CampHireRequestButton';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -17,6 +18,7 @@ export function CampAssignmentStage({
   updateFields,
   hcwContacts = [],
   contactsLoading = false,
+  clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
   disabled = false,
@@ -30,6 +32,7 @@ export function CampAssignmentStage({
       || form.lifecycleStage === 'execution');
   const fieldsDisabled = disabled || isTerminal;
   const canCopyDetails = Boolean(form.hcwName || form.hcwContactId);
+  const canRaiseHireRequest = !isTerminal;
 
   async function handleCopyDetails() {
     const didCopy = await copyCampAssignmentDetails(form);
@@ -55,11 +58,26 @@ export function CampAssignmentStage({
   }
 
   if (isAssigned) {
+    const inExecution = form.lifecycleStage === 'execution'
+      || isCampDateDueForExecution(form);
     return (
       <div className="camp-assignment-stage">
-        <p className="meta-text camp-assignment-note">
-          HCW assigned. This camp has moved to the Execution stage.
-        </p>
+        <div className="camp-assignment-toolbar">
+          <p className="meta-text camp-assignment-note">
+            {inExecution
+              ? 'HCW assigned. This camp is in the Execution stage (opens one day before the camp date).'
+              : 'HCW assigned. This camp stays in Assignment until one day before the camp date, then moves to Execution.'}
+          </p>
+          {canRaiseHireRequest ? (
+            <CampHireRequestButton
+              form={form}
+              professions={clientMasterProfessions.length
+                ? clientMasterProfessions
+                : clientMasterProfession}
+              label="Raise hiring request"
+            />
+          ) : null}
+        </div>
         <div className="form-grid camp-assignment-assign-panel">
           <ReadOnlyField label="HCW Category" value={form.hcwCategory || '—'} />
           <ReadOnlyField label="HCW Name" value={form.hcwName || '—'} />
@@ -90,15 +108,28 @@ export function CampAssignmentStage({
 
   return (
     <div className="camp-assignment-stage">
-      <p className="meta-text camp-assignment-intro">
-        Select resource type, state, and city to find the healthcare worker configured for this client in Client Master.
-        Before assignment you can refuse the camp. After assignment, only cancel by TCPL or Client is allowed.
-      </p>
+      <div className="camp-assignment-toolbar">
+        <p className="meta-text camp-assignment-intro">
+          Select resource type, state, and city to find Contact Directory healthcare workers that match
+          this client’s Healthcare Worker role in Client Master.
+          Before assignment you can refuse the camp. After assignment, only cancel by TCPL or Client is allowed.
+        </p>
+        <CampHireRequestButton
+          form={form}
+          professions={clientMasterProfessions.length
+            ? clientMasterProfessions
+            : clientMasterProfession}
+          disabled={fieldsDisabled}
+          variant="button"
+          label="Raise hiring request"
+        />
+      </div>
       <CampHcwAssignPicker
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
         disabled={fieldsDisabled}
         selectedContactId={form.hcwContactId || ''}
+        clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
         onSelect={handleSelect}

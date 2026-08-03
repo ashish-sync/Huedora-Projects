@@ -152,7 +152,7 @@ export default function App() {
                   <Route path="manage/:id/edit" element={<CampFormPage />} />
                   <Route path="import" element={<Navigate to="/camps/communications/upload" replace />} />
                   <Route path="chargesheet" element={<Navigate to="/camps/manage" replace />} />
-                  <Route path="payout" element={<Navigate to="/finance/camp-payouts" replace />} />
+                  <Route path="payout" element={<Navigate to="/finance/payouts" replace />} />
                   <Route path="communications" element={<CommunicationsLayout />}>
                     <Route index element={<Navigate to="paste" replace />} />
                     <Route path="paste" element={<CommunicationsPastePage />} />
@@ -178,7 +178,8 @@ export default function App() {
                   <Route path="build/credit-note" element={<CreditNoteBuilderPage />} />
                   <Route path="build/credit-note/:id" element={<CreditNoteBuilderPage />} />
                   <Route path="master" element={<FinanceCommercialMasterPage />} />
-                  <Route path="camp-payouts" element={<FinanceCampPayoutsPage />} />
+                  <Route path="payouts" element={<FinanceCampPayoutsPage />} />
+                  <Route path="camp-payouts" element={<Navigate to="/finance/payouts" replace />} />
                   <Route path="generate" element={<FinanceGeneratePage />} />
                   <Route path="generate/:docSlug" element={<FinanceGeneratePage />} />
                   <Route path="expenses" element={<Navigate to="/finance" replace />} />

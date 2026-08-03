@@ -5,27 +5,32 @@ import {
 } from './campAssignmentCopy.js';
 
 describe('formatCampAssignmentDetails', () => {
-  it('formats assigned camp details for sharing', () => {
+  it('formats assigned camp details for sharing with bold labels and Title Case', () => {
     const text = formatCampAssignmentDetails({
-      doctorName: 'Dr. Demo ASGN',
+      doctorName: 'Dr. balkrishna patil',
       campDate: '2026-08-10',
-      campAddress: '12 MG Road, Pune, Maharashtra 411001',
+      campAddress: 'guru krupa clinic, shop no. 10, rustomjee, global city virar west palghar',
       startTime: '09:00',
       endTime: '12:00',
-      fieldPersonName: 'Amit Sharma',
-      fieldPersonPhone: '9876543210',
-      hcwName: 'Ravi Technician',
-      hcwContact: '9123456780',
+      fieldPersonName: 'vishal gupta',
+      fieldPersonPhone: '7559133770',
+      hcwName: 'mahesh',
+      hcwContact: '9999999999',
     });
 
-    expect(text).toContain('Doctor Name: Dr. Demo ASGN');
-    expect(text).toContain('Clinic Date: 10-08-2026');
-    expect(text).toContain('Clinic Address: 12 MG Road, Pune, Maharashtra 411001');
-    expect(text).toContain('Clinic Timing: 09:00 – 12:00');
-    expect(text).toContain('Contact Person: Amit Sharma');
-    expect(text).toContain('Contact Number: 9876543210');
-    expect(text).toContain('HCW Name: Ravi Technician');
-    expect(text).toContain('HCW Number: 9123456780');
+    expect(text).toBe(
+      [
+        '*Doctor Name:* Balkrishna Patil',
+        '*Clinic Date:* 10-08-2026',
+        '*Clinic Address:* Guru Krupa Clinic, Shop No. 10, Rustomjee, Global City Virar West Palghar',
+        '*Clinic Timing:* 09:00 – 12:00',
+        '*Contact Person:* Vishal Gupta',
+        '*Contact Number:* 7559133770',
+        '*HCW Name:* Mahesh',
+        '*HCW Number:* 9999999999',
+        '',
+      ].join('\n'),
+    );
   });
 });
 

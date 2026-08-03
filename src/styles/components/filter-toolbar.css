@@ -26,7 +26,6 @@
 .pm-filter-bar,
 .logistics-filter-bar,
 .finance-docs-filters,
-.camp-ops-root .camps-filter-card,
 .camp-ops-root .communications-filter-panel {
   display: flex !important;
   flex-wrap: nowrap !important;
@@ -49,13 +48,28 @@
 .pm-filter-bar,
 .logistics-filter-bar,
 .finance-docs-filters,
-.camp-ops-root .camps-filter-card,
 .camp-ops-root .communications-filter-panel {
   margin-bottom: var(--space-3, 0.75rem) !important;
   padding: 0.625rem 0.75rem !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-sm, 10px) !important;
   background: var(--bg-elevated) !important;
+}
+
+/* Camps filter card stacks toolbar + active chips (never side-by-side). */
+.camp-ops-root .camps-filter-card {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  box-sizing: border-box !important;
+  margin-bottom: var(--space-3, 0.75rem) !important;
+  padding: 0 !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm, 10px) !important;
+  background: var(--bg-elevated) !important;
+  overflow: hidden !important;
 }
 
 .master-filter-main,
@@ -117,13 +131,23 @@
 .finance-docs-filters > select,
 .finance-docs-filters > .adaptive-select-host,
 .toolbar > select,
-.toolbar > .adaptive-select-host,
-.camp-ops-root .camps-filter-status,
-.camp-ops-root .camps-filter-control.tylo-select {
+.toolbar > .adaptive-select-host {
   flex: 0 0 var(--filter-control-min-w) !important;
   width: var(--filter-control-min-w) !important;
   min-width: var(--filter-control-min-w) !important;
   max-width: var(--filter-control-min-w) !important;
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+  box-sizing: border-box !important;
+}
+
+.camp-ops-root .camps-filter-status,
+.camp-ops-root .camps-filter-control.tylo-select {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  min-width: var(--filter-control-min-w) !important;
+  max-width: 16rem !important;
   height: var(--filter-control-h) !important;
   min-height: var(--filter-control-h) !important;
   max-height: var(--filter-control-h) !important;
@@ -275,6 +299,7 @@
   --camps-filter-h: var(--filter-control-h);
   --camps-filter-gap: var(--filter-toolbar-gap);
   width: 100% !important;
+  flex-wrap: wrap !important;
 }
 
 .camp-ops-root .camps-filter-group--search {
@@ -312,7 +337,6 @@
   .pm-filter-bar,
   .logistics-filter-bar,
   .finance-docs-filters,
-  .camp-ops-root .camps-filter-card,
   .camp-ops-root .camps-filter-toolbar,
   .master-filter-main,
   .pm-filter-main {

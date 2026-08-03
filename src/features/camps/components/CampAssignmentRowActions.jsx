@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ClipboardCopy, User, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ClipboardCopy, UserCheck, Briefcase, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { CampRowIconButton } from './CampRowIconButton';
 import {
   canCancelOrRefuseCamp,
@@ -9,6 +9,7 @@ import {
 } from '../utils/campCancelRefuse';
 import { isCampAssigned } from '../utils/campAssignmentActions';
 import { copyCampAssignmentDetailsFromRecord } from '../utils/campAssignmentCopy';
+import { buildCampHireRequestPath } from '../utils/campHireRequest.js';
 
 const STAGE = 'assignment';
 
@@ -19,12 +20,14 @@ export function CampAssignmentRowActions({
   hasPermission,
   onAction,
 }) {
+  const navigate = useNavigate();
   const [copyState, setCopyState] = useState('');
   const assigned = isCampAssigned(camp);
   const isTerminal = ['cancelled', 'rejected'].includes(camp.status);
   const showCross = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps }, STAGE);
   const closeAction = resolveCancelOrRefuseAction(camp, STAGE);
   const closeLabel = cancelOrRefuseLabel(camp, STAGE);
+  const canHireRequest = !isTerminal && camp.status === 'approved';
 
   async function handleCopyDetails() {
     const didCopy = await copyCampAssignmentDetailsFromRecord(camp);
@@ -33,7 +36,11 @@ export function CampAssignmentRowActions({
     window.setTimeout(() => setCopyState(''), 2000);
   }
 
-  if (!canEdit && !showCross && !assigned) {
+  function handleHireRequest() {
+    navigate(buildCampHireRequestPath(camp));
+  }
+
+  if (!canEdit && !showCross && !assigned && !canHireRequest) {
     return <span className="camps-cell-empty">—</span>;
   }
 
@@ -47,9 +54,17 @@ export function CampAssignmentRowActions({
           aria-label="Open assignment"
         >
           <span className="camp-row-icon-btn__glyph" aria-hidden="true">
-            <User size={17} strokeWidth={2} />
+            <UserCheck size={17} strokeWidth={2} />
           </span>
         </Link>
+      )}
+      {canHireRequest && (
+        <CampRowIconButton
+          icon={Briefcase}
+          label="Raise hiring request in Request One"
+          variant="hire"
+          onClick={handleHireRequest}
+        />
       )}
       {assigned && (
         <CampRowIconButton

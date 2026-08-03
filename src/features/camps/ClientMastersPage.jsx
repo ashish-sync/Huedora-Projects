@@ -18,6 +18,7 @@ import {
   clientMasterListPath,
   CLIENT_MASTER_NEW_PATH,
 } from './clientMasterPaths.js';
+import { formatHealthcareWorkers } from './utils/healthcareWorkers.js';
 
 function formatAmount(value) {
   if (value == null || value === '') return '—';
@@ -236,7 +237,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                         <td>{record.programName || '—'}</td>
                         <td>{record.campName || '—'}</td>
                         <td>{record.campType || '—'}</td>
-                        <td>{record.healthcareWorker || '—'}</td>
+                        <td>{formatHealthcareWorkers(record.healthcareWorker) || '—'}</td>
                         <td>{formatAmount(record.poAmount)}</td>
                         <td>{record.campDuration || '—'}</td>
                         <td>

@@ -19,10 +19,10 @@ function localDateFromIso(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function daysFromToday(dateValue) {
+export function daysFromToday(dateValue, now = new Date()) {
   const target = localDateFromIso(dateValue);
   if (!target) return 0;
-  const today = new Date();
+  const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   return Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { FIELD, MODULE, ACTION } from '../../shared/labels.js';
@@ -22,6 +22,17 @@ import {
   emptyMasterPayload,
   validateMasterPayload,
 } from '../masters/masterCatalog.js';
+import { campApi, clientMasterApi } from '../camps/campOpsApi.js';
+import {
+  formatLinkedCampSummary,
+  mapCampToHiringPrefill,
+} from '../camps/utils/campHireRequest.js';
+import {
+  parseClientMasterListResponse,
+  resolveClientMasterHealthcareWorkers,
+} from '../camps/utils/clientMasterCascade.js';
+import { normalizeHealthcareWorkers } from '../camps/utils/healthcareWorkers.js';
+import { isVendorContact } from '../agreements/contactPicklists.js';
 
 const REQUEST_TYPES = [
   { value: 'SERVICE', label: 'Repair & Service Request', needsAsset: true },
@@ -427,6 +438,7 @@ export default function AssetRequestsPage() {
   const [rows, setRows] = useState([]);
   const [assets, setAssets] = useState([]);
   const [contacts, setContacts] = useState([]);
+  const [vendorContacts, setVendorContacts] = useState([]);
   const [logisticsMeta, setLogisticsMeta] = useState(null);
   const [expenseMaster, setExpenseMaster] = useState({ expenseCategories: [], expenseSubCategories: [] });
   const [clients, setClients] = useState([]);
@@ -448,6 +460,9 @@ export default function AssetRequestsPage() {
   const [jdBusy, setJdBusy] = useState(false);
   const [generatedLinks, setGeneratedLinks] = useState({});
   const [linkBusyId, setLinkBusyId] = useState('');
+  const [linkedCamp, setLinkedCamp] = useState(null);
+  const [linkedCampLoading, setLinkedCampLoading] = useState(false);
+  const campPrefillKeyRef = useRef('');
   const reimbursementBillRef = useRef(null);
   const otherAttachmentRef = useRef(null);
   const jdFileRef = useRef(null);
@@ -470,11 +485,99 @@ export default function AssetRequestsPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const requestType = String(searchParams.get('type') || '').toUpperCase();
+    const campRecordId = String(searchParams.get('campRecordId') || '').trim();
+    if (requestType !== 'HIRING' || !campRecordId) {
+      if (!campRecordId) setLinkedCamp(null);
+      return undefined;
+    }
+
+    const prefillKey = `${campRecordId}|${searchParams.get('roles') || ''}`;
+    if (campPrefillKeyRef.current === prefillKey) return undefined;
+
+    let cancelled = false;
+    setLinkedCampLoading(true);
+
+    (async () => {
+      try {
+        const campResponse = await campApi.get(campRecordId);
+        const camp = campResponse?.data?.data || campResponse?.data;
+        if (!camp || cancelled) return;
+
+        const clientId = camp.clientId || camp.client?._id || camp.client || '';
+        let masters = [];
+        if (clientId) {
+          try {
+            const masterResponse = await clientMasterApi.listByClient(clientId);
+            masters = parseClientMasterListResponse(masterResponse);
+          } catch {
+            masters = [];
+          }
+        }
+
+        const queryRoles = normalizeHealthcareWorkers(searchParams.get('roles'));
+        const matchedMaster = masters.find((record) => {
+          const program = String(record.programName || record.drugTherapyName || '').trim().toLowerCase();
+          const method = String(record.campName || '').trim().toLowerCase();
+          return (
+            program === String(camp.campaignType || '').trim().toLowerCase()
+            && method === String(camp.campaignName || '').trim().toLowerCase()
+          );
+        }) || masters.find((record) => record.isActive !== false) || null;
+
+        const rolesFromMaster = resolveClientMasterHealthcareWorkers(masters, {
+          campaignType: camp.campaignType,
+          campaignName: camp.campaignName,
+        });
+        const masterForPrefill = matchedMaster
+          ? {
+              ...matchedMaster,
+              healthcareWorker: rolesFromMaster.length
+                ? rolesFromMaster
+                : matchedMaster.healthcareWorker,
+            }
+          : {
+              campName: camp.campaignName,
+              campType: camp.campType,
+              healthcareWorker: queryRoles.length ? queryRoles : rolesFromMaster,
+            };
+
+        const prefill = mapCampToHiringPrefill(camp, masterForPrefill);
+        if (cancelled) return;
+
+        setLinkedCamp(camp);
+        setTypeFilter('HIRING');
+        setForm((prev) => ({
+          ...prev,
+          ...prefill,
+          hiringType: '',
+          budgetMin: '',
+          budgetMax: '',
+          reason: '',
+        }));
+        campPrefillKeyRef.current = prefillKey;
+      } catch (err) {
+        if (!cancelled) {
+          setLinkedCamp(null);
+          setError(err?.message || 'Could not load camp details for hiring request');
+        }
+      } finally {
+        if (!cancelled) setLinkedCampLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
   const contactsById = useMemo(() => {
     const map = new Map();
     for (const c of contacts) map.set(String(c._id), c);
+    for (const c of vendorContacts) map.set(String(c._id), c);
     return map;
-  }, [contacts]);
+  }, [contacts, vendorContacts]);
   const logisticsConfig = logisticsMeta?.inOut || {};
   const logisticsProductTypes = logisticsConfig.productTypes || FALLBACK_PRODUCT;
   const logisticsProducts = logisticsMeta?.products || [];
@@ -706,6 +809,9 @@ export default function AssetRequestsPage() {
     api('/contacts?limit=500')
       .then((r) => setContacts(r.data || []))
       .catch(() => {});
+    api('/contacts?limit=500&contactCategory=Vendor')
+      .then((r) => setVendorContacts((r.data || []).filter((c) => isVendorContact(c))))
+      .catch(() => setVendorContacts([]));
     api('/logistics/meta')
       .then((r) => setLogisticsMeta(r.data || null))
       .catch(() => setLogisticsMeta(null));
@@ -1365,6 +1471,26 @@ export default function AssetRequestsPage() {
       {canRequest && (
         <form className="card arq-form" onSubmit={submit} autoComplete="off" data-form-type="other">
           <h3>New request</h3>
+          {(linkedCamp || linkedCampLoading) && form.requestType === 'HIRING' ? (
+            <div className="arq-camp-link-banner">
+              {linkedCampLoading ? (
+                <p className="muted" style={{ margin: 0 }}>Loading camp details…</p>
+              ) : (
+                <>
+                  <div className="arq-camp-link-banner__title">Linked camp</div>
+                  <Link
+                    className="arq-camp-link-banner__link"
+                    to={`/camps/manage/${linkedCamp._id}/edit`}
+                  >
+                    {formatLinkedCampSummary(linkedCamp)}
+                  </Link>
+                  <p className="muted mono-sm arq-camp-link-banner__hint">
+                    Prefilling from this camp and Client Master. Set Hiring type and budget; remarks stay optional.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : null}
           <div className="arq-grid">
             {form.requestType === 'SERVICE' && form.serviceType !== 'Maintenance' ? (
               <div className="arq-service-top-row arq-span">
@@ -1411,7 +1537,7 @@ export default function AssetRequestsPage() {
                     }}
                   >
                     <option value="">Leave blank</option>
-                    {contacts.map((contact) => (
+                    {vendorContacts.map((contact) => (
                       <option key={contact._id} value={contact._id}>
                         {contact.organization || contact.name || 'Unnamed'}
                         {contact.city ? `: ${contact.city}` : ''}

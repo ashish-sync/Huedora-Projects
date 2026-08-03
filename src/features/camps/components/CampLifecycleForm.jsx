@@ -46,12 +46,39 @@ import {
   syncPrimaryContactFields,
 } from '../utils/campContactPersons';
 import { formatDoctorName, formatContactPersonName } from '../../../shared/textFormat.js';
+import {
+  FINANCE_PAYOUT_PART_FIELDS,
+  FINANCE_REVENUE_PART_FIELDS,
+  formatFinanceAmountValue,
+  sanitizeFinanceAmountInput,
+} from '../utils/campFinanceAmounts.js';
+import {
+  CAMP_FINANCE_EXPENSE_CATEGORY,
+  CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+} from '../utils/campFinanceExpense.js';
 
 function ReadOnlyField({ label, value }) {
   return (
     <label>
       {label}
       <input value={value ?? ''} readOnly className="input-readonly" />
+    </label>
+  );
+}
+
+function FinanceAmountField({ label, value, onChange, disabled, hint }) {
+  return (
+    <label>
+      {label}
+      <CampFormInput
+        type="text"
+        inputMode="decimal"
+        value={formatFinanceAmountValue(value)}
+        onChange={(e) => onChange(sanitizeFinanceAmountInput(e.target.value))}
+        disabled={disabled}
+        placeholder="0"
+      />
+      {hint ? <span className="meta-text">{hint}</span> : null}
     </label>
   );
 }
@@ -140,6 +167,7 @@ export function CampLifecycleForm({
   hcwFinanceBlockers = [],
   hcwContacts = [],
   contactsLoading = false,
+  clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
   onValidationError,
@@ -475,6 +503,7 @@ export function CampLifecycleForm({
         updateFields={updateFields}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
         disabled={stageDisabled('assignment')}
@@ -589,6 +618,24 @@ export function CampLifecycleForm({
     const disabled = stageDisabled('financial');
     const submitted = Boolean(form.submittedToFinanceAt);
     const showHcwBlockers = !submitted && hcwFinanceBlockers.length > 0;
+
+    function updateFinanceAmount(field, raw) {
+      const nextValue = sanitizeFinanceAmountInput(raw);
+      const isRevenuePart = FINANCE_REVENUE_PART_FIELDS.includes(field);
+      const isPayoutPart = FINANCE_PAYOUT_PART_FIELDS.includes(field);
+      if (isRevenuePart || isPayoutPart) {
+        const nextForm = { ...form, [field]: nextValue };
+        const nextDerived = computeLifecycleDerived(nextForm);
+        updateFields?.({
+          [field]: nextValue,
+          ...(isRevenuePart ? { totalRevenue: nextDerived.totalRevenue } : {}),
+          ...(isPayoutPart ? { totalPayout: nextDerived.totalPayout } : {}),
+        });
+        return;
+      }
+      updateField(field, nextValue);
+    }
+
     return (
       <div className="form-grid">
         {assignedHcwLoading ? (
@@ -597,7 +644,7 @@ export function CampLifecycleForm({
         {showHcwBlockers ? (
           <div className="camp-finance-hcw-blockers full">
             <p className="meta-text camp-finance-hcw-blockers-title">
-              Complete the assigned HCW profile in Contact Directory before submitting to Finance:
+              Complete the payee profile in Contact Directory before submitting to Finance:
             </p>
             <ul className="camp-finance-hcw-blockers-list">
               {hcwFinanceBlockers.map((item) => (
@@ -613,38 +660,70 @@ export function CampLifecycleForm({
             ) : null}
           </div>
         ) : null}
-        <label>
-          Camp Revenue
-          <CampFormInput type="number" value={form.campRevenue} onChange={(e) => updateField('campRevenue', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <label>
-          Overtime Revenue
-          <CampFormInput type="number" value={form.overtimeRevenue} onChange={(e) => updateField('overtimeRevenue', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <label>
-          Other Revenue
-          <CampFormInput type="number" value={form.otherRevenue} onChange={(e) => updateField('otherRevenue', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <ReadOnlyField label="Total Revenue (Auto)" value={derived.totalRevenue} />
-        <label>
-          Camp Amount
-          <CampFormInput type="number" value={form.campAmount} onChange={(e) => updateField('campAmount', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <label>
-          Travelling
-          <CampFormInput type="number" value={form.travelling} onChange={(e) => updateField('travelling', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <label>
-          Overtime
-          <CampFormInput type="number" value={form.overtimeExpense} onChange={(e) => updateField('overtimeExpense', Number(e.target.value))} disabled={disabled} />
-        </label>
-        <label>
-          Other Expenses
-          <CampFormInput type="number" value={form.otherExpenses} onChange={(e) => updateField('otherExpenses', Number(e.target.value))} disabled={disabled} />
-        </label>
+        <ReadOnlyField
+          label="Expense Category *"
+          value={form.expenseCategory || CAMP_FINANCE_EXPENSE_CATEGORY}
+        />
+        <ReadOnlyField
+          label="Expense Sub-Category *"
+          value={form.expenseSubCategory || CAMP_FINANCE_EXPENSE_SUB_CATEGORY}
+        />
+        <FinanceAmountField
+          label="Camp Revenue"
+          value={form.campRevenue}
+          onChange={(v) => updateFinanceAmount('campRevenue', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Overtime Revenue"
+          value={form.overtimeRevenue}
+          onChange={(v) => updateFinanceAmount('overtimeRevenue', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Other Revenue"
+          value={form.otherRevenue}
+          onChange={(v) => updateFinanceAmount('otherRevenue', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Total Revenue (Auto)"
+          value={form.totalRevenue ?? derived.totalRevenue}
+          onChange={(v) => updateFinanceAmount('totalRevenue', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Camp Amount"
+          value={form.campAmount}
+          onChange={(v) => updateFinanceAmount('campAmount', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Travelling"
+          value={form.travelling}
+          onChange={(v) => updateFinanceAmount('travelling', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Overtime"
+          value={form.overtimeExpense}
+          onChange={(v) => updateFinanceAmount('overtimeExpense', v)}
+          disabled={disabled}
+        />
+        <FinanceAmountField
+          label="Other Expenses"
+          value={form.otherExpenses}
+          onChange={(v) => updateFinanceAmount('otherExpenses', v)}
+          disabled={disabled}
+        />
 
         <div className="camp-payout-submit-row full">
-          <ReadOnlyField label="Total Payout (Auto)" value={derived.totalPayout} />
+          <FinanceAmountField
+            label="Total Payout (Auto)"
+            value={form.totalPayout ?? derived.totalPayout}
+            onChange={(v) => updateFinanceAmount('totalPayout', v)}
+            disabled={disabled}
+          />
           <SelectField
             label="Payment check"
             value={form.paymentSubmitStatus}

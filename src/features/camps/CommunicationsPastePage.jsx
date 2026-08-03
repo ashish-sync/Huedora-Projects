@@ -35,13 +35,13 @@ const CONFIRM_COPY = {
   },
 };
 
-function ConfirmDialog({ action, previewSummary, onCancel, onConfirm, loading }) {
+function ConfirmDialog({ action, previewSummary, error = '', onCancel, onConfirm, loading }) {
   if (!action) return null;
   const copy = CONFIRM_COPY[action];
   if (!copy) return null;
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay" onClick={loading ? undefined : onCancel}>
       <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
         <h2>{copy.title}</h2>
         <p className="modal-message">{copy.message}</p>
@@ -63,6 +63,7 @@ function ConfirmDialog({ action, previewSummary, onCancel, onConfirm, loading })
             )}
           </div>
         )}
+        {error ? <p className="error modal-message" role="alert">{error}</p> : null}
         <div className="modal-actions">
           <button type="button" className="btn secondary" onClick={onCancel} disabled={loading}>
             Cancel
@@ -206,30 +207,41 @@ export default function CommunicationsPastePage() {
   }, [preview, savedPreviewSnapshot]);
 
   const previewSummary = useMemo(() => {
-    if (!preview?.summary) return null;
-    const validBodyRows = preview.summary.validBodyRows || 0;
-    const partialBodyRows = preview.summary.partialBodyRows || 0;
-    const invalidBodyRows = preview.summary.invalidBodyRows || 0;
-    const duplicateBodyRows = preview.summary.duplicateBodyRows
-      ?? preview.bodyPreview?.filter((entry) => entry.duplicateOf).length
+    if (!preview?.summary && !preview?.bodyPreview) return null;
+    const bodyPreview = preview.bodyPreview || [];
+    const creatable = bodyPreview.filter(
+      (entry) => (entry.valid || entry.partial) && !entry.duplicateOf && !entry.historicalDateBlocked,
+    );
+    const validBodyRows = creatable.filter((entry) => entry.valid).length;
+    const partialBodyRows = creatable.filter((entry) => entry.partial).length;
+    const historicalBlocked = bodyPreview.filter((entry) => entry.historicalDateBlocked).length;
+    const invalidBodyRows = (preview.summary?.invalidBodyRows || 0) + historicalBlocked;
+    const duplicateBodyRows = preview.summary?.duplicateBodyRows
+      ?? bodyPreview.filter((entry) => entry.duplicateOf).length
       ?? 0;
-    const firstValidRow = preview.bodyPreview?.find((entry) => entry.valid || entry.partial)?.row;
+    const firstValidRow = creatable[0]?.row;
     const sampleLabel = firstValidRow
       ? [firstValidRow.clientName, firstValidRow.campaignName].filter(Boolean).join(' · ') || '—'
       : null;
+    const historicalHint = historicalBlocked
+      ? ` · ${historicalBlocked} blocked (camp date >2 days ago — Team Leader only)`
+      : '';
 
     return {
       validBodyRows: validBodyRows + partialBodyRows,
       invalidBodyRows,
       partialBodyRows,
       duplicateBodyRows,
+      historicalBlocked,
       sampleLabel,
-      label: `${validBodyRows + partialBodyRows} importable · ${invalidBodyRows} invalid${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}${partialBodyRows ? ` · ${partialBodyRows} partial` : ''}`,
+      label: `${validBodyRows + partialBodyRows} importable · ${invalidBodyRows} invalid${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}${partialBodyRows ? ` · ${partialBodyRows} partial` : ''}${historicalHint}`,
     };
   }, [preview]);
 
   const hasCreatableRows = useMemo(
-    () => preview?.bodyPreview?.some((entry) => (entry.valid || entry.partial) && !entry.duplicateOf) ?? false,
+    () => preview?.bodyPreview?.some(
+      (entry) => (entry.valid || entry.partial) && !entry.duplicateOf && !entry.historicalDateBlocked,
+    ) ?? false,
     [preview],
   );
 
@@ -649,6 +661,7 @@ export default function CommunicationsPastePage() {
       handleExtractClick();
       return;
     }
+    setError('');
     if (!confirmPastePreviewDurations(preview?.bodyPreview || [])) return;
     setConfirmAction('process');
   }
@@ -915,7 +928,10 @@ export default function CommunicationsPastePage() {
       <ConfirmDialog
         action={confirmAction}
         previewSummary={previewSummary}
-        onCancel={() => setConfirmAction(null)}
+        error={confirmAction === 'process' ? error : ''}
+        onCancel={() => {
+          setConfirmAction(null);
+        }}
         onConfirm={handleConfirmAction}
         loading={actionLoading}
       />

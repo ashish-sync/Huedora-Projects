@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CampExecutionRowActions } from './CampExecutionRowActions.jsx';
 
@@ -9,6 +9,11 @@ const baseCamp = {
   assignmentStatus: 'Assigned',
   lifecycleStage: 'execution',
   executionStatus: 'Ongoing',
+  chargeableStatus: 'Chargeable',
+  inTime: '09:05',
+  attire: 'No Issues',
+  campDate: '2000-01-01',
+  startTime: '09:00',
 };
 
 function renderActions(overrides = {}) {
@@ -28,14 +33,24 @@ function renderActions(overrides = {}) {
 }
 
 describe('CampExecutionRowActions', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('renders execution row actions without runtime errors', () => {
     renderActions();
     expect(screen.getByLabelText('Mark executed')).toBeTruthy();
     expect(screen.getByLabelText('Edit camp')).toBeTruthy();
   });
 
+  it('greys out mark executed until required execution fields are filled', () => {
+    renderActions({ chargeableStatus: '', inTime: '', attire: '' });
+    expect(screen.getByLabelText('Cannot mark executed yet').disabled).toBe(true);
+    expect(screen.getByLabelText('View execution issues')).toBeTruthy();
+  });
+
   it('shows issues action when execution is blocked', () => {
-    renderActions({ assignmentStatus: 'Pending' });
+    renderActions({ assignmentStatus: 'Pending', chargeableStatus: '', inTime: '', attire: '' });
     expect(screen.getByLabelText('View execution issues')).toBeTruthy();
     expect(screen.getByLabelText('Cannot mark executed yet').disabled).toBe(true);
   });

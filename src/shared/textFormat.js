@@ -8,14 +8,14 @@ const MINOR_WORDS = new Set([
 ]);
 
 const PLAIN_FIELDS = new Set([
-  'campAddress', 'address', 'googlePlaceId', 'pincode', 'pinCode', 'latitude', 'longitude',
+  'googlePlaceId', 'pincode', 'pinCode', 'latitude', 'longitude',
   'startTime', 'endTime', 'inTime', 'outTime', 'campDate', 'requestDate', 'purchaseMonth',
   'assignedUserEmails', 'requestTimeline', 'accountNumber', 'transactionId', 'password',
   'campaignName', 'programName', 'campName', 'deviceNameSnapshot',
   'assetType', 'agreementStatus', 'custody', 'campaignType', 'source', 'contactPersonLevel',
   'resourceType', 'contactCategory', 'productType', 'assignmentStatus', 'executionStatus',
   'chargeableStatus', 'attire', 'labCoat', 'speciality', 'profession', 'supplyCategory',
-  'healthcareWorker', 'hcwCategory', 'zone', 'method',
+  'healthcareWorker', 'hcwCategory', 'zone', 'method', 'remarks', 'hcwContactId',
 ]);
 
 const CODE_FIELDS = new Set([
@@ -121,7 +121,12 @@ export function formatTextValue(value, fieldKey = '') {
 
   const key = String(fieldKey || '');
   if (key === 'doctorName') return formatDoctorName(value);
-  if (key === 'fieldPersonName' || key === 'contactPersonName') return formatContactPersonName(value);
+  if (key === 'fieldPersonName' || key === 'contactPersonName' || key === 'hcwName') {
+    return formatContactPersonName(value);
+  }
+  if (key === 'campAddress' || key === 'address' || key === 'hospitalName' || key === 'clinicName') {
+    return toProperTitleCase(value);
+  }
   if (EMAIL_FIELDS.has(key)) return cleanSpaces(value).toLowerCase();
   if (PHONE_FIELDS.has(key)) return cleanSpaces(value);
   if (CODE_FIELDS.has(key)) return cleanSpaces(value).toUpperCase();

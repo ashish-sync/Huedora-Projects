@@ -116,8 +116,17 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select--multi .adaptive-select__control {
-  min-height: 100px !important;
-  align-items: flex-start;
+  height: auto !important;
+  min-height: var(--control-h) !important;
+  max-height: none !important;
+  align-items: center;
+}
+
+.adaptive-select--multi .adaptive-select__value-container {
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 
 .adaptive-select__value-container {
@@ -151,15 +160,66 @@ select:not([multiple]):not([size]) option {
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
+  width: auto !important;
+  min-width: 2px !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
+  outline: none !important;
   background: transparent !important;
   box-shadow: none !important;
   color: var(--ink) !important;
   font: inherit !important;
   line-height: inherit !important;
+}
+
+.adaptive-select__multi-value {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px !important;
+  background: var(--surface-muted, #f1f5f9) !important;
+  color: var(--ink) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  overflow: hidden;
+}
+
+.adaptive-select__multi-value__label {
+  padding: 3px 2px 3px 8px !important;
+  color: inherit !important;
+}
+
+.adaptive-select__multi-value__remove {
+  padding: 0 6px !important;
+  border-radius: 0 !important;
+  color: var(--muted) !important;
+  cursor: pointer;
+}
+
+.adaptive-select__multi-value__remove:hover {
+  background: color-mix(in srgb, var(--danger, #b91c1c) 12%, transparent) !important;
+  color: var(--danger, #b91c1c) !important;
+}
+
+/* react-select RequiredInput / dummy fields — never show as form chrome */
+.adaptive-select input[aria-hidden='true'],
+.adaptive-select-host > input[aria-hidden='true'] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .adaptive-select__indicator-separator {

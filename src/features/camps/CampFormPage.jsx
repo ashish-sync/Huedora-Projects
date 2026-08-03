@@ -21,7 +21,7 @@ import {
   applyClientMasterCascade,
   pickSingleOption,
   resolveCampNameOptions,
-  resolveClientMasterHealthcareWorker,
+  resolveClientMasterHealthcareWorkers,
   parseClientMasterListResponse,
 } from './utils/clientMasterCascade';
 import {
@@ -47,6 +47,7 @@ import { confirmCampDurationIfNeeded } from './utils/campDurationWarning';
 import { syncPrimaryContactFields, normalizeContactPersons } from './utils/campContactPersons.js';
 import { mergeConsumablesWithTemplate, normalizeConsumablesUsed } from './utils/campConsumables.js';
 import { getHcwFinanceBlockers, isHcwReadyForFinance } from './utils/hcwFinanceReadiness.js';
+import { embeddedServiceProviderId, resolveCampPayoutPayee } from './utils/campPayoutPayee.js';
 import { findAssignableHealthcareWorker } from './utils/campHcwContact.js';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
@@ -100,6 +101,8 @@ export default function CampFormPage() {
   const [contactsLoading, setContactsLoading] = useState(false);
   const [assignedHcwContact, setAssignedHcwContact] = useState(null);
   const [assignedHcwLoading, setAssignedHcwLoading] = useState(false);
+  const [payoutPayeeContact, setPayoutPayeeContact] = useState(null);
+  const [payoutPayeeLoading, setPayoutPayeeLoading] = useState(false);
   const [confirmRequest, setConfirmRequest] = useState(null);
   const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
   const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
@@ -182,6 +185,11 @@ export default function CampFormPage() {
       return undefined;
     }
 
+    if (embeddedServiceProviderId(form.hcwContactId)) {
+      setAssignedHcwContact(null);
+      return undefined;
+    }
+
     let cancelled = false;
     setAssignedHcwLoading(true);
     api(`/contacts/${form.hcwContactId}`)
@@ -199,6 +207,44 @@ export default function CampFormPage() {
       cancelled = true;
     };
   }, [isEdit, activeStage, form.hcwContactId, hcwContacts]);
+
+  useEffect(() => {
+    if (!isEdit || activeStage !== 'financial' || !assignedHcwContact) {
+      setPayoutPayeeContact(null);
+      setPayoutPayeeLoading(false);
+      return undefined;
+    }
+
+    const resolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
+    if (resolved.payeeContact) {
+      setPayoutPayeeContact(resolved.payeeContact);
+      setPayoutPayeeLoading(false);
+      return undefined;
+    }
+
+    if (!resolved.payeeIsServiceProvider || !resolved.payeeContactId) {
+      setPayoutPayeeContact(assignedHcwContact);
+      setPayoutPayeeLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setPayoutPayeeLoading(true);
+    api(`/contacts/${resolved.payeeContactId}`)
+      .then((res) => {
+        if (!cancelled) setPayoutPayeeContact(res.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setPayoutPayeeContact(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPayoutPayeeLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, activeStage, assignedHcwContact, hcwContacts]);
 
   useEffect(() => {
     Promise.all([
@@ -428,9 +474,12 @@ export default function CampFormPage() {
       setError('Select Payment Confirmed, Payment Not Checked, or Payment Hold');
       return;
     }
-    const hcwBlockers = getHcwFinanceBlockers(assignedHcwContact);
+    const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
+    const payeeContact = payoutPayeeContact || payeeResolved.payeeContact;
+    const payeeLabel = payeeResolved.payeeIsServiceProvider ? 'Service Provider' : 'HCW';
+    const hcwBlockers = getHcwFinanceBlockers(payeeContact, { label: payeeLabel });
     if (hcwBlockers.length) {
-      setError(`Complete assigned HCW profile before Finance submit: ${hcwBlockers.join('; ')}`);
+      setError(`Complete ${payeeLabel} profile before Finance submit: ${hcwBlockers.join('; ')}`);
       return;
     }
     setSubmitFinanceBusy(true);
@@ -697,13 +746,14 @@ export default function CampFormPage() {
     [divisionPrograms, form.campaignType, form.campaignName],
   );
 
-  const clientMasterProfession = useMemo(
-    () => resolveClientMasterHealthcareWorker(clientMasterRecords, {
+  const clientMasterProfessions = useMemo(
+    () => resolveClientMasterHealthcareWorkers(clientMasterRecords, {
       campaignType: form.campaignType,
       campaignName: form.campaignName,
     }),
     [clientMasterRecords, form.campaignType, form.campaignName],
   );
+  const clientMasterProfession = clientMasterProfessions[0] || '';
 
   const stageReadOnly = useMemo(() => ({
     request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage),
@@ -745,8 +795,11 @@ export default function CampFormPage() {
   const hasNoDivisions = Boolean(form.clientId) && !programsLoading && divisionOptions.length === 0;
   const hasNoMethods = Boolean(form.clientId) && Boolean(form.campaignType) && !programsLoading && campNameOptions.length === 0;
   const financeSubmitted = Boolean(form.submittedToFinanceAt);
+  const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
+  const payeeContact = payoutPayeeContact || payeeResolved.payeeContact;
+  const payeeLabel = payeeResolved.payeeIsServiceProvider ? 'Service Provider' : 'HCW';
   const hcwFinanceBlockers = activeStage === 'financial' && !financeSubmitted
-    ? getHcwFinanceBlockers(assignedHcwContact)
+    ? getHcwFinanceBlockers(payeeContact, { label: payeeLabel })
     : [];
   const showFinanceSubmit = isEdit
     && activeStage === 'financial'
@@ -755,8 +808,9 @@ export default function CampFormPage() {
     && !readOnly;
   const canSubmitFinance = showFinanceSubmit
     && Boolean(form.paymentSubmitStatus)
-    && isHcwReadyForFinance(assignedHcwContact)
+    && isHcwReadyForFinance(payeeContact, { label: payeeLabel })
     && !assignedHcwLoading
+    && !payoutPayeeLoading
     && !submitFinanceBusy;
   const canSubmit = campStatus !== 'cancelled'
     && campStatus !== 'rejected'
@@ -847,6 +901,7 @@ export default function CampFormPage() {
         downloadFinanceBusy={downloadFinanceBusy}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
         onValidationError={setError}

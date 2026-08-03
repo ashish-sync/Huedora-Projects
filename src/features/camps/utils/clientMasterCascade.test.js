@@ -4,6 +4,7 @@ import {
   parseClientMasterDivisions,
   pickSingleOption,
   resolveClientMasterHealthcareWorker,
+  resolveClientMasterHealthcareWorkers,
 } from './clientMasterCascade.js';
 
 describe('parseClientMasterDivisions', () => {
@@ -138,5 +139,33 @@ describe('resolveClientMasterHealthcareWorker', () => {
       campaignType: 'Cardio',
       campaignName: 'Screening',
     })).toBe('Phlebotomist');
+  });
+
+  it('returns multiple healthcare worker roles from Client Master', () => {
+    expect(resolveClientMasterHealthcareWorkers([
+      {
+        programName: 'Ortho',
+        campName: 'BMD',
+        healthcareWorker: ['Technician', 'Phlebotomist'],
+        isActive: true,
+      },
+    ], {
+      campaignType: 'Ortho',
+      campaignName: 'BMD',
+    })).toEqual(['Technician', 'Phlebotomist']);
+  });
+
+  it('normalizes legacy comma-separated healthcare worker strings', () => {
+    expect(resolveClientMasterHealthcareWorkers([
+      {
+        programName: 'Ortho',
+        campName: 'BMD',
+        healthcareWorker: 'Technician, Phlebotomist',
+        isActive: true,
+      },
+    ], {
+      campaignType: 'Ortho',
+      campaignName: 'BMD',
+    })).toEqual(['Technician', 'Phlebotomist']);
   });
 });

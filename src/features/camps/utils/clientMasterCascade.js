@@ -5,6 +5,7 @@
  */
 
 import { normalizeCampMethodKey } from '../constants/campNames.js';
+import { normalizeHealthcareWorkers } from './healthcareWorkers.js';
 
 
 
@@ -144,10 +145,12 @@ function recordMethod(record) {
 
 
 
+function recordHealthcareWorkerRoles(record) {
+  return normalizeHealthcareWorkers(record?.healthcareWorker);
+}
+
 function recordHealthcareWorkerRole(record) {
-
-  return String(record?.healthcareWorker || '').trim();
-
+  return recordHealthcareWorkerRoles(record)[0] || '';
 }
 
 
@@ -185,83 +188,53 @@ function recordMatchesMethod(record, methodKey) {
 
 
 /**
-
- * Healthcare worker role configured on Client Master for this client + division + method.
-
+ * Healthcare worker role(s) configured on Client Master for this client + division + method.
+ * Returns an array (multi-select). Empty when not configured.
  */
-
-export function resolveClientMasterHealthcareWorker(records = [], {
-
+export function resolveClientMasterHealthcareWorkers(records = [], {
   campaignType = '',
-
   campaignName = '',
-
 } = {}) {
-
   const divisionKey = normalizeMasterDivisionKey(campaignType);
-
   const methodKey = normalizeMasterMethodKey(campaignName);
-
   const activeRecords = records.filter((record) => record?.isActive !== false);
-
   const withRole = activeRecords
+    .map((record) => ({ record, roles: recordHealthcareWorkerRoles(record) }))
+    .filter((entry) => entry.roles.length);
 
-    .map((record) => ({ record, role: recordHealthcareWorkerRole(record) }))
-
-    .filter((entry) => entry.role);
-
-
-
-  if (!withRole.length) return '';
-
-
+  if (!withRole.length) return [];
 
   if (divisionKey && methodKey) {
-
     const exact = withRole.find(({ record }) => (
-
       recordMatchesDivision(record, divisionKey)
-
       && recordMatchesMethod(record, methodKey)
-
     ));
-
-    if (exact) return exact.role;
-
+    if (exact) return exact.roles;
   }
-
-
 
   if (divisionKey) {
-
     const byDivision = withRole.find(({ record }) => recordMatchesDivision(record, divisionKey));
-
-    if (byDivision) return byDivision.role;
-
+    if (byDivision) return byDivision.roles;
   }
-
-
 
   if (methodKey) {
-
     const byMethod = withRole.find(({ record }) => recordMatchesMethod(record, methodKey));
-
-    if (byMethod) return byMethod.role;
-
+    if (byMethod) return byMethod.roles;
   }
 
+  if (withRole.length === 1) return withRole[0].roles;
 
+  const uniqueJoined = [...new Set(withRole.map((entry) => entry.roles.slice().sort().join('\0')))];
+  if (uniqueJoined.length === 1) return withRole[0].roles;
 
-  const uniqueRoles = [...new Set(withRole.map((entry) => entry.role))];
+  return [];
+}
 
-  if (uniqueRoles.length === 1) return uniqueRoles[0];
-
-  if (withRole.length === 1) return withRole[0].role;
-
-
-
-  return '';
-
+/**
+ * @deprecated Prefer resolveClientMasterHealthcareWorkers (multi). Returns first role or ''.
+ */
+export function resolveClientMasterHealthcareWorker(records = [], filters = {}) {
+  return resolveClientMasterHealthcareWorkers(records, filters)[0] || '';
 }
 
 

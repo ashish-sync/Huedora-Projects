@@ -9,6 +9,11 @@ function TyloDropdownIndicator(props) {
   );
 }
 
+function TyloInput(props) {
+  const required = Boolean(props.selectProps?.['aria-required']);
+  return <components.Input {...props} aria-required={required || undefined} />;
+}
+
 function textContent(node) {
   if (node == null || typeof node === 'boolean') return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -168,8 +173,10 @@ export default function AdaptiveSelect({
         isMulti={multiple}
         isDisabled={disabled}
         isClearable={Boolean(emptyOption) && !required}
-        isSearchable
-        required={required}
+        isSearchable={multiple ? choices.length > 6 : choices.length > 8}
+        // Do not pass `required` — react-select injects a RequiredInput that
+        // inherits app-wide input chrome and shows as a stray control.
+        aria-required={required || undefined}
         placeholder={placeholder || emptyOption?.label || 'Select…'}
         noOptionsMessage={({ inputValue }) =>
           inputValue ? 'No matching options' : 'No options available'
@@ -178,7 +185,7 @@ export default function AdaptiveSelect({
         menuPosition="fixed"
         menuPlacement="auto"
         blurInputOnSelect
-        components={{ DropdownIndicator: TyloDropdownIndicator }}
+        components={{ DropdownIndicator: TyloDropdownIndicator, Input: TyloInput }}
       />
     </div>
   );

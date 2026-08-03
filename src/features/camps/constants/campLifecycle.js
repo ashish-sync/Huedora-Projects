@@ -12,6 +12,10 @@ import {
   CONTACT_PERSON_LEVEL_OPTIONS,
 } from '../utils/campContactPersons.js';
 import { getConsumablesCompletionBlockers } from '../utils/campConsumables.js';
+import {
+  CAMP_FINANCE_EXPENSE_CATEGORY,
+  CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+} from '../utils/campFinanceExpense.js';
 
 export { CONTACT_PERSON_LEVEL_OPTIONS };
 
@@ -414,6 +418,9 @@ export function emptyLifecycleForm() {
   const today = todayIsoDate();
   return {
     clientId: '',
+    _id: '',
+    campId: '',
+    clientName: '',
     campaignName: '',
     campaignType: '',
     source: 'dashboard',
@@ -486,6 +493,9 @@ export function emptyLifecycleForm() {
     paymentRemark: '',
     paymentSubmitStatus: '',
     financePaymentStatus: '',
+    expenseCategory: CAMP_FINANCE_EXPENSE_CATEGORY,
+    expenseSubCategory: CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+    expenseSubCategoryId: '',
     submittedToFinanceAt: '',
     remarks: '',
     lifecycleStage: 'request',
@@ -501,7 +511,10 @@ export function campToForm(camp) {
 
   return {
     ...emptyLifecycleForm(),
+    _id: camp._id || '',
+    campId: camp.campId || '',
     clientId: camp.client?._id || camp.client || '',
+    clientName: camp.clientName || camp.client?.name || '',
     campaignName: camp.campaignName || '',
     campaignType: camp.campaignType || '',
     source: camp.source || 'dashboard',
@@ -571,6 +584,9 @@ export function campToForm(camp) {
     paymentRemark: camp.paymentRemark || '',
     paymentSubmitStatus: camp.paymentSubmitStatus || '',
     financePaymentStatus: camp.financePaymentStatus || '',
+    expenseCategory: camp.expenseCategory || CAMP_FINANCE_EXPENSE_CATEGORY,
+    expenseSubCategory: camp.expenseSubCategory || CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+    expenseSubCategoryId: camp.expenseSubCategoryId || '',
     submittedToFinanceAt: camp.submittedToFinanceAt || '',
     remarks: camp.remarks || '',
     lifecycleStage: normalizeLifecycleStage(camp.lifecycleStage, 'request'),

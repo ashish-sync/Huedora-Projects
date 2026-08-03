@@ -7,7 +7,7 @@ import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
 
 const NAV_ITEMS = [
   { to: '/finance', end: true, label: NAV.OVERVIEW },
-  { to: '/finance/camp-payouts', end: true, label: NAV.CAMP_PAYOUTS },
+  { to: '/finance/payouts', end: true, label: NAV.PAYOUT_QUEUE },
   { to: '/finance/build', end: true, label: NAV.INVOICE_BUILDER, writeOnly: true },
   { to: '/finance/master', end: true, label: NAV.ORG_MASTER },
 ];

@@ -26,6 +26,7 @@ import { useAuth } from './useCampOpsAuth.js';
 import { campApi } from './campOpsApi.js';
 import { trimString } from './utils/trimInput';
 import { validateBulkCampAction } from './utils/campBulkActions';
+import { canMarkCampExecuted, getExecutionBlockers } from './utils/campExecutionActions';
 import { useAutoDismiss } from './hooks/useAutoDismiss';
 
 import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
@@ -704,7 +705,12 @@ export default function CampsPage() {
           </button>
         )}
         {camp.status === 'approved' && hasPermission('camps:execute') && (
-          <button className="btn btn-compact" onClick={() => openCampActionConfirm('execute', camp)}>
+          <button
+            className="btn btn-compact"
+            disabled={!canMarkCampExecuted(camp)}
+            title={canMarkCampExecuted(camp) ? undefined : getExecutionBlockers(camp).join(' · ')}
+            onClick={() => openCampActionConfirm('execute', camp)}
+          >
             Mark Executed
           </button>
         )}

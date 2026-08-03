@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom';
 import { AutofillDecoyFields, patchAutofillContainer } from '../../../shared/suppressBrowserAutofill.js';
 import { contactToHcwFields } from '../utils/campHcwContact';
 import { campApi, clientMasterApi } from '../campOpsApi';
-import { resolveClientMasterHealthcareWorker, parseClientMasterListResponse } from '../utils/clientMasterCascade';
+import { resolveClientMasterHealthcareWorkers, parseClientMasterListResponse } from '../utils/clientMasterCascade';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
+import { CampHireRequestButton } from './CampHireRequestButton';
 import {
   assignmentCopySourceFromCamp,
   copyCampAssignmentDetailsFromRecord,
@@ -22,7 +23,7 @@ export function CampAssignModal({
   const [fields, setFields] = useState(() => contactToHcwFields(
     hcwContacts.find((c) => String(c._id) === String(camp?.hcwContactId)),
   ));
-  const [clientMasterProfession, setClientMasterProfession] = useState('');
+  const [clientMasterProfessions, setClientMasterProfessions] = useState([]);
   const [clientMasterLoading, setClientMasterLoading] = useState(false);
   const [savedCamp, setSavedCamp] = useState(null);
   const [copyState, setCopyState] = useState('');
@@ -52,7 +53,7 @@ export function CampAssignModal({
   useEffect(() => {
     const clientId = camp?.client?._id || camp?.client || camp?.clientId || '';
     if (!clientId) {
-      setClientMasterProfession('');
+      setClientMasterProfessions([]);
       setClientMasterLoading(false);
       return undefined;
     }
@@ -63,13 +64,13 @@ export function CampAssignModal({
       .then((response) => {
         if (cancelled) return;
         const records = parseClientMasterListResponse(response);
-        setClientMasterProfession(resolveClientMasterHealthcareWorker(records, {
+        setClientMasterProfessions(resolveClientMasterHealthcareWorkers(records, {
           campaignType: camp?.campaignType,
           campaignName: camp?.campaignName,
         }));
       })
       .catch(() => {
-        if (!cancelled) setClientMasterProfession('');
+        if (!cancelled) setClientMasterProfessions([]);
       })
       .finally(() => {
         if (!cancelled) setClientMasterLoading(false);
@@ -176,14 +177,23 @@ export function CampAssignModal({
               <>
                 <p className="camp-approval-issues-lead">
                   Select resource type, state, and city to find the healthcare worker configured for this client in Client Master.
-                  The camp moves to Execution after assignment.
+                  After assignment the camp stays in Assignment until one day before the camp date, then moves to Execution.
                 </p>
+                <div className="camp-assignment-toolbar camp-assign-modal-hire">
+                  <CampHireRequestButton
+                    form={{ ...camp, ...fields }}
+                    professions={clientMasterProfessions}
+                    disabled={saving}
+                    variant="button"
+                    label="Raise hiring request"
+                  />
+                </div>
                 <CampHcwAssignPicker
                   hcwContacts={hcwContacts}
                   contactsLoading={contactsLoading}
                   disabled={saving}
                   selectedContactId={fields.hcwContactId}
-                  clientMasterProfession={clientMasterProfession}
+                  clientMasterProfessions={clientMasterProfessions}
                   clientMasterLoading={clientMasterLoading}
                   onSelect={(nextFields) => {
                     setFields(nextFields);

@@ -1235,6 +1235,7 @@
 
 .camp-ops-root .communications-paste-shell,
 .camp-ops-root .paste-workflow-shell {
+  --paste-pad-x: 18px;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -1253,7 +1254,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
-  padding: 14px 18px 10px;
+  padding: 14px var(--paste-pad-x) 10px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1294,7 +1295,7 @@
   align-items: center;
   gap: 0;
   margin: 0;
-  padding: 10px 18px;
+  padding: 10px var(--paste-pad-x);
   list-style: none;
   border-bottom: 1px solid var(--border);
   background: var(--bg-sunken);
@@ -1385,25 +1386,27 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 18px 0;
+  padding: 8px var(--paste-pad-x) 0;
   flex-shrink: 0;
 }
 
+/* Full-bleed band — same left/right edges as header + stepper */
 .camp-ops-root .paste-context-fields {
   flex-shrink: 0;
-  margin: 0 18px 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  margin: 0;
+  padding: 10px var(--paste-pad-x) 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
   background: var(--bg-sunken);
 }
 
 .camp-ops-root .paste-context-fields-heading {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .camp-ops-root .paste-context-fields-heading strong {
@@ -1415,49 +1418,65 @@
 .camp-ops-root .paste-context-fields-heading span {
   font-size: 0.76rem;
   color: var(--text-muted);
+  text-align: right;
 }
 
 .camp-ops-root .paste-context-fields-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px 12px;
+  gap: 10px 14px;
+  align-items: start;
+  width: 100%;
 }
 
 .camp-ops-root .paste-context-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
+  width: 100%;
+  margin: 0;
 }
 
 .camp-ops-root .paste-context-field-label {
+  display: block;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--text-muted);
+  line-height: 1.2;
 }
 
-.camp-ops-root .paste-context-field select {
+.camp-ops-root .paste-context-field select,
+.camp-ops-root .paste-context-field select:disabled,
+.camp-ops-root .paste-context-field select:disabled:hover {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 36px;
   min-height: 36px;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  color: var(--text);
-  font-size: 0.86rem;
+  max-height: 36px;
+  padding: 0 36px 0 10px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background-color: var(--bg-elevated) !important;
+  background-image: var(--tylo-select-chevron) !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 10px 6px !important;
+  color: var(--text) !important;
+  font-size: 0.86rem !important;
+  font-weight: 600;
+  line-height: 34px;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--text);
+  cursor: default;
 }
 
-.camp-ops-root .paste-context-field .other-aware-select,
-.camp-ops-root .paste-context-field .other-aware-select__control,
-.camp-ops-root .paste-context-field .adaptive-select {
-  width: 100%;
-  min-width: 0;
-}
-
-.camp-ops-root .paste-context-field .adaptive-select__control {
-  min-height: 36px !important;
+.camp-ops-root .paste-context-field select:not(:disabled) {
+  cursor: pointer;
 }
 
 .camp-ops-root .paste-context-field .field-error {
@@ -3171,7 +3190,7 @@
   color: var(--text-muted);
 }
 
-.camp-ops-root input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.date-input-display):not(.date-input-native),
+.camp-ops-root input:not([type='file']):not([type='hidden']):not(.adaptive-select__input):not(.master-search-input):not(.date-input-display):not(.date-input-native):not([aria-hidden='true']),
 .camp-ops-root select,
 .camp-ops-root textarea {
   width: 100%;
@@ -3181,16 +3200,29 @@
   background-color: var(--bg-elevated);
 }
 
+.camp-ops-root .adaptive-select__input-container,
 .camp-ops-root .adaptive-select__input,
 .camp-ops-root .adaptive-select input,
 .camp-ops-root .master-search-input {
   width: auto !important;
-  min-width: 2px;
+  min-width: 2px !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
-  padding: 0 var(--control-pad-inline-end, 0.75rem) 0 0 !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+.camp-ops-root .adaptive-select--multi .adaptive-select__control {
+  height: auto !important;
+  min-height: var(--control-h) !important;
+  max-height: none !important;
+  align-items: center;
 }
 
 .camp-ops-root .master-search-input {
@@ -3882,7 +3914,7 @@
 }
 
 .camp-ops-root .paste-input-mode-tabs {
-  margin: 0 18px 12px;
+  margin: 10px var(--paste-pad-x) 12px;
   align-self: flex-start;
 }
 
@@ -4110,6 +4142,17 @@
   border-color: #93c5fd;
 }
 
+.camp-ops-root .camp-row-icon-btn--hire {
+  color: #a16207;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.camp-ops-root .camp-row-icon-btn--hire:hover:not(:disabled):not(.is-disabled) {
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
 .camp-ops-root .camp-approval-issues-modal,
 .camp-ops-root .camp-assign-modal {
   width: min(560px, 100%);
@@ -4146,15 +4189,95 @@
 }
 
 .camp-ops-root .camp-hcw-assign-picker {
-  gap: 0.85rem 1rem;
+  gap: 12px 16px;
+  align-items: start;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 1.25rem;
+  line-height: 1.25;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field-title {
+  color: var(--text-muted);
 }
 
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-hint {
-  display: block;
-  margin: 0.15rem 0 0.35rem;
-  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 0.7rem;
   font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--muted, #64748b);
+  white-space: nowrap;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > select,
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  margin: 0;
+  padding: 0 36px 0 10px;
+  border: 1px solid var(--border, var(--line));
+  border-radius: 8px;
+  background-color: var(--bg-elevated);
+  color: var(--text, var(--ink));
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 34px;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > input.input-readonly {
+  padding-right: 10px;
+  cursor: default;
+  background-color: var(--bg-elevated);
+  opacity: 1;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > input.input-readonly.is-empty {
+  color: var(--text-muted, var(--muted));
+  font-weight: 500;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > select:disabled {
+  opacity: 1;
+  color: var(--text-muted, var(--muted));
+  background-color: var(--bg-sunken);
+  cursor: not-allowed;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-note {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--line, var(--border));
+  background: var(--bg-sunken);
+  line-height: 1.4;
+}
+
+.camp-ops-root .camp-assignment-intro {
+  margin: 0 0 0.15rem;
+  line-height: 1.45;
 }
 
 .camp-ops-root .camp-approval-issues-header {
@@ -7244,7 +7367,8 @@
 }
 
 .camp-ops-root .camps-filter-card {
-  border-bottom: 1px solid var(--line, #e2e8f0);
+  /* Shell styles live in filter-toolbar.css — keep manage card flush. */
+  border-bottom: 0;
 }
 
 .camp-ops-root .camps-filter-toolbar {
@@ -7252,14 +7376,15 @@
   --camps-filter-gap: var(--filter-toolbar-gap);
   --camps-filter-date-w: 10.5rem;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--camps-filter-gap);
   width: 100%;
   margin: 0;
   padding: 0.625rem 0.75rem;
-  border-bottom: 1px solid var(--line, #e2e8f0);
-  background: var(--surface, #f8fafc);
+  border: 0;
+  border-bottom: 0;
+  background: transparent;
   box-sizing: border-box;
 }
 
@@ -7439,9 +7564,28 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 0;
   border-top: 1px solid var(--line, #e2e8f0);
-  background: var(--bg-elevated, #fff);
+  background: color-mix(in srgb, var(--surface, #f8fafc) 88%, var(--bg-elevated, #fff));
+  box-sizing: border-box;
+}
+
+.camp-ops-root .camps-filter-chips--row .filter-chip {
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-height: var(--camps-filter-h, var(--filter-control-h, 2.25rem));
+  height: auto;
+  box-sizing: border-box;
+}
+
+.camp-ops-root .camps-filter-chips--row .btn.btn-compact {
+  flex: 0 0 auto;
+  height: var(--camps-filter-h, var(--filter-control-h, 2.25rem)) !important;
+  min-height: var(--camps-filter-h, var(--filter-control-h, 2.25rem)) !important;
+  max-height: var(--camps-filter-h, var(--filter-control-h, 2.25rem)) !important;
 }
 
 .camp-ops-root .camps-filter-secondary {
@@ -7848,8 +7992,30 @@
   gap: 1rem;
 }
 
-.camp-ops-root .camp-assignment-intro {
+.camp-ops-root .camp-assignment-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.camp-ops-root .camp-assignment-toolbar .camp-assignment-intro,
+.camp-ops-root .camp-assignment-toolbar .camp-assignment-note {
+  flex: 1 1 240px;
   margin: 0;
+}
+
+.camp-ops-root .camp-hire-request-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .camp-assign-modal-hire {
+  justify-content: flex-end;
+  margin-bottom: 4px;
 }
 
 .camp-ops-root .camp-assignment-decision-wrap {

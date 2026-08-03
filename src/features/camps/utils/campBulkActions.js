@@ -1,4 +1,5 @@
 import { campStatusLabel } from '../constants/campLifecycle.js';
+import { getExecutionBlockers } from './campExecutionActions.js';
 
 const PERMISSION_MESSAGES = {
   approve: 'You do not have permission to approve camps',
@@ -40,8 +41,9 @@ function getCampBulkIssue(action, camp, auth) {
   }
 
   if (action === 'execute') {
-    if (camp.status !== 'approved') {
-      return `${campLabel(camp)} is ${statusLabel(camp.status)} and cannot be marked executed`;
+    const blockers = getExecutionBlockers(camp);
+    if (blockers.length) {
+      return `${campLabel(camp)}: ${blockers[0]}`;
     }
     return null;
   }

@@ -6,6 +6,7 @@ import { PhoneField } from '../../components/ui/PhoneField.jsx';
 import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { CampNameSelect } from './components/CampNameSelect';
 import { ClientNameSearchInput } from './components/ClientNameSearchInput';
 import { SearchableOptionsInput } from './components/SearchableOptionsInput';
@@ -13,6 +14,7 @@ import { ClientMasterConsumablesField } from './components/ClientMasterConsumabl
 import { clientMasterApi } from './campOpsApi.js';
 import { clientMasterListPath } from './clientMasterPaths.js';
 import { trimFormStrings } from './utils/trimInput';
+import { normalizeHealthcareWorkers } from './utils/healthcareWorkers.js';
 import {
   getProgramDocumentMeta,
   openProgramDocument,
@@ -24,7 +26,12 @@ import {
   validateClientMasterForm,
 } from './utils/clientMasterValidation';
 
-const SERVICE_MODEL_OPTIONS = ['HCW + Device', 'Device Only', 'HCW Only', 'Rented'];
+const SERVICE_MODEL_OPTIONS = [
+  'HCW Only',
+  'Rented',
+  'HCW + Device (Light Device)',
+  'HCW + Device (Heavy Device)',
+];
 const HEALTHCARE_WORKER_OPTIONS = ['Technician', 'Phlebotomist', 'Dietician'];
 
 const formStringFields = [
@@ -35,14 +42,9 @@ const formStringFields = [
   'billingPan',
   'billingStateName',
   'billingStateCode',
-  'billingContactPerson',
-  'billingEmail',
-  'billingPhone',
   'programName',
   'campName',
   'campType',
-  'coordinatorName',
-  'healthcareWorker',
   'campDuration',
   'spocName',
   'spocNumber',
@@ -71,14 +73,10 @@ const emptyForm = {
   billingPan: '',
   billingStateName: '',
   billingStateCode: '',
-  billingContactPerson: '',
-  billingEmail: '',
-  billingPhone: '',
   programName: '',
   campName: 'BMD',
   campType: '',
-  coordinatorName: '',
-  healthcareWorker: '',
+  healthcareWorker: [],
   poAmount: '',
   campDuration: '4:00',
   spocName: '',
@@ -262,17 +260,19 @@ export default function ClientMasterFormPage() {
     const trimmed = trimFormStrings(form, formStringFields);
     const payload = {
       ...trimmed,
+      healthcareWorker: normalizeHealthcareWorkers(form.healthcareWorker),
       clientId: form.clientId || undefined,
       isActive: form.isActive,
+      coordinatorName: '',
       billing: {
         address: trimmed.billingAddress || '',
         gstin: trimmed.billingGstin || '',
         pan: trimmed.billingPan || '',
         stateName: trimmed.billingStateName || '',
         stateCode: trimmed.billingStateCode || '',
-        contactPerson: trimmed.billingContactPerson || '',
-        email: trimmed.billingEmail || '',
-        phone: trimmed.billingPhone || '',
+        contactPerson: trimmed.spocName || '',
+        email: trimmed.spocEmail || '',
+        phone: trimmed.spocNumber || '',
       },
       assignedUserEmails: String(form.assignedUserEmails || '')
         .split(/[;,\n]/)
@@ -355,14 +355,7 @@ export default function ClientMasterFormPage() {
             <option value="inactive">Inactive</option>
           </select>
         </label>
-      </div>
-
-      <h3 className="client-master-section-title">Billing details (Invoice recipient)</h3>
-      <p className="meta-text" style={{ marginTop: 0 }}>
-        Stored on the company and reused by Invoice Builder when this Client Master is selected.
-      </p>
-      <div className="form-grid">
-        <label className="full">
+        <label>
           Billing address
           <textarea
             rows={2}
@@ -371,6 +364,13 @@ export default function ClientMasterFormPage() {
             placeholder="Registered / billing address for GST invoices"
           />
         </label>
+      </div>
+
+      <h3 className="client-master-section-title">Billing details (Invoice recipient)</h3>
+      <p className="meta-text" style={{ marginTop: 0 }}>
+        Stored on the company and reused by Invoice Builder when this Client Master is selected.
+      </p>
+      <div className="form-grid">
         <label>
           State
           <input
@@ -406,29 +406,6 @@ export default function ClientMasterFormPage() {
             maxLength={10}
           />
         </label>
-        <label>
-          Billing contact
-          <input
-            value={form.billingContactPerson}
-            onChange={(e) => updateField('billingContactPerson', e.target.value)}
-            placeholder="Defaults to SPOC if empty on invoice"
-          />
-        </label>
-        <label>
-          Billing email
-          <input
-            type="email"
-            value={form.billingEmail}
-            onChange={(e) => updateField('billingEmail', e.target.value)}
-          />
-        </label>
-        <label>
-          Billing phone
-          <input
-            value={form.billingPhone}
-            onChange={(e) => updateField('billingPhone', e.target.value)}
-          />
-        </label>
       </div>
 
       <h3 className="client-master-section-title">Program</h3>
@@ -457,30 +434,29 @@ export default function ClientMasterFormPage() {
             value={form.campType}
             onChange={(value) => updateField('campType', value)}
             options={SERVICE_MODEL_OPTIONS}
-            placeholder="e.g. HCW + Device"
+            placeholder="e.g. HCW + Device (Light Device)"
             groupLabel="Service models"
             error={fieldErrors.campType}
           />
         </label>
         <label>
-          Coordinator Name
-          <input
-            value={form.coordinatorName}
-            onChange={(e) => updateField('coordinatorName', e.target.value)}
-            className={fieldErrors.coordinatorName ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.coordinatorName} />
-        </label>
-        <label>
           Healthcare Worker
-          <SearchableOptionsInput
-            value={form.healthcareWorker}
-            onChange={(value) => updateField('healthcareWorker', value)}
-            options={HEALTHCARE_WORKER_OPTIONS}
-            placeholder="e.g. Technician"
-            groupLabel="Healthcare workers"
-            error={fieldErrors.healthcareWorker}
-          />
+          <AdaptiveSelect
+            multiple
+            value={normalizeHealthcareWorkers(form.healthcareWorker)}
+            onChange={(e) => updateField('healthcareWorker', normalizeHealthcareWorkers(e.target.value))}
+            disabled={loading}
+            className={fieldErrors.healthcareWorker ? 'input-invalid' : ''}
+            placeholder="Select one or more roles"
+            aria-label="Healthcare Worker"
+          >
+            <option value="">Select healthcare worker roles</option>
+            {HEALTHCARE_WORKER_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </AdaptiveSelect>
+          <FieldError message={fieldErrors.healthcareWorker} />
+          <span className="meta-text">You can select multiple roles (e.g. Technician and Phlebotomist).</span>
         </label>
         <label>
           PO Amount
@@ -505,6 +481,7 @@ export default function ClientMasterFormPage() {
             className={fieldErrors.spocName ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors.spocName} />
+          <span className="meta-text">SPOC name, email, and phone are also used as billing contact on invoices.</span>
         </label>
         <PhoneField
           label="SPOC Number"

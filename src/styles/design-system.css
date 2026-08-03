@@ -152,6 +152,12 @@ select.filter-select,
   line-height: 1.2 !important;
 }
 
+.adaptive-select--multi .adaptive-select__control {
+  height: auto !important;
+  min-height: var(--control-h) !important;
+  max-height: none !important;
+}
+
 .btn,
 .btn.secondary,
 .btn.danger {

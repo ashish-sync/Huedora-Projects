@@ -54,7 +54,7 @@ export default function FinanceCampPayoutsPage() {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '500' });
+      const params = new URLSearchParams({ limit: '1000' });
       if (q.trim()) params.set('q', q.trim());
       if (statusFilter) params.set('status', statusFilter);
       const { data } = await api(`/finance/camp-payouts?${params}`);

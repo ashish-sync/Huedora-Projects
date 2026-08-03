@@ -237,10 +237,10 @@ export const QUALITY_RATINGS = ['Good', 'Average', 'Poor'];
 export const ATTIRE_CHECK_OPTIONS = ['No Issues', 'Issues'];
 export const HCW_CATEGORIES = ['Technician', 'Phlebotomist', 'Dietician', 'Other'];
 export const EXECUTION_DOC_TYPES = [
-  { value: 'doctor_form', label: 'Doctor Form' },
-  { value: 'patient_form', label: 'Patient Form' },
-  { value: 'gps_selfie', label: 'GPS Selfie' },
-  { value: 'other', label: 'Other document' },
+  { value: 'doctor_form', label: 'Doctor Form (DF)' },
+  { value: 'patient_form', label: 'Patient Form (PF)' },
+  { value: 'gps_selfie', label: 'GPS Selfie (GS)' },
+  { value: 'other', label: 'Other document (OT)' },
 ];
 
 export const PAYMENT_SUBMIT_STATUSES = [

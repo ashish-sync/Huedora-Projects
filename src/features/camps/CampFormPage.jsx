@@ -151,7 +151,11 @@ export default function CampFormPage() {
   }, [isEdit]);
 
   useEffect(() => {
-    if (activeStage !== 'assignment' && workingStage !== 'assignment') return undefined;
+    const needsHcwContacts = activeStage === 'assignment'
+      || workingStage === 'assignment'
+      || activeStage === 'financial'
+      || workingStage === 'financial';
+    if (!needsHcwContacts) return undefined;
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);

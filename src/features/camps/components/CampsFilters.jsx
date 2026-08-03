@@ -1,12 +1,7 @@
 import { DateInput } from './DateInput';
 import { FILTER } from '../../../shared/labels.js';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
-import { REQUEST_REVIEW_FILTER_OPTIONS } from '../constants/requestReviewStatus';
-import {
-  ASSIGNMENT_STAGE_FILTER_OPTIONS,
-  EXECUTION_STAGE_FILTER_OPTIONS,
-  FINANCIAL_STAGE_FILTER_OPTIONS,
-} from '../constants/campStageFilters';
+import MasterSearchField from '../../../components/masters/MasterSearchField.jsx';
 
 const quickPresets = [
   { key: 'today', label: 'Today' },
@@ -21,38 +16,42 @@ const alertOptions = [
   { value: 'overdue', label: 'Overdue — not executed' },
 ];
 
-const statusOptions = [
+const REQUEST_STATUS_OPTIONS = [
   { value: 'pending_review', label: 'Pending review' },
+  { value: 'information_requested', label: 'Information requested' },
   { value: 'approved', label: 'Approved' },
-  { value: 'executed', label: 'Executed' },
   { value: 'rejected', label: 'Refused' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-function stageFilterOptions({
-  assignmentStage,
-  requestStage,
-  executionStage,
-  financialStage,
-}) {
-  if (assignmentStage) return ASSIGNMENT_STAGE_FILTER_OPTIONS;
-  if (requestStage) return REQUEST_REVIEW_FILTER_OPTIONS;
-  if (executionStage) return EXECUTION_STAGE_FILTER_OPTIONS;
-  if (financialStage) return FINANCIAL_STAGE_FILTER_OPTIONS;
-  return null;
-}
+const ASSIGNMENT_STATUS_OPTIONS = [
+  { value: 'unassigned', label: 'Unassigned' },
+  { value: 'assigned', label: 'Assigned' },
+  { value: 'cancelled_by_tcpl', label: 'Cancelled by TCPL' },
+  { value: 'cancelled_by_client', label: 'Cancelled by client' },
+];
 
-function stageFilterAriaLabel({
-  assignmentStage,
-  requestStage,
-  executionStage,
-  financialStage,
-}) {
-  if (assignmentStage) return 'Assignment status';
-  if (requestStage) return 'Request review status';
-  if (executionStage) return 'Execution status';
-  if (financialStage) return 'Finance payment status';
-  return 'Status and alerts';
+const EXECUTION_STATUS_OPTIONS = [
+  { value: 'yet_to_start', label: 'Yet to start' },
+  { value: 'ongoing', label: 'Ongoing' },
+  { value: 'executed', label: 'Marked executed' },
+  { value: 'completed', label: 'Camp completed' },
+  { value: 'cancelled_by_tcpl', label: 'Cancelled by TCPL' },
+  { value: 'cancelled_by_client', label: 'Cancelled by client' },
+];
+
+const FINANCIAL_STATUS_OPTIONS = [
+  { value: 'payment_not_checked', label: 'Payment not checked' },
+  { value: 'payment_confirmed', label: 'Payment confirmed' },
+  { value: 'payment_hold', label: 'Payment hold' },
+  { value: 'payment_completed', label: 'Paid (Finance)' },
+];
+
+function statusOptionsForStage(stage) {
+  if (stage === 'assignment') return ASSIGNMENT_STATUS_OPTIONS;
+  if (stage === 'execution') return EXECUTION_STATUS_OPTIONS;
+  if (stage === 'financial') return FINANCIAL_STATUS_OPTIONS;
+  return REQUEST_STATUS_OPTIONS;
 }
 
 export function CampsFilters({
@@ -69,24 +68,12 @@ export function CampsFilters({
   onFilterChange,
   activeChips,
   onClearAll,
-  assignmentStage = false,
-  requestStage = false,
-  executionStage = false,
-  financialStage = false,
+  showStatusFilter = true,
+  workingStage = 'request',
 }) {
   const activePreset = matchQuickPreset(dateFrom, dateTo);
-  const stageOptions = stageFilterOptions({
-    assignmentStage,
-    requestStage,
-    executionStage,
-    financialStage,
-  });
-  const filterAriaLabel = stageFilterAriaLabel({
-    assignmentStage,
-    requestStage,
-    executionStage,
-    financialStage,
-  });
+  const statusOptions = statusOptionsForStage(workingStage);
+  const showAlerts = workingStage === 'request' || workingStage === 'execution';
 
   function handleQuickSelect(preset) {
     const range = getQuickDateRange(preset);
@@ -99,82 +86,75 @@ export function CampsFilters({
     <div className="camps-filter-card">
       <div className="camps-filter-toolbar">
         <div className="camps-filter-group camps-filter-group--search">
-          <input
+          <MasterSearchField
             id="camps-search"
-            className="camps-filter-control camps-filter-search"
+            className="camps-filter-search"
             placeholder="Search camp ID, doctor, city…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+            aria-label="Search camps"
           />
           <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
             Search
           </button>
         </div>
 
-        <span className="camps-filter-divider" aria-hidden="true" />
-
-        <select
-          id="camps-status-filter"
-          className="camps-filter-control camps-filter-status tylo-select"
-          aria-label={filterAriaLabel}
-          value={filterValue}
-          onChange={(e) => onFilterChange(e.target.value)}
-        >
-          {stageOptions ? (
-            stageOptions.map((option) => (
-              <option key={option.value || 'all'} value={option.value}>{option.label}</option>
-            ))
-          ) : (
-            <>
-              <option value="">{FILTER.ALL_CAMPS}</option>
-              {alertOptions.map((option) => (
+        <div className="camps-filter-toolbar__filters">
+          {showStatusFilter && (
+            <select
+              id="camps-status-filter"
+              className="camps-filter-control camps-filter-status tylo-select"
+              aria-label="Status and alerts"
+              value={filterValue}
+              onChange={(e) => onFilterChange(e.target.value)}
+            >
+              <option value="">{FILTER.ALL_STATUSES}</option>
+              {showAlerts && alertOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
-            </>
+            </select>
           )}
-        </select>
 
-        <span className="camps-filter-divider" aria-hidden="true" />
-
-        <div className="camps-filter-group camps-filter-group--dates" role="group" aria-label="Date filters">
-          <div className="camps-filter-quick-dates" role="group" aria-label="Quick date filters">
-            {quickPresets.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                className={`btn secondary btn-compact camps-filter-preset${activePreset === key ? ' is-active' : ''}`}
-                onClick={() => handleQuickSelect(key)}
-              >
-                {label}
+          <div className="camps-filter-group camps-filter-group--dates" role="group" aria-label="Date filters">
+            <div className="camps-filter-quick-dates" role="group" aria-label="Quick date filters">
+              {quickPresets.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`btn secondary btn-compact camps-filter-preset${activePreset === key ? ' is-active' : ''}`}
+                  onClick={() => handleQuickSelect(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="camps-filter-date-range">
+              <DateInput
+                id="camps-date-from"
+                hideLabel
+                className="camps-filter-date-field"
+                value={dateFrom}
+                onChange={onDateFromChange}
+              />
+              <span className="camps-filter-date-sep" aria-hidden="true">to</span>
+              <DateInput
+                id="camps-date-to"
+                hideLabel
+                className="camps-filter-date-field"
+                value={dateTo}
+                onChange={onDateToChange}
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <button type="button" className="btn secondary btn-compact" onClick={onClearDates}>
+                Clear
               </button>
-            ))}
+            )}
           </div>
-          <div className="camps-filter-date-range">
-            <DateInput
-              id="camps-date-from"
-              hideLabel
-              className="camps-filter-date-field"
-              value={dateFrom}
-              onChange={onDateFromChange}
-            />
-            <span className="camps-filter-date-sep">to</span>
-            <DateInput
-              id="camps-date-to"
-              hideLabel
-              className="camps-filter-date-field"
-              value={dateTo}
-              onChange={onDateToChange}
-            />
-          </div>
-          {(dateFrom || dateTo) && (
-            <button type="button" className="btn secondary btn-compact" onClick={onClearDates}>
-              Clear
-            </button>
-          )}
         </div>
       </div>
 

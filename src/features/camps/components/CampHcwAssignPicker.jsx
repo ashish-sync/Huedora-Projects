@@ -1,28 +1,49 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  HCW_RESOURCE_TYPES,
-  HEALTHCARE_WORKER_PROFESSIONS,
-} from '../../agreements/contactPicklists.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { HCW_RESOURCE_TYPES, resourceTypesForCategory } from '../../agreements/contactPicklists.js';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import {
-  HCW_CONTACT_CATEGORY,
+  assignmentResourceTypeForContact,
   buildHcwAssignCascade,
   contactToHcwFields,
   findAssignableHealthcareWorker,
+  isHealthcareWorkerCategory,
 } from '../utils/campHcwContact';
+import {
+  formatHealthcareWorkers,
+  normalizeHealthcareWorkers,
+} from '../utils/healthcareWorkers.js';
 
-function ReadOnlyField({ label, value }) {
+function AssignField({ label, hint, className = '', children }) {
   return (
-    <label>
-      {label}
-      <input value={value ?? ''} readOnly className="input-readonly" />
+    <label className={`camp-hcw-assign-field ${className}`.trim()}>
+      <span className="camp-hcw-assign-field-label">
+        <span className="camp-hcw-assign-field-title">{label}</span>
+        {hint ? <span className="camp-hcw-assign-hint">{hint}</span> : null}
+      </span>
+      {children}
     </label>
   );
 }
 
-function intersectWithMaster(availableValues, masterOptions) {
-  const available = new Set(availableValues);
-  return masterOptions.filter((option) => available.has(option));
+function hcwResourceTypeChoices(masterOptions, otherLabel = 'Other') {
+  const canonical = new Set(resourceTypesForCategory('Healthcare Worker'));
+  return masterOptions.filter(
+    (option) => canonical.has(option) || option === otherLabel || option === 'Others',
+  );
+}
+
+function isServiceProviderResourceType(value = '') {
+  return String(value || '').trim() === 'Service Provider';
+}
+
+function personOptionLabel(contact, { city, state }) {
+  const parts = [contact.name];
+  if (contact.contact) parts.push(contact.contact);
+  if (contact.profession) parts.push(contact.profession);
+  if (contact.serviceProviderName) parts.push(contact.serviceProviderName);
+  if (!city && contact.city) parts.push(contact.city);
+  if (!state && contact.state) parts.push(contact.state);
+  return parts.filter(Boolean).join(' · ');
 }
 
 export function CampHcwAssignPicker({
@@ -30,6 +51,9 @@ export function CampHcwAssignPicker({
   contactsLoading = false,
   disabled = false,
   selectedContactId = '',
+  clientMasterProfessions = [],
+  clientMasterProfession = '',
+  clientMasterLoading = false,
   onSelect,
 }) {
   const selectedContact = useMemo(
@@ -37,57 +61,78 @@ export function CampHcwAssignPicker({
     [hcwContacts, selectedContactId],
   );
 
-  const [resourceType, setResourceType] = useState(() => selectedContact?.resourceType || '');
-  const [profession, setProfession] = useState(() => selectedContact?.profession || '');
-  const [city, setCity] = useState(() => selectedContact?.city || '');
+  // Predefined on Client Master (Healthcare Worker) — multi-select, not shown as a field.
+  const professions = useMemo(
+    () => normalizeHealthcareWorkers(
+      clientMasterProfessions.length ? clientMasterProfessions : clientMasterProfession,
+    ),
+    [clientMasterProfessions, clientMasterProfession],
+  );
+  const professionKey = professions.join('|');
 
-  const { options: masterResourceTypes } = usePicklistOptions(
+  const [resourceType, setResourceType] = useState(
+    () => assignmentResourceTypeForContact(selectedContact),
+  );
+  const [state, setState] = useState(() => selectedContact?.state || '');
+  const [city, setCity] = useState(() => selectedContact?.city || '');
+  const prevProfessionKeyRef = useRef(professionKey);
+
+  const { options: masterResourceTypes, otherLabel } = usePicklistOptions(
     'contact.hcwResourceType',
     HCW_RESOURCE_TYPES,
   );
-  const { options: masterProfessions } = usePicklistOptions(
-    'contact.profession.healthcareWorker',
-    HEALTHCARE_WORKER_PROFESSIONS,
-  );
+
+  const serviceProviderSelected = isServiceProviderResourceType(resourceType);
 
   const cascade = useMemo(
-    () => buildHcwAssignCascade(hcwContacts, { resourceType, profession, city }),
-    [hcwContacts, resourceType, profession, city],
+    () => buildHcwAssignCascade(hcwContacts, {
+      resourceType,
+      professions,
+      state,
+      city,
+    }),
+    [hcwContacts, resourceType, professions, state, city],
   );
 
   const resourceTypeOptions = useMemo(
-    () => intersectWithMaster(cascade.resourceTypes, masterResourceTypes)
-      .filter((option) => option !== 'Service Provider'),
-    [cascade.resourceTypes, masterResourceTypes],
+    () => hcwResourceTypeChoices(masterResourceTypes, otherLabel),
+    [masterResourceTypes, otherLabel],
   );
 
-  const professionOptions = useMemo(
-    () => intersectWithMaster(cascade.professions, masterProfessions),
-    [cascade.professions, masterProfessions],
-  );
-
-  const fields = contactToHcwFields(selectedContact);
   const fieldsDisabled = disabled || contactsLoading;
-  const canPickProfession = Boolean(resourceType);
-  const canPickCity = Boolean(resourceType && profession);
-  const canPickPerson = Boolean(resourceType && profession);
+  const masterRoleMissing = !professions.length
+    && !clientMasterLoading
+    && !contactsLoading;
+  const canUseFilters = Boolean(resourceType) && professions.length > 0;
+  const canPickState = canUseFilters;
+  const canPickCity = Boolean(canPickState && state);
+  const canPickPerson = canUseFilters;
+  const rolesLabel = formatHealthcareWorkers(professions);
 
   useEffect(() => {
     if (!selectedContact) return;
-    setResourceType(selectedContact.resourceType || '');
-    setProfession(selectedContact.profession || '');
+    setResourceType(assignmentResourceTypeForContact(selectedContact));
+    setState(selectedContact.state || '');
     setCity(selectedContact.city || '');
   }, [selectedContact?._id]);
 
+  useEffect(() => {
+    if (prevProfessionKeyRef.current === professionKey) return;
+    prevProfessionKeyRef.current = professionKey;
+    setState('');
+    setCity('');
+    onSelect?.(contactToHcwFields(null));
+  }, [professionKey, onSelect]);
+
   function handleResourceTypeChange(nextResourceType) {
     setResourceType(nextResourceType);
-    setProfession('');
+    setState('');
     setCity('');
     onSelect?.(contactToHcwFields(null));
   }
 
-  function handleProfessionChange(nextProfession) {
-    setProfession(nextProfession);
+  function handleStateChange(nextState) {
+    setState(nextState);
     setCity('');
     onSelect?.(contactToHcwFields(null));
   }
@@ -98,100 +143,137 @@ export function CampHcwAssignPicker({
   }
 
   function handlePersonChange(contactId) {
-    const contact = cascade.people.find((item) => String(item._id) === String(contactId));
+    const contact = cascade.people.find((item) => String(item._id) === String(contactId))
+      || findAssignableHealthcareWorker(hcwContacts, contactId);
     onSelect?.(contactToHcwFields(contact));
   }
 
+  const stateEmptyLabel = !resourceType
+    ? 'Select resource type first'
+    : masterRoleMissing
+      ? 'Configure Healthcare Worker in Client Master'
+      : 'Select state';
+
+  const cityEmptyLabel = !canPickState
+    ? 'Complete filters above first'
+    : !state
+      ? 'Select state first'
+      : 'All cities';
+
+  const personEmptyLabel = !canPickPerson
+    ? (masterRoleMissing
+      ? 'Configure Healthcare Worker in Client Master first'
+      : 'Select resource type first')
+    : cascade.people.length
+      ? (serviceProviderSelected ? 'Select employee' : 'Select healthcare worker')
+      : (serviceProviderSelected
+        ? 'No matching employees under service providers'
+        : 'No matching contacts');
+
   return (
     <div className="form-grid camp-hcw-assign-picker">
-      <ReadOnlyField label="Contact Category" value={HCW_CONTACT_CATEGORY} />
-
-      <label>
-        Resource Type
+      <AssignField label="Resource Type">
         <select
+          className="tylo-select"
           value={resourceType}
           onChange={(event) => handleResourceTypeChange(event.target.value)}
-          disabled={fieldsDisabled}
+          disabled={fieldsDisabled || masterRoleMissing}
           required
         >
           <option value="">
-            {contactsLoading ? 'Loading…' : 'Select resource type'}
+            {contactsLoading || clientMasterLoading
+              ? 'Loading…'
+              : masterRoleMissing
+                ? 'Configure Client Master first'
+                : 'Select resource type'}
           </option>
           {resourceTypeOptions.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </select>
-      </label>
+      </AssignField>
 
-      <label>
-        Profession / Role
+      <AssignField label="State">
         <select
-          value={profession}
-          onChange={(event) => handleProfessionChange(event.target.value)}
-          disabled={fieldsDisabled || !canPickProfession}
+          className="tylo-select"
+          value={state}
+          onChange={(event) => handleStateChange(event.target.value)}
+          disabled={fieldsDisabled || !canPickState}
           required
         >
-          <option value="">
-            {canPickProfession ? 'Select profession' : 'Select resource type first'}
-          </option>
-          {professionOptions.map((option) => (
+          <option value="">{stateEmptyLabel}</option>
+          {cascade.states.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </select>
-      </label>
+      </AssignField>
 
-      <label>
-        City
+      <AssignField label="City">
         <select
+          className="tylo-select"
           value={city}
           onChange={(event) => handleCityChange(event.target.value)}
           disabled={fieldsDisabled || !canPickCity}
         >
-          <option value="">
-            {canPickCity ? 'All cities' : 'Select profession first'}
-          </option>
+          <option value="">{cityEmptyLabel}</option>
           {cascade.cities.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </select>
-      </label>
+      </AssignField>
 
-      <label className="full">
-        Healthcare Worker
+      <AssignField
+        label={serviceProviderSelected ? 'Employee Name' : 'Healthcare Worker Name'}
+        hint={serviceProviderSelected
+          ? 'Employees under Service Providers in Contact Directory (not the agency itself).'
+          : undefined}
+        className="full"
+      >
         <select
+          className="tylo-select"
           value={selectedContactId || ''}
           onChange={(event) => handlePersonChange(event.target.value)}
           disabled={fieldsDisabled || !canPickPerson}
           required
         >
-          <option value="">
-            {canPickPerson ? 'Select healthcare worker' : 'Select profession first'}
-          </option>
+          <option value="">{personEmptyLabel}</option>
           {cascade.people.map((contact) => (
             <option key={contact._id} value={contact._id}>
-              {contact.name}
-              {contact.contact ? ` · ${contact.contact}` : ''}
-              {!city && contact.city ? ` · ${contact.city}` : ''}
+              {personOptionLabel(contact, { city, state })}
             </option>
           ))}
         </select>
-      </label>
+      </AssignField>
 
-      {selectedContactId ? (
-        <>
-          <ReadOnlyField label="HCW Category" value={fields.hcwCategory || '—'} />
-          <ReadOnlyField label="HCW Name" value={fields.hcwName || '—'} />
-          <ReadOnlyField label="HCW Contact" value={fields.hcwContact || '—'} />
-        </>
+      {masterRoleMissing ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          Set Healthcare Worker in Master One → Client Master for this client, division, and method
+          (you can select more than one). Assignment only lists matching Contact Directory contacts.
+        </p>
       ) : null}
 
-      {!cascade.assignable.length && !contactsLoading ? (
-        <p className="meta-text full">
-          No Healthcare Worker contacts found in Contact Directory. Add contacts under Contact Category
-          {' '}
-          <strong>Healthcare Worker</strong>
-          {' '}
-          first.
+      {!cascade.assignable.length && canUseFilters && !contactsLoading ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          {serviceProviderSelected
+            ? `No employees under Service Providers match Client Master role(s) “${rolesLabel}”. Link Full-Time / Individual workers to a provider, or add Employees on the Service Provider in Contact Directory.`
+            : `No Healthcare Worker contacts match resource type “${resourceType}”${rolesLabel ? ` and Client Master role(s) “${rolesLabel}”` : ''}. Add matching contacts in Contact Directory first.`}
+        </p>
+      ) : null}
+
+      {cascade.assignable.length > 0
+        && canPickPerson
+        && !cascade.people.length
+        && !contactsLoading
+        && professions.length ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          Contacts exist for “{resourceType}”, but none have Profession / Role in
+          “{rolesLabel}”. Align Contact Directory with Client Master Healthcare Worker.
+        </p>
+      ) : null}
+
+      {!hcwContacts.some(isHealthcareWorkerCategory) && !contactsLoading ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          No Healthcare Worker contacts found in Contact Directory. Add Healthcare Worker contacts there first.
         </p>
       ) : null}
     </div>

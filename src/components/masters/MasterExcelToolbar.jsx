@@ -96,7 +96,6 @@ export default function MasterExcelToolbar({
         toolbarClassName,
         className,
       ].filter(Boolean).join(' ')}
-      style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center', display: 'flex' }}
     >
       {exportPath ? (
         <button

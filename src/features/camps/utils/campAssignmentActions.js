@@ -1,7 +1,18 @@
-function isCampAssigned(camp = {}) {
+import { daysFromToday } from './campDatePolicy.js';
+
+/** Assigned camps enter Execution starting one calendar day before camp date. */
+export const EXECUTION_ADVANCE_DAYS_BEFORE = 1;
+
+export function isCampAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
   if (camp.lifecycleStage === 'execution' && camp.assignmentDecision === 'assign') return true;
   return false;
+}
+
+export function isCampDateDueForExecution(camp = {}, now = new Date()) {
+  const campDate = String(camp?.campDate || '').trim();
+  if (!campDate) return false;
+  return daysFromToday(campDate, now) <= EXECUTION_ADVANCE_DAYS_BEFORE;
 }
 
 export function getAssignmentBlockers(camp = {}) {

@@ -1,13 +1,7 @@
 export const EMAIL_DOMAIN = import.meta.env.VITE_EMAIL_DOMAIN || 'huedoraconnect.com';
 
-export const IS_DEMO_SERVER = import.meta.env.VITE_DEMO_SERVER !== 'false';
-
-export const DEMO_USERS = [
-  { label: 'Admin', email: `admin@${EMAIL_DOMAIN}`, password: 'admin123', role: 'Admin' },
-  { label: 'Operations', email: `ops@${EMAIL_DOMAIN}`, password: 'admin123', role: 'Operations Executive' },
-  { label: 'Reviewer', email: `reviewer@${EMAIL_DOMAIN}`, password: 'admin123', role: 'Reviewer' },
-  { label: 'Read Only', email: `viewer@${EMAIL_DOMAIN}`, password: 'admin123', role: 'Read Only' },
-];
+/** Opt-in only. Production builds must leave VITE_DEMO_SERVER unset or false. */
+export const IS_DEMO_SERVER = String(import.meta.env.VITE_DEMO_SERVER || '').toLowerCase() === 'true';
 
 export const ASSIGNABLE_ROLES = [
   { value: 'admin', label: 'Admin' },

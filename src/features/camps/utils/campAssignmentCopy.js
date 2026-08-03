@@ -1,4 +1,11 @@
 import { formatDate } from '../../../shared/dateFormat.js';
+import {
+  cleanSpaces,
+  formatContactPersonName,
+  formatDoctorName,
+  toProperTitleCase,
+} from '../../../shared/textFormat.js';
+import { campToForm } from '../constants/campLifecycle.js';
 
 function detailLine(label, value) {
   const text = String(value ?? '').trim() || '—';
@@ -12,19 +19,31 @@ function formatClinicTiming(form = {}) {
   return start || end || '';
 }
 
+function formatPhone(value) {
+  return cleanSpaces(value);
+}
+
+function formatAddress(value) {
+  return toProperTitleCase(value);
+}
+
 /** Plain-text block for WhatsApp / email when sharing an assigned camp. */
 export function formatCampAssignmentDetails(form = {}) {
   const lines = [
-    detailLine('Doctor Name', form.doctorName),
+    detailLine('Doctor Name', formatDoctorName(form.doctorName)),
     detailLine('Clinic Date', formatDate(form.campDate) || form.campDate),
-    detailLine('Clinic Address', form.campAddress),
+    detailLine('Clinic Address', formatAddress(form.campAddress)),
     detailLine('Clinic Timing', formatClinicTiming(form)),
-    detailLine('Contact Person', form.fieldPersonName),
-    detailLine('Contact Number', form.fieldPersonPhone),
-    detailLine('HCW Name', form.hcwName),
-    detailLine('HCW Number', form.hcwContact),
+    detailLine('Contact Person', formatContactPersonName(form.fieldPersonName)),
+    detailLine('Contact Number', formatPhone(form.fieldPersonPhone)),
+    detailLine('HCW Name', toProperTitleCase(form.hcwName)),
+    detailLine('HCW Number', formatPhone(form.hcwContact)),
   ];
   return `${lines.join('\n')}\n`;
+}
+
+export function assignmentCopySourceFromCamp(camp = {}) {
+  return campToForm(camp);
 }
 
 export async function copyTextToClipboard(value) {
@@ -48,4 +67,8 @@ export async function copyTextToClipboard(value) {
 
 export async function copyCampAssignmentDetails(form, options = {}) {
   return copyTextToClipboard(formatCampAssignmentDetails(form, options));
+}
+
+export async function copyCampAssignmentDetailsFromRecord(camp, options = {}) {
+  return copyCampAssignmentDetails(assignmentCopySourceFromCamp(camp), options);
 }

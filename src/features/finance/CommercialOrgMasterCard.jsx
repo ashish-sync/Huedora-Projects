@@ -108,6 +108,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           <div className="org-master-form-span-2">
             <label className="org-master-field-label">Upload Logo</label>
             <FileDrop
+              className="doc-file-drop--logo"
               label="Drop logo image or click to browse"
               previewUrl={form.logoDataUrl}
               onFile={(file) => readFileAsDataUrl(file, (url) => update('logoDataUrl', url))}
@@ -236,6 +237,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           <div className="org-master-form-span-2">
             <label className="org-master-field-label">Payment QR Code</label>
             <FileDrop
+              className="doc-file-drop--qr"
               label="Upload payment QR image"
               previewUrl={form.paymentQrDataUrl}
               onFile={(file) => readFileAsDataUrl(file, (url) => update('paymentQrDataUrl', url))}

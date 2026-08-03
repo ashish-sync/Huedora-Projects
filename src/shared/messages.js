@@ -4,7 +4,7 @@
  */
 
 export const MESSAGES = {
-  welcome: (name) => (name ? `Welcome back, ${name}.` : 'Welcome back.'),
+  welcome: (name) => (name ? `Welcome, ${name}` : 'Welcome'),
   saved: (entity) => `${entity} saved successfully.`,
   updated: (entity) => `${entity} updated successfully.`,
   archived: (entity) => `${entity} archived successfully.`,

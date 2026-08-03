@@ -18,7 +18,9 @@ export function CampRowIconButton({
       onClick={onClick}
       disabled={disabled}
     >
-      <Icon size={17} strokeWidth={2} aria-hidden="true" />
+      <span className="camp-row-icon-btn__glyph" aria-hidden="true">
+        <Icon size={17} strokeWidth={2} />
+      </span>
     </button>
   );
 }

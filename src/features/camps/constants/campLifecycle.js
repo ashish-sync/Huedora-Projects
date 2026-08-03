@@ -12,6 +12,10 @@ import {
   CONTACT_PERSON_LEVEL_OPTIONS,
 } from '../utils/campContactPersons.js';
 import { getConsumablesCompletionBlockers } from '../utils/campConsumables.js';
+import {
+  CAMP_FINANCE_EXPENSE_CATEGORY,
+  CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+} from '../utils/campFinanceExpense.js';
 
 export { CONTACT_PERSON_LEVEL_OPTIONS };
 
@@ -145,6 +149,7 @@ export const CAMP_SOURCE_OPTIONS = [
   { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'excel', label: 'Import' },
   { value: 'paste', label: 'Manual Paste' },
+  { value: 'parser', label: 'Request Parser' },
   { value: 'api', label: 'API' },
 ];
 
@@ -232,10 +237,10 @@ export const QUALITY_RATINGS = ['Good', 'Average', 'Poor'];
 export const ATTIRE_CHECK_OPTIONS = ['No Issues', 'Issues'];
 export const HCW_CATEGORIES = ['Technician', 'Phlebotomist', 'Dietician', 'Other'];
 export const EXECUTION_DOC_TYPES = [
-  { value: 'doctor_form', label: 'Doctor Form' },
-  { value: 'patient_form', label: 'Patient Form' },
-  { value: 'gps_selfie', label: 'GPS Selfie' },
-  { value: 'other', label: 'Other document' },
+  { value: 'doctor_form', label: 'Doctor Form (DF)' },
+  { value: 'patient_form', label: 'Patient Form (PF)' },
+  { value: 'gps_selfie', label: 'GPS Selfie (GS)' },
+  { value: 'other', label: 'Other document (OT)' },
 ];
 
 export const PAYMENT_SUBMIT_STATUSES = [
@@ -413,6 +418,9 @@ export function emptyLifecycleForm() {
   const today = todayIsoDate();
   return {
     clientId: '',
+    _id: '',
+    campId: '',
+    clientName: '',
     campaignName: '',
     campaignType: '',
     source: 'dashboard',
@@ -485,6 +493,9 @@ export function emptyLifecycleForm() {
     paymentRemark: '',
     paymentSubmitStatus: '',
     financePaymentStatus: '',
+    expenseCategory: CAMP_FINANCE_EXPENSE_CATEGORY,
+    expenseSubCategory: CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+    expenseSubCategoryId: '',
     submittedToFinanceAt: '',
     remarks: '',
     lifecycleStage: 'request',
@@ -500,7 +511,10 @@ export function campToForm(camp) {
 
   return {
     ...emptyLifecycleForm(),
+    _id: camp._id || '',
+    campId: camp.campId || '',
     clientId: camp.client?._id || camp.client || '',
+    clientName: camp.clientName || camp.client?.name || '',
     campaignName: camp.campaignName || '',
     campaignType: camp.campaignType || '',
     source: camp.source || 'dashboard',
@@ -570,6 +584,9 @@ export function campToForm(camp) {
     paymentRemark: camp.paymentRemark || '',
     paymentSubmitStatus: camp.paymentSubmitStatus || '',
     financePaymentStatus: camp.financePaymentStatus || '',
+    expenseCategory: camp.expenseCategory || CAMP_FINANCE_EXPENSE_CATEGORY,
+    expenseSubCategory: camp.expenseSubCategory || CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
+    expenseSubCategoryId: camp.expenseSubCategoryId || '',
     submittedToFinanceAt: camp.submittedToFinanceAt || '',
     remarks: camp.remarks || '',
     lifecycleStage: normalizeLifecycleStage(camp.lifecycleStage, 'request'),

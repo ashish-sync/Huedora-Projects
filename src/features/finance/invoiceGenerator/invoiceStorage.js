@@ -56,6 +56,8 @@ export function defaultInvoiceForm() {
       qrEnabled: true,
       paymentQrDataUrl: '',
     },
+    clientMasterId: '',
+    clientId: '',
     billTo: {
       name: '',
       contactPerson: '',

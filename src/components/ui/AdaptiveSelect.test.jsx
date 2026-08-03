@@ -34,8 +34,13 @@ function ControlledSelect({ count, onChange = () => {}, multiple = false, ...pro
 }
 
 describe('AdaptiveSelect', () => {
-  it('keeps nine choices as a native select', () => {
+  it('uses react-select by default for any choice count', () => {
     render(<ControlledSelect count={9} />);
+    expect(screen.getByRole('combobox', { name: 'Example' })).toBeTruthy();
+  });
+
+  it('keeps few choices as a native select when threshold is above the count', () => {
+    render(<ControlledSelect count={9} threshold={10} />);
     expect(screen.getByLabelText('Example').tagName).toBe('SELECT');
   });
 
@@ -58,10 +63,20 @@ describe('AdaptiveSelect', () => {
   });
 
   it('switches mode when dynamic choices reach the threshold', () => {
-    const { rerender } = render(<ControlledSelect count={9} />);
+    const { rerender } = render(<ControlledSelect count={9} threshold={10} />);
     expect(screen.getByLabelText('Example').tagName).toBe('SELECT');
-    rerender(<ControlledSelect count={10} />);
+    rerender(<ControlledSelect count={10} threshold={10} />);
     expect(screen.getByRole('combobox', { name: 'Example' })).toBeTruthy();
+  });
+
+  it('strips native-only chrome classes from react-select', () => {
+    render(
+      <ControlledSelect count={10} className="tylo-select filter-select" />
+    );
+    const root = document.querySelector('.adaptive-select');
+    expect(root).toBeTruthy();
+    expect(root.className).not.toMatch(/\btylo-select\b/);
+    expect(root.className).not.toMatch(/\bfilter-select\b/);
   });
 
   it('propagates required and disabled state in searchable mode', () => {

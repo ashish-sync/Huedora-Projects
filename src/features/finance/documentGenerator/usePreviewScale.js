@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { A4_LANDSCAPE_PX } from '../shared/a4Landscape.js';
 
-const MIN_SCALE = 0.72;
+export const DEFAULT_PREVIEW_SCALE = 0.7;
+const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.05;
 
-export function usePreviewScale() {
+export function usePreviewScale({ defaultScale = DEFAULT_PREVIEW_SCALE } = {}) {
   const wrapRef = useRef(null);
-  const [scale, setScale] = useState(0.85);
+  const [scale, setScale] = useState(defaultScale);
 
   const fitToWidth = useCallback(() => {
     const wrap = wrapRef.current;
@@ -21,14 +22,12 @@ export function usePreviewScale() {
     setScale(Math.max(MIN_SCALE, Math.round(next * 100) / 100));
   }, []);
 
-  useEffect(() => {
-    fitToWidth();
-    window.addEventListener('resize', fitToWidth);
-    return () => window.removeEventListener('resize', fitToWidth);
-  }, [fitToWidth]);
+  const resetZoom = useCallback(() => {
+    setScale(defaultScale);
+  }, [defaultScale]);
 
   const zoomIn = () => setScale((s) => Math.min(MAX_SCALE, Math.round((s + 0.08) * 100) / 100));
   const zoomOut = () => setScale((s) => Math.max(MIN_SCALE, Math.round((s - 0.08) * 100) / 100));
 
-  return { wrapRef, scale, setScale, zoomIn, zoomOut, fitToWidth, pagePx: A4_LANDSCAPE_PX };
+  return { wrapRef, scale, setScale, zoomIn, zoomOut, fitToWidth, resetZoom, pagePx: A4_LANDSCAPE_PX };
 }

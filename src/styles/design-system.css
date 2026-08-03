@@ -125,13 +125,13 @@
 .inv-search,
 .am-search,
 input.esign-search,
-.filter-select,
+select.filter-select,
 .toolbar select,
-.toolbar .filter-select,
-.agreements-filters .filter-select,
+.toolbar select.filter-select,
+.agreements-filters select.filter-select,
 .agreements-filters select,
 .filter-bar select,
-.filter-bar .filter-select,
+.filter-bar select.filter-select,
 .catalog-toolbar select,
 .inv-toolbar select,
 .am-toolbar select,
@@ -147,9 +147,15 @@ input.esign-search,
   min-height: var(--control-h) !important;
   max-height: var(--control-h) !important;
   box-sizing: border-box !important;
-  border-radius: var(--radius-button) !important;
+  border-radius: var(--dropdown-radius) !important;
   font-size: 0.8125rem !important;
   line-height: 1.2 !important;
+}
+
+.adaptive-select--multi .adaptive-select__control {
+  height: auto !important;
+  min-height: var(--control-h) !important;
+  max-height: none !important;
 }
 
 .btn,
@@ -179,7 +185,7 @@ input.esign-search,
 .inv-search,
 .am-search,
 input.esign-search,
-.filter-select,
+select.filter-select,
 .toolbar select,
 .agreements-filters select,
 .date-range-filter-field .date-input-display,
@@ -187,12 +193,12 @@ input.esign-search,
 .field select {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  padding-left: var(--control-pad-inline-start) !important;
+  padding-right: var(--control-pad-inline-end) !important;
   border-width: 1px !important;
   border-style: solid !important;
   border-color: var(--line) !important;
-  background: var(--bg-elevated) !important;
+  background-color: var(--bg-elevated) !important;
   color: var(--ink) !important;
 }
 
@@ -325,7 +331,7 @@ button.module-kpi.is-clickable:hover {
   display: flex !important;
   flex-wrap: nowrap !important;
   align-items: center !important;
-  gap: var(--stack-sm) !important;
+  gap: var(--filter-toolbar-gap) !important;
 }
 
 .filter-bar,
@@ -333,7 +339,7 @@ button.module-kpi.is-clickable:hover {
   display: flex !important;
   flex-wrap: nowrap !important;
   align-items: center !important;
-  gap: var(--stack-sm) !important;
+  gap: var(--filter-toolbar-gap) !important;
   width: 100% !important;
   min-width: 0 !important;
   flex: 1 1 auto;
@@ -401,12 +407,12 @@ button.module-kpi.is-clickable:hover {
   max-width: none !important;
 }
 
-.filter-select,
-.toolbar .filter-select,
-.agreements-filters .filter-select,
+select.filter-select,
+.toolbar select.filter-select,
+.agreements-filters select.filter-select,
 .agreements-filters select,
-.agreements-filters .adaptive-select,
-.filter-bar .filter-select,
+.agreements-filters .adaptive-select-host,
+.filter-bar select.filter-select,
 .filter-bar select,
 .catalog-toolbar select,
 .inv-toolbar select,
@@ -416,12 +422,19 @@ button.module-kpi.is-clickable:hover {
 .logistics-toolbar select,
 .toolbar select,
 .inv-toolbar > .adaptive-select,
+.inv-toolbar > .adaptive-select-host,
 .am-toolbar > .adaptive-select,
+.am-toolbar > .adaptive-select-host,
 .vf-toolbar > .adaptive-select,
+.vf-toolbar > .adaptive-select-host,
 .esign-toolbar > .adaptive-select,
+.esign-toolbar > .adaptive-select-host,
 .logistics-toolbar > .adaptive-select,
+.logistics-toolbar > .adaptive-select-host,
 .toolbar > .adaptive-select,
-.agreements-filters > .adaptive-select {
+.toolbar > .adaptive-select-host,
+.agreements-filters > .adaptive-select,
+.agreements-filters > .adaptive-select-host {
   flex: 0 0 var(--control-w) !important;
   width: var(--control-w) !important;
   min-width: var(--control-w) !important;
@@ -456,9 +469,9 @@ button.module-kpi.is-clickable:hover {
 .vf-toolbar,
 .esign-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--stack-sm);
+  gap: var(--filter-toolbar-gap);
   padding: var(--toolbar-pad-y) var(--toolbar-pad-x);
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface) 65%, var(--bg-elevated));
@@ -469,9 +482,9 @@ button.module-kpi.is-clickable:hover {
 
 .logistics-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--stack-sm);
+  gap: var(--filter-toolbar-gap);
   padding: var(--toolbar-pad-y) var(--toolbar-pad-x);
   margin: 0 0 var(--stack-sm);
   border: 1px solid var(--line);

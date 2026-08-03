@@ -155,8 +155,8 @@
 .camp-ops-root textarea:focus,
 .camp-ops-root .custom-select.is-open .custom-select-trigger,
 .camp-ops-root .custom-select-trigger:hover {
-  border-color: var(--focus) !important;
-  box-shadow: 0 0 0 3px var(--glow) !important;
+  border-color: color-mix(in srgb, var(--focus) 35%, var(--line)) !important;
+  box-shadow: var(--dropdown-focus-ring) !important;
   outline: none;
   background: var(--bg-elevated) !important;
 }
@@ -565,10 +565,12 @@
   border-color: var(--line) !important;
 }
 
-.camp-ops-root .paste-context-field select {
-  background: var(--bg-elevated) !important;
+.camp-ops-root .paste-context-field select,
+.camp-ops-root .paste-context-field select:disabled {
+  background-color: var(--bg-elevated) !important;
   border-color: var(--line) !important;
   color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink);
 }
 
 .camp-ops-root .email-detail-meta {

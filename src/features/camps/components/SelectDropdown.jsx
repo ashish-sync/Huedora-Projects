@@ -57,7 +57,7 @@ export function SelectDropdown({
         onClick={() => setOpen((current) => !current)}
       >
         <span className="custom-select-value">{selectedOption?.label || placeholder}</span>
-        <span className="custom-select-chevron" aria-hidden="true" />
+        <span className="tylo-dropdown-chevron custom-select-chevron" aria-hidden="true" />
       </button>
       {open && (
         <ul className="custom-select-menu" role="listbox" aria-label={label || placeholder}>

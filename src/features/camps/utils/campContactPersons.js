@@ -1,3 +1,5 @@
+import { formatContactPersonName } from '../../../shared/textFormat.js';
+
 export const CONTACT_PERSON_LEVELS = [
   'Territory Manager',
   'Area Manager',
@@ -34,6 +36,10 @@ export function normalizeContactPersonLevel(level) {
     || DEFAULT_CONTACT_PERSON_LEVEL;
 }
 
+function formatName(value) {
+  return formatContactPersonName(String(value ?? '').trim());
+}
+
 export function emptyContactPerson(level = DEFAULT_CONTACT_PERSON_LEVEL) {
   return {
     level: normalizeContactPersonLevel(level),
@@ -47,13 +53,13 @@ export function normalizeContactPersons(source = {}) {
   if (list.length) {
     return list.map((item) => ({
       level: normalizeContactPersonLevel(item?.level ?? item?.contactPersonLevel),
-      name: String(item?.name ?? item?.fieldPersonName ?? '').trim(),
+      name: formatName(item?.name ?? item?.fieldPersonName),
       phone: String(item?.phone ?? item?.fieldPersonPhone ?? '').trim(),
     }));
   }
 
   const legacy = emptyContactPerson(source.contactPersonLevel || DEFAULT_CONTACT_PERSON_LEVEL);
-  legacy.name = String(source.fieldPersonName || '').trim();
+  legacy.name = formatName(source.fieldPersonName);
   legacy.phone = String(source.fieldPersonPhone || '').trim();
 
   if (legacy.name || legacy.phone) {

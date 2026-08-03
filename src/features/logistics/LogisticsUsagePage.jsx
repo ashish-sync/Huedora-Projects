@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 export default function LogisticsUsagePage() {
   const { can } = useAuth();
@@ -76,26 +78,31 @@ export default function LogisticsUsagePage() {
         </div>
       </div>
 
-      <div className="inv-toolbar logistics-toolbar">
-        <input
-          className="esign-search inv-search"
-          placeholder="Filter by HCW…"
+      <MasterFilterShell
+        actions={
+          <>
+            <button className="btn secondary btn-compact" type="button" onClick={load}>
+              Refresh
+            </button>
+            <Link className="btn secondary btn-compact" to="/camps/manage">
+              Open Camp One
+            </Link>
+          </>
+        }
+      >
+        <MasterSearchField
           value={hcw}
           onChange={(e) => setHcw(e.target.value)}
+          placeholder="Filter by HCW…"
+          aria-label="Filter by HCW"
         />
-        <input
-          className="esign-search inv-search"
-          placeholder="Filter by location…"
+        <MasterSearchField
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+          placeholder="Filter by location…"
+          aria-label="Filter by location"
         />
-        <button className="btn secondary" type="button" onClick={load}>
-          Search
-        </button>
-        <Link className="btn secondary" to="/camps/manage">
-          Open Camp One
-        </Link>
-      </div>
+      </MasterFilterShell>
 
       <div className="card card--flush table-wrap">
         <table className="inv-table">

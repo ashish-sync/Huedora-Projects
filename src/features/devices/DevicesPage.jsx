@@ -6,6 +6,8 @@ import { MODULE, FIELD, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import {
   OWNERSHIP_TYPE_OPTIONS,
@@ -486,70 +488,74 @@ export default function DevicesPage() {
         </form>
       )}
 
-      <section className="am-catalog card card--flush">
-        <div className="am-toolbar">
-          <input
-            className="esign-search am-search"
-            placeholder="Search name, serial, custodian, city, state…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && load()}
-          />
-          <AdaptiveSelect
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            aria-label="Filter by ownership type"
-          >
-            <option value="">All ownership types</option>
-            {OWNERSHIP_TYPE_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <AdaptiveSelect
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            aria-label="Filter by asset status"
-          >
-            <option value="">All statuses</option>
-            {ASSET_STATUS_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <AdaptiveSelect
-            value={filterCustody}
-            onChange={(e) => setFilterCustody(e.target.value)}
-            aria-label="Filter by custody"
-          >
-            <option value="">All custody</option>
-            {ASSET_CUSTODY_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </AdaptiveSelect>
-          <button className="btn secondary" type="button" onClick={load}>
-            Search
-          </button>
-          {(filterStatus || filterCustody || filterType) && (
-            <button
-              type="button"
-              className="filter-chip"
-              onClick={() => {
-                setFilterStatus('');
-                setFilterCustody('');
-                setFilterType('');
-              }}
-            >
-              Clear filters
-              <span aria-hidden="true">×</span>
+      <MasterFilterShell
+        actions={
+          <>
+            <button className="btn secondary btn-compact" type="button" onClick={load}>
+              Refresh
             </button>
-          )}
-        </div>
+            {filterStatus || filterCustody || filterType ? (
+              <button
+                type="button"
+                className="btn btn-ghost btn-compact"
+                onClick={() => {
+                  setFilterStatus('');
+                  setFilterCustody('');
+                  setFilterType('');
+                }}
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        <MasterSearchField
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search name, serial, custodian, city, state…"
+          aria-label="Search assets"
+        />
+        <AdaptiveSelect
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          aria-label="Filter by ownership type"
+        >
+          <option value="">All ownership types</option>
+          {OWNERSHIP_TYPE_OPTIONS.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          aria-label="Filter by asset status"
+        >
+          <option value="">All statuses</option>
+          {ASSET_STATUS_OPTIONS.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          value={filterCustody}
+          onChange={(e) => setFilterCustody(e.target.value)}
+          aria-label="Filter by custody"
+        >
+          <option value="">All custody</option>
+          {ASSET_CUSTODY_OPTIONS.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </AdaptiveSelect>
+      </MasterFilterShell>
 
+      <section className="am-catalog card card--flush">
         <div className="am-table-wrap">
           <table className="am-table">
             <thead>

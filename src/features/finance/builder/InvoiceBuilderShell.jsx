@@ -6,7 +6,7 @@ import { exportDocumentPdf } from './exportInvoicePdf.js';
 import './export-invoice.css';
 import './builder.css';
 
-function SaveIndicator({ state, savedAt }) {
+function SaveIndicator({ state, savedAt, status }) {
   if (state === 'saving') {
     return <span className="ib-save ib-save--saving">Saving…</span>;
   }
@@ -17,7 +17,10 @@ function SaveIndicator({ state, savedAt }) {
       </span>
     );
   }
-  return <span className="ib-save ib-save--idle">Autosave on</span>;
+  if (status && status !== 'Draft') {
+    return <span className="ib-save ib-save--idle">{status}</span>;
+  }
+  return <span className="ib-save ib-save--idle">Server autosave</span>;
 }
 
 function ShortcutsModal({ open, onClose, newDocLabel = 'New document' }) {
@@ -59,14 +62,23 @@ export default function InvoiceBuilderShell({
   panelAriaLabel = 'Document fields',
   exportFilePrefix = 'document',
   docNumber,
+  status = 'Draft',
   grandTotal,
   saveState,
   savedAt,
+  error,
+  busyAction = '',
+  readOnly = false,
+  loadingDoc = false,
   panelOpen,
   onTogglePanel,
   onPrint,
   onSaveNow,
   onExportPdf,
+  onSubmit,
+  onApprove,
+  onReject,
+  onIssue,
   onNewInvoice,
   shortcutsOpen,
   onShortcutsClose,
@@ -77,7 +89,7 @@ export default function InvoiceBuilderShell({
 }) {
   const previewRef = useRef(null);
   const [exporting, setExporting] = useState(false);
-  const { wrapRef, scale, zoomIn, zoomOut, fitToWidth } = usePreviewScale();
+  const { wrapRef, scale, zoomIn, zoomOut, resetZoom } = usePreviewScale();
 
   const handleSaveAndExport = useCallback(async () => {
     setExporting(true);
@@ -87,7 +99,7 @@ export default function InvoiceBuilderShell({
         requestAnimationFrame(() => requestAnimationFrame(resolve));
       });
       if (onExportPdf) {
-        onExportPdf();
+        await onExportPdf();
         return;
       }
       const el = previewRef.current;
@@ -106,18 +118,14 @@ export default function InvoiceBuilderShell({
     }
   }, [exportRef, handleSaveAndExport]);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => fitToWidth());
-    return () => cancelAnimationFrame(id);
-  }, [panelOpen, fitToWidth]);
-
-  const shellClass = `ib-shell${panelOpen ? ' ib-shell--panel-open' : ''}`;
+  const shellClass = `ib-shell${panelOpen ? ' ib-shell--panel-open' : ''}${readOnly ? ' ib-shell--readonly' : ''}`;
+  const busy = Boolean(busyAction) || exporting || loadingDoc;
 
   return (
     <div className={shellClass}>
       <header className="ib-toolbar">
         <div className="ib-toolbar-left">
-          <Link to="/finance" className="ib-icon-btn" title="Back to Finance" aria-label="Back">
+          <Link to="/finance/build" className="ib-icon-btn" title="Back to document types" aria-label="Back">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M15 18l-6-6 6-6" />
             </svg>
@@ -125,9 +133,11 @@ export default function InvoiceBuilderShell({
           <div className="ib-toolbar-title">
             <span className="ib-toolbar-label">{docTypeLabel}</span>
             <span className="ib-toolbar-doc">{docNumber || 'Draft'}</span>
-            <span className="ib-toolbar-sub">Click any field on the document to edit</span>
+            <span className={`ib-status-pill ib-status-pill--${String(status || 'draft').toLowerCase()}`}>
+              {status || 'Draft'}
+            </span>
           </div>
-          <SaveIndicator state={saveState} savedAt={savedAt} />
+          <SaveIndicator state={saveState} savedAt={savedAt} status={status} />
         </div>
 
         <div className="ib-toolbar-center">
@@ -138,7 +148,7 @@ export default function InvoiceBuilderShell({
         </div>
 
         <div className="ib-toolbar-right">
-          <button type="button" className="ib-text-btn" onClick={onNewInvoice} title={newDocLabel}>
+          <button type="button" className="ib-text-btn" onClick={onNewInvoice} title={newDocLabel} disabled={busy}>
             {newDocLabel}
           </button>
           <button type="button" className="ib-text-btn" onClick={onShowShortcuts} title="Shortcuts (?)">
@@ -147,14 +157,58 @@ export default function InvoiceBuilderShell({
           <button type="button" className="ib-text-btn" onClick={onPrint} title="Print (⌘P)">
             Print
           </button>
+          {!readOnly && onSubmit ? (
+            <button
+              type="button"
+              className="ib-text-btn"
+              disabled={busy || status !== 'Draft'}
+              onClick={() => onSubmit?.()}
+              title="Submit for approval"
+            >
+              {busyAction === 'submit' ? 'Submitting…' : 'Submit'}
+            </button>
+          ) : null}
+          {status === 'Submitted' && onApprove ? (
+            <button
+              type="button"
+              className="ib-text-btn"
+              disabled={busy}
+              onClick={() => onApprove?.()}
+              title="Approve document"
+            >
+              {busyAction === 'approve' ? 'Approving…' : 'Approve'}
+            </button>
+          ) : null}
+          {status === 'Submitted' && onReject ? (
+            <button
+              type="button"
+              className="ib-text-btn"
+              disabled={busy}
+              onClick={() => onReject?.()}
+              title="Reject to draft"
+            >
+              {busyAction === 'reject' ? 'Rejecting…' : 'Reject'}
+            </button>
+          ) : null}
+          {onIssue && ['Draft', 'Submitted', 'Approved', 'Uploaded'].includes(status) ? (
+            <button
+              type="button"
+              className="ib-text-btn"
+              disabled={busy}
+              onClick={() => onIssue?.()}
+              title="Issue document (assigns number)"
+            >
+              {busyAction === 'issue' ? 'Issuing…' : 'Issue'}
+            </button>
+          ) : null}
           <button
             type="button"
             className="ib-primary-btn"
-            disabled={exporting}
+            disabled={busy}
             onClick={handleSaveAndExport}
             title="Save & export PDF (⌘S)"
           >
-            {exporting ? 'Saving…' : 'Save & Export'}
+            {exporting ? 'Saving…' : readOnly ? 'Export PDF' : 'Save & Export'}
           </button>
           <button
             type="button"
@@ -171,29 +225,42 @@ export default function InvoiceBuilderShell({
         </div>
       </header>
 
+      {error ? (
+        <div className="ib-error-banner" role="alert">
+          {error}
+        </div>
+      ) : null}
+      {loadingDoc ? (
+        <div className="ib-loading-banner" role="status">
+          Loading document…
+        </div>
+      ) : null}
+
       <div className="ib-workspace">
         <main className="ib-canvas" ref={wrapRef}>
-          <div
-            className="ib-page-stage"
-            style={{ width: A4_LANDSCAPE_PX.w * scale, height: A4_LANDSCAPE_PX.h * scale }}
-          >
+          <div className="ib-canvas-viewport">
             <div
-              className="ib-page-scaler"
-              style={{
-                transform: `scale(${scale})`,
-                width: A4_LANDSCAPE_PX.w,
-                height: A4_LANDSCAPE_PX.h,
-                transformOrigin: 'top center',
-              }}
+              className="ib-page-stage"
+              style={{ width: A4_LANDSCAPE_PX.w * scale, height: A4_LANDSCAPE_PX.h * scale }}
             >
-              {typeof children === 'function' ? children(previewRef) : children}
+              <div
+                className="ib-page-scaler"
+                style={{
+                  transform: `scale(${scale})`,
+                  width: A4_LANDSCAPE_PX.w,
+                  height: A4_LANDSCAPE_PX.h,
+                  transformOrigin: 'top center',
+                }}
+              >
+                {typeof children === 'function' ? children(previewRef) : children}
+              </div>
             </div>
           </div>
           <div className="ib-zoom" role="group" aria-label="Zoom">
             <button type="button" className="ib-zoom-btn" onClick={zoomOut} aria-label="Zoom out">
               −
             </button>
-            <button type="button" className="ib-zoom-pct" onClick={fitToWidth}>
+            <button type="button" className="ib-zoom-pct" onClick={resetZoom} title="Reset zoom to 70%">
               {Math.round(scale * 100)}%
             </button>
             <button type="button" className="ib-zoom-btn" onClick={zoomIn} aria-label="Zoom in">

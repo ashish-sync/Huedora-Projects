@@ -85,12 +85,15 @@ export function TotalsStrip({ rows, grandLabel = 'Grand Total', grandValue }) {
   );
 }
 
-export function FileDrop({ label, accept = 'image/*', onFile, previewUrl }) {
+export function FileDrop({ label, accept = 'image/*', onFile, previewUrl, className = '' }) {
   return (
-    <div className="doc-file-drop">
+    <div className={`doc-file-drop ${className}`.trim()}>
       <label className={`doc-file-drop-label${previewUrl ? ' has-preview' : ''}`}>
         {previewUrl ? (
-          <img src={previewUrl} alt="" className="doc-file-drop-preview" />
+          <>
+            <img src={previewUrl} alt="" className="doc-file-drop-preview" />
+            <span className="doc-file-drop-replace-hint">Click to replace</span>
+          </>
         ) : (
           <>
             <span className="doc-file-drop-icon" aria-hidden="true">

@@ -5,13 +5,21 @@ import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
 import {
   DESIGNATION_ACCESS_TEMPLATES,
-  DESIGNATION_ROLE_NAMES,
   getDesignationAccessTemplate,
-  roleIdsForDesignationTemplate,
 } from './designationAccess.js';
+import {
+  buildUserAccessDraft,
+  hasAnyModuleAccess,
+  permissionsFromModuleMatrix,
+  tierIsOnInMatrix,
+  tiersForModule,
+  toggleModuleTierInMatrix,
+} from './moduleAccessTiers.js';
 
 const EMPTY_USER = {
   email: '',
@@ -23,25 +31,17 @@ const EMPTY_USER = {
   password: '',
   passwordConfirm: '',
   roleIds: [],
+  moduleAccess: {},
   isActive: true,
 };
-
-const DEFAULT_ACTIONS = [
-  { id: 'all', label: 'All Access' },
-  { id: 'view', label: 'View' },
-  { id: 'add', label: 'Add' },
-  { id: 'delete', label: 'Delete' },
-  { id: 'upload', label: 'Upload' },
-  { id: 'request', label: 'Request' },
-  { id: 'approve', label: 'Approve' },
-];
 
 function roleIdOf(r) {
   return String(r?._id || r?.id || r || '');
 }
 
-function buildUserDraftFromRecord(user) {
+function buildUserDraftFromRecord(user, modules, roles) {
   if (!user) return { ...EMPTY_USER };
+  const access = buildUserAccessDraft(user, modules, roles, roleIdOf);
   return {
     email: user.email || '',
     username: user.username || '',
@@ -51,9 +51,24 @@ function buildUserDraftFromRecord(user) {
     reportingManagerId: user.reportingManagerId ? String(user.reportingManagerId) : '',
     password: '',
     passwordConfirm: '',
-    roleIds: (user.roles || []).map(roleIdOf).filter(Boolean),
+    roleIds: access.roleIds,
+    moduleAccess: access.moduleAccess,
     isActive: user.isActive !== false,
   };
+}
+
+function resolveAccessPayload(userDraft, modules, roles) {
+  const adminRole = roles.find((r) => r.permissions?.includes('*'));
+  const adminRoleId = adminRole ? roleIdOf(adminRole) : '';
+  const hasAdmin = Boolean(adminRoleId && userDraft.roleIds.includes(adminRoleId));
+  if (hasAdmin) {
+    return { roleIds: [adminRoleId], grantedPermissions: [] };
+  }
+  const grantedPermissions = permissionsFromModuleMatrix(modules, userDraft.moduleAccess);
+  if (!grantedPermissions.length) {
+    return null;
+  }
+  return { roleIds: [], grantedPermissions };
 }
 
 function mergeUserRecord(users, saved) {
@@ -65,87 +80,9 @@ function mergeUserRecord(users, saved) {
   return next;
 }
 
-function draftFromUserRecord(user, roles, templates) {
-  const draft = buildUserDraftFromRecord(user);
-  const template = getDesignationAccessTemplate(draft.designation, templates);
-  if (!template || !roles.length) return draft;
-  const roleIds = roleIdsForDesignationTemplate(template, roles, roleIdOf);
-  if (!roleIds.length) return draft;
-  return { ...draft, roleIds };
-}
-
 function formatWhen(iso) {
   if (!iso) return null;
   return formatDateTime(iso) === '-' ? null : formatDateTime(iso);
-}
-
-function modulePermissionKeys(module) {
-  return [...new Set(Object.values(module?.actions || {}).flat().filter(Boolean))];
-}
-
-function permissionKeysForModules(moduleList) {
-  const keys = new Set();
-  for (const m of moduleList) {
-    for (const k of modulePermissionKeys(m)) keys.add(k);
-  }
-  return keys;
-}
-
-function roleTouchesModules(role, moduleIds, modules) {
-  if (!moduleIds.length) return false;
-  if (role?.permissions?.includes('*')) return true;
-  const selected = modules.filter((m) => moduleIds.includes(m.id));
-  const keys = permissionKeysForModules(selected);
-  return (role?.permissions || []).some((p) => keys.has(p));
-}
-
-function actionKeys(module, actionId) {
-  return module?.actions?.[actionId] || [];
-}
-
-function keysGranted(permissions, keys) {
-  if (!keys.length) return false;
-  const set = new Set(permissions || []);
-  if (set.has('*')) return true;
-  return keys.every((k) => set.has(k));
-}
-
-function detectModuleActions(module, permissions) {
-  const perms = permissions || [];
-  const available = ACCESS_ACTION_IDS(module);
-  if (perms.includes('*')) return available;
-  if (available.includes('all') && keysGranted(perms, actionKeys(module, 'all'))) {
-    return available;
-  }
-  const on = [];
-  for (const id of available) {
-    if (id === 'all') continue;
-    if (keysGranted(perms, actionKeys(module, id))) on.push(id);
-  }
-  return on;
-}
-
-function ACCESS_ACTION_IDS(module) {
-  return Object.keys(module?.actions || {}).filter((id) => module.actions[id]?.length);
-}
-
-function summarizeRoleForModules(role, moduleIds, modules) {
-  if (role?.permissions?.includes('*')) return 'Admin all Access';
-  const selected = modules.filter((m) => moduleIds.includes(m.id));
-  const bits = [];
-  for (const m of selected) {
-    const actions = detectModuleActions(m, role.permissions || []).filter((a) => a !== 'all');
-    const labels = actions.map((id) => {
-      const found = DEFAULT_ACTIONS.find((a) => a.id === id);
-      return found?.label || id;
-    });
-    if (detectModuleActions(m, role.permissions || []).includes('all')) {
-      bits.push(`${m.label}: All Access`);
-    } else if (labels.length) {
-      bits.push(`${m.label}: ${labels.join(' + ')}`);
-    }
-  }
-  return bits.length ? bits.join(' · ') : 'No matching rights';
 }
 
 export default function RolePermissionMasterPage() {
@@ -197,11 +134,6 @@ export default function RolePermissionMasterPage() {
       return hay.includes(q);
     });
   }, [users, userQ]);
-
-  const designationTemplate = useMemo(
-    () => getDesignationAccessTemplate(userDraft.designation, designationTemplates),
-    [userDraft.designation, designationTemplates]
-  );
 
   const loadRoles = () =>
     Promise.all([api('/users/roles'), api('/users/permissions')]).then(([r, p]) => {
@@ -268,47 +200,20 @@ export default function RolePermissionMasterPage() {
     if (!user) return;
 
     syncedUserIdRef.current = userKey;
-    setUserDraft(draftFromUserRecord(user, roles, designationTemplates));
-  }, [editingUserId, creatingUser, users, roles, designationTemplates]);
-
-  useEffect(() => {
-    if (creatingUser || !editingUserId || !roles.length) return;
-    const user = users.find((u) => String(u.id) === String(editingUserId));
-    if (!user) return;
-    const template = getDesignationAccessTemplate(user.designation, designationTemplates);
-    if (!template) return;
-    const expectedRoleIds = roleIdsForDesignationTemplate(template, roles, roleIdOf);
-    if (!expectedRoleIds.length) return;
-    setUserDraft((prev) => {
-      const same =
-        expectedRoleIds.length === prev.roleIds.length
-        && expectedRoleIds.every((id) => prev.roleIds.includes(id));
-      if (same) return prev;
-      return {
-        ...prev,
-        designation: user.designation || prev.designation,
-        roleIds: expectedRoleIds,
-      };
-    });
-  }, [roles, designationTemplates, editingUserId, creatingUser, users]);
-
-  const applyDesignationAccess = (designation) => {
-    const template = getDesignationAccessTemplate(designation, designationTemplates);
-    if (!template) return;
-    const roleIds = roleIdsForDesignationTemplate(template, roles, roleIdOf);
-    if (!roleIds.length) return;
-    setUserDraft((prev) => ({ ...prev, designation, roleIds }));
-  };
+    setUserDraft(buildUserDraftFromRecord(user, modules, roles));
+  }, [editingUserId, creatingUser, users, modules, roles]);
 
   const toggleUserRole = (roleId) => {
-    if (!canWrite || designationTemplate) return;
+    if (!canWrite) return;
     const id = String(roleId);
     const role = roles.find((r) => roleIdOf(r) === id);
     const isAdmin = role?.permissions?.includes('*');
     setUserDraft((prev) => {
       const has = prev.roleIds.includes(id);
       if (isAdmin) {
-        return { ...prev, roleIds: has ? [] : [id] };
+        return has
+          ? { ...prev, roleIds: [], moduleAccess: { ...prev.moduleAccess } }
+          : { ...prev, roleIds: [id], moduleAccess: {} };
       }
       if (has) {
         return { ...prev, roleIds: prev.roleIds.filter((x) => x !== id) };
@@ -319,31 +224,15 @@ export default function RolePermissionMasterPage() {
     });
   };
 
-  const rolesForModule = (moduleId) =>
-    roles.filter((r) => {
-      if (r.permissions?.includes('*')) return false;
-      if (DESIGNATION_ROLE_NAMES.has(r.name)) return false;
-      return roleTouchesModules(r, [moduleId], modules);
-    });
-
-  const toggleAllRolesForModule = (moduleId) => {
-    if (!canWrite || designationTemplate) return;
-    const appRoles = rolesForModule(moduleId);
-    const ids = appRoles.map((r) => roleIdOf(r));
-    if (!ids.length) return;
+  const toggleModuleTier = (module, tier) => {
+    if (!canWrite) return;
     setUserDraft((prev) => {
       const adminRole = roles.find((r) => r.permissions?.includes('*'));
       const adminId = adminRole ? roleIdOf(adminRole) : '';
-      if (adminId && prev.roleIds.includes(adminId)) {
-        return prev;
-      }
-      const allOn = ids.every((id) => prev.roleIds.includes(id));
-      if (allOn) {
-        return { ...prev, roleIds: prev.roleIds.filter((id) => !ids.includes(id)) };
-      }
       return {
         ...prev,
-        roleIds: [...new Set([...prev.roleIds.filter((id) => id !== adminId), ...ids])],
+        roleIds: adminId ? prev.roleIds.filter((x) => x !== adminId) : prev.roleIds,
+        moduleAccess: toggleModuleTierInMatrix(prev.moduleAccess, module, tier),
       };
     });
   };
@@ -385,17 +274,9 @@ export default function RolePermissionMasterPage() {
   const saveUser = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
-    const template = getDesignationAccessTemplate(userDraft.designation, designationTemplates);
-    const roleIds =
-      template && roles.length
-        ? roleIdsForDesignationTemplate(template, roles, roleIdOf)
-        : userDraft.roleIds;
-    if (!roleIds.length) {
-      setError(
-        template
-          ? 'Camp Coordinator role is not loaded yet. Refresh the page and try again.'
-          : 'Assign at least one role on an application below'
-      );
+    const access = resolveAccessPayload(userDraft, modules, roles);
+    if (!access) {
+      setError('Assign at least one access option in Control Center below');
       return;
     }
     const pwd = userDraft.password.trim();
@@ -424,7 +305,8 @@ export default function RolePermissionMasterPage() {
             designation: userDraft.designation,
             reportingManagerId: userDraft.reportingManagerId || null,
             password: pwd,
-            roleIds,
+            roleIds: access.roleIds,
+            grantedPermissions: access.grantedPermissions,
           },
         });
         setCreatingUser(false);
@@ -432,7 +314,7 @@ export default function RolePermissionMasterPage() {
         syncedUserIdRef.current = String(data.id);
         setUsers((prev) => mergeUserRecord(prev, data));
         setEditingUserId(data.id);
-        setUserDraft(draftFromUserRecord(data, roles, designationTemplates));
+        setUserDraft(buildUserDraftFromRecord(data, modules, roles));
         void loadUsers();
         setMsg('User created.');
       } else if (editingUserId) {
@@ -441,7 +323,8 @@ export default function RolePermissionMasterPage() {
           phone: userDraft.phone,
           designation: userDraft.designation,
           reportingManagerId: userDraft.reportingManagerId || null,
-          roleIds,
+          roleIds: access.roleIds,
+          grantedPermissions: access.grantedPermissions,
           isActive: userDraft.isActive,
         };
         if (pwd) body.password = pwd;
@@ -449,7 +332,7 @@ export default function RolePermissionMasterPage() {
         skipDraftSyncRef.current = true;
         syncedUserIdRef.current = String(data.id);
         setUsers((prev) => mergeUserRecord(prev, data));
-        setUserDraft(draftFromUserRecord(data, roles, designationTemplates));
+        setUserDraft(buildUserDraftFromRecord(data, modules, roles));
         void loadUsers();
         setMsg(
           pwd
@@ -491,50 +374,28 @@ export default function RolePermissionMasterPage() {
 
   const passwordChangedLabel = formatWhen(editingUser?.passwordChangedAt);
 
-  const renderDesignationAccessGrid = () => {
-    const templateModules = designationTemplate?.modules || [];
-    return (
-      <section className="rp-section rp-section--modules">
-        <h4>Access by application</h4>
-        <p className="muted rp-hint">
-          Access for <strong>{userDraft.designation}</strong> is fixed to{' '}
-          {designationTemplate?.summary || 'these applications only'}.
-        </p>
-        <div className="rp-module-grid">
-          {templateModules.map((entry) => {
-            const module = modules.find((m) => m.id === entry.moduleId);
-            if (!module) return null;
-            return (
-              <div key={entry.moduleId} className="rp-module-row is-active is-locked">
-                <div className="rp-module-card-copy">
-                  <strong>{module.label}</strong>
-                  <span className="muted">{module.description}</span>
-                </div>
-                <div className="rp-module-toggles">
-                  <span className="access-toggle is-on access-toggle--preset">{entry.access}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    );
-  };
-
   const renderUserAccessGrid = () => {
-    if (designationTemplate) return renderDesignationAccessGrid();
-
     const adminRole = roles.find((r) => r.permissions?.includes('*'));
     const adminRoleId = adminRole ? roleIdOf(adminRole) : '';
     const hasAdmin = Boolean(adminRoleId && userDraft.roleIds.includes(adminRoleId));
+    const designationTemplate = getDesignationAccessTemplate(
+      userDraft.designation,
+      designationTemplates
+    );
 
     return (
       <section className="rp-section rp-section--modules">
-        <h4>Access by application</h4>
+        <h4>Control Center</h4>
         <p className="muted rp-hint">
-          Tick roles on each application, or use All to select every role for that app. Admin covers
-          everything.
+          Choose what this person can do in each application independently. Viewer on one app does not
+          affect another. Use All for every option on that app only.
         </p>
+        {designationTemplate && (
+          <p className="muted rp-hint rp-hint--template">
+            Suggested bundle for <strong>{userDraft.designation}</strong>:{' '}
+            {designationTemplate.summary}
+          </p>
+        )}
         <div className="rp-module-grid">
           {adminRole && (
             <div className="rp-module-row rp-module-row--admin">
@@ -556,49 +417,39 @@ export default function RolePermissionMasterPage() {
             </div>
           )}
           {modules.map((m) => {
-            const appRoles = rolesForModule(m.id);
-            if (!appRoles.length) return null;
-            const roleIdsForModule = appRoles.map((r) => roleIdOf(r));
-            const allOn = roleIdsForModule.every((id) => userDraft.roleIds.includes(id));
-            const moduleActive = roleIdsForModule.some((id) => userDraft.roleIds.includes(id));
+            const moduleTiers = tiersForModule(m);
+            if (!moduleTiers.length) return null;
+            const moduleActive = hasAnyModuleAccess({ [m.id]: userDraft.moduleAccess[m.id] });
+            const allOn = tierIsOnInMatrix(m, { id: 'all' }, userDraft.moduleAccess);
             return (
               <div
                 key={m.id}
-                className={`rp-module-row ${hasAdmin ? 'is-muted' : ''} ${moduleActive ? 'is-active' : ''}`}
+                className={`rp-module-row ${hasAdmin ? 'is-muted' : ''} ${moduleActive || allOn ? 'is-active' : ''}`}
               >
                 <div className="rp-module-card-copy">
                   <strong>{m.label}</strong>
                   <span className="muted">{m.description}</span>
                 </div>
                 <div className="rp-module-toggles">
-                  <label
-                    className={`access-toggle access-toggle--all ${allOn ? 'is-on' : ''}`}
-                    title="Select all roles for this application"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={allOn}
-                      disabled={!canWrite || hasAdmin}
-                      onChange={() => toggleAllRolesForModule(m.id)}
-                    />
-                    All
-                  </label>
-                  {appRoles.map((r) => {
-                    const id = roleIdOf(r);
-                    const on = userDraft.roleIds.includes(id);
+                  {moduleTiers.map((tier) => {
+                    const on = tierIsOnInMatrix(m, tier, userDraft.moduleAccess);
                     return (
                       <label
-                        key={id}
-                        className={`access-toggle ${on ? 'is-on' : ''}`}
-                        title={summarizeRoleForModules(r, [m.id], modules)}
+                        key={`${m.id}-${tier.id}`}
+                        className={`access-toggle ${tier.id === 'all' ? 'access-toggle--all' : ''} ${on ? 'is-on' : ''}`}
+                        title={
+                          tier.id === 'all'
+                            ? 'Select every access level for this application'
+                            : `${tier.label} access for ${m.label}`
+                        }
                       >
                         <input
                           type="checkbox"
                           checked={on}
                           disabled={!canWrite || hasAdmin}
-                          onChange={() => toggleUserRole(id)}
+                          onChange={() => toggleModuleTier(m, tier)}
                         />
-                        {r.name}
+                        {tier.label}
                       </label>
                     );
                   })}
@@ -665,15 +516,17 @@ export default function RolePermissionMasterPage() {
           <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
               <h3>People</h3>
-              {canViewUsers && (
-                <input
-                  className="rp-search"
-                  placeholder="Search name, email, role…"
+            </div>
+            {canViewUsers ? (
+              <MasterFilterShell>
+                <MasterSearchField
                   value={userQ}
                   onChange={(e) => setUserQ(e.target.value)}
+                  placeholder="Search name, email, role…"
+                  aria-label="Search people"
                 />
-              )}
-            </div>
+              </MasterFilterShell>
+            ) : null}
             {!canViewUsers && (
               <p className="muted">You need users:read or users:write to list users.</p>
             )}
@@ -774,28 +627,9 @@ export default function RolePermissionMasterPage() {
                         value={userDraft.designation}
                         disabled={!canWrite}
                         placeholder="e.g. Healthcare Camp Coordinator"
-                        onChange={(e) => {
-                          const designation = e.target.value;
-                          const template = getDesignationAccessTemplate(
-                            designation,
-                            designationTemplates
-                          );
-                          if (template) {
-                            const nextRoleIds = roleIdsForDesignationTemplate(
-                              template,
-                              roles,
-                              roleIdOf
-                            );
-                            setUserDraft((prev) => ({
-                              ...prev,
-                              designation,
-                              roleIds: nextRoleIds.length ? nextRoleIds : prev.roleIds,
-                            }));
-                          } else {
-                            setUserDraft((prev) => ({ ...prev, designation }));
-                          }
-                        }}
-                        onBlur={(e) => applyDesignationAccess(e.target.value)}
+                        onChange={(e) =>
+                          setUserDraft((prev) => ({ ...prev, designation: e.target.value }))
+                        }
                       />
                       <datalist id="user-designation-options">
                         {designations.map((title) => (

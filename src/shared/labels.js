@@ -45,7 +45,9 @@ export const NAV = {
   PROFORMA: 'Proforma',
   PURCHASE_ORDERS: 'Purchase Orders',
   GENERATE: 'Generate',
-  CAMP_PAYOUTS: 'Camp Payouts',
+  INVOICE_BUILDER: 'Invoice Builder',
+  CAMP_PAYOUTS: 'Payout Queue',
+  PAYOUT_QUEUE: 'Payout Queue',
   ORG_MASTER: 'Organisation',
   CHARGESHEET: 'Chargesheet',
   PAYOUT: 'Payout',
@@ -69,12 +71,13 @@ export const MODULE_BLURB = {
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
   CAMP_MANAGEMENT: 'Camp operations — camps, lifecycle stages, and connectors.',
   ASSET_REQUESTS:
-    'Repair, maintenance, goods issue, training, reimbursement, hiring, and master data requests.',
+    'Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests.',
   LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
   INVENTORY_LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
-  FINANCE: 'Expenses, invoices, purchase orders, proforma, and credit notes.',
-  MASTER_DATA: 'Shared reference data for assets, inventory, movements, and documents.',
-  DASHBOARD: 'Review cross-module activity by date range.',
+  FINANCE: 'Payout queue, tax invoices, proforma, purchase orders, and credit notes.',
+  MASTER_DATA:
+    'Products, Expense Master, Contact Directory, Document Templates, Signatures, Client Master, and PIN Geography.',
+  DASHBOARD: 'Executive project health and module drill-down by date range.',
 };
 
 export const FIELD = {

@@ -10,6 +10,8 @@ import { formatDate } from '../../shared/dateFormat.js';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 const DOCUMENT_TYPES = [
   { value: 'LEASE', label: 'Lease' },
@@ -568,7 +570,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
         </p>
       )}
 
-      <div className="esign-sign-modes" role="tablist" aria-label="Document Master views">
+      <div className="esign-sign-modes" role="tablist" aria-label="Document Templates views">
         <button
           type="button"
           role="tab"
@@ -600,19 +602,21 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
       {view === 'templates' && (
         <div className="master-layout master-layout-list">
           <div className="card">
-            <div className="esign-toolbar" style={{ marginBottom: '0.85rem' }}>
-              <input
-                className="esign-search"
-                placeholder="Search templates…"
+            <MasterFilterShell
+              actions={
+                <button className="btn secondary btn-compact" type="button" onClick={load}>
+                  Refresh
+                </button>
+              }
+            >
+              <MasterSearchField
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && load()}
+                placeholder="Search templates…"
                 aria-label="Search templates"
               />
-              <button className="btn secondary" type="button" onClick={load}>
-                Search
-              </button>
-            </div>
+            </MasterFilterShell>
             <div className="table-wrap">
               <table>
                 <thead>

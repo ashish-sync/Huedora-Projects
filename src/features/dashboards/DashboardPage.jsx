@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import HealthcareInsightBanner from '../../components/HealthcareInsightBanner.jsx';
 import { MODULE, MODULE_BLURB } from '../../shared/labels.js';
 import { MESSAGES } from '../../shared/messages.js';
+import { WHY_WORK_COUNTS_INSIGHTS } from '../../shared/pickHealthcareInsight.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { loginExperience } from '../../shared/loginExperienceConfig.js';
 
@@ -117,7 +118,13 @@ const MODULES = [
     canShow: (can) =>
       can('logistics:master') ||
       can('logistics:write') ||
+      can('logistics:read') ||
       can('agreements:write') ||
+      can('agreements:read') ||
+      can('camps:read') ||
+      can('camps:request') ||
+      can('camps:approve') ||
+      can('finance:read') ||
       can('*'),
     icon: (
       <svg {...iconProps}>
@@ -179,45 +186,45 @@ export default function DashboardPage() {
 
       <header className="tylo-home-hero">
         <div className="tylo-home-hero-copy">
-          <p className="tylo-home-kicker">TYLO One</p>
-          <h1 id="tylo-modules-heading" className="tylo-home-prompt">
-            {MESSAGES.welcome(firstName)}
-          </h1>
-          <p className="tylo-home-lead">
-            Open an application area to continue: Asset One, Document One, Verification One,
-            Camp One, Request One, Master One, Movement One, or Finance One.
-          </p>
+          <h1 className="tylo-home-prompt">{MESSAGES.welcome(firstName)}</h1>
+          <p className="tylo-home-lead">Choose a module below to get started.</p>
         </div>
 
-        {canSeeDashboard && (
-          <div className="tylo-home-dash-action">
-            <Link className="btn tylo-home-dash-btn" to="/dashboard">
-              {MODULE.DASHBOARD}
-              <span aria-hidden="true"> →</span>
-            </Link>
-            <p className="tylo-home-dash-hint">Review any module by date range</p>
+        {(loginExperience.healthcareInsights || canSeeDashboard) && (
+          <div
+            className={`tylo-home-hero-rail${
+              loginExperience.healthcareInsights && canSeeDashboard
+                ? ''
+                : ' tylo-home-hero-rail--solo'
+            }`}
+          >
+            {loginExperience.healthcareInsights ? (
+              <HealthcareInsightBanner
+                variant="home"
+                userId={user?.id || user?._id || ''}
+                allowShuffle
+                sectionTitle="Why your work counts"
+                insightPool={WHY_WORK_COUNTS_INSIGHTS}
+              />
+            ) : null}
+
+            {canSeeDashboard ? (
+              <Link className="tylo-home-dash-panel" to="/dashboard">
+                <span className="tylo-home-dash-panel-copy">
+                  <span className="tylo-home-dash-panel-kicker">Cross-module</span>
+                  <span className="tylo-home-dash-panel-title">{MODULE.DASHBOARD}</span>
+                  <span className="tylo-home-dash-panel-hint">Review any module by date range</span>
+                </span>
+                <span className="tylo-home-dash-panel-arrow" aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            ) : null}
           </div>
         )}
       </header>
 
-      {loginExperience.healthcareInsights ? (
-        <HealthcareInsightBanner
-          variant="home"
-          userId={user?.id || user?._id || ''}
-          allowShuffle
-        />
-      ) : null}
-
-      <section className="tylo-home-modules" aria-labelledby="tylo-modules-heading">
-        <div className="tylo-home-section-head">
-          <h2 className="tylo-home-section-title">Modules</h2>
-          <p className="muted tylo-home-section-note">
-            {modules.length
-              ? `${modules.length} available for your role`
-              : 'No modules available for your role'}
-          </p>
-        </div>
-
+      <section className="tylo-home-modules" aria-label="Modules">
         {!modules.length ? (
           <p className="tylo-home-empty muted">Ask an administrator to grant module access.</p>
         ) : (

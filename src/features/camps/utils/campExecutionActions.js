@@ -1,4 +1,8 @@
 import { campStatusLabel, isExecutionClosedOut } from '../constants/campLifecycle.js';
+import { getCampStartDateTime } from './campSchedule.js';
+
+/** Mark executed is allowed only after this many minutes past camp start time. */
+export const MARK_EXECUTED_MINUTES_AFTER_START = 30;
 
 function isCampAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
@@ -6,7 +10,18 @@ function isCampAssigned(camp = {}) {
   return false;
 }
 
-export function getExecutionBlockers(camp = {}) {
+function hasFilled(value) {
+  return Boolean(String(value || '').trim());
+}
+
+export function isMarkExecutedTimingOpen(camp = {}, now = new Date()) {
+  const start = getCampStartDateTime(camp);
+  if (!start) return false;
+  const earliest = start.getTime() + MARK_EXECUTED_MINUTES_AFTER_START * 60 * 1000;
+  return now.getTime() >= earliest;
+}
+
+export function getExecutionBlockers(camp = {}, now = new Date()) {
   const blockers = [];
 
   if (['cancelled', 'rejected'].includes(camp.status)) {
@@ -33,9 +48,25 @@ export function getExecutionBlockers(camp = {}) {
     blockers.push('Assign a healthcare worker before marking this camp executed.');
   }
 
+  if (!hasFilled(camp.chargeableStatus)) {
+    blockers.push('Select Chargeable Status');
+  }
+  if (!hasFilled(camp.inTime)) {
+    blockers.push('Enter In Time');
+  }
+  if (!hasFilled(camp.attire)) {
+    blockers.push('Select Attire');
+  }
+
+  if (!isMarkExecutedTimingOpen(camp, now)) {
+    blockers.push(
+      `Camp can be marked executed only after ${MARK_EXECUTED_MINUTES_AFTER_START} minutes from start time`,
+    );
+  }
+
   return blockers;
 }
 
-export function canMarkCampExecuted(camp = {}) {
-  return getExecutionBlockers(camp).length === 0;
+export function canMarkCampExecuted(camp = {}, now = new Date()) {
+  return getExecutionBlockers(camp, now).length === 0;
 }

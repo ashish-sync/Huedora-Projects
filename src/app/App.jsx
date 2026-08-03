@@ -43,6 +43,7 @@ const AssetOverviewPage = lazy(() => import('../features/assets/AssetOverviewPag
 const MasterDataPage = lazy(() => import('../features/masters/MasterDataPage.jsx'));
 const FinanceLayout = lazy(() => import('../features/finance/FinanceLayout.jsx'));
 const FinanceOverviewPage = lazy(() => import('../features/finance/FinanceOverviewPage.jsx'));
+const FinanceBuilderPickerPage = lazy(() => import('../features/finance/FinanceBuilderPickerPage.jsx'));
 const InvoiceBuilderPage = lazy(() => import('../features/finance/builder/InvoiceBuilderPage.jsx'));
 const ProformaBuilderPage = lazy(() => import('../features/finance/builder/ProformaBuilderPage.jsx'));
 const PurchaseOrderBuilderPage = lazy(() => import('../features/finance/builder/PurchaseOrderBuilderPage.jsx'));
@@ -151,7 +152,7 @@ export default function App() {
                   <Route path="manage/:id/edit" element={<CampFormPage />} />
                   <Route path="import" element={<Navigate to="/camps/communications/upload" replace />} />
                   <Route path="chargesheet" element={<Navigate to="/camps/manage" replace />} />
-                  <Route path="payout" element={<Navigate to="/camps/manage" replace />} />
+                  <Route path="payout" element={<Navigate to="/finance/payouts" replace />} />
                   <Route path="communications" element={<CommunicationsLayout />}>
                     <Route index element={<Navigate to="paste" replace />} />
                     <Route path="paste" element={<CommunicationsPastePage />} />
@@ -167,19 +168,25 @@ export default function App() {
                 </Route>
                 <Route path="/finance" element={<FinanceLayout />}>
                   <Route index element={<FinanceOverviewPage />} />
-                  <Route path="build" element={<InvoiceBuilderPage />} />
+                  <Route path="build" element={<FinanceBuilderPickerPage />} />
+                  <Route path="build/invoice" element={<InvoiceBuilderPage />} />
+                  <Route path="build/invoice/:id" element={<InvoiceBuilderPage />} />
                   <Route path="build/proforma" element={<ProformaBuilderPage />} />
+                  <Route path="build/proforma/:id" element={<ProformaBuilderPage />} />
                   <Route path="build/purchase-order" element={<PurchaseOrderBuilderPage />} />
+                  <Route path="build/purchase-order/:id" element={<PurchaseOrderBuilderPage />} />
                   <Route path="build/credit-note" element={<CreditNoteBuilderPage />} />
+                  <Route path="build/credit-note/:id" element={<CreditNoteBuilderPage />} />
                   <Route path="master" element={<FinanceCommercialMasterPage />} />
-                  <Route path="camp-payouts" element={<FinanceCampPayoutsPage />} />
+                  <Route path="payouts" element={<FinanceCampPayoutsPage />} />
+                  <Route path="camp-payouts" element={<Navigate to="/finance/payouts" replace />} />
                   <Route path="generate" element={<FinanceGeneratePage />} />
                   <Route path="generate/:docSlug" element={<FinanceGeneratePage />} />
                   <Route path="expenses" element={<Navigate to="/finance" replace />} />
                   <Route path="invoices" element={<Navigate to="/finance" replace />} />
                   <Route path="proforma" element={<Navigate to="/finance" replace />} />
                   <Route path="purchase-orders" element={<Navigate to="/finance" replace />} />
-                  <Route path="generate-invoice" element={<Navigate to="/finance/build" replace />} />
+                  <Route path="generate-invoice" element={<Navigate to="/finance/build/invoice" replace />} />
                 </Route>
                 <Route path="/asset-requests" element={<AssetRequestsPage />} />
                 <Route path="/movements" element={<Navigate to="/asset-requests" replace />} />

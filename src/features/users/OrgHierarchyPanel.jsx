@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../shared/api.js';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 function getInitials(fullName = '', email = '') {
   const parts = String(fullName || '')
@@ -196,16 +198,14 @@ export default function OrgHierarchyPanel({ canWrite, onEditPerson }) {
       </div>
 
       {!loading && !error && people.length > 0 ? (
-        <div className="org-hierarchy-toolbar">
-          <input
-            type="search"
-            className="org-hierarchy-search rp-search"
-            placeholder="Search name, role, or email…"
+        <MasterFilterShell>
+          <MasterSearchField
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, role, or email…"
             aria-label="Search org hierarchy"
           />
-        </div>
+        </MasterFilterShell>
       ) : null}
 
       {error && <p className="error">{error}</p>}

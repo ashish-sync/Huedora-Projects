@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { bindAutofillBlock } from '../../../shared/suppressBrowserAutofill.js';
 import { useSearchDropdownKeyboard } from '../hooks/useSearchDropdownKeyboard';
 
 function filterOptions(options, query) {
@@ -70,7 +71,7 @@ export function SearchableOptionsInput({
   }, []);
 
   return (
-    <div className="client-search-field" ref={wrapperRef}>
+    <div className="client-search-field tylo-combobox-field" ref={wrapperRef}>
       <input
         id={id}
         value={value}
@@ -78,18 +79,20 @@ export function SearchableOptionsInput({
           onChange(e.target.value);
           openDropdown();
         }}
-        onFocus={openDropdown}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        autoComplete="off"
         disabled={disabled}
         required={required}
+        {...bindAutofillBlock({
+          onFocus: openDropdown,
+        })}
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
         aria-controls={id ? `${id}-listbox` : undefined}
         className={error ? 'input-invalid' : ''}
       />
+      <span className="tylo-dropdown-chevron tylo-combobox-chevron" aria-hidden="true" />
       {error && <small className="field-error">{error}</small>}
       {open && filteredOptions.length > 0 && (
         <div className="client-search-dropdown" id={id ? `${id}-listbox` : undefined} role="listbox">

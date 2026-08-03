@@ -5,8 +5,8 @@ import { PRODUCT_TYPES } from '../../shared/productTypes.js';
 export { PRODUCT_TYPES };
 
 export const MASTER_MODULES = [
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'movement', label: 'Movement One' },
+  { id: 'inventory', label: 'Products' },
+  { id: 'movement', label: 'Finance' },
   { id: 'document', label: 'Document One' },
   { id: 'camp', label: 'Camp One' },
 ];
@@ -87,12 +87,12 @@ export const MASTER_ENTITIES = [
   },
   {
     id: 'expense-categories',
-    label: 'Expense Categories',
+    label: 'Expense Master',
     module: 'movement',
     apiPath: '/logistics/expense-categories',
     fields: [
-      { name: 'name', label: 'Name', required: true },
-      { name: 'covers', label: 'Covers', type: 'textarea' },
+      { name: 'code', label: 'Code', required: true },
+      { name: 'name', label: 'Expense Category', required: true },
     ],
   },
   {
@@ -243,15 +243,9 @@ export const MASTER_HUB_GROUPS = [
     entityIds: ['products'],
   },
   {
-    id: 'business-partners',
-    label: 'Partners',
-    scope: 'logistics',
-    entityIds: ['parties'],
-  },
-  {
     id: 'finance-masters',
     label: 'Finance',
-    scope: 'logistics',
+    scope: 'movement',
     entityIds: ['expense-categories'],
   },
   {

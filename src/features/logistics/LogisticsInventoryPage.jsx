@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 
@@ -193,13 +195,26 @@ export default function LogisticsInventoryPage({ productType = '' } = {}) {
         ))}
       </div>
 
-      <div className="inv-toolbar logistics-toolbar">
-        <input
-          className="esign-search inv-search"
-          placeholder="Search name, SKU, serial, IMEI…"
+      <MasterFilterShell
+        actions={
+          <>
+            <button className="btn secondary btn-compact" type="button" onClick={load}>
+              Refresh
+            </button>
+            {canWrite ? (
+              <button className="btn btn-compact" type="button" onClick={() => (formOpen ? setFormOpen(false) : openCreate())}>
+                {formOpen ? 'Close form' : '+ Add stock item'}
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        <MasterSearchField
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search name, SKU, serial, IMEI…"
+          aria-label="Search inventory"
         />
         <AdaptiveSelect value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
           <option value="">All warehouses</option>
@@ -217,15 +232,7 @@ export default function LogisticsInventoryPage({ productType = '' } = {}) {
             </option>
           ))}
         </AdaptiveSelect>
-        <button className="btn secondary" type="button" onClick={load}>
-          Search
-        </button>
-        {canWrite && (
-          <button className="btn" type="button" onClick={() => (formOpen ? setFormOpen(false) : openCreate())}>
-            {formOpen ? 'Close form' : '+ Add stock item'}
-          </button>
-        )}
-      </div>
+      </MasterFilterShell>
 
       {canWrite && formOpen && (
         <form className="card logistics-form" onSubmit={save}>

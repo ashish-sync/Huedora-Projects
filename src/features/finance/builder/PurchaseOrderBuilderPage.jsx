@@ -23,6 +23,16 @@ export default function PurchaseOrderBuilderPage() {
     updateTerm,
     addTerm,
     newPurchaseOrder,
+    status,
+    error,
+    busyAction,
+    readOnly,
+    loadingDoc,
+    submitDocument,
+    approveDocument,
+    rejectDocument,
+    issueDocument,
+    exportServerPdf,
   } = usePurchaseOrderBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -45,13 +55,23 @@ export default function PurchaseOrderBuilderPage() {
       panelAriaLabel="Purchase order fields"
       exportFilePrefix="purchase-order"
       docNumber={form.po?.documentNumber}
+      status={status}
       grandTotal={formatMoney(totals?.grandTotal)}
       saveState={saveState}
       savedAt={savedAt}
+      error={error}
+      busyAction={busyAction}
+      readOnly={readOnly}
+      loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
       onPrint={handlePrint}
       onSaveNow={saveNow}
+      onExportPdf={exportServerPdf}
+      onSubmit={submitDocument}
+      onApprove={approveDocument}
+      onReject={rejectDocument}
+      onIssue={issueDocument}
       onNewInvoice={newPurchaseOrder}
       shortcutsOpen={shortcutsOpen}
       onShortcutsClose={() => setShortcutsOpen(false)}
@@ -75,7 +95,7 @@ export default function PurchaseOrderBuilderPage() {
           form={form}
           totals={totals}
           previewRef={previewRef}
-          editable
+          editable={!readOnly}
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}

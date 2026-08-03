@@ -5,6 +5,8 @@ import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -367,40 +369,6 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         )
       }
       kpis={embedded ? [] : [{ label: 'Contacts', value: listMeta.total || rows.length }]}
-      toolbar={
-        <>
-          <input
-            className="esign-search"
-            placeholder="Search name, email, category, organization, city…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && load()}
-          />
-          <button
-            className="btn secondary"
-            type="button"
-            onClick={() => {
-              setPage(1);
-              load();
-            }}
-          >
-            Search
-          </button>
-          {excelConfig ? (
-            <MasterExcelToolbar
-              {...excelConfig}
-              canImport={canWriteContacts}
-              onImportComplete={(data) => {
-                setImportMsg(
-                  `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors`
-                );
-                load();
-              }}
-              onError={(message) => setError(message)}
-            />
-          ) : null}
-        </>
-      }
     >
       {error && (
         <FeedbackBanner variant="error">{error}</FeedbackBanner>
@@ -408,6 +376,45 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       {importMsg && (
         <FeedbackBanner variant="info">{importMsg}</FeedbackBanner>
       )}
+
+      <MasterFilterShell
+        actions={
+          <>
+            {excelConfig ? (
+              <MasterExcelToolbar
+                {...excelConfig}
+                canImport={canWriteContacts}
+                onImportComplete={(data) => {
+                  setImportMsg(
+                    `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors`
+                  );
+                  load();
+                }}
+                onError={(message) => setError(message)}
+                compact
+              />
+            ) : null}
+            <button
+              className="btn secondary btn-compact"
+              type="button"
+              onClick={() => {
+                setPage(1);
+                load();
+              }}
+            >
+              Refresh
+            </button>
+          </>
+        }
+      >
+        <MasterSearchField
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search name, email, category, organization, city…"
+          aria-label="Search contacts"
+        />
+      </MasterFilterShell>
 
       <div className="cd-layout">
         <div className="cd-list card card--flush">

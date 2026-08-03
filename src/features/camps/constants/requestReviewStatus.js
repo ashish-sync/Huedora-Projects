@@ -68,12 +68,3 @@ export function resolveRequestReviewStatus(camp = {}, now = new Date()) {
   }
   return camp.requestReviewStatus || '';
 }
-
-export const REQUEST_REVIEW_FILTER_OPTIONS = [
-  { value: '', label: 'Camps in Request' },
-  { value: 'review_pending', label: 'Review Pending' },
-  { value: 'review_overdue', label: 'Review Overdue' },
-  { value: 'information_requested', label: 'Information Requested' },
-  { value: 'request_approved', label: 'Request Approved' },
-  { value: 'request_rejected', label: 'Request Refused' },
-];

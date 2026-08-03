@@ -9,6 +9,8 @@ describe('textFormat', () => {
   it('title-cases names', () => {
     expect(toProperTitleCase('demo pharma ltd')).toBe('Demo Pharma Ltd');
     expect(formatTextValue('  ravi kumar  ', 'doctorName')).toBe('Ravi Kumar');
+    expect(formatTextValue('  guru krupa clinic  ', 'campAddress')).toBe('Guru Krupa Clinic');
+    expect(formatTextValue('  mahesh  ', 'hcwName')).toBe('Mahesh');
   });
 
   it('preserves codes and picklists', () => {

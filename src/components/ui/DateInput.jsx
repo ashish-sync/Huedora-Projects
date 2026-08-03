@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { formatDate, toApiDateValue } from '../../shared/dateFormat.js';
+import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 
 function CalendarIcon() {
   return (
@@ -73,6 +74,8 @@ export function DateInput({
 
   function handlePickerChange(event) {
     const next = event.target.value;
+    if (min && next && next < min) return;
+    if (max && next && next > max) return;
     setDisplayValue(next ? formatDate(next) : '');
     onChange?.(next);
   }
@@ -103,10 +106,12 @@ export function DateInput({
         disabled={disabled}
         aria-label={hideLabel ? (ariaLabel || label) : undefined}
         onChange={(e) => setDisplayValue(e.target.value)}
-        onBlur={(e) => commitDisplay(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commitDisplay(e.currentTarget.value);
         }}
+        {...bindAutofillBlock({
+          onBlur: (e) => commitDisplay(e.target.value),
+        })}
       />
       <button
         type="button"
@@ -129,6 +134,7 @@ export function DateInput({
         tabIndex={-1}
         aria-hidden="true"
         onChange={handlePickerChange}
+        {...bindAutofillBlock()}
       />
     </div>
   );

@@ -5,9 +5,10 @@ import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
-import PinMappedPreview from '../../components/ui/PinMappedPreview.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 
 const emptyForm = {
@@ -19,22 +20,19 @@ const emptyForm = {
   zone: '',
 };
 
-const emptyFilters = {
-  stateId: '',
-  districtId: '',
-  state: '',
-  district: '',
-  zone: '',
-};
-
 export default function LocationMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
-  const canWrite = can('agreements:write') || can('users:write') || can('*');
+  const canWrite =
+    can('camps:request') ||
+    can('camps:approve') ||
+    can('logistics:master') ||
+    can('agreements:write') ||
+    can('users:write') ||
+    can('*');
   const canDelete = can('*');
   const excelConfig = masterExcelFor('pin-codes');
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
-  const [filters, setFilters] = useState(emptyFilters);
   const [editId, setEditId] = useState(null);
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
@@ -47,8 +45,6 @@ export default function LocationMasterPage({ embedded = false } = {}) {
   const load = () => {
     const params = new URLSearchParams({ page: String(page), limit: String(limit), active: 'false' });
     if (q) params.set('q', q);
-    if (filters.stateId) params.set('stateId', filters.stateId);
-    if (filters.districtId) params.set('districtId', filters.districtId);
     setLoading(true);
     return api(`/geo/pin-codes?${params}`)
       .then((r) => {
@@ -61,8 +57,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on page/limit/filters
-  }, [page, limit, filters.stateId, filters.districtId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on page/limit
+  }, [page, limit]);
 
   const save = async (e) => {
     e.preventDefault();
@@ -122,11 +118,6 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     }
   };
 
-  const clearFilters = () => {
-    setFilters(emptyFilters);
-    setPage(1);
-  };
-
   return (
     <PageShell
       hideChrome={embedded}
@@ -147,57 +138,46 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       {error ? <p className="error-text">{error}</p> : null}
       {msg ? <p className="muted">{msg}</p> : null}
 
-      <div className="toolbar toolbar--page">
-        <input
-          placeholder="Search PIN, state, zone, district…"
+      <MasterFilterShell
+        actions={
+          <>
+            {excelConfig ? (
+              <MasterExcelToolbar
+                {...excelConfig}
+                canImport={canWrite}
+                onImportComplete={() => load()}
+                onError={(message) => setError(message)}
+                compact
+              />
+            ) : null}
+            <button
+              type="button"
+              className="btn secondary btn-compact"
+              onClick={() => {
+                setError('');
+                setPage(1);
+                load();
+              }}
+            >
+              Refresh
+            </button>
+          </>
+        }
+      >
+        <MasterSearchField
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          style={{ maxWidth: 280 }}
-        />
-        <button
-          type="button"
-          className="btn secondary"
-          onClick={() => {
-            setError('');
-            setPage(1);
-            load();
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              setError('');
+              setPage(1);
+              load();
+            }
           }}
-        >
-          Search
-        </button>
-        {excelConfig ? (
-          <MasterExcelToolbar
-            {...excelConfig}
-            canImport={canWrite}
-            onImportComplete={() => load()}
-            onError={(message) => setError(message)}
-            compact
-          />
-        ) : null}
-      </div>
-
-      <div className="card pin-master-filters">
-        <h3 className="pin-master-filters-title">Filter by geography</h3>
-        <LocationCascade
-          showPin={false}
-          showCity={false}
-          showZone
-          showDistrict
-          districtRequired={false}
-          showPinCountsInOptions
-          value={filters}
-          onChange={(loc) => {
-            setFilters(loc);
-            setPage(1);
-          }}
+          placeholder="Search PIN, state, zone, district…"
+          aria-label="Search PIN geography"
         />
-        <PinMappedPreview stateId={filters.stateId} districtId={filters.districtId} />
-        {filters.stateId || filters.districtId ? (
-          <button type="button" className="btn secondary btn-compact" onClick={clearFilters}>
-            Clear filters
-          </button>
-        ) : null}
-      </div>
+      </MasterFilterShell>
 
       <div className="card card--flush table-wrap">
         <table>

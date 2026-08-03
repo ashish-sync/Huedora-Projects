@@ -1,5 +1,18 @@
-import { Children, isValidElement } from 'react';
-import Select from 'react-select';
+import { Children, isValidElement, useCallback, useMemo, useRef, useState } from 'react';
+import Select, { components } from 'react-select';
+
+function TyloDropdownIndicator(props) {
+  return (
+    <components.DropdownIndicator {...props}>
+      <span className="tylo-dropdown-chevron" aria-hidden="true" />
+    </components.DropdownIndicator>
+  );
+}
+
+function TyloInput(props) {
+  const required = Boolean(props.selectProps?.['aria-required']);
+  return <components.Input {...props} aria-required={required || undefined} />;
+}
 
 function textContent(node) {
   if (node == null || typeof node === 'boolean') return '';
@@ -15,9 +28,16 @@ function optionChildren(children) {
   );
 }
 
+function withoutNativeSelectChromeClass(className = '') {
+  return className
+    .split(/\s+/)
+    .filter((token) => token && token !== 'tylo-select' && token !== 'filter-select')
+    .join(' ');
+}
+
 export default function AdaptiveSelect({
   children,
-  threshold = 10,
+  threshold = 0,
   value,
   onChange,
   multiple = false,
@@ -31,6 +51,8 @@ export default function AdaptiveSelect({
   'aria-label': ariaLabelProp,
   ...rest
 }) {
+  const hostRef = useRef(null);
+  const [menuWidth, setMenuWidth] = useState(null);
   const childOptions = optionChildren(children);
   const parsedOptions = childOptions.map((child) => ({
     value: child.props.value == null ? '' : String(child.props.value),
@@ -41,6 +63,44 @@ export default function AdaptiveSelect({
   const choices = parsedOptions.filter((option) => option.value !== '');
   const ariaLabel =
     ariaLabelProp || placeholder || emptyOption?.label || name || 'Select option';
+
+  const handleMenuOpen = useCallback(() => {
+    const width = hostRef.current?.getBoundingClientRect().width;
+    setMenuWidth(width ? Math.round(width) : null);
+  }, []);
+
+  const handleMenuClose = useCallback(() => {
+    setMenuWidth(null);
+  }, []);
+
+  const selectStyles = useMemo(() => {
+    const menuWidthStyle = menuWidth
+      ? { width: menuWidth, minWidth: menuWidth, maxWidth: menuWidth }
+      : {};
+
+    const styleOverrides = style
+      ? {
+          container: (base) => ({ ...base, ...style }),
+          control: (base) => ({
+            ...base,
+            ...(style.height ? { minHeight: style.height } : {}),
+            ...(style.minHeight ? { minHeight: style.minHeight } : {}),
+          }),
+        }
+      : {};
+
+    return {
+      ...styleOverrides,
+      menu: (base) => ({
+        ...base,
+        ...menuWidthStyle,
+      }),
+      menuPortal: (base) => ({
+        ...base,
+        zIndex: 1400,
+      }),
+    };
+  }, [menuWidth, style]);
 
   if (choices.length < threshold) {
     return (
@@ -91,42 +151,42 @@ export default function AdaptiveSelect({
     });
   };
 
+  const reactClassName = withoutNativeSelectChromeClass(className);
+
   return (
-    <Select
-      {...rest}
-      inputId={id}
-      name={name}
-      aria-label={ariaLabel}
-      className={`adaptive-select${multiple ? ' adaptive-select--multi' : ''}${
-        className ? ` ${className}` : ''
-      }`}
-      classNamePrefix="adaptive-select"
-      styles={
-        style
-          ? {
-              container: (base) => ({ ...base, ...style }),
-              control: (base) => ({
-                ...base,
-                ...(style.height ? { minHeight: style.height } : {}),
-                ...(style.minHeight ? { minHeight: style.minHeight } : {}),
-              }),
-            }
-          : undefined
-      }
-      options={choices}
-      value={selected}
-      onChange={emitChange}
-      isMulti={multiple}
-      isDisabled={disabled}
-      isClearable={Boolean(emptyOption) && !required}
-      isSearchable
-      required={required}
-      placeholder={placeholder || emptyOption?.label || 'Select…'}
-      noOptionsMessage={({ inputValue }) =>
-        inputValue ? 'No matching options' : 'No options available'
-      }
-      menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
-      menuPosition="fixed"
-    />
+    <div ref={hostRef} className="adaptive-select-host">
+      <Select
+        {...rest}
+        inputId={id}
+        name={name}
+        aria-label={ariaLabel}
+        className={`adaptive-select${multiple ? ' adaptive-select--multi' : ''}${
+          reactClassName ? ` ${reactClassName}` : ''
+        }`}
+        classNamePrefix="adaptive-select"
+        styles={selectStyles}
+        options={choices}
+        value={selected}
+        onChange={emitChange}
+        onMenuOpen={handleMenuOpen}
+        onMenuClose={handleMenuClose}
+        isMulti={multiple}
+        isDisabled={disabled}
+        isClearable={Boolean(emptyOption) && !required}
+        isSearchable={multiple ? choices.length > 6 : choices.length > 8}
+        // Do not pass `required` — react-select injects a RequiredInput that
+        // inherits app-wide input chrome and shows as a stray control.
+        aria-required={required || undefined}
+        placeholder={placeholder || emptyOption?.label || 'Select…'}
+        noOptionsMessage={({ inputValue }) =>
+          inputValue ? 'No matching options' : 'No options available'
+        }
+        menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+        menuPosition="fixed"
+        menuPlacement="auto"
+        blurInputOnSelect
+        components={{ DropdownIndicator: TyloDropdownIndicator, Input: TyloInput }}
+      />
+    </div>
   );
 }

@@ -37,7 +37,8 @@ vi.mock('./campOpsApi.js', () => ({
             lifecycleStage: 'execution',
             assignmentStatus: 'Assigned',
             executionStatus: 'Ongoing',
-            campDate: '2026-08-01',
+            // Future date so effective status stays scheduled in badge logic
+            campDate: '2099-08-01',
             startTime: '09:00',
             endTime: '12:00',
           },
@@ -74,7 +75,7 @@ describe('CampManagePage execution stage', () => {
   it('renders execution stage table and row actions without crashing', async () => {
     renderExecutionManagePage();
     expect(await screen.findByText('Demo')).toBeTruthy();
-    expect(screen.getByLabelText('Mark executed')).toBeTruthy();
+    expect(screen.getByLabelText('Cannot mark executed yet')).toBeTruthy();
     expect(screen.getByTitle(EXECUTION_STATUS.CAMP_SCHEDULED)).toBeTruthy();
   });
 });

@@ -5,6 +5,8 @@ import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
 export default function PicklistApprovalsPage({ embedded = false } = {}) {
   const { can } = useAuth();
@@ -14,6 +16,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
   const [rows, setRows] = useState([]);
   const [registry, setRegistry] = useState([]);
   const [status, setStatus] = useState('PENDING');
+  const [q, setQ] = useState('');
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busyId, setBusyId] = useState('');
@@ -28,6 +31,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
     setError('');
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (status) params.set('status', status);
+    if (q.trim()) params.set('q', q.trim());
     return api(`/picklists/suggestions?${params}`)
       .then((r) => {
         setRows(r.data || []);
@@ -46,7 +50,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, status]);
+  }, [page, limit, status, q]);
 
   const labelFor = (key) => registry.find((r) => r.key === key)?.label || key;
 
@@ -85,26 +89,36 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
 
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
-      <div className="toolbar" style={{ marginBottom: 12, gap: 8, display: 'flex', flexWrap: 'wrap' }}>
-        <div className="field" style={{ margin: 0, minWidth: 160 }}>
-          <label>Status</label>
-          <AdaptiveSelect
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="">All</option>
-          </AdaptiveSelect>
-        </div>
-        <button className="btn secondary" type="button" onClick={load} disabled={loading}>
-          Refresh
-        </button>
-      </div>
+      <MasterFilterShell
+        actions={
+          <button className="btn secondary btn-compact" type="button" onClick={load} disabled={loading}>
+            Refresh
+          </button>
+        }
+      >
+        <MasterSearchField
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search value, dropdown, or source…"
+          aria-label="Search picklist suggestions"
+        />
+        <AdaptiveSelect
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filter by status"
+        >
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="">All statuses</option>
+        </AdaptiveSelect>
+      </MasterFilterShell>
 
       <div className="card card--flush table-wrap">
         <table>

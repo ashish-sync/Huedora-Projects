@@ -1,31 +1,25 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { MODULE, NAV } from '../../shared/labels.js';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
-
-const EDITOR_ROUTES = ['/finance/build', '/finance/build/proforma', '/finance/build/purchase-order', '/finance/build/credit-note'];
+import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
 
 const NAV_ITEMS = [
   { to: '/finance', end: true, label: NAV.OVERVIEW },
-  { to: '/finance/camp-payouts', end: true, label: NAV.CAMP_PAYOUTS },
-  { to: '/finance/build', end: true, label: 'Invoice Builder' },
+  { to: '/finance/payouts', end: true, label: NAV.PAYOUT_QUEUE },
+  { to: '/finance/build', end: true, label: NAV.INVOICE_BUILDER, writeOnly: true },
   { to: '/finance/master', end: true, label: NAV.ORG_MASTER },
 ];
 
-const EDITOR_ROUTE = /^\/finance\/build(\/[\w-]+)?$/;
-
 export default function FinanceLayout() {
   const { pathname } = useLocation();
-  const isEditor = EDITOR_ROUTE.test(pathname);
+  const isEditor = FINANCE_BUILDER_EDITOR_ROUTE.test(pathname) || pathname === '/finance/build';
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
   const allowed = can('finance:read') || canWrite;
 
-  const navItems = NAV_ITEMS.filter((item) => {
-    if (canWrite) return true;
-    return !EDITOR_ROUTES.includes(item.to);
-  });
+  const navItems = NAV_ITEMS.filter((item) => (item.writeOnly ? canWrite : true));
 
   if (!allowed) {
     return (
@@ -36,6 +30,10 @@ export default function FinanceLayout() {
         <p className="muted">You do not have access to {MODULE.FINANCE}.</p>
       </PageShell>
     );
+  }
+
+  if (isEditor && !canWrite) {
+    return <Navigate to="/finance" replace />;
   }
 
   if (isEditor) {
@@ -51,7 +49,7 @@ export default function FinanceLayout() {
       <PageShell
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.FINANCE }]}
         title={MODULE.FINANCE}
-        description="Create and manage commercial documents."
+        description={MODULE_BLURB.FINANCE}
       >
         <ModuleSubNav
           ariaLabel={`${MODULE.FINANCE} sections`}

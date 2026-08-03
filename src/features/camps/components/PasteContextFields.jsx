@@ -15,6 +15,9 @@ export function PasteContextFields({
   onDivisionChange,
   onCampNameChange,
 }) {
+  const singleDivisionOption = divisionOptions.length === 1;
+  const singleMethodOption = campNameOptions.length === 1;
+
   return (
     <div className="paste-context-fields" aria-label="Camp context before paste">
       <div className="paste-context-fields-heading">
@@ -55,9 +58,11 @@ export function PasteContextFields({
                 ? 'Loading divisions…'
                 : !clientId
                   ? 'Select client first'
-                  : divisionOptions.length
-                    ? 'Select division / therapy'
-                    : 'No division configured'}
+                  : singleDivisionOption
+                    ? campaignType
+                    : divisionOptions.length
+                      ? 'Select division / therapy'
+                      : 'No division configured'}
             </option>
             {divisionOptions.map((division) => (
               <option key={division} value={division}>{division}</option>
@@ -74,6 +79,7 @@ export function PasteContextFields({
             onChange={onCampNameChange}
             disabled={disabled || programsLoading || !clientId || !campaignType || !campNameOptions.length}
             required
+            allowOther={false}
             error={errors.campaignName || ''}
             options={campNameOptions}
             placeholder="Select method"
@@ -85,7 +91,7 @@ export function PasteContextFields({
                   : programsLoading
                     ? 'Loading methods…'
                     : campNameOptions.length
-                      ? 'Select method'
+                      ? (singleMethodOption ? campaignName : 'Select method')
                       : 'No method configured'
             }
           />

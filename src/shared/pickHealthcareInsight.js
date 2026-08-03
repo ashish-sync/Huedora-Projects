@@ -60,4 +60,37 @@ export function totalHealthcareInsights() {
   return INDIAN_HEALTHCARE_INSIGHTS.length;
 }
 
-export { insightAt };
+/** Motivating facts for the home “Why your work counts” section. */
+export const WHY_WORK_COUNTS_INSIGHTS = INDIAN_HEALTHCARE_INSIGHTS.filter(
+  (item) => item.tone === 'motivate',
+);
+
+function insightFromPool(pool, index) {
+  if (!pool?.length) return insightAt(index);
+  const total = pool.length;
+  const safe = ((index % total) + total) % total;
+  return pool[safe];
+}
+
+export function pickInsightPoolIndex(pool, options = {}) {
+  if (!pool?.length) return pickHealthcareInsightIndex(options);
+  const day = new Date().toISOString().slice(0, 10);
+  let seed = `${day}|${options.userId || ''}`;
+
+  if (options.mode === 'session' && typeof sessionStorage !== 'undefined') {
+    let sessionId = sessionStorage.getItem(SESSION_KEY);
+    if (!sessionId) {
+      sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem(SESSION_KEY, sessionId);
+    }
+    seed = `session|${sessionId}|${options.userId || ''}`;
+  }
+
+  return hashString(seed) % pool.length;
+}
+
+export function pickInsightFromPool(pool, options = {}) {
+  return insightFromPool(pool, pickInsightPoolIndex(pool, options));
+}
+
+export { insightAt, insightFromPool };

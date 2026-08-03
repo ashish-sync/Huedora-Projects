@@ -1,5 +1,6 @@
 import { isValidCampMethod } from '../constants/campNames';
 import { emailListError, emailError, isValidPhone, phoneError } from '../../../shared/validation.js';
+import { normalizeHealthcareWorkers } from './healthcareWorkers.js';
 
 const DURATION_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
 
@@ -34,8 +35,6 @@ export function validateClientMasterForm(form) {
     programName: 160,
     campName: 120,
     campType: 80,
-    coordinatorName: 80,
-    healthcareWorker: 80,
     spocName: 80,
     spocEmail: 120,
     requestTimeline: 80,
@@ -47,6 +46,11 @@ export function validateClientMasterForm(form) {
       errors[field] = `Must be ${max} characters or less`;
     }
   });
+
+  const healthcareWorkers = normalizeHealthcareWorkers(form.healthcareWorker);
+  if (healthcareWorkers.some((role) => role.length > 80)) {
+    errors.healthcareWorker = 'Each role must be 80 characters or less';
+  }
 
   const campName = String(form.campName || '').trim();
   if (!campName) {
@@ -115,20 +119,25 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     ? clientRef._id
     : (clientRef || '');
 
+  const billing = record.billing || record.client || {};
   return {
     clientId: clientId ? String(clientId) : '',
     clientName: keepClientName ? (record.clientName || '') : '',
-    clientCode: record.client?.code || '',
+    clientCode: record.clientCode || record.client?.code || '',
+    billingAddress: billing.address || '',
+    billingGstin: billing.gstin || '',
+    billingPan: billing.pan || '',
+    billingStateName: billing.stateName || '',
+    billingStateCode: billing.stateCode || '',
     programName: record.programName || '',
     campName: record.campName || 'BMD',
     campType: record.campType || '',
-    coordinatorName: record.coordinatorName || '',
-    healthcareWorker: record.healthcareWorker || '',
+    healthcareWorker: normalizeHealthcareWorkers(record.healthcareWorker),
     poAmount: String(record.poAmount ?? ''),
     campDuration: record.campDuration || '4:00',
-    spocName: record.spocName || '',
-    spocNumber: record.spocNumber || '',
-    spocEmail: record.spocEmail || '',
+    spocName: record.spocName || billing.contactPerson || '',
+    spocNumber: record.spocNumber || billing.phone || '',
+    spocEmail: record.spocEmail || billing.email || '',
     requestTimeline: record.requestTimeline || '',
     assignedUserEmails: Array.isArray(record.assignedUserEmails)
       ? record.assignedUserEmails.join(', ')

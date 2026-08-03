@@ -79,7 +79,7 @@ export default function AssetRegistrySearchInput({
   };
 
   return (
-    <div className="asset-registry-search" ref={wrapperRef}>
+    <div className="asset-registry-search tylo-combobox-field" ref={wrapperRef}>
       <input
         id={id}
         value={value}
@@ -97,6 +97,7 @@ export default function AssetRegistrySearchInput({
         aria-autocomplete="list"
         aria-controls={id ? `${id}-listbox` : undefined}
       />
+      <span className="tylo-dropdown-chevron tylo-combobox-chevron" aria-hidden="true" />
       {open && (loading || results.length > 0 || String(value || '').trim().length >= 2) && (
         <div
           className="asset-registry-search-dropdown"

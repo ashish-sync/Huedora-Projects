@@ -23,7 +23,7 @@ vi.mock('../campOpsApi.js', () => ({
 function renderExecutionForm(overrides = {}) {
   const form = {
     ...emptyLifecycleForm(),
-    campDate: '2026-08-01',
+    campDate: '2099-08-01',
     startTime: '09:00',
     endTime: '12:00',
     lifecycleStage: 'execution',
@@ -56,9 +56,9 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByText('Chargeable Status')).toBeTruthy();
     expect(screen.getByText('In Time')).toBeTruthy();
     expect(screen.getByText('Execution Documents')).toBeTruthy();
-    expect(screen.getByText('Doctor Form')).toBeTruthy();
-    expect(screen.getByText('Patient Form')).toBeTruthy();
-    expect(screen.getByText('GPS Selfie')).toBeTruthy();
+    expect(screen.getByText('Doctor Form (DF)')).toBeTruthy();
+    expect(screen.getByText('Patient Form (PF)')).toBeTruthy();
+    expect(screen.getByText('GPS Selfie (GS)')).toBeTruthy();
     expect(screen.getByPlaceholderText('Specify document type/name')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Upload' }).length).toBe(4);
     expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
@@ -71,7 +71,7 @@ describe('CampLifecycleForm execution stage', () => {
       <CampLifecycleForm
         form={{
           ...emptyLifecycleForm(),
-          campDate: '2026-08-01',
+          campDate: '2099-08-01',
           startTime: '09:00',
           endTime: '12:00',
           lifecycleStage: 'execution',

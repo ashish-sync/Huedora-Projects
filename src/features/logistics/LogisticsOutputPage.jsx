@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api } from '../../shared/api.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 
@@ -79,18 +81,21 @@ export default function LogisticsOutputPage() {
         </div>
       </div>
 
-      <div className="inv-toolbar logistics-toolbar">
-        <input
-          className="esign-search inv-search"
-          placeholder="Search resource…"
+      <MasterFilterShell
+        actions={
+          <button className="btn secondary btn-compact" type="button" onClick={load} disabled={busy}>
+            {busy ? 'Loading…' : 'Refresh'}
+          </button>
+        }
+      >
+        <MasterSearchField
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search resource…"
+          aria-label="Search resources"
         />
-        <button className="btn secondary" type="button" onClick={load} disabled={busy}>
-          {busy ? 'Loading…' : 'Refresh'}
-        </button>
-      </div>
+      </MasterFilterShell>
 
       <div className="card card--flush table-wrap">
         <table className="inv-table">

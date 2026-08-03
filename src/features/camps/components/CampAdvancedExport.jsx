@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { exportApi } from '../campOpsApi.js';
 import { trimString } from '../utils/trimInput';
-import {
-  ASSIGNMENT_STAGE_FILTER_OPTIONS,
-  EXECUTION_STAGE_FILTER_OPTIONS,
-  FINANCIAL_STAGE_FILTER_OPTIONS,
-} from '../constants/campStageFilters.js';
 import { ACTION } from '../../../shared/labels.js';
 import { CAMP_LIFECYCLE_STAGES } from '../constants/campLifecycle.js';
 import {
@@ -30,21 +25,12 @@ const STATUS_FILTER_OPTIONS = [
 
 const EMPTY_FILTERS = {
   lifecycleStage: '',
-  stageFilter: '',
   status: '',
   client: '',
   campaignType: '',
   search: '',
   overdue: false,
 };
-
-function stageFilterOptions(lifecycleStage) {
-  if (lifecycleStage === 'request') return REQUEST_REVIEW_FILTER_OPTIONS;
-  if (lifecycleStage === 'assignment') return ASSIGNMENT_STAGE_FILTER_OPTIONS;
-  if (lifecycleStage === 'execution') return EXECUTION_STAGE_FILTER_OPTIONS;
-  if (lifecycleStage === 'financial') return FINANCIAL_STAGE_FILTER_OPTIONS;
-  return [];
-}
 
 function buildExportFilters(filters = {}) {
   const payload = {};
@@ -53,7 +39,6 @@ function buildExportFilters(filters = {}) {
   const campaignType = trimString(filters.campaignType);
   const status = trimString(filters.status);
   const lifecycleStage = trimString(filters.lifecycleStage);
-  const stageFilter = trimString(filters.stageFilter);
 
   if (search) payload.search = search;
   if (client) payload.client = client;
@@ -61,11 +46,6 @@ function buildExportFilters(filters = {}) {
   if (status) payload.status = status;
   if (filters.overdue) payload.overdue = '1';
   if (lifecycleStage) payload.lifecycleStage = lifecycleStage;
-
-  if (lifecycleStage === 'request' && stageFilter) payload.requestReviewStatus = stageFilter;
-  if (lifecycleStage === 'assignment' && stageFilter) payload.assignmentFilter = stageFilter;
-  if (lifecycleStage === 'execution' && stageFilter) payload.executionFilter = stageFilter;
-  if (lifecycleStage === 'financial' && stageFilter) payload.financialFilter = stageFilter;
 
   return payload;
 }
@@ -128,11 +108,9 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
     return filtered.filter((section) => section.id === activeModuleId);
   }, [sections, normalizedSearch, activeModuleId]);
 
-  const stageOptions = stageFilterOptions(filters.lifecycleStage);
   const selectedCount = selectedColumns.length;
   const activeFiltersCount = [
     filters.lifecycleStage,
-    filters.stageFilter,
     filters.status,
     filters.client,
     filters.campaignType,
@@ -166,11 +144,7 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
   }, []);
 
   function updateFilter(key, value) {
-    setFilters((prev) => {
-      const next = { ...prev, [key]: value };
-      if (key === 'lifecycleStage') next.stageFilter = '';
-      return next;
-    });
+    setFilters((prev) => ({ ...prev, [key]: value }));
     setActivePresetId('');
     setSelectedTemplateId('');
   }
@@ -227,7 +201,6 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
     if (template.filters && typeof template.filters === 'object') {
       setFilters({
         lifecycleStage: template.filters.lifecycleStage || '',
-        stageFilter: template.filters.stageFilter || '',
         status: template.filters.status || '',
         client: template.filters.client || '',
         campaignType: template.filters.campaignType || '',
@@ -383,19 +356,6 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
                   ))}
                 </select>
               </label>
-              {stageOptions.length > 0 && (
-                <label className="camp-export-filter-item">
-                  <span>Stage filter</span>
-                  <select
-                    value={filters.stageFilter}
-                    onChange={(e) => updateFilter('stageFilter', e.target.value)}
-                  >
-                    {stageOptions.map((option) => (
-                      <option key={option.value || 'all'} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
               <label className="camp-export-filter-item">
                 <span>Status</span>
                 <select

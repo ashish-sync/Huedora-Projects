@@ -1,5 +1,5 @@
 import FieldError from './FieldError.jsx';
-import { PASSWORD_MANAGER_IGNORE } from '../../shared/suppressBrowserAutofill.js';
+import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 
 /**
  * Single email or comma-separated email list (textarea) with shared validation styling.
@@ -27,6 +27,7 @@ export function EmailField({
   const invalid = Boolean(error);
   const isList = variant === 'list';
   const resolvedPlaceholder = placeholder || (isList ? 'user@client.com, ops@client.com' : 'name@company.com');
+  const blockProps = autoComplete === 'off' ? bindAutofillBlock() : {};
 
   const sharedProps = {
     id: inputId,
@@ -44,26 +45,17 @@ export function EmailField({
   const control = isList ? (
     <textarea
       rows={rows}
-      autoComplete={PASSWORD_MANAGER_IGNORE.autoComplete}
-      readOnly
-      onFocus={(event) => {
-        event.currentTarget.removeAttribute('readonly');
-      }}
       {...sharedProps}
-      {...PASSWORD_MANAGER_IGNORE}
+      {...blockProps}
     />
   ) : (
     <input
       type="text"
       inputMode="email"
       autoCapitalize="none"
-      autoComplete={autoComplete === 'off' ? PASSWORD_MANAGER_IGNORE.autoComplete : autoComplete}
-      readOnly={autoComplete === 'off'}
-      onFocus={(event) => {
-        if (autoComplete === 'off') event.currentTarget.removeAttribute('readonly');
-      }}
       {...sharedProps}
-      {...(autoComplete === 'off' ? PASSWORD_MANAGER_IGNORE : {})}
+      {...blockProps}
+      {...(autoComplete !== 'off' ? { autoComplete } : {})}
     />
   );
 

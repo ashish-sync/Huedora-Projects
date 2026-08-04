@@ -267,18 +267,21 @@ export default function ImportPage() {
           <h3>Upload Excel / CSV</h3>
           {isAdminImport ? (
             <p className="import-intro">
-              Upload camp data from Excel with automatic header suggestions, or download the sample file. Columns match Client Master (client + division + method) and the Create Camp form.
+              Upload camp data from Excel with automatic header suggestions, or download the sample file. Columns match the Create Camp form.
             </p>
           ) : (
             <p className="import-intro">
-              Download the sample Excel file and fill in camp details using the same column headers as the website (client, program, and camp scheduling fields).
+              Download the sample Excel file and fill in camp details using the same column headers as Create Camp.
             </p>
           )}
 
           <div className="sample-download-panel">
             <div>
               <strong>{isAdminImport ? 'Standard import format' : 'Step 1: Use the standard format'}</strong>
-              <p>Download the sample file with the correct column headers and 15 example rows. Only fields shown on Client Master and Create Camp are included.</p>
+              <p>
+                Download the sample file with Create Camp column headers and example rows.
+                State, zone, district, and HQ are filled from PIN Code during import.
+              </p>
             </div>
             <button type="button" className="btn secondary" onClick={handleDownloadSample}>
               {ACTION.SAMPLE_FORMAT}

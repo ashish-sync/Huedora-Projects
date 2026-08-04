@@ -11,7 +11,7 @@ const BODY_FIELDS = [
   { key: 'endTime', label: 'Camp End Time' },
   { key: 'doctorName', label: 'Doctor Name' },
   { key: 'doctorCode', label: 'Doctor Code' },
-  { key: 'campAddress', label: 'Camp Address' },
+  { key: 'campAddress', label: 'Camp / Clinic Address' },
   { key: 'state', label: 'State' },
   { key: 'zone', label: 'Zone' },
   { key: 'city', label: 'City' },

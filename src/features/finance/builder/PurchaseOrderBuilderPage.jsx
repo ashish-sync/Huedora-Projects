@@ -10,6 +10,7 @@ export default function PurchaseOrderBuilderPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const exportRef = useRef(null);
+  const printRef = useRef(null);
   const {
     form,
     totals,
@@ -32,16 +33,14 @@ export default function PurchaseOrderBuilderPage() {
     approveDocument,
     rejectDocument,
     issueDocument,
-    exportServerPdf,
   } = usePurchaseOrderBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
-  const handlePrint = useCallback(() => window.print(), []);
   const showShortcuts = useCallback(() => setShortcutsOpen(true), []);
 
   useBuilderKeyboard({
     onTogglePanel: togglePanel,
-    onPrint: handlePrint,
+    onPrint: () => printRef.current?.(),
     onExportPdf: () => exportRef.current?.(),
     onNewInvoice: newPurchaseOrder,
     onShowShortcuts: showShortcuts,
@@ -65,9 +64,7 @@ export default function PurchaseOrderBuilderPage() {
       loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
-      onPrint={handlePrint}
       onSaveNow={saveNow}
-      onExportPdf={exportServerPdf}
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
@@ -77,6 +74,7 @@ export default function PurchaseOrderBuilderPage() {
       onShortcutsClose={() => setShortcutsOpen(false)}
       onShowShortcuts={showShortcuts}
       exportRef={exportRef}
+      printRef={printRef}
       panel={
         <PurchaseOrderBuilderPanel
           form={form}

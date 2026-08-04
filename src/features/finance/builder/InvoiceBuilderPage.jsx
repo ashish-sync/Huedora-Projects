@@ -10,6 +10,7 @@ export default function InvoiceBuilderPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const exportRef = useRef(null);
+  const printRef = useRef(null);
   const {
     form,
     totals,
@@ -34,16 +35,14 @@ export default function InvoiceBuilderPage() {
     approveDocument,
     rejectDocument,
     issueDocument,
-    exportServerPdf,
   } = useInvoiceBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
-  const handlePrint = useCallback(() => window.print(), []);
   const showShortcuts = useCallback(() => setShortcutsOpen(true), []);
 
   useBuilderKeyboard({
     onTogglePanel: togglePanel,
-    onPrint: handlePrint,
+    onPrint: () => printRef.current?.(),
     onExportPdf: () => exportRef.current?.(),
     onNewInvoice: newInvoice,
     onShowShortcuts: showShortcuts,
@@ -66,9 +65,7 @@ export default function InvoiceBuilderPage() {
       loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
-      onPrint={handlePrint}
       onSaveNow={saveNow}
-      onExportPdf={exportServerPdf}
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
@@ -78,6 +75,7 @@ export default function InvoiceBuilderPage() {
       onShortcutsClose={() => setShortcutsOpen(false)}
       onShowShortcuts={showShortcuts}
       exportRef={exportRef}
+      printRef={printRef}
       panel={
         <InvoiceBuilderPanel
           form={form}

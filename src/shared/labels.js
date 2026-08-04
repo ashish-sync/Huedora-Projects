@@ -45,7 +45,8 @@ export const NAV = {
   PROFORMA: 'Proforma',
   PURCHASE_ORDERS: 'Purchase Orders',
   GENERATE: 'Generate',
-  INVOICE_BUILDER: 'Invoice Builder',
+  INVOICE_BUILDER: 'Billing Center',
+  BILLING_CENTER: 'Billing Center',
   CAMP_PAYOUTS: 'Payout Queue',
   PAYOUT_QUEUE: 'Payout Queue',
   VENDOR_BILLS: 'Vendor Bills',
@@ -75,7 +76,7 @@ export const MODULE_BLURB = {
     'Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests.',
   LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
   INVENTORY_LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',
-  FINANCE: 'Payout queue, tax invoices, proforma, purchase orders, and credit notes.',
+  FINANCE: 'Billing Center, payout queue, vendor bills, and organisation master.',
   MASTER_DATA:
     'Products, Expense Master, Contact Directory, Document Templates, Signatures, Client Master, and PIN Geography.',
   DASHBOARD: 'Executive project health and module drill-down by date range.',

@@ -91,7 +91,6 @@ export default function FinanceVendorBillsPage() {
           <div className="finance-docs-head finance-docs-head--embedded">
             <div>
               <h3 className="finance-docs-title">{NAV.VENDOR_BILLS}</h3>
-              <p className="muted">Accounts payable — intake, verify, approve, pay, and archive vendor bills.</p>
             </div>
           </div>
 

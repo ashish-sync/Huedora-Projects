@@ -100,28 +100,40 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
   return (
     <div className="org-master-form">
       <section className="org-master-form-section">
-        <h3 className="org-master-form-section-title">Company identity</h3>
-        <p className="org-master-form-section-desc">
-          Used on Invoice, Purchase Order, Proforma, and Credit Note.
-        </p>
-        <div className="org-master-form-grid">
-          <div className="org-master-form-span-2">
-            <label className="org-master-field-label">Upload Logo</label>
+        <div className="org-master-form-section-head">
+          <h3 className="org-master-form-section-title">Identity</h3>
+        </div>
+
+        <div className="org-master-media-row">
+          <div className="org-master-media-field">
+            <label className="org-master-field-label">Logo</label>
             <FileDrop
               className="doc-file-drop--logo"
-              label="Drop logo image or click to browse"
+              label="Upload logo"
               previewUrl={form.logoDataUrl}
               onFile={(file) => readFileAsDataUrl(file, (url) => update('logoDataUrl', url))}
             />
           </div>
-          <div>
-            <label className="org-master-field-label">Full Name</label>
+          <div className="org-master-media-field">
+            <label className="org-master-field-label">Payment QR</label>
+            <FileDrop
+              className="doc-file-drop--qr"
+              label="Upload QR"
+              previewUrl={form.paymentQrDataUrl}
+              onFile={(file) => readFileAsDataUrl(file, (url) => update('paymentQrDataUrl', url))}
+            />
+          </div>
+        </div>
+
+        <div className="org-master-form-grid org-master-form-grid--3">
+          <div className="org-master-form-span-2">
+            <label className="org-master-field-label">Legal name</label>
             <input
               className="org-master-input"
               value={form.legalName || ''}
               disabled={disabled}
               onChange={(e) => update('legalName', e.target.value)}
-              placeholder="Legal / company name"
+              placeholder="Company legal name"
             />
           </div>
           <div>
@@ -131,14 +143,14 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
               value={form.brandLine || ''}
               disabled={disabled}
               onChange={(e) => update('brandLine', e.target.value)}
-              placeholder="Brand line or tagline"
+              placeholder="Optional"
             />
           </div>
-          <div className="org-master-form-span-2">
-            <label className="org-master-field-label">Registered Address</label>
+          <div className="org-master-form-span-3">
+            <label className="org-master-field-label">Registered address</label>
             <textarea
-              className="org-master-input"
-              rows={3}
+              className="org-master-input org-master-input--textarea"
+              rows={2}
               value={form.registeredOffice || ''}
               disabled={disabled}
               onChange={(e) => update('registeredOffice', e.target.value)}
@@ -163,7 +175,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
               onChange={(e) => update('phone', e.target.value)}
             />
           </div>
-          <div className="org-master-form-span-2">
+          <div>
             <label className="org-master-field-label">Website</label>
             <input
               className="org-master-input"
@@ -177,10 +189,12 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
       </section>
 
       <section className="org-master-form-section">
-        <h3 className="org-master-form-section-title">Bank &amp; payment</h3>
-        <div className="org-master-form-grid">
+        <div className="org-master-form-section-head">
+          <h3 className="org-master-form-section-title">Bank &amp; payment</h3>
+        </div>
+        <div className="org-master-form-grid org-master-form-grid--3">
           <div>
-            <label className="org-master-field-label">Account Holder</label>
+            <label className="org-master-field-label">Account holder</label>
             <input
               className="org-master-input"
               value={form.accountHolder || ''}
@@ -225,31 +239,24 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
             />
           </div>
           <div>
-            <label className="org-master-field-label">UPI ID (optional)</label>
+            <label className="org-master-field-label">UPI ID</label>
             <input
               className="org-master-input"
               value={form.upiId || ''}
               disabled={disabled}
               onChange={(e) => update('upiId', e.target.value)}
-              placeholder="name@upi — used if no QR image"
-            />
-          </div>
-          <div className="org-master-form-span-2">
-            <label className="org-master-field-label">Payment QR Code</label>
-            <FileDrop
-              className="doc-file-drop--qr"
-              label="Upload payment QR image"
-              previewUrl={form.paymentQrDataUrl}
-              onFile={(file) => readFileAsDataUrl(file, (url) => update('paymentQrDataUrl', url))}
+              placeholder="name@upi"
             />
           </div>
         </div>
       </section>
 
-      <section className="org-master-form-section org-master-form-section--tax">
-        <h3 className="org-master-form-section-title">Tax registration (optional)</h3>
-        <p className="org-master-form-section-desc">GSTIN, PAN, and state code for tax documents.</p>
-        <div className="org-master-form-grid">
+      <section className="org-master-form-section">
+        <div className="org-master-form-section-head">
+          <h3 className="org-master-form-section-title">Tax registration</h3>
+          <span className="org-master-form-section-note">Optional</span>
+        </div>
+        <div className="org-master-form-grid org-master-form-grid--4">
           <div>
             <label className="org-master-field-label">GSTIN</label>
             <input

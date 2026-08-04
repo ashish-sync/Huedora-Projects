@@ -1,4 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
+import { fiscalYearLabel } from '../documentNumbering.js';
 import {
   defaultLineItem,
   MAX_INVOICE_LINE_ITEMS,
@@ -64,7 +65,7 @@ export function defaultCreditNoteForm() {
       transporterName: '',
     },
     invoice: {
-      documentNumber: peekCreditNoteNumber(today),
+      documentNumber: '',
       copyLabel: 'Original for Recipient',
       issueDate: today,
       dueDate: today,
@@ -114,25 +115,31 @@ function readSeqMap() {
 
 function periodKey(dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
-  const yy = String(d.getFullYear()).slice(-2);
+  const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${yy}-${mm}`;
+  return `${fy}_${mm}`;
 }
 
 export function peekCreditNoteNumber(dateIso) {
   const seqMap = readSeqMap();
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
   const key = periodKey(dateIso);
   const next = (seqMap[key] || 0) + 1;
-  return `TCCN-${key}-${String(next).padStart(3, '0')}`;
+  return `CN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function nextCreditNoteNumber(dateIso) {
   const seqMap = readSeqMap();
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
   const key = periodKey(dateIso);
   const next = (seqMap[key] || 0) + 1;
   seqMap[key] = next;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
-  return `TCCN-${key}-${String(next).padStart(3, '0')}`;
+  return `CN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function loadCreditNoteDraft() {

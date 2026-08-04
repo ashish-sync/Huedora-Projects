@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../shared/auth.jsx';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
 import ClientMasterRecipientPicker from '../builder/ClientMasterRecipientPicker.jsx';
+import { canManageOrganisationMaster } from '../builder/commercialApproval.js';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
@@ -52,15 +54,21 @@ export default function ProformaBuilderPanel({
   const lineRows = (form.rows || []).filter((r) => r.type === 'line');
   const taxMode = usesIgst(form.recipient?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
   const taxLabels = resolveTaxColumnLabels(invoiceView);
+  const { user } = useAuth();
+  const canOrgMaster = canManageOrganisationMaster(user);
 
   return (
     <div className="ib-panel-inner">
       <div className="ib-panel-intro">
         <p>
           Letterhead &amp; bank come from{' '}
-          <Link to="/finance/master" className="ib-link">
-            Organisation master
-          </Link>
+          {canOrgMaster ? (
+            <Link to="/finance/master" className="ib-link">
+              Organisation master
+            </Link>
+          ) : (
+            'Organisation master'
+          )}
           . Click the document to edit inline.
         </p>
       </div>
@@ -102,7 +110,13 @@ export default function ProformaBuilderPanel({
       <Section title="Proforma" defaultOpen>
         <div className="ib-grid">
           <Field label="Proforma no.">
-            <input className={`${inputCls} ib-input--mono`} value={form.document.documentNumber} onChange={(e) => update('document.documentNumber', e.target.value)} />
+            <input
+              className={`${inputCls} ib-input--mono`}
+              value={form.document.documentNumber}
+              readOnly
+              placeholder="Assigned on approval"
+              title="Document number is assigned when the document is approved"
+            />
           </Field>
           <Field label="Project">
             <input className={inputCls} value={form.recipient.projectName} onChange={(e) => update('recipient.projectName', e.target.value)} />

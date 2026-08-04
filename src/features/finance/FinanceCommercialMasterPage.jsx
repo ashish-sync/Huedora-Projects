@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import { emptyOrgMasterForm, orgMasterToPayload } from './commercialOrgMaster.js';
 import { CommercialOrgMasterForm } from './CommercialOrgMasterCard.jsx';
+import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { useCommercialOrgMaster } from './useCommercialOrgMaster.js';
 import './finance-commercial.css';
 
 export default function FinanceCommercialMasterPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const canWrite = can('finance:write') || can('*');
+  const canEdit = canWrite && canManageOrganisationMaster(user);
   const { data, loading, error, save, reload } = useCommercialOrgMaster();
   const [form, setForm] = useState(emptyOrgMasterForm);
   const [msg, setMsg] = useState('');
@@ -26,7 +28,7 @@ export default function FinanceCommercialMasterPage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!canWrite) return;
+    if (!canEdit) return;
     setBusy(true);
     setMsg('');
     try {
@@ -41,44 +43,38 @@ export default function FinanceCommercialMasterPage() {
 
   return (
     <div className="finance-org-master-page">
-      <div className="finance-org-master-intro card">
-        <div>
+      <header className="finance-org-master-header">
+        <div className="finance-org-master-header-text">
           <h2 className="finance-org-master-heading">Organisation master</h2>
-          <p className="muted finance-org-master-lead">
-            Fixed letterhead, bank, and payment details shared across{' '}
-            <strong>Invoice</strong>, <strong>Purchase Order</strong>, <strong>Proforma</strong>, and{' '}
-            <strong>Credit Note</strong>. Edit once here — every document picks it up automatically.
+          <p className="finance-org-master-lead">
+            Letterhead, bank, and tax details shared by Invoice, PO, Proforma, and Credit Note.
           </p>
         </div>
-        <div className="finance-org-master-doc-pills">
-          {['Invoice', 'Purchase Order', 'Proforma', 'Credit Note'].map((label) => (
-            <span key={label} className="finance-org-master-pill">
-              {label}
-            </span>
-          ))}
+        <div className="finance-org-master-actions finance-org-master-actions--top">
+          <Link to="/finance/build" className="btn secondary btn-compact">
+            Back
+          </Link>
+          <button type="button" className="btn secondary btn-compact" disabled={loading || busy} onClick={() => reload()}>
+            Reload
+          </button>
+          {canEdit ? (
+            <button type="submit" form="org-master-form" className="btn btn-compact" disabled={busy}>
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+          ) : null}
         </div>
-      </div>
+      </header>
 
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
-      <form className="card finance-org-master-form-wrap" onSubmit={handleSave}>
-        <CommercialOrgMasterForm form={form} setForm={setForm} disabled={!canWrite || busy} />
+      {!canEdit ? (
+        <p className="finance-org-master-readonly muted">
+          View-only. Organisation master can be edited by Admin, Operations Head, Senior Manager, or Manager.
+        </p>
+      ) : null}
 
-        <div className="finance-org-master-actions">
-          <button type="button" className="btn secondary" disabled={loading} onClick={() => reload()}>
-            Reload
-          </button>
-          {canWrite ? (
-            <button type="submit" className="btn" disabled={busy}>
-              {busy ? 'Saving…' : 'Save organisation master'}
-            </button>
-          ) : (
-            <p className="muted">View-only access. Ask an administrator for Finance write access.</p>
-          )}
-          <Link to="/finance/generate" className="btn secondary">
-            Back to Generate
-          </Link>
-        </div>
+      <form id="org-master-form" className="finance-org-master-form-wrap" onSubmit={handleSave}>
+        <CommercialOrgMasterForm form={form} setForm={setForm} disabled={!canEdit || busy} />
       </form>
     </div>
   );

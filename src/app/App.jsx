@@ -42,7 +42,6 @@ const AssetInventoryLayout = lazy(() => import('../features/assets/AssetInventor
 const AssetOverviewPage = lazy(() => import('../features/assets/AssetOverviewPage.jsx'));
 const MasterDataPage = lazy(() => import('../features/masters/MasterDataPage.jsx'));
 const FinanceLayout = lazy(() => import('../features/finance/FinanceLayout.jsx'));
-const FinanceOverviewPage = lazy(() => import('../features/finance/FinanceOverviewPage.jsx'));
 const FinanceBuilderPickerPage = lazy(() => import('../features/finance/FinanceBuilderPickerPage.jsx'));
 const InvoiceBuilderPage = lazy(() => import('../features/finance/builder/InvoiceBuilderPage.jsx'));
 const ProformaBuilderPage = lazy(() => import('../features/finance/builder/ProformaBuilderPage.jsx'));
@@ -169,7 +168,7 @@ export default function App() {
                   <Route path="users" element={<Navigate to="/role-permission-master" replace />} />
                 </Route>
                 <Route path="/finance" element={<FinanceLayout />}>
-                  <Route index element={<FinanceOverviewPage />} />
+                  <Route index element={<Navigate to="/finance/build" replace />} />
                   <Route path="build" element={<FinanceBuilderPickerPage />} />
                   <Route path="build/invoice" element={<InvoiceBuilderPage />} />
                   <Route path="build/invoice/:id" element={<InvoiceBuilderPage />} />
@@ -186,10 +185,10 @@ export default function App() {
                   <Route path="vendor-bills/:id" element={<FinanceVendorBillDetailPage />} />
                   <Route path="generate" element={<FinanceGeneratePage />} />
                   <Route path="generate/:docSlug" element={<FinanceGeneratePage />} />
-                  <Route path="expenses" element={<Navigate to="/finance" replace />} />
+                  <Route path="expenses" element={<Navigate to="/finance/build" replace />} />
                   <Route path="invoices" element={<Navigate to="/finance/vendor-bills" replace />} />
-                  <Route path="proforma" element={<Navigate to="/finance" replace />} />
-                  <Route path="purchase-orders" element={<Navigate to="/finance" replace />} />
+                  <Route path="proforma" element={<Navigate to="/finance/build" replace />} />
+                  <Route path="purchase-orders" element={<Navigate to="/finance/build" replace />} />
                   <Route path="generate-invoice" element={<Navigate to="/finance/build/invoice" replace />} />
                 </Route>
                 <Route path="/asset-requests" element={<AssetRequestsPage />} />

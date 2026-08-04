@@ -7838,16 +7838,21 @@
 .camp-ops-root .camp-time-frame-top {
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-bottom: 2px;
 }
 
 .camp-ops-root .camp-time-frame-slot {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 8px;
   font-size: 0.88rem;
   font-weight: 700;
   color: #0f766e;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .camp-ops-root .camp-time-frame-duration {
@@ -7855,6 +7860,7 @@
   font-weight: 500;
   color: #94a3b8;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .camp-ops-root .camp-time-frame-range {

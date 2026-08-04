@@ -10,6 +10,7 @@ export default function CreditNoteBuilderPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const exportRef = useRef(null);
+  const printRef = useRef(null);
   const {
     form,
     totals,
@@ -34,16 +35,14 @@ export default function CreditNoteBuilderPage() {
     approveDocument,
     rejectDocument,
     issueDocument,
-    exportServerPdf,
   } = useCreditNoteBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
-  const handlePrint = useCallback(() => window.print(), []);
   const showShortcuts = useCallback(() => setShortcutsOpen(true), []);
 
   useBuilderKeyboard({
     onTogglePanel: togglePanel,
-    onPrint: handlePrint,
+    onPrint: () => printRef.current?.(),
     onExportPdf: () => exportRef.current?.(),
     onNewInvoice: newCreditNote,
     onShowShortcuts: showShortcuts,
@@ -67,9 +66,7 @@ export default function CreditNoteBuilderPage() {
       loadingDoc={loadingDoc}
       panelOpen={panelOpen}
       onTogglePanel={togglePanel}
-      onPrint={handlePrint}
       onSaveNow={saveNow}
-      onExportPdf={exportServerPdf}
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
@@ -79,6 +76,7 @@ export default function CreditNoteBuilderPage() {
       onShortcutsClose={() => setShortcutsOpen(false)}
       onShowShortcuts={showShortcuts}
       exportRef={exportRef}
+      printRef={printRef}
       panel={
         <InvoiceBuilderPanel
           form={form}

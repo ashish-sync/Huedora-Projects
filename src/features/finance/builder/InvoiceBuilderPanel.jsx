@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../shared/auth.jsx';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
 import {
   getLineGstRateDisplay,
@@ -8,6 +9,7 @@ import {
   usesIgst,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_INVOICE_LINE_ITEMS } from '../invoiceGenerator/invoiceStorage.js';
+import { canManageOrganisationMaster } from './commercialApproval.js';
 import ClientMasterRecipientPicker from './ClientMasterRecipientPicker.jsx';
 
 function Section({ id, title, badge, defaultOpen = false, children }) {
@@ -57,15 +59,21 @@ export default function InvoiceBuilderPanel({
   } = panelConfig;
   const taxMode = usesIgst(form.billTo?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
   const taxLabels = resolveTaxColumnLabels(form);
+  const { user } = useAuth();
+  const canOrgMaster = canManageOrganisationMaster(user);
 
   return (
     <div className="ib-panel-inner">
       <div className="ib-panel-intro">
         <p>
           Letterhead &amp; bank come from{' '}
-          <Link to="/finance/master" className="ib-link">
-            Organisation master
-          </Link>
+          {canOrgMaster ? (
+            <Link to="/finance/master" className="ib-link">
+              Organisation master
+            </Link>
+          ) : (
+            'Organisation master'
+          )}
           . Click the document to edit inline.
         </p>
       </div>
@@ -121,14 +129,20 @@ export default function InvoiceBuilderPanel({
       <Section id="invoice" title={docSectionTitle} defaultOpen>
         <div className="ib-grid">
           <Field label={docNoLabel}>
-            <input className={`${inputCls} ib-input--mono`} value={form.invoice.documentNumber} onChange={(e) => update('invoice.documentNumber', e.target.value)} />
+            <input
+              className={`${inputCls} ib-input--mono`}
+              value={form.invoice.documentNumber}
+              readOnly
+              placeholder="Assigned on approval"
+              title="Document number is assigned when the document is approved"
+            />
           </Field>
           <Field label="Project">
             <input className={inputCls} value={form.invoice.projectName} onChange={(e) => update('invoice.projectName', e.target.value)} placeholder="BMD Camp" />
           </Field>
           {showOriginalInvoice ? (
             <Field label={originalInvoiceLabel} span={2}>
-              <input className={inputCls} value={form.invoice.cnReference || ''} onChange={(e) => update('invoice.cnReference', e.target.value)} placeholder="TCIN-26-07-001" />
+              <input className={inputCls} value={form.invoice.cnReference || ''} onChange={(e) => update('invoice.cnReference', e.target.value)} placeholder="IN/26-27/08/0001" />
             </Field>
           ) : null}
           <Field label="Date">

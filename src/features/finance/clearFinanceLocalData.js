@@ -12,7 +12,7 @@ export const FINANCE_LOCAL_STORAGE_KEYS = [
 ];
 
 /** Bump when a full finance local reset should run for all users (local + live). */
-export const FINANCE_LOCAL_RESET_VERSION = '2026-07-26-full-reset';
+export const FINANCE_LOCAL_RESET_VERSION = '2026-08-04-org-cache-quota';
 
 const RESET_VERSION_KEY = 'tylo_finance_local_reset_version';
 

@@ -475,7 +475,7 @@ export default function CampFormPage() {
   async function handleSubmitToFinance() {
     if (!id) return;
     if (!form.paymentSubmitStatus) {
-      setError('Select Payment Confirmed, Payment Not Checked, or Payment Hold');
+      setError('Select Validation Completed, Validation Pending, or Payment On Hold');
       return;
     }
     const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);

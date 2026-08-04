@@ -17,5 +17,5 @@ export default function FinanceGeneratePage() {
     return <Navigate to={target} replace />;
   }
 
-  return <Navigate to="/finance" replace />;
+  return <Navigate to="/finance/build" replace />;
 }

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../../shared/auth.jsx';
 import { usePreviewScale } from '../documentGenerator/usePreviewScale.js';
 import { A4_LANDSCAPE_PX } from '../shared/a4Landscape.js';
-import { exportDocumentPdf } from './exportInvoicePdf.js';
+import { canApproveCommercialDocument } from './commercialApproval.js';
+import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import './export-invoice.css';
 import './builder.css';
 
@@ -74,7 +76,6 @@ export default function InvoiceBuilderShell({
   onTogglePanel,
   onPrint,
   onSaveNow,
-  onExportPdf,
   onSubmit,
   onApprove,
   onReject,
@@ -84,12 +85,22 @@ export default function InvoiceBuilderShell({
   onShortcutsClose,
   onShowShortcuts,
   exportRef,
+  printRef,
   panel,
   children,
 }) {
   const previewRef = useRef(null);
+  const autoPrintStarted = useRef(false);
   const [exporting, setExporting] = useState(false);
-  const { wrapRef, scale, zoomIn, zoomOut, resetZoom, fitToWidth } = usePreviewScale();
+  const [printing, setPrinting] = useState(false);
+  const { wrapRef, scale, zoomIn, zoomOut, resetZoom } = usePreviewScale();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const canApprove = canApproveCommercialDocument(user);
+  const isDraftLike = status === 'Draft' || status === 'Uploaded' || !status;
+  const isSubmitted = status === 'Submitted';
+  const wantsPrint = searchParams.get('print') === '1';
 
   const handleSaveAndExport = useCallback(async () => {
     setExporting(true);
@@ -98,19 +109,43 @@ export default function InvoiceBuilderShell({
       await new Promise((resolve) => {
         requestAnimationFrame(() => requestAnimationFrame(resolve));
       });
-      if (onExportPdf) {
-        await onExportPdf();
-        return;
-      }
       const el = previewRef.current;
-      if (!el) return;
+      if (!el) throw new Error('Preview not ready');
+      // Same DOM pipeline as Print — not the server PDF template.
       await exportDocumentPdf(el, `${docNumber || exportFilePrefix}.pdf`);
     } catch (err) {
       console.error('Save & export failed', err);
     } finally {
       setExporting(false);
     }
-  }, [docNumber, exportFilePrefix, onExportPdf, onSaveNow]);
+  }, [docNumber, exportFilePrefix, onSaveNow]);
+
+  const handlePrint = useCallback(async () => {
+    const el = previewRef.current;
+    const title = [docTypeLabel, docNumber].filter(Boolean).join(' ').trim() || docTypeLabel;
+    setPrinting(true);
+    try {
+      if (el) {
+        await printDocumentPreview(el, { title });
+        return;
+      }
+      if (onPrint) {
+        onPrint();
+        return;
+      }
+      const prevTitle = document.title;
+      document.title = title;
+      try {
+        window.print();
+      } finally {
+        document.title = prevTitle;
+      }
+    } catch (err) {
+      console.error('Print failed', err);
+    } finally {
+      setPrinting(false);
+    }
+  }, [docNumber, docTypeLabel, onPrint]);
 
   useEffect(() => {
     if (exportRef) {
@@ -119,23 +154,39 @@ export default function InvoiceBuilderShell({
   }, [exportRef, handleSaveAndExport]);
 
   useEffect(() => {
-    fitToWidth();
-  }, [fitToWidth, panelOpen]);
+    if (printRef) {
+      printRef.current = handlePrint;
+    }
+  }, [printRef, handlePrint]);
 
+  // Billing Center "Print" opens the builder with ?print=1 — same pipeline as toolbar Print.
   useEffect(() => {
-    const onResize = () => fitToWidth();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [fitToWidth]);
+    if (!wantsPrint || loadingDoc || autoPrintStarted.current) return undefined;
+    const timer = window.setTimeout(() => {
+      if (!previewRef.current || autoPrintStarted.current) return;
+      autoPrintStarted.current = true;
+      handlePrint().finally(() => {
+        const next = new URLSearchParams(searchParams);
+        next.delete('print');
+        const qs = next.toString();
+        navigate(`${window.location.pathname}${qs ? `?${qs}` : ''}`, { replace: true });
+      });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [wantsPrint, loadingDoc, handlePrint, navigate, searchParams]);
 
   const shellClass = `ib-shell${panelOpen ? ' ib-shell--panel-open' : ''}${readOnly ? ' ib-shell--readonly' : ''}`;
-  const busy = Boolean(busyAction) || exporting || loadingDoc;
+  const busy = Boolean(busyAction) || exporting || printing || loadingDoc;
+  const resolvedStatus = String(status || 'Draft');
+  const hasDocNumber = Boolean(String(docNumber || '').trim());
+  const toolbarDocLabel = hasDocNumber ? docNumber : 'Untitled';
+  const showStatusPill = hasDocNumber || resolvedStatus !== 'Draft';
 
   return (
     <div className={shellClass}>
       <header className="ib-toolbar">
         <div className="ib-toolbar-left">
-          <Link to="/finance/build" className="ib-icon-btn" title="Back to document types" aria-label="Back">
+          <Link to="/finance/build" className="ib-icon-btn" title="Back to Billing Center" aria-label="Back">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M15 18l-6-6 6-6" />
             </svg>
@@ -143,47 +194,61 @@ export default function InvoiceBuilderShell({
           <div className="ib-toolbar-title">
             <span className="ib-toolbar-label">{docTypeLabel}</span>
             <span className="ib-toolbar-meta">
-              <span className="ib-toolbar-doc">{docNumber || 'Draft'}</span>
-              <span className={`ib-status-pill ib-status-pill--${String(status || 'draft').toLowerCase()}`}>
-                {status || 'Draft'}
-              </span>
+              <span className="ib-toolbar-doc">{toolbarDocLabel}</span>
+              {showStatusPill ? (
+                <span className={`ib-status-pill ib-status-pill--${resolvedStatus.toLowerCase()}`}>
+                  {resolvedStatus}
+                </span>
+              ) : null}
             </span>
           </div>
           <SaveIndicator state={saveState} savedAt={savedAt} status={status} />
         </div>
 
         <div className="ib-toolbar-center">
-          <span className="ib-total-pill">
-            <span className="ib-total-label">Total</span>
-            <span className="ib-total-value">₹ {grandTotal}</span>
-          </span>
+          <div className="ib-toolbar-cluster">
+            <span className="ib-total-pill">
+              <span className="ib-total-label">Total</span>
+              <span className="ib-total-value">₹ {grandTotal}</span>
+            </span>
+            <div className="ib-zoom" role="group" aria-label="Zoom">
+              <button type="button" className="ib-zoom-btn" onClick={zoomOut} aria-label="Zoom out">
+                −
+              </button>
+              <button type="button" className="ib-zoom-pct" onClick={resetZoom} title="Reset zoom to 80%">
+                {Math.round(scale * 100)}%
+              </button>
+              <button type="button" className="ib-zoom-btn" onClick={zoomIn} aria-label="Zoom in">
+                +
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="ib-toolbar-right">
-          <button type="button" className="ib-text-btn" onClick={onNewInvoice} title={newDocLabel} disabled={busy}>
-            {newDocLabel}
+          {!isDraftLike ? (
+            <button type="button" className="ib-text-btn" onClick={onNewInvoice} title={newDocLabel} disabled={busy}>
+              {newDocLabel}
+            </button>
+          ) : null}
+          <button type="button" className="ib-text-btn" onClick={handlePrint} title="Print (⌘P)" disabled={busy}>
+            {printing ? 'Preparing…' : 'Print'}
           </button>
-          <button type="button" className="ib-text-btn" onClick={onShowShortcuts} title="Shortcuts (?)">
-            ?
-          </button>
-          <button type="button" className="ib-text-btn" onClick={onPrint} title="Print (⌘P)">
-            Print
-          </button>
-          {!readOnly && onSubmit ? (
+          {isDraftLike && onSubmit ? (
             <button
               type="button"
-              className="ib-text-btn"
-              disabled={busy || status !== 'Draft'}
+              className="ib-primary-btn"
+              disabled={busy}
               onClick={() => onSubmit?.()}
-              title="Send for approval"
+              title="Send to Operations Head or Senior Manager for approval"
             >
               {busyAction === 'submit' ? 'Sending…' : 'Send for approval'}
             </button>
           ) : null}
-          {status === 'Submitted' && onApprove ? (
+          {isSubmitted && canApprove && onApprove ? (
             <button
               type="button"
-              className="ib-text-btn"
+              className="ib-primary-btn"
               disabled={busy}
               onClick={() => onApprove?.()}
               title="Approve document"
@@ -191,7 +256,7 @@ export default function InvoiceBuilderShell({
               {busyAction === 'approve' ? 'Approving…' : 'Approve'}
             </button>
           ) : null}
-          {status === 'Submitted' && onReject ? (
+          {isSubmitted && canApprove && onReject ? (
             <button
               type="button"
               className="ib-text-btn"
@@ -202,26 +267,22 @@ export default function InvoiceBuilderShell({
               {busyAction === 'reject' ? 'Rejecting…' : 'Reject'}
             </button>
           ) : null}
-          {onIssue && ['Approved', 'Uploaded'].includes(status) ? (
+          {isSubmitted && !canApprove ? (
+            <span className="ib-save ib-save--idle" title="Awaiting Operations Head or Senior Manager">
+              Awaiting approval
+            </span>
+          ) : null}
+          {!isDraftLike ? (
             <button
               type="button"
               className="ib-text-btn"
               disabled={busy}
-              onClick={() => onIssue?.()}
-              title="Finalize and assign document number"
+              onClick={handleSaveAndExport}
+              title="Download PDF (⌘S)"
             >
-              {busyAction === 'issue' ? 'Finalizing…' : 'Finalize'}
+              {exporting ? 'Preparing PDF…' : 'Download PDF'}
             </button>
           ) : null}
-          <button
-            type="button"
-            className="ib-primary-btn"
-            disabled={busy}
-            onClick={handleSaveAndExport}
-            title="Download PDF (⌘S)"
-          >
-            {exporting ? 'Preparing PDF…' : 'Download PDF'}
-          </button>
           <button
             type="button"
             className={`ib-icon-btn ib-panel-btn${panelOpen ? ' is-active' : ''}`}
@@ -267,17 +328,6 @@ export default function InvoiceBuilderShell({
                 {typeof children === 'function' ? children(previewRef) : children}
               </div>
             </div>
-          </div>
-          <div className="ib-zoom" role="group" aria-label="Zoom">
-            <button type="button" className="ib-zoom-btn" onClick={zoomOut} aria-label="Zoom out">
-              −
-            </button>
-            <button type="button" className="ib-zoom-pct" onClick={resetZoom} title="Reset zoom to 70%">
-              {Math.round(scale * 100)}%
-            </button>
-            <button type="button" className="ib-zoom-btn" onClick={zoomIn} aria-label="Zoom in">
-              +
-            </button>
           </div>
         </main>
 

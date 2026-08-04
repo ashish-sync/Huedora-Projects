@@ -54,7 +54,7 @@ function invoiceLikeToPayload(form, documentType) {
     shipToAddress: trim(ship.address),
     vehicleNo: trim(ship.vehicleNo),
     transporterName: trim(ship.transporterName),
-    documentNumber: trim(inv.documentNumber),
+    documentNumber: '',
     lineItems: (form.lineItems || [])
       .filter((row) => trim(row.description) || Number(row.qty) || Number(row.rate))
       .map((row, index) => ({
@@ -119,7 +119,7 @@ function proformaToPayload(form) {
     advanceReceived: adj.advanceReceived,
     terms: Array.isArray(form.terms) ? form.terms : [],
     customNotes: trim(doc.customNotes),
-    documentNumber: trim(doc.documentNumber),
+    documentNumber: '',
     lineItems,
     builderForm: form,
     documentType: 'proforma',
@@ -142,7 +142,7 @@ function poToPayload(form) {
     terms: Array.isArray(form.terms) ? form.terms : [],
     notes: trim(form.notes),
     customNotes: trim(form.notes),
-    documentNumber: trim(po.documentNumber),
+    documentNumber: '',
     lineItems: (form.lineItems || [])
       .filter((row) => trim(row.description) || Number(row.qty) || Number(row.rate))
       .map((row, index) => ({
@@ -164,9 +164,16 @@ export function formToApiPayload(documentType, form) {
   return invoiceLikeToPayload(form, 'client_invoice');
 }
 
+/** Official numbers exist only after approval — blank for Draft / Submitted / Uploaded. */
+function officialDocumentNumber(doc) {
+  if (['Draft', 'Submitted', 'Uploaded'].includes(doc?.status)) return '';
+  return doc?.documentNumber || '';
+}
+
 function mergeInvoiceLike(base, doc) {
   const form = structuredClone(base);
   const bf = doc.builderForm && typeof doc.builderForm === 'object' ? doc.builderForm : null;
+  const docNo = officialDocumentNumber(doc);
   if (bf) {
     return {
       ...form,
@@ -179,7 +186,7 @@ function mergeInvoiceLike(base, doc) {
       invoice: {
         ...form.invoice,
         ...(bf.invoice || {}),
-        documentNumber: doc.documentNumber || bf.invoice?.documentNumber || '',
+        documentNumber: docNo,
         issueDate: doc.documentDate || bf.invoice?.issueDate || form.invoice.issueDate,
         dueDate: doc.dueDate || bf.invoice?.dueDate || form.invoice.dueDate,
       },
@@ -213,7 +220,7 @@ function mergeInvoiceLike(base, doc) {
   };
   form.invoice = {
     ...form.invoice,
-    documentNumber: doc.documentNumber || '',
+    documentNumber: docNo,
     issueDate: doc.documentDate || form.invoice.issueDate,
     dueDate: doc.dueDate || form.invoice.dueDate,
     placeOfSupply: doc.placeOfSupply || '',
@@ -252,6 +259,7 @@ function mergeInvoiceLike(base, doc) {
 function mergeProforma(doc) {
   const form = structuredClone(defaultProformaForm());
   const bf = doc.builderForm && typeof doc.builderForm === 'object' ? doc.builderForm : null;
+  const docNo = officialDocumentNumber(doc);
   if (bf) {
     return {
       ...form,
@@ -259,7 +267,7 @@ function mergeProforma(doc) {
       document: {
         ...form.document,
         ...(bf.document || {}),
-        documentNumber: doc.documentNumber || bf.document?.documentNumber || '',
+        documentNumber: docNo,
         issueDate: doc.documentDate || bf.document?.issueDate || form.document.issueDate,
         dueDate: doc.dueDate || bf.document?.dueDate || form.document.dueDate,
       },
@@ -280,7 +288,7 @@ function mergeProforma(doc) {
   };
   form.document = {
     ...form.document,
-    documentNumber: doc.documentNumber || '',
+    documentNumber: docNo,
     issueDate: doc.documentDate || form.document.issueDate,
     dueDate: doc.dueDate || form.document.dueDate,
     paymentTermsDays: doc.paymentTermsDays || form.document.paymentTermsDays,
@@ -314,6 +322,7 @@ function mergeProforma(doc) {
 function mergePo(doc) {
   const form = structuredClone(defaultPurchaseOrderForm());
   const bf = doc.builderForm && typeof doc.builderForm === 'object' ? doc.builderForm : null;
+  const docNo = officialDocumentNumber(doc);
   if (bf) {
     return {
       ...form,
@@ -321,7 +330,7 @@ function mergePo(doc) {
       po: {
         ...form.po,
         ...(bf.po || {}),
-        documentNumber: doc.documentNumber || bf.po?.documentNumber || '',
+        documentNumber: docNo,
         documentDate: doc.documentDate || bf.po?.documentDate || form.po.documentDate,
         deliveryDate: doc.dueDate || bf.po?.deliveryDate || form.po.deliveryDate,
       },
@@ -341,7 +350,7 @@ function mergePo(doc) {
   form.deliveryAddress = doc.deliveryAddress || '';
   form.po = {
     ...form.po,
-    documentNumber: doc.documentNumber || '',
+    documentNumber: docNo,
     documentDate: doc.documentDate || form.po.documentDate,
     deliveryDate: doc.dueDate || form.po.deliveryDate,
     reference: doc.projectName || doc.reference || '',
@@ -433,6 +442,14 @@ export async function cancelCommercialDocument(id) {
   const res = await api(`/finance/commercial-documents/${id}/cancel`, {
     method: 'POST',
     body: '{}',
+  });
+  return res.data;
+}
+
+export async function recordCommercialPayment(id, amount) {
+  const res = await api(`/finance/commercial-documents/${id}/payment`, {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
   });
   return res.data;
 }

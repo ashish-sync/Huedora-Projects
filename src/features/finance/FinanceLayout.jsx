@@ -3,24 +3,26 @@ import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
+import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
 
 const NAV_ITEMS = [
-  { to: '/finance', end: true, label: NAV.OVERVIEW },
+  { to: '/finance/build', end: false, label: NAV.BILLING_CENTER },
   { to: '/finance/vendor-bills', end: false, label: NAV.VENDOR_BILLS },
   { to: '/finance/payouts', end: true, label: NAV.PAYOUT_QUEUE },
-  { to: '/finance/build', end: true, label: NAV.INVOICE_BUILDER, writeOnly: true },
-  { to: '/finance/master', end: true, label: NAV.ORG_MASTER },
 ];
+
+const ORG_MASTER_NAV = { to: '/finance/master', end: true, label: NAV.ORG_MASTER };
 
 export default function FinanceLayout() {
   const { pathname } = useLocation();
   const isEditor = FINANCE_BUILDER_EDITOR_ROUTE.test(pathname);
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const canWrite = can('finance:write') || can('*');
   const allowed = can('finance:read') || canWrite;
+  const canOrgMaster = canManageOrganisationMaster(user);
 
-  const navItems = NAV_ITEMS.filter((item) => (item.writeOnly ? canWrite : true));
+  const navItems = canOrgMaster ? [...NAV_ITEMS, ORG_MASTER_NAV] : NAV_ITEMS;
 
   if (!allowed) {
     return (
@@ -33,8 +35,12 @@ export default function FinanceLayout() {
     );
   }
 
+  if (pathname.startsWith('/finance/master') && !canOrgMaster) {
+    return <Navigate to="/finance/build" replace />;
+  }
+
   if (isEditor && !canWrite) {
-    return <Navigate to="/finance" replace />;
+    return <Navigate to="/finance/build" replace />;
   }
 
   if (isEditor) {

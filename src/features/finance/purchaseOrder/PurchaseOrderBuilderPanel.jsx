@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../shared/auth.jsx';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
+import { canManageOrganisationMaster } from '../builder/commercialApproval.js';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
@@ -46,15 +48,21 @@ export default function PurchaseOrderBuilderPanel({
 }) {
   const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
   const taxLabels = resolveTaxColumnLabels(form);
+  const { user } = useAuth();
+  const canOrgMaster = canManageOrganisationMaster(user);
 
   return (
     <div className="ib-panel-inner">
       <div className="ib-panel-intro">
         <p>
           Company letterhead &amp; bank come from{' '}
-          <Link to="/finance/master" className="ib-link">
-            Organisation master
-          </Link>
+          {canOrgMaster ? (
+            <Link to="/finance/master" className="ib-link">
+              Organisation master
+            </Link>
+          ) : (
+            'Organisation master'
+          )}
           . Click the document to edit inline.
         </p>
       </div>
@@ -91,7 +99,13 @@ export default function PurchaseOrderBuilderPanel({
       <Section title="Purchase order" defaultOpen>
         <div className="ib-grid">
           <Field label="PO no.">
-            <input className={`${inputCls} ib-input--mono`} value={form.po?.documentNumber || ''} onChange={(e) => update('po.documentNumber', e.target.value)} />
+            <input
+              className={`${inputCls} ib-input--mono`}
+              value={form.po?.documentNumber || ''}
+              readOnly
+              placeholder="Assigned on approval"
+              title="Document number is assigned when the document is approved"
+            />
           </Field>
           <Field label="Reference">
             <input className={inputCls} value={form.po?.reference || ''} onChange={(e) => update('po.reference', e.target.value)} placeholder="RFQ / quote" />

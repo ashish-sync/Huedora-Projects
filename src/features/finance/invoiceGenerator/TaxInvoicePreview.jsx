@@ -107,15 +107,13 @@ export default function TaxInvoicePreview({
               <div className="ti-doc-meta-row">
                 <span className="ti-doc-meta-label">{labels.docNo}</span>
                 {editable ? (
-                  <InlineField
-                    className="ti-doc-meta-value"
-                    value={invoice?.documentNumber}
-                    onChange={(v) => onUpdate?.('invoice.documentNumber', v)}
-                    placeholder="Auto"
-                    mono
-                  />
+                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">
+                    {invoice?.documentNumber || 'Assigned on approval'}
+                  </span>
                 ) : (
-                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">{invoice?.documentNumber || '—'}</span>
+                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">
+                    {invoice?.documentNumber || 'Draft'}
+                  </span>
                 )}
               </div>
               {invoice?.issueDate ? (

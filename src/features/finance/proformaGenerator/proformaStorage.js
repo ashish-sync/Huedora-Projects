@@ -1,4 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
+import { fiscalYearLabel } from '../documentNumbering.js';
 
 const STORAGE_KEY = 'tylo_one_proforma_generator_v1';
 const NUMBER_KEY = 'tylo_one_proforma_number_seq';
@@ -60,7 +61,7 @@ export function defaultProformaForm() {
       stateCode: '',
     },
     document: {
-      documentNumber: peekProformaNumber(today),
+      documentNumber: '',
       issueDate: today,
       dueDate: today,
       paymentTermsDays: 45,
@@ -102,9 +103,9 @@ export function defaultProformaForm() {
 
 export function peekProformaNumber(dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
-  const yy = String(d.getFullYear()).slice(-2);
+  const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${yy}-${mm}`;
+  const periodKey = `${fy}_${mm}`;
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
@@ -112,13 +113,15 @@ export function peekProformaNumber(dateIso) {
     seqMap = {};
   }
   const next = (seqMap[periodKey] || 0) + 1;
-  return `TCPI-${yy}-${mm}-${String(next).padStart(3, '0')}`;
+  return `PI/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function nextProformaNumber(dateIso) {
   const num = peekProformaNumber(dateIso);
   const d = dateIso ? new Date(dateIso) : new Date();
-  const periodKey = `${String(d.getFullYear()).slice(-2)}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const fy = fiscalYearLabel(d);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const periodKey = `${fy}_${mm}`;
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');

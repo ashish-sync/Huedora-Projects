@@ -92,15 +92,11 @@ export default function PurchaseOrderPreview({
               <div className="ti-doc-meta-row">
                 <span className="ti-doc-meta-label">PO No</span>
                 {editable ? (
-                  <InlineField
-                    className="ti-doc-meta-value"
-                    value={po?.documentNumber}
-                    onChange={(v) => onUpdate?.('po.documentNumber', v)}
-                    placeholder="Auto"
-                    mono
-                  />
+                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">
+                    {po?.documentNumber || 'Assigned on approval'}
+                  </span>
                 ) : (
-                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">{po?.documentNumber || '—'}</span>
+                  <span className="ti-doc-meta-value ti-doc-meta-value--mono">{po?.documentNumber || 'Draft'}</span>
                 )}
               </div>
               <div className="ti-doc-meta-row">

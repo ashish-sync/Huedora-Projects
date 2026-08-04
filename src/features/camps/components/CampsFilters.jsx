@@ -41,10 +41,10 @@ const EXECUTION_STATUS_OPTIONS = [
 ];
 
 const FINANCIAL_STATUS_OPTIONS = [
-  { value: 'payment_not_checked', label: 'Payment not checked' },
-  { value: 'payment_confirmed', label: 'Payment confirmed' },
-  { value: 'payment_hold', label: 'Payment hold' },
-  { value: 'payment_completed', label: 'Paid (Finance)' },
+  { value: 'payment_not_checked', label: 'Validation Pending' },
+  { value: 'payment_confirmed', label: 'Validation Completed' },
+  { value: 'payment_hold', label: 'Payment On Hold' },
+  { value: 'payment_completed', label: 'Payment Completed' },
 ];
 
 function statusOptionsForStage(stage) {

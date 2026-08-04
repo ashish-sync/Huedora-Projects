@@ -1,4 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
+import { fiscalYearLabel } from '../documentNumbering.js';
 
 const STORAGE_KEY = 'tylo_one_purchase_order_generator_v1';
 const NUMBER_KEY = 'tylo_one_purchase_order_number_seq';
@@ -64,7 +65,7 @@ export function defaultPurchaseOrderForm() {
     billingAddress: '',
     deliveryAddress: '',
     po: {
-      documentNumber: peekPONumber(today),
+      documentNumber: '',
       documentDate: today,
       deliveryDate: today,
       paymentTerms: 'Net 30 days from invoice date',
@@ -174,25 +175,31 @@ function readSeqMap() {
 
 function periodKey(dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
-  const yy = String(d.getFullYear()).slice(-2);
+  const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${yy}-${mm}`;
+  return `${fy}_${mm}`;
 }
 
 export function peekPONumber(dateIso) {
   const seqMap = readSeqMap();
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
   const key = periodKey(dateIso);
   const next = (seqMap[key] || 0) + 1;
-  return `TCPO-${key}-${String(next).padStart(3, '0')}`;
+  return `PO/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function nextPONumber(dateIso) {
   const seqMap = readSeqMap();
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
   const key = periodKey(dateIso);
   const next = (seqMap[key] || 0) + 1;
   seqMap[key] = next;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
-  return `TCPO-${key}-${String(next).padStart(3, '0')}`;
+  return `PO/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function loadPurchaseOrderDraft() {

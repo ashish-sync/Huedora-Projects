@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { A4_LANDSCAPE_PX } from '../shared/a4Landscape.js';
 
-export const DEFAULT_PREVIEW_SCALE = 0.7;
+export const DEFAULT_PREVIEW_SCALE = 0.8;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 1.05;
 

@@ -368,7 +368,7 @@ export default function ClientMasterFormPage() {
 
       <h3 className="client-master-section-title">Billing details (Invoice recipient)</h3>
       <p className="meta-text" style={{ marginTop: 0 }}>
-        Stored on the company and reused by Invoice Builder when this Client Master is selected.
+        Stored on the company and reused by Billing Center when this Client Master is selected.
       </p>
       <div className="form-grid">
         <label>

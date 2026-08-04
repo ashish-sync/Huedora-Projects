@@ -25,10 +25,11 @@
 
 /* ─── Toolbar ─── */
 .ib-toolbar {
-  display: flex;
+  --ib-control-h: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  column-gap: 16px;
   height: var(--ib-toolbar-h);
   padding: 0 16px;
   background: var(--ib-surface);
@@ -43,23 +44,45 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  height: 100%;
+}
+
+.ib-toolbar-left {
+  justify-content: flex-start;
+}
+
+.ib-toolbar-right {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
 .ib-toolbar-center {
-  flex: 1;
   display: flex;
+  align-items: center;
   justify-content: center;
+  min-width: 0;
+  height: 100%;
+}
+
+.ib-toolbar-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--ib-control-h);
 }
 
 .ib-toolbar-title {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 0;
   min-width: 0;
+  line-height: 1.15;
 }
 
 .ib-toolbar-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -68,13 +91,14 @@
 }
 
 .ib-toolbar-doc {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   font-family: ui-monospace, 'SF Mono', monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+  line-height: 1.25;
 }
 
 .ib-toolbar-meta {
@@ -82,7 +106,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .ib-status-pill {
@@ -175,12 +199,16 @@
 }
 
 .ib-save {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ib-control-h);
   font-size: 11px;
   color: var(--ib-muted);
-  padding: 2px 8px;
+  padding: 0 10px;
   border-radius: 999px;
   background: var(--surface-muted);
   white-space: nowrap;
+  line-height: 1;
 }
 
 .ib-save--saving {
@@ -195,34 +223,39 @@
 
 .ib-total-pill {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  height: var(--ib-control-h);
+  padding: 0 12px;
   border-radius: 999px;
   background: var(--bg-sunken);
   border: 1px solid var(--ib-border);
+  box-sizing: border-box;
+  line-height: 1;
 }
 
 .ib-total-label {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--ib-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .ib-total-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .ib-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--ib-control-h);
+  height: var(--ib-control-h);
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -230,6 +263,7 @@
   cursor: pointer;
   text-decoration: none;
   transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
 }
 
 .ib-icon-btn:hover {
@@ -243,14 +277,20 @@
 }
 
 .ib-text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--ib-control-h);
   border: none;
   background: transparent;
   font-size: 13px;
   font-weight: 500;
   color: var(--ib-muted);
-  padding: 6px 10px;
+  padding: 0 10px;
   border-radius: 8px;
   cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .ib-text-btn:hover {
@@ -259,15 +299,21 @@
 }
 
 .ib-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--ib-control-h);
   border: none;
   background: var(--ib-accent);
   color: var(--brand-ink);
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 16px;
+  padding: 0 14px;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.12s;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .ib-primary-btn:hover:not(:disabled) {
@@ -292,7 +338,7 @@
   min-width: 0;
   position: relative;
   overflow: auto;
-  padding: 20px 20px 72px;
+  padding: 20px;
   background-color: var(--ib-canvas);
   background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -322,38 +368,40 @@
 }
 
 .ib-zoom {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: var(--ib-surface);
+  gap: 0;
+  height: var(--ib-control-h);
+  background: var(--bg-sunken);
   border: 1px solid var(--ib-border);
   border-radius: 999px;
-  padding: 4px;
-  box-shadow: var(--ib-shadow), 0 8px 24px rgba(15, 23, 42, 0.12);
-  z-index: 10;
-  pointer-events: auto;
+  padding: 0 2px;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .ib-zoom-btn,
 .ib-zoom-pct {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ib-text);
   cursor: pointer;
   border-radius: 999px;
-  min-width: 36px;
-  height: 36px;
+  min-width: 26px;
+  height: calc(var(--ib-control-h) - 6px);
+  line-height: 1;
+  padding: 0;
 }
 
 .ib-zoom-pct {
-  font-size: 13px;
-  min-width: 56px;
+  font-size: 12px;
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
 }
 
 .ib-zoom-btn:hover,
@@ -647,22 +695,38 @@
 }
 
 /* ─── Responsive ─── */
+@media (max-width: 1100px) {
+  .ib-toolbar-right {
+    gap: 2px;
+  }
+
+  .ib-text-btn {
+    padding: 0 8px;
+  }
+}
+
 @media (max-width: 768px) {
   .ib-toolbar {
+    display: flex;
+    flex-wrap: wrap;
     height: auto;
     min-height: var(--ib-toolbar-h);
     padding: 8px 12px;
-    flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
+    row-gap: 8px;
   }
 
   .ib-toolbar-left {
     flex: 1 1 auto;
     min-width: 0;
+    height: auto;
   }
 
   .ib-toolbar-center {
-    display: none;
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    height: auto;
   }
 
   .ib-toolbar-title {
@@ -686,9 +750,11 @@
   }
 
   .ib-toolbar-right {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     justify-content: flex-end;
     flex-wrap: wrap;
+    height: auto;
   }
 
   .ib-panel.is-open {

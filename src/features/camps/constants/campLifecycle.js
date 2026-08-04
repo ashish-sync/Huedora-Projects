@@ -244,15 +244,15 @@ export const EXECUTION_DOC_TYPES = [
 ];
 
 export const PAYMENT_SUBMIT_STATUSES = [
-  { value: 'payment_confirmed', label: 'Payment Confirmed' },
-  { value: 'payment_not_checked', label: 'Payment Not Checked' },
-  { value: 'payment_hold', label: 'Payment Hold' },
+  { value: 'payment_confirmed', label: 'Validation Completed' },
+  { value: 'payment_not_checked', label: 'Validation Pending' },
+  { value: 'payment_hold', label: 'Payment On Hold' },
 ];
 
 export const FINANCE_PAYMENT_STATUSES = [
   { value: 'not_paid', label: 'Not Paid' },
   { value: 'under_review', label: 'Under Review' },
-  { value: 'paid', label: 'Paid' },
+  { value: 'paid', label: 'Payment Completed' },
 ];
 
 export function paymentSubmitStatusLabel(value) {

@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
-import { api, apiFetch } from '../../shared/api.js';
+import { api } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FILTER } from '../../shared/labels.js';
 import { COMMERCIAL_DOC_TYPES, docTypeLabel } from './commercialDocumentConfig.js';
-import { buildEditPath, deleteCommercialDocument } from './builder/builderPersistence.js';
+import { buildEditPath, recordCommercialPayment } from './builder/builderPersistence.js';
 
 function formatMoney(n) {
   const num = Number(n);
@@ -18,26 +18,18 @@ function formatMoney(n) {
   return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 }
 
-function pdfPathForRow(row) {
-  const cfg = COMMERCIAL_DOC_TYPES.find((t) => t.key === row.documentType);
-  return cfg ? cfg.pdfPath(row._id) : null;
+/** Official number exists only after approval (Issued). Never fall back to internal docKey. */
+function displayDocumentNumber(row) {
+  if (['Draft', 'Submitted', 'Uploaded'].includes(row?.status)) return '—';
+  return row?.documentNumber || '—';
 }
 
-async function downloadPdf(row) {
-  const path = pdfPathForRow(row);
-  if (!path) return;
-  const res = await apiFetch(`${path}?download=1`);
-  if (!res.ok) throw new Error('Download failed');
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${(row.documentNumber || row.docKey || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
-  a.click();
-  URL.revokeObjectURL(url);
+function canRecordPayment(row) {
+  return ['Issued', 'Approved'].includes(row?.status);
 }
 
 export default function FinanceDocumentsList({ embedded = false, showCreateLink = true }) {
+  const navigate = useNavigate();
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
 
@@ -50,6 +42,12 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [documentType, setDocumentType] = useState('');
   const [error, setError] = useState('');
   const [listLoading, setListLoading] = useState(false);
+
+  const [payRow, setPayRow] = useState(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payBusy, setPayBusy] = useState(false);
+  const [payError, setPayError] = useState('');
+  const [payMsg, setPayMsg] = useState('');
 
   const load = useCallback(async () => {
     setListLoading(true);
@@ -73,6 +71,45 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   useEffect(() => {
     load();
   }, [load]);
+
+  function openPayment(row) {
+    setPayError('');
+    setPayMsg('');
+    setPayRow(row);
+    const existing = Number(row.paidAmount);
+    setPayAmount(
+      Number.isFinite(existing) && existing > 0 ? String(existing) : String(row.grandTotal ?? ''),
+    );
+  }
+
+  function closePayment() {
+    if (payBusy) return;
+    setPayRow(null);
+    setPayAmount('');
+    setPayError('');
+  }
+
+  async function submitPayment() {
+    if (!payRow) return;
+    setPayBusy(true);
+    setPayError('');
+    setPayMsg('');
+    try {
+      const updated = await recordCommercialPayment(payRow._id, payAmount);
+      setPayMsg(
+        updated.paymentStatus === 'Fully paid'
+          ? 'Marked fully paid.'
+          : 'Marked partially paid.',
+      );
+      setPayRow(null);
+      setPayAmount('');
+      await load();
+    } catch (e) {
+      setPayError(e.message || 'Failed to record payment');
+    } finally {
+      setPayBusy(false);
+    }
+  }
 
   const content = (
     <>
@@ -128,6 +165,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       </MasterFilterShell>
 
       {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
+      {payMsg ? <FeedbackBanner variant="success">{payMsg}</FeedbackBanner> : null}
 
       <div className="table-wrap">
         <table className="data-table">
@@ -156,7 +194,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                   {showCreateLink && canWrite ? (
                     <>
                       {' '}
-                      Open <strong>Invoice Builder</strong> to create a new document.
+                      Open <strong>Billing Center</strong> to create a new document.
                     </>
                   ) : null}
                 </td>
@@ -164,7 +202,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
             ) : (
               rows.map((row) => (
                 <tr key={row._id}>
-                  <td className="mono-sm">{row.documentNumber || row.docKey || '—'}</td>
+                  <td className="mono-sm">{displayDocumentNumber(row)}</td>
                   <td>{docTypeLabel(row.documentType)}</td>
                   <td>{row.recipientName || '—'}</td>
                   <td>{formatDate(row.documentDate)}</td>
@@ -175,35 +213,17 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {canWrite && ['Draft', 'Uploaded', 'Submitted', 'Approved'].includes(row.status) ? (
-                        <Link className="btn-link" to={buildEditPath(row.documentType, row._id)}>
-                          {row.status === 'Draft' || row.status === 'Uploaded' ? 'Edit' : 'Open'}
-                        </Link>
-                      ) : (
-                        <Link className="btn-link" to={buildEditPath(row.documentType, row._id)}>
-                          View
-                        </Link>
-                      )}
+                    <div className="finance-docs-row-actions">
+                      <Link to={buildEditPath(row.documentType, row._id)}>Edit</Link>
                       <button
                         type="button"
-                        className="btn-link"
-                        onClick={() => downloadPdf(row).catch((e) => setError(e.message))}
+                        onClick={() => navigate(`${buildEditPath(row.documentType, row._id)}?print=1`)}
                       >
-                        PDF
+                        Print
                       </button>
-                      {canWrite && ['Draft', 'Uploaded', 'Cancelled'].includes(row.status) ? (
-                        <button
-                          type="button"
-                          className="btn-link"
-                          onClick={() => {
-                            if (!window.confirm('Delete this document?')) return;
-                            deleteCommercialDocument(row._id)
-                              .then(() => load())
-                              .catch((e) => setError(e.message));
-                          }}
-                        >
-                          Delete
+                      {canWrite && canRecordPayment(row) ? (
+                        <button type="button" onClick={() => openPayment(row)}>
+                          Payment
                         </button>
                       ) : null}
                     </div>
@@ -226,6 +246,51 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           setPage(1);
         }}
       />
+
+      {payRow ? (
+        <div className="modal-overlay" role="presentation" onClick={closePayment}>
+          <div
+            className="modal-card finance-payment-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Record payment"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="modal-title">Record payment</h3>
+            <p className="muted finance-payment-modal-meta">
+              {docTypeLabel(payRow.documentType)} · {displayDocumentNumber(payRow)}
+            </p>
+            <div className="field">
+              <label>Invoice amount</label>
+              <input readOnly value={`₹ ${formatMoney(payRow.grandTotal)}`} />
+            </div>
+            <div className="field">
+              <label>Payment amount *</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                autoFocus
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                disabled={payBusy}
+              />
+              <p className="field-hint muted">
+                Same as invoice amount → Fully paid. Any other amount → Partially paid.
+              </p>
+            </div>
+            {payError ? <FeedbackBanner variant="error">{payError}</FeedbackBanner> : null}
+            <div className="modal-actions">
+              <button type="button" className="btn secondary" disabled={payBusy} onClick={closePayment}>
+                Cancel
+              </button>
+              <button type="button" className="btn primary" disabled={payBusy} onClick={submitPayment}>
+                {payBusy ? 'Saving…' : 'Save payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 

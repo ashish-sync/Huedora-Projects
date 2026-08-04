@@ -1,30 +1,49 @@
 export const FINANCE_BUILDER_OPTIONS = [
   {
-    to: '/finance/build/invoice',
-    label: 'Tax Invoice',
-    code: 'INV',
-    desc: 'GST invoice',
-  },
-  {
-    to: '/finance/build/proforma',
-    label: 'Proforma',
-    code: 'PRO',
-    desc: 'Quote / estimate',
+    to: '/finance/build/quotation',
+    label: 'Quotation',
+    code: 'QT',
+    available: false,
   },
   {
     to: '/finance/build/purchase-order',
     label: 'Purchase Order',
     code: 'PO',
-    desc: 'Vendor PO',
+    available: true,
+  },
+  {
+    to: '/finance/build/proforma',
+    label: 'Proforma Invoice',
+    code: 'PI',
+    available: true,
+  },
+  {
+    to: '/finance/build/invoice',
+    label: 'Tax Invoice',
+    code: 'IN',
+    available: true,
   },
   {
     to: '/finance/build/credit-note',
     label: 'Credit Note',
     code: 'CN',
-    desc: 'GST credit',
+    available: true,
+  },
+  {
+    to: '/finance/build/debit-note',
+    label: 'Debit Note',
+    code: 'DN',
+    available: false,
   },
 ];
 
-export const FINANCE_BUILDER_EDITOR_PATHS = FINANCE_BUILDER_OPTIONS.map((item) => item.to);
+export function formatBuilderOptionLabel(item) {
+  return `${item.code} – ${item.label}`;
+}
 
-export const FINANCE_BUILDER_EDITOR_ROUTE = /^\/finance\/build\/(invoice|proforma|purchase-order|credit-note)$/;
+export const FINANCE_BUILDER_EDITOR_PATHS = FINANCE_BUILDER_OPTIONS.filter((item) => item.available).map(
+  (item) => item.to,
+);
+
+export const FINANCE_BUILDER_EDITOR_ROUTE =
+  /^\/finance\/build\/(invoice|proforma|purchase-order|credit-note|quotation|debit-note)(\/[^/]+)?$/;

@@ -213,7 +213,7 @@ export function usePersistedCommercialBuilder({
     }
     const id = row?._id || docIdRef.current;
     if (!id) throw new Error('Save the document before exporting');
-    const name = row?.documentNumber || row?.docKey || docMeta?.documentNumber || slug;
+    const name = row?.documentNumber || docMeta?.documentNumber || slug;
     await downloadServerPdf(documentType, id, name);
     return row;
   }, [docMeta, documentType, slug]);

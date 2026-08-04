@@ -1,4 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
+import { fiscalYearLabel } from '../documentNumbering.js';
 
 const STORAGE_KEY = 'tylo_one_invoice_generator_v1';
 const NUMBER_KEY = 'tylo_one_invoice_number_seq';
@@ -78,7 +79,7 @@ export function defaultInvoiceForm() {
       transporterName: '',
     },
     invoice: {
-      documentNumber: peekInvoiceNumber(today),
+      documentNumber: '',
       copyLabel: 'Original for Recipient',
       issueDate: today,
       dueDate: today,
@@ -121,9 +122,9 @@ export function defaultInvoiceForm() {
 
 export function nextInvoiceNumber(dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
-  const yy = String(d.getFullYear()).slice(-2);
+  const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${yy}-${mm}`;
+  const periodKey = `${fy}_${mm}`;
 
   let seqMap = {};
   try {
@@ -136,14 +137,14 @@ export function nextInvoiceNumber(dateIso) {
   seqMap[periodKey] = next;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
 
-  return `TCIN-${yy}-${mm}-${String(next).padStart(3, '0')}`;
+  return `IN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function peekInvoiceNumber(dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
-  const yy = String(d.getFullYear()).slice(-2);
+  const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${yy}-${mm}`;
+  const periodKey = `${fy}_${mm}`;
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
@@ -151,7 +152,7 @@ export function peekInvoiceNumber(dateIso) {
     seqMap = {};
   }
   const next = (seqMap[periodKey] || 0) + 1;
-  return `TCIN-${yy}-${mm}-${String(next).padStart(3, '0')}`;
+  return `IN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function loadInvoiceDraft() {

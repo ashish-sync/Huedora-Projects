@@ -77,55 +77,145 @@ export const buildInvoiceExportNode = buildDocumentExportNode;
 /** @deprecated Use removeDocumentExportNode */
 export const removeInvoiceExportNode = removeDocumentExportNode;
 
+function pdfExportOptions(filename = 'document.pdf') {
+  const width = A4_LANDSCAPE_PX.w;
+  const height = A4_LANDSCAPE_PX.h;
+  return {
+    margin: 0,
+    filename,
+    image: { type: 'png', quality: 1 },
+    html2canvas: {
+      scale: 4,
+      useCORS: true,
+      allowTaint: true,
+      letterRendering: true,
+      logging: false,
+      width,
+      height,
+      windowWidth: width,
+      windowHeight: height,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: [A4_LANDSCAPE.widthMm, A4_LANDSCAPE.heightMm],
+      orientation: 'landscape',
+      compress: true,
+      precision: 16,
+    },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+  };
+}
+
 /**
- * Export commercial document DOM to a crisp A4 landscape PDF (297 × 210 mm).
+ * Render the on-screen commercial document to a PDF blob (shared by Download + Print).
  */
-export async function exportDocumentPdf(sourceRoot, filename = 'document.pdf') {
+export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf') {
   const built = buildDocumentExportNode(sourceRoot);
   if (!built) throw new Error('Nothing to export');
 
   const { host, clone } = built;
-
   try {
     await waitForLayout();
-
-    const width = A4_LANDSCAPE_PX.w;
-    const height = A4_LANDSCAPE_PX.h;
-
-    await html2pdf()
-      .set({
-        margin: 0,
-        filename,
-        image: { type: 'png', quality: 1 },
-        html2canvas: {
-          scale: 4,
-          useCORS: true,
-          allowTaint: true,
-          letterRendering: true,
-          logging: false,
-          width,
-          height,
-          windowWidth: width,
-          windowHeight: height,
-          backgroundColor: '#ffffff',
-          scrollX: 0,
-          scrollY: 0,
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: [A4_LANDSCAPE.widthMm, A4_LANDSCAPE.heightMm],
-          orientation: 'landscape',
-          compress: true,
-          precision: 16,
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-      })
-      .from(clone)
-      .save();
+    const blob = await html2pdf().set(pdfExportOptions(filename)).from(clone).outputPdf('blob');
+    if (!(blob instanceof Blob)) throw new Error('PDF render failed');
+    return blob;
   } finally {
     removeDocumentExportNode(host);
   }
 }
 
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Download commercial document PDF — same render pipeline as Print.
+ */
+export async function exportDocumentPdf(sourceRoot, filename = 'document.pdf') {
+  const blob = await renderDocumentPdfBlob(sourceRoot, filename);
+  triggerBlobDownload(blob, filename);
+}
+
 /** @deprecated Use exportDocumentPdf */
 export const exportInvoicePdf = exportDocumentPdf;
+
+/**
+ * Print using the exact same PDF as Download (no separate HTML/server template).
+ */
+export async function printDocumentPreview(sourceRoot, { title = 'Document' } = {}) {
+  const filename = `${String(title || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+  const blob = await renderDocumentPdfBlob(sourceRoot, filename);
+  const url = URL.createObjectURL(blob);
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.setAttribute('title', title);
+  Object.assign(iframe.style, {
+    position: 'fixed',
+    left: '-10000px',
+    top: '0',
+    width: '297mm',
+    height: '210mm',
+    border: '0',
+    opacity: '1',
+    pointerEvents: 'none',
+    zIndex: '-1',
+  });
+
+  try {
+    document.body.appendChild(iframe);
+
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+      const fail = (err) => {
+        if (settled) return;
+        settled = true;
+        reject(err);
+      };
+
+      iframe.onload = () => {
+        const win = iframe.contentWindow;
+        if (!win) {
+          fail(new Error('Print window unavailable'));
+          return;
+        }
+
+        const finish = () => done();
+        win.addEventListener('afterprint', finish, { once: true });
+
+        // PDF plugin may need a brief moment before print is ready.
+        setTimeout(() => {
+          try {
+            win.focus();
+            win.print();
+          } catch (err) {
+            fail(err);
+            return;
+          }
+          setTimeout(finish, 60_000);
+        }, 250);
+      };
+
+      iframe.onerror = () => fail(new Error('Failed to load print PDF'));
+      iframe.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  }
+}

@@ -35,9 +35,13 @@ export function CampTimeFrame({
       {showLabel ? <span className="camp-time-frame-label">Time Frame</span> : null}
       <div className="camp-time-frame-card">
         <div className="camp-time-frame-top">
-          {data.slot ? <span className="camp-time-frame-slot">{data.slot}</span> : null}
-          {data.durationHours ? (
-            <span className="camp-time-frame-duration">{data.durationHours} hr</span>
+          {data.slot || data.durationHours ? (
+            <span className="camp-time-frame-slot">
+              {data.slot || '—'}
+              {data.durationHours ? (
+                <span className="camp-time-frame-duration">{data.durationHours} hr</span>
+              ) : null}
+            </span>
           ) : null}
         </div>
         {data.timeRange ? (

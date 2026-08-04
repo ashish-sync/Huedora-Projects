@@ -4,6 +4,20 @@ import { TYLO_LOGO_DATA_URL } from '../../shared/tyloLogoDataUrl.js';
 
 const CACHE_KEY = 'tylo_commercial_org_master_v1';
 
+/** Base64 logo/QR blobs are too large for localStorage (~5MB quota) and live on the API. */
+const CACHE_OMIT_KEYS = ['logoDataUrl', 'paymentQrDataUrl'];
+
+function toCachePayload(data) {
+  if (!data || typeof data !== 'object') return null;
+  const out = { ...data };
+  CACHE_OMIT_KEYS.forEach((key) => {
+    delete out[key];
+  });
+  // Drop mongoose / API noise that only inflates the cache
+  delete out.__v;
+  return out;
+}
+
 export const ORG_MASTER_FIELD_GROUPS = [
   {
     id: 'identity',
@@ -38,15 +52,41 @@ export const ORG_MASTER_FIELD_GROUPS = [
 export function loadOrgMasterCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Migrate older caches that stored full data-URL images and filled the quota.
+    if (parsed?.logoDataUrl || parsed?.paymentQrDataUrl) {
+      saveOrgMasterCache(parsed);
+      return toCachePayload(parsed);
+    }
+    return parsed;
   } catch {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
     return null;
   }
 }
 
 export function saveOrgMasterCache(data) {
-  if (!data) return;
-  localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  if (!data || typeof localStorage === 'undefined') return;
+  const payload = toCachePayload(data);
+  if (!payload) return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    // QuotaExceededError — drop this cache rather than break Finance screens.
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Org master cache skipped (storage quota):', err?.name || err);
+    }
+  }
 }
 
 export async function fetchCommercialOrgMaster() {

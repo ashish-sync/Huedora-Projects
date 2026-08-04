@@ -170,7 +170,7 @@ export default function FinanceCampPayoutsPage() {
 
     if (draft.financePaymentStatus === 'paid') {
       if (!String(draft.transactionId || '').trim()) {
-        setError('UTR / Transaction ID is required when status is Paid.');
+        setError('UTR / Transaction ID is required when status is Payment Completed.');
         return;
       }
       if (payMode === 'single') {
@@ -674,7 +674,7 @@ export default function FinanceCampPayoutsPage() {
                           </label>
                         ) : (
                           <p className="meta-text full">
-                            Bulk pay marks each selected camp Paid for its own Total Payout, using the same UTR.
+                            Bulk pay marks each selected camp Payment Completed for its own Total Payout, using the same UTR.
                           </p>
                         )}
                         <label className="full">

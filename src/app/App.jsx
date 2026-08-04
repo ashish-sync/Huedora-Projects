@@ -50,6 +50,8 @@ const PurchaseOrderBuilderPage = lazy(() => import('../features/finance/builder/
 const CreditNoteBuilderPage = lazy(() => import('../features/finance/builder/CreditNoteBuilderPage.jsx'));
 const FinanceCommercialMasterPage = lazy(() => import('../features/finance/FinanceCommercialMasterPage.jsx'));
 const FinanceCampPayoutsPage = lazy(() => import('../features/finance/FinanceCampPayoutsPage.jsx'));
+const FinanceVendorBillsPage = lazy(() => import('../features/finance/FinanceVendorBillsPage.jsx'));
+const FinanceVendorBillDetailPage = lazy(() => import('../features/finance/FinanceVendorBillDetailPage.jsx'));
 const FinanceGeneratePage = lazy(() => import('../features/finance/FinanceGeneratePage.jsx'));
 
 function PageLoader() {
@@ -180,10 +182,12 @@ export default function App() {
                   <Route path="master" element={<FinanceCommercialMasterPage />} />
                   <Route path="payouts" element={<FinanceCampPayoutsPage />} />
                   <Route path="camp-payouts" element={<Navigate to="/finance/payouts" replace />} />
+                  <Route path="vendor-bills" element={<FinanceVendorBillsPage />} />
+                  <Route path="vendor-bills/:id" element={<FinanceVendorBillDetailPage />} />
                   <Route path="generate" element={<FinanceGeneratePage />} />
                   <Route path="generate/:docSlug" element={<FinanceGeneratePage />} />
                   <Route path="expenses" element={<Navigate to="/finance" replace />} />
-                  <Route path="invoices" element={<Navigate to="/finance" replace />} />
+                  <Route path="invoices" element={<Navigate to="/finance/vendor-bills" replace />} />
                   <Route path="proforma" element={<Navigate to="/finance" replace />} />
                   <Route path="purchase-orders" element={<Navigate to="/finance" replace />} />
                   <Route path="generate-invoice" element={<Navigate to="/finance/build/invoice" replace />} />

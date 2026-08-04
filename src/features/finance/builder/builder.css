@@ -295,13 +295,15 @@
   min-height: 100%;
   min-width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding: 8px 24px 24px;
 }
 
 .ib-page-stage {
   position: relative;
   flex-shrink: 0;
+  margin-inline: auto;
 }
 
 .ib-page-scaler {

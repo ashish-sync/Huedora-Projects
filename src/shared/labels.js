@@ -48,6 +48,7 @@ export const NAV = {
   INVOICE_BUILDER: 'Invoice Builder',
   CAMP_PAYOUTS: 'Payout Queue',
   PAYOUT_QUEUE: 'Payout Queue',
+  VENDOR_BILLS: 'Vendor Bills',
   ORG_MASTER: 'Organisation',
   CHARGESHEET: 'Chargesheet',
   PAYOUT: 'Payout',

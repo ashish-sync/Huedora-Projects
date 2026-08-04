@@ -7,6 +7,7 @@ import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
 
 const NAV_ITEMS = [
   { to: '/finance', end: true, label: NAV.OVERVIEW },
+  { to: '/finance/vendor-bills', end: false, label: NAV.VENDOR_BILLS },
   { to: '/finance/payouts', end: true, label: NAV.PAYOUT_QUEUE },
   { to: '/finance/build', end: true, label: NAV.INVOICE_BUILDER, writeOnly: true },
   { to: '/finance/master', end: true, label: NAV.ORG_MASTER },
@@ -14,7 +15,7 @@ const NAV_ITEMS = [
 
 export default function FinanceLayout() {
   const { pathname } = useLocation();
-  const isEditor = FINANCE_BUILDER_EDITOR_ROUTE.test(pathname) || pathname === '/finance/build';
+  const isEditor = FINANCE_BUILDER_EDITOR_ROUTE.test(pathname);
   const { can } = useAuth();
   const canWrite = can('finance:write') || can('*');
   const allowed = can('finance:read') || canWrite;

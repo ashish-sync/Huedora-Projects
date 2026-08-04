@@ -29,7 +29,7 @@ function ShortcutsModal({ open, onClose, newDocLabel = 'New document' }) {
   const rows = [
     [`${mod} + \\`, 'Toggle edit panel'],
     [`${mod} + P`, 'Print'],
-    [`${mod} + S`, 'Save & export PDF'],
+    [`${mod} + S`, 'Download PDF'],
     [`${mod} + Shift + N`, newDocLabel],
     ['?', 'Show shortcuts'],
   ];
@@ -89,7 +89,7 @@ export default function InvoiceBuilderShell({
 }) {
   const previewRef = useRef(null);
   const [exporting, setExporting] = useState(false);
-  const { wrapRef, scale, zoomIn, zoomOut, resetZoom } = usePreviewScale();
+  const { wrapRef, scale, zoomIn, zoomOut, resetZoom, fitToWidth } = usePreviewScale();
 
   const handleSaveAndExport = useCallback(async () => {
     setExporting(true);
@@ -117,6 +117,16 @@ export default function InvoiceBuilderShell({
       exportRef.current = handleSaveAndExport;
     }
   }, [exportRef, handleSaveAndExport]);
+
+  useEffect(() => {
+    fitToWidth();
+  }, [fitToWidth, panelOpen]);
+
+  useEffect(() => {
+    const onResize = () => fitToWidth();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [fitToWidth]);
 
   const shellClass = `ib-shell${panelOpen ? ' ib-shell--panel-open' : ''}${readOnly ? ' ib-shell--readonly' : ''}`;
   const busy = Boolean(busyAction) || exporting || loadingDoc;
@@ -163,9 +173,9 @@ export default function InvoiceBuilderShell({
               className="ib-text-btn"
               disabled={busy || status !== 'Draft'}
               onClick={() => onSubmit?.()}
-              title="Submit for approval"
+              title="Send for approval"
             >
-              {busyAction === 'submit' ? 'Submitting…' : 'Submit'}
+              {busyAction === 'submit' ? 'Sending…' : 'Send for approval'}
             </button>
           ) : null}
           {status === 'Submitted' && onApprove ? (
@@ -190,15 +200,15 @@ export default function InvoiceBuilderShell({
               {busyAction === 'reject' ? 'Rejecting…' : 'Reject'}
             </button>
           ) : null}
-          {onIssue && ['Draft', 'Submitted', 'Approved', 'Uploaded'].includes(status) ? (
+          {onIssue && ['Approved', 'Uploaded'].includes(status) ? (
             <button
               type="button"
               className="ib-text-btn"
               disabled={busy}
               onClick={() => onIssue?.()}
-              title="Issue document (assigns number)"
+              title="Finalize and assign document number"
             >
-              {busyAction === 'issue' ? 'Issuing…' : 'Issue'}
+              {busyAction === 'issue' ? 'Finalizing…' : 'Finalize'}
             </button>
           ) : null}
           <button
@@ -206,9 +216,9 @@ export default function InvoiceBuilderShell({
             className="ib-primary-btn"
             disabled={busy}
             onClick={handleSaveAndExport}
-            title="Save & export PDF (⌘S)"
+            title="Download PDF (⌘S)"
           >
-            {exporting ? 'Saving…' : readOnly ? 'Export PDF' : 'Save & Export'}
+            {exporting ? 'Preparing PDF…' : 'Download PDF'}
           </button>
           <button
             type="button"

@@ -113,7 +113,7 @@ export function buildCampHireRequestPath(source = {}, options = {}) {
   );
   if (roles.length) params.set('roles', roles.join(','));
 
-  return `/asset-requests?${params.toString()}`;
+  return `/request-one?${params.toString()}`;
 }
 
 /** @deprecated Prefer buildCampHireRequestPath */

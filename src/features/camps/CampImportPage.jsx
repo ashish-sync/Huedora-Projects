@@ -233,7 +233,7 @@ export default function ImportPage() {
     return (
       <div className="empty-state">
         <p>You do not have permission to import camps.</p>
-        <Link to="/camps/manage" className="btn secondary">
+        <Link to="/camp-one/manage" className="btn secondary">
           Back to camps
         </Link>
       </div>
@@ -528,7 +528,7 @@ export default function ImportPage() {
             </FeedbackBanner>
           )}
           <div className="form-actions">
-            <Link className="btn" to="/camps/manage">View Imported Camps</Link>
+            <Link className="btn" to="/camp-one/manage">View Imported Camps</Link>
             <button className="btn secondary" onClick={resetImport}>
               Import Another File
             </button>

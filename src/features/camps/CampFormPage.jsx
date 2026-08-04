@@ -611,7 +611,7 @@ export default function CampFormPage() {
       setConfirmReasonDetails(null);
 
       if (action === 'closeCamp') {
-        navigate('/camps/manage');
+        navigate('/camp-one/manage');
       }
     } catch (err) {
       setError(err?.message || 'Action failed');
@@ -737,7 +737,7 @@ export default function CampFormPage() {
       } else {
         await campApi.create(payload);
       }
-      navigate('/camps/manage');
+      navigate('/camp-one/manage');
     } catch (err) {
       setError(err?.message || 'Failed to save camp');
     } finally {
@@ -774,7 +774,7 @@ export default function CampFormPage() {
     return (
       <div className="empty-state">
         <p>You do not have permission to create camps.</p>
-        <button type="button" className="btn secondary" onClick={() => navigate('/camps/manage')}>
+        <button type="button" className="btn secondary" onClick={() => navigate('/camp-one/manage')}>
           Back to camps
         </button>
       </div>
@@ -785,7 +785,7 @@ export default function CampFormPage() {
     return (
       <div className="empty-state">
         <p>New camps can only be added at the Request stage. Switch to Request to create a camp.</p>
-        <button type="button" className="btn secondary" onClick={() => navigate('/camps/manage')}>
+        <button type="button" className="btn secondary" onClick={() => navigate('/camp-one/manage')}>
           Back to camps
         </button>
       </div>
@@ -828,14 +828,14 @@ export default function CampFormPage() {
     <form ref={formRef} className="form-card camp-lifecycle-page" onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
       <AutofillDecoyFields />
       <div className="camp-form-header-row">
-        <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camps/manage" />
+        <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camp-one/manage" />
         {isEdit && campMeta && (
           <div className="camp-form-header-actions">
             <CampRowIconButton
               icon={X}
               label="Close"
               variant="neutral"
-              onClick={() => navigate('/camps/manage')}
+              onClick={() => navigate('/camp-one/manage')}
             />
             <CampRowInfoMenu
               camp={campMeta}
@@ -936,7 +936,7 @@ export default function CampFormPage() {
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Camp'}
           </button>
         )}
-        <button type="button" className="btn secondary" onClick={() => navigate('/camps/manage')}>
+        <button type="button" className="btn secondary" onClick={() => navigate('/camp-one/manage')}>
           Cancel
         </button>
       </div>

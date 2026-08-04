@@ -161,7 +161,7 @@ export default function AgreementDetailPage() {
     setPdfLoading(true);
     setPdfError('');
     try {
-      const res = await apiFetch(`/agreements/${id}/pdf`);
+      const res = await apiFetch(`/document-one/${id}/pdf`);
       if (!res.ok) throw new Error('Could not load PDF preview');
       const blob = await res.blob();
       if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
@@ -316,7 +316,7 @@ export default function AgreementDetailPage() {
   const downloadPdf = async () => {
     setError('');
     try {
-      const res = await apiFetch(`/agreements/${id}/pdf?download=1`);
+      const res = await apiFetch(`/document-one/${id}/pdf?download=1`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -346,7 +346,7 @@ export default function AgreementDetailPage() {
       <div className="esign-top">
         <div>
           <p className="eyebrow">
-            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
+            <Link to="/document-one">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>{doc.agreementNumber}</span>
           </p>
@@ -520,7 +520,7 @@ export default function AgreementDetailPage() {
                       <p className="muted" style={{ marginTop: 0 }}>
                         Use your stored signature
                         {can('*') ? ' (admins can pick any master mark)' : ' from your profile'}.{' '}
-                        <Link to="/agreements/signature-master">Manage</Link>
+                        <Link to="/master-one?scope=document&entity=signatures">Manage</Link>
                       </p>
                       <div className="sig-pick-list">
                         {masterSignatures.map((s) => (

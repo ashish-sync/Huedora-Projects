@@ -34,7 +34,7 @@ describe('campHireRequest', () => {
     const path = buildCampHireRequestPath(camp, {
       professions: ['Technician', 'Phlebotomist'],
     });
-    expect(path.startsWith('/asset-requests?')).toBe(true);
+    expect(path.startsWith('/request-one?')).toBe(true);
     expect(path).toContain('type=HIRING');
     expect(path).toContain('campRecordId=camp-1');
     expect(path).toContain('campId=CAMP-1001');

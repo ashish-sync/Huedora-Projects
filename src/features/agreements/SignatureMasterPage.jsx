@@ -254,7 +254,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
           <p className="eyebrow">
             <Link to="/">{MODULE.HOME}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
-            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
+            <Link to="/document-one">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>{MODULE.DIGITAL_SIGNATURE_MASTER}</span>
           </p>
@@ -272,7 +272,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
               onError={(message) => setError(message)}
             />
           ) : null}
-          <Link className="btn secondary" to="/agreements/new">
+          <Link className="btn secondary" to="/document-one/new">
             New document
           </Link>
         </div>

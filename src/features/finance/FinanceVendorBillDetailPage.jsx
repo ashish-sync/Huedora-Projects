@@ -7,7 +7,7 @@ import { api } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { NAV } from '../../shared/labels.js';
-import { isVendorContact } from '../agreements/contactPicklists.js';
+import { isVendorContact } from '../document-one/contactPicklists.js';
 import {
   VENDOR_BILL_EDITABLE_STATUSES,
   VENDOR_BILL_PAYABLE_STATUSES,
@@ -318,7 +318,7 @@ export default function FinanceVendorBillDetailPage() {
       const saved = await persistBill();
       if (isNew) {
         setMsg('Vendor bill created.');
-        navigate(`/finance/vendor-bills/${saved._id}`, { replace: true });
+        navigate(`/finance-one/vendor-bills/${saved._id}`, { replace: true });
         return saved;
       }
       setBill(saved);
@@ -436,7 +436,7 @@ export default function FinanceVendorBillDetailPage() {
           <div className="finance-docs-head finance-docs-head--embedded">
             <div>
               <p className="muted">
-                <Link to="/finance/vendor-bills">{NAV.VENDOR_BILLS}</Link>
+                <Link to="/finance-one/vendor-bills">{NAV.VENDOR_BILLS}</Link>
                 {' / '}
                 {isNew ? 'New' : bill?.invoiceKey || id}
               </p>

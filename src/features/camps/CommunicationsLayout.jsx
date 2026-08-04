@@ -8,25 +8,25 @@ export default function CommunicationsLayout() {
 
   const navItems = [
     {
-      to: '/camps/communications/paste',
+      to: '/camp-one/communications/paste',
       end: true,
       label: NAV.CAMP_CREATE_MANUAL_PASTE,
       show: hasPermission('communications:read'),
     },
     {
-      to: '/camps/communications/email',
+      to: '/camp-one/communications/email',
       end: true,
       label: NAV.CAMP_CREATE_EMAIL,
       show: hasPermission('communications:read'),
     },
     {
-      to: '/camps/communications/upload',
+      to: '/camp-one/communications/upload',
       end: true,
       label: NAV.CAMP_CREATE_UPLOAD,
       show: hasPermission('import:create') || hasPermission('import:execute'),
     },
     {
-      to: '/camps/communications/download',
+      to: '/camp-one/communications/download',
       end: true,
       label: NAV.CAMP_CREATE_DOWNLOAD,
       show: hasPermission('camps:read'),

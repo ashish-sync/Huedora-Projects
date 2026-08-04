@@ -12,29 +12,29 @@ import './campOps.css';
 import './campOps.theme.css';
 
 const pageTitles = {
-  '/camps/manage': { title: NAV.CAMP_MANAGE, subtitle: 'Review, approve, execute, and manage camps' },
-  '/camps/communications/paste': { title: NAV.CAMP_CREATE, subtitle: 'Paste camp details, extract fields, and create camps' },
-  '/camps/communications/email': { title: NAV.CAMP_CREATE, subtitle: 'Review inbox, extract camps, and manage email rules' },
-  '/camps/communications/upload': { title: NAV.CAMP_CREATE, subtitle: 'Upload Excel or CSV, map columns, and import camps' },
-  '/camps/communications/download': { title: NAV.CAMP_CREATE, subtitle: 'Download camp exports and sample import templates' },
+  '/camp-one/manage': { title: NAV.CAMP_MANAGE, subtitle: 'Review, approve, execute, and manage camps' },
+  '/camp-one/communications/paste': { title: NAV.CAMP_CREATE, subtitle: 'Paste camp details, extract fields, and create camps' },
+  '/camp-one/communications/email': { title: NAV.CAMP_CREATE, subtitle: 'Review inbox, extract camps, and manage email rules' },
+  '/camp-one/communications/upload': { title: NAV.CAMP_CREATE, subtitle: 'Upload Excel or CSV, map columns, and import camps' },
+  '/camp-one/communications/download': { title: NAV.CAMP_CREATE, subtitle: 'Download camp exports and sample import templates' },
 };
 
 function getPageMeta(pathname) {
   if (pathname.endsWith('/edit')) {
     return { title: 'Edit Camp', subtitle: 'Correct camp details and save until execution' };
   }
-  if (pathname === '/camps/manage/new') {
+  if (pathname === '/camp-one/manage/new') {
     return { title: 'Create Camp', subtitle: 'Add a new camp manually' };
   }
   return pageTitles[pathname] || { title: MODULE.CAMP_MANAGEMENT, subtitle: MODULE_BLURB.CAMP_MANAGEMENT };
 }
 
 function isCampsListRoute(pathname) {
-  return pathname === '/camps/manage';
+  return pathname === '/camp-one/manage';
 }
 
 function isCreateCampsRoute(pathname) {
-  return pathname.startsWith('/camps/communications');
+  return pathname.startsWith('/camp-one/communications');
 }
 
 function CampOpsLayoutBody({
@@ -111,11 +111,11 @@ export default function CampOpsLayout() {
   const breadcrumbs = useMemo(() => {
     const items = [
       { to: '/', label: MODULE.HOME },
-      pathname === '/camps/manage'
+      pathname === '/camp-one/manage'
         ? { label: MODULE.CAMP_MANAGEMENT }
-        : { to: '/camps/manage', label: MODULE.CAMP_MANAGEMENT },
+        : { to: '/camp-one/manage', label: MODULE.CAMP_MANAGEMENT },
     ];
-    if (pathname !== '/camps/manage' && meta.title) {
+    if (pathname !== '/camp-one/manage' && meta.title) {
       items.push({ label: meta.title });
     }
     return items;
@@ -124,12 +124,12 @@ export default function CampOpsLayout() {
   const navItems = useMemo(() => {
     const items = [
       {
-        to: '/camps/communications',
+        to: '/camp-one/communications',
         end: false,
         label: NAV.CAMP_CREATE,
         show: hasPermission('communications:read'),
       },
-      { to: '/camps/manage', end: false, label: NAV.CAMP_MANAGE, show: hasPermission('camps:read') },
+      { to: '/camp-one/manage', end: false, label: NAV.CAMP_MANAGE, show: hasPermission('camps:read') },
     ];
     return items.filter((item) => item.show);
   }, [hasPermission]);

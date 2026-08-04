@@ -1,0 +1,694 @@
+/**
+ * Lamp Login — self-contained premium dark UI.
+ * All critical visuals live here so global form/button CSS cannot flatten the design.
+ */
+
+html:has(.lamp-login),
+body:has(.lamp-login),
+#root:has(.lamp-login) {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: #030303;
+}
+
+.lamp-login {
+  --ll-blue: #0005b2;
+  --ll-blue-hover: #0003a0;
+  --ll-warm: #ffb86a;
+  --ll-warm-glow: rgba(255, 184, 106, 0.45);
+  --ll-ink: #ffffff;
+  --ll-muted: rgba(255, 255, 255, 0.78);
+  --ll-dim: rgba(255, 255, 255, 0.55);
+  --ll-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: var(--ll-ink);
+  background: #030303;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lamp-login *,
+.lamp-login *::before,
+.lamp-login *::after {
+  box-sizing: border-box;
+}
+
+/* ── Atmosphere ─────────────────────────────────────────────── */
+
+.ll-veil,
+.ll-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 600ms var(--ll-ease);
+}
+
+.ll-veil {
+  background: #030303;
+}
+
+.ll-veil.is-on {
+  opacity: 0;
+}
+
+.ll-wash {
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 55%, rgba(255, 200, 140, 0.18), transparent 62%),
+    radial-gradient(ellipse 55% 65% at 72% 48%, rgba(255, 230, 190, 0.16), transparent 68%),
+    radial-gradient(ellipse 90% 80% at 50% 110%, rgba(0, 5, 178, 0.06), transparent 55%),
+    #070707;
+}
+
+.ll-wash.is-on {
+  opacity: 1;
+}
+
+.ll-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Stage ──────────────────────────────────────────────────── */
+
+.ll-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+  width: 100%;
+  max-width: 1120px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+@media (min-width: 900px) {
+  .ll-stage {
+    grid-template-columns: minmax(280px, 1fr) minmax(360px, 440px);
+    gap: 64px;
+    padding: 56px 48px;
+  }
+}
+
+/* ── Brand column ───────────────────────────────────────────── */
+
+.ll-brand-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .ll-brand-col {
+    align-items: flex-start;
+    text-align: left;
+    gap: 32px;
+  }
+}
+
+.ll-brand-lockup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.ll-brand-lockup-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ll-brand-logo {
+  flex-shrink: 0;
+  border-radius: 50%;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.4));
+}
+
+.lamp-login .brand-wordmark--ll-hero {
+  margin: 0;
+  font-size: clamp(1.35rem, 2vw, 1.55rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: #fff;
+}
+
+.lamp-login .brand-wordmark--ll-hero span {
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  opacity: 0.9;
+}
+
+.ll-kicker {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ll-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ll-headline {
+  margin: 0;
+  max-width: none;
+  font-size: clamp(1.9rem, 3.5vw, 2.55rem);
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.ll-headline-line {
+  display: block;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.ll-headline-line + .ll-headline-line {
+  margin-top: 0.08em;
+}
+
+.ll-sub {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ll-signature {
+  margin: 0;
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+@media (max-width: 899px) {
+  .ll-headline-line {
+    white-space: normal;
+  }
+}
+
+.ll-torch {
+  position: relative;
+  width: min(100%, 360px);
+  margin-top: 8px;
+  isolation: isolate;
+}
+
+/* Soft volumetric beam — layered glows, no hard clip edges */
+.ll-torch-beam {
+  position: absolute;
+  left: 68%;
+  top: 48%;
+  z-index: 0;
+  width: min(1100px, 160vw);
+  height: 420px;
+  margin-top: -210px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scaleX(0.78) scaleY(0.9);
+  transform-origin: left center;
+  transition:
+    opacity 600ms var(--ll-ease),
+    transform 650ms var(--ll-ease);
+}
+
+.ll-torch-beam.is-on {
+  opacity: 1;
+  transform: scaleX(1) scaleY(1);
+}
+
+.ll-torch-beam__core,
+.ll-torch-beam__mid,
+.ll-torch-beam__halo,
+.ll-torch-beam__spec {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ll-torch-beam__halo {
+  background: radial-gradient(
+    ellipse 90% 70% at 8% 50%,
+    rgba(255, 190, 120, 0.28) 0%,
+    rgba(255, 180, 100, 0.1) 28%,
+    transparent 68%
+  );
+  filter: blur(28px);
+}
+
+.ll-torch-beam__mid {
+  background: radial-gradient(
+    ellipse 75% 42% at 12% 50%,
+    rgba(255, 230, 180, 0.4) 0%,
+    rgba(255, 200, 130, 0.16) 35%,
+    transparent 72%
+  );
+  filter: blur(18px);
+  mix-blend-mode: screen;
+}
+
+.ll-torch-beam__core {
+  background: radial-gradient(
+    ellipse 55% 22% at 10% 50%,
+    rgba(255, 250, 235, 0.7) 0%,
+    rgba(255, 220, 160, 0.28) 30%,
+    transparent 70%
+  );
+  filter: blur(12px);
+  mix-blend-mode: screen;
+}
+
+.ll-torch-beam__spec {
+  left: -2%;
+  width: 48%;
+  background: radial-gradient(
+    ellipse 40% 18% at 18% 50%,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 230, 180, 0.2) 40%,
+    transparent 75%
+  );
+  filter: blur(8px);
+  mix-blend-mode: screen;
+}
+
+.ll-torch-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  .ll-torch-btn {
+    align-items: flex-start;
+  }
+}
+
+.ll-torch-btn:hover .ll-torch-svg {
+  transform: translateY(-1px);
+}
+
+.ll-torch-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.ll-torch-svg {
+  display: block;
+  width: min(100%, 270px);
+  height: auto;
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.55));
+  transition: filter 450ms var(--ll-ease), transform 350ms var(--ll-ease);
+}
+
+.ll-torch-btn.is-on .ll-torch-svg {
+  filter:
+    drop-shadow(0 16px 24px rgba(0, 0, 0, 0.4))
+    drop-shadow(18px 0 36px rgba(255, 190, 110, 0.45));
+}
+
+.ll-torch-hint {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ll-torch-btn.is-on .ll-torch-hint {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ll-torch-btn:not(.is-on) .ll-torch-hint {
+  animation: ll-hint-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes ll-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Glass card ─────────────────────────────────────────────── */
+
+.ll-card-shell {
+  width: 100%;
+  transition:
+    opacity 520ms var(--ll-ease),
+    transform 560ms var(--ll-ease),
+    filter 520ms ease,
+    visibility 520ms;
+}
+
+.ll-card-shell.is-off {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(36px) translateY(12px) scale(0.98);
+  filter: blur(8px);
+}
+
+.ll-card-shell.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  filter: none;
+  transition-delay: 100ms;
+}
+
+.lamp-login .ll-card {
+  width: 100%;
+  margin: 0;
+  padding: 40px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 45%, rgba(255, 255, 255, 0.09) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 28px 70px rgba(0, 0, 0, 0.5),
+    0 0 80px rgba(255, 190, 120, 0.08);
+  backdrop-filter: blur(40px) saturate(1.45);
+  -webkit-backdrop-filter: blur(40px) saturate(1.45);
+}
+
+.ll-card-logo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.lamp-login .ll-card-logo-mark {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
+.lamp-login .brand-wordmark--ll {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: #fff;
+}
+
+.lamp-login .brand-wordmark--ll span {
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  opacity: 0.9;
+}
+
+.lamp-login .ll-card h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.ll-card-lead {
+  margin: 0 0 26px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ll-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ll-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lamp-login .ll-field > label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.ll-input-wrap {
+  position: relative;
+}
+
+/* Beat global .field input / browser autofill */
+.lamp-login .ll-card input[type='email'],
+.lamp-login .ll-card input[type='password'],
+.lamp-login .ll-card input[type='text'] {
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin: 0;
+  padding: 0 44px 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 450;
+  line-height: 1.2;
+  outline: none;
+  box-shadow: none !important;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.lamp-login .ll-card input[type='email'] {
+  padding-right: 14px;
+}
+
+.lamp-login .ll-card input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.lamp-login .ll-card input:hover {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.lamp-login .ll-card input:focus {
+  border-color: rgba(120, 140, 255, 0.65) !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(0, 5, 178, 0.35) !important;
+}
+
+.lamp-login .ll-card input:-webkit-autofill,
+.lamp-login .ll-card input:-webkit-autofill:hover,
+.lamp-login .ll-card input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+  transition: background-color 99999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.45) inset !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.ll-eye {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.ll-eye:hover,
+.ll-eye:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.ll-eye svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ll-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ll-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  user-select: none;
+}
+
+.lamp-login .ll-remember input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--ll-blue);
+  cursor: pointer;
+}
+
+.lamp-login .ll-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lamp-login .ll-link:hover,
+.lamp-login .ll-link:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: none;
+}
+
+.ll-error {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: #fca5a5;
+}
+
+.ll-success {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  font-size: 13px;
+  color: #a7f3d0;
+}
+
+.lamp-login .ll-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  margin-top: 22px;
+  padding: 0 16px;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: var(--ll-blue) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 12px 32px rgba(0, 5, 178, 0.4) !important;
+  transition:
+    background 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    opacity 200ms ease;
+}
+
+.lamp-login .ll-submit:hover:not(:disabled) {
+  background: var(--ll-blue-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 36px rgba(0, 5, 178, 0.5) !important;
+}
+
+.lamp-login .ll-submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
+.ll-footer-link {
+  margin: 20px 0 0;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-veil,
+  .ll-wash,
+  .ll-torch-beam,
+  .ll-card-shell,
+  .ll-torch-svg,
+  .lamp-login .ll-submit,
+  .ll-torch-btn:not(.is-on) .ll-torch-hint {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}

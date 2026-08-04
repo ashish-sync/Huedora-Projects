@@ -526,7 +526,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
             <span className="crumb-sep" aria-hidden="true">
               /
             </span>
-            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
+            <Link to="/document-one">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">
               /
             </span>
@@ -546,7 +546,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
               onError={(message) => setError(message)}
             />
           ) : null}
-          <Link className="btn secondary" to="/agreements/new">
+          <Link className="btn secondary" to="/document-one/new">
             Send a document
           </Link>
         </div>
@@ -745,7 +745,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
               </AdaptiveSelect>
               <span className="muted" style={{ fontSize: '0.82rem' }}>
                 Used as the owner/sender mark for this template (left side).{' '}
-                <Link to="/agreements/signature-master">Manage signatures</Link>
+                <Link to="/master-one?scope=document&entity=signatures">Manage signatures</Link>
               </span>
             </div>
 

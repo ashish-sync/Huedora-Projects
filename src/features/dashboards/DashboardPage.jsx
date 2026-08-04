@@ -19,7 +19,7 @@ const iconProps = {
 
 const MODULES = [
   {
-    to: '/asset-inventory',
+    to: '/asset-one',
     title: MODULE.ASSET_INVENTORY,
     blurb: MODULE_BLURB.ASSET_INVENTORY,
     tone: 'tone-asset',
@@ -42,7 +42,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/agreements',
+    to: '/document-one',
     title: MODULE.DOCUMENT_HUB,
     blurb: MODULE_BLURB.DOCUMENT_HUB,
     tone: 'tone-document',
@@ -57,7 +57,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/verifications',
+    to: '/verification-one',
     title: MODULE.ASSET_VERIFICATION,
     blurb: MODULE_BLURB.ASSET_VERIFICATION,
     tone: 'tone-verify',
@@ -70,7 +70,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/camps/manage',
+    to: '/camp-one/manage',
     title: MODULE.CAMP_MANAGEMENT,
     blurb: MODULE_BLURB.CAMP_MANAGEMENT,
     tone: 'tone-camp',
@@ -85,7 +85,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/asset-requests',
+    to: '/request-one',
     title: MODULE.ASSET_REQUESTS,
     blurb: MODULE_BLURB.ASSET_REQUESTS,
     tone: 'tone-request',
@@ -111,7 +111,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/master-data',
+    to: '/master-one',
     title: MODULE.MASTER_DATA,
     blurb: MODULE_BLURB.MASTER_DATA,
     tone: 'tone-master',
@@ -136,7 +136,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/logistics',
+    to: '/movement-one',
     title: MODULE.LOGISTICS,
     blurb: MODULE_BLURB.LOGISTICS,
     tone: 'tone-movement',
@@ -157,7 +157,7 @@ const MODULES = [
     ),
   },
   {
-    to: '/finance',
+    to: '/finance-one',
     title: MODULE.FINANCE,
     blurb: MODULE_BLURB.FINANCE,
     tone: 'tone-finance',

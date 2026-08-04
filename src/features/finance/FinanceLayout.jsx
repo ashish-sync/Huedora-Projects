@@ -7,12 +7,12 @@ import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
 
 const NAV_ITEMS = [
-  { to: '/finance/build', end: false, label: NAV.BILLING_CENTER },
-  { to: '/finance/vendor-bills', end: false, label: NAV.VENDOR_BILLS },
-  { to: '/finance/payouts', end: true, label: NAV.PAYOUT_QUEUE },
+  { to: '/finance-one/billing', end: false, label: NAV.BILLING_CENTER },
+  { to: '/finance-one/vendor-bills', end: false, label: NAV.VENDOR_BILLS },
+  { to: '/finance-one/payouts', end: true, label: NAV.PAYOUT_QUEUE },
 ];
 
-const ORG_MASTER_NAV = { to: '/finance/master', end: true, label: NAV.ORG_MASTER };
+const ORG_MASTER_NAV = { to: '/finance-one/organisation', end: true, label: NAV.ORG_MASTER };
 
 export default function FinanceLayout() {
   const { pathname } = useLocation();
@@ -35,12 +35,12 @@ export default function FinanceLayout() {
     );
   }
 
-  if (pathname.startsWith('/finance/master') && !canOrgMaster) {
-    return <Navigate to="/finance/build" replace />;
+  if (pathname.startsWith('/finance-one/organisation') && !canOrgMaster) {
+    return <Navigate to="/finance-one/billing" replace />;
   }
 
   if (isEditor && !canWrite) {
-    return <Navigate to="/finance/build" replace />;
+    return <Navigate to="/finance-one/billing" replace />;
   }
 
   if (isEditor) {

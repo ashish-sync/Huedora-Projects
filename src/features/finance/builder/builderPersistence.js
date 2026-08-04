@@ -475,8 +475,8 @@ export async function downloadServerPdf(documentType, id, fileName) {
 
 export function buildEditPath(documentType, id) {
   const cfg = docConfig(documentType);
-  if (!cfg || !id) return '/finance/build';
-  return `/finance/build/${cfg.slug}/${id}`;
+  if (!cfg || !id) return '/finance-one/billing';
+  return `/finance-one/billing/${cfg.slug}/${id}`;
 }
 
 export function isEditableStatus(status) {

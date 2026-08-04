@@ -402,7 +402,7 @@ export default function TrackingDashboardPage() {
             </button>
           ) : null}
           {view === 'drilldown' && submitted && moduleId === 'logistics' ? (
-            <Link className="btn secondary" to="/logistics">
+            <Link className="btn secondary" to="/movement-one">
               Open Movement One
             </Link>
           ) : null}
@@ -607,7 +607,7 @@ export default function TrackingDashboardPage() {
                     <h3 id="ops-finance-heading">Financial snapshot</h3>
                     <p>Commercial documents, expenses, and agreement exposure.</p>
                   </div>
-                  <Link className="btn secondary btn-compact" to="/finance">
+                  <Link className="btn secondary btn-compact" to="/finance-one">
                     Finance One
                   </Link>
                 </div>
@@ -737,176 +737,176 @@ export default function TrackingDashboardPage() {
       {view === 'drilldown' ? (
         <>
           <div className="card track-range ops-review-filters" aria-label="Module review filters">
-            <div className="track-range-presets" role="group" aria-label="Quick ranges">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={`track-range-chip${preset === p.id ? ' is-active' : ''}`}
-                  onClick={() => applyPreset(p.id)}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-
-            <DateRangeFilter
-              className="date-range-filter--panel"
-              from={from}
-              to={to}
-              onFromChange={(next) => {
-                setFrom(next);
-                setPreset(detectPreset(next, to));
-              }}
-              onToChange={(next) => {
-                setTo(next);
-                setPreset(detectPreset(from, next));
-              }}
-              onSubmit={submitReview}
-              onClear={clearReview}
-              submitting={loading}
-              disabled={!moduleId}
-              hint={`Review uses each module's activity date (${data?.dateFieldLabel || 'created / transaction date'}). Current range: ${rangeLabel}.`}
+        <div className="track-range-presets" role="group" aria-label="Quick ranges">
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`track-range-chip${preset === p.id ? ' is-active' : ''}`}
+              onClick={() => applyPreset(p.id)}
             >
-              <label className="date-range-filter-field module-review-module">
-                <span>Module</span>
-                <AdaptiveSelect
-                  required
-                  value={moduleId}
-                  onChange={(e) => setModuleId(e.target.value)}
-                  aria-label="Module"
-                >
-                  <option value="">Select module</option>
-                  {modules.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                </AdaptiveSelect>
-              </label>
-            </DateRangeFilter>
-          </div>
+              {p.label}
+            </button>
+          ))}
+        </div>
 
-          {!submitted && !data ? (
-            <EmptyState
-              title="Choose a module and date range"
+        <DateRangeFilter
+          className="date-range-filter--panel"
+          from={from}
+          to={to}
+          onFromChange={(next) => {
+            setFrom(next);
+            setPreset(detectPreset(next, to));
+          }}
+          onToChange={(next) => {
+            setTo(next);
+            setPreset(detectPreset(from, next));
+          }}
+          onSubmit={submitReview}
+          onClear={clearReview}
+          submitting={loading}
+          disabled={!moduleId}
+          hint={`Review uses each module's activity date (${data?.dateFieldLabel || 'created / transaction date'}). Current range: ${rangeLabel}.`}
+        >
+          <label className="date-range-filter-field module-review-module">
+            <span>Module</span>
+            <AdaptiveSelect
+              required
+              value={moduleId}
+              onChange={(e) => setModuleId(e.target.value)}
+              aria-label="Module"
+            >
+              <option value="">Select module</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </AdaptiveSelect>
+          </label>
+        </DateRangeFilter>
+      </div>
+
+      {!submitted && !data ? (
+        <EmptyState
+          title="Choose a module and date range"
               description="Pick what you want to review, set From and To, then submit — or return to Overview for the full project picture."
               action={
                 <button type="button" className="btn secondary" onClick={() => setView('overview')}>
                   Back to overview
                 </button>
               }
-            />
-          ) : null}
+        />
+      ) : null}
 
           {loading && !data && moduleId !== 'logistics' ? (
             <p className="muted">Loading review…</p>
           ) : null}
 
-          {submitted && moduleId === 'logistics' ? (
-            <div className="module-review-logistics">
-              <div className="module-review-logistics-head">
+      {submitted && moduleId === 'logistics' ? (
+        <div className="module-review-logistics">
+          <div className="module-review-logistics-head">
+            <div>
+              <h2 className="module-review-logistics-title">Movement One dashboard</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                Live stock movement for {rangeLabel}. Open Movement One for goods receipt and
+                goods issue actions.
+              </p>
+            </div>
+                <Link className="btn secondary btn-compact" to="/movement-one">
+              Open Movement One
+            </Link>
+          </div>
+          <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
+        </div>
+      ) : null}
+
+      {data && moduleId !== 'logistics' ? (
+        <div className="track-sections module-review-results">
+          {summaryBlocks.map((block) => (
+            <section className="card track-panel" key={block.title}>
+              <div className="track-panel-head">
                 <div>
-                  <h2 className="module-review-logistics-title">Movement One dashboard</h2>
-                  <p className="muted" style={{ margin: 0 }}>
-                    Live stock movement for {rangeLabel}. Open Movement One for goods receipt and
-                    goods issue actions.
+                  <h2>{block.title}</h2>
+                  <p className="muted">
+                    {data.moduleLabel} · {rangeLabel}
                   </p>
                 </div>
-                <Link className="btn secondary btn-compact" to="/logistics">
-                  Open Movement One
-                </Link>
               </div>
-              <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
+              <div className="track-table-wrap">
+                <table className="track-table">
+                  <thead>
+                    <tr>
+                      <th>Value</th>
+                      <th className="num">Count</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.entries.map(([label, count]) => (
+                      <tr key={label}>
+                        <td>
+                          <span className="badge tone-neutral">{label}</span>
+                        </td>
+                        <td className="num mono-sm">{count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
+
+          <section className="card track-panel" style={{ gridColumn: '1 / -1' }}>
+            <div className="track-panel-head">
+              <div>
+                <h2>{data.moduleLabel} records</h2>
+                <p className="muted">
+                  Showing {data.rows?.length || 0}
+                  {data.truncated ? ` of ${data.total}` : ''} in range
+                  {data.dateFieldLabel ? ` · sorted by ${data.dateFieldLabel}` : ''}
+                </p>
+              </div>
+              {data.linkTo ? (
+                <Link className="btn secondary btn-compact" to={data.linkTo}>
+                  Open {data.moduleLabel}
+                </Link>
+              ) : null}
             </div>
-          ) : null}
-
-          {data && moduleId !== 'logistics' ? (
-            <div className="track-sections module-review-results">
-              {summaryBlocks.map((block) => (
-                <section className="card track-panel" key={block.title}>
-                  <div className="track-panel-head">
-                    <div>
-                      <h2>{block.title}</h2>
-                      <p className="muted">
-                        {data.moduleLabel} · {rangeLabel}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="track-table-wrap">
-                    <table className="track-table">
-                      <thead>
-                        <tr>
-                          <th>Value</th>
-                          <th className="num">Count</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {block.entries.map(([label, count]) => (
-                          <tr key={label}>
-                            <td>
-                              <span className="badge tone-neutral">{label}</span>
-                            </td>
-                            <td className="num mono-sm">{count}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              ))}
-
-              <section className="card track-panel" style={{ gridColumn: '1 / -1' }}>
-                <div className="track-panel-head">
-                  <div>
-                    <h2>{data.moduleLabel} records</h2>
-                    <p className="muted">
-                      Showing {data.rows?.length || 0}
-                      {data.truncated ? ` of ${data.total}` : ''} in range
-                      {data.dateFieldLabel ? ` · sorted by ${data.dateFieldLabel}` : ''}
-                    </p>
-                  </div>
-                  {data.linkTo ? (
-                    <Link className="btn secondary btn-compact" to={data.linkTo}>
-                      Open {data.moduleLabel}
-                    </Link>
-                  ) : null}
-                </div>
                 <div
                   className="track-table-wrap card table-wrap"
                   style={{ boxShadow: 'none', border: 0 }}
                 >
-                  <table className="track-table">
-                    <thead>
-                      <tr>
-                        {(data.columns || []).map((col) => (
-                          <th key={col.key}>{col.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(data.rows || []).map((row) => (
-                        <tr key={row.id}>
-                          {(data.columns || []).map((col) => (
+              <table className="track-table">
+                <thead>
+                  <tr>
+                    {(data.columns || []).map((col) => (
+                      <th key={col.key}>{col.label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.rows || []).map((row) => (
+                    <tr key={row.id}>
+                      {(data.columns || []).map((col) => (
                             <td
                               key={col.key}
                               className={col.key === 'when' ? 'mono-sm muted' : undefined}
                             >
-                              {row[col.key] ?? '-'}
-                            </td>
-                          ))}
-                        </tr>
+                          {row[col.key] ?? '-'}
+                        </td>
                       ))}
-                    </tbody>
-                  </table>
-                  {!data.rows?.length ? (
-                    <p className="muted" style={{ padding: '1rem' }}>
-                      No records found for this module in the selected date range.
-                    </p>
-                  ) : null}
-                </div>
-              </section>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!data.rows?.length ? (
+                <p className="muted" style={{ padding: '1rem' }}>
+                  No records found for this module in the selected date range.
+                </p>
+              ) : null}
             </div>
+          </section>
+        </div>
           ) : null}
         </>
       ) : null}

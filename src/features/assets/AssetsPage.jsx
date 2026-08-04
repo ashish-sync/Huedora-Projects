@@ -584,7 +584,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     if (!canViewAgreements) return;
     if (!silent) setViewError('');
     try {
-      const res = await apiFetch(`/agreements/${agreement._id}/documents/${doc._id}/download`);
+      const res = await apiFetch(`/document-one/${agreement._id}/documents/${doc._id}/download`);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error?.message || 'Could not open attachment');
@@ -1012,7 +1012,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       </button>
                       <Link
                         className="inv-icon-btn"
-                        to={`/assets/${a._id}`}
+                        to={`/asset-one/assets/${a._id}`}
                         title="Audit Trail"
                         aria-label="Audit Trail"
                       >
@@ -1104,7 +1104,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   {canViewAgreements && (
                     <Link
                       className="btn secondary btn-compact"
-                      to={`/agreements/${viewSignedRecord.agreement._id}`}
+                      to={`/document-one/${viewSignedRecord.agreement._id}`}
                       onClick={closeView}
                     >
                       Open in {MODULE.DOCUMENT_HUB}
@@ -1157,7 +1157,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   <div className="inv-agreement-actions inv-agreement-actions--center">
                     <Link
                       className="btn btn-compact"
-                      to={`/agreements/new?assetId=${viewRow._id}`}
+                      to={`/document-one/new?assetId=${viewRow._id}`}
                       onClick={closeView}
                     >
                       New Agreement

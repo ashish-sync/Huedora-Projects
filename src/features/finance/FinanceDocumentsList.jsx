@@ -116,7 +116,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       <div className={`finance-docs-head${embedded ? ' finance-docs-head--embedded' : ''}`}>
         <h3 className="finance-docs-title">Saved documents</h3>
         {showCreateLink && canWrite ? (
-          <Link to="/finance/build" className="btn secondary btn-compact">
+          <Link to="/finance-one/billing" className="btn secondary btn-compact">
             + New document
           </Link>
         ) : null}

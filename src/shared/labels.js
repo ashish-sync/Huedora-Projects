@@ -68,7 +68,7 @@ export const NAV = {
 
 /** Short module blurbs for home / catalogs */
 export const MODULE_BLURB = {
-  ASSET_INVENTORY: 'Agreements and custody for Medical and Non-Medical Devices.',
+  ASSET_INVENTORY: 'Register and track Medical and Non-Medical Devices.',
   DOCUMENT_HUB: 'Create, send, and track contracts.',
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
   CAMP_MANAGEMENT: 'Camp operations — camps, lifecycle stages, and connectors.',

@@ -666,7 +666,7 @@ export default function CommunicationsEmailPage() {
                             <div className="communications-camps-cell">
                               <span className="status-pill status-pill-success">Created</span>
                               {(message.linkedCamps || []).slice(0, 2).map((camp) => (
-                                <Link key={camp.campId} to={`/camps/manage/${camp.id}/edit`} className="communications-camp-link">
+                                <Link key={camp.campId} to={`/camp-one/manage/${camp.id}/edit`} className="communications-camp-link">
                                   {camp.campId}
                                 </Link>
                               ))}

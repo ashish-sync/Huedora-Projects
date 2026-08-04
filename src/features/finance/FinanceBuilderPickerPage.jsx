@@ -28,7 +28,7 @@ export default function FinanceBuilderPickerPage() {
               View saved documents below. Ask an administrator for Finance write access to create new ones.
             </p>
             {canOrgMaster ? (
-              <Link to="/finance/master" className="btn secondary btn-compact">
+              <Link to="/finance-one/organisation" className="btn secondary btn-compact">
                 Organisation master
               </Link>
             ) : null}

@@ -51,7 +51,7 @@ export default function FinanceCommercialMasterPage() {
           </p>
         </div>
         <div className="finance-org-master-actions finance-org-master-actions--top">
-          <Link to="/finance/build" className="btn secondary btn-compact">
+          <Link to="/finance-one/billing" className="btn secondary btn-compact">
             Back
           </Link>
           <button type="button" className="btn secondary btn-compact" disabled={loading || busy} onClick={() => reload()}>

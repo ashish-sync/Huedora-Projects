@@ -68,7 +68,7 @@ export default function InvoiceBuilderPanel({
         <p>
           Letterhead &amp; bank come from{' '}
           {canOrgMaster ? (
-            <Link to="/finance/master" className="ib-link">
+            <Link to="/finance-one/organisation" className="ib-link">
               Organisation master
             </Link>
           ) : (

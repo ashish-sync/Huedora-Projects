@@ -48,7 +48,7 @@ export function CampAssignmentRowActions({
     <div className="actions camp-row-actions camp-row-icon-actions">
       {canEdit && !isTerminal && (
         <Link
-          to={`/camps/manage/${camp._id}/edit`}
+          to={`/camp-one/manage/${camp._id}/edit`}
           className="camp-row-icon-btn camp-row-icon-btn--assign"
           title="Open assignment"
           aria-label="Open assignment"

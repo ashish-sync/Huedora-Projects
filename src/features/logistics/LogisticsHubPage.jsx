@@ -339,7 +339,7 @@ export default function LogisticsHubPage({
     <div className={`ilog-hub${embedded ? ' ilog-hub--embedded' : ''}`}>
       {!embedded && (
       <section className="ilog-quick-actions" aria-label="Quick actions">
-        <Link to="/logistics/inward" className="ilog-rail-card">
+        <Link to="/movement-one/inward" className="ilog-rail-card">
           <span className="ilog-rail-icon" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="10" y="14" width="22" height="22" rx="3" />
@@ -354,7 +354,7 @@ export default function LogisticsHubPage({
           </span>
         </Link>
 
-        <Link to="/logistics/outward" className="ilog-rail-card">
+        <Link to="/movement-one/outward" className="ilog-rail-card">
           <span className="ilog-rail-icon" aria-hidden="true">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="16" y="14" width="22" height="22" rx="3" />

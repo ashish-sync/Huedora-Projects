@@ -1056,7 +1056,7 @@ export default function LogisticsOutwardPage() {
                     {formOpen && !fulfillingId ? 'Close form' : '+ Manual goods issue'}
                   </button>
                 ) : null}
-                <Link className="btn secondary btn-compact" to="/asset-requests?type=LOGISTICS">
+                <Link className="btn secondary btn-compact" to="/request-one?type=LOGISTICS">
                   Create Goods Issuance Request
                 </Link>
               </>
@@ -1618,7 +1618,7 @@ export default function LogisticsOutwardPage() {
                 <button className="btn secondary btn-compact" type="button" onClick={loadRequests}>
                   Refresh
                 </button>
-                <Link className="btn btn-compact" to="/asset-requests?type=LOGISTICS">
+                <Link className="btn btn-compact" to="/request-one?type=LOGISTICS">
                   + New Goods Issuance Request
                 </Link>
               </>

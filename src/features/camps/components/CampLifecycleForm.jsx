@@ -655,7 +655,7 @@ export function CampLifecycleForm({
               <p className="meta-text">
                 Assigned HCW: <strong>{assignedHcwContact.name}</strong>
                 {' · '}
-                <a href="/master-data?scope=document&entity=contacts">Open Contact Directory</a>
+                <a href="/master-one?scope=document&entity=contacts">Open Contact Directory</a>
               </p>
             ) : null}
           </div>

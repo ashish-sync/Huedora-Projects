@@ -64,7 +64,7 @@ export default function InvoiceGeneratorForm({ form, setForm, totals }) {
     <>
       <p className="doc-master-hint">
         Company, bank &amp; GSTIN are prefilled from{' '}
-        <a href="/finance/master">Organisation master</a>. Add recipient, project, and line items below.
+        <a href="/finance-one/organisation">Organisation master</a>. Add recipient, project, and line items below.
       </p>
 
       <FormSection id="recipient" title="Recipient" defaultOpen>

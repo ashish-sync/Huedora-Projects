@@ -25,7 +25,7 @@ export function campManageListHref(camp) {
   const params = new URLSearchParams();
   if (camp?.campId) params.set('findCampId', camp.campId);
   const query = params.toString();
-  return query ? `/camps/manage?${query}` : '/camps/manage';
+  return query ? `/camp-one/manage?${query}` : '/camp-one/manage';
 }
 
 async function copyText(value) {
@@ -111,7 +111,7 @@ export function CampCreatedBanner({ camps = [], onDismiss }) {
           <li key={camp.campId} className="camp-created-item">
             <div className="camp-created-item-main">
               {camp.id ? (
-                <Link to={`/camps/manage/${camp.id}/edit`} className="camp-created-id-link">
+                <Link to={`/camp-one/manage/${camp.id}/edit`} className="camp-created-id-link">
                   {camp.campId}
                   {camp.partial ? ' (incomplete)' : ''}
                 </Link>

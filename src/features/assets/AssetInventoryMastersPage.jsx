@@ -1,7 +1,7 @@
 import { MODULE } from '../../shared/labels.js';
 import LogisticsMasterPage from '../logistics/LogisticsMasterPage.jsx';
 
-/** @deprecated Route redirects to /master-data; kept for compatibility. */
+/** @deprecated Route redirects to /master-one; kept for compatibility. */
 export default function AssetInventoryMastersPage() {
   return (
     <LogisticsMasterPage

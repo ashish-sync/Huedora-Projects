@@ -101,7 +101,7 @@ export default function AgreementsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: MODULE.HOME }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DOCUMENT_HUB }]}
       title={MODULE.DOCUMENT_HUB}
       actions={
         <>
@@ -114,7 +114,7 @@ export default function AgreementsPage() {
             {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
           </button>
           {can('agreements:write') ? (
-            <button className="btn" type="button" onClick={() => navigate('/agreements/new')}>
+            <button className="btn" type="button" onClick={() => navigate('/document-one/new')}>
               New agreement
             </button>
           ) : null}
@@ -187,7 +187,7 @@ export default function AgreementsPage() {
               ).length;
               const total = (a.signers || []).length;
               return (
-                <tr key={a._id} className="esign-row" onClick={() => navigate(`/agreements/${a._id}`)}>
+                <tr key={a._id} className="esign-row" onClick={() => navigate(`/document-one/${a._id}`)}>
                   <td>
                     <div className="esign-doc-title">{a.title || 'Untitled'}</div>
                     <div className="muted mono-sm">{a.agreementNumber}</div>
@@ -234,7 +234,7 @@ export default function AgreementsPage() {
                 </button>
               ) : (
                 can('agreements:write') && (
-                  <button className="btn" type="button" onClick={() => navigate('/agreements/new')}>
+                  <button className="btn" type="button" onClick={() => navigate('/document-one/new')}>
                     New agreement
                   </button>
                 )

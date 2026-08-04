@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { HCW_RESOURCE_TYPES, resourceTypesForCategory } from '../../agreements/contactPicklists.js';
+import { HCW_RESOURCE_TYPES, resourceTypesForCategory } from '../../document-one/contactPicklists.js';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import {
   assignmentResourceTypeForContact,

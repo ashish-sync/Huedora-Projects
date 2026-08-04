@@ -42,10 +42,10 @@ vi.mock('../../shared/api.js', () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/camps/manage']}>
+    <MemoryRouter initialEntries={['/camp-one/manage']}>
       <CampWorkingStageProvider>
         <Routes>
-          <Route path="/camps/manage" element={<CampsPage />} />
+          <Route path="/camp-one/manage" element={<CampsPage />} />
         </Routes>
       </CampWorkingStageProvider>
     </MemoryRouter>,

@@ -14,7 +14,7 @@ export function CampManageHeaderActions() {
   return (
     <div className="inv-header-actions camp-header-toolbar">
       <div className="camp-export-actions">
-        <Link className="btn btn-compact" to="/camps/manage/new">
+        <Link className="btn btn-compact" to="/camp-one/manage/new">
           + New Camp
         </Link>
       </div>

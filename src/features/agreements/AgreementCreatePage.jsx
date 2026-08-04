@@ -424,7 +424,7 @@ export default function AgreementCreatePage() {
           /* agreement created; asset link can be added from envelope detail */
         }
       }
-      navigate(`/agreements/${data._id}`);
+      navigate(`/document-one/${data._id}`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -437,7 +437,7 @@ export default function AgreementCreatePage() {
       <div className="esign-top">
         <div>
           <p className="eyebrow">
-            <Link to="/agreements">{MODULE.DOCUMENT_HUB}</Link>
+            <Link to="/document-one">{MODULE.DOCUMENT_HUB}</Link>
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>New document</span>
           </p>
@@ -452,9 +452,9 @@ export default function AgreementCreatePage() {
           ) : (
             <p className="muted esign-sub">
               Select the recipient, then choose a template or document from {MODULE.DOCUMENT_MASTER}.{' '}
-              <Link to="/agreements/contacts">{MODULE.CONTACT_DIRECTORY}</Link>
+              <Link to="/master-one?scope=document&entity=contacts">{MODULE.CONTACT_DIRECTORY}</Link>
               {' · '}
-              <Link to="/agreements/document-master">{MODULE.DOCUMENT_MASTER}</Link>
+              <Link to="/master-one?scope=document&entity=templates">{MODULE.DOCUMENT_MASTER}</Link>
             </p>
           )}
         </div>
@@ -744,7 +744,7 @@ export default function AgreementCreatePage() {
               SMS
             </label>
             <div className="wizard-actions">
-              <Link className="btn secondary" to="/agreements">Cancel</Link>
+              <Link className="btn secondary" to="/document-one">Cancel</Link>
               <button className="btn" type="button" onClick={goNext}>
                 Continue to document →
               </button>

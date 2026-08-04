@@ -120,7 +120,7 @@ export default function DocumentGeneratorShell({
         <section className="doc-studio-canvas" ref={wrapRef} aria-label="Document preview">
           <div className="doc-studio-float-bar" role="toolbar" aria-label="Document actions">
             <div className="doc-studio-float-group doc-studio-float-group--nav">
-              <Link to="/finance/generate" className="doc-studio-icon-btn" title="All documents">
+              <Link to="/finance-one/billing" className="doc-studio-icon-btn" title="All documents">
                 <IconBack />
               </Link>
               <div className="doc-studio-float-title">

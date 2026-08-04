@@ -74,7 +74,7 @@ export default function FinanceVendorBillsPage() {
       else if (view === 'active') params.set('active', '1');
       const qs = params.toString();
       await downloadExcel(
-        qs ? `/finance/vendor-bills/export?${qs}` : '/finance/vendor-bills/export',
+        qs ? `/finance-one/vendor-bills/export?${qs}` : '/finance-one/vendor-bills/export',
         'Vendor_Bills.xlsx',
       );
     } catch (err) {
@@ -107,7 +107,7 @@ export default function FinanceVendorBillsPage() {
                   <button
                     type="button"
                     className="btn primary btn-compact"
-                    onClick={() => navigate('/finance/vendor-bills/new')}
+                    onClick={() => navigate('/finance-one/vendor-bills/new')}
                   >
                     New vendor bill
                   </button>
@@ -188,7 +188,7 @@ export default function FinanceVendorBillsPage() {
               {rows.map((row) => (
                 <tr key={row._id}>
                   <td>
-                    <Link to={`/finance/vendor-bills/${row._id}`}>{row.invoiceKey || '—'}</Link>
+                    <Link to={`/finance-one/vendor-bills/${row._id}`}>{row.invoiceKey || '—'}</Link>
                   </td>
                   <td>{row.billNumber || row.invoiceNumber || '—'}</td>
                   <td>{row.vendorName || '—'}</td>

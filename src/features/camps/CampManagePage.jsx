@@ -690,7 +690,7 @@ export default function CampsPage() {
     return (
       <div className="actions camp-row-actions">
         {canEditCampRecord(camp) && (
-          <Link to={`/camps/manage/${camp._id}/edit`} className="btn secondary btn-compact">
+          <Link to={`/camp-one/manage/${camp._id}/edit`} className="btn secondary btn-compact">
             Edit
           </Link>
         )}
@@ -824,7 +824,7 @@ export default function CampsPage() {
             }
             action={
               isRequestStage && (hasPermission('camps:create') || hasPermission('camps:update')) ? (
-                <Link to="/camps/manage/new" className="btn">New Camp</Link>
+                <Link to="/camp-one/manage/new" className="btn">New Camp</Link>
               ) : null
             }
           />

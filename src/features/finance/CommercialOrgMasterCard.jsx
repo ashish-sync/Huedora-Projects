@@ -17,7 +17,7 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
       return (
         <div className="org-master-banner org-master-banner--empty">
           <span className="org-master-banner-hint">Set up organisation master for letterhead &amp; bank</span>
-          <Link to="/finance/master" className="org-master-banner-link">
+          <Link to="/finance-one/organisation" className="org-master-banner-link">
             Set up →
           </Link>
         </div>
@@ -34,7 +34,7 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
           ·
         </span>
         <span className="org-master-banner-hint">Letterhead &amp; bank</span>
-        <Link to="/finance/master" className="org-master-banner-link">
+        <Link to="/finance-one/organisation" className="org-master-banner-link">
           Edit
         </Link>
       </div>
@@ -48,7 +48,7 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
         <p className="org-master-card-desc muted">
           Logo, company details, bank info, and payment QR are managed in one place for all documents.
         </p>
-        <Link to="/finance/master" className="org-master-card-link">
+        <Link to="/finance-one/organisation" className="org-master-card-link">
           Set up organisation master →
         </Link>
       </div>
@@ -63,7 +63,7 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
           <p className="org-master-card-title">{master.legalName || 'Company name not set'}</p>
           {master.brandLine ? <p className="org-master-card-tagline">{master.brandLine}</p> : null}
         </div>
-        <Link to="/finance/master" className="org-master-card-edit">
+        <Link to="/finance-one/organisation" className="org-master-card-edit">
           Edit master
         </Link>
       </div>

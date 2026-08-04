@@ -273,7 +273,7 @@ export default function DevicesPage() {
     <PageShell
       breadcrumbs={[
         { to: '/', label: MODULE.HOME },
-        { to: '/asset-inventory', label: MODULE.ASSET_INVENTORY },
+        { to: '/asset-one', label: MODULE.ASSET_INVENTORY },
         { label: MODULE.ASSET_MASTER },
       ]}
       title={MODULE.ASSET_MASTER}

@@ -18,7 +18,7 @@ export function CampFinancialRowActions({ camp, canEdit }) {
         />
         {canEdit && (
           <Link
-            to={`/camps/manage/${camp._id}/edit`}
+            to={`/camp-one/manage/${camp._id}/edit`}
             className="camp-row-icon-btn camp-row-icon-btn--edit"
             title="Edit camp"
             aria-label="Edit camp"

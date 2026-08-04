@@ -49,11 +49,11 @@ function LinkedCampsBanner({ linkedCamps = [] }) {
               <span className="status-pill status-pill-muted">{camp.status?.replaceAll('_', ' ')}</span>
             </div>
             {camp.editable ? (
-              <Link to={`/camps/manage/${camp.id}/edit`} className="btn secondary btn-compact">
+              <Link to={`/camp-one/manage/${camp.id}/edit`} className="btn secondary btn-compact">
                 Edit camp
               </Link>
             ) : (
-              <Link to={`/camps/manage/${camp.id}/edit`} className="btn secondary btn-compact">
+              <Link to={`/camp-one/manage/${camp.id}/edit`} className="btn secondary btn-compact">
                 View camp
               </Link>
             )}

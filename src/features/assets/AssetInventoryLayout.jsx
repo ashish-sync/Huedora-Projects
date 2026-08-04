@@ -7,7 +7,7 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 
 const NAV_ITEMS = [
-  { to: '/asset-inventory', end: true, label: NAV.ASSETS_OVERVIEW },
+  { to: '/asset-one', end: true, label: NAV.ASSETS_OVERVIEW },
 ];
 
 export default function AssetInventoryLayout() {

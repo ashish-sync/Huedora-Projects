@@ -10,11 +10,11 @@ export function clientMasterListPath({ tab, search } = {}) {
   });
   if (tab) params.set('tab', tab);
   if (search) params.set('search', search);
-  return `/master-data?${params}`;
+  return `/master-one?${params}`;
 }
 
-export const CLIENT_MASTER_NEW_PATH = '/master-data/client-masters/new';
+export const CLIENT_MASTER_NEW_PATH = '/master-one/client-masters/new';
 
 export function clientMasterEditPath(id) {
-  return `/master-data/client-masters/${id}/edit`;
+  return `/master-one/client-masters/${id}/edit`;
 }

@@ -35,7 +35,7 @@ function buildCampsLink({
   if (campaign) params.set('campaign', campaign);
   if (campaignType) params.set('campaignType', campaignType);
   const query = params.toString();
-  return `/camps/manage${query ? `?${query}` : ''}`;
+  return `/camp-one/manage${query ? `?${query}` : ''}`;
 }
 
 const statusCards = [

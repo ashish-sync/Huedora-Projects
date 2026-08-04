@@ -5,11 +5,11 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 
 const NAV_ITEMS = [
-  { to: '/logistics', end: true, label: NAV.OVERVIEW },
-  { to: '/logistics/inward', label: NAV.GOODS_RECEIPT },
-  { to: '/logistics/outward', label: NAV.GOODS_ISSUE },
-  { to: '/logistics/usage', label: NAV.CONSUMPTION },
-  { to: '/logistics/output', label: NAV.PRODUCTION_OUTPUT },
+  { to: '/movement-one', end: true, label: NAV.OVERVIEW },
+  { to: '/movement-one/inward', label: NAV.GOODS_RECEIPT },
+  { to: '/movement-one/outward', label: NAV.GOODS_ISSUE },
+  { to: '/movement-one/usage', label: NAV.CONSUMPTION },
+  { to: '/movement-one/output', label: NAV.PRODUCTION_OUTPUT },
 ];
 
 export default function LogisticsLayout() {

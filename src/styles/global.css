@@ -3424,73 +3424,25 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   }
 }
 
-/* ── Login ──────────────────────────────────────────────────── */
+/* ── Login (lamp-login in features/auth/lamp-login) ───────── */
 
-.login-page {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1.2fr minmax(360px, 480px);
-  background: var(--brand);
-  animation: fade-in 0.45s var(--ease) both;
-}
-
-.login-hero {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: clamp(28px, 5vw, 56px);
-  color: #f5f9ff;
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 70% 55% at 15% 15%, rgba(25, 118, 210, 0.45), transparent 55%),
-    radial-gradient(ellipse 55% 45% at 90% 80%, rgba(211, 47, 47, 0.22), transparent 50%),
-    linear-gradient(155deg, #0a3a82 0%, #0d47a1 50%, #1565c0 100%);
-}
-
-.login-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.06) 0 1.5px, transparent 2px);
-  background-size: 48px 48px, 36px 36px;
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.login-hero-top,
-.login-hero-inner {
-  position: relative;
-  z-index: 1;
-}
-
-.login-hero-logo {
-  margin-bottom: 16px;
-}
-
-.login-hero-inner {
-  max-width: 28rem;
-  animation: rise-in 0.55s var(--ease) 0.06s both;
-}
-
-.login-hero h1 {
-  margin: 0 0 16px;
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 3.4vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  color: #fff;
-}
-
-.login-hero p {
+html:has(.login-page),
+body:has(.login-page),
+#root:has(.login-page) {
+  height: 100%;
+  min-height: 100%;
   margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.55;
-  color: rgba(245, 249, 255, 0.78);
-  max-width: 36ch;
+  background: #050505;
+}
+
+.login-page:not(.lamp-login) {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.55);
+  background: #050505;
+  font-family: var(--font);
 }
 
 .health-insight {
@@ -3674,134 +3626,6 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
 
 .health-insight-shuffle:hover {
   color: color-mix(in srgb, var(--brand) 75%, var(--ink));
-}
-
-.login-panel {
-  display: grid;
-  place-items: center;
-  padding: 28px 24px;
-  background: var(--bg);
-}
-
-.login-card {
-  width: min(400px, 100%);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 34px 30px;
-  background: var(--bg-elevated);
-  animation: rise-in 0.5s var(--ease) 0.1s both;
-}
-
-.login-card .login-kicker {
-  margin: 0 0 8px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--brand);
-}
-
-.login-card h2 {
-  margin: 0 0 8px;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-
-.login-card > p {
-  margin: 0 0 26px;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.login-card .btn {
-  width: 100%;
-  height: 48px;
-  margin-top: 6px;
-  font-size: 0.98rem;
-}
-
-.login-password-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.login-password-wrap input {
-  width: 100%;
-  padding-right: 48px;
-}
-
-.login-password-toggle {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.login-password-toggle:hover,
-.login-password-toggle:focus-visible {
-  color: var(--brand);
-  background: var(--brand-soft);
-  outline: none;
-}
-
-.login-password-toggle svg {
-  width: 18px;
-  height: 18px;
-}
-
-.login-switch {
-  margin: 16px 0 0;
-  text-align: center;
-}
-
-.login-link {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--brand);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 650;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.login-link:hover,
-.login-link:focus-visible {
-  color: var(--brand-hover);
-  outline: none;
-}
-
-.login-success {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--ok-soft);
-  color: var(--ok);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.login-hint {
-  margin: 18px 0 0;
-  font-size: 0.76rem;
-  color: var(--muted-soft);
-  line-height: 1.45;
 }
 
 /* ── Module chrome ──────────────────────────────────────────── */
@@ -8914,14 +8738,6 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
     flex-direction: column;
   }
 
-  .login-page {
-    grid-template-columns: 1fr;
-  }
-
-  .login-hero {
-    min-height: 240px;
-    padding: 24px 20px;
-  }
 
   .esign-pipeline,
   .esign-create-grid,
@@ -8964,9 +8780,6 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
     grid-template-columns: 1fr;
   }
 
-  .login-card {
-    padding: 26px 18px;
-  }
 }
 
 /* -- Inventory & Logistics ------------------------------------ */
@@ -11492,7 +11305,6 @@ html[data-theme='dark'] .confirm-backdrop {
 
 html[data-theme='dark'] .confirm-dialog,
 html[data-theme='dark'] .card,
-html[data-theme='dark'] .login-card,
 html[data-theme='dark'] .boot-gate-card,
 html[data-theme='dark'] .inv-catalog,
 html[data-theme='dark'] .am-catalog,

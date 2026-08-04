@@ -8,7 +8,7 @@ export default function AssetTypeStockPage() {
   const productType = slugToRegisterProductType(typeSlug);
 
   if (!productType) {
-    return <Navigate to="/asset-inventory" replace />;
+    return <Navigate to="/asset-one" replace />;
   }
 
   return <AssetsPage embedded productType={productType} />;

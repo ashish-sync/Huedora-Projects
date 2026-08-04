@@ -129,7 +129,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
       }
       actions={
         embedded ? null : (
-          <Link className="btn secondary" to="/master-data">
+          <Link className="btn secondary" to="/master-one">
             Back to Master One
           </Link>
         )

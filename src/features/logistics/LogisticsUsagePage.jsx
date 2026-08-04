@@ -84,7 +84,7 @@ export default function LogisticsUsagePage() {
             <button className="btn secondary btn-compact" type="button" onClick={load}>
               Refresh
             </button>
-            <Link className="btn secondary btn-compact" to="/camps/manage">
+            <Link className="btn secondary btn-compact" to="/camp-one/manage">
               Open Camp One
             </Link>
           </>

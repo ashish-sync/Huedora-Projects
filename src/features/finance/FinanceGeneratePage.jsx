@@ -1,10 +1,10 @@
 import { Navigate, useParams } from 'react-router-dom';
 
 const BUILDER_ROUTES = {
-  invoice: '/finance/build/invoice',
-  proforma: '/finance/build/proforma',
-  'purchase-order': '/finance/build/purchase-order',
-  'credit-note': '/finance/build/credit-note',
+  invoice: '/finance-one/billing/invoice',
+  proforma: '/finance-one/billing/proforma',
+  'purchase-order': '/finance-one/billing/purchase-order',
+  'credit-note': '/finance-one/billing/credit-note',
 };
 
 /** Legacy generate routes redirect to the new document builders or finance hub. */
@@ -17,5 +17,5 @@ export default function FinanceGeneratePage() {
     return <Navigate to={target} replace />;
   }
 
-  return <Navigate to="/finance/build" replace />;
+  return <Navigate to="/finance-one/billing" replace />;
 }

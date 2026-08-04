@@ -201,7 +201,7 @@ export default function Layout({ children }) {
                 </div>
                 {(can('users:write') || can('*')) && (
                   <Link
-                    to="/role-permission-master"
+                    to="/access-control"
                     role="menuitem"
                     className="header-profile-link"
                     onClick={() => setMenuOpen(false)}

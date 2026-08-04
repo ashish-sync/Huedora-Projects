@@ -328,7 +328,7 @@ export default function VerificationsPage() {
       if (custodianContact.trim()) fd.append('custodianContact', custodianContact.trim());
 
       const res = await apiFetch(
-        `/verifications/records/${active.record._id}/rounds/${active.condition.nextRound}`,
+        `/verification-one/records/${active.record._id}/rounds/${active.condition.nextRound}`,
         {
           method: 'POST',
           body: fd,
@@ -456,7 +456,7 @@ export default function VerificationsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: MODULE.HOME }]}
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_VERIFICATION }]}
       title={MODULE.ASSET_VERIFICATION}
       kpis={[
         { key: 'SAFE', label: 'Safe', value: counts.SAFE || 0, active: filter === 'SAFE', onClick: () => setFilter(filter === 'SAFE' ? '' : 'SAFE') },
@@ -957,7 +957,7 @@ export default function VerificationsPage() {
                         Not Initiated appear here. Register them in {MODULE.ASSET_INVENTORY} and assign
                         custodians from {MODULE.CONTACT_DIRECTORY}.
                       </p>
-                      <Link className="btn secondary" to="/asset-inventory">
+                      <Link className="btn secondary" to="/asset-one">
                         Open {MODULE.ASSET_INVENTORY}
                       </Link>
                     </div>

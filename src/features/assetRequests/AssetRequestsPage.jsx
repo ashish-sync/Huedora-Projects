@@ -32,7 +32,7 @@ import {
   resolveClientMasterHealthcareWorkers,
 } from '../camps/utils/clientMasterCascade.js';
 import { normalizeHealthcareWorkers } from '../camps/utils/healthcareWorkers.js';
-import { isVendorContact } from '../agreements/contactPicklists.js';
+import { isVendorContact } from '../document-one/contactPicklists.js';
 
 const REQUEST_TYPES = [
   { value: 'SERVICE', label: 'Repair & Service Request', needsAsset: true },
@@ -1272,7 +1272,7 @@ export default function AssetRequestsPage() {
   const openProductImage = async (request) => {
     setError('');
     try {
-      const response = await apiFetch(`/asset-requests/${request._id}/product-image`);
+      const response = await apiFetch(`/request-one/${request._id}/product-image`);
       if (!response.ok) throw new Error(`Could not load product image (${response.status})`);
       const blobUrl = URL.createObjectURL(await response.blob());
       window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -1285,7 +1285,7 @@ export default function AssetRequestsPage() {
   const openBill = async (request) => {
     setError('');
     try {
-      const response = await apiFetch(`/asset-requests/${request._id}/bill`);
+      const response = await apiFetch(`/request-one/${request._id}/bill`);
       if (!response.ok) throw new Error(`Could not load bill (${response.status})`);
       const blobUrl = URL.createObjectURL(await response.blob());
       window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -1298,7 +1298,7 @@ export default function AssetRequestsPage() {
   const openRequestAttachment = async (request) => {
     setError('');
     try {
-      const response = await apiFetch(`/asset-requests/${request._id}/attachment`);
+      const response = await apiFetch(`/request-one/${request._id}/attachment`);
       if (!response.ok) throw new Error(`Could not load attachment (${response.status})`);
       const blobUrl = URL.createObjectURL(await response.blob());
       window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -1311,7 +1311,7 @@ export default function AssetRequestsPage() {
   const openJd = async (request) => {
     setError('');
     try {
-      const response = await apiFetch(`/asset-requests/${request._id}/jd`);
+      const response = await apiFetch(`/request-one/${request._id}/jd`);
       if (!response.ok) throw new Error(`Could not load job description (${response.status})`);
       const blobUrl = URL.createObjectURL(await response.blob());
       window.open(blobUrl, '_blank', 'noopener,noreferrer');
@@ -1480,7 +1480,7 @@ export default function AssetRequestsPage() {
                   <div className="arq-camp-link-banner__title">Linked camp</div>
                   <Link
                     className="arq-camp-link-banner__link"
-                    to={`/camps/manage/${linkedCamp._id}/edit`}
+                    to={`/camp-one/manage/${linkedCamp._id}/edit`}
                   >
                     {formatLinkedCampSummary(linkedCamp)}
                   </Link>

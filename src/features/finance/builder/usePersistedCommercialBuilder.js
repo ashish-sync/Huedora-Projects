@@ -111,7 +111,7 @@ export function usePersistedCommercialBuilder({
         if (saveFlashTimer.current) clearTimeout(saveFlashTimer.current);
         saveFlashTimer.current = setTimeout(() => setSaveState('idle'), 2400);
         if (navigateOnCreate && creating && row._id && routeId !== row._id) {
-          navigate(`/finance/build/${slug}/${row._id}`, { replace: true });
+          navigate(`/finance-one/billing/${slug}/${row._id}`, { replace: true });
         }
         return row;
       } catch (err) {
@@ -162,7 +162,7 @@ export function usePersistedCommercialBuilder({
     setError('');
     setSaveState('idle');
     setSavedAt(null);
-    navigate(`/finance/build/${slug}`, { replace: true });
+    navigate(`/finance-one/billing/${slug}`, { replace: true });
   }, [applyOrgMaster, buildFreshForm, navigate, orgMaster, slug]);
 
   const runLifecycle = useCallback(async (action) => {

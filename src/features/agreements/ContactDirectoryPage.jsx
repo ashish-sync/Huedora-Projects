@@ -351,7 +351,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           ? []
           : [
               { to: '/', label: MODULE.HOME },
-              { to: '/master-data', label: MODULE.MASTER_DATA },
+              { to: '/master-one', label: MODULE.MASTER_DATA },
               { label: MODULE.CONTACT_DIRECTORY },
             ]
       }
@@ -363,7 +363,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       actions={
         embedded || !can('agreements:write') ? null : (
-          <Link className="btn" to="/agreements/new">
+          <Link className="btn" to="/document-one/new">
             + New document
           </Link>
         )

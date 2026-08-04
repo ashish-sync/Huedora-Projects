@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useParams, useLocation } from 'react-router-do
 import { useAuth } from '../shared/auth.jsx';
 import { isBootSequenceEnabled } from '../shared/loginExperienceConfig.js';
 import Layout from './Layout.jsx';
-import LoginPage from '../features/auth/LoginPage.jsx';
 import { CLIENT_MASTER_ENTITY, CLIENT_MASTER_SCOPE } from '../features/camps/clientMasterPaths.js';
 import {
   CAMP_PATH,
@@ -13,6 +12,7 @@ import {
   assetOneDetailPath,
 } from '../shared/moduleRoutes.js';
 
+const LoginPage = lazy(() => import('../features/auth/LoginPage.jsx'));
 const TyloBootSequence = lazy(() => import('../features/auth/TyloBootSequence.jsx'));
 
 const ModulesHomePage = lazy(() => import('../features/dashboards/DashboardPage.jsx'));
@@ -61,7 +61,14 @@ const FinanceVendorBillDetailPage = lazy(() => import('../features/finance/Finan
 const FinanceGeneratePage = lazy(() => import('../features/finance/FinanceGeneratePage.jsx'));
 
 function PageLoader() {
-  return <div className="login-page">Loading…</div>;
+  return (
+    <div className="page-loader" role="status" aria-live="polite">
+      <div className="page-loader__track" aria-hidden="true">
+        <div className="page-loader__bar" />
+      </div>
+      <span className="page-loader__label">Loading</span>
+    </div>
+  );
 }
 
 function PrivateRoute({ children }) {
@@ -127,7 +134,14 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <LoginPage />
+          </Suspense>
+        }
+      />
       <Route path="/v/:token" element={<Suspense fallback={<PageLoader />}><SelfVerifyPage /></Suspense>} />
       <Route path="/verify/:token" element={<Suspense fallback={<PageLoader />}><SelfVerifyPage /></Suspense>} />
       <Route path="/s/:token" element={<Suspense fallback={<PageLoader />}><RecipientSignPage /></Suspense>} />

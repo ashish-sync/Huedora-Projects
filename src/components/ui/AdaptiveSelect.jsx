@@ -37,7 +37,7 @@ function withoutNativeSelectChromeClass(className = '') {
 
 export default function AdaptiveSelect({
   children,
-  threshold = 0,
+  threshold = 10,
   value,
   onChange,
   multiple = false,
@@ -53,14 +53,21 @@ export default function AdaptiveSelect({
 }) {
   const hostRef = useRef(null);
   const [menuWidth, setMenuWidth] = useState(null);
-  const childOptions = optionChildren(children);
-  const parsedOptions = childOptions.map((child) => ({
-    value: child.props.value == null ? '' : String(child.props.value),
-    label: textContent(child.props.children),
-    isDisabled: Boolean(child.props.disabled),
-  }));
+  const childOptions = useMemo(() => optionChildren(children), [children]);
+  const parsedOptions = useMemo(
+    () =>
+      childOptions.map((child) => ({
+        value: child.props.value == null ? '' : String(child.props.value),
+        label: textContent(child.props.children),
+        isDisabled: Boolean(child.props.disabled),
+      })),
+    [childOptions],
+  );
   const emptyOption = parsedOptions.find((option) => option.value === '');
-  const choices = parsedOptions.filter((option) => option.value !== '');
+  const choices = useMemo(
+    () => parsedOptions.filter((option) => option.value !== ''),
+    [parsedOptions],
+  );
   const ariaLabel =
     ariaLabelProp || placeholder || emptyOption?.label || name || 'Select option';
 

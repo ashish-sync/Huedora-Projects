@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
     refreshMe();
   }, [refreshMe]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const { data } = await api('/auth/login', { method: 'POST', body: { email, password } });
     setAccessToken(data.accessToken);
     const { data: me } = await api('/auth/me');
@@ -41,13 +41,13 @@ export function AuthProvider({ children }) {
       setBootSessionActive(true);
     }
     return me;
-  };
+  }, []);
 
   const completeLoginBoot = useCallback(() => {
     setBootSessionActive(false);
   }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await api('/auth/logout', { method: 'POST', body: {} });
     } catch {
@@ -58,15 +58,15 @@ export function AuthProvider({ children }) {
     setBootSessionActive(false);
     clearInsightSession();
     exitAppFullscreen();
-  };
+  }, []);
 
-  const can = (permission) => {
+  const can = useCallback((permission) => {
     if (!user?.permissions) return false;
     return user.permissions.includes('*') || user.permissions.includes(permission);
-  };
+  }, [user]);
 
-  const isAdmin = () => can('*');
-  const canDelete = () => isAdmin();
+  const isAdmin = useCallback(() => can('*'), [can]);
+  const canDelete = useCallback(() => isAdmin(), [isAdmin]);
 
   const value = useMemo(
     () => ({
@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
       bootSessionActive,
       completeLoginBoot,
     }),
-    [user, loading, refreshMe, bootSessionActive, completeLoginBoot]
+    [user, loading, login, logout, can, isAdmin, canDelete, refreshMe, bootSessionActive, completeLoginBoot]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,6 +6,7 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { ACTION, NAV } from '../../shared/labels.js';
@@ -26,6 +27,7 @@ export default function FinanceVendorBillsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [status, setStatus] = useState('');
   const [view, setView] = useState('active');
   const [error, setError] = useState('');
@@ -37,7 +39,7 @@ export default function FinanceVendorBillsPage() {
     setError('');
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (status) {
         params.set('status', status);
       } else if (view === 'archive') {
@@ -56,7 +58,7 @@ export default function FinanceVendorBillsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, q, status, view]);
+  }, [page, limit, debouncedQ, status, view]);
 
   useEffect(() => {
     load();

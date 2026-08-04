@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 
 import { MODULE, FIELD, NAV, ACTION } from '../../shared/labels.js';
 import { formatTextValue } from '../../shared/textFormat.js';
@@ -141,6 +142,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [agreementStatus, setAgreementStatus] = useState('');
   const [custody, setCustody] = useState('');
   const [page, setPage] = useState(1);
@@ -236,7 +238,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setError('');
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (agreementStatus) params.set('agreementStatus', agreementStatus);
       if (custody) params.set('custody', custody);
       if (scopedType) params.set('productType', scopedType);
@@ -248,7 +250,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     } finally {
       setLoading(false);
     }
-  }, [page, limit, q, agreementStatus, custody, scopedType]);
+  }, [page, limit, debouncedQ, agreementStatus, custody, scopedType]);
 
   useEffect(() => {
     load();
@@ -524,6 +526,13 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setPreviewTitle('');
     setViewRow(null);
     setViewDocs([]);
+  };
+
+  const refreshDocs = async (assetId) => {
+    const { data } = await api(`/assets/${assetId}/documents`);
+    const docs = data || [];
+    setViewDocs(docs);
+    return docs;
   };
 
   const uploadSignedAgreement = async (file) => {

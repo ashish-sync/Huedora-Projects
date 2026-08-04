@@ -8,6 +8,7 @@ import { api, apiUrl } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import {
@@ -53,6 +54,7 @@ export default function LogisticsInwardPage() {
   const [meta, setMeta] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [formOpen, setFormOpen] = useState(false);
@@ -127,7 +129,7 @@ export default function LogisticsInwardPage() {
         limit: String(limit),
         entryTypes: 'Inward,Return',
       });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       const res = await api(`/logistics/in-out?${params}`);
       setRows(res.data || []);
       setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
@@ -136,7 +138,7 @@ export default function LogisticsInwardPage() {
     } finally {
       setListLoading(false);
     }
-  }, [q, page, limit]);
+  }, [debouncedQ, page, limit]);
 
   useEffect(() => {
     api('/logistics/meta')

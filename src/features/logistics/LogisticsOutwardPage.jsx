@@ -9,6 +9,7 @@ import { api } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
@@ -342,6 +343,7 @@ export default function LogisticsOutwardPage() {
   const [meta, setMeta] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [formOpen, setFormOpen] = useState(false);
@@ -417,7 +419,7 @@ export default function LogisticsOutwardPage() {
         limit: String(limit),
         entryTypes: 'Outward,Return',
       });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (statusFilter && statusFilter !== 'All') params.set('dispatchStatus', statusFilter);
       const res = await api(`/logistics/in-out?${params}`);
       const list = (res.data || []).filter(
@@ -430,7 +432,7 @@ export default function LogisticsOutwardPage() {
     } finally {
       setListLoading(false);
     }
-  }, [q, statusFilter, page, limit]);
+  }, [debouncedQ, statusFilter, page, limit]);
 
   const markDelivery = async (row, outcome) => {
     if (!canWrite || !row?._id) return;

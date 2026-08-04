@@ -47,16 +47,21 @@ export default function AgreementsPage() {
     else setSearchParams({});
   };
 
+  const loadStats = () => {
+    api('/agreements/stats')
+      .then((st) => setStats(st.data))
+      .catch(() => {});
+  };
+
   const load = () => {
     setListLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (q) params.set('q', q);
     if (status) params.set('status', status);
-    Promise.all([api(`/agreements?${params}`), api('/agreements/stats')])
-      .then(([list, st]) => {
+    api(`/agreements?${params}`)
+      .then((list) => {
         setRows(list.data);
         setListMeta(list.meta || { page, limit, total: 0, pages: 0 });
-        setStats(st.data);
       })
       .catch((e) => setError(e.message))
       .finally(() => setListLoading(false));
@@ -77,6 +82,10 @@ export default function AgreementsPage() {
       setExportBusy(false);
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
 
   useEffect(() => {
     load();

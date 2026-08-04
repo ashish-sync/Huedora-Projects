@@ -34,8 +34,8 @@ function ControlledSelect({ count, onChange = () => {}, multiple = false, ...pro
 }
 
 describe('AdaptiveSelect', () => {
-  it('uses react-select by default for any choice count', () => {
-    render(<ControlledSelect count={9} />);
+  it('uses react-select once choices reach the default threshold', () => {
+    render(<ControlledSelect count={10} />);
     expect(screen.getByRole('combobox', { name: 'Example' })).toBeTruthy();
   });
 

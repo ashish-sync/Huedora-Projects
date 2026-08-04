@@ -12,7 +12,7 @@ function parseLocalDateInput(value) {
   if (!text) return null;
 
   const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
-  const dmy = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/.exec(text);
+  const dmy = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/.exec(text);
 
   let year;
   let month;

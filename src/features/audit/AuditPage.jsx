@@ -19,8 +19,7 @@ export default function AuditPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
-
-  if (!can('audit:read')) return <p className="error">No audit access</p>;
+  const canRead = can('audit:read');
 
   const load = (filters = applied, pageNum = page, pageLimit = limit) => {
     setLoading(true);
@@ -42,9 +41,12 @@ export default function AuditPage() {
   };
 
   useEffect(() => {
+    if (!canRead) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when page/limit change
-  }, [page, limit]);
+  }, [page, limit, canRead]);
+
+  if (!canRead) return <p className="error">No audit access</p>;
 
   const submitFilters = (e) => {
     e?.preventDefault?.();

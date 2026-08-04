@@ -53,7 +53,7 @@ export default function Layout({ children }) {
         if (hasNew) playNotificationSound();
       }
       knownUnreadIdsRef.current = ids;
-      setUnreadCount(unread.length);
+      setUnreadCount((prev) => (prev === unread.length ? prev : unread.length));
     } catch {
       // Keep last known count on transient errors
     }
@@ -77,7 +77,7 @@ export default function Layout({ children }) {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
     };
-  }, [canSeeNotifications, refreshUnread, pathname]);
+  }, [canSeeNotifications, refreshUnread]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;

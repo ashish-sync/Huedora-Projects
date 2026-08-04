@@ -5,6 +5,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { MODULE, ACTION, FILTER, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import './finance-commercial.css';
@@ -38,6 +39,7 @@ export default function FinanceCampPayoutsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [statusFilter, setStatusFilter] = useState('');
   const [groupBy, setGroupBy] = useState('client');
   const [thenBy, setThenBy] = useState('');
@@ -54,8 +56,8 @@ export default function FinanceCampPayoutsPage() {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '1000' });
-      if (q.trim()) params.set('q', q.trim());
+      const params = new URLSearchParams({ limit: '500' });
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (statusFilter) params.set('status', statusFilter);
       const { data } = await api(`/finance/payouts?${params}`);
       setRows(Array.isArray(data) ? data : []);
@@ -65,7 +67,7 @@ export default function FinanceCampPayoutsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, statusFilter]);
+  }, [debouncedQ, statusFilter]);
 
   useEffect(() => {
     load();

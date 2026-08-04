@@ -6,6 +6,7 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FILTER } from '../../shared/labels.js';
@@ -38,6 +39,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [status, setStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
   const [error, setError] = useState('');
@@ -54,7 +56,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     setError('');
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (status) params.set('status', status);
       if (documentType) params.set('documentType', documentType);
       const res = await api(`/finance/commercial-documents?${params}`);
@@ -66,7 +68,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     } finally {
       setListLoading(false);
     }
-  }, [page, limit, q, status, documentType]);
+  }, [page, limit, debouncedQ, status, documentType]);
 
   useEffect(() => {
     load();

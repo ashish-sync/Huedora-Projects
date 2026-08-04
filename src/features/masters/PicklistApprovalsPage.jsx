@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { api } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -17,6 +18,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
   const [registry, setRegistry] = useState([]);
   const [status, setStatus] = useState('PENDING');
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busyId, setBusyId] = useState('');
@@ -31,7 +33,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
     setError('');
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (status) params.set('status', status);
-    if (q.trim()) params.set('q', q.trim());
+    if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
     return api(`/picklists/suggestions?${params}`)
       .then((r) => {
         setRows(r.data || []);
@@ -50,7 +52,7 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, status, q]);
+  }, [page, limit, status, debouncedQ]);
 
   const labelFor = (key) => registry.find((r) => r.key === key)?.label || key;
 

@@ -75,6 +75,58 @@ textarea {
   height: 100%;
 }
 
+/* Compact route/boot loader — avoids login-page layout flash */
+.page-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 40vh;
+  padding: 48px 24px;
+  color: var(--muted, #64748b);
+}
+
+.page-loader__track {
+  width: min(220px, 55vw);
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand, #0a5ac2) 12%, transparent);
+}
+
+.page-loader__bar {
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand, #0a5ac2);
+  animation: page-loader-slide 0.9s ease-in-out infinite;
+}
+
+.page-loader__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@keyframes page-loader-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loader__bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.55;
+  }
+}
+
 .app-header {
   height: var(--header-h);
   flex-shrink: 0;
@@ -430,6 +482,7 @@ textarea {
   min-height: 0;
   overflow: auto;
   padding: 12px clamp(16px, 2.5vw, 24px) 28px;
+  scroll-behavior: smooth;
 }
 
 .main > * {

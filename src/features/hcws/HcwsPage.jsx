@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../shared/api.js';
-import { FIELD } from '../../shared/labels.js';
+import { FIELD, MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 

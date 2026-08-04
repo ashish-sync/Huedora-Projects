@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 const campActionSources = [
   'src/features/camps/utils/campExecutionActions.js',
@@ -17,7 +18,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['**/*.{js,jsx,mjs}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -31,12 +32,17 @@ export default [
         },
       },
     },
+    plugins: {
+      'react-hooks': reactHooks,
+    },
     linterOptions: {
       reportUnusedDisableDirectives: false,
     },
     rules: {
       'no-undef': 'error',
       'no-unused-vars': 'off',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
   {

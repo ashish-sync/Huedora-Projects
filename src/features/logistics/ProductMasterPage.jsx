@@ -3,6 +3,7 @@ import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
 import { api } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
@@ -71,6 +72,7 @@ export default function ProductMasterPage() {
   const [catalog, setCatalog] = useState([]);
   const [uoms, setUoms] = useState([]);
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [typeFilter, setTypeFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -128,7 +130,7 @@ export default function ProductMasterPage() {
     setError('');
     try {
       const params = new URLSearchParams({ limit: '500' });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (typeFilter) params.set('productType', typeFilter);
       if (categoryFilter) params.set('productCategory', categoryFilter);
       if (statusFilter === 'active') params.set('isActive', 'true');
@@ -139,7 +141,7 @@ export default function ProductMasterPage() {
     } catch (e) {
       setError(e.message);
     }
-  }, [q, typeFilter, categoryFilter, statusFilter]);
+  }, [debouncedQ, typeFilter, categoryFilter, statusFilter]);
 
   useEffect(() => {
     loadLookups();

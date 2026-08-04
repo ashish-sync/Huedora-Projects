@@ -4,6 +4,7 @@ import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
 import ProductMasterPage from './ProductMasterPage.jsx';
 import ExpenseMasterPage from './ExpenseMasterPage.jsx';
@@ -237,6 +238,7 @@ export default function LogisticsMasterPage({
   const [contacts, setContacts] = useState([]);
   const [contactPick, setContactPick] = useState('');
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -274,7 +276,7 @@ export default function LogisticsMasterPage({
     setListLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      if (q.trim()) params.set('q', q.trim());
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       const res = await api(`${entity.path}?${params}`);
       setRows(res.data || []);
       setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
@@ -283,7 +285,7 @@ export default function LogisticsMasterPage({
     } finally {
       setListLoading(false);
     }
-  }, [entity?.path, entity?.id, entity?.dedicated, entity?.embedded, q, page, limit]);
+  }, [entity?.path, entity?.id, entity?.dedicated, entity?.embedded, debouncedQ, page, limit]);
 
   useEffect(() => {
     if (!entity) return;

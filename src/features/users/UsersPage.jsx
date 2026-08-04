@@ -17,8 +17,7 @@ export default function UsersPage() {
     roleIds: [],
   });
   const [error, setError] = useState('');
-
-  if (!can('users:write')) return <p className="error">Admin only</p>;
+  const canWrite = can('users:write');
 
   const load = () => {
     api('/users').then((r) => setRows(r.data)).catch((e) => setError(e.message));
@@ -26,8 +25,11 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
+    if (!canWrite) return;
     load();
-  }, []);
+  }, [canWrite]);
+
+  if (!canWrite) return <p className="error">Admin only</p>;
 
   return (
     <PageShell

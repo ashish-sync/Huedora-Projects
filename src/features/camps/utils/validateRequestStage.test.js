@@ -16,7 +16,7 @@ const validRequest = {
   clientId: 'client-1',
   campaignType: 'Ortho',
   campaignName: 'BMD',
-  campDate: '2026-08-01',
+  campDate: isoOffset(0),
   startTime: '09:00',
   endTime: '13:00',
   doctorName: 'Rajesh Kumar',

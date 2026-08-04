@@ -161,7 +161,7 @@ export default function AgreementDetailPage() {
     setPdfLoading(true);
     setPdfError('');
     try {
-      const res = await apiFetch(`/document-one/${id}/pdf`);
+      const res = await apiFetch(`/agreements/${id}/pdf`);
       if (!res.ok) throw new Error('Could not load PDF preview');
       const blob = await res.blob();
       if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
@@ -316,7 +316,7 @@ export default function AgreementDetailPage() {
   const downloadPdf = async () => {
     setError('');
     try {
-      const res = await apiFetch(`/document-one/${id}/pdf?download=1`);
+      const res = await apiFetch(`/agreements/${id}/pdf?download=1`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

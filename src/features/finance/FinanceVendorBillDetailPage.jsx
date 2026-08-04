@@ -7,7 +7,7 @@ import { api } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { NAV } from '../../shared/labels.js';
-import { isVendorContact } from '../document-one/contactPicklists.js';
+import { isVendorContact } from '../agreements/contactPicklists.js';
 import {
   VENDOR_BILL_EDITABLE_STATUSES,
   VENDOR_BILL_PAYABLE_STATUSES,

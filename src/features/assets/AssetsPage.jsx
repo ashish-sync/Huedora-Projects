@@ -584,7 +584,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     if (!canViewAgreements) return;
     if (!silent) setViewError('');
     try {
-      const res = await apiFetch(`/document-one/${agreement._id}/documents/${doc._id}/download`);
+      const res = await apiFetch(`/agreements/${agreement._id}/documents/${doc._id}/download`);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error?.message || 'Could not open attachment');

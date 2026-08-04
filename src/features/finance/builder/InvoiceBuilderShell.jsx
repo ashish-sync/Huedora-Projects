@@ -142,9 +142,11 @@ export default function InvoiceBuilderShell({
           </Link>
           <div className="ib-toolbar-title">
             <span className="ib-toolbar-label">{docTypeLabel}</span>
-            <span className="ib-toolbar-doc">{docNumber || 'Draft'}</span>
-            <span className={`ib-status-pill ib-status-pill--${String(status || 'draft').toLowerCase()}`}>
-              {status || 'Draft'}
+            <span className="ib-toolbar-meta">
+              <span className="ib-toolbar-doc">{docNumber || 'Draft'}</span>
+              <span className={`ib-status-pill ib-status-pill--${String(status || 'draft').toLowerCase()}`}>
+                {status || 'Draft'}
+              </span>
             </span>
           </div>
           <SaveIndicator state={saveState} savedAt={savedAt} status={status} />

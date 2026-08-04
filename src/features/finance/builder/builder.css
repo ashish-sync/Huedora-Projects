@@ -77,6 +77,14 @@
   max-width: 200px;
 }
 
+.ib-toolbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .ib-status-pill {
   display: inline-flex;
   align-items: center;
@@ -640,12 +648,47 @@
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
+  .ib-toolbar {
+    height: auto;
+    min-height: var(--ib-toolbar-h);
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .ib-toolbar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   .ib-toolbar-center {
     display: none;
   }
 
+  .ib-toolbar-title {
+    gap: 2px;
+  }
+
+  .ib-toolbar-label {
+    display: block;
+  }
+
+  .ib-toolbar-meta {
+    gap: 6px;
+  }
+
   .ib-toolbar-doc {
-    max-width: 100px;
+    max-width: 140px;
+  }
+
+  .ib-save {
+    display: none;
+  }
+
+  .ib-toolbar-right {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .ib-panel.is-open {

@@ -11,17 +11,17 @@ import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
-  GST_RATE_PRESETS,
+  INVENTORY_TRACKING_OPTIONS,
+  PRODUCT_TYPE_CODE_HINTS,
   applyProductTypeRules,
   associatedProductTypesFor,
   categoriesForType,
   emptyProductForm,
   formToPayload,
-  isConsumableType,
+  inventoryTrackingLabel,
   isExpiryLocked,
   rowToForm,
   showReorderLevelField,
-  showWarrantyField,
   suggestProductName,
   validateProductForm,
 } from '../../shared/productMasterConfig.js';
@@ -96,6 +96,8 @@ export default function ProductMasterPage() {
     const map = Object.fromEntries(uoms.map((u) => [u._id, `${u.name} (${u.code})`]));
     return (id) => map[id] || '—';
   }, [uoms]);
+
+  const codeHint = PRODUCT_TYPE_CODE_HINTS[resolveProductType(form.productType)] || 'AUTO';
 
   const assocCandidates = useMemo(() => {
     const allowed = new Set(associatedProductTypesFor(form.productType));
@@ -340,9 +342,9 @@ export default function ProductMasterPage() {
                 setTypeFilter(e.target.value);
                 setCategoryFilter('');
               }}
-              aria-label="Filter by product type"
+              aria-label="Filter by product category"
             >
-              <option value="">All types</option>
+              <option value="">All categories</option>
               {PRODUCT_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -353,9 +355,9 @@ export default function ProductMasterPage() {
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               disabled={!typeFilter}
-              aria-label="Filter by category"
+              aria-label="Filter by method"
             >
-              <option value="">All categories</option>
+              <option value="">All methods</option>
               {categoryOptions.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -403,13 +405,12 @@ export default function ProductMasterPage() {
                   </th>
                 )}
                 <th>Code</th>
-                <th>Product Name</th>
-                <th>Type</th>
+                <th>Display Name</th>
                 <th>Category</th>
+                <th>Method</th>
                 <th>Brand</th>
                 <th>UOM</th>
-                <th>Inventory</th>
-                <th>Cost</th>
+                <th>Track By</th>
                 <th>Status</th>
                 <th className="inv-col-actions">Actions</th>
               </tr>
@@ -438,13 +439,7 @@ export default function ProductMasterPage() {
                   <td>{row.productCategory || '—'}</td>
                   <td>{row.brand || row.manufacturer || '—'}</td>
                   <td>{uomLabel(row.uomId)}</td>
-                  <td>{row.inventoryType || '—'}</td>
-                  <td className="mono-sm">
-                    {Number(row.standardCost || 0).toLocaleString(undefined, {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 2,
-                    })}
-                  </td>
+                  <td>{inventoryTrackingLabel(row.trackingKind)}</td>
                   <td>
                     <span className={`pm-status ${row.isActive === false ? 'is-inactive' : 'is-active'}`}>
                       {row.isActive === false ? 'Inactive' : 'Active'}
@@ -461,7 +456,7 @@ export default function ProductMasterPage() {
               ))}
               {!rows.length && (
                 <tr>
-                  <td colSpan={canWrite ? 11 : 10}>
+                  <td colSpan={canWrite ? 10 : 9}>
                     <p className="muted pm-empty">No products match your filters.</p>
                   </td>
                 </tr>
@@ -475,9 +470,6 @@ export default function ProductMasterPage() {
 
   const showAssoc = associatedProductTypesFor(form.productType).length > 0;
   const assocSelected = (form.associatedProductIds || []).length;
-  const isConsumable = isConsumableType(form.productType);
-  const showWarranty = showWarrantyField(form.productType);
-  const showReorder = showReorderLevelField(form.productType);
 
   return (
     <div className="product-master pm-enterprise">
@@ -493,10 +485,13 @@ export default function ProductMasterPage() {
             <h3 className="product-master-title">
               {mode === 'edit' ? 'Edit product' : 'New product'}
             </h3>
-            {editingCode ? <span className="pm-code-badge mono-sm">{editingCode}</span> : null}
+            <span className="pm-code-badge mono-sm" title="Product code is assigned automatically on create">
+              {editingCode || `${codeHint} · auto`}
+            </span>
           </header>
-          <Section title="Classification">
-            <Field id="pm-type" label="Product Type" required>
+
+          <Section title="Product">
+            <Field id="pm-type" label="Product Category" required>
               <AdaptiveSelect
                 id="pm-type"
                 required
@@ -511,9 +506,9 @@ export default function ProductMasterPage() {
                 ))}
               </AdaptiveSelect>
             </Field>
-            <Field id="pm-category" label="Product Category" required>
+            <Field id="pm-method" label="Method" required>
               <AdaptiveSelect
-                id="pm-category"
+                id="pm-method"
                 required
                 disabled={!canWrite}
                 value={form.productCategory}
@@ -526,10 +521,19 @@ export default function ProductMasterPage() {
                 ))}
               </AdaptiveSelect>
             </Field>
-          </Section>
-
-          <Section title="Product details">
-            <Field id="pm-brand" label="Brand / Manufacturer" required>
+            <Field id="pm-code" label="Product Code">
+              <input
+                id="pm-code"
+                readOnly
+                value={editingCode || 'Auto generated on save'}
+                className="pm-code-readonly"
+                aria-describedby="pm-code-hint"
+              />
+              <p id="pm-code-hint" className="pm-field-hint">
+                Assigned automatically (e.g. {codeHint}).
+              </p>
+            </Field>
+            <Field id="pm-brand" label="Brand - Manufacturer" required>
               <input
                 id="pm-brand"
                 required
@@ -538,7 +542,7 @@ export default function ProductMasterPage() {
                 onChange={(e) => onBrandOrModelChange('brand', e.target.value)}
               />
             </Field>
-            <Field id="pm-model" label="Model / Variant" required>
+            <Field id="pm-model" label="Model - Variant" required>
               <input
                 id="pm-model"
                 required
@@ -548,7 +552,7 @@ export default function ProductMasterPage() {
                 placeholder="Model or variant"
               />
             </Field>
-            <Field id="pm-name" label="Product Name" required>
+            <Field id="pm-name" label="Display Name" required>
               <input
                 id="pm-name"
                 required
@@ -558,32 +562,6 @@ export default function ProductMasterPage() {
                 placeholder="Brand — Model"
               />
             </Field>
-            <Field id="pm-desc" label="Description">
-              <textarea
-                id="pm-desc"
-                rows={2}
-                readOnly={!canWrite}
-                value={form.description}
-                onChange={(e) => setField('description', e.target.value)}
-                placeholder="Optional"
-              />
-            </Field>
-          </Section>
-
-          <Section title="Product images" className="pm-section--images">
-            <div className="pm-images-wrap">
-              <ProductImagesPanel
-                productId={editingId}
-                product={productRecord}
-                canWrite={canWrite}
-                showTitle={false}
-                onUpdated={onProductMediaUpdated}
-                hint="Upload one or more photos for visual identification during asset registration."
-              />
-            </div>
-          </Section>
-
-          <Section title="Commercial">
             <Field id="pm-uom" label="UOM">
               <AdaptiveSelect
                 id="pm-uom"
@@ -599,143 +577,24 @@ export default function ProductMasterPage() {
                 ))}
               </AdaptiveSelect>
             </Field>
-            {isConsumable ? (
-              <Field id="pm-upp" label="Units per Pack" required>
-                <input
-                  id="pm-upp"
-                  type="number"
-                  min="1"
-                  step="1"
-                  required
-                  readOnly={!canWrite}
-                  value={form.unitsPerPack}
-                  onChange={(e) => setField('unitsPerPack', e.target.value)}
-                />
-              </Field>
-            ) : showWarranty ? (
-              <Field id="pm-warranty" label="Warranty (Months)">
-                <input
-                  id="pm-warranty"
-                  type="number"
-                  min="0"
-                  step="1"
-                  readOnly={!canWrite}
-                  value={form.warrantyMonths}
-                  onChange={(e) => setField('warrantyMonths', e.target.value)}
-                />
-              </Field>
-            ) : showReorder ? (
-              <Field id="pm-reorder" label="Reorder Level">
-                <input
-                  id="pm-reorder"
-                  type="number"
-                  min="0"
-                  step="1"
-                  readOnly={!canWrite}
-                  value={form.reorderLevel}
-                  onChange={(e) => setField('reorderLevel', e.target.value)}
-                />
-              </Field>
-            ) : null}
-            <Field id="pm-cost" label="Default Purchase Cost">
-              <input
-                id="pm-cost"
-                type="number"
-                min="0"
-                step="0.01"
-                readOnly={!canWrite}
-                value={form.purchaseCost}
-                onChange={(e) => setField('purchaseCost', e.target.value)}
-                placeholder="0.00"
-              />
+            <Field id="pm-tracking" label="Track Inventory By" required>
+              <AdaptiveSelect
+                id="pm-tracking"
+                required
+                disabled={!canWrite}
+                value={form.trackingKind || 'None'}
+                onChange={(e) => setField('trackingKind', e.target.value)}
+              >
+                {INVENTORY_TRACKING_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+              <p className="pm-field-hint">
+                Applies to procurement, inventory, stock movements, and reporting for this product.
+              </p>
             </Field>
-            {!isConsumable ? (
-              <Field id="pm-gst" label="Default GST (%)">
-                <div className="pm-gst-stack">
-                  <AdaptiveSelect
-                    id="pm-gst"
-                    disabled={!canWrite}
-                    value={form.gstCustom ? 'custom' : String(form.gstRate)}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === 'custom') setForm((f) => ({ ...f, gstCustom: true }));
-                      else setForm((f) => ({ ...f, gstCustom: false, gstRate: v }));
-                    }}
-                  >
-                    {GST_RATE_PRESETS.map((r) => (
-                      <option key={r} value={String(r)}>
-                        {r}%
-                      </option>
-                    ))}
-                    <option value="custom">Custom</option>
-                  </AdaptiveSelect>
-                  {form.gstCustom && (
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      readOnly={!canWrite}
-                      value={form.gstRate}
-                      onChange={(e) => setField('gstRate', e.target.value)}
-                      aria-label="Custom GST rate"
-                      placeholder="Rate %"
-                    />
-                  )}
-                </div>
-              </Field>
-            ) : showReorder ? (
-              <Field id="pm-reorder" label="Reorder Level">
-                <input
-                  id="pm-reorder"
-                  type="number"
-                  min="0"
-                  step="1"
-                  readOnly={!canWrite}
-                  value={form.reorderLevel}
-                  onChange={(e) => setField('reorderLevel', e.target.value)}
-                />
-              </Field>
-            ) : null}
-            {isConsumable && (
-              <Field id="pm-gst" label="Default GST (%)" span={2}>
-                <div className="pm-gst-stack pm-gst-stack--inline">
-                  <AdaptiveSelect
-                    id="pm-gst"
-                    disabled={!canWrite}
-                    value={form.gstCustom ? 'custom' : String(form.gstRate)}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === 'custom') setForm((f) => ({ ...f, gstCustom: true }));
-                      else setForm((f) => ({ ...f, gstCustom: false, gstRate: v }));
-                    }}
-                  >
-                    {GST_RATE_PRESETS.map((r) => (
-                      <option key={r} value={String(r)}>
-                        {r}%
-                      </option>
-                    ))}
-                    <option value="custom">Custom</option>
-                  </AdaptiveSelect>
-                  {form.gstCustom && (
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      readOnly={!canWrite}
-                      value={form.gstRate}
-                      onChange={(e) => setField('gstRate', e.target.value)}
-                      aria-label="Custom GST rate"
-                      placeholder="Rate %"
-                    />
-                  )}
-                </div>
-              </Field>
-            )}
-          </Section>
-
-          <Section title="Status">
             <Field id="pm-expiry" label="Expiry Applicable">
               <BoolSelect
                 id="pm-expiry"
@@ -744,30 +603,51 @@ export default function ProductMasterPage() {
                 onChange={(v) => setField('expiryApplicable', v)}
               />
               {expiryLocked && (
-                <p className="pm-field-hint">Set automatically for this product type.</p>
+                <p className="pm-field-hint">Set automatically for this product category.</p>
               )}
             </Field>
-            <Field id="pm-active" label="Active">
-              <BoolSelect
-                id="pm-active"
+            {showReorderLevelField(form.productType) ? (
+              <Field id="pm-reorder" label="Reorder Level">
+                <input
+                  id="pm-reorder"
+                  type="number"
+                  min="0"
+                  step="1"
+                  readOnly={!canWrite}
+                  value={form.reorderLevel}
+                  onChange={(e) => setField('reorderLevel', e.target.value)}
+                />
+              </Field>
+            ) : null}
+            <Field id="pm-status" label="Status">
+              <AdaptiveSelect
+                id="pm-status"
                 disabled={!canWrite}
-                value={form.isActive}
-                onChange={(v) => setField('isActive', v)}
-              />
-            </Field>
-            <Field id="pm-remarks" label="Remarks" span={2}>
-              <textarea
-                id="pm-remarks"
-                rows={2}
-                readOnly={!canWrite}
-                value={form.remarks}
-                onChange={(e) => setField('remarks', e.target.value)}
-                placeholder="Internal notes"
-              />
+                value={form.isActive !== false ? 'Active' : 'Inactive'}
+                onChange={(e) => setField('isActive', e.target.value === 'Active')}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </AdaptiveSelect>
             </Field>
           </Section>
 
-          {showAssoc && (
+          {mode === 'edit' ? (
+            <Section title="Product images" className="pm-section--images">
+              <div className="pm-images-wrap">
+                <ProductImagesPanel
+                  productId={editingId}
+                  product={productRecord}
+                  canWrite={canWrite}
+                  showTitle={false}
+                  onUpdated={onProductMediaUpdated}
+                  hint="Upload one or more photos for visual identification during asset registration."
+                />
+              </div>
+            </Section>
+          ) : null}
+
+          {showAssoc ? (
             <Section title="Associated products" className="pm-section--last pm-section--assoc">
               <div className="pm-assoc-panel pm-span-2">
                 <div className="pm-assoc-head">
@@ -828,9 +708,9 @@ export default function ProductMasterPage() {
                 )}
               </div>
             </Section>
+          ) : (
+            <div className="pm-section-divider" aria-hidden="true" />
           )}
-
-          {!showAssoc && <div className="pm-section-divider" aria-hidden="true" />}
 
           {canWrite && (
             <div className="pm-form-actions">

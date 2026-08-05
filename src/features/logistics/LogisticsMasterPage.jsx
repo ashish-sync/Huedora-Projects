@@ -19,6 +19,7 @@ import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import { PRODUCT_TYPES } from '../../shared/productTypes.js';
+import { INVENTORY_TRACKING_OPTIONS } from '../../shared/productMasterConfig.js';
 
 const MASTER_GROUPS = [
   {
@@ -130,7 +131,7 @@ const FIELD_LABELS = {
   productType: 'Product type',
   programProject: 'Program / Project',
   expiryApplicable: 'Expiry applicable',
-  trackingKind: 'Tracking',
+  trackingKind: 'Track Inventory By',
   brand: 'Brand',
   model: 'Model',
   sku: 'SKU',
@@ -140,8 +141,6 @@ const FIELD_LABELS = {
   direction: 'Direction',
   covers: 'Covers',
 };
-
-const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
 
 const LOCATION_LEVELS = ['Zone', 'Room', 'Rack', 'Shelf', 'Bin'];
 const TEXTAREA_FIELDS = new Set(['description', 'address', 'covers']);
@@ -680,12 +679,12 @@ export default function LogisticsMasterPage({
                 ) : field === 'trackingKind' ? (
                   <AdaptiveSelect
                     id={`lm-${field}`}
-                    value={form.trackingKind}
+                    value={form.trackingKind || 'None'}
                     onChange={(e) => setForm({ ...form, trackingKind: e.target.value })}
                   >
-                    {TRACKING_KINDS.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {INVENTORY_TRACKING_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
                       </option>
                     ))}
                   </AdaptiveSelect>

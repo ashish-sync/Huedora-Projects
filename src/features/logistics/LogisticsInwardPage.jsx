@@ -574,12 +574,23 @@ export default function LogisticsInwardPage() {
                 />
               </Field>
             )}
-            {tracked && (
-              <Field label="Batch / Serial" required>
+            {form.trackingKind === 'Batch' && (
+              <Field label="Batch number" required>
                 <input
                   required
                   value={form.batchOrSerial}
                   onChange={(e) => setField('batchOrSerial', e.target.value)}
+                  placeholder="Batch"
+                />
+              </Field>
+            )}
+            {(form.trackingKind === 'Serial' || form.trackingKind === 'Batch + Serial') && (
+              <Field label="Serial number" required>
+                <input
+                  required
+                  value={form.batchOrSerial}
+                  onChange={(e) => setField('batchOrSerial', e.target.value)}
+                  placeholder="Device serial"
                 />
               </Field>
             )}

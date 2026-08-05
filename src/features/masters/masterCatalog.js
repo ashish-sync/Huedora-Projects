@@ -13,7 +13,7 @@ export const MASTER_MODULES = [
 
 export const PRODUCT_INVENTORY_TYPES = ['Asset', 'Inventory'];
 export const GST_RATE_PRESETS = ['0', '5', '12', '18', '28'];
-export const TRACKING_KINDS = ['None', 'Serial', 'Batch', 'Batch + Serial'];
+export const TRACKING_KINDS = ['None', 'Batch', 'Serial'];
 export const DOCUMENT_TYPES = ['LEASE', 'TEMPORARY_OWNERSHIP', 'LETTER', 'OTHER'];
 export const SIGNING_TYPES = ['SIGNING', 'NON_SIGNING'];
 export const SIGNATURE_ROLES = [

@@ -31,7 +31,7 @@ export const FALLBACK_CAT_DEFAULTS = {
   'Non-Medical Device': { expiryApplicable: false, trackingKind: 'Serial' },
   Peripheral: { expiryApplicable: false, trackingKind: 'Serial' },
   Consumable: { expiryApplicable: true, trackingKind: 'Batch' },
-  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
+  'Spare Part': { expiryApplicable: false, trackingKind: 'Batch' },
   Other: { expiryApplicable: false, trackingKind: 'None' },
   // Legacy keys still present on older stock / txn rows
   Device: { expiryApplicable: false, trackingKind: 'Serial' },
@@ -39,7 +39,7 @@ export const FALLBACK_CAT_DEFAULTS = {
   Accessory: { expiryApplicable: false, trackingKind: 'Serial' },
   Document: { expiryApplicable: false, trackingKind: 'None' },
   Misc: { expiryApplicable: false, trackingKind: 'None' },
-  'Spare Part / Accessory': { expiryApplicable: false, trackingKind: 'Batch + Serial' },
+  'Spare Part / Accessory': { expiryApplicable: false, trackingKind: 'Batch' },
   Miscellaneous: { expiryApplicable: false, trackingKind: 'None' },
 };
 

@@ -18,6 +18,54 @@ export const PRODUCT_TYPE_CODE_HINTS = Object.fromEntries(
 
 export const INVENTORY_CLASS_TYPES = ['Asset', 'Inventory'];
 
+/**
+ * Track Inventory By — single product-master setting (stored as trackingKind).
+ * Quantity → None (qty-only); Batch / Serial Number drive warehouse & movements.
+ */
+export const INVENTORY_TRACKING_OPTIONS = [
+  { value: 'None', label: 'Quantity' },
+  { value: 'Batch', label: 'Batch' },
+  { value: 'Serial', label: 'Serial Number' },
+];
+
+export const INVENTORY_TRACKING_LABELS = Object.fromEntries(
+  INVENTORY_TRACKING_OPTIONS.map((o) => [o.value, o.label])
+);
+
+const TRACKING_ALIASES = {
+  None: 'None',
+  Quantity: 'None',
+  Qty: 'None',
+  Batch: 'Batch',
+  Serial: 'Serial',
+  'Serial Number': 'Serial',
+  SerialNumber: 'Serial',
+  'Batch + Serial': 'Serial',
+  'Batch and Serial': 'Serial',
+};
+
+export function resolveInventoryTracking(raw, fallback = 'None') {
+  const v = String(raw || '').trim();
+  if (!v) return fallback;
+  if (TRACKING_ALIASES[v]) return TRACKING_ALIASES[v];
+  const hit = Object.entries(TRACKING_ALIASES).find(([k]) => k.toLowerCase() === v.toLowerCase());
+  return hit?.[1] || fallback;
+}
+
+export function inventoryTrackingLabel(trackingKind) {
+  return INVENTORY_TRACKING_LABELS[resolveInventoryTracking(trackingKind)] || 'Quantity';
+}
+
+/** Defaults for inventory tracking when product category (type) changes. */
+export const TRACKING_DEFAULTS_BY_TYPE = {
+  'Medical Device': 'Serial',
+  'Non-Medical Device': 'Serial',
+  Peripheral: 'Serial',
+  Consumable: 'Batch',
+  'Spare Part': 'Batch',
+  Other: 'None',
+};
+
 export const GST_RATE_PRESETS = [0, 5, 12, 18, 28];
 
 /** Medical Device categories align with camp / hiring methods. */
@@ -174,10 +222,12 @@ export function applyProductTypeRules(productType, current = {}) {
     ),
     inventoryType,
     expiryApplicable: !!expiryApplicable,
+    trackingKind: TRACKING_DEFAULTS_BY_TYPE[type] || 'None',
     warrantyMonths: device ? current.warrantyMonths ?? defaults.warrantyMonths : '',
-    reorderLevel: device ? '' : current.reorderLevel ?? '',
+    reorderLevel: consumable ? current.reorderLevel ?? '' : '',
     unitsPerPack: consumable ? current.unitsPerPack ?? '1' : '1',
-    associatedProductIds: device || type === 'Peripheral' ? current.associatedProductIds || [] : [],
+    associatedProductIds:
+      device ? current.associatedProductIds || [] : [],
   };
 }
 
@@ -228,7 +278,7 @@ export function showWarrantyField(productType) {
 }
 
 export function showReorderLevelField(productType) {
-  return !isDeviceType(productType);
+  return isConsumableType(productType);
 }
 
 export function associatedProductTypesFor(productType) {
@@ -236,8 +286,6 @@ export function associatedProductTypesFor(productType) {
   if (t === 'Medical Device' || t === 'Non-Medical Device') {
     return ['Peripheral', 'Consumable', 'Spare Part', 'Other'];
   }
-  if (t === 'Peripheral') return ['Consumable', 'Spare Part', 'Other'];
-  if (t === 'Spare Part') return ['Consumable', 'Other'];
   return [];
 }
 
@@ -249,14 +297,14 @@ export function suggestProductName(brand, model) {
 }
 
 export function validateProductForm(form) {
-  if (!String(form.productType || '').trim()) return 'Product Type is required';
-  if (!String(form.brand || '').trim()) return 'Brand / Manufacturer is required';
-  if (!String(form.model || '').trim()) return 'Model / Variant is required';
-  if (!String(form.name || '').trim()) return 'Product Name is required';
-  if (!String(form.productCategory || '').trim()) return 'Product Category is required';
+  if (!String(form.productType || '').trim()) return 'Product Category is required';
+  if (!String(form.brand || '').trim()) return 'Brand - Manufacturer is required';
+  if (!String(form.model || '').trim()) return 'Model - Variant is required';
+  if (!String(form.name || '').trim()) return 'Display Name is required';
+  if (!String(form.productCategory || '').trim()) return 'Method is required';
   const allowedCategories = categoriesForType(form.productType);
   if (!allowedCategories.includes(form.productCategory)) {
-    return `Product Category must be one of: ${allowedCategories.join(', ')}`;
+    return `Method must be one of: ${allowedCategories.join(', ')}`;
   }
   if (!String(form.inventoryType || '').trim()) return 'Inventory Type is required';
   const allowedInventory = inventoryTypesForProduct(form.productType);
@@ -271,6 +319,10 @@ export function validateProductForm(form) {
   }
   if (isDeviceType(form.productType) && form.expiryApplicable) {
     return 'Medical Device and Non-Medical Device cannot have expiry tracking';
+  }
+  const tracking = resolveInventoryTracking(form.trackingKind);
+  if (!['None', 'Batch', 'Serial'].includes(tracking)) {
+    return 'Track Inventory By must be Quantity, Batch, or Serial Number';
   }
   if (isConsumableType(form.productType)) {
     const upp = Number(form.unitsPerPack);
@@ -298,6 +350,7 @@ export function emptyProductForm() {
     gstRate: '18',
     gstCustom: false,
     inventoryType: defaults.inventoryType,
+    trackingKind: TRACKING_DEFAULTS_BY_TYPE['Medical Device'],
     expiryApplicable: defaults.expiryApplicable,
     warrantyMonths: defaults.warrantyMonths,
     reorderLevel: '',
@@ -325,13 +378,19 @@ export function rowToForm(row) {
     gstRate: String(gst),
     gstCustom,
     inventoryType: resolveInventoryTypeForProduct(productType, row.inventoryType),
+    trackingKind: resolveInventoryTracking(
+      row.trackingKind,
+      TRACKING_DEFAULTS_BY_TYPE[productType] || 'None'
+    ),
     expiryApplicable: !!row.expiryApplicable,
     warrantyMonths: isDeviceType(productType)
       ? row.warrantyPeriodMonths != null && row.warrantyPeriodMonths !== ''
         ? String(row.warrantyPeriodMonths)
         : defaults.warrantyMonths
       : '',
-    reorderLevel: isDeviceType(productType) ? '' : row.reorderLevel ?? row.minStock ?? '',
+    reorderLevel: isConsumableType(productType)
+      ? row.reorderLevel ?? row.minStock ?? ''
+      : '',
     associatedProductIds: Array.isArray(row.associatedProductIds)
       ? [...row.associatedProductIds]
       : Array.isArray(row.compatibleDeviceIds)
@@ -347,6 +406,10 @@ export function formToPayload(form) {
   const model = String(form.model || '').trim();
   const brand = String(form.brand || '').trim();
   const name = String(form.name || '').trim() || suggestProductName(brand, model);
+  const trackingKind = resolveInventoryTracking(
+    form.trackingKind,
+    TRACKING_DEFAULTS_BY_TYPE[productType] || 'None'
+  );
   return {
     productType,
     productCategory: String(form.productCategory || '').trim(),
@@ -364,6 +427,7 @@ export function formToPayload(form) {
     standardCost: form.purchaseCost === '' ? 0 : Number(form.purchaseCost),
     gstRate: form.gstRate === '' ? 0 : Number(form.gstRate),
     inventoryType: resolveInventoryTypeForProduct(productType, form.inventoryType),
+    trackingKind,
     expiryApplicable: !!form.expiryApplicable,
     warrantyPeriodMonths: isDeviceType(productType)
       ? form.warrantyMonths === ''
@@ -372,16 +436,16 @@ export function formToPayload(form) {
       : 0,
     calibrationRequired: false,
     calibrationFrequency: '',
-    reorderLevel: isDeviceType(productType)
-      ? 0
-      : form.reorderLevel === ''
+    reorderLevel: isConsumableType(productType)
+      ? form.reorderLevel === ''
         ? 0
-        : Math.max(0, Number(form.reorderLevel) || 0),
-    minStock: isDeviceType(productType)
-      ? 0
-      : form.reorderLevel === ''
+        : Math.max(0, Number(form.reorderLevel) || 0)
+      : 0,
+    minStock: isConsumableType(productType)
+      ? form.reorderLevel === ''
         ? 0
-        : Math.max(0, Number(form.reorderLevel) || 0),
+        : Math.max(0, Number(form.reorderLevel) || 0)
+      : 0,
     associatedProductIds: Array.isArray(form.associatedProductIds)
       ? form.associatedProductIds.filter(Boolean)
       : [],

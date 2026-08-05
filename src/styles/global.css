@@ -482,7 +482,6 @@ textarea {
   min-height: 0;
   overflow: auto;
   padding: 12px clamp(16px, 2.5vw, 24px) 28px;
-  scroll-behavior: smooth;
 }
 
 .main > * {

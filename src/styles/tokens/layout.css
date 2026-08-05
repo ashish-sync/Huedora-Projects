@@ -66,6 +66,6 @@
   --bp-lg: 1024px;
   --bp-xl: 1280px;
 
-  /* Default UI density (~95% browser zoom) — tuned for desktop Chrome */
-  --app-ui-zoom: 0.95;
+  /* Native 100% zoom — page-wide CSS zoom causes Chrome compositor lag */
+  --app-ui-zoom: 1;
 }

@@ -15,16 +15,6 @@
       (function () {
         var root = document.documentElement;
         try {
-          var ua = navigator.userAgent || '';
-          var isChrome = /Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua);
-          var isDesktop = window.matchMedia('(min-width: 641px)').matches;
-          if (isChrome && isDesktop) {
-            root.setAttribute('data-ua-chrome', '1');
-            root.style.zoom = '0.95';
-          }
-        } catch (e) {}
-
-        try {
           var t = localStorage.getItem('tylo-one-theme');
           if (t === 'dark' || t === 'light') {
             root.setAttribute('data-theme', t);
@@ -47,14 +37,6 @@
         }
       })();
     </script>
-    <style>
-      /* Default desktop density (~95% browser zoom) in Chrome — before the app bundle loads */
-      @media (min-width: 641px) {
-        html[data-ua-chrome='1'] {
-          zoom: 0.95;
-        }
-      }
-    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

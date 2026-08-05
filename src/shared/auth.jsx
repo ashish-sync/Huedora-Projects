@@ -48,16 +48,29 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await api('/auth/logout', { method: 'POST', body: {} });
-    } catch {
-      /* ignore */
-    }
+    // Clear the local session first so the UI exits immediately.
+    // Waiting on /auth/logout (or a refresh retry) made logout feel broken.
     setAccessToken(null);
     setUser(null);
     setBootSessionActive(false);
     clearInsightSession();
     exitAppFullscreen();
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = controller
+      ? window.setTimeout(() => controller.abort(), 4000)
+      : null;
+    try {
+      await api('/auth/logout', {
+        method: 'POST',
+        body: {},
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+    } catch {
+      /* ignore network / abort — local session is already cleared */
+    } finally {
+      if (timeout) window.clearTimeout(timeout);
+    }
   }, []);
 
   const can = useCallback((permission) => {

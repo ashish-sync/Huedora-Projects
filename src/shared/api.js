@@ -38,6 +38,7 @@ function isAuthRefreshExempt(path) {
   const p = String(path || '');
   return (
     p.includes('/auth/login')
+    || p.includes('/auth/logout')
     || p.includes('/auth/refresh')
     || p.includes('/auth/reset-password')
   );
@@ -111,15 +112,21 @@ export async function api(path, options = {}, retried = false) {
   }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-  const res = await fetch(apiUrl(path), {
-    ...options,
-    headers,
-    credentials: 'include',
-    body:
-      options.body && !(options.body instanceof FormData) && typeof options.body === 'object'
-        ? JSON.stringify(options.body)
-        : options.body,
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl(path), {
+      ...options,
+      headers,
+      credentials: 'include',
+      body:
+        options.body && !(options.body instanceof FormData) && typeof options.body === 'object'
+          ? JSON.stringify(options.body)
+          : options.body,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    throw err;
+  }
 
   const json = await parseJsonSafe(res);
 

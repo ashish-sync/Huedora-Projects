@@ -27,18 +27,31 @@ export default function Layout({ children }) {
   const isHome = pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef(null);
   const knownUnreadIdsRef = useRef(null);
+  const lastUnreadPollRef = useRef(0);
+  const unreadAbortRef = useRef(null);
   const canSeeNotifications = can('notifications:read') || can('dashboards:read') || can('*');
 
-  const refreshUnread = useCallback(async () => {
+  const refreshUnread = useCallback(async ({ force = false } = {}) => {
     if (!canSeeNotifications) {
       setUnreadCount(0);
       return;
     }
+    const now = Date.now();
+    if (!force && now - lastUnreadPollRef.current < 5000) return;
+    lastUnreadPollRef.current = now;
+
+    unreadAbortRef.current?.abort();
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    unreadAbortRef.current = controller;
+
     try {
-      const res = await api('/notifications?unread=true');
+      const res = await api('/notifications?unread=true', {
+        ...(controller ? { signal: controller.signal } : {}),
+      });
       const unread = (res.data || []).filter((n) => !n.readAt);
       const ids = new Set(unread.map((n) => String(n._id)));
       const prev = knownUnreadIdsRef.current;
@@ -53,8 +66,9 @@ export default function Layout({ children }) {
         if (hasNew) playNotificationSound();
       }
       knownUnreadIdsRef.current = ids;
-      setUnreadCount((prev) => (prev === unread.length ? prev : unread.length));
-    } catch {
+      setUnreadCount((prevCount) => (prevCount === unread.length ? prevCount : unread.length));
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
       // Keep last known count on transient errors
     }
   }, [canSeeNotifications]);
@@ -66,16 +80,17 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (!canSeeNotifications) return undefined;
-    refreshUnread();
-    const timer = window.setInterval(refreshUnread, POLL_MS);
-    const onFocus = () => refreshUnread();
-    const onChanged = () => refreshUnread();
+    refreshUnread({ force: true });
+    const timer = window.setInterval(() => refreshUnread({ force: true }), POLL_MS);
+    const onFocus = () => refreshUnread({ force: false });
+    const onChanged = () => refreshUnread({ force: true });
     window.addEventListener('focus', onFocus);
     window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+      unreadAbortRef.current?.abort();
     };
   }, [canSeeNotifications, refreshUnread]);
 
@@ -105,9 +120,15 @@ export default function Layout({ children }) {
     setConfirmLogout(true);
   };
 
-  const confirmAndLogout = () => {
+  const confirmAndLogout = async () => {
+    if (logoutBusy) return;
+    setLogoutBusy(true);
     setConfirmLogout(false);
-    logout();
+    try {
+      await logout();
+    } finally {
+      setLogoutBusy(false);
+    }
   };
 
   const unreadLabel =
@@ -237,8 +258,8 @@ export default function Layout({ children }) {
               <button type="button" className="btn secondary" onClick={() => setConfirmLogout(false)}>
                 Cancel
               </button>
-              <button type="button" className="btn" onClick={confirmAndLogout}>
-                Log out
+              <button type="button" className="btn" onClick={confirmAndLogout} disabled={logoutBusy}>
+                {logoutBusy ? 'Logging out…' : 'Log out'}
               </button>
             </div>
           </div>

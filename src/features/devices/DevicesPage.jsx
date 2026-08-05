@@ -48,7 +48,7 @@ function statusTone(status) {
   const s = String(status || '');
   if (s === 'Agreement Signed') return 'ok';
   if (s === 'Lost/Stolen' || s === 'Untraceable' || s === 'End of Life') return 'danger';
-  if (s === 'Under Repairs' || s === 'With TCPL') return 'warn';
+  if (s === 'Under Repairs' || s === 'Tylo Office' || s === 'With TCPL') return 'warn';
   return 'neutral';
 }
 

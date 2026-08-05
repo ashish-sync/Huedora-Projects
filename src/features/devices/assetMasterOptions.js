@@ -26,7 +26,7 @@ export function formatOwnershipType(value) {
 }
 
 export const ASSET_STATUS_OPTIONS = [
-  'With TCPL',
+  'Tylo Office',
   'Lost/Stolen',
   'Agreement Signed',
   'Not Initiated',

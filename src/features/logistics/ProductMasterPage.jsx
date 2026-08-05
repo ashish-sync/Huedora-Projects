@@ -404,10 +404,10 @@ export default function ProductMasterPage() {
                     />
                   </th>
                 )}
-                <th>Code</th>
-                <th>Display Name</th>
                 <th>Category</th>
                 <th>Method</th>
+                <th>Code</th>
+                <th>Display Name</th>
                 <th>Brand</th>
                 <th>UOM</th>
                 <th>Track By</th>
@@ -428,6 +428,8 @@ export default function ProductMasterPage() {
                       />
                     </td>
                   )}
+                  <td>{resolveProductType(row.productType)}</td>
+                  <td>{row.productCategory || '—'}</td>
                   <td className="mono-sm">{row.code || '—'}</td>
                   <td>
                     <strong>{row.name || '—'}</strong>
@@ -435,8 +437,6 @@ export default function ProductMasterPage() {
                       <div className="muted pm-cell-sub">{row.model}</div>
                     ) : null}
                   </td>
-                  <td>{resolveProductType(row.productType)}</td>
-                  <td>{row.productCategory || '—'}</td>
                   <td>{row.brand || row.manufacturer || '—'}</td>
                   <td>{uomLabel(row.uomId)}</td>
                   <td>{inventoryTrackingLabel(row.trackingKind)}</td>

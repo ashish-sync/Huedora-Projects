@@ -41,7 +41,7 @@ const emptyForm = {
 function assetStatusTone(status) {
   const s = String(status || '');
   if (s === 'Agreement Signed' || s === 'Active') return 'ok';
-  if (['With TCPL', 'Under Repairs'].includes(s)) return 'info';
+  if (['Tylo Office', 'Under Repairs'].includes(s)) return 'info';
   if (['Lost/Stolen', 'Untraceable', 'End of Life'].includes(s)) return 'danger';
   if (s === 'Not Initiated') return 'neutral';
   return 'warn';

@@ -245,7 +245,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setForm((f) => ({
       ...f,
       productId: p._id,
-      name: productAssetName(p),
+      name: productAssetName(p) || p.name || '',
       productType: p.productType || f.productType,
       cost:
         productCost === '' || productCost == null
@@ -310,7 +310,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setBusy(true);
     try {
       if (!editingId && !form.productId) {
-        setError('Select Model / Variant from Product Master.');
+        setError('Select Display Name from Product Master.');
         setBusy(false);
         return;
       }
@@ -575,14 +575,14 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   </AdaptiveSelect>
                 </div>
                 <div className="field">
-                  <label htmlFor="asset-product-id">Model / Variant *</label>
+                  <label htmlFor="asset-product-id">Display Name *</label>
                   <AdaptiveSelect
                     id="asset-product-id"
                     required={!editingId}
                     value={form.productId}
                     onChange={(e) => pickProduct(e.target.value)}
                   >
-                    <option value="">Select from Product Master…</option>
+                    <option value="">Select Display Name from Product Master…</option>
                     {productsForType.map((p) => (
                       <option key={p._id} value={p._id}>
                         {productOptionLabel(p)}

@@ -1,4 +1,4 @@
-/** Brand / Manufacturer – Model/Variant/Name (canonical display for assets & movements). */
+/** Product Master display helpers for assets, movements, and pickers. */
 
 export function productBrandLabel(product) {
   if (!product) return '';
@@ -7,22 +7,29 @@ export function productBrandLabel(product) {
 
 export function productModelLabel(product) {
   if (!product) return '';
-  return String(product.model || product.partNumber || product.name || '').trim();
+  return String(product.model || product.partNumber || '').trim();
 }
 
-/** Full asset name: "Brand - Model" */
-export function productAssetName(product) {
+/** Product Master Display Name (`name`), with Brand — Model fallback. */
+export function productDisplayName(product) {
   if (!product) return '';
+  const display = String(product.name || '').trim();
+  if (display) return display;
   const brand = productBrandLabel(product);
   const model = productModelLabel(product);
-  if (brand && model) return `${brand} - ${model}`;
+  if (brand && model) return `${brand} — ${model}`;
   return model || brand || '';
 }
 
-/** Dropdown label for Model/Variant/Name picker */
+/** Canonical name stored on assets / movements. */
+export function productAssetName(product) {
+  return productDisplayName(product);
+}
+
+/** Dropdown label: Display Name (code). */
 export function productOptionLabel(product) {
   if (!product) return '';
-  const model = productModelLabel(product);
-  if (!model) return product.code ? String(product.code) : '';
-  return product.code ? `${model} (${product.code})` : model;
+  const display = productDisplayName(product);
+  if (!display) return product.code ? String(product.code) : '';
+  return product.code ? `${display} (${product.code})` : display;
 }

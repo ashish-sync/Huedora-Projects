@@ -953,7 +953,7 @@ export default function VerificationsPage() {
                     <div className="vf-empty">
                       <strong>No Medical Devices due for verification</strong>
                       <p className="muted">
-                        Medical Devices with Asset Status With TCPL, Not Applicable, Agreement Signed, or
+                        Medical Devices with Asset Status With TCPL, Agreement Signed, or
                         Not Initiated appear here. Register them in {MODULE.ASSET_INVENTORY} and assign
                         custodians from {MODULE.CONTACT_DIRECTORY}.
                       </p>

@@ -85,9 +85,10 @@ export const MODULE_BLURB = {
 export const FIELD = {
   ASSET_TYPE: 'Asset Type (Product Type)',
   ASSET_NAME: 'Asset Name',
-  ASSET_PERIPHERAL_DETAILS: 'Asset / Peripheral Details',
+  ASSET_PERIPHERAL_DETAILS: 'Asset & Peripheral Remarks',
   OWNERSHIP_TYPE: 'Ownership Type',
-  ASSET_VALUE: 'Asset Value',
+  ASSET_VALUE: 'Purchase Amount',
+  PURCHASE_MONTH: 'Purchase Month & Year',
   ASSET_STATUS: 'Asset Status',
   ASSET_CUSTODY: 'Asset Custody',
   ALL_ASSET_STATUSES: 'All Asset Statuses',

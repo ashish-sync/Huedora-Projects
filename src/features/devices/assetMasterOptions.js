@@ -1,16 +1,19 @@
 export const OWNERSHIP_TYPE_OPTIONS = [
-  'Company Owned',
-  'Rented',
   'Client Owned',
-  'Hybrid',
+  'Tylo Owned',
+  'Rented Asset',
 ];
 
 const OWNERSHIP_TYPE_ALIASES = {
-  owned: 'Company Owned',
-  'company owned': 'Company Owned',
-  rented: 'Rented',
+  owned: 'Tylo Owned',
+  'company owned': 'Tylo Owned',
+  'company-owned': 'Tylo Owned',
+  'tylo owned': 'Tylo Owned',
+  rented: 'Rented Asset',
+  'rented asset': 'Rented Asset',
   'client owned': 'Client Owned',
-  hybrid: 'Hybrid',
+  'client-owned': 'Client Owned',
+  hybrid: 'Tylo Owned',
 };
 
 export function formatOwnershipType(value) {
@@ -24,7 +27,6 @@ export function formatOwnershipType(value) {
 
 export const ASSET_STATUS_OPTIONS = [
   'With TCPL',
-  'Not Applicable',
   'Lost/Stolen',
   'Agreement Signed',
   'Not Initiated',
@@ -35,8 +37,7 @@ export const ASSET_STATUS_OPTIONS = [
 
 export const ASSET_CUSTODY_OPTIONS = [
   'Client / Rented',
-  'TCPL - Head Office',
-  'TPCL - Warehouse',
+  'Tylo Office',
   'Individual',
   'Service Provider',
 ];

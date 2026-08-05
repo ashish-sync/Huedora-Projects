@@ -18,7 +18,7 @@ import {
   ASSET_CUSTODY_OPTIONS,
   formatOwnershipType,
 } from '../devices/assetMasterOptions.js';
-import { phoneOrEmailError, PAGE_SIZES } from '../../shared/validation.js';
+import { PAGE_SIZES } from '../../shared/validation.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { collectProductImages } from '../../shared/productImages.js';
 import {
@@ -32,49 +32,11 @@ const emptyForm = {
   productType: 'Medical Device',
   serialNumber: '',
   purchaseMonth: '',
+  cost: '',
   agreementStatus: 'Not Initiated',
   custody: '',
-  custodianName: '',
-  custodianContact: '',
-  custodianCity: '',
-  custodianState: '',
-  custodianStateId: '',
   peripheralRemarks: '',
-  contactId: '',
 };
-
-function clearCustodianFields(form) {
-  return {
-    ...form,
-    contactId: '',
-    custodianName: '',
-    custodianContact: '',
-    custodianCity: '',
-    custodianDistrict: '',
-    custodianDistrictId: '',
-    custodianCityId: '',
-  };
-}
-
-function contactToCustodianForm(contact) {
-  if (!contact) return {};
-  return {
-    contactId: contact._id,
-    custodianName: contact.name || '',
-    custodianContact: contact.contact || contact.mobile || contact.email || '',
-    custodianCity: contact.city || '',
-    custodianState: contact.state || '',
-    custodianDistrict: contact.district || '',
-    custodianStateId: contact.stateId || '',
-    custodianDistrictId: contact.districtId || '',
-    custodianCityId: contact.cityId || '',
-  };
-}
-
-function contactOptionLabel(c) {
-  const bits = [c.name, c.city, c.state, c.profession || c.resourceType].filter(Boolean);
-  return bits.join(' · ');
-}
 
 function assetStatusTone(status) {
   const s = String(status || '');
@@ -151,9 +113,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const [contacts, setContacts] = useState([]);
   const [products, setProducts] = useState([]);
-  const [geoStates, setGeoStates] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(emptyForm);
@@ -257,97 +217,10 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   }, [load]);
 
   useEffect(() => {
-    api('/contacts?limit=500')
-      .then((r) => setContacts(r.data || []))
-      .catch(() => {});
     api('/logistics/products?limit=500&isActive=true')
       .then((r) => setProducts(r.data || []))
       .catch(() => {});
-    api('/geo/states')
-      .then((r) => setGeoStates(r.data || []))
-      .catch(() => {});
   }, []);
-
-  const custodianOptions = useMemo(() => {
-    if (!form.custodianState && !form.custodianStateId) return contacts;
-    return contacts.filter((c) => {
-      if (form.custodianStateId && c.stateId) {
-        return String(c.stateId) === String(form.custodianStateId);
-      }
-      if (form.custodianState) {
-        return (
-          String(c.state || '')
-            .trim()
-            .toLowerCase() === String(form.custodianState).trim().toLowerCase()
-        );
-      }
-      return true;
-    });
-  }, [contacts, form.custodianState, form.custodianStateId]);
-
-  useEffect(() => {
-    if (!formOpen || form.custodianStateId || !form.custodianState || !geoStates.length) return;
-    const st = geoStates.find(
-      (s) => String(s.name || '').toLowerCase() === String(form.custodianState).toLowerCase()
-    );
-    if (st) {
-      setForm((f) => ({ ...f, custodianStateId: st._id }));
-    }
-  }, [formOpen, form.custodianState, form.custodianStateId, geoStates]);
-
-  const pickCustodianState = (stateId) => {
-    if (!stateId) {
-      setForm((f) => ({ ...f, custodianStateId: '', custodianState: '' }));
-      return;
-    }
-    const st = geoStates.find((s) => String(s._id) === String(stateId));
-    setForm((f) => {
-      const next = {
-        ...f,
-        custodianStateId: stateId,
-        custodianState: st?.name || '',
-      };
-      if (!f.contactId) return next;
-      const contact = contacts.find((c) => String(c._id) === String(f.contactId));
-      if (!contact) return clearCustodianFields(next);
-      const inState =
-        (contact.stateId && String(contact.stateId) === String(stateId)) ||
-        (st?.name &&
-          String(contact.state || '')
-            .trim()
-            .toLowerCase() === String(st.name).toLowerCase());
-      return inState ? next : clearCustodianFields(next);
-    });
-  };
-
-  const pickCustodian = (contactId) => {
-    if (!contactId) {
-      setForm((f) => clearCustodianFields(f));
-      return;
-    }
-    const contact = contacts.find((c) => String(c._id) === String(contactId));
-    if (!contact) {
-      setForm((f) => clearCustodianFields(f));
-      return;
-    }
-    let stateId = contact.stateId || '';
-    let stateName = contact.state || '';
-    if (!stateId && stateName && geoStates.length) {
-      const st = geoStates.find(
-        (s) => String(s.name || '').toLowerCase() === String(stateName).toLowerCase()
-      );
-      if (st) {
-        stateId = st._id;
-        stateName = st.name;
-      }
-    }
-    setForm((f) => ({
-      ...f,
-      ...contactToCustodianForm(contact),
-      custodianState: stateName,
-      custodianStateId: stateId,
-    }));
-  };
 
   const productsForType = products.filter(
     (p) => !form.productType || p.productType === form.productType
@@ -365,14 +238,19 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const pickProduct = (productId) => {
     const p = products.find((x) => String(x._id) === String(productId));
     if (!p) {
-      setForm((f) => ({ ...f, productId: '', name: '' }));
+      setForm((f) => ({ ...f, productId: '', name: '', cost: '' }));
       return;
     }
+    const productCost = p.standardCost ?? p.defaultPerUnitCost ?? p.purchaseCost;
     setForm((f) => ({
       ...f,
       productId: p._id,
       name: productAssetName(p),
       productType: p.productType || f.productType,
+      cost:
+        productCost === '' || productCost == null
+          ? f.cost
+          : String(productCost),
     }));
   };
 
@@ -403,16 +281,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       productType: row.productType || scopedType || 'Medical Device',
       serialNumber: row.serialNumber || '',
       purchaseMonth: purchaseToMonthInput(row.addedMonth || master?.purchaseMonth),
+      cost:
+        row.deviceValue != null
+          ? String(row.deviceValue)
+          : master?.cost != null
+            ? String(master.cost)
+            : '',
       agreementStatus: row.agreementStatus || 'Not Initiated',
       custody: row.custody || '',
-      custodianName: row.custodianName || row.contactId?.name || '',
-      custodianContact:
-        row.custodianContact || row.contactId?.contact || row.contactId?.email || '',
-      custodianCity: row.location?.city || row.contactId?.city || '',
-      custodianState: row.location?.state || row.contactId?.state || row.custodianState || '',
-      custodianStateId: row.contactId?.stateId || '',
       peripheralRemarks: row.remarks || master?.description || '',
-      contactId: row.contactId?._id || row.contactId || '',
     });
     setFormOpen(true);
     setError('');
@@ -433,59 +310,38 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setBusy(true);
     try {
       if (!editingId && !form.productId) {
-        setError('Select Model/Variant/Name from Product Master.');
+        setError('Select Model / Variant from Product Master.');
         setBusy(false);
         return;
       }
-      if (!form.contactId) {
-        setError('Select a custodian from Contact Directory.');
+      if (form.cost === '' || form.cost == null || !Number.isFinite(Number(form.cost)) || Number(form.cost) < 0) {
+        setError('Purchase Amount is required and must be zero or greater.');
         setBusy(false);
         return;
       }
-      const contactErr = phoneOrEmailError(form.custodianContact.trim(), 'Custodian Contact');
-      if (contactErr) {
-        setError(contactErr);
-        setBusy(false);
-        return;
-      }
+      const shared = {
+        ...(form.productId ? { productId: form.productId } : {}),
+        name: form.name.trim(),
+        assetType: form.assetType,
+        productType: scopedType || form.productType || 'Medical Device',
+        serialNumber: form.serialNumber.trim(),
+        purchaseMonth: form.purchaseMonth,
+        cost: Number(form.cost),
+        agreementStatus: form.agreementStatus,
+        custody: form.custody,
+        description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
+      };
       if (editingId) {
-        const body = {
-          ...(form.productId ? { productId: form.productId } : {}),
-          ...(form.contactId ? { contactId: form.contactId } : {}),
-          name: form.name.trim(),
-          assetType: form.assetType,
-          productType: scopedType || form.productType || 'Medical Device',
-          serialNumber: form.serialNumber.trim(),
-          purchaseMonth: form.purchaseMonth,
-          agreementStatus: form.agreementStatus,
-          custody: form.custody,
-          custodianName: form.custodianName.trim(),
-          custodianContact: form.custodianContact.trim(),
-          custodianCity: form.custodianCity.trim(),
-          custodianState: form.custodianState,
-          description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
-          contactId: form.contactId || null,
-        };
-        await api(`/assets/${editingId}`, { method: 'PATCH', body });
+        await api(`/assets/${editingId}`, {
+          method: 'PATCH',
+          body: shared,
+        });
         setMsg('Asset updated.');
       } else {
-        const payload = {
-          productId: form.productId || null,
-          contactId: form.contactId,
-          name: form.name.trim(),
-          assetType: form.assetType,
-          productType: scopedType || form.productType || 'Medical Device',
-          serialNumber: form.serialNumber.trim(),
-          purchaseMonth: form.purchaseMonth,
-          agreementStatus: form.agreementStatus,
-          custody: form.custody,
-          custodianName: form.custodianName.trim(),
-          custodianContact: form.custodianContact.trim(),
-          custodianCity: form.custodianCity.trim(),
-          custodianState: form.custodianState,
-          description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
-        };
-        const { data } = await api('/devices', { method: 'POST', body: payload });
+        const { data } = await api('/devices', {
+          method: 'POST',
+          body: shared,
+        });
         setMsg(`Added “${data.name}” with serial ${data.serialNumber}.`);
       }
       closeForm();
@@ -684,7 +540,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             <div className="asset-form-page-header">
               <h3>{editingId ? 'Edit asset' : 'Add asset'}</h3>
               <p className="meta-text muted">
-                Register device ownership, status, custody, and custodian details.
+                Register product, serial, purchase details, ownership, status, and custody.
               </p>
             </div>
             <div className="asset-form-header-actions">
@@ -696,7 +552,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
 
           <div className="asset-form-body">
             <section className="asset-form-section">
-              <h4 className="asset-form-section-title">Product</h4>
               <div className="asset-form-row asset-form-row-3">
                 <div className="field">
                   <label htmlFor="asset-product-type">{FIELD.ASSET_TYPE} *</label>
@@ -710,6 +565,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                         productType: e.target.value,
                         productId: '',
                         name: '',
+                        cost: '',
                       })
                     }
                     disabled={Boolean(scopedType)}
@@ -735,36 +591,40 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   </AdaptiveSelect>
                 </div>
                 <div className="field">
-                  <label htmlFor="asset-name">{FIELD.ASSET_NAME} (Display Name) *</label>
+                  <label htmlFor="asset-serial">Serial Number *</label>
                   <input
-                    id="asset-name"
+                    id="asset-serial"
                     required
-                    readOnly={Boolean(form.productId)}
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Brand — Model"
-                    title={form.productId ? 'From Product Master' : ''}
+                    value={form.serialNumber}
+                    onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+                    placeholder="SN-1001"
                   />
                 </div>
               </div>
-              {form.productId && selectedProductImages.length > 0 ? (
-                <div className="asset-form-row asset-form-row-1">
-                  <div className="field asset-product-images-field">
-                    <label>Product reference images</label>
-                    <ProductImagesPanel
-                      product={selectedProduct}
-                      compact
-                      title="Product reference images"
-                      hint="From Product Master — for visual identification."
-                    />
-                  </div>
+              <div className="asset-form-row asset-form-row-3">
+                <div className="field">
+                  <label htmlFor="asset-purchase">{FIELD.PURCHASE_MONTH} *</label>
+                  <input
+                    id="asset-purchase"
+                    required
+                    type="month"
+                    value={form.purchaseMonth}
+                    onChange={(e) => setForm({ ...form, purchaseMonth: e.target.value })}
+                  />
                 </div>
-              ) : null}
-            </section>
-
-            <section className="asset-form-section">
-              <h4 className="asset-form-section-title">Registration</h4>
-              <div className="asset-form-row asset-form-row-2">
+                <div className="field">
+                  <label htmlFor="asset-cost">{FIELD.ASSET_VALUE} *</label>
+                  <input
+                    id="asset-cost"
+                    required
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.cost}
+                    onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
                 <div className="field">
                   <label htmlFor="asset-ownership">{FIELD.OWNERSHIP_TYPE} *</label>
                   <AdaptiveSelect
@@ -781,28 +641,8 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     ))}
                   </AdaptiveSelect>
                 </div>
-                <div className="field">
-                  <label htmlFor="asset-serial">Serial number *</label>
-                  <input
-                    id="asset-serial"
-                    required
-                    value={form.serialNumber}
-                    onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                    placeholder="SN-1001"
-                  />
-                </div>
               </div>
-              <div className="asset-form-row asset-form-row-2">
-                <div className="field">
-                  <label htmlFor="asset-purchase">Purchase (MM/YYYY) *</label>
-                  <input
-                    id="asset-purchase"
-                    required
-                    type="month"
-                    value={form.purchaseMonth}
-                    onChange={(e) => setForm({ ...form, purchaseMonth: e.target.value })}
-                  />
-                </div>
+              <div className="asset-form-row asset-form-row-3">
                 <div className="field">
                   <label htmlFor="asset-status">{FIELD.ASSET_STATUS} *</label>
                   <AdaptiveSelect
@@ -818,8 +658,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     ))}
                   </AdaptiveSelect>
                 </div>
-              </div>
-              <div className="asset-form-row asset-form-row-2">
                 <div className="field">
                   <label htmlFor="asset-custody">{FIELD.ASSET_CUSTODY} *</label>
                   <AdaptiveSelect
@@ -843,60 +681,20 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     type="text"
                     value={form.peripheralRemarks}
                     onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
-                    placeholder="Optional remarks about peripherals, accessories, or configuration"
+                    placeholder="Optional remarks about asset or peripherals"
                   />
                 </div>
               </div>
-            </section>
-
-            <section className="asset-form-section">
-              <h4 className="asset-form-section-title">Custodian</h4>
-              <div className="asset-form-row asset-form-row-2">
-                <div className="field">
-                  <label htmlFor="asset-custodian">{FIELD.CUSTODIAN_NAME} *</label>
-                  <AdaptiveSelect
-                    id="asset-custodian"
-                    required
-                    threshold={1}
-                    placeholder="Search custodian…"
-                    aria-label={FIELD.CUSTODIAN_NAME}
-                    value={form.contactId}
-                    onChange={(e) => pickCustodian(e.target.value)}
-                  >
-                    <option value="">Select custodian…</option>
-                    {custodianOptions.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {contactOptionLabel(c)}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-custodian-state">{FIELD.CUSTODIAN_STATE}</label>
-                  <AdaptiveSelect
-                    id="asset-custodian-state"
-                    threshold={1}
-                    placeholder="Filter by state…"
-                    aria-label={FIELD.CUSTODIAN_STATE}
-                    value={form.custodianStateId}
-                    onChange={(e) => pickCustodianState(e.target.value)}
-                  >
-                    <option value="">All States</option>
-                    {geoStates.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-              </div>
-              {form.contactId ? (
+              {form.productId && selectedProductImages.length > 0 ? (
                 <div className="asset-form-row asset-form-row-1">
-                  <div className="asset-custodian-summary" aria-live="polite">
-                    <strong>Selected custodian</strong>
-                    {[form.custodianContact, form.custodianCity, form.custodianState]
-                      .filter(Boolean)
-                      .join(' · ') || '—'}
+                  <div className="field asset-product-images-field">
+                    <label>Product reference images</label>
+                    <ProductImagesPanel
+                      product={selectedProduct}
+                      compact
+                      title="Product reference images"
+                      hint="From Product Master — for visual identification."
+                    />
                   </div>
                 </div>
               ) : null}
@@ -1246,7 +1044,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           </span>
         </>
       }
-      description="Register and track devices by type, value, status, custody, and custodian."
+      description="Register and track devices by type, purchase amount, status, and custody."
       actions={headerActions}
     >
       {main}

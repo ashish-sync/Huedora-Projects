@@ -50,10 +50,10 @@ export default function InvoiceBuilderPage() {
 
   return (
     <InvoiceBuilderShell
-      docTypeLabel="Invoice"
+      docTypeLabel="Tax Invoice"
       newDocLabel="New"
-      newDocShortcutLabel="New invoice"
-      exportFilePrefix="invoice"
+      newDocShortcutLabel="New tax invoice"
+      exportFilePrefix="tax-invoice"
       docNumber={form.invoice.documentNumber}
       status={status}
       grandTotal={formatMoney(totals?.grandTotal)}
@@ -88,6 +88,16 @@ export default function InvoiceBuilderPage() {
           addTerm={addTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          panelConfig={{
+            docSectionTitle: 'Tax Invoice',
+            docNoLabel: 'Invoice no.',
+            projectLabel: 'Project / Service Period',
+            showOriginalInvoice: false,
+            showPoFields: true,
+            showShipTo: true,
+            hideReverseCharge: false,
+            hideReceiptVoucher: true,
+          }}
         />
       }
     >
@@ -96,7 +106,6 @@ export default function InvoiceBuilderPage() {
           form={form}
           previewRef={previewRef}
           editable={!readOnly}
-          documentTitle="INVOICE"
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}

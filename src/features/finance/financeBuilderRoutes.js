@@ -3,7 +3,7 @@ export const FINANCE_BUILDER_OPTIONS = [
     to: '/finance-one/billing/quotation',
     label: 'Quotation',
     code: 'QT',
-    available: false,
+    available: true,
   },
   {
     to: '/finance-one/billing/purchase-order',
@@ -24,6 +24,18 @@ export const FINANCE_BUILDER_OPTIONS = [
     available: true,
   },
   {
+    to: '/finance-one/billing/bill-of-supply',
+    label: 'Bill of Supply',
+    code: 'BS',
+    available: true,
+  },
+  {
+    to: '/finance-one/billing/delivery-challan',
+    label: 'Delivery Challan',
+    code: 'DC',
+    available: true,
+  },
+  {
     to: '/finance-one/billing/credit-note',
     label: 'Credit Note',
     code: 'CN',
@@ -33,7 +45,7 @@ export const FINANCE_BUILDER_OPTIONS = [
     to: '/finance-one/billing/debit-note',
     label: 'Debit Note',
     code: 'DN',
-    available: false,
+    available: true,
   },
 ];
 
@@ -46,4 +58,4 @@ export const FINANCE_BUILDER_EDITOR_PATHS = FINANCE_BUILDER_OPTIONS.filter((item
 );
 
 export const FINANCE_BUILDER_EDITOR_ROUTE =
-  /^\/finance-one\/billing\/(invoice|proforma|purchase-order|credit-note|quotation|debit-note)(\/[^/]+)?$/;
+  /^\/finance-one\/billing\/(invoice|proforma|purchase-order|credit-note|delivery-challan|bill-of-supply|quotation|debit-note)(\/[^/]+)?$/;

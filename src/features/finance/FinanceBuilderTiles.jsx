@@ -4,7 +4,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { FINANCE_BUILDER_OPTIONS, formatBuilderOptionLabel } from './financeBuilderRoutes.js';
 
 /** Create-document type picker for Billing Center. */
-export function FinanceBuilderCreateSelect() {
+export function FinanceBuilderCreateSelect({ showLabel = false, label = 'Create document' } = {}) {
   const navigate = useNavigate();
   const options = useMemo(
     () =>
@@ -30,7 +30,8 @@ export function FinanceBuilderCreateSelect() {
 
   return (
     <div className="finance-create-doc">
-      <div className="finance-create-doc-row">
+      {showLabel ? <p className="finance-create-doc-label">{label}</p> : null}
+      <div className="finance-create-doc-row control-inline-row">
         <AdaptiveSelect
           id="finance-create-doc-type"
           className="finance-create-doc-select"
@@ -58,5 +59,5 @@ export function FinanceBuilderCreateSelect() {
 
 /** @deprecated Prefer FinanceBuilderCreateSelect */
 export function FinanceBuilderTiles() {
-  return <FinanceBuilderCreateSelect />;
+  return <FinanceBuilderCreateSelect showLabel />;
 }

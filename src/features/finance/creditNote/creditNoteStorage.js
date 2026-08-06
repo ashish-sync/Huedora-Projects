@@ -12,6 +12,9 @@ export { MAX_INVOICE_LINE_ITEMS as MAX_CREDIT_NOTE_LINE_ITEMS };
 
 export function defaultCreditNoteForm() {
   const today = todayIso();
+  const due = new Date(today);
+  due.setDate(due.getDate() + 30);
+  const dueDate = due.toISOString().slice(0, 10);
   return {
     company: {
       logoDataUrl: '',
@@ -25,6 +28,8 @@ export function defaultCreditNoteForm() {
       gstin: '',
       pan: '',
       cin: '',
+      udyam: '',
+      udyamLabel: '',
       lutBondNo: '',
       fssaiNo: '',
       tan: '',
@@ -60,6 +65,9 @@ export function defaultCreditNoteForm() {
       name: '',
       contactPerson: '',
       address: '',
+      gstin: '',
+      stateName: '',
+      stateCode: '',
       vehicleNo: '',
       shipBy: 'Road',
       transporterName: '',
@@ -68,32 +76,36 @@ export function defaultCreditNoteForm() {
       documentNumber: '',
       copyLabel: 'Original for Recipient',
       issueDate: today,
-      dueDate: today,
+      dueDate,
       dispatchFrom: '',
       dispatchDate: today,
       placeOfSupply: '',
       vendorCode: '',
       poReference: '',
+      poDate: '',
       projectName: '',
+      servicePeriod: '',
       reverseCharge: 'N',
       receiptVoucherNo: '',
       cnReference: '',
+      originalInvoiceDate: '',
+      creditReason: 'Rate Revision / Cancellation / Service Adjustment',
       dnReference: '',
     },
-    lineItems: [defaultLineItem()],
-    terms: [
-      'This credit note is issued against the original tax invoice referenced above.',
-      'The credited amount will be adjusted against future invoices or refunded as agreed.',
+    lineItems: [
+      defaultLineItem({
+        description: 'Healthcare Camp / Activation Services',
+      }),
     ],
-    declaration:
-      'We declare that this credit note shows the actual particulars of the credit issued and that all details are true and correct.',
+    terms: ['Payment is due within 30 days from the date of invoice.'],
+    declaration: '',
     adjustments: {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: 0,
     },
     taxColumnLabels: {
-      rateLabel: 'GST %',
+      rateLabel: 'GST Rate',
       amountLabel: 'GST',
     },
     signature: {
@@ -114,32 +126,23 @@ function readSeqMap() {
 }
 
 function periodKey(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${fy}_${mm}`;
+  return fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
 }
 
 export function peekCreditNoteNumber(dateIso) {
   const seqMap = readSeqMap();
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const key = periodKey(dateIso);
-  const next = (seqMap[key] || 0) + 1;
-  return `CN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
+  const fy = periodKey(dateIso);
+  const next = (seqMap[fy] || 0) + 1;
+  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
 }
 
 export function nextCreditNoteNumber(dateIso) {
   const seqMap = readSeqMap();
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const key = periodKey(dateIso);
-  const next = (seqMap[key] || 0) + 1;
-  seqMap[key] = next;
+  const fy = periodKey(dateIso);
+  const next = (seqMap[fy] || 0) + 1;
+  seqMap[fy] = next;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
-  return `CN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
+  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
 }
 
 export function loadCreditNoteDraft() {

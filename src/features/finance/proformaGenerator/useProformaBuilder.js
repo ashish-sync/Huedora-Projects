@@ -113,6 +113,30 @@ export function useProformaBuilder() {
         recipient: {
           ...prev.recipient,
           ...(patch.recipient || {}),
+          name: patch.recipient?.name || patch.billTo?.name || prev.recipient.name,
+          placeOfSupply:
+            patch.recipient?.placeOfSupply || patch.billTo?.address || prev.recipient.placeOfSupply,
+          recipientGstin:
+            patch.recipient?.recipientGstin || patch.billTo?.gstin || prev.recipient.recipientGstin,
+          stateCode: patch.recipient?.stateCode || patch.billTo?.stateCode || prev.recipient.stateCode,
+          stateName: patch.billTo?.stateName || prev.recipient.stateName,
+          contactPerson:
+            patch.recipient?.contactPerson || patch.billTo?.contactPerson || prev.recipient.contactPerson,
+          contactEmail:
+            patch.recipient?.contactEmail || patch.billTo?.email || prev.recipient.contactEmail,
+          projectName: patch.projectName || prev.recipient.projectName,
+        },
+        shipTo: {
+          ...prev.shipTo,
+          name: patch.billTo?.name || prev.shipTo?.name || '',
+          address: patch.billTo?.address || prev.shipTo?.address || '',
+          gstin: patch.billTo?.gstin || prev.shipTo?.gstin || '',
+          stateName: patch.billTo?.stateName || prev.shipTo?.stateName || '',
+          stateCode: patch.billTo?.stateCode || prev.shipTo?.stateCode || '',
+        },
+        document: {
+          ...prev.document,
+          servicePeriod: patch.projectName || prev.document.servicePeriod,
         },
       }));
     },

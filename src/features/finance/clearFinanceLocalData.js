@@ -8,6 +8,14 @@ export const FINANCE_LOCAL_STORAGE_KEYS = [
   'tylo_one_purchase_order_number_seq',
   'tylo_one_credit_note_generator_v1',
   'tylo_one_credit_note_number_seq',
+  'tylo_one_debit_note_generator_v1',
+  'tylo_one_debit_note_number_seq',
+  'tylo_one_delivery_challan_generator_v1',
+  'tylo_one_delivery_challan_number_seq',
+  'tylo_one_bill_of_supply_generator_v1',
+  'tylo_one_bill_of_supply_number_seq',
+  'tylo_one_quotation_generator_v1',
+  'tylo_one_quotation_number_seq',
   'tylo_commercial_org_master_v1',
 ];
 

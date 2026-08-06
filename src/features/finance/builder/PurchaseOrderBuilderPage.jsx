@@ -21,8 +21,6 @@ export default function PurchaseOrderBuilderPage() {
     updateLine,
     addLine,
     removeLine,
-    updateTerm,
-    addTerm,
     newPurchaseOrder,
     status,
     error,
@@ -49,6 +47,7 @@ export default function PurchaseOrderBuilderPage() {
   return (
     <InvoiceBuilderShell
       docTypeLabel="Purchase Order"
+      pageOrientation="portrait"
       newDocLabel="New"
       newDocShortcutLabel="New purchase order"
       panelAriaLabel="Purchase order fields"
@@ -83,22 +82,17 @@ export default function PurchaseOrderBuilderPage() {
           updateLine={updateLine}
           addLine={addLine}
           removeLine={removeLine}
-          updateTerm={updateTerm}
-          addTerm={addTerm}
         />
       }
     >
       {(previewRef) => (
         <PurchaseOrderPreview
           form={form}
-          totals={totals}
           previewRef={previewRef}
           editable={!readOnly}
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}
-          onUpdateTerm={updateTerm}
-          onAddTerm={addTerm}
         />
       )}
     </InvoiceBuilderShell>

@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
-import TaxInvoicePreview from '../invoiceGenerator/TaxInvoicePreview.jsx';
 import InvoiceBuilderPanel from './InvoiceBuilderPanel.jsx';
 import InvoiceBuilderShell from './InvoiceBuilderShell.jsx';
 import { useBuilderKeyboard } from './useBuilderKeyboard.js';
+import CreditNotePreview from '../creditNote/CreditNotePreview.jsx';
 import { useCreditNoteBuilder } from '../creditNote/useCreditNoteBuilder.js';
 
 export default function CreditNoteBuilderPage() {
@@ -92,33 +92,27 @@ export default function CreditNoteBuilderPage() {
           panelConfig={{
             docSectionTitle: 'Credit note',
             docNoLabel: 'Credit note no.',
+            projectLabel: 'Project / Service Period',
             showOriginalInvoice: true,
-            originalInvoiceLabel: 'Original invoice',
+            originalInvoiceLabel: 'Original invoice no.',
+            showPoFields: true,
+            showShipTo: true,
+            showCreditReason: true,
+            showOriginalInvoiceDate: true,
+            hideReverseCharge: true,
+            hideReceiptVoucher: true,
           }}
         />
       }
     >
       {(previewRef) => (
-        <TaxInvoicePreview
+        <CreditNotePreview
           form={form}
           previewRef={previewRef}
           editable={!readOnly}
-          documentTitle="CREDIT NOTE"
-          totalAmountLabel="Total Credit Amount"
-          detailsCardTitle="Credit Note Details"
-          fieldLabels={{
-            docNo: 'Credit Note No',
-            docDate: 'Credit Note Date',
-            project: 'Reference',
-            originalInvoice: 'Original Invoice No',
-          }}
-          showPaymentDetails={false}
-          showReverseCharge={false}
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}
-          onUpdateTerm={updateTerm}
-          onAddTerm={addTerm}
         />
       )}
     </InvoiceBuilderShell>

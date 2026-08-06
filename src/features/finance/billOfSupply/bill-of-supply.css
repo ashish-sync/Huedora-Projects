@@ -1,0 +1,280 @@
+/* Portrait A4 Bill of Supply — matches official Tylo Care template */
+
+.bos-print-root {
+  width: 210mm;
+  flex-shrink: 0;
+}
+
+.bos-doc {
+  --bos-ink: #111827;
+  --bos-muted: #4b5563;
+  --bos-line: #111827;
+  --bos-gray: #f3f4f6;
+  --bos-page-w: 210mm;
+  --bos-page-h: 297mm;
+  --bos-margin: 10mm;
+
+  width: var(--bos-page-w);
+  min-height: var(--bos-page-h);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: var(--bos-margin);
+  background: #fff;
+  color: var(--bos-ink);
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 9.5px;
+  line-height: 1.35;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bos-doc *,
+.bos-doc *::before,
+.bos-doc *::after {
+  box-sizing: border-box;
+}
+
+.bos-header {
+  display: grid;
+  grid-template-columns: 28mm 1fr 42mm;
+  gap: 3mm;
+  align-items: start;
+  margin-bottom: 3mm;
+}
+
+.bos-logo {
+  height: 14mm;
+  width: auto;
+  max-width: 28mm;
+  object-fit: contain;
+  object-position: left top;
+}
+
+.bos-logo-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+}
+
+.bos-logo-text {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.bos-tagline {
+  font-size: 7.5px;
+  color: var(--bos-muted);
+}
+
+.bos-company {
+  text-align: center;
+  font-size: 8px;
+  color: var(--bos-ink);
+}
+
+.bos-company p {
+  margin: 0 0 1mm;
+}
+
+.bos-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: right;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.bos-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 0;
+}
+
+.bos-grid-table th,
+.bos-grid-table td {
+  border: 0.7px solid var(--bos-line);
+  padding: 1.6mm 2mm;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.bos-grid-table th {
+  background: var(--bos-gray);
+  font-size: 8px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.bos-meta-label {
+  display: block;
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--bos-muted);
+  margin-bottom: 0.8mm;
+}
+
+.bos-meta-value {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  min-height: 12px;
+}
+
+.bos-party-head {
+  text-align: center !important;
+  font-size: 8.5px !important;
+  letter-spacing: 0.03em;
+}
+
+.bos-party-body {
+  min-height: 28mm;
+}
+
+.bos-party-field {
+  margin-bottom: 2mm;
+}
+
+.bos-party-field:last-child {
+  margin-bottom: 0;
+}
+
+.bos-party-field .bos-meta-label {
+  margin-bottom: 0.4mm;
+}
+
+.bos-party-field .bos-meta-value {
+  font-weight: 500;
+  min-height: 10px;
+}
+
+.bos-items th {
+  text-align: center;
+  font-size: 7.5px !important;
+}
+
+.bos-items td {
+  font-size: 8.5px;
+  vertical-align: middle;
+}
+
+.bos-items .bos-num {
+  text-align: right;
+}
+
+.bos-items .bos-center {
+  text-align: center;
+}
+
+.bos-items .bos-desc {
+  text-align: left;
+}
+
+.bos-totals-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bos-totals {
+  width: 70mm;
+  border-collapse: collapse;
+}
+
+.bos-totals td {
+  border: 0.7px solid var(--bos-line);
+  padding: 1.4mm 2mm;
+  font-size: 8.5px;
+}
+
+.bos-totals td:last-child {
+  text-align: right;
+  width: 28mm;
+}
+
+.bos-totals tr.bos-total-strong td {
+  background: var(--bos-gray);
+  font-weight: 800;
+}
+
+.bos-amount-words {
+  border: 0.7px solid var(--bos-line);
+  padding: 2mm 2.5mm;
+  font-size: 9px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.bos-footer-head {
+  text-align: center !important;
+}
+
+.bos-footer-body {
+  min-height: 42mm;
+  font-size: 8px;
+}
+
+.bos-footer-body p {
+  margin: 0 0 1.5mm;
+}
+
+.bos-footer-note {
+  margin-top: 2mm !important;
+  font-style: italic;
+  color: var(--bos-muted);
+  font-size: 7px !important;
+}
+
+.bos-sign {
+  margin-top: 6mm;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bos-sign-box {
+  width: 55mm;
+  text-align: center;
+}
+
+.bos-sign-for {
+  margin: 0 0 12mm;
+  font-size: 9px;
+}
+
+.bos-sign-line {
+  border-top: 0.7px solid var(--bos-line);
+  margin: 0 4mm 1.5mm;
+}
+
+.bos-sign-label {
+  margin: 0;
+  font-size: 9px;
+}
+
+.bos-inline {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  min-height: 12px;
+}
+
+.bos-inline:focus {
+  outline: 1px dashed rgba(11, 61, 145, 0.45);
+  outline-offset: 1px;
+}
+
+.bos-inline--area {
+  resize: vertical;
+  min-height: 18px;
+}
+
+@media print {
+  .bos-doc {
+    border: none;
+  }
+}

@@ -4,8 +4,16 @@ import { fiscalYearLabel } from '../documentNumbering.js';
 const STORAGE_KEY = 'tylo_one_invoice_generator_v1';
 const NUMBER_KEY = 'tylo_one_invoice_number_seq';
 
-/** Max line items on Tylo GST invoice (A4 landscape single-page layout). */
+/** Max line items on Tylo GST tax invoice (A4 portrait letterhead). */
 export const MAX_INVOICE_LINE_ITEMS = 5;
+
+export const INVOICE_PAYMENT_TERM = 'Payment is due within 30 days from the date of invoice.';
+
+export function msmeDeclaration(company = {}) {
+  const legal = company.legalName || 'Tylo Care Private Limited';
+  const udyam = company.udyam || 'UDYAM-MH-19-0446179';
+  return `${legal} is registered as a Micro Enterprise under the MSMED Act, 2006, bearing Udyam Registration No. ${udyam}. Delayed payments shall be governed by applicable provisions of the MSMED Act, 2006.`;
+}
 
 export function defaultLineItem(overrides = {}) {
   return {
@@ -26,6 +34,9 @@ export function defaultLineItem(overrides = {}) {
 
 export function defaultInvoiceForm() {
   const today = todayIso();
+  const due = new Date(today);
+  due.setDate(due.getDate() + 30);
+  const dueDate = due.toISOString().slice(0, 10);
   return {
     company: {
       logoDataUrl: '',
@@ -39,6 +50,8 @@ export function defaultInvoiceForm() {
       gstin: '',
       pan: '',
       cin: '',
+      udyam: '',
+      udyamLabel: '',
       lutBondNo: '',
       fssaiNo: '',
       tan: '',
@@ -54,7 +67,7 @@ export function defaultInvoiceForm() {
     },
     payment: {
       upiId: '',
-      qrEnabled: true,
+      qrEnabled: false,
       paymentQrDataUrl: '',
     },
     clientMasterId: '',
@@ -74,6 +87,9 @@ export function defaultInvoiceForm() {
       name: '',
       contactPerson: '',
       address: '',
+      gstin: '',
+      stateName: '',
+      stateCode: '',
       vehicleNo: '',
       shipBy: 'Road',
       transporterName: '',
@@ -82,33 +98,37 @@ export function defaultInvoiceForm() {
       documentNumber: '',
       copyLabel: 'Original for Recipient',
       issueDate: today,
-      dueDate: today,
+      dueDate,
       dispatchFrom: '',
       dispatchDate: today,
       placeOfSupply: '',
       vendorCode: '',
       poReference: '',
+      poDate: '',
       projectName: '',
+      servicePeriod: '',
       reverseCharge: 'N',
       receiptVoucherNo: '',
       cnReference: '',
       dnReference: '',
     },
-    lineItems: [defaultLineItem()],
-    terms: [
-      'Please check the total amount before making payment.',
-      'Payment to be made via NEFT/RTGS/UPI as per bank details.',
-      'Goods once sold will not be taken back after 30 days.',
+    lineItems: [
+      defaultLineItem({
+        description: 'Healthcare Camp / Activation Services',
+        igstRate: 18,
+        cgstRate: 9,
+        sgstRate: 9,
+      }),
     ],
-    declaration:
-      'We declare that this invoice shows the actual price of the goods/services described and that all particulars are true and correct.',
+    terms: [INVOICE_PAYMENT_TERM],
+    declaration: msmeDeclaration(),
     adjustments: {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: 0,
     },
     taxColumnLabels: {
-      rateLabel: 'GST %',
+      rateLabel: 'GST Rate',
       amountLabel: 'GST',
     },
     signature: {
@@ -120,39 +140,28 @@ export function defaultInvoiceForm() {
   };
 }
 
-export function nextInvoiceNumber(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${fy}_${mm}`;
-
-  let seqMap = {};
+function readSeqMap() {
   try {
-    seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
+    return JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
   } catch {
-    seqMap = {};
+    return {};
   }
-
-  const next = (seqMap[periodKey] || 0) + 1;
-  seqMap[periodKey] = next;
-  localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
-
-  return `IN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
 }
 
 export function peekInvoiceNumber(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${fy}_${mm}`;
-  let seqMap = {};
-  try {
-    seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
-  } catch {
-    seqMap = {};
-  }
-  const next = (seqMap[periodKey] || 0) + 1;
-  return `IN/${fy}/${mm}/${String(next).padStart(4, '0')}`;
+  const seqMap = readSeqMap();
+  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
+  const next = (seqMap[fy] || 0) + 1;
+  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
+}
+
+export function nextInvoiceNumber(dateIso) {
+  const num = peekInvoiceNumber(dateIso);
+  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
+  const seqMap = readSeqMap();
+  seqMap[fy] = (seqMap[fy] || 0) + 1;
+  localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
+  return num;
 }
 
 export function loadInvoiceDraft() {
@@ -166,10 +175,7 @@ export function loadInvoiceDraft() {
 }
 
 export function saveInvoiceDraft(form) {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ ...form, savedAt: new Date().toISOString() })
-  );
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...form, savedAt: new Date().toISOString() }));
 }
 
 export function clearInvoiceDraft() {

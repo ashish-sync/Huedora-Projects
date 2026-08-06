@@ -55,6 +55,7 @@ export default function TyloBootSequence({ user, onComplete }) {
   const canvasRef = useRef(null);
   const terminalRef = useRef(null);
   const abortRef = useRef(null);
+  const finishOnceRef = useRef(false);
 
   const vars = useMemo(() => resolveBootVariables(user), [user]);
   const script = useMemo(() => buildBootSequence(vars), [vars]);
@@ -71,6 +72,9 @@ export default function TyloBootSequence({ user, onComplete }) {
   const { setTheme } = useTheme();
 
   const finish = useCallback(() => {
+    if (finishOnceRef.current) return;
+    finishOnceRef.current = true;
+    abortRef.current?.abort();
     if (loginExperience.darkModeAfterBoot) {
       setTheme('dark');
     }
@@ -78,10 +82,15 @@ export default function TyloBootSequence({ user, onComplete }) {
     window.setTimeout(() => onComplete?.(), 920);
   }, [onComplete, setTheme]);
 
+  const skipBoot = useCallback(() => {
+    finish();
+  }, [finish]);
+
   useEffect(() => {
     const controller = new AbortController();
     abortRef.current = controller;
     let mounted = true;
+    finishOnceRef.current = false;
 
     const reducedMotion =
       typeof window !== 'undefined' &&
@@ -159,7 +168,8 @@ export default function TyloBootSequence({ user, onComplete }) {
         }, 3800);
         controller.signal.addEventListener('abort', () => window.clearTimeout(autoId));
       } catch (err) {
-        if (err?.name !== 'AbortError' && mounted) finish();
+        if (err?.name === 'AbortError') return;
+        if (mounted) finish();
       }
     };
 
@@ -183,8 +193,13 @@ export default function TyloBootSequence({ user, onComplete }) {
   }, [completedLines, activeLine]);
 
   useEffect(() => {
-    if (!canContinue) return undefined;
     const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        skipBoot();
+        return;
+      }
+      if (!canContinue) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         finish();
@@ -192,7 +207,7 @@ export default function TyloBootSequence({ user, onComplete }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canContinue, finish]);
+  }, [canContinue, finish, skipBoot]);
 
   return (
     <div
@@ -228,14 +243,20 @@ export default function TyloBootSequence({ user, onComplete }) {
           )}
         </div>
 
-        {canContinue && phase !== 'fading' && (
-          <footer className="tylo-boot-footer">
+        <footer className="tylo-boot-footer">
+          {canContinue && phase !== 'fading' ? (
             <button type="button" className="tylo-boot-continue" onClick={finish}>
               Continue to workspace
             </button>
-            <span className="tylo-boot-footer-hint">Press Enter</span>
-          </footer>
-        )}
+          ) : (
+            <button type="button" className="tylo-boot-continue tylo-boot-continue--ghost" onClick={skipBoot}>
+              Skip
+            </button>
+          )}
+          <span className="tylo-boot-footer-hint">
+            {canContinue ? 'Press Enter · Esc to skip' : 'Press Esc to skip'}
+          </span>
+        </footer>
       </div>
     </div>
   );

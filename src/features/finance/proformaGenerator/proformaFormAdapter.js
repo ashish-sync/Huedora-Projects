@@ -1,4 +1,4 @@
-/** Map proforma form shape → invoice preview shape (Tylo template). */
+/** Map proforma form shape → invoice-like preview helpers. */
 export function proformaToInvoiceView(proforma) {
   const lineItems = (proforma.rows || [])
     .filter((r) => r.type === 'line')
@@ -14,7 +14,19 @@ export function proformaToInvoiceView(proforma) {
       sgstRate: r.sgstRate,
     }));
 
-  const { company, recipient, document: doc, bank, adjustments, terms, payment, signature, taxColumnLabels } = proforma;
+  const {
+    company,
+    recipient,
+    shipTo,
+    document: doc,
+    bank,
+    adjustments,
+    terms,
+    payment,
+    signature,
+    taxColumnLabels,
+    declaration,
+  } = proforma;
 
   return {
     company: {
@@ -30,7 +42,7 @@ export function proformaToInvoiceView(proforma) {
     },
     payment: payment || {},
     signature: signature || {},
-    taxColumnLabels: taxColumnLabels || { rateLabel: 'GST %', amountLabel: 'GST' },
+    taxColumnLabels: taxColumnLabels || { rateLabel: 'GST Rate', amountLabel: 'GST' },
     billTo: {
       name: recipient?.name || '',
       address: recipient?.placeOfSupply || '',
@@ -41,20 +53,28 @@ export function proformaToInvoiceView(proforma) {
       contactPerson: recipient?.contactPerson || '',
       email: recipient?.contactEmail || '',
     },
+    shipTo: {
+      name: shipTo?.name || '',
+      address: shipTo?.address || recipient?.deliveryAddress || '',
+      gstin: shipTo?.gstin || '',
+      stateName: shipTo?.stateName || '',
+      stateCode: shipTo?.stateCode || '',
+    },
     invoice: {
       documentNumber: doc?.documentNumber || '',
-      projectName: recipient?.projectName || '',
+      projectName: doc?.servicePeriod || recipient?.projectName || '',
+      servicePeriod: doc?.servicePeriod || recipient?.projectName || '',
       issueDate: doc?.issueDate || '',
       dueDate: doc?.dueDate || '',
       reverseCharge: 'N',
       placeOfSupply: recipient?.placeOfSupply || '',
-      receiptVoucherNo: doc?.reference || '',
-      cnReference: '',
-      dnReference: '',
+      poReference: doc?.reference || '',
+      poDate: doc?.referenceDate || '',
     },
     lineItems,
     adjustments: adjustments || {},
     terms: terms || [],
+    declaration: declaration || '',
   };
 }
 
@@ -67,11 +87,18 @@ const PATH_MAP = {
   'billTo.pan': 'recipient.recipientPan',
   'billTo.contactPerson': 'recipient.contactPerson',
   'billTo.email': 'recipient.contactEmail',
+  'shipTo.name': 'shipTo.name',
+  'shipTo.address': 'shipTo.address',
+  'shipTo.gstin': 'shipTo.gstin',
+  'shipTo.stateName': 'shipTo.stateName',
+  'shipTo.stateCode': 'shipTo.stateCode',
   'invoice.documentNumber': 'document.documentNumber',
-  'invoice.projectName': 'recipient.projectName',
+  'invoice.projectName': 'document.servicePeriod',
+  'invoice.servicePeriod': 'document.servicePeriod',
   'invoice.issueDate': 'document.issueDate',
   'invoice.dueDate': 'document.dueDate',
-  'invoice.receiptVoucherNo': 'document.reference',
+  'invoice.poReference': 'document.reference',
+  'invoice.poDate': 'document.referenceDate',
   'taxColumnLabels.rateLabel': 'taxColumnLabels.rateLabel',
   'taxColumnLabels.amountLabel': 'taxColumnLabels.amountLabel',
 };

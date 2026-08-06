@@ -1,5 +1,5 @@
 import html2pdf from 'html2pdf.js';
-import { A4_LANDSCAPE, A4_LANDSCAPE_PX } from '../shared/a4Landscape.js';
+import { pageSpec } from '../shared/a4Landscape.js';
 import { formatDisplayDate } from '../invoiceGenerator/invoiceCalculations.js';
 
 function waitForLayout() {
@@ -44,22 +44,31 @@ function replaceInputsWithText(root) {
 /**
  * Build a clean, full-size DOM clone for PDF rasterization (no inputs, no UI chrome).
  */
-const EXPORT_SELECTORS = '.tylo-invoice, .po-document';
+const EXPORT_SELECTORS = '.tylo-invoice, .po-document, .po-doc, .dc-doc, .bos-doc';
 
-export function buildDocumentExportNode(sourceRoot) {
+export function buildDocumentExportNode(sourceRoot, { orientation = 'landscape' } = {}) {
   const article = sourceRoot?.querySelector?.(EXPORT_SELECTORS) || sourceRoot;
   if (!article) return null;
 
   const clone = article.cloneNode(true);
-  if (clone.classList.contains('po-document')) {
+  if (clone.classList.contains('po-document') || clone.classList.contains('po-doc')) {
     clone.classList.add('po-document--export');
+    clone.classList.add('po-doc--export');
+  } else if (clone.classList.contains('dc-doc')) {
+    clone.classList.add('dc-doc--export');
   } else {
     clone.classList.add('tylo-invoice--export');
   }
   replaceInputsWithText(clone);
 
+  const { mm } = pageSpec(orientation);
   const host = document.createElement('div');
   host.className = 'ti-export-host';
+  if (orientation === 'portrait') {
+    host.classList.add('ti-export-host--portrait');
+  }
+  host.style.width = `${mm.widthMm}mm`;
+  host.style.height = `${mm.heightMm}mm`;
   host.setAttribute('aria-hidden', 'true');
   host.appendChild(clone);
   document.body.appendChild(host);
@@ -77,9 +86,10 @@ export const buildInvoiceExportNode = buildDocumentExportNode;
 /** @deprecated Use removeDocumentExportNode */
 export const removeInvoiceExportNode = removeDocumentExportNode;
 
-function pdfExportOptions(filename = 'document.pdf') {
-  const width = A4_LANDSCAPE_PX.w;
-  const height = A4_LANDSCAPE_PX.h;
+function pdfExportOptions(filename = 'document.pdf', orientation = 'landscape') {
+  const { mm, px } = pageSpec(orientation);
+  const width = px.w;
+  const height = px.h;
   return {
     margin: 0,
     filename,
@@ -100,8 +110,8 @@ function pdfExportOptions(filename = 'document.pdf') {
     },
     jsPDF: {
       unit: 'mm',
-      format: [A4_LANDSCAPE.widthMm, A4_LANDSCAPE.heightMm],
-      orientation: 'landscape',
+      format: [mm.widthMm, mm.heightMm],
+      orientation,
       compress: true,
       precision: 16,
     },
@@ -112,14 +122,14 @@ function pdfExportOptions(filename = 'document.pdf') {
 /**
  * Render the on-screen commercial document to a PDF blob (shared by Download + Print).
  */
-export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf') {
-  const built = buildDocumentExportNode(sourceRoot);
+export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf', { orientation = 'landscape' } = {}) {
+  const built = buildDocumentExportNode(sourceRoot, { orientation });
   if (!built) throw new Error('Nothing to export');
 
   const { host, clone } = built;
   try {
     await waitForLayout();
-    const blob = await html2pdf().set(pdfExportOptions(filename)).from(clone).outputPdf('blob');
+    const blob = await html2pdf().set(pdfExportOptions(filename, orientation)).from(clone).outputPdf('blob');
     if (!(blob instanceof Blob)) throw new Error('PDF render failed');
     return blob;
   } finally {
@@ -141,8 +151,8 @@ function triggerBlobDownload(blob, filename) {
 /**
  * Download commercial document PDF — same render pipeline as Print.
  */
-export async function exportDocumentPdf(sourceRoot, filename = 'document.pdf') {
-  const blob = await renderDocumentPdfBlob(sourceRoot, filename);
+export async function exportDocumentPdf(sourceRoot, filename = 'document.pdf', { orientation = 'landscape' } = {}) {
+  const blob = await renderDocumentPdfBlob(sourceRoot, filename, { orientation });
   triggerBlobDownload(blob, filename);
 }
 
@@ -152,10 +162,11 @@ export const exportInvoicePdf = exportDocumentPdf;
 /**
  * Print using the exact same PDF as Download (no separate HTML/server template).
  */
-export async function printDocumentPreview(sourceRoot, { title = 'Document' } = {}) {
+export async function printDocumentPreview(sourceRoot, { title = 'Document', orientation = 'landscape' } = {}) {
   const filename = `${String(title || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
-  const blob = await renderDocumentPdfBlob(sourceRoot, filename);
+  const blob = await renderDocumentPdfBlob(sourceRoot, filename, { orientation });
   const url = URL.createObjectURL(blob);
+  const { mm } = pageSpec(orientation);
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
@@ -164,8 +175,8 @@ export async function printDocumentPreview(sourceRoot, { title = 'Document' } = 
     position: 'fixed',
     left: '-10000px',
     top: '0',
-    width: '297mm',
-    height: '210mm',
+    width: `${mm.widthMm}mm`,
+    height: `${mm.heightMm}mm`,
     border: '0',
     opacity: '1',
     pointerEvents: 'none',

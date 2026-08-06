@@ -1,21 +1,23 @@
-/** Default Tylo Care letterhead & bank — matches standard GST invoice template. */
+/** Default Tylo Care letterhead & bank — matches official Bill of Supply template. */
 export const TYLO_ORG_SEED = {
-  legalName: 'Tyo Care Private Limited',
+  legalName: 'Tylo Care Private Limited',
   brandLine: 'Bringing Healthcare Closer',
   registeredOffice:
-    '216, 2nd Floor, Corporate Avenue, Sonawala Road, Goregaon East, Mumbai, Maharashtra 400063',
-  cin: 'U74999MH2008PTC184213',
-  phone: '022 6113 1400',
-  email: 'care@kartavyahealtheon.com',
-  website: 'kartavyahealtheon.com',
-  gstin: '27AADCK4268L1Z4',
-  pan: 'AADCK4268L',
+    'C-1207, Sahara Tower, CHS Ltd, C Wing, Sahar Road, International Airport, Mumbai - 400099',
+  cin: 'U86909MH2026PTC472417',
+  phone: '',
+  email: 'growth@tylocare.com',
+  website: 'tylocare.com',
+  gstin: '27AANCT2428H1Z4',
+  pan: 'AANCT2428H',
   stateCode: '27',
-  accountHolder: 'Tylo Care Pvt. Ltd.',
-  bankName: 'HDFC Bank Ltd',
-  bankBranch: 'Goregaon E',
-  accountNumber: '50200120975721',
-  ifscCode: 'HDFC0000212',
+  udyam: 'UDYAM-MH-19-0446179',
+  udyamLabel: 'Micro Enterprise',
+  accountHolder: 'Tylo Care Private Limited',
+  bankName: 'IDFC FIRST Bank',
+  bankBranch: 'Prabhadevi Branch, Mumbai',
+  accountNumber: '10289978474',
+  ifscCode: 'IDFB0040102',
 };
 
 export const TYLO_INVOICE_FORMAT = {

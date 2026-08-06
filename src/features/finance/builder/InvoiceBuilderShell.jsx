@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/auth.jsx';
 import { usePreviewScale } from '../documentGenerator/usePreviewScale.js';
-import { A4_LANDSCAPE_PX } from '../shared/a4Landscape.js';
 import { canApproveCommercialDocument } from './commercialApproval.js';
 import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import './export-invoice.css';
@@ -88,12 +87,16 @@ export default function InvoiceBuilderShell({
   printRef,
   panel,
   children,
+  /** 'landscape' (default) or 'portrait' — Purchase Order only uses portrait. */
+  pageOrientation = 'landscape',
 }) {
   const previewRef = useRef(null);
   const autoPrintStarted = useRef(false);
   const [exporting, setExporting] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const { wrapRef, scale, zoomIn, zoomOut, resetZoom } = usePreviewScale();
+  const { wrapRef, scale, zoomIn, zoomOut, resetZoom, fitToWidth, pagePx } = usePreviewScale({
+    orientation: pageOrientation,
+  });
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -101,6 +104,11 @@ export default function InvoiceBuilderShell({
   const isDraftLike = status === 'Draft' || status === 'Uploaded' || !status;
   const isSubmitted = status === 'Submitted';
   const wantsPrint = searchParams.get('print') === '1';
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => fitToWidth());
+    return () => cancelAnimationFrame(id);
+  }, [panelOpen, fitToWidth, pageOrientation]);
 
   const handleSaveAndExport = useCallback(async () => {
     setExporting(true);
@@ -111,14 +119,15 @@ export default function InvoiceBuilderShell({
       });
       const el = previewRef.current;
       if (!el) throw new Error('Preview not ready');
-      // Same DOM pipeline as Print — not the server PDF template.
-      await exportDocumentPdf(el, `${docNumber || exportFilePrefix}.pdf`);
+      await exportDocumentPdf(el, `${docNumber || exportFilePrefix}.pdf`, {
+        orientation: pageOrientation,
+      });
     } catch (err) {
       console.error('Save & export failed', err);
     } finally {
       setExporting(false);
     }
-  }, [docNumber, exportFilePrefix, onSaveNow]);
+  }, [docNumber, exportFilePrefix, onSaveNow, pageOrientation]);
 
   const handlePrint = useCallback(async () => {
     const el = previewRef.current;
@@ -126,7 +135,7 @@ export default function InvoiceBuilderShell({
     setPrinting(true);
     try {
       if (el) {
-        await printDocumentPreview(el, { title });
+        await printDocumentPreview(el, { title, orientation: pageOrientation });
         return;
       }
       if (onPrint) {
@@ -145,7 +154,7 @@ export default function InvoiceBuilderShell({
     } finally {
       setPrinting(false);
     }
-  }, [docNumber, docTypeLabel, onPrint]);
+  }, [docNumber, docTypeLabel, onPrint, pageOrientation]);
 
   useEffect(() => {
     if (exportRef) {
@@ -207,15 +216,17 @@ export default function InvoiceBuilderShell({
 
         <div className="ib-toolbar-center">
           <div className="ib-toolbar-cluster">
-            <span className="ib-total-pill">
-              <span className="ib-total-label">Total</span>
-              <span className="ib-total-value">₹ {grandTotal}</span>
-            </span>
+            {grandTotal != null ? (
+              <span className="ib-total-pill">
+                <span className="ib-total-label">Total</span>
+                <span className="ib-total-value">₹ {grandTotal}</span>
+              </span>
+            ) : null}
             <div className="ib-zoom" role="group" aria-label="Zoom">
               <button type="button" className="ib-zoom-btn" onClick={zoomOut} aria-label="Zoom out">
                 −
               </button>
-              <button type="button" className="ib-zoom-pct" onClick={resetZoom} title="Reset zoom to 80%">
+              <button type="button" className="ib-zoom-pct" onClick={resetZoom} title="Fit page to canvas">
                 {Math.round(scale * 100)}%
               </button>
               <button type="button" className="ib-zoom-btn" onClick={zoomIn} aria-label="Zoom in">
@@ -314,14 +325,14 @@ export default function InvoiceBuilderShell({
           <div className="ib-canvas-viewport">
             <div
               className="ib-page-stage"
-              style={{ width: A4_LANDSCAPE_PX.w * scale, height: A4_LANDSCAPE_PX.h * scale }}
+              style={{ width: pagePx.w * scale, height: pagePx.h * scale }}
             >
               <div
                 className="ib-page-scaler"
                 style={{
                   transform: `scale(${scale})`,
-                  width: A4_LANDSCAPE_PX.w,
-                  height: A4_LANDSCAPE_PX.h,
+                  width: pagePx.w,
+                  height: pagePx.h,
                   transformOrigin: 'top center',
                 }}
               >

@@ -2,8 +2,9 @@
  * Cinematic login / terminal boot — feature flags (Vite env).
  *
  * Set VITE_LOGIN_CINEMATIC=false to restore the classic flow:
- *   Sign in → home (no boot screen, no forced fullscreen, no health insights).
+ *   Sign in → home (no boot screen, no health insights).
  *
+ * Browser fullscreen (F11-style) on sign-in is permanently disabled.
  * Sub-flags only apply when the master switch is on (unless noted).
  */
 
@@ -27,8 +28,8 @@ export const loginExperience = Object.freeze({
   cinematic: cinematicMaster,
   /** Full-screen terminal boot after successful sign-in. */
   bootSequence: flag('VITE_LOGIN_BOOT_SEQUENCE', cinematicMaster),
-  /** Browser fullscreen on Sign in click (F11-style). */
-  fullscreenOnSignIn: flag('VITE_LOGIN_FULLSCREEN', cinematicMaster),
+  /** Browser fullscreen on Sign in click — disabled (no F11-style takeover). */
+  fullscreenOnSignIn: false,
   /** Indian healthcare fact cards on login + home. */
   healthcareInsights: flag('VITE_LOGIN_HEALTH_INSIGHTS', cinematicMaster),
   /** Switch to dark theme when boot completes. */

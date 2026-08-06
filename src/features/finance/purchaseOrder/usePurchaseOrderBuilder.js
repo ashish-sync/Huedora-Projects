@@ -50,6 +50,9 @@ export function usePurchaseOrderBuilder() {
       if (readOnly) return;
       setForm((prev) => {
         const lineItems = [...prev.lineItems];
+        while (lineItems.length <= index) {
+          lineItems.push(defaultPoLineItem());
+        }
         lineItems[index] = { ...lineItems[index], ...patch };
         return { ...prev, lineItems };
       });

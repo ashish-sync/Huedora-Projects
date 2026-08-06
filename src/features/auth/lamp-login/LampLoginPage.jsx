@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import BrandLogo from '../../../components/BrandLogo.jsx';
 import { api } from '../../../shared/api.js';
-import { requestAppFullscreen } from '../../../shared/fullscreen.js';
-import { loginExperience } from '../../../shared/loginExperienceConfig.js';
 import { useAuth } from '../../../shared/auth.jsx';
 import Flashlight from './Flashlight.jsx';
 import LoginGlassCard from './LoginGlassCard.jsx';
@@ -50,9 +48,6 @@ export default function LampLoginPage() {
 
   const onSignIn = async (e) => {
     e.preventDefault();
-    if (loginExperience.fullscreenOnSignIn) {
-      requestAppFullscreen();
-    }
     setBusy(true);
     setError('');
     setSuccess('');

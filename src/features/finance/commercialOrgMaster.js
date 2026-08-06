@@ -31,6 +31,12 @@ export const ORG_MASTER_FIELD_GROUPS = [
       { key: 'email', label: 'Email', type: 'email' },
       { key: 'phone', label: 'Phone', type: 'text' },
       { key: 'website', label: 'Website', type: 'text' },
+      { key: 'gstin', label: 'GSTIN', type: 'text' },
+      { key: 'cin', label: 'CIN', type: 'text' },
+      { key: 'pan', label: 'PAN', type: 'text' },
+      { key: 'udyam', label: 'Udyam Registration No.', type: 'text' },
+      { key: 'udyamLabel', label: 'Udyam category', type: 'text' },
+      { key: 'stateCode', label: 'State code', type: 'text' },
     ],
   },
   {
@@ -129,6 +135,8 @@ export function applyOrgMasterToInvoiceForm(form, master) {
       gstin: masterVal(m, 'gstin', form.company?.gstin),
       pan: masterVal(m, 'pan', form.company?.pan),
       cin: masterVal(m, 'cin', form.company?.cin),
+      udyam: masterVal(m, 'udyam', form.company?.udyam),
+      udyamLabel: masterVal(m, 'udyamLabel', form.company?.udyamLabel),
       stateCode: masterVal(m, 'stateCode', form.company?.stateCode),
     },
     bank: {
@@ -169,6 +177,8 @@ export function applyOrgMasterToProformaForm(form, master) {
       gstin: masterVal(master, 'gstin', form.company?.gstin),
       pan: masterVal(master, 'pan', form.company?.pan),
       cin: masterVal(master, 'cin', form.company?.cin),
+      udyam: masterVal(master, 'udyam', form.company?.udyam),
+      udyamLabel: masterVal(master, 'udyamLabel', form.company?.udyamLabel),
       stateCode: masterVal(master, 'stateCode', form.company?.stateCode),
     },
     bank: {
@@ -195,22 +205,51 @@ export function applyOrgMasterToProformaForm(form, master) {
 export function applyOrgMasterToPurchaseOrderForm(form, master) {
   const m = master || {};
   const address = masterVal(m, 'registeredOffice', form.company?.address || form.company?.registeredOffice);
+  const legal = masterVal(m, 'legalName', form.company?.legalName);
+  const gstin = masterVal(m, 'gstin', form.company?.gstin);
+  const email = masterVal(m, 'email', form.company?.email);
+  const phone = masterVal(m, 'phone', form.company?.phone);
+  const stateCode = masterVal(m, 'stateCode', form.company?.stateCode);
+  const state = masterVal(m, 'state', form.company?.state || form.billing?.state);
   return {
     ...form,
     company: {
       ...form.company,
       logoDataUrl: masterVal(m, 'logoDataUrl', form.company?.logoDataUrl || TYLO_LOGO_DATA_URL),
-      legalName: masterVal(m, 'legalName', form.company?.legalName),
+      legalName: legal,
       brandLine: masterVal(m, 'brandLine', form.company?.brandLine),
       address,
       registeredOffice: address,
-      email: masterVal(m, 'email', form.company?.email),
-      phone: masterVal(m, 'phone', form.company?.phone),
+      email,
+      phone,
       website: masterVal(m, 'website', form.company?.website),
-      gstin: masterVal(m, 'gstin', form.company?.gstin),
+      gstin,
       pan: masterVal(m, 'pan', form.company?.pan),
       cin: masterVal(m, 'cin', form.company?.cin),
-      stateCode: masterVal(m, 'stateCode', form.company?.stateCode),
+      udyam: masterVal(m, 'udyam', form.company?.udyam),
+      udyamLabel: masterVal(m, 'udyamLabel', form.company?.udyamLabel),
+      stateCode,
+      state,
+    },
+    buyer: {
+      ...form.buyer,
+      companyName: form.buyer?.companyName || legal || '',
+      address: form.buyer?.address || address || '',
+      gstin: form.buyer?.gstin || gstin || '',
+      email: form.buyer?.email || email || '',
+      mobile: form.buyer?.mobile || phone || '',
+    },
+    billing: {
+      ...form.billing,
+      address:
+        form.billing?.address ||
+        [legal, address].filter(Boolean).join(', '),
+      gstin: form.billing?.gstin || gstin || '',
+      state: form.billing?.state || state || '',
+      stateCode: form.billing?.stateCode || stateCode || '',
+      placeOfSupply:
+        form.billing?.placeOfSupply ||
+        [state, stateCode ? `(${stateCode})` : null].filter(Boolean).join(' '),
     },
     bank: {
       ...form.bank,
@@ -225,7 +264,6 @@ export function applyOrgMasterToPurchaseOrderForm(form, master) {
       upiId: masterVal(m, 'upiId', form.payment?.upiId),
       paymentQrDataUrl: masterVal(m, 'paymentQrDataUrl', form.payment?.paymentQrDataUrl),
     },
-    billingAddress: form.billingAddress || address || '',
     signature: {
       ...form.signature,
       companyLabel: masterVal(m, 'legalName', form.signature?.companyLabel),
@@ -277,6 +315,8 @@ export function emptyOrgMasterForm() {
     gstin: '',
     pan: '',
     cin: '',
+    udyam: '',
+    udyamLabel: '',
     stateCode: '',
   };
 }
@@ -300,6 +340,8 @@ export function orgMasterToPayload(form) {
     gstin: form.gstin,
     pan: form.pan,
     cin: form.cin,
+    udyam: form.udyam,
+    udyamLabel: form.udyamLabel,
     stateCode: form.stateCode,
   };
 }

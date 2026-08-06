@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import TaxInvoicePreview from '../invoiceGenerator/TaxInvoicePreview.jsx';
+import LandscapeInvoiceLikePreview from '../shared/LandscapeInvoiceLikePreview.jsx';
+import { LANDSCAPE_DOC_CONFIGS } from '../shared/landscapeDocConfigs.js';
 import { invoicePathToProforma, proformaToInvoiceView } from './proformaFormAdapter.js';
 
 export default function ProformaPreview({
@@ -9,23 +10,21 @@ export default function ProformaPreview({
   onUpdate,
   onUpdateLine,
   onAddLine,
-  onUpdateTerm,
-  onAddTerm,
 }) {
-  const invoiceForm = useMemo(() => proformaToInvoiceView(form), [form]);
+  const view = useMemo(() => proformaToInvoiceView(form), [form]);
   const lineIds = useMemo(
     () => (form.rows || []).filter((r) => r.type === 'line').map((r) => r.id),
     [form.rows]
   );
 
-  const handleUpdate = useCallback(
-    (path, value) => {
-      onUpdate?.(invoicePathToProforma(path), value);
+  const setPath = useCallback(
+    (invoicePath, value) => {
+      onUpdate?.(invoicePathToProforma(invoicePath), value);
     },
     [onUpdate]
   );
 
-  const handleUpdateLine = useCallback(
+  const setLine = useCallback(
     (index, patch) => {
       const id = lineIds[index];
       if (id) onUpdateLine?.(id, patch);
@@ -34,23 +33,14 @@ export default function ProformaPreview({
   );
 
   return (
-    <TaxInvoicePreview
-      form={invoiceForm}
+    <LandscapeInvoiceLikePreview
+      form={view}
       previewRef={previewRef}
       editable={editable}
-      documentTitle="PROFORMA INVOICE"
-      totalAmountLabel="Total Proforma Amount"
-      detailsCardTitle="Proforma Details"
-      fieldLabels={{
-        docNo: 'Proforma No',
-        docDate: 'Proforma Date',
-        project: 'Project',
-      }}
-      onUpdate={handleUpdate}
-      onUpdateLine={handleUpdateLine}
+      onUpdate={setPath}
+      onUpdateLine={setLine}
       onAddLine={onAddLine}
-      onUpdateTerm={onUpdateTerm}
-      onAddTerm={onAddTerm}
+      config={LANDSCAPE_DOC_CONFIGS.proforma}
     />
   );
 }

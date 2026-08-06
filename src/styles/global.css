@@ -555,9 +555,42 @@ textarea {
 
 .row {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3, 12px);
   flex-wrap: wrap;
   align-items: center;
+}
+
+/** Select + action button on one row — matched height, consistent gap/radius */
+.control-inline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.control-inline-row > select,
+.control-inline-row > select.tylo-select,
+.control-inline-row > .adaptive-select-host,
+.control-inline-row > .adaptive-select {
+  flex: 1 1 12rem;
+  min-width: 0;
+  height: var(--control-h);
+  min-height: var(--control-h);
+  box-sizing: border-box;
+}
+
+.control-inline-row > .adaptive-select-host .adaptive-select__control {
+  height: var(--control-h) !important;
+  min-height: var(--control-h) !important;
+}
+
+.control-inline-row > .btn {
+  flex: 0 0 auto;
+  height: var(--control-h);
+  min-height: var(--control-h);
+  border-radius: var(--dropdown-radius, var(--radius-sm));
+  white-space: nowrap;
+  align-self: center;
 }
 
 .page-header,
@@ -1082,7 +1115,7 @@ html[data-theme='dark'] .tylo-home-atmosphere {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .date-range-filter-field {
@@ -1122,13 +1155,15 @@ html[data-theme='dark'] .tylo-home-atmosphere {
 .date-range-filter-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-3);
   align-items: center;
 }
 
 .date-range-filter-actions .btn {
+  height: var(--control-h);
   min-height: var(--control-h);
   min-width: 5rem;
+  border-radius: var(--dropdown-radius, var(--radius-sm));
 }
 
 .date-range-filter-hint {
@@ -10696,8 +10731,9 @@ body:has(.login-page),
 
 .logistics-form-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-3);
   margin-top: 12px;
+  align-items: center;
 }
 
 .logistics-form-actions--inline {
@@ -10709,7 +10745,16 @@ body:has(.login-page),
 .logistics-form-actions--inline .btn {
   height: var(--control-h);
   min-height: var(--control-h);
+  border-radius: var(--dropdown-radius, var(--radius-sm));
   white-space: nowrap;
+}
+
+.logistics-form-actions--inline > select,
+.logistics-form-actions--inline > .tylo-select,
+.logistics-form-actions--inline > .adaptive-select-host {
+  height: var(--control-h);
+  min-height: var(--control-h);
+  box-sizing: border-box;
 }
 
 .logistics-contact-pick-card {
@@ -10727,7 +10772,7 @@ body:has(.login-page),
   display: grid;
   grid-template-columns: minmax(9.5rem, 11rem) minmax(0, 1fr);
   gap: var(--space-3) var(--space-4);
-  align-items: start;
+  align-items: end;
 }
 
 .logistics-contact-pick .field {
@@ -11679,6 +11724,18 @@ html[data-theme='dark'] .chip {
 .tylo-boot-continue:hover {
   background: rgba(74, 222, 128, 0.18);
   border-color: rgba(74, 222, 128, 0.65);
+}
+
+.tylo-boot-continue--ghost {
+  background: transparent;
+  border-color: rgba(74, 222, 128, 0.28);
+  color: rgba(187, 247, 208, 0.75);
+}
+
+.tylo-boot-continue--ghost:hover {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.45);
+  color: #bbf7d0;
 }
 
 .tylo-boot-footer-hint {

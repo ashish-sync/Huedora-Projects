@@ -4,14 +4,20 @@ import { fiscalYearLabel } from '../documentNumbering.js';
 const STORAGE_KEY = 'tylo_one_proforma_generator_v1';
 const NUMBER_KEY = 'tylo_one_proforma_number_seq';
 
-/** Max line items on Tylo proforma (A4 landscape single-page layout). */
-export const MAX_PROFORMA_LINE_ITEMS = 5;
+/** Max line items on Tylo proforma (portrait A4). */
+export const MAX_PROFORMA_LINE_ITEMS = 8;
+
+export const PROFORMA_DECLARATION =
+  'This is a Proforma Invoice issued for quotation, approval or advance payment purposes only. It is not a Tax Invoice under the GST Act and does not create any GST liability. A final Tax Invoice will be issued upon confirmation and/or execution of services, as applicable.';
+
+export const PROFORMA_PAYMENT_TERM =
+  'Payment is due within 30 days from the date of the final Tax Invoice unless otherwise agreed.';
 
 export function defaultLineRow(overrides = {}) {
   return {
     type: 'line',
     id: crypto.randomUUID(),
-    description: '',
+    description: 'Healthcare Camp / Activation Services',
     hsnSac: '999316',
     qty: 1,
     rate: 0,
@@ -33,6 +39,9 @@ export function defaultSectionRow(title = 'A. Services') {
 
 export function defaultProformaForm() {
   const today = todayIso();
+  const due = new Date(today);
+  due.setDate(due.getDate() + 30);
+  const dueDate = due.toISOString().slice(0, 10);
   return {
     company: {
       logoDataUrl: '',
@@ -42,6 +51,8 @@ export function defaultProformaForm() {
       gstin: '',
       pan: '',
       cin: '',
+      udyam: '',
+      udyamLabel: '',
       phone: '',
       email: '',
       website: '',
@@ -58,14 +69,24 @@ export function defaultProformaForm() {
       contactEmail: '',
       recipientGstin: '',
       recipientPan: '',
+      stateName: '',
+      stateCode: '',
+    },
+    shipTo: {
+      name: '',
+      address: '',
+      gstin: '',
+      stateName: '',
       stateCode: '',
     },
     document: {
       documentNumber: '',
       issueDate: today,
-      dueDate: today,
-      paymentTermsDays: 45,
+      dueDate,
+      paymentTermsDays: 30,
       reference: '',
+      referenceDate: '',
+      servicePeriod: '',
       customNotes: '',
     },
     bank: {
@@ -85,12 +106,10 @@ export function defaultProformaForm() {
       advanceReceived: 0,
     },
     rows: [defaultLineRow()],
-    terms: [
-      'This is a proforma invoice and not a tax invoice.',
-      'Prices are valid for 30 days from the issue date.',
-    ],
+    terms: [PROFORMA_PAYMENT_TERM],
+    declaration: PROFORMA_DECLARATION,
     taxColumnLabels: {
-      rateLabel: 'GST %',
+      rateLabel: 'GST Rate',
       amountLabel: 'GST',
     },
     signature: {
@@ -104,31 +123,27 @@ export function defaultProformaForm() {
 export function peekProformaNumber(dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
   const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${fy}_${mm}`;
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
   } catch {
     seqMap = {};
   }
-  const next = (seqMap[periodKey] || 0) + 1;
-  return `PI/${fy}/${mm}/${String(next).padStart(4, '0')}`;
+  const next = (seqMap[fy] || 0) + 1;
+  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
 }
 
 export function nextProformaNumber(dateIso) {
   const num = peekProformaNumber(dateIso);
   const d = dateIso ? new Date(dateIso) : new Date();
   const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const periodKey = `${fy}_${mm}`;
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
   } catch {
     seqMap = {};
   }
-  seqMap[periodKey] = (seqMap[periodKey] || 0) + 1;
+  seqMap[fy] = (seqMap[fy] || 0) + 1;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
   return num;
 }

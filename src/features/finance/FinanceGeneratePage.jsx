@@ -5,6 +5,10 @@ const BUILDER_ROUTES = {
   proforma: '/finance-one/billing/proforma',
   'purchase-order': '/finance-one/billing/purchase-order',
   'credit-note': '/finance-one/billing/credit-note',
+  'debit-note': '/finance-one/billing/debit-note',
+  'delivery-challan': '/finance-one/billing/delivery-challan',
+  'bill-of-supply': '/finance-one/billing/bill-of-supply',
+  quotation: '/finance-one/billing/quotation',
 };
 
 /** Legacy generate routes redirect to the new document builders or finance hub. */

@@ -1,0 +1,331 @@
+/* A4 landscape Delivery Challan — fills builder stage; flex layout consumes page */
+
+.dc-print-root {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.dc-doc {
+  --dc-page-w: 100%;
+  --dc-page-h: 100%;
+  --dc-margin: 7mm;
+  --dc-ink: #0f172a;
+  --dc-muted: #475569;
+  --dc-line: rgba(15, 23, 42, 0.22);
+  --dc-line-soft: rgba(15, 23, 42, 0.12);
+  --dc-accent: #1e3a5f;
+  --dc-accent-light: #e8eef5;
+  --dc-radius: 5px;
+  --dc-gap: 1.3mm;
+
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  max-height: none;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--dc-margin);
+  background: #fff;
+  color: var(--dc-ink);
+  border: 1px solid var(--dc-line);
+  border-radius: 0;
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 9.2px;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dc-gap);
+  overflow: hidden;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.dc-doc *,
+.dc-doc *::before,
+.dc-doc *::after {
+  box-sizing: border-box;
+}
+
+/* ─── Header ─── */
+.dc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4mm;
+  flex-shrink: 0;
+  padding-bottom: 1.4mm;
+  border-bottom: 1px solid var(--dc-line-soft);
+}
+
+.dc-logo {
+  display: block;
+  height: 11mm;
+  width: auto;
+  max-width: 32mm;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.dc-logo-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5mm;
+}
+
+.dc-logo-text {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--dc-accent);
+  line-height: 1;
+}
+
+.dc-tagline {
+  font-size: 7.5px;
+  color: var(--dc-muted);
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.dc-title {
+  margin: 0;
+  padding: 1.5mm 4mm;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─── Card-style grid tables ─── */
+.dc-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  margin: 0;
+  border: 1px solid var(--dc-line-soft);
+  border-radius: var(--dc-radius);
+  overflow: hidden;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.dc-grid th,
+.dc-grid td {
+  padding: 1mm 2mm;
+  vertical-align: top;
+  word-break: break-word;
+  border-bottom: 1px solid var(--dc-line-soft);
+}
+
+.dc-grid tr:last-child td {
+  border-bottom: none;
+}
+
+.dc-grid th:not(:last-child),
+.dc-grid td:not(:last-child) {
+  border-right: 1px solid var(--dc-line-soft);
+}
+
+.dc-grid th {
+  background: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  text-align: left;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--dc-accent);
+}
+
+.dc-meta-label {
+  display: block;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--dc-muted);
+  margin-bottom: 0.4mm;
+}
+
+.dc-meta-value {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--dc-ink);
+  min-height: 11px;
+}
+
+.dc-field-row {
+  display: grid;
+  grid-template-columns: 34% minmax(0, 1fr);
+  gap: 1.5mm;
+  align-items: start;
+  margin-bottom: 0.5mm;
+}
+
+.dc-field-row:last-child {
+  margin-bottom: 0;
+}
+
+.dc-field-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--dc-muted);
+  padding-top: 1px;
+}
+
+.dc-field-value {
+  font-size: 8.5px;
+  font-weight: 500;
+  color: var(--dc-ink);
+  min-height: 10px;
+  line-height: 1.3;
+}
+
+.dc-party-body {
+  min-height: 0;
+  padding: 1.6mm 2.5mm;
+}
+
+.dc-purpose-cell {
+  min-height: 0;
+  padding: 1.6mm 2.5mm;
+  vertical-align: top;
+  font-size: 8.5px;
+  line-height: 1.35;
+}
+
+/* ─── Line items ─── */
+.dc-doc > .dc-grid.dc-items {
+  flex: 1 1 auto;
+  flex-shrink: 1;
+  min-height: 30mm;
+}
+
+.dc-items th {
+  font-size: 6.4px !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--dc-muted);
+  background: transparent;
+  text-align: center;
+  padding: 0.8mm 0.7mm;
+  border-right: none;
+  border-bottom: 1px solid var(--dc-line);
+}
+
+.dc-items thead tr:first-child th {
+  font-size: 8px !important;
+  color: var(--dc-accent);
+  background: #fff;
+  text-align: left;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid var(--dc-line-soft);
+  padding: 1mm 2mm;
+}
+
+.dc-items td {
+  font-size: 7.6px;
+  padding: 0.7mm 0.7mm;
+  vertical-align: middle;
+  border-right: none;
+  border-bottom: 1px solid var(--dc-line-soft);
+}
+
+.dc-items tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dc-center {
+  text-align: center;
+}
+
+/* ─── Declaration ─── */
+.dc-declaration {
+  font-size: 7.8px;
+  font-weight: 500;
+  line-height: 1.32;
+  color: var(--dc-muted);
+}
+
+/* ─── Dispatch / acknowledgement ─── */
+.dc-sig-label {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--dc-muted);
+}
+
+.dc-sig-value {
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--dc-ink);
+  min-height: 10px;
+  margin-bottom: 1.2mm;
+}
+
+.dc-qr {
+  text-align: center;
+  vertical-align: middle !important;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--dc-muted);
+}
+
+.dc-add-row {
+  margin-top: 1mm;
+  flex-shrink: 0;
+}
+
+/* ─── Inline edit compatibility ─── */
+.dc-doc .ei-inline {
+  font-size: inherit;
+  padding: 0.3mm 0.8mm;
+  margin: -0.3mm -0.8mm;
+  border-radius: 2px;
+}
+
+.dc-doc .ei-inline--area {
+  min-height: 16px;
+  line-height: 1.3;
+}
+
+.dc-doc .dc-center .ei-inline {
+  text-align: inherit;
+}
+
+@media print {
+  @page {
+    size: 297mm 210mm landscape;
+    margin: 9mm;
+  }
+
+  .dc-doc {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: 192mm;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+
+  .dc-add-row {
+    display: none;
+  }
+}

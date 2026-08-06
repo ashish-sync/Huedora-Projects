@@ -53,8 +53,17 @@ export default function InvoiceBuilderPanel({
   const {
     docSectionTitle = 'Invoice',
     docNoLabel = 'Invoice no.',
+    projectLabel = 'Project',
     showOriginalInvoice = false,
     originalInvoiceLabel = 'Original invoice',
+    showPoFields = false,
+    showShipTo = false,
+    showCreditReason = false,
+    showDebitReason = false,
+    showOriginalInvoiceDate = false,
+    hideReverseCharge = false,
+    hideReceiptVoucher = false,
+    hideTaxColumnTitles = false,
     maxLineItems = MAX_INVOICE_LINE_ITEMS,
   } = panelConfig;
   const taxMode = usesIgst(form.billTo?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
@@ -99,10 +108,7 @@ export default function InvoiceBuilderPanel({
               className={`${inputCls} ib-textarea`}
               rows={2}
               value={form.billTo.address}
-              onChange={(e) => {
-                update('billTo.address', e.target.value);
-                update('invoice.placeOfSupply', e.target.value);
-              }}
+              onChange={(e) => update('billTo.address', e.target.value)}
             />
           </Field>
           <Field label="State">
@@ -137,13 +143,93 @@ export default function InvoiceBuilderPanel({
               title="Document number is assigned when the document is approved"
             />
           </Field>
-          <Field label="Project">
-            <input className={inputCls} value={form.invoice.projectName} onChange={(e) => update('invoice.projectName', e.target.value)} placeholder="BMD Camp" />
+          <Field label={projectLabel}>
+            <input
+              className={inputCls}
+              value={form.invoice.servicePeriod || form.invoice.projectName}
+              onChange={(e) => {
+                update('invoice.servicePeriod', e.target.value);
+                update('invoice.projectName', e.target.value);
+              }}
+              placeholder="BMD Camp"
+            />
           </Field>
           {showOriginalInvoice ? (
-            <Field label={originalInvoiceLabel} span={2}>
-              <input className={inputCls} value={form.invoice.cnReference || ''} onChange={(e) => update('invoice.cnReference', e.target.value)} placeholder="IN/26-27/08/0001" />
+            <Field label={originalInvoiceLabel} span={showOriginalInvoiceDate ? 1 : 2}>
+              <input
+                className={inputCls}
+                value={form.invoice[panelConfig.originalInvoiceField || 'cnReference'] || ''}
+                onChange={(e) =>
+                  update(`invoice.${panelConfig.originalInvoiceField || 'cnReference'}`, e.target.value)
+                }
+                placeholder="TYLO/26-27/0001"
+              />
             </Field>
+          ) : null}
+          {showOriginalInvoiceDate ? (
+            <Field label="Original invoice date">
+              <input
+                type="date"
+                className={inputCls}
+                value={form.invoice.originalInvoiceDate || ''}
+                onChange={(e) => update('invoice.originalInvoiceDate', e.target.value)}
+              />
+            </Field>
+          ) : null}
+          {showCreditReason ? (
+            <Field label="Reason for credit note" span={2}>
+              <select
+                className={inputCls}
+                value={form.invoice.creditReason || 'Rate Revision / Cancellation / Service Adjustment'}
+                onChange={(e) => update('invoice.creditReason', e.target.value)}
+              >
+                <option value="Rate Revision / Cancellation / Service Adjustment">
+                  Rate Revision / Cancellation / Service Adjustment
+                </option>
+                <option value="Rate Revision">Rate Revision</option>
+                <option value="Cancellation">Cancellation</option>
+                <option value="Service Adjustment">Service Adjustment</option>
+              </select>
+            </Field>
+          ) : null}
+          {showDebitReason ? (
+            <Field label="Reason for debit note" span={2}>
+              <select
+                className={inputCls}
+                value={
+                  form.invoice.debitReason ||
+                  'Additional Service / Underbilling / Rate Revision / Tax Adjustment'
+                }
+                onChange={(e) => update('invoice.debitReason', e.target.value)}
+              >
+                <option value="Additional Service / Underbilling / Rate Revision / Tax Adjustment">
+                  Additional Service / Underbilling / Rate Revision / Tax Adjustment
+                </option>
+                <option value="Additional Service">Additional Service</option>
+                <option value="Underbilling">Underbilling</option>
+                <option value="Rate Revision">Rate Revision</option>
+                <option value="Tax Adjustment">Tax Adjustment</option>
+              </select>
+            </Field>
+          ) : null}
+          {showPoFields ? (
+            <>
+              <Field label="PO / WO No.">
+                <input
+                  className={inputCls}
+                  value={form.invoice.poReference || ''}
+                  onChange={(e) => update('invoice.poReference', e.target.value)}
+                />
+              </Field>
+              <Field label="PO / WO Date">
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={form.invoice.poDate || ''}
+                  onChange={(e) => update('invoice.poDate', e.target.value)}
+                />
+              </Field>
+            </>
           ) : null}
           <Field label="Date">
             <input type="date" className={inputCls} value={form.invoice.issueDate} onChange={(e) => update('invoice.issueDate', e.target.value)} />
@@ -151,37 +237,85 @@ export default function InvoiceBuilderPanel({
           <Field label="Due date">
             <input type="date" className={inputCls} value={form.invoice.dueDate} onChange={(e) => update('invoice.dueDate', e.target.value)} />
           </Field>
-          <Field label="Reverse charge">
-            <select className={inputCls} value={form.invoice.reverseCharge} onChange={(e) => update('invoice.reverseCharge', e.target.value)}>
-              <option value="N">No</option>
-              <option value="Y">Yes</option>
-            </select>
-          </Field>
-          <Field label="Receipt voucher">
-            <input className={inputCls} value={form.invoice.receiptVoucherNo || ''} onChange={(e) => update('invoice.receiptVoucherNo', e.target.value)} />
-          </Field>
+          {!hideReverseCharge ? (
+            <>
+              <Field label="Place of supply" title="GST Place of Supply — State / State Code">
+                <input
+                  className={inputCls}
+                  value={
+                    form.invoice.placeOfSupplyState ||
+                    [form.billTo?.stateName, form.billTo?.stateCode].filter(Boolean).join(' / ') ||
+                    ''
+                  }
+                  onChange={(e) => update('invoice.placeOfSupplyState', e.target.value)}
+                  placeholder="Maharashtra / 27"
+                />
+              </Field>
+              <Field label="Reverse charge">
+                <select className={inputCls} value={form.invoice.reverseCharge} onChange={(e) => update('invoice.reverseCharge', e.target.value)}>
+                  <option value="N">No</option>
+                  <option value="Y">Yes</option>
+                </select>
+              </Field>
+            </>
+          ) : null}
+          {!hideReceiptVoucher ? (
+            <Field label="Receipt voucher">
+              <input className={inputCls} value={form.invoice.receiptVoucherNo || ''} onChange={(e) => update('invoice.receiptVoucherNo', e.target.value)} />
+            </Field>
+          ) : null}
         </div>
       </Section>
 
+      {showShipTo ? (
+        <Section id="shipTo" title="Ship to / Service location">
+          <div className="ib-grid">
+            <Field label="Legal / Location name" span={2}>
+              <input className={inputCls} value={form.shipTo?.name || ''} onChange={(e) => update('shipTo.name', e.target.value)} />
+            </Field>
+            <Field label="Address" span={2}>
+              <textarea
+                className={inputCls}
+                rows={2}
+                value={form.shipTo?.address || ''}
+                onChange={(e) => update('shipTo.address', e.target.value)}
+              />
+            </Field>
+            <Field label="GSTIN">
+              <input className={inputCls} value={form.shipTo?.gstin || ''} onChange={(e) => update('shipTo.gstin', e.target.value)} />
+            </Field>
+            <Field label="State / State code">
+              <input
+                className={inputCls}
+                value={[form.shipTo?.stateName, form.shipTo?.stateCode].filter(Boolean).join(' / ')}
+                onChange={(e) => update('shipTo.stateName', e.target.value)}
+              />
+            </Field>
+          </div>
+        </Section>
+      ) : null}
+
       <Section id="lines" title="Line items" badge={form.lineItems.length}>
-        <div className="ib-grid ib-grid--compact" style={{ marginBottom: 12 }}>
-          <Field label="Rate column title">
-            <input
-              className={inputCls}
-              value={form.taxColumnLabels?.rateLabel ?? taxLabels.rateLabel}
-              onChange={(e) => update('taxColumnLabels.rateLabel', e.target.value)}
-              placeholder="GST %"
-            />
-          </Field>
-          <Field label="Amount column title">
-            <input
-              className={inputCls}
-              value={form.taxColumnLabels?.amountLabel ?? taxLabels.amountLabel}
-              onChange={(e) => update('taxColumnLabels.amountLabel', e.target.value)}
-              placeholder="GST"
-            />
-          </Field>
-        </div>
+        {!hideTaxColumnTitles ? (
+          <div className="ib-grid ib-grid--compact" style={{ marginBottom: 12 }}>
+            <Field label="Rate column title">
+              <input
+                className={inputCls}
+                value={form.taxColumnLabels?.rateLabel ?? taxLabels.rateLabel}
+                onChange={(e) => update('taxColumnLabels.rateLabel', e.target.value)}
+                placeholder="GST %"
+              />
+            </Field>
+            <Field label="Amount column title">
+              <input
+                className={inputCls}
+                value={form.taxColumnLabels?.amountLabel ?? taxLabels.amountLabel}
+                onChange={(e) => update('taxColumnLabels.amountLabel', e.target.value)}
+                placeholder="GST"
+              />
+            </Field>
+          </div>
+        ) : null}
         <div className="ib-lines">
           {form.lineItems.map((line, index) => (
             <div key={line.id} className="ib-line-card">
@@ -209,14 +343,16 @@ export default function InvoiceBuilderPanel({
                 <Field label="Discount">
                   <input type="number" className={inputCls} value={line.discount} onChange={(e) => updateLine(index, { discount: e.target.value })} />
                 </Field>
-                <Field label={taxLabels.rateLabel}>
-                  <input
-                    type="number"
-                    className={inputCls}
-                    value={getLineGstRateDisplay(line, taxMode)}
-                    onChange={(e) => updateLine(index, patchLineGstRate(e.target.value, taxMode))}
-                  />
-                </Field>
+                {!hideTaxColumnTitles ? (
+                  <Field label={taxLabels.rateLabel}>
+                    <input
+                      type="number"
+                      className={inputCls}
+                      value={getLineGstRateDisplay(line, taxMode)}
+                      onChange={(e) => updateLine(index, patchLineGstRate(e.target.value, taxMode))}
+                    />
+                  </Field>
+                ) : null}
               </div>
               {totals?.lines?.[index] ? (
                 <div className="ib-line-total">₹ {formatMoney(totals.lines[index].totalAmount)}</div>

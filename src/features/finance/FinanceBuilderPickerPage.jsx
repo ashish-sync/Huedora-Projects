@@ -16,8 +16,7 @@ export default function FinanceBuilderPickerPage() {
       {canWrite ? (
         <section className="finance-hub-panel card finance-hub-panel--picker">
           <div className="finance-hub-create finance-hub-create--standalone">
-            <p className="finance-hub-section-label">Create document</p>
-            <FinanceBuilderCreateSelect />
+            <FinanceBuilderCreateSelect showLabel label="Create document" />
           </div>
         </section>
       ) : (

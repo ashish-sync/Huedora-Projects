@@ -5,6 +5,7 @@
   left: 0;
   top: 0;
   width: 297mm;
+  height: 210mm;
   background: #fff;
   pointer-events: none;
   z-index: -9999;
@@ -15,22 +16,22 @@
 .tylo-invoice.tylo-invoice--export {
   --ti-page-w: 297mm;
   --ti-page-h: 210mm;
-  --ti-margin: 9mm;
+  --ti-margin: 7mm;
   --ti-ink: #0a0f1a;
   --ti-muted: #334155;
   --ti-line: rgba(15, 23, 42, 0.32);
   --ti-line-soft: rgba(15, 23, 42, 0.2);
   --ti-accent: #1e3a5f;
-  --ti-gap: 2.5mm;
+  --ti-gap: 1.4mm;
 
-  width: var(--ti-page-w) !important;
-  height: var(--ti-page-h) !important;
-  min-height: var(--ti-page-h) !important;
-  max-height: var(--ti-page-h) !important;
+  width: 297mm !important;
+  height: 210mm !important;
+  min-height: 210mm !important;
+  max-height: 210mm !important;
   padding: var(--ti-margin) !important;
   gap: var(--ti-gap) !important;
-  font-size: 10.5px !important;
-  line-height: 1.4 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
   color: var(--ti-ink) !important;
   border: none !important;
   border-radius: 0 !important;
@@ -146,6 +147,13 @@
   border-bottom: 1px solid var(--ti-line-soft) !important;
 }
 
+.tylo-invoice--export .ti-lines .ti-desc {
+  white-space: pre-wrap !important;
+  vertical-align: top !important;
+  overflow: visible !important;
+  word-break: break-word;
+}
+
 .tylo-invoice--export .ti-lines .ti-r {
   font-weight: 500 !important;
   font-variant-numeric: tabular-nums !important;
@@ -169,6 +177,91 @@
   font-size: 10.5px !important;
   font-weight: 500 !important;
   color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-summary-foot .ti-summary-label,
+.tylo-invoice--export .ti-summary-foot .ti-summary-value {
+  background: #fff !important;
+  border: 1px solid var(--ti-line-soft) !important;
+  padding: 1.4mm 2mm !important;
+  color: var(--ti-ink) !important;
+}
+
+.tylo-invoice--export .ti-summary-foot .ti-summary-label {
+  border-right: none !important;
+  color: #1e3a5f !important;
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+}
+
+.tylo-invoice--export .ti-summary-foot .ti-summary-value {
+  border-left: none !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+}
+
+.tylo-invoice--export .ti-words-total {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 1.6mm !important;
+  width: 100% !important;
+}
+
+.tylo-invoice--export .ti-words-total__words {
+  background: #fafbfc !important;
+  border: 1px solid var(--ti-line-soft) !important;
+  border-radius: 5px !important;
+  color: var(--ti-ink) !important;
+  font-size: 9.5px !important;
+  padding: 1.5mm 2.5mm !important;
+}
+
+.tylo-invoice--export .ti-card--totals {
+  background: #fafbfc !important;
+  border: 1px solid var(--ti-line-soft) !important;
+  border-radius: 5px !important;
+}
+
+.tylo-invoice--export .ti-totals-row,
+.tylo-invoice--export .ti-totals-grand {
+  display: grid !important;
+  grid-template-columns: minmax(0, 32fr) minmax(0, 16fr) minmax(0, 12fr) !important;
+}
+
+.tylo-invoice--export .ti-totals-row {
+  background: #fff !important;
+  border-bottom: 1px solid var(--ti-line-soft) !important;
+  padding: 0 !important;
+}
+
+.tylo-invoice--export .ti-totals-row__label {
+  color: #1e3a5f !important;
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+}
+
+.tylo-invoice--export .ti-totals-row__value {
+  color: var(--ti-ink) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-align: right !important;
+}
+
+.tylo-invoice--export .ti-totals-grand {
+  background: #1e3a5f !important;
+  color: #fff !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.tylo-invoice--export .ti-totals-grand__label,
+.tylo-invoice--export .ti-totals-grand__value {
+  color: #fff !important;
+  font-weight: 800 !important;
+}
+
+.tylo-invoice--export .ti-totals-grand__gst {
+  background: #1e3a5f !important;
 }
 
 .tylo-invoice--export .ti-totals {
@@ -362,19 +455,39 @@
   }
 }
 
-/* ─── PO PDF export clone ─── */
+/* ─── PO / DC PDF export clones ─── */
+.ti-export-host--portrait {
+  width: 210mm;
+  height: 297mm;
+}
+
+.po-doc.po-doc--export,
 .po-document.po-document--export {
-  width: 297mm !important;
-  height: 210mm !important;
-  padding: 9mm !important;
+  width: 210mm !important;
+  height: 297mm !important;
+  min-height: 297mm !important;
+  max-height: 297mm !important;
+  padding: 7mm !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   background: #fff !important;
-  font-size: 9px !important;
+  font-size: 9.5px !important;
+}
+
+.dc-doc.dc-doc--export {
+  width: 297mm !important;
+  height: 210mm !important;
+  min-height: 210mm !important;
+  max-height: 210mm !important;
+  padding: 7mm !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
 }
 
 .po-document--export .po-export-text,
-.po-document--export .ei-inline {
+.po-document--export .ei-inline,
+.po-doc--export .ei-inline {
   font-size: inherit;
   line-height: 1.35;
 }

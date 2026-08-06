@@ -4,14 +4,15 @@ import { fiscalYearLabel } from '../documentNumbering.js';
 const STORAGE_KEY = 'tylo_one_purchase_order_generator_v1';
 const NUMBER_KEY = 'tylo_one_purchase_order_number_seq';
 
-export const MAX_PO_LINE_ITEMS = 5;
+export const MAX_PO_LINE_ITEMS = 7;
 
 export function defaultPoLineItem(overrides = {}) {
   return {
     id: crypto.randomUUID(),
-    itemCode: '',
     description: '',
-    hsnSac: '',
+    make: '',
+    model: '',
+    unit: 'Nos',
     uom: 'Nos',
     qty: 1,
     rate: 0,
@@ -39,54 +40,71 @@ export function defaultPurchaseOrderForm() {
       gstin: '',
       pan: '',
       cin: '',
+      udyam: '',
+      udyamLabel: '',
       stateCode: '',
+      state: '',
     },
-    bank: {
-      accountHolder: '',
-      bankName: '',
-      accountNumber: '',
-      branchName: '',
-      ifscCode: '',
-    },
-    payment: {
-      upiId: '',
-      paymentQrDataUrl: '',
+    buyer: {
+      companyName: '',
+      address: '',
+      gstin: '',
+      contactPerson: '',
+      mobile: '',
+      email: '',
     },
     vendor: {
       name: '',
+      code: 'VND-000123',
       address: '',
       gstin: '',
       pan: '',
       stateName: '',
       stateCode: '',
       contactPerson: '',
+      mobile: '',
       email: '',
     },
-    billingAddress: '',
-    deliveryAddress: '',
+    delivery: {
+      address: '',
+      contact: '',
+      mobile: '',
+      expectedDate: today,
+      instructions: '',
+    },
+    billing: {
+      address: '',
+      gstin: '',
+      state: '',
+      stateCode: '',
+      placeOfSupply: '',
+    },
+    commercial: {
+      paymentTerms: '',
+      freight: '',
+      insurance: '',
+      deliveryTerms: '',
+      warranty: '',
+      validity: '',
+    },
     po: {
       documentNumber: '',
       documentDate: today,
+      vendorQuoteRef: '',
+      vendorQuoteDate: '',
+      revisionNo: 0,
+      projectCostCentre: '',
+      // legacy aliases kept for older drafts
       deliveryDate: today,
-      paymentTerms: 'Net 30 days from invoice date',
+      paymentTerms: '',
       reference: '',
     },
     lineItems: [defaultPoLineItem()],
-    terms: [
-      'Goods must match specifications and quality standards agreed upon.',
-      'Payment as per payment terms mentioned above.',
-      'Delivery must be completed by the delivery date unless agreed otherwise in writing.',
-    ],
-    shippingInstructions: '',
+    terms: [],
     notes: '',
     signature: {
       imageDataUrl: '',
       signatoryName: '',
-      companyLabel: '',
-    },
-    vendorAcceptance: {
-      signatoryName: '',
-      acceptedDate: '',
       companyLabel: '',
     },
     taxColumnLabels: {
@@ -99,69 +117,86 @@ export function defaultPurchaseOrderForm() {
 function migratePurchaseOrderDraft(raw) {
   if (!raw) return null;
   const base = defaultPurchaseOrderForm();
-
-  const vendor = {
-    ...base.vendor,
-    ...(raw.vendor || {}),
-    name: raw.vendor?.name || raw.vendorName || '',
-    address: raw.vendor?.address || raw.vendorAddress || '',
-    gstin: raw.vendor?.gstin || raw.vendorGstin || '',
-  };
-
-  const po = {
-    ...base.po,
-    ...(raw.po || {}),
-    documentNumber: raw.po?.documentNumber || raw.documentNumber || base.po.documentNumber,
-    documentDate: raw.po?.documentDate || raw.documentDate || base.po.documentDate,
-    deliveryDate: raw.po?.deliveryDate || raw.dueDate || base.po.deliveryDate,
-    paymentTerms: raw.po?.paymentTerms || raw.paymentTerms || base.po.paymentTerms,
-    reference: raw.po?.reference || raw.reference || '',
-  };
-
   const company = {
     ...base.company,
     ...(raw.company || {}),
     address: raw.company?.address || raw.company?.registeredOffice || base.company.address,
     registeredOffice: raw.company?.registeredOffice || raw.company?.address || base.company.registeredOffice,
   };
-
+  const vendor = {
+    ...base.vendor,
+    ...(raw.vendor || {}),
+    name: raw.vendor?.name || raw.vendorName || '',
+    code: raw.vendor?.code || base.vendor.code,
+    address: raw.vendor?.address || raw.vendorAddress || '',
+    gstin: raw.vendor?.gstin || raw.vendorGstin || '',
+    mobile: raw.vendor?.mobile || '',
+  };
+  const po = {
+    ...base.po,
+    ...(raw.po || {}),
+    documentNumber: raw.po?.documentNumber || raw.documentNumber || '',
+    documentDate: raw.po?.documentDate || raw.documentDate || base.po.documentDate,
+    vendorQuoteRef: raw.po?.vendorQuoteRef || raw.po?.reference || '',
+    vendorQuoteDate: raw.po?.vendorQuoteDate || '',
+    revisionNo: raw.po?.revisionNo ?? 0,
+    projectCostCentre: raw.po?.projectCostCentre || raw.po?.reference || '',
+    deliveryDate: raw.po?.deliveryDate || raw.dueDate || base.po.deliveryDate,
+  };
   const lineItems = (raw.lineItems || []).map((line) =>
     defaultPoLineItem({
       ...line,
-      itemCode: line.itemCode || line.hsnSac || '',
-      hsnSac: line.hsnSac || line.itemCode || '',
-      uom: line.uom || 'Nos',
+      unit: line.unit || line.uom || 'Nos',
+      uom: line.uom || line.unit || 'Nos',
+      make: line.make || '',
+      model: line.model || '',
       discount: line.discount ?? 0,
-      igstRate: line.igstRate ?? raw.purchaseTaxRate ?? 18,
-      cgstRate: line.cgstRate ?? (Number(raw.purchaseTaxRate) || 18) / 2,
-      sgstRate: line.sgstRate ?? (Number(raw.purchaseTaxRate) || 18) / 2,
-      rate: line.isFoc ? 0 : line.rate,
     })
   );
-
-  const terms = Array.isArray(raw.terms)
-    ? raw.terms
-    : raw.notes && !Array.isArray(raw.terms)
-      ? base.terms
-      : base.terms;
 
   return {
     ...base,
     ...raw,
     company,
-    bank: { ...base.bank, ...(raw.bank || {}) },
-    payment: { ...base.payment, ...(raw.payment || {}) },
+    buyer: {
+      ...base.buyer,
+      ...(raw.buyer || {}),
+      companyName: raw.buyer?.companyName || company.legalName || '',
+      address: raw.buyer?.address || company.registeredOffice || company.address || '',
+      gstin: raw.buyer?.gstin || company.gstin || '',
+      email: raw.buyer?.email || company.email || '',
+      mobile: raw.buyer?.mobile || company.phone || '',
+    },
     vendor,
+    delivery: {
+      ...base.delivery,
+      ...(raw.delivery || {}),
+      address: raw.delivery?.address || raw.deliveryAddress || '',
+      expectedDate: raw.delivery?.expectedDate || po.deliveryDate || base.delivery.expectedDate,
+      instructions: raw.delivery?.instructions || raw.shippingInstructions || '',
+    },
+    billing: {
+      ...base.billing,
+      ...(raw.billing || {}),
+      address:
+        raw.billing?.address ||
+        raw.billingAddress ||
+        [company.legalName, company.registeredOffice || company.address].filter(Boolean).join(', '),
+      gstin: raw.billing?.gstin || company.gstin || '',
+      state: raw.billing?.state || company.state || '',
+      stateCode: raw.billing?.stateCode || company.stateCode || '',
+      placeOfSupply:
+        raw.billing?.placeOfSupply ||
+        [company.state, company.stateCode ? `(${company.stateCode})` : null].filter(Boolean).join(' '),
+    },
+    commercial: {
+      ...base.commercial,
+      ...(raw.commercial || {}),
+      paymentTerms: raw.commercial?.paymentTerms || raw.po?.paymentTerms || '',
+    },
     po,
-    billingAddress: raw.billingAddress || company.address || company.registeredOffice || '',
-    deliveryAddress: raw.deliveryAddress || '',
     lineItems: lineItems.length ? lineItems : base.lineItems,
-    terms,
-    shippingInstructions: raw.shippingInstructions || '',
-    notes: raw.notes || '',
     signature: { ...base.signature, ...(raw.signature || {}) },
-    vendorAcceptance: { ...base.vendorAcceptance, ...(raw.vendorAcceptance || {}) },
-    taxColumnLabels: { ...base.taxColumnLabels, ...(raw.taxColumnLabels || {}) },
   };
 }
 
@@ -173,33 +208,20 @@ function readSeqMap() {
   }
 }
 
-function periodKey(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${fy}_${mm}`;
-}
-
 export function peekPONumber(dateIso) {
   const seqMap = readSeqMap();
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const key = periodKey(dateIso);
-  const next = (seqMap[key] || 0) + 1;
-  return `PO/${fy}/${mm}/${String(next).padStart(4, '0')}`;
+  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
+  const next = (seqMap[fy] || 0) + 1;
+  return `PO/${fy}/${String(next).padStart(4, '0')}`;
 }
 
 export function nextPONumber(dateIso) {
+  const num = peekPONumber(dateIso);
+  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
   const seqMap = readSeqMap();
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const key = periodKey(dateIso);
-  const next = (seqMap[key] || 0) + 1;
-  seqMap[key] = next;
+  seqMap[fy] = (seqMap[fy] || 0) + 1;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
-  return `PO/${fy}/${mm}/${String(next).padStart(4, '0')}`;
+  return num;
 }
 
 export function loadPurchaseOrderDraft() {

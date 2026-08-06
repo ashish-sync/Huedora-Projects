@@ -50,7 +50,7 @@ export default function ProformaBuilderPage() {
 
   return (
     <InvoiceBuilderShell
-      docTypeLabel="Proforma"
+      docTypeLabel="Proforma Invoice"
       newDocLabel="New"
       newDocShortcutLabel="New proforma"
       panelAriaLabel="Proforma fields"
@@ -100,8 +100,6 @@ export default function ProformaBuilderPage() {
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}
-          onUpdateTerm={updateTerm}
-          onAddTerm={addTerm}
         />
       )}
     </InvoiceBuilderShell>

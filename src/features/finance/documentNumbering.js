@@ -1,18 +1,21 @@
 /** Commercial document numbering — keep in sync with server documentNumbering.js */
 
 /**
- * PREFIX/FY/MM/SEQ — e.g. IN/26-27/08/0002
- * PO Purchase Order · PI Proforma · IN Tax Invoice · CN Credit Note · DN Debit Note
+ * PREFIX/FY/SEQ — e.g. TYLO/26-27/0001 (Tax Invoice, Quotation, Proforma, CN/DN, Bill of Supply)
+ * PO/FY/SEQ · DC/FY/SEQ
  */
 export const DOCUMENT_NUMBER_STANDARDS = [
-  { documentType: 'purchase_order', prefix: 'PO', label: 'Purchase Order', example: 'PO/26-27/08/0001' },
-  { documentType: 'proforma', prefix: 'PI', label: 'Proforma Invoice', example: 'PI/26-27/08/0001' },
-  { documentType: 'client_invoice', prefix: 'IN', label: 'Tax Invoice', example: 'IN/26-27/08/0002' },
-  { documentType: 'credit_note', prefix: 'CN', label: 'Credit Note', example: 'CN/26-27/08/0001' },
-  { documentType: 'debit_note', prefix: 'DN', label: 'Debit Note', example: 'DN/26-27/08/0001' },
+  { documentType: 'purchase_order', prefix: 'PO', label: 'Purchase Order', example: 'PO/26-27/0001' },
+  { documentType: 'quotation', prefix: 'TYLO', label: 'Quotation', example: 'TYLO/26-27/0001' },
+  { documentType: 'proforma', prefix: 'TYLO', label: 'Proforma Invoice', example: 'TYLO/26-27/0001' },
+  { documentType: 'client_invoice', prefix: 'TYLO', label: 'Tax Invoice', example: 'TYLO/26-27/0001' },
+  { documentType: 'credit_note', prefix: 'TYLO', label: 'Credit Note', example: 'TYLO/26-27/0001' },
+  { documentType: 'debit_note', prefix: 'TYLO', label: 'Debit Note', example: 'TYLO/26-27/0001' },
+  { documentType: 'delivery_challan', prefix: 'DC', label: 'Delivery Challan', example: 'DC/26-27/0001' },
+  { documentType: 'bill_of_supply', prefix: 'TYLO', label: 'Bill of Supply', example: 'TYLO/26-27/0001' },
 ];
 
-export const DOCUMENT_NUMBER_FORMAT = 'PREFIX/FY/MM/SEQ';
+export const DOCUMENT_NUMBER_FORMAT = 'PREFIX/FY/SEQ';
 
 /** Indian FY label e.g. 26-27 for Apr 2026 – Mar 2027 */
 export function fiscalYearLabel(dateIso) {
@@ -31,21 +34,49 @@ function numberExample(prefix, dateIso) {
 }
 
 export function proformaNumberExample(dateIso) {
-  return numberExample('PI', dateIso);
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `TYLO/${fy}/0001`;
 }
 
 export function purchaseOrderNumberExample(dateIso) {
-  return numberExample('PO', dateIso);
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `PO/${fy}/0001`;
 }
 
 export function invoiceNumberExample(dateIso) {
-  return numberExample('IN', dateIso);
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `TYLO/${fy}/0001`;
 }
 
 export function creditNoteNumberExample(dateIso) {
-  return numberExample('CN', dateIso);
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `TYLO/${fy}/0001`;
 }
 
 export function debitNoteNumberExample(dateIso) {
-  return numberExample('DN', dateIso);
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `TYLO/${fy}/0001`;
+}
+
+export function deliveryChallanNumberExample(dateIso) {
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `DC/${fy}/0001`;
+}
+
+export function billOfSupplyNumberExample(dateIso) {
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `TYLO/${fy}/0001`;
+}
+
+export function quotationNumberExample(dateIso) {
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  return `TYLO/${fy}/0001`;
 }

@@ -28,11 +28,16 @@ select.tylo-select,
 select:not([multiple]):not([size]) {
   appearance: none;
   -webkit-appearance: none;
+  box-sizing: border-box;
+  height: var(--control-h);
+  min-height: var(--control-h);
   background-color: var(--bg-elevated);
   background-image: var(--tylo-select-chevron);
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 10px 6px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   padding-left: var(--control-pad-inline-start) !important;
   padding-right: 36px !important;
   font-size: var(--text-body-sm-size, 0.8125rem);
@@ -90,6 +95,7 @@ select:not([multiple]):not([size]) option {
 
 .adaptive-select__control {
   min-height: var(--control-h) !important;
+  height: var(--control-h) !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--dropdown-radius) !important;
   background: var(--bg-elevated) !important;

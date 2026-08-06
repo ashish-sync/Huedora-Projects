@@ -54,6 +54,10 @@ const InvoiceBuilderPage = lazy(() => import('../features/finance/builder/Invoic
 const ProformaBuilderPage = lazy(() => import('../features/finance/builder/ProformaBuilderPage.jsx'));
 const PurchaseOrderBuilderPage = lazy(() => import('../features/finance/builder/PurchaseOrderBuilderPage.jsx'));
 const CreditNoteBuilderPage = lazy(() => import('../features/finance/builder/CreditNoteBuilderPage.jsx'));
+const DebitNoteBuilderPage = lazy(() => import('../features/finance/builder/DebitNoteBuilderPage.jsx'));
+const DeliveryChallanBuilderPage = lazy(() => import('../features/finance/builder/DeliveryChallanBuilderPage.jsx'));
+const BillOfSupplyBuilderPage = lazy(() => import('../features/finance/builder/BillOfSupplyBuilderPage.jsx'));
+const QuotationBuilderPage = lazy(() => import('../features/finance/builder/QuotationBuilderPage.jsx'));
 const FinanceCommercialMasterPage = lazy(() => import('../features/finance/FinanceCommercialMasterPage.jsx'));
 const FinanceCampPayoutsPage = lazy(() => import('../features/finance/FinanceCampPayoutsPage.jsx'));
 const FinanceVendorBillsPage = lazy(() => import('../features/finance/FinanceVendorBillsPage.jsx'));
@@ -219,6 +223,14 @@ export default function App() {
                   <Route path="billing/purchase-order/:id" element={<PurchaseOrderBuilderPage />} />
                   <Route path="billing/credit-note" element={<CreditNoteBuilderPage />} />
                   <Route path="billing/credit-note/:id" element={<CreditNoteBuilderPage />} />
+                  <Route path="billing/debit-note" element={<DebitNoteBuilderPage />} />
+                  <Route path="billing/debit-note/:id" element={<DebitNoteBuilderPage />} />
+                  <Route path="billing/delivery-challan" element={<DeliveryChallanBuilderPage />} />
+                  <Route path="billing/delivery-challan/:id" element={<DeliveryChallanBuilderPage />} />
+                  <Route path="billing/bill-of-supply" element={<BillOfSupplyBuilderPage />} />
+                  <Route path="billing/bill-of-supply/:id" element={<BillOfSupplyBuilderPage />} />
+                  <Route path="billing/quotation" element={<QuotationBuilderPage />} />
+                  <Route path="billing/quotation/:id" element={<QuotationBuilderPage />} />
                   <Route path="organisation" element={<FinanceCommercialMasterPage />} />
                   <Route path="payouts" element={<FinanceCampPayoutsPage />} />
                   <Route path="vendor-bills" element={<FinanceVendorBillsPage />} />
@@ -352,6 +364,35 @@ export default function App() {
                 <Route
                   path="/finance/build/credit-note/:id"
                   element={<LegacyFinanceDocRedirect slug="credit-note" />}
+                />
+                <Route path="/finance/build/debit-note" element={<Navigate to={FINANCE_PATH.DEBIT_NOTE} replace />} />
+                <Route
+                  path="/finance/build/debit-note/:id"
+                  element={<LegacyFinanceDocRedirect slug="debit-note" />}
+                />
+                <Route
+                  path="/finance/build/delivery-challan"
+                  element={<Navigate to={FINANCE_PATH.DELIVERY_CHALLAN} replace />}
+                />
+                <Route
+                  path="/finance/build/delivery-challan/:id"
+                  element={<LegacyFinanceDocRedirect slug="delivery-challan" />}
+                />
+                <Route
+                  path="/finance/build/bill-of-supply"
+                  element={<Navigate to={FINANCE_PATH.BILL_OF_SUPPLY} replace />}
+                />
+                <Route
+                  path="/finance/build/bill-of-supply/:id"
+                  element={<LegacyFinanceDocRedirect slug="bill-of-supply" />}
+                />
+                <Route
+                  path="/finance/build/quotation"
+                  element={<Navigate to={FINANCE_PATH.QUOTATION} replace />}
+                />
+                <Route
+                  path="/finance/build/quotation/:id"
+                  element={<LegacyFinanceDocRedirect slug="quotation" />}
                 />
                 <Route path="/finance/master" element={<Navigate to={FINANCE_PATH.ORGANISATION} replace />} />
                 <Route path="/finance/payouts" element={<Navigate to={FINANCE_PATH.PAYOUTS} replace />} />

@@ -118,17 +118,48 @@ export default function ProformaBuilderPanel({
               title="Document number is assigned when the document is approved"
             />
           </Field>
-          <Field label="Project">
-            <input className={inputCls} value={form.recipient.projectName} onChange={(e) => update('recipient.projectName', e.target.value)} />
+          <Field label="Project / service period">
+            <input
+              className={inputCls}
+              value={form.document.servicePeriod || form.recipient.projectName || ''}
+              onChange={(e) => {
+                update('document.servicePeriod', e.target.value);
+                update('recipient.projectName', e.target.value);
+              }}
+            />
           </Field>
-          <Field label="Date">
+          <Field label="Proforma date">
             <input type="date" className={inputCls} value={form.document.issueDate} onChange={(e) => update('document.issueDate', e.target.value)} />
           </Field>
           <Field label="Valid until">
             <input type="date" className={inputCls} value={form.document.dueDate} onChange={(e) => update('document.dueDate', e.target.value)} />
           </Field>
-          <Field label="Reference" span={2}>
+          <Field label="PO / WO no.">
             <input className={inputCls} value={form.document.reference || ''} onChange={(e) => update('document.reference', e.target.value)} />
+          </Field>
+          <Field label="PO / WO date">
+            <input type="date" className={inputCls} value={form.document.referenceDate || ''} onChange={(e) => update('document.referenceDate', e.target.value)} />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Ship to / service location">
+        <div className="ib-grid">
+          <Field label="Location name" span={2}>
+            <input className={inputCls} value={form.shipTo?.name || ''} onChange={(e) => update('shipTo.name', e.target.value)} />
+          </Field>
+          <Field label="Address" span={2}>
+            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.shipTo?.address || ''} onChange={(e) => update('shipTo.address', e.target.value)} />
+          </Field>
+          <Field label="GSTIN">
+            <input className={inputCls} value={form.shipTo?.gstin || ''} onChange={(e) => update('shipTo.gstin', e.target.value)} />
+          </Field>
+          <Field label="State / code">
+            <input
+              className={inputCls}
+              value={[form.shipTo?.stateName, form.shipTo?.stateCode].filter(Boolean).join(' / ')}
+              onChange={(e) => update('shipTo.stateName', e.target.value)}
+            />
           </Field>
         </div>
       </Section>

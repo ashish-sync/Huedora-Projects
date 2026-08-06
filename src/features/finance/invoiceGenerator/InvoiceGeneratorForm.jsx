@@ -13,7 +13,7 @@ import {
   nextInvoiceNumber,
   saveInvoiceDraft,
 } from './invoiceStorage.js';
-import { computeInvoiceTotals, usesIgst } from './invoiceCalculations.js';
+import { computeInvoiceTotals, resolveTaxMode } from './invoiceCalculations.js';
 
 /** Only fields the user fills — letterhead & bank come from Organisation master. */
 export default function InvoiceGeneratorForm({ form, setForm, totals }) {
@@ -226,7 +226,7 @@ export function useInvoiceFormState() {
   }, [orgMaster]);
 
   const totals = useMemo(() => {
-    const taxMode = usesIgst(form.billTo?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+    const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
     return computeInvoiceTotals(form.lineItems, taxMode, form.adjustments || {});
   }, [form.lineItems, form.billTo?.stateCode, form.company?.stateCode, form.adjustments]);
 

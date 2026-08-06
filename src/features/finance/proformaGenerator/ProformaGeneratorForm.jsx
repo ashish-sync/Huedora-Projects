@@ -10,7 +10,7 @@ import {
 } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { computeProformaDocument } from './proformaCalculations.js';
-import { usesIgst } from '../invoiceGenerator/invoiceCalculations.js';
+import { resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import {
   clearProformaDraft,
   defaultLineRow,
@@ -239,7 +239,7 @@ export function useProformaFormState() {
   }, [orgMaster]);
 
   const doc = useMemo(() => {
-    const taxMode = usesIgst(form.recipient?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+    const taxMode = resolveTaxMode(form.recipient?.stateCode, form.company?.stateCode);
     return computeProformaDocument(form.rows, taxMode, form.adjustments);
   }, [form.rows, form.recipient?.stateCode, form.company?.stateCode, form.adjustments]);
 

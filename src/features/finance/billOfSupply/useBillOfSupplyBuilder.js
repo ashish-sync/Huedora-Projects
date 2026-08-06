@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { applyOrgMasterToInvoiceForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
-import { computeInvoiceTotals, usesIgst } from '../invoiceGenerator/invoiceCalculations.js';
+import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import { defaultLineItem } from '../invoiceGenerator/invoiceStorage.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
 import {
@@ -30,7 +30,7 @@ export function useBillOfSupplyBuilder() {
   const { form, setForm, readOnly } = persistence;
 
   const totals = useMemo(() => {
-    const taxMode = usesIgst(form.billTo?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+    const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
     const zeroTaxLines = (form.lineItems || []).map((line) => ({
       ...line,
       igstRate: 0,

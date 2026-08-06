@@ -5,7 +5,8 @@ import {
   formatInr,
   getLineGstRateDisplay,
   patchLineGstRate,
-  usesIgst,
+  resolveLineGstRates,
+  resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { InlineAddChip, InlineField, InlineTableInput, InlineTextarea } from '../documentGenerator/inlineEdit.jsx';
 import '../documentGenerator/inline-edit.css';
@@ -50,8 +51,13 @@ export default function PurchaseOrderPreview({
   onUpdateLine,
   onAddLine,
 }) {
-  const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
-  const totals = computeInvoiceTotals(form.lineItems || [], taxMode, {});
+  // Seller (vendor) vs buyer/company state → IGST or CGST+SGST
+  const taxMode = resolveTaxMode(form.vendor?.stateCode, form.company?.stateCode);
+  const normalizedLines = (form.lineItems || []).map((line) => ({
+    ...line,
+    ...resolveLineGstRates(line, taxMode),
+  }));
+  const totals = computeInvoiceTotals(normalizedLines, taxMode, {});
   const { company, buyer, vendor, delivery, billing, commercial, po, signature } = form;
   const hasLogo = Boolean(company?.logoDataUrl);
   const legal = company?.legalName || 'Tylo Care Private Limited';
@@ -420,11 +426,13 @@ export default function PurchaseOrderPreview({
               return (
                 <tr key={line.id || index}>
                   <td className="po-center">{index + 1}</td>
-                  <td>
+                  <td className="po-desc">
                     {editable ? (
-                      <InlineTableInput
+                      <InlineTextarea
+                        rows={2}
                         value={line.description || ''}
                         onChange={(v) => onUpdateLine?.(index, { description: v })}
+                        placeholder="Item description"
                       />
                     ) : (
                       line.description
@@ -522,30 +530,33 @@ export default function PurchaseOrderPreview({
           </div>
         ) : null}
 
-        <div className="po-totals-wrap">
-          <table className="po-totals">
-            <tbody>
-              <tr>
-                <td>Taxable Value</td>
-                <td>{money(totals.subtotal)}</td>
-              </tr>
-              <tr>
-                <td>Total GST</td>
-                <td>{money(totals.taxAmount)}</td>
-              </tr>
-              <tr>
-                <td>Round Off</td>
-                <td>{money(totals.roundOff)}</td>
-              </tr>
-              <tr className="po-total-strong">
-                <td>GRAND TOTAL</td>
-                <td>{money(totals.grandTotal)}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="po-words-total">
+          <div className="po-words-total__left">
+            <div className="po-amount-words">
+              <strong>Amount In Words:</strong> Rupees {words || '____________________ Only.'}
+            </div>
+          </div>
+          <div className="po-card po-card--totals">
+            <div className="po-card-body po-card-body--totals">
+              <div className="po-totals-row">
+                <span className="po-totals-row__label">Taxable Value</span>
+                <span className="po-totals-row__value">{money(totals.subtotal)}</span>
+              </div>
+              <div className="po-totals-row">
+                <span className="po-totals-row__label">Total GST</span>
+                <span className="po-totals-row__value">{money(totals.taxAmount)}</span>
+              </div>
+              <div className="po-totals-row">
+                <span className="po-totals-row__label">Round Off</span>
+                <span className="po-totals-row__value">{money(totals.roundOff)}</span>
+              </div>
+            </div>
+            <div className="po-totals-grand">
+              <span className="po-totals-grand__label">GRAND TOTAL</span>
+              <span className="po-totals-grand__value">{money(totals.grandTotal)}</span>
+            </div>
+          </div>
         </div>
-
-        <p className="po-amount-words">Amount In Words: Rupees {words || '____________________ Only.'}</p>
 
         <div className="po-sign">
           <div className="po-sign-box">

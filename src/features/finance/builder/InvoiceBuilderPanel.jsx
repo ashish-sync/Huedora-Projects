@@ -6,7 +6,7 @@ import {
   getLineGstRateDisplay,
   patchLineGstRate,
   resolveTaxColumnLabels,
-  usesIgst,
+  resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_INVOICE_LINE_ITEMS } from '../invoiceGenerator/invoiceStorage.js';
 import { canManageOrganisationMaster } from './commercialApproval.js';
@@ -66,7 +66,7 @@ export default function InvoiceBuilderPanel({
     hideTaxColumnTitles = false,
     maxLineItems = MAX_INVOICE_LINE_ITEMS,
   } = panelConfig;
-  const taxMode = usesIgst(form.billTo?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+  const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
   const taxLabels = resolveTaxColumnLabels(form);
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);

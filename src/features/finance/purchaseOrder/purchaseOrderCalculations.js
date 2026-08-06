@@ -2,16 +2,18 @@ import {
   amountInWordsIndian,
   computeInvoiceTotals,
   computeLineItem,
+  resolveLineGstRates,
+  resolveTaxMode,
   usesIgst,
 } from '../invoiceGenerator/invoiceCalculations.js';
 
-export { amountInWordsIndian, usesIgst, computeLineItem };
+export { amountInWordsIndian, usesIgst, resolveTaxMode, computeLineItem };
 
 export function computePurchaseOrderTotals(form) {
-  const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+  const taxMode = resolveTaxMode(form.vendor?.stateCode, form.company?.stateCode);
   const lineItems = (form.lineItems || []).map((line) => {
-    if (!line.isFoc) return line;
-    return { ...line, rate: 0, discount: 0 };
+    const base = !line.isFoc ? line : { ...line, rate: 0, discount: 0 };
+    return { ...base, ...resolveLineGstRates(base, taxMode) };
   });
   const totals = computeInvoiceTotals(lineItems, taxMode, {});
   return {

@@ -6,7 +6,7 @@ import { canManageOrganisationMaster } from '../builder/commercialApproval.js';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
-  usesIgst,
+  resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_PO_LINE_ITEMS } from './purchaseOrderStorage.js';
 
@@ -43,7 +43,7 @@ export default function PurchaseOrderBuilderPanel({
   addLine,
   removeLine,
 }) {
-  const taxMode = usesIgst(form.vendor?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+  const taxMode = resolveTaxMode(form.vendor?.stateCode, form.company?.stateCode);
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);
   const lines = form.lineItems || [];

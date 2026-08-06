@@ -5,7 +5,8 @@ import {
   formatInr,
   getLineGstRateDisplay,
   patchLineGstRate,
-  usesIgst,
+  resolveLineGstRates,
+  resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { InlineField, InlineTableInput, InlineTextarea } from '../documentGenerator/inlineEdit.jsx';
 import '../documentGenerator/inline-edit.css';
@@ -87,31 +88,16 @@ function SummaryRow({ label, value }) {
 }
 
 function SummaryRows({ totals, isNil, taxMode, showAdjustments, adj, money }) {
+  const cgst = isNil || taxMode !== 'cgst_sgst' ? 0 : totals.totalCgstAmount;
+  const sgst = isNil || taxMode !== 'cgst_sgst' ? 0 : totals.totalSgstAmount;
+  const igst = isNil || taxMode !== 'igst' ? 0 : totals.totalIgstAmount;
+
   return (
     <>
       <SummaryRow label="Taxable Value" value={money(totals.subtotal)} />
-      {isNil ? (
-        <>
-          <SummaryRow label="CGST" value="NIL" />
-          <SummaryRow label="SGST" value="NIL" />
-          <SummaryRow label="IGST" value="NIL" />
-        </>
-      ) : (
-        <>
-          <SummaryRow
-            label="CGST"
-            value={taxMode === 'cgst_sgst' ? money(totals.totalCgstAmount) : ''}
-          />
-          <SummaryRow
-            label="SGST"
-            value={taxMode === 'cgst_sgst' ? money(totals.totalSgstAmount) : ''}
-          />
-          <SummaryRow
-            label="IGST"
-            value={taxMode === 'igst' ? money(totals.totalIgstAmount) : ''}
-          />
-        </>
-      )}
+      <SummaryRow label="CGST" value={money(cgst)} />
+      <SummaryRow label="SGST" value={money(sgst)} />
+      <SummaryRow label="IGST" value={money(igst)} />
       {showAdjustments && Number(adj.cnAmount) ? (
         <SummaryRow label="Less: Credit Note" value={money(adj.cnAmount)} />
       ) : null}
@@ -215,7 +201,8 @@ export default function LandscapeInvoiceLikePreview({
   const REASONS = isCreditDoc ? CREDIT_REASONS : DEBIT_REASONS;
 
   const { company, bank, billTo, shipTo, invoice, signature } = form || {};
-  const taxMode = usesIgst(billTo?.stateCode, company?.stateCode) ? 'igst' : 'cgst_sgst';
+  // Seller (company) vs customer billing (billTo) state → IGST or CGST+SGST
+  const taxMode = resolveTaxMode(billTo?.stateCode, company?.stateCode);
 
   const rawLines = form?.lineItems?.length
     ? form.lineItems
@@ -228,7 +215,7 @@ export default function LandscapeInvoiceLikePreview({
       ];
   const effectiveLines = isNil
     ? rawLines.map((line) => ({ ...line, igstRate: 0, cgstRate: 0, sgstRate: 0 }))
-    : rawLines;
+    : rawLines.map((line) => ({ ...line, ...resolveLineGstRates(line, taxMode) }));
 
   const adj = form?.adjustments || {};
   const totals = computeInvoiceTotals(effectiveLines, taxMode, {
@@ -607,7 +594,7 @@ export default function LandscapeInvoiceLikePreview({
                     <td className="ti-r">{money(computed.taxableAmount)}</td>
                     <td className="ti-num ti-tax-rate">
                       {isNil ? (
-                        'NIL'
+                        '0.00'
                       ) : editable ? (
                         <InlineTableInput
                           value={rateDisplay}

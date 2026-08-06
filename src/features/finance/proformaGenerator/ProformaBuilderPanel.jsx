@@ -8,7 +8,7 @@ import {
   getLineGstRateDisplay,
   patchLineGstRate,
   resolveTaxColumnLabels,
-  usesIgst,
+  resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { proformaToInvoiceView } from './proformaFormAdapter.js';
 import { MAX_PROFORMA_LINE_ITEMS } from './proformaStorage.js';
@@ -52,7 +52,7 @@ export default function ProformaBuilderPanel({
 }) {
   const invoiceView = useMemo(() => proformaToInvoiceView(form), [form]);
   const lineRows = (form.rows || []).filter((r) => r.type === 'line');
-  const taxMode = usesIgst(form.recipient?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+  const taxMode = resolveTaxMode(form.recipient?.stateCode, form.company?.stateCode);
   const taxLabels = resolveTaxColumnLabels(invoiceView);
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);

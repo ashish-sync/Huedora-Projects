@@ -80,9 +80,7 @@ export function computeLineItem(line, taxMode = 'igst') {
   const rate = Number(line.rate) || 0;
   const discount = Number(line.discount) || 0;
   const taxableAmount = Math.max(qty * rate - discount, 0);
-  const igstRate = Number(line.igstRate) || 0;
-  const cgstRate = Number(line.cgstRate) || 0;
-  const sgstRate = Number(line.sgstRate) || 0;
+  const { igstRate, cgstRate, sgstRate } = resolveLineGstRates(line, taxMode);
 
   let igstAmount = 0;
   let cgstAmount = 0;
@@ -105,6 +103,9 @@ export function computeLineItem(line, taxMode = 'igst') {
     rate,
     discount,
     taxableAmount,
+    igstRate,
+    cgstRate,
+    sgstRate,
     igstAmount,
     cgstAmount,
     sgstAmount,
@@ -154,11 +155,53 @@ export function computeInvoiceTotals(lineItems, taxMode = 'igst', adjustments = 
   };
 }
 
+/**
+ * Intra-state → CGST+SGST; inter-state → IGST.
+ * Missing either code defaults to IGST (safer until both are known).
+ */
 export function usesIgst(recipientStateCode, orgStateCode) {
   const r = String(recipientStateCode || '').trim();
   const o = String(orgStateCode || '').trim();
   if (!r || !o) return true;
   return r !== o;
+}
+
+export function resolveTaxMode(recipientStateCode, orgStateCode) {
+  return usesIgst(recipientStateCode, orgStateCode) ? 'igst' : 'cgst_sgst';
+}
+
+/**
+ * Derive CGST/SGST or IGST rates from whichever fields are filled.
+ * Same-state: split a combined GST% equally across CGST + SGST.
+ * Different-state: use IGST% (or combine CGST+SGST into IGST).
+ */
+export function resolveLineGstRates(line = {}, taxMode = 'igst') {
+  const igstRaw = Number(line.igstRate);
+  const cgstRaw = Number(line.cgstRate);
+  const sgstRaw = Number(line.sgstRate);
+  const gstRaw = Number(line.gstRate);
+  const hasIgst = Number.isFinite(igstRaw) && igstRaw > 0;
+  const hasSplit =
+    (Number.isFinite(cgstRaw) && cgstRaw > 0) || (Number.isFinite(sgstRaw) && sgstRaw > 0);
+  const combinedSplit =
+    (Number.isFinite(cgstRaw) ? cgstRaw : 0) + (Number.isFinite(sgstRaw) ? sgstRaw : 0);
+  const combined =
+    hasIgst ? igstRaw : hasSplit ? combinedSplit : Number.isFinite(gstRaw) && gstRaw > 0 ? gstRaw : 0;
+
+  if (taxMode === 'igst') {
+    return { igstRate: combined, cgstRate: 0, sgstRate: 0 };
+  }
+
+  if (hasSplit) {
+    return {
+      igstRate: 0,
+      cgstRate: Number.isFinite(cgstRaw) ? cgstRaw : 0,
+      sgstRate: Number.isFinite(sgstRaw) ? sgstRaw : 0,
+    };
+  }
+
+  const half = Math.round((combined / 2) * 100) / 100;
+  return { igstRate: 0, cgstRate: half, sgstRate: half };
 }
 
 /** Default GST column headers — user can rename on the document. */
@@ -177,15 +220,12 @@ export function resolveTaxColumnLabels(form) {
 
 /** Combined GST rate shown in the single rate column. */
 export function getLineGstRateDisplay(line, taxMode = 'igst') {
+  const rates = resolveLineGstRates(line, taxMode);
   if (taxMode === 'igst') {
-    const v = line?.igstRate;
-    return v === '' || v == null ? '' : String(v);
+    return rates.igstRate ? String(rates.igstRate) : '';
   }
-  const cgst = Number(line?.cgstRate) || 0;
-  const sgst = Number(line?.sgstRate) || 0;
-  if (cgst || sgst) return String(cgst + sgst);
-  const combined = Number(line?.gstRate);
-  return Number.isFinite(combined) && combined > 0 ? String(combined) : '';
+  const combined = (Number(rates.cgstRate) || 0) + (Number(rates.sgstRate) || 0);
+  return combined ? String(combined) : '';
 }
 
 /** Map edited GST% to the correct underlying rate fields. */

@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { applyOrgMasterToProformaForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
-import { computeInvoiceTotals, usesIgst } from '../invoiceGenerator/invoiceCalculations.js';
+import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
 import { proformaToInvoiceView } from './proformaFormAdapter.js';
 import {
@@ -36,7 +36,7 @@ export function useProformaBuilder() {
 
   const totals = useMemo(() => {
     const view = proformaToInvoiceView(form);
-    const taxMode = usesIgst(view.billTo?.stateCode, view.company?.stateCode) ? 'igst' : 'cgst_sgst';
+    const taxMode = resolveTaxMode(view.billTo?.stateCode, view.company?.stateCode);
     return computeInvoiceTotals(view.lineItems, taxMode, view.adjustments || {});
   }, [form]);
 

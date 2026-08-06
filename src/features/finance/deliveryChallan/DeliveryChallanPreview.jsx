@@ -303,11 +303,13 @@ export default function DeliveryChallanPreview({
                     line.assetId
                   )}
                 </td>
-                <td>
+                <td className="dc-desc">
                   {editable ? (
-                    <InlineTableInput
+                    <InlineTextarea
+                      rows={2}
                       value={line.description || ''}
                       onChange={(v) => onUpdateLine?.(index, { description: v })}
+                      placeholder="Item description"
                     />
                   ) : (
                     line.description

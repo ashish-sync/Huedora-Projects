@@ -6,7 +6,7 @@ import {
   defaultLineItem,
   MAX_INVOICE_LINE_ITEMS,
 } from '../invoiceGenerator/invoiceStorage.js';
-import { computeInvoiceTotals, usesIgst } from '../invoiceGenerator/invoiceCalculations.js';
+import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import { usePersistedCommercialBuilder } from './usePersistedCommercialBuilder.js';
 
 const applyOrg = (form, org) => applyOrgMasterToInvoiceForm(form, org);
@@ -30,7 +30,7 @@ export function useInvoiceBuilder() {
   const { form, setForm, readOnly } = persistence;
 
   const totals = useMemo(() => {
-    const taxMode = usesIgst(form.billTo?.stateCode, form.company?.stateCode) ? 'igst' : 'cgst_sgst';
+    const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
     return computeInvoiceTotals(form.lineItems, taxMode, form.adjustments || {});
   }, [form.lineItems, form.billTo?.stateCode, form.company?.stateCode, form.adjustments]);
 

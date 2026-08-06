@@ -5439,6 +5439,81 @@ body:has(.login-page),
   margin: 0 auto;
 }
 
+.ph-step-card--wide {
+  max-width: 920px;
+}
+
+.ph-line-table {
+  margin: 16px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.ph-line-table-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ph-line-table-head h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.ph-line-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ph-line-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.ph-line-table th,
+.ph-line-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 0.85rem;
+}
+
+.ph-line-table th {
+  background: color-mix(in srgb, var(--bg-elevated) 80%, var(--line));
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.ph-line-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ph-line-table input {
+  width: 100%;
+  min-width: 72px;
+  box-sizing: border-box;
+}
+
+.ph-line-sr {
+  width: 36px;
+  text-align: center !important;
+  color: var(--muted);
+}
+
+.ph-line-actions {
+  width: 88px;
+  white-space: nowrap;
+}
+
+.ph-line-add {
+  margin-top: 10px;
+}
+
 .ph-step-head {
   margin-bottom: 18px;
   padding-bottom: 14px;

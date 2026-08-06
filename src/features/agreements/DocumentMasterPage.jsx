@@ -380,6 +380,28 @@ function TemplatePreviewModal({ template, onClose }) {
             </div>
           </footer>
         )}
+        {(template.repeatableTables || []).length > 0 && (
+          <footer className="dm-modal-fields">
+            <strong>Repeatable line tables</strong>
+            <p className="muted" style={{ margin: '6px 0 0' }}>
+              {(template.repeatableTables || [])
+                .map(
+                  (t) =>
+                    `${(t.columns || []).length} column${(t.columns || []).length === 1 ? '' : 's'} (prototype row)`
+                )
+                .join(' · ')}
+            </p>
+            <div className="dm-upload-fields">
+              {(template.repeatableTables || []).flatMap((t) =>
+                (t.columns || []).map((p) => (
+                  <span key={`${t.id}-${p.key}`} className="badge tone-ok">
+                    {p.label}
+                  </span>
+                ))
+              )}
+            </div>
+          </footer>
+        )}
       </div>
     </div>,
     document.body
@@ -406,6 +428,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
   const [analyzeBusy, setAnalyzeBusy] = useState(false);
   const [uploadPreviewText, setUploadPreviewText] = useState('');
   const [uploadPlaceholders, setUploadPlaceholders] = useState([]);
+  const [uploadRepeatableTables, setUploadRepeatableTables] = useState([]);
 
   const load = () => {
     const params = new URLSearchParams({ limit: '100', all: 'true' });
@@ -443,6 +466,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
     setDefaultSignatureId('');
     setUploadPreviewText('');
     setUploadPlaceholders([]);
+    setUploadRepeatableTables([]);
   };
 
   const onPickFile = async (picked) => {
@@ -450,6 +474,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
     setFile(picked);
     setUploadPreviewText('');
     setUploadPlaceholders([]);
+    setUploadRepeatableTables([]);
     if (!picked) return;
 
     const ext = picked.name.split('.').pop()?.toLowerCase();
@@ -470,11 +495,13 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
       const { data } = await api('/templates/analyze', { method: 'POST', body: fd });
       setUploadPreviewText(data.plain || '');
       setUploadPlaceholders(data.placeholders || []);
+      setUploadRepeatableTables(data.repeatableTables || []);
     } catch (err) {
       setError(err.message || 'Could not read this Word file.');
       setFile(null);
       setUploadPreviewText('');
       setUploadPlaceholders([]);
+      setUploadRepeatableTables([]);
     } finally {
       setAnalyzeBusy(false);
     }
@@ -644,8 +671,13 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                       <td>{typeLabel(t.documentType || t.agreementType)}</td>
                       <td>{signingLabel(t.signingType)}</td>
                       <td>
-                        {(t.placeholders || []).length ? (
-                          <span className="badge tone-ok">{(t.placeholders || []).length}</span>
+                        {(t.placeholders || []).length || (t.repeatableTables || []).length ? (
+                          <span className="badge tone-ok">
+                            {(t.placeholders || []).length}
+                            {(t.repeatableTables || []).length
+                              ? ` + ${(t.repeatableTables || []).reduce((n, tbl) => n + (tbl.columns?.length || 0), 0)} line`
+                              : ''}
+                          </span>
                         ) : (
                           <span className="muted">-</span>
                         )}
@@ -769,6 +801,30 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                       {p.label} ({p.type})
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {uploadRepeatableTables.length > 0 && (
+              <div className="field">
+                <label>Repeatable line table detected</label>
+                <p className="muted" style={{ margin: '0 0 8px' }}>
+                  {uploadRepeatableTables
+                    .map(
+                      (t) =>
+                        `${(t.columns || []).length} column${(t.columns || []).length === 1 ? '' : 's'} from the prototype item row`
+                    )
+                    .join(' · ')}
+                  . Users can add rows when filling this template.
+                </p>
+                <div className="dm-upload-fields">
+                  {uploadRepeatableTables.flatMap((t) =>
+                    (t.columns || []).map((p) => (
+                      <span key={`${t.id}-${p.key}`} className="badge">
+                        {p.label}
+                      </span>
+                    ))
+                  )}
                 </div>
               </div>
             )}

@@ -113,6 +113,7 @@ export default function AgreementCreatePage() {
   const [endDate, setEndDate] = useState('');
 
   const [placeholderValues, setPlaceholderValues] = useState({});
+  const [lineRowsByTable, setLineRowsByTable] = useState({});
   const [selectedLinkAssetId, setSelectedLinkAssetId] = useState('');
   const [selectedAssetSnapshot, setSelectedAssetSnapshot] = useState(null);
   const [assetPickerQuery, setAssetPickerQuery] = useState('');
@@ -169,7 +170,10 @@ export default function AgreementCreatePage() {
   );
 
   const placeholders = selectedTemplate?.placeholders || [];
-  const hasPlaceholders = docMode === 'template' && placeholders.length > 0;
+  const repeatableTables = selectedTemplate?.repeatableTables || [];
+  const hasLineTables = docMode === 'template' && repeatableTables.length > 0;
+  const hasPlaceholders =
+    docMode === 'template' && (placeholders.length > 0 || repeatableTables.length > 0);
   const assetPlaceholders = useMemo(
     () => placeholders.filter((p) => isAssetRegistryPlaceholder(p)),
     [placeholders]
@@ -184,6 +188,15 @@ export default function AgreementCreatePage() {
         next[p.key] = '';
       });
       setPlaceholderValues(next);
+      const nextLines = {};
+      (selectedTemplate.repeatableTables || []).forEach((table) => {
+        const empty = {};
+        (table.columns || []).forEach((col) => {
+          empty[col.key] = '';
+        });
+        nextLines[table.id] = [empty];
+      });
+      setLineRowsByTable(nextLines);
       setPreviewToken('');
       setPdfUrl('');
     }
@@ -311,7 +324,7 @@ export default function AgreementCreatePage() {
     if (hasExpiry && endDate) fd.append('endDate', endDate);
   };
 
-  const goNext = () => {
+  const goNext = async () => {
     setError('');
     if (step === 1 && !recipientReady()) {
       setError('Select a contact from the directory or create a new one with name and email/contact.');
@@ -341,10 +354,45 @@ export default function AgreementCreatePage() {
         );
         return;
       }
-      if (hasPlaceholders) {
+      if (docMode === 'template' && selectedTemplateId) {
         seedPlaceholdersFromRecipient();
         seedPlaceholdersFromAsset();
-        setStep(3);
+        setBusy(true);
+        try {
+          const { data: fresh } = await api(`/templates/${selectedTemplateId}`);
+          if (fresh) {
+            setTemplates((prev) =>
+              prev.map((t) => (t._id === fresh._id ? { ...t, ...fresh } : t))
+            );
+            const tables = fresh.repeatableTables || [];
+            const docFields = fresh.placeholders || [];
+            if (tables.length) {
+              setLineRowsByTable((prev) => {
+                const next = { ...prev };
+                tables.forEach((table) => {
+                  if (next[table.id]?.length) return;
+                  const empty = {};
+                  (table.columns || []).forEach((col) => {
+                    empty[col.key] = '';
+                  });
+                  next[table.id] = [empty];
+                });
+                return next;
+              });
+            }
+            if (!docFields.length && !tables.length) {
+              await submit();
+              return;
+            }
+          }
+          setStep(3);
+        } catch (err) {
+          setError(err.message);
+          if (hasPlaceholders) setStep(3);
+          else await submit();
+        } finally {
+          setBusy(false);
+        }
         return;
       }
       submit();
@@ -359,11 +407,27 @@ export default function AgreementCreatePage() {
       setError(`Fill all fields: ${missing.map((m) => m.label).join(', ')}`);
       return;
     }
+    for (const table of repeatableTables) {
+      const rows = lineRowsByTable[table.id] || [];
+      const minRows = Number(table.minRows) > 0 ? Number(table.minRows) : 1;
+      if (rows.length < minRows) {
+        setError(`Add at least ${minRows} line item${minRows === 1 ? '' : 's'}`);
+        return;
+      }
+      for (let i = 0; i < rows.length; i += 1) {
+        for (const col of table.columns || []) {
+          if (!String(rows[i]?.[col.key] || '').trim()) {
+            setError(`Fill Row ${i + 1} · ${col.label}`);
+            return;
+          }
+        }
+      }
+    }
     setBusy(true);
     try {
       const { data } = await api(`/templates/${selectedTemplateId}/fill-preview`, {
         method: 'POST',
-        body: { values: placeholderValues, title },
+        body: { values: placeholderValues, lineRows: lineRowsByTable, title },
       });
       setPreviewToken(data.previewToken);
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
@@ -375,6 +439,37 @@ export default function AgreementCreatePage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const updateLineCell = (tableId, rowIndex, key, value) => {
+    setLineRowsByTable((prev) => {
+      const rows = [...(prev[tableId] || [])];
+      rows[rowIndex] = { ...rows[rowIndex], [key]: value };
+      return { ...prev, [tableId]: rows };
+    });
+  };
+
+  const addLineRow = (table) => {
+    const maxRows = Number(table.maxRows) > 0 ? Number(table.maxRows) : 20;
+    setLineRowsByTable((prev) => {
+      const rows = [...(prev[table.id] || [])];
+      if (rows.length >= maxRows) return prev;
+      const empty = {};
+      (table.columns || []).forEach((col) => {
+        empty[col.key] = '';
+      });
+      return { ...prev, [table.id]: [...rows, empty] };
+    });
+  };
+
+  const removeLineRow = (table, rowIndex) => {
+    const minRows = Number(table.minRows) > 0 ? Number(table.minRows) : 1;
+    setLineRowsByTable((prev) => {
+      const rows = [...(prev[table.id] || [])];
+      if (rows.length <= minRows) return prev;
+      rows.splice(rowIndex, 1);
+      return { ...prev, [table.id]: rows };
+    });
   };
 
   const submit = async () => {
@@ -789,6 +884,15 @@ export default function AgreementCreatePage() {
                     {(t.placeholders || []).length > 0 && (
                       <span className="badge tone-ok">{(t.placeholders || []).length} fields</span>
                     )}
+                    {(t.repeatableTables || []).length > 0 && (
+                      <span className="badge tone-ok">
+                        {(t.repeatableTables || []).reduce(
+                          (n, tbl) => n + (tbl.columns?.length || 0),
+                          0
+                        )}{' '}
+                        line cols
+                      </span>
+                    )}
                   </button>
                 ))}
                 {!templates.length && <p className="muted">No templates available.</p>}
@@ -907,7 +1011,7 @@ export default function AgreementCreatePage() {
       )}
 
       {step === 3 && (
-        <div className="card ph-step-card">
+        <div className={`card ph-step-card${hasLineTables ? ' ph-step-card--wide' : ''}`}>
           <div className="ph-step-head">
             <h3 style={{ margin: 0 }}>Fill placeholders</h3>
             {assetPlaceholders.length > 0 && (
@@ -916,6 +1020,12 @@ export default function AgreementCreatePage() {
                 when you pick a match.
               </p>
             )}
+            {hasLineTables ? (
+              <p className="muted" style={{ margin: '6px 0 0' }}>
+                Line items use the template table row as a prototype. Add rows as needed; each is
+                included in the PDF.
+              </p>
+            ) : null}
           </div>
 
           {assetPlaceholders.length > 0 && (
@@ -988,8 +1098,75 @@ export default function AgreementCreatePage() {
                 )}
               </div>
             ))}
-            {!placeholders.length && <p className="muted">No placeholders on this template.</p>}
+            {!placeholders.length && !hasLineTables && (
+              <p className="muted">No placeholders on this template.</p>
+            )}
           </div>
+
+          {repeatableTables.map((table) => {
+            const rows = lineRowsByTable[table.id] || [];
+            const maxRows = Number(table.maxRows) > 0 ? Number(table.maxRows) : 20;
+            const minRows = Number(table.minRows) > 0 ? Number(table.minRows) : 1;
+            return (
+              <div className="ph-line-table" key={table.id}>
+                <div className="ph-line-table-head">
+                  <h4>Line items</h4>
+                  <span className="muted">
+                    {rows.length} / {maxRows} rows
+                  </span>
+                </div>
+                <div className="ph-line-table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th className="ph-line-sr">#</th>
+                        {(table.columns || []).map((col) => (
+                          <th key={col.key}>{col.label}</th>
+                        ))}
+                        <th className="ph-line-actions" aria-label="Actions" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, rowIndex) => (
+                        <tr key={`${table.id}-${rowIndex}`}>
+                          <td className="ph-line-sr">{rowIndex + 1}</td>
+                          {(table.columns || []).map((col) => (
+                            <td key={col.key}>
+                              <input
+                                required
+                                inputMode={col.type === 'number' ? 'decimal' : 'text'}
+                                value={row[col.key] || ''}
+                                onChange={(e) =>
+                                  updateLineCell(table.id, rowIndex, col.key, e.target.value)
+                                }
+                                aria-label={`Row ${rowIndex + 1} ${col.label}`}
+                              />
+                            </td>
+                          ))}
+                          <td className="ph-line-actions">
+                            {rows.length > minRows ? (
+                              <button
+                                type="button"
+                                className="btn secondary btn-sm"
+                                onClick={() => removeLineRow(table, rowIndex)}
+                              >
+                                Remove
+                              </button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {rows.length < maxRows ? (
+                  <button type="button" className="btn secondary ph-line-add" onClick={() => addLineRow(table)}>
+                    + Add row
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
 
           <div className="wizard-actions ph-step-actions">
             <button className="btn secondary" type="button" onClick={() => setStep(2)}>

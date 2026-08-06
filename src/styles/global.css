@@ -3938,6 +3938,36 @@ body:has(.login-page),
   background: var(--surface);
 }
 
+.esign-docx-frame {
+  width: 100%;
+  min-height: min(78vh, 900px);
+  max-height: min(78vh, 900px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #e8e8e8;
+  padding: 8px;
+}
+
+.esign-pdf-toolbar .btn-group {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.esign-pdf-toolbar .btn-group .btn {
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.esign-pdf-toolbar .btn-group .btn.is-active {
+  background: var(--brand, #0a5ac2);
+  color: #fff;
+}
+
 .esign-assets-grid {
   display: grid;
   grid-template-columns: 1fr minmax(260px, 320px);
@@ -8755,9 +8785,25 @@ body:has(.login-page),
 }
 
 .docx-native-body .tylo-docx {
-  background: var(--bg-elevated) !important;
+  --docx-minorHAnsi-font: Calibri, Carlito, 'Segoe UI', Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  --docx-majorHAnsi-font: 'Calibri Light', Calibri, Carlito, 'Segoe UI', Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  background: #fff !important;
+  color: #000;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.14);
   margin: 0 auto !important;
+  font-family: var(--docx-minorHAnsi-font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+/* Keep letterhead / floated logo from collapsing page width. */
+.docx-native-body .tylo-docx article,
+.docx-native-body .tylo-docx section {
+  max-width: none;
+}
+
+.docx-native-body .tylo-docx img {
+  max-width: none;
 }
 
 .dm-native-zoom {

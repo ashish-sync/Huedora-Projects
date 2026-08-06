@@ -9,6 +9,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
+import DocxNativePreview from '../../components/DocxNativePreview.jsx';
 import AssetRegistrySearchInput, {
   AssetRegistryPickerSummary,
 } from './AssetRegistrySearchInput.jsx';
@@ -49,6 +50,12 @@ async function fetchPdfBlobUrl(previewPath) {
   if (!res.ok) throw new Error('Could not load PDF preview');
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+async function fetchDocxBlob(previewPath) {
+  const res = await apiFetch(previewPath);
+  if (!res.ok) throw new Error('Could not load Word preview');
+  return res.blob();
 }
 
 function typeLabelBadge(t) {
@@ -119,6 +126,9 @@ export default function AgreementCreatePage() {
   const [assetPickerQuery, setAssetPickerQuery] = useState('');
   const [previewToken, setPreviewToken] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
+  const [filledDocxBlob, setFilledDocxBlob] = useState(null);
+  const [pdfEngine, setPdfEngine] = useState('');
+  const [previewMode, setPreviewMode] = useState('word'); // word | pdf
 
   const loadContacts = (q = '') => {
     const params = q ? `?q=${encodeURIComponent(q)}&limit=100` : '?limit=100';
@@ -199,6 +209,9 @@ export default function AgreementCreatePage() {
       setLineRowsByTable(nextLines);
       setPreviewToken('');
       setPdfUrl('');
+      setFilledDocxBlob(null);
+      setPdfEngine('');
+      setPreviewMode('word');
     }
   }, [selectedTemplate, docMode]);
 
@@ -433,6 +446,15 @@ export default function AgreementCreatePage() {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
       const url = await fetchPdfBlobUrl(data.previewUrl);
       setPdfUrl(url);
+      setPdfEngine(data.pdfEngine || '');
+      if (data.filledDocxUrl) {
+        const docxBlob = await fetchDocxBlob(data.filledDocxUrl);
+        setFilledDocxBlob(docxBlob);
+        setPreviewMode('word');
+      } else {
+        setFilledDocxBlob(null);
+        setPreviewMode('pdf');
+      }
       setStep(4);
     } catch (err) {
       setError(err.message);
@@ -1186,10 +1208,35 @@ export default function AgreementCreatePage() {
               <div>
                 <strong>Document preview</strong>
                 <p className="muted" style={{ margin: '2px 0 0' }}>
-                  Review the filled PDF. Sender (left) and Receiver (right) slots appear on every page.
+                  {filledDocxBlob
+                    ? 'Word layout matches your template. Switch to PDF to review the file used for signing (signature footer on every page).'
+                    : 'Review the filled PDF. Sender (left) and Receiver (right) slots appear on every page.'}
+                  {pdfEngine === 'libreoffice'
+                    ? ' PDF was converted from Word for layout fidelity.'
+                    : pdfEngine === 'pdfkit'
+                      ? ' PDF is a simplified rebuild — install LibreOffice on the API host for Word-faithful PDFs.'
+                      : ''}
                 </p>
               </div>
               <div className="row">
+                {filledDocxBlob ? (
+                  <div className="btn-group" role="group" aria-label="Preview mode">
+                    <button
+                      type="button"
+                      className={`btn secondary btn-compact${previewMode === 'word' ? ' is-active' : ''}`}
+                      onClick={() => setPreviewMode('word')}
+                    >
+                      Word layout
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn secondary btn-compact${previewMode === 'pdf' ? ' is-active' : ''}`}
+                      onClick={() => setPreviewMode('pdf')}
+                    >
+                      PDF
+                    </button>
+                  </div>
+                ) : null}
                 <button className="btn secondary" type="button" onClick={() => setStep(3)}>
                   ← Edit fields
                 </button>
@@ -1198,7 +1245,11 @@ export default function AgreementCreatePage() {
                 </button>
               </div>
             </div>
-            {pdfUrl ? (
+            {previewMode === 'word' && filledDocxBlob ? (
+              <div className="esign-docx-frame">
+                <DocxNativePreview file={filledDocxBlob} />
+              </div>
+            ) : pdfUrl ? (
               <iframe title="PDF preview" className="pdf-preview-frame esign-pdf-frame" src={pdfUrl} />
             ) : (
               <p className="muted">Preview not loaded.</p>

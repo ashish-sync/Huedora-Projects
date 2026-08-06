@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { renderAsync } from 'docx-preview';
 import { apiFetch } from '../shared/api.js';
 
+const FONT_STACK =
+  "Calibri, Carlito, 'Segoe UI', Arial, 'Helvetica Neue', Helvetica, sans-serif";
+const LIGHT_FONT_STACK =
+  "'Calibri Light', Calibri, Carlito, 'Segoe UI', Arial, 'Helvetica Neue', Helvetica, sans-serif";
 
 const RENDER_OPTIONS = {
   className: 'tylo-docx',
@@ -18,6 +22,64 @@ const RENDER_OPTIONS = {
   renderFootnotes: true,
   renderEndnotes: true,
 };
+
+/**
+ * docx-preview often misses OOXML `w:cstheme` / theme fonts and falls back to
+ * Times New Roman (serif), which also reflows letterhead lines. Normalize to the
+ * Word theme stack (Calibri) so upload preview matches the desktop file.
+ */
+function normalizeDocxPreviewFonts(styleRoot, bodyRoot) {
+  const roots = [styleRoot, bodyRoot].filter(Boolean);
+
+  for (const root of roots) {
+    root.querySelectorAll('style').forEach((styleEl) => {
+      let css = styleEl.textContent || '';
+      css = css
+        .replace(/Times New Roman/gi, FONT_STACK)
+        .replace(
+          /(--docx-minorHAnsi-font\s*:\s*)([^;]+)/gi,
+          `$1${FONT_STACK}`
+        )
+        .replace(
+          /(--docx-majorHAnsi-font\s*:\s*)([^;]+)/gi,
+          `$1${LIGHT_FONT_STACK}`
+        )
+        .replace(
+          /(--docx-minorEastAsia-font\s*:\s*)([^;]+)/gi,
+          `$1${FONT_STACK}`
+        );
+      styleEl.textContent = css;
+    });
+
+    root.querySelectorAll('[style]').forEach((el) => {
+      const ff = el.style?.fontFamily || '';
+      if (!ff) return;
+      if (/Times New Roman|serif/i.test(ff) && !/sans-serif/i.test(ff)) {
+        el.style.fontFamily = FONT_STACK;
+      } else if (/^['"]?Calibri Light['"]?$/i.test(ff.trim())) {
+        el.style.fontFamily = LIGHT_FONT_STACK;
+      } else if (/^['"]?Calibri['"]?$/i.test(ff.trim())) {
+        el.style.fontFamily = FONT_STACK;
+      }
+    });
+  }
+
+  if (styleRoot) {
+    let patch = styleRoot.querySelector('style[data-tylo-docx-font-fix]');
+    if (!patch) {
+      patch = document.createElement('style');
+      patch.setAttribute('data-tylo-docx-font-fix', '1');
+      styleRoot.appendChild(patch);
+    }
+    patch.textContent = `
+      .tylo-docx {
+        --docx-minorHAnsi-font: ${FONT_STACK};
+        --docx-majorHAnsi-font: ${LIGHT_FONT_STACK};
+        font-family: ${FONT_STACK};
+      }
+    `;
+  }
+}
 
 /**
  * Native Word (.docx) preview that preserves pages, bold, tables, and images.
@@ -50,6 +112,8 @@ export default function DocxNativePreview({ file, templateId, className = '' }) 
         }
         if (cancelled || !bodyRef.current) return;
         await renderAsync(data, bodyRef.current, styleRef.current || bodyRef.current, RENDER_OPTIONS);
+        if (cancelled) return;
+        normalizeDocxPreviewFonts(styleRef.current, bodyRef.current);
       } catch (err) {
         if (!cancelled) setError(err.message || 'Could not render Word preview');
       } finally {

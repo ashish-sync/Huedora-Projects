@@ -10,6 +10,11 @@ import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import {
+  getErrorMessage,
+  validateImportFileClient,
+  formatRowImportError,
+} from '../../shared/importErrors.js';
+import {
   OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
   ASSET_CUSTODY_OPTIONS,
@@ -224,12 +229,12 @@ export default function DevicesPage() {
     setError('');
     try {
       const res = await apiFetch('/devices/import-template');
-      if (!res.ok) throw new Error('Could not download sample Excel');
+      if (!res.ok) throw new Error('Could not download sample CSV');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Asset_Master_Sample.xlsx';
+      a.download = 'Asset_Master_Sample.csv';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -240,6 +245,12 @@ export default function DevicesPage() {
   const runImport = async (file) => {
     setError('');
     setMsg('');
+    const pre = validateImportFileClient(file);
+    if (pre) {
+      setError(pre);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     setImportBusy(true);
     try {
       const fd = new FormData();
@@ -256,11 +267,11 @@ export default function DevicesPage() {
         `Imported ${data.created} asset${data.created === 1 ? '' : 's'}${errHint}.${reportHint}`
       );
       if (data.errors?.length) {
-        setError(data.errors.map((e) => `Row ${e.row}: ${e.message}`).slice(0, 5).join(' · '));
+        setError(data.errors.slice(0, 5).map(formatRowImportError).join(' '));
       }
       load();
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, 'Import failed. Use a .csv or .xlsb file matching the sample format.'));
     } finally {
       setImportBusy(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -296,7 +307,7 @@ export default function DevicesPage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".csv,.xlsb,text/csv"
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0];

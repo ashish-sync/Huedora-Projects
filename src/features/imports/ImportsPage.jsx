@@ -4,6 +4,8 @@ import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
+import { getErrorMessage, validateImportFileClient } from '../../shared/importErrors.js';
 
 export default function ImportsPage() {
   const { can } = useAuth();
@@ -16,6 +18,11 @@ export default function ImportsPage() {
   }
 
   const run = async (path, file) => {
+    const pre = validateImportFileClient(file);
+    if (pre) {
+      setError(pre);
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -24,7 +31,7 @@ export default function ImportsPage() {
       const res = await api(path, { method: 'POST', body: fd });
       setResult(res.data);
     } catch (err) {
-      setError(err.message);
+      setError(getErrorMessage(err, IMPORT_ACCEPT_HINT));
     } finally {
       setBusy(false);
     }
@@ -108,8 +115,11 @@ function ImportCard({ title, hint, busy, onDry, onCommit }) {
       <p className="muted" style={{ margin: '0 0 10px' }}>
         {hint}
       </p>
+      <p className="muted mono-sm" style={{ margin: '0 0 8px' }}>
+        {IMPORT_ACCEPT_HINT}
+      </p>
       <FilePicker
-        accept=".xlsx,.xls,.csv"
+        accept={IMPORT_ACCEPT_ATTR}
         onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
       <div className="row" style={{ marginTop: 12 }}>

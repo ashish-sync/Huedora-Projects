@@ -803,6 +803,10 @@ export default function AssetRequestsPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, typeFilter]);
+
+  useEffect(() => {
     api('/assets?limit=200')
       .then((r) => setAssets(r.data || []))
       .catch(() => {});
@@ -818,7 +822,7 @@ export default function AssetRequestsPage() {
     loadExpenseMaster();
     loadClientMasterOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, typeFilter]);
+  }, []);
 
   const applyLinked = (partial) => {
     setForm((prev) => ({ ...prev, ...partial }));

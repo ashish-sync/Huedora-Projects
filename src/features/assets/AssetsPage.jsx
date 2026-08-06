@@ -150,12 +150,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setError('');
     try {
       const res = await apiFetch('/devices/import-template');
-      if (!res.ok) throw new Error('Could not download sample Excel');
+      if (!res.ok) throw new Error('Could not download sample CSV');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Asset_Inventory_Sample.xlsx';
+      a.download = 'Asset_Inventory_Sample.csv';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -501,7 +501,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
               <input
                 ref={fileRef}
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".csv,.xlsb,text/csv"
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0];

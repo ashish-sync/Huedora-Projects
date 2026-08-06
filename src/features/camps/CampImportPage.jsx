@@ -8,6 +8,9 @@ import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import { ACTION } from '../../shared/labels.js';
 import { trimString } from './utils/trimInput';
 import { formatDateDDMMYYYY } from './utils/dateFormat';
+import { downloadCampSampleFile } from './utils/campSampleDownload.js';
+import { getErrorMessage, validateImportFileClient } from '../../shared/importErrors.js';
+import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
 
 const STEPS_ADMIN = ['Upload', 'Map Headers', 'Preview', 'Import'];
 const STEPS_EMPLOYEE = ['Upload', 'Preview', 'Import'];
@@ -17,15 +20,13 @@ async function parseApiErrorMessage(err, fallback) {
   if (data instanceof Blob) {
     try {
       const json = JSON.parse(await data.text());
-      return json.message || fallback;
+      return getErrorMessage(json?.error?.message || json?.message, fallback);
     } catch {
       return fallback;
     }
   }
-  return err?.message || err.message || fallback;
+  return getErrorMessage(err, fallback);
 }
-
-import { downloadCampSampleFile } from './utils/campSampleDownload.js';
 
 export default function ImportPage() {
   const { isSuperAdmin, hasPermission } = useAuth();
@@ -73,7 +74,11 @@ export default function ImportPage() {
           setDefaultClientName(clients[0].name);
         }
       })
-      .catch((err) => setError(err?.message || 'Failed to load import settings'));
+      .catch((err) =>
+        setError(
+          getErrorMessage(err, 'Could not load import settings. Refresh the page and try again.')
+        )
+      );
   }, [isAdminImport]);
 
   const requiredMissing = useMemo(
@@ -100,6 +105,11 @@ export default function ImportPage() {
 
   async function handleUpload(file) {
     if (!file) return;
+    const pre = validateImportFileClient(file);
+    if (pre) {
+      setError(pre);
+      return;
+    }
     setLoading(true);
     setError('');
     setResult(null);
@@ -127,7 +137,7 @@ export default function ImportPage() {
 
       if (data.missingStandardHeaders?.length) {
         setError(
-          `This file does not match the required format. Missing columns: ${data.missingStandardHeaders.join(', ')}. Download the sample Excel and use those exact column headers.`
+          `This file does not match the required format. Missing columns: ${data.missingStandardHeaders.join(', ')}. Download the sample CSV and use those exact column headers.`
         );
         return;
       }
@@ -136,7 +146,12 @@ export default function ImportPage() {
       setMapping(nextMapping);
       await runPreview(nextRows, nextMapping);
     } catch (err) {
-      setError(err?.message || 'Failed to parse Excel file');
+      setError(
+        getErrorMessage(
+          err,
+          'The file could not be read. Use a .csv (preferred) or .xlsb file matching the sample headers.'
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -164,7 +179,7 @@ export default function ImportPage() {
       setError('');
       alert('Template saved successfully');
     } catch (err) {
-      setError(err?.message || 'Failed to save template');
+      setError(getErrorMessage(err, 'Could not save the import template. Check the name and try again.'));
     } finally {
       setLoading(false);
     }
@@ -180,7 +195,12 @@ export default function ImportPage() {
     try {
       await runPreview(rows, mapping);
     } catch (err) {
-      setError(err?.message || 'Preview failed');
+      setError(
+        getErrorMessage(
+          err,
+          'Preview failed. Map every required column to a file header, then try again.'
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -203,7 +223,12 @@ export default function ImportPage() {
       setResult(data);
       setStep(resultStep);
     } catch (err) {
-      setError(err?.message || 'Import failed');
+      setError(
+        getErrorMessage(
+          err,
+          'Import could not be completed. Fix invalid rows in the preview, then try again.'
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -214,7 +239,7 @@ export default function ImportPage() {
     try {
       await downloadCampSampleFile();
     } catch (err) {
-      setError(await parseApiErrorMessage(err, 'Failed to download sample file'));
+      setError(await parseApiErrorMessage(err, 'Could not download the sample CSV. Please try again.'));
     }
   }
 
@@ -267,11 +292,11 @@ export default function ImportPage() {
           <h3>Upload Excel / CSV</h3>
           {isAdminImport ? (
             <p className="import-intro">
-              Upload camp data from Excel with automatic header suggestions, or download the sample file. Columns match the Create Camp form.
+              Upload camp data from CSV with automatic header suggestions, or download the sample file. Columns match the Create Camp form.
             </p>
           ) : (
             <p className="import-intro">
-              Download the sample Excel file and fill in camp details using the same column headers as Create Camp.
+              Download the sample CSV file and fill in camp details using the same column headers as Create Camp.
             </p>
           )}
 
@@ -290,13 +315,14 @@ export default function ImportPage() {
 
           <div className="upload-zone">
             <p><strong>{isAdminImport ? 'Upload your file' : 'Step 2: Upload your completed file'}</strong></p>
-            <p className="import-muted">Supported: .xlsx, .xls, .csv</p>
+            <p className="import-muted">Supported: .csv (preferred) or .xlsb · max 1,000 rows · max 3 MB</p>
             <label className="btn">
-              Choose File
+              Choose file
               <input
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept={IMPORT_ACCEPT_ATTR}
                 onChange={(e) => handleUpload(e.target.files?.[0])}
+                title={IMPORT_ACCEPT_HINT}
               />
             </label>
           </div>

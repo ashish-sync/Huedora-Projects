@@ -767,7 +767,7 @@ export default function CommunicationsPastePage() {
               {!hasPasteContext && 'Complete camp context above before pasting.'}
               {hasPasteContext && inputMode === 'text' && !hasPasteText && 'Paste camp details below.'}
               {hasPasteContext && inputMode === 'text' && hasPasteText && !hasExtracted && `${pasteMeta.charCount} characters · ready to extract`}
-              {hasPasteContext && inputMode === 'file' && !hasFileReady && 'Upload an Excel or CSV file below.'}
+              {hasPasteContext && inputMode === 'file' && !hasFileReady && 'Upload a CSV file below.'}
               {hasPasteContext && inputMode === 'file' && hasFileReady && !hasExtracted && `${fileParse.totalRows} row(s) loaded · map columns then extract`}
               {hasPasteContext && hasExtracted && 'Content locked after extract. Use Clear to start over.'}
             </ContextBanner>
@@ -775,12 +775,12 @@ export default function CommunicationsPastePage() {
             {inputMode === 'file' ? (
               <div className="paste-file-upload-zone">
                 <p><strong>Upload camp file</strong></p>
-                <p className="import-muted">Supported: .xlsx, .xls, .csv</p>
+                <p className="import-muted">Supported: .csv (preferred) or .xlsb · max 1,000 rows · max 3 MB</p>
                 <label className="btn secondary">
                   Choose file
                   <input
                     type="file"
-                    accept=".xlsx,.xls,.csv"
+                    accept=".csv,.xlsb,text/csv"
                     disabled={!hasPasteContext || actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
                     onChange={(e) => {
                       handleFileUpload(e.target.files?.[0]);

@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useAuth as useTyloAuth } from '../../shared/auth.jsx';
+import { getErrorMessage } from '../../shared/importErrors.js';
 import { canSetHistoricalCampDates as canSetHistoricalCampDatesForUser } from './utils/campDatePolicy.js';
 
 /** TYLO role names that grant full camp-ops access (same as HueDora admin / super_admin). */
@@ -115,8 +116,8 @@ export function useCampOpsAuth() {
   };
 }
 
-export function apiErrorMessage(err, fallback = 'Request failed') {
-  return err?.details?.message || err?.message || fallback;
+export function apiErrorMessage(err, fallback = 'Something went wrong. Please try again.') {
+  return getErrorMessage(err?.details?.message || err, fallback);
 }
 
 /** Alias for ported HueDora pages that import `useAuth`. */

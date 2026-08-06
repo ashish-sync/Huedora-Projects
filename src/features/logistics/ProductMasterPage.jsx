@@ -9,6 +9,7 @@ import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx'
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
   INVENTORY_TRACKING_OPTIONS,
@@ -69,6 +70,9 @@ export default function ProductMasterPage() {
 
   const [mode, setMode] = useState('list');
   const [rows, setRows] = useState([]);
+  const [listMeta, setListMeta] = useState({ page: 1, limit: 50, total: 0, pages: 0 });
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
   const [catalog, setCatalog] = useState([]);
   const [uoms, setUoms] = useState([]);
   const [q, setQ] = useState('');
@@ -119,7 +123,7 @@ export default function ProductMasterPage() {
     try {
       const [uomRes, productRes] = await Promise.all([
         api('/logistics/uoms?limit=200'),
-        api('/logistics/products?limit=500&isActive=true'),
+        api('/logistics/products?limit=200&isActive=true'),
       ]);
       setUoms(uomRes.data || []);
       setCatalog(productRes.data || []);
@@ -131,23 +135,39 @@ export default function ProductMasterPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const params = new URLSearchParams({ limit: '500' });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
       if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (typeFilter) params.set('productType', typeFilter);
       if (categoryFilter) params.set('productCategory', categoryFilter);
       if (statusFilter === 'active') params.set('isActive', 'true');
       if (statusFilter === 'inactive') params.set('isActive', 'false');
       const res = await api(`/logistics/products?${params}`);
-      setRows(res.data || []);
+      const data = res.data || [];
+      setRows(data);
+      setListMeta(
+        res.meta || {
+          page,
+          limit,
+          total: data.length,
+          pages: Math.ceil(data.length / limit) || 0,
+        }
+      );
       setSelected(new Set());
     } catch (e) {
       setError(e.message);
     }
-  }, [debouncedQ, typeFilter, categoryFilter, statusFilter]);
+  }, [debouncedQ, typeFilter, categoryFilter, statusFilter, page, limit]);
 
   useEffect(() => {
     loadLookups();
   }, [loadLookups]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQ, typeFilter, categoryFilter, statusFilter]);
 
   useEffect(() => {
     if (mode === 'list') load();
@@ -464,6 +484,17 @@ export default function ProductMasterPage() {
             </tbody>
           </table>
         </div>
+        <PaginationBar
+          page={listMeta.page || page}
+          limit={listMeta.limit || limit}
+          total={listMeta.total || 0}
+          pages={listMeta.pages || 0}
+          onPageChange={setPage}
+          onLimitChange={(n) => {
+            setLimit(n);
+            setPage(1);
+          }}
+        />
       </div>
     );
   }

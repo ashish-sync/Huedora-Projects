@@ -1,10 +1,16 @@
 import { useRef, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { ACTION } from '../../shared/labels.js';
+import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
+import {
+  getErrorMessage,
+  validateImportFileClient,
+  formatRowImportError,
+} from '../../shared/importErrors.js';
 
 /**
  * Standard master actions: Download, Sample format, Import.
- * Download uses primary styling; sample and import use secondary.
+ * Import accepts CSV (primary) or XLSB; samples are CSV.
  */
 export default function MasterExcelToolbar({
   exportPath,
@@ -31,7 +37,7 @@ export default function MasterExcelToolbar({
   const secondaryBtnClass = `btn secondary${compactClass}`;
 
   const reportError = (err) => {
-    const message = err?.message || 'Request failed';
+    const message = getErrorMessage(err, IMPORT_ACCEPT_HINT);
     if (onError) onError(message);
     else setMsg('');
     return message;
@@ -55,7 +61,10 @@ export default function MasterExcelToolbar({
     setSampleBusy(true);
     setMsg('');
     try {
-      await downloadExcel(samplePath, sampleFilename);
+      const name = sampleFilename
+        ? String(sampleFilename).replace(/\.xlsx$/i, '.csv')
+        : undefined;
+      await downloadExcel(samplePath, name);
     } catch (err) {
       reportError(err);
     } finally {
@@ -65,6 +74,12 @@ export default function MasterExcelToolbar({
 
   const runImport = async (file) => {
     if (!importPath || !file) return;
+    const pre = validateImportFileClient(file);
+    if (pre) {
+      reportError(pre);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     setImportBusy(true);
     setMsg('');
     try {
@@ -72,11 +87,13 @@ export default function MasterExcelToolbar({
       fd.append('file', file);
       const { data } = await api(importPath, { method: 'POST', body: fd });
       const errHint =
-        data.errorRows > 0 ? ` · ${data.errorRows} row${data.errorRows === 1 ? '' : 's'} failed` : '';
+        data.errorRows > 0
+          ? ` · ${data.errorRows} row${data.errorRows === 1 ? '' : 's'} failed`
+          : '';
       const summary = `Imported ${data.created || 0} created · ${data.updated || 0} updated${errHint}`;
       setMsg(summary);
       if (data.errors?.length && onError) {
-        onError(data.errors.map((e) => `Row ${e.row}: ${e.message}`).slice(0, 3).join(' · '));
+        onError(data.errors.slice(0, 3).map(formatRowImportError).join(' '));
       }
       onImportComplete?.(data);
     } catch (err) {
@@ -122,7 +139,7 @@ export default function MasterExcelToolbar({
           <input
             ref={fileRef}
             type="file"
-            accept=".xlsx,.xls,.csv"
+            accept={IMPORT_ACCEPT_ATTR}
             hidden
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -134,6 +151,7 @@ export default function MasterExcelToolbar({
             type="button"
             disabled={importBusy}
             onClick={() => fileRef.current?.click()}
+            title={IMPORT_ACCEPT_HINT}
           >
             {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
           </button>

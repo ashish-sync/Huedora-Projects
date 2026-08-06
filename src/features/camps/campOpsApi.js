@@ -55,7 +55,7 @@ async function postForm(path, formData) {
 async function getBlob(path) {
   const res = await apiFetch(path);
   if (!res.ok) {
-    let message = `Download failed (${res.status})`;
+    let message = `Download failed (${res.status}). Please try again.`;
     try {
       const json = await res.json();
       if (json?.error?.message || json?.message) {

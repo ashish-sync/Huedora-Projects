@@ -13,6 +13,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import { validateUploadFile } from '../../shared/importErrors.js';
 import ServiceProviderProfile from './ServiceProviderProfile.jsx';
 import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
@@ -281,6 +282,15 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
 
   async function uploadKycDocument(docType, file) {
     if (!editId || !file) return;
+    const pre = validateUploadFile(file, {
+      maxBytes: 5 * 1024 * 1024,
+      acceptExt: ['.pdf', '.png', '.jpg', '.jpeg', '.webp'],
+      label: 'KYC document',
+    });
+    if (pre) {
+      setError(pre);
+      return;
+    }
     setKycUploadBusy(docType);
     setError('');
     try {

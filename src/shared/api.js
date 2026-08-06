@@ -96,7 +96,14 @@ async function parseJsonSafe(res) {
 }
 
 function toApiError(json, status) {
-  const err = new Error(json?.error?.message || `Request failed (${status})`);
+  const message =
+    json?.error?.message ||
+    (status === 413
+      ? 'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.'
+      : status === 429
+        ? 'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or .xlsb file.'
+        : `Request failed (${status})`);
+  const err = new Error(message);
   err.status = status;
   err.code = json?.error?.code;
   err.details = json?.error?.details;
@@ -165,12 +172,18 @@ export async function downloadExcel(path, filename, retried = false) {
         /* fall through */
       }
     }
-    let message = `Download failed (${res.status})`;
+    let message = `Download failed (${res.status}). Please try again.`;
     try {
       const json = await res.json();
       if (json?.error?.message) message = json.error.message;
     } catch {
-      /* ignore */
+      if (res.status === 413) {
+        message =
+          'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.';
+      } else if (res.status === 429) {
+        message =
+          'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or .xlsb file.';
+      }
     }
     throw new Error(message);
   }

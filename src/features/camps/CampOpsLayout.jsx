@@ -15,7 +15,7 @@ const pageTitles = {
   '/camp-one/manage': { title: NAV.CAMP_MANAGE, subtitle: 'Review, approve, execute, and manage camps' },
   '/camp-one/communications/paste': { title: NAV.CAMP_CREATE, subtitle: 'Paste camp details, extract fields, and create camps' },
   '/camp-one/communications/email': { title: NAV.CAMP_CREATE, subtitle: 'Review inbox, extract camps, and manage email rules' },
-  '/camp-one/communications/upload': { title: NAV.CAMP_CREATE, subtitle: 'Upload Excel or CSV, map columns, and import camps' },
+  '/camp-one/communications/upload': { title: NAV.CAMP_CREATE, subtitle: 'Upload CSV, map columns, and import camps' },
   '/camp-one/communications/download': { title: NAV.CAMP_CREATE, subtitle: 'Download camp exports and sample import templates' },
 };
 

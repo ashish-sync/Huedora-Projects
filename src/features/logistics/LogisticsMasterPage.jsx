@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -6,20 +6,21 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
-import ProductMasterPage from './ProductMasterPage.jsx';
-import ExpenseMasterPage from './ExpenseMasterPage.jsx';
-import ContactDirectoryPage from '../agreements/ContactDirectoryPage.jsx';
-import DocumentMasterPage from '../agreements/DocumentMasterPage.jsx';
-import SignatureMasterPage from '../agreements/SignatureMasterPage.jsx';
-import PicklistApprovalsPage from '../masters/PicklistApprovalsPage.jsx';
-import LocationMasterPage from '../locations/LocationMasterPage.jsx';
-import ClientMasterEmbeddedPage from '../camps/ClientMasterEmbeddedPage.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import { PRODUCT_TYPES } from '../../shared/productTypes.js';
 import { INVENTORY_TRACKING_OPTIONS } from '../../shared/productMasterConfig.js';
+
+const ProductMasterPage = lazy(() => import('./ProductMasterPage.jsx'));
+const ExpenseMasterPage = lazy(() => import('./ExpenseMasterPage.jsx'));
+const ContactDirectoryPage = lazy(() => import('../agreements/ContactDirectoryPage.jsx'));
+const DocumentMasterPage = lazy(() => import('../agreements/DocumentMasterPage.jsx'));
+const SignatureMasterPage = lazy(() => import('../agreements/SignatureMasterPage.jsx'));
+const PicklistApprovalsPage = lazy(() => import('../masters/PicklistApprovalsPage.jsx'));
+const LocationMasterPage = lazy(() => import('../locations/LocationMasterPage.jsx'));
+const ClientMasterEmbeddedPage = lazy(() => import('../camps/ClientMasterEmbeddedPage.jsx'));
 
 const MASTER_GROUPS = [
   {
@@ -96,6 +97,10 @@ function EmbeddedMaster({ kind }) {
   if (kind === 'picklist-approvals') return <PicklistApprovalsPage embedded />;
   if (kind === 'client-masters') return <ClientMasterEmbeddedPage />;
   return null;
+}
+
+function MasterPane({ children }) {
+  return <Suspense fallback={<p className="muted">Loading master…</p>}>{children}</Suspense>;
 }
 
 function entitySingular(label) {
@@ -507,11 +512,17 @@ export default function LogisticsMasterPage({
           </div>
 
           {entity.dedicated === 'expense-master' ? (
-            <ExpenseMasterPage />
+            <MasterPane>
+              <ExpenseMasterPage />
+            </MasterPane>
           ) : entity.dedicated ? (
-            <ProductMasterPage />
+            <MasterPane>
+              <ProductMasterPage />
+            </MasterPane>
           ) : entity.embedded ? (
-            <EmbeddedMaster kind={entity.embedded} />
+            <MasterPane>
+              <EmbeddedMaster kind={entity.embedded} />
+            </MasterPane>
           ) : (
             <>
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}

@@ -40,6 +40,7 @@ export default function Layout({ children }) {
       setUnreadCount(0);
       return;
     }
+    if (typeof document !== 'undefined' && document.hidden && !force) return;
     const now = Date.now();
     if (!force && now - lastUnreadPollRef.current < 5000) return;
     lastUnreadPollRef.current = now;
@@ -49,13 +50,13 @@ export default function Layout({ children }) {
     unreadAbortRef.current = controller;
 
     try {
-      const res = await api('/notifications?unread=true', {
+      const res = await api('/notifications/unread-count', {
         ...(controller ? { signal: controller.signal } : {}),
       });
-      const unread = (res.data || []).filter((n) => !n.readAt);
-      const ids = new Set(unread.map((n) => String(n._id)));
+      const count = Number(res.data?.count) || 0;
+      const ids = new Set((res.data?.sampleIds || []).map(String));
       const prev = knownUnreadIdsRef.current;
-      if (prev) {
+      if (prev && ids.size) {
         let hasNew = false;
         for (const id of ids) {
           if (!prev.has(id)) {
@@ -65,8 +66,8 @@ export default function Layout({ children }) {
         }
         if (hasNew) playNotificationSound();
       }
-      knownUnreadIdsRef.current = ids;
-      setUnreadCount((prevCount) => (prevCount === unread.length ? prevCount : unread.length));
+      knownUnreadIdsRef.current = ids.size ? ids : knownUnreadIdsRef.current;
+      setUnreadCount((prevCount) => (prevCount === count ? prevCount : count));
     } catch (err) {
       if (err?.name === 'AbortError') return;
       // Keep last known count on transient errors
@@ -81,14 +82,22 @@ export default function Layout({ children }) {
   useEffect(() => {
     if (!canSeeNotifications) return undefined;
     refreshUnread({ force: true });
-    const timer = window.setInterval(() => refreshUnread({ force: true }), POLL_MS);
+    const timer = window.setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      refreshUnread({ force: true });
+    }, POLL_MS);
     const onFocus = () => refreshUnread({ force: false });
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) refreshUnread({ force: true });
+    };
     const onChanged = () => refreshUnread({ force: true });
     window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
       unreadAbortRef.current?.abort();
     };

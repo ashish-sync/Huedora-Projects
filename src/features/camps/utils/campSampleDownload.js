@@ -13,7 +13,7 @@ export async function downloadCampSampleFile() {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'camp-import-sample.xlsx';
+  link.download = 'camp-import-sample.csv';
   document.body.appendChild(link);
   link.click();
   link.remove();

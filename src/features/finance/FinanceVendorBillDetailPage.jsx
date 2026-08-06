@@ -16,6 +16,7 @@ import {
   vendorBillStatusLabel,
 } from './vendorBillConstants.js';
 import './finance-commercial.css';
+import { validateUploadFile } from '../../shared/importErrors.js';
 
 const EMPTY_FORM = {
   billNumber: '',
@@ -274,6 +275,14 @@ export default function FinanceVendorBillDetailPage() {
 
   async function uploadAttachment(billId) {
     if (!billFiles.length) return null;
+    for (const file of billFiles) {
+      const pre = validateUploadFile(file, {
+        maxBytes: 10 * 1024 * 1024,
+        acceptExt: ['.pdf', '.png', '.jpg', '.jpeg', '.webp'],
+        label: 'vendor bill',
+      });
+      if (pre) throw new Error(pre);
+    }
     const body = new FormData();
     billFiles.forEach((file) => body.append('bills', file));
     const res = await api(`/finance/vendor-bills/${billId}/attachment`, {

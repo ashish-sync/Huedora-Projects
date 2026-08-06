@@ -115,17 +115,8 @@ export default function ProformaGeneratorForm({ form, setForm, doc }) {
           <Field label="Delivery address" className="doc-span-2">
             <textarea className="doc-field-input" rows={2} value={form.recipient.deliveryAddress} onChange={(e) => update('recipient.deliveryAddress', e.target.value)} />
           </Field>
-          <Field label="Contact person">
-            <input className="doc-field-input" value={form.recipient.contactPerson} onChange={(e) => update('recipient.contactPerson', e.target.value)} />
-          </Field>
-          <Field label="Email">
-            <input className="doc-field-input" value={form.recipient.contactEmail} onChange={(e) => update('recipient.contactEmail', e.target.value)} />
-          </Field>
           <Field label="GSTIN">
             <input className="doc-field-input" value={form.recipient.recipientGstin} onChange={(e) => update('recipient.recipientGstin', e.target.value)} />
-          </Field>
-          <Field label="PAN">
-            <input className="doc-field-input" value={form.recipient.recipientPan} onChange={(e) => update('recipient.recipientPan', e.target.value)} />
           </Field>
           <Field label="State code" hint="Used for IGST vs CGST/SGST">
             <input className="doc-field-input" value={form.recipient.stateCode} onChange={(e) => update('recipient.stateCode', e.target.value)} />
@@ -163,17 +154,14 @@ export default function ProformaGeneratorForm({ form, setForm, doc }) {
                   <Field label="HSN/SAC">
                     <input className="doc-field-input" value={row.hsnSac} onChange={(e) => updateRow(row.id, { hsnSac: e.target.value })} />
                   </Field>
-                  <Field label="IGST %">
-                    <input type="number" className="doc-field-input" value={row.igstRate} onChange={(e) => updateRow(row.id, { igstRate: e.target.value })} />
-                  </Field>
                   <Field label="Qty">
                     <input type="number" className="doc-field-input" value={row.qty} onChange={(e) => updateRow(row.id, { qty: e.target.value })} />
                   </Field>
                   <Field label="Unit rate">
                     <input type="number" className="doc-field-input" value={row.rate} onChange={(e) => updateRow(row.id, { rate: e.target.value })} />
                   </Field>
-                  <Field label="Discount">
-                    <input type="number" className="doc-field-input" value={row.discount} onChange={(e) => updateRow(row.id, { discount: e.target.value })} />
+                  <Field label="GST Rate %">
+                    <input type="number" className="doc-field-input" value={row.igstRate} onChange={(e) => updateRow(row.id, { igstRate: e.target.value })} />
                   </Field>
                 </div>
               </LineCard>

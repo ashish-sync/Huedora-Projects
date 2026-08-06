@@ -125,18 +125,19 @@ export default function DeliveryChallanBuilderPanel({
               onChange={(e) => update('deliverTo.name', e.target.value)}
             />
           </Field>
+          <Field label="Contact Name">
+            <input
+              className={inputCls}
+              value={form.deliverTo?.contactPerson || ''}
+              onChange={(e) => update('deliverTo.contactPerson', e.target.value)}
+              placeholder="—"
+            />
+          </Field>
           <Field label="Company">
             <input
               className={inputCls}
               value={form.deliverTo?.company || ''}
               onChange={(e) => update('deliverTo.company', e.target.value)}
-            />
-          </Field>
-          <Field label="Contact person">
-            <input
-              className={inputCls}
-              value={form.deliverTo?.contactPerson || ''}
-              onChange={(e) => update('deliverTo.contactPerson', e.target.value)}
             />
           </Field>
           <Field label="Mobile">
@@ -232,10 +233,15 @@ export default function DeliveryChallanBuilderPanel({
                 />
               </Field>
               <Field label="Description" span={2}>
-                <input
+                <textarea
                   className={inputCls}
+                  rows={2}
                   value={line.description || ''}
-                  onChange={(e) => updateLine(index, { description: e.target.value })}
+                  onChange={(e) => {
+                    const parts = String(e.target.value || '').split('\n').slice(0, 2);
+                    updateLine(index, { description: parts.join('\n') });
+                  }}
+                  placeholder="Max 2 lines (Shift+Enter on preview)"
                 />
               </Field>
               <Field label="Make">
@@ -323,8 +329,18 @@ export default function DeliveryChallanBuilderPanel({
           <Field label="Received mobile">
             <input
               className={inputCls}
+              inputMode="numeric"
+              maxLength={10}
               value={form.acknowledgement?.receivedMobile || ''}
-              onChange={(e) => update('acknowledgement.receivedMobile', e.target.value)}
+              onChange={(e) =>
+                update(
+                  'acknowledgement.receivedMobile',
+                  String(e.target.value || '')
+                    .replace(/\D/g, '')
+                    .slice(0, 10)
+                )
+              }
+              placeholder="10 digits"
             />
           </Field>
           <Field label="Condition on receipt">

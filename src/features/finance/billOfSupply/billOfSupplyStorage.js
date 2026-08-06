@@ -50,6 +50,7 @@ export function defaultBillOfSupplyForm() {
     },
     clientMasterId: '',
     clientId: '',
+    shipToSameAsBillTo: false,
     billTo: {
       name: '',
       contactPerson: '',
@@ -106,9 +107,10 @@ export function defaultBillOfSupplyForm() {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: 0,
+      roundOff: '',
     },
     taxColumnLabels: {
-      rateLabel: 'GST Rate',
+      rateLabel: 'GST Rate %',
       amountLabel: 'GST',
     },
     signature: {

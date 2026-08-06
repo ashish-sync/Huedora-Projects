@@ -10,8 +10,6 @@ export function defaultPoLineItem(overrides = {}) {
   return {
     id: crypto.randomUUID(),
     description: '',
-    make: '',
-    model: '',
     unit: 'Nos',
     uom: 'Nos',
     qty: 1,
@@ -53,9 +51,10 @@ export function defaultPurchaseOrderForm() {
       mobile: '',
       email: '',
     },
+    contactId: '',
     vendor: {
       name: '',
-      code: 'VND-000123',
+      code: '',
       address: '',
       gstin: '',
       pan: '',
@@ -87,6 +86,26 @@ export function defaultPurchaseOrderForm() {
       warranty: '',
       validity: '',
     },
+    specialTerms: {
+      deliverySchedule: '',
+      warranty: '',
+      replacementPolicy: '',
+      penaltyClause: '',
+      inspection: '',
+      documentation: '',
+      otherInstructions: '',
+    },
+    authorisation: {
+      preparedBy: { name: '', designation: '', signature: '', date: '' },
+      checkedBy: { name: '', designation: '', signature: '', date: '' },
+      approvedBy: { name: '', designation: '', signature: '', date: '' },
+    },
+    vendorAcceptance: {
+      acceptedBy: '',
+      designation: '',
+      signature: '',
+      date: '',
+    },
     po: {
       documentNumber: '',
       documentDate: today,
@@ -102,13 +121,14 @@ export function defaultPurchaseOrderForm() {
     lineItems: [defaultPoLineItem()],
     terms: [],
     notes: '',
+    roundOff: '',
     signature: {
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
     },
     taxColumnLabels: {
-      rateLabel: 'GST %',
+      rateLabel: 'GST Rate %',
       amountLabel: 'GST',
     },
   };
@@ -143,16 +163,16 @@ function migratePurchaseOrderDraft(raw) {
     projectCostCentre: raw.po?.projectCostCentre || raw.po?.reference || '',
     deliveryDate: raw.po?.deliveryDate || raw.dueDate || base.po.deliveryDate,
   };
-  const lineItems = (raw.lineItems || []).map((line) =>
-    defaultPoLineItem({
-      ...line,
-      unit: line.unit || line.uom || 'Nos',
-      uom: line.uom || line.unit || 'Nos',
-      make: line.make || '',
-      model: line.model || '',
-      discount: line.discount ?? 0,
-    })
-  );
+  const lineItems = (raw.lineItems || [])
+    .slice(0, MAX_PO_LINE_ITEMS)
+    .map((line) =>
+      defaultPoLineItem({
+        ...line,
+        unit: line.unit || line.uom || 'Nos',
+        uom: line.uom || line.unit || 'Nos',
+        discount: line.discount ?? 0,
+      })
+    );
 
   return {
     ...base,
@@ -193,6 +213,19 @@ function migratePurchaseOrderDraft(raw) {
       ...base.commercial,
       ...(raw.commercial || {}),
       paymentTerms: raw.commercial?.paymentTerms || raw.po?.paymentTerms || '',
+    },
+    specialTerms: {
+      ...base.specialTerms,
+      ...(raw.specialTerms || {}),
+    },
+    authorisation: {
+      preparedBy: { ...base.authorisation.preparedBy, ...(raw.authorisation?.preparedBy || {}) },
+      checkedBy: { ...base.authorisation.checkedBy, ...(raw.authorisation?.checkedBy || {}) },
+      approvedBy: { ...base.authorisation.approvedBy, ...(raw.authorisation?.approvedBy || {}) },
+    },
+    vendorAcceptance: {
+      ...base.vendorAcceptance,
+      ...(raw.vendorAcceptance || {}),
     },
     po,
     lineItems: lineItems.length ? lineItems : base.lineItems,

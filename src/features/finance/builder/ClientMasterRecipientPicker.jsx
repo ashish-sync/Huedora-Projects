@@ -4,6 +4,7 @@ import { clientMasterApi } from '../../camps/campOpsApi.js';
 
 /**
  * Map a Client Master program (+ company billing) onto invoice bill-to / proforma recipient fields.
+ * Contact Name always prefers program SPOC Name from Client Master.
  */
 export function recipientPatchFromClientMaster(row) {
   if (!row) return null;
@@ -11,10 +12,10 @@ export function recipientPatchFromClientMaster(row) {
   const name = String(row.clientName || billing.name || '').trim();
   const address = String(billing.address || '').trim();
   const contactPerson = String(
-    billing.contactPerson || row.spocName || ''
+    row.spocName || billing.contactPerson || ''
   ).trim();
-  const email = String(billing.email || row.spocEmail || '').trim();
-  const phone = String(billing.phone || row.spocNumber || '').trim();
+  const email = String(row.spocEmail || billing.email || '').trim();
+  const phone = String(row.spocNumber || billing.phone || '').trim();
   const projectName = String(row.programName || row.campName || '').trim();
 
   return {
@@ -129,8 +130,8 @@ export default function ClientMasterRecipientPicker({
       </AdaptiveSelect>
       {error ? <p className="ib-client-master-pick-error">{error}</p> : null}
       <p className="ib-client-master-pick-hint">
-        Pick a program to autofill recipient details from Client Master billing. You can still edit
-        fields below.
+        Pick a program to autofill recipient details from Client Master. Contact Name uses SPOC Name.
+        You can still edit fields below.
       </p>
     </div>
   );

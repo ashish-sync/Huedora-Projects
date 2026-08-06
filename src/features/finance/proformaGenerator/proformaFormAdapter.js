@@ -42,7 +42,7 @@ export function proformaToInvoiceView(proforma) {
     },
     payment: payment || {},
     signature: signature || {},
-    taxColumnLabels: taxColumnLabels || { rateLabel: 'GST Rate', amountLabel: 'GST' },
+    taxColumnLabels: taxColumnLabels || { rateLabel: 'GST Rate %', amountLabel: 'GST' },
     billTo: {
       name: recipient?.name || '',
       address: recipient?.placeOfSupply || '',
@@ -55,6 +55,7 @@ export function proformaToInvoiceView(proforma) {
     },
     shipTo: {
       name: shipTo?.name || '',
+      contactPerson: shipTo?.contactPerson || '',
       address: shipTo?.address || recipient?.deliveryAddress || '',
       gstin: shipTo?.gstin || '',
       stateName: shipTo?.stateName || '',
@@ -88,6 +89,7 @@ const PATH_MAP = {
   'billTo.contactPerson': 'recipient.contactPerson',
   'billTo.email': 'recipient.contactEmail',
   'shipTo.name': 'shipTo.name',
+  'shipTo.contactPerson': 'shipTo.contactPerson',
   'shipTo.address': 'shipTo.address',
   'shipTo.gstin': 'shipTo.gstin',
   'shipTo.stateName': 'shipTo.stateName',

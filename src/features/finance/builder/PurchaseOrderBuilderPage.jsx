@@ -21,6 +21,8 @@ export default function PurchaseOrderBuilderPage() {
     updateLine,
     addLine,
     removeLine,
+    applyVendorContact,
+    clearVendorContact,
     newPurchaseOrder,
     status,
     error,
@@ -82,6 +84,8 @@ export default function PurchaseOrderBuilderPage() {
           updateLine={updateLine}
           addLine={addLine}
           removeLine={removeLine}
+          applyVendorContact={applyVendorContact}
+          clearVendorContact={clearVendorContact}
         />
       }
     >

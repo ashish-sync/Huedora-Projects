@@ -50,12 +50,15 @@ export function computeProformaDocument(rows, taxMode = 'igst', adjustments = {}
   const subtotal = lineRows.reduce((s, l) => s + l.taxableAmount, 0);
   const taxAmount = lineRows.reduce((s, l) => s + l.taxAmount, 0);
   const totalDiscount = lineRows.reduce((s, l) => s + (Number(l.discount) || 0), 0);
-  const cnAmount = Number(adjustments.cnAmount) || 0;
-  const dnAmount = Number(adjustments.dnAmount) || 0;
-  const advanceReceived = Number(adjustments.advanceReceived) || 0;
-  const rawTotal = subtotal + taxAmount + dnAmount - cnAmount - advanceReceived;
-  const rounded = Math.round(rawTotal);
-  const roundOff = Math.round((rounded - rawTotal) * 100) / 100;
+  const rawTotal = subtotal + taxAmount;
+  const autoRoundOff = Math.round((Math.round(rawTotal) - rawTotal) * 100) / 100;
+  const hasManualRoundOff =
+    adjustments.roundOff !== undefined &&
+    adjustments.roundOff !== null &&
+    String(adjustments.roundOff).trim() !== '';
+  const roundOff = hasManualRoundOff
+    ? Math.round((Number(adjustments.roundOff) || 0) * 100) / 100
+    : autoRoundOff;
   const grandTotal = Math.round((rawTotal + roundOff) * 100) / 100;
 
   return {
@@ -64,9 +67,9 @@ export function computeProformaDocument(rows, taxMode = 'igst', adjustments = {}
     subtotal: Math.round(subtotal * 100) / 100,
     taxAmount: Math.round(taxAmount * 100) / 100,
     totalDiscount,
-    cnAmount,
-    dnAmount,
-    advanceReceived,
+    cnAmount: 0,
+    dnAmount: 0,
+    advanceReceived: 0,
     roundOff,
     grandTotal,
     amountInWords: amountInWordsIndian(grandTotal),

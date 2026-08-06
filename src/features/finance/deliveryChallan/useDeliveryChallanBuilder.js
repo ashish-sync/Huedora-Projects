@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { applyOrgMasterToInvoiceForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
+import { clampTextLines } from '../documentGenerator/inlineEdit.jsx';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
 import {
   defaultDeliveryChallanForm,
@@ -14,12 +15,14 @@ function applyOrg(form, org) {
     ...next,
     from: {
       ...next.from,
-      companyName: next.from?.companyName || next.company?.legalName || '',
-      address: next.from?.address || next.company?.address || '',
-      gstin: next.from?.gstin || next.company?.gstin || '',
-      mobile: next.from?.mobile || next.company?.phone || '',
-      email: next.from?.email || next.company?.email || '',
-      contactPerson: next.from?.contactPerson || next.company?.contactPerson || '',
+      // Identity / tax / contact channels always from Organisation master
+      companyName: next.company?.legalName || '',
+      address: next.company?.address || '',
+      gstin: next.company?.gstin || '',
+      mobile: next.company?.phone || '',
+      email: next.company?.email || '',
+      // Contact person remains document-specific
+      contactPerson: next.from?.contactPerson || '',
     },
   };
 }
@@ -29,6 +32,14 @@ function freshDeliveryChallanForm() {
   form.invoice.documentNumber = '';
   return form;
 }
+
+const ORG_LOCKED_FROM_PATHS = new Set([
+  'from.companyName',
+  'from.address',
+  'from.gstin',
+  'from.mobile',
+  'from.email',
+]);
 
 export function useDeliveryChallanBuilder() {
   const { data: orgMaster } = useCommercialOrgMaster();
@@ -44,7 +55,9 @@ export function useDeliveryChallanBuilder() {
 
   const update = useCallback(
     (path, value) => {
-      if (readOnly) return;
+      if (readOnly || ORG_LOCKED_FROM_PATHS.has(path) || path.startsWith('company.') || path.startsWith('bank.')) {
+        return;
+      }
       setForm((prev) => {
         const next = structuredClone(prev);
         const keys = path.split('.');
@@ -65,7 +78,11 @@ export function useDeliveryChallanBuilder() {
         while (lineItems.length <= index) {
           lineItems.push(defaultDeliveryChallanLine());
         }
-        lineItems[index] = { ...lineItems[index], ...patch };
+        const next = { ...patch };
+        if (Object.prototype.hasOwnProperty.call(next, 'description')) {
+          next.description = clampTextLines(next.description, 2);
+        }
+        lineItems[index] = { ...lineItems[index], ...next };
         return { ...prev, lineItems };
       });
     },

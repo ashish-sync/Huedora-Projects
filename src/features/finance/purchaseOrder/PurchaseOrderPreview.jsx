@@ -11,6 +11,7 @@ import {
 import { InlineAddChip, InlineField, InlineTableInput, InlineTextarea } from '../documentGenerator/inlineEdit.jsx';
 import '../documentGenerator/inline-edit.css';
 import { defaultPoLineItem, MAX_PO_LINE_ITEMS } from './purchaseOrderStorage.js';
+import { formatCompanyLetterhead } from '../shared/companyLetterhead.js';
 import './purchase-order.css';
 
 function money(n) {
@@ -57,56 +58,78 @@ export default function PurchaseOrderPreview({
     ...line,
     ...resolveLineGstRates(line, taxMode),
   }));
-  const totals = computeInvoiceTotals(normalizedLines, taxMode, {});
-  const { company, buyer, vendor, delivery, billing, commercial, po, signature } = form;
+  const totals = computeInvoiceTotals(normalizedLines, taxMode, {
+    roundOff: form.roundOff,
+  });
+  const { company, buyer, vendor, delivery, billing, commercial, po, specialTerms, authorisation, vendorAcceptance } =
+    form;
   const hasLogo = Boolean(company?.logoDataUrl);
-  const legal = company?.legalName || 'Tylo Care Private Limited';
-  const lines = Array.from({ length: MAX_PO_LINE_ITEMS }, (_, i) =>
-    form.lineItems?.[i] ? form.lineItems[i] : defaultPoLineItem()
+  const legal = company?.legalName || '—';
+  const lines = (form.lineItems?.length > 0 ? form.lineItems : [defaultPoLineItem()]).slice(
+    0,
+    MAX_PO_LINE_ITEMS
   );
   const words = amountInWordsIndian(totals.grandTotal);
-  const filledCount = (form.lineItems || []).filter((r) => r.description || Number(r.qty) || Number(r.rate)).length;
+  const canAddLine = editable && lines.length < MAX_PO_LINE_ITEMS;
 
   const lineTaxable = (line) =>
     Math.round(((Number(line.qty) || 0) * (Number(line.rate) || 0) - (Number(line.discount) || 0)) * 100) / 100;
+  const letterhead = formatCompanyLetterhead(company, { variant: 'po-compact' });
+
+  const specialTermRows = [
+    { key: 'deliverySchedule', label: 'Delivery Schedule:' },
+    { key: 'warranty', label: 'Warranty:' },
+    { key: 'replacementPolicy', label: 'Replacement Policy:' },
+    { key: 'penaltyClause', label: 'Penalty Clause:' },
+    { key: 'inspection', label: 'Inspection:' },
+    { key: 'documentation', label: 'Documentation:' },
+    { key: 'otherInstructions', label: 'Other Instructions:' },
+  ];
+
+  const summaryRows = [
+    { label: 'Gross Amount', value: money(totals.totalGrossAmount) },
+    { label: 'Discount', value: money(totals.totalDiscount) },
+    { label: 'Taxable Amount', value: money(totals.subtotal) },
+    { label: 'CGST', value: money(totals.totalCgstAmount) },
+    { label: 'SGST', value: money(totals.totalSgstAmount) },
+    { label: 'IGST', value: money(totals.totalIgstAmount) },
+  ];
+
+  const authRoles = [
+    { key: 'preparedBy', label: 'Prepared By' },
+    { key: 'checkedBy', label: 'Checked By' },
+    { key: 'approvedBy', label: 'Approved By' },
+  ];
+  const authFields = [
+    { key: 'name', label: 'Name' },
+    { key: 'designation', label: 'Designation' },
+    { key: 'signature', label: 'Signature' },
+    { key: 'date', label: 'Date', type: 'date' },
+  ];
 
   return (
     <div ref={previewRef} className="po-print-root">
       <article className="po-doc" aria-label="Purchase Order">
         <header className="po-header">
-          <div>
+          <div className="po-header-brand">
             {hasLogo ? (
               <img src={company.logoDataUrl} alt={legal} className="po-logo" />
             ) : (
               <div className="po-logo-fallback">
                 <span className="po-logo-text">TYLO</span>
-                <span className="po-tagline">{company?.brandLine || '— Bringing Healthcare Closer. —'}</span>
+                <span className="po-tagline">{company?.brandLine || ''}</span>
               </div>
             )}
           </div>
-          <div className="po-company">
-            <p>
-              <strong>Registered Office:</strong> {company?.registeredOffice || company?.address || '—'}
-            </p>
-            <p>
-              {[
-                company?.gstin ? `GSTIN: ${company.gstin}` : null,
-                company?.cin ? `CIN: ${company.cin}` : null,
-                company?.udyam
-                  ? `Udyam: ${company.udyam}${company.udyamLabel ? ` (${company.udyamLabel})` : ''}`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join('  |  ')}
-            </p>
-            <p>
-              {[
-                company?.email ? `Email: ${company.email}` : null,
-                company?.website ? `Website: ${company.website}` : null,
-              ]
-                .filter(Boolean)
-                .join('  |  ')}
-            </p>
+          <div className="po-company po-company--compact">
+            {letterhead.legalName ? (
+              <p className="po-company-line1">
+                <strong className="po-company-legal">{letterhead.legalName}</strong>
+              </p>
+            ) : null}
+            {letterhead.line2 ? (
+              <p className="po-company-line2 po-company-line2--single">{letterhead.line2}</p>
+            ) : null}
           </div>
           <h1 className="po-title">PURCHASE ORDER</h1>
         </header>
@@ -170,40 +193,18 @@ export default function PurchaseOrderPreview({
           <tbody>
             <tr>
               <td className="po-party-body">
-                <FieldRow label="Company Name">
-                  <Val
-                    editable={editable}
-                    value={buyer?.companyName || legal}
-                    onChange={(v) => onUpdate?.('buyer.companyName', v)}
-                  />
-                </FieldRow>
-                <FieldRow label="Registered Office">
-                  {editable ? (
-                    <InlineTextarea
-                      value={buyer?.address || ''}
-                      onChange={(v) => onUpdate?.('buyer.address', v)}
-                      rows={2}
-                    />
-                  ) : (
-                    buyer?.address || '—'
-                  )}
-                </FieldRow>
-                <FieldRow label="GSTIN">
-                  <Val editable={editable} value={buyer?.gstin} onChange={(v) => onUpdate?.('buyer.gstin', v)} />
-                </FieldRow>
-                <FieldRow label="Contact Person">
+                <FieldRow label="Company Name">{buyer?.companyName || legal || '—'}</FieldRow>
+                <FieldRow label="Registered Office">{buyer?.address || '—'}</FieldRow>
+                <FieldRow label="GSTIN">{buyer?.gstin || '—'}</FieldRow>
+                <FieldRow label="Contact Name">
                   <Val
                     editable={editable}
                     value={buyer?.contactPerson}
                     onChange={(v) => onUpdate?.('buyer.contactPerson', v)}
                   />
                 </FieldRow>
-                <FieldRow label="Mobile">
-                  <Val editable={editable} value={buyer?.mobile} onChange={(v) => onUpdate?.('buyer.mobile', v)} />
-                </FieldRow>
-                <FieldRow label="Email">
-                  <Val editable={editable} value={buyer?.email} onChange={(v) => onUpdate?.('buyer.email', v)} />
-                </FieldRow>
+                <FieldRow label="Mobile">{buyer?.mobile || '—'}</FieldRow>
+                <FieldRow label="Email">{buyer?.email || '—'}</FieldRow>
               </td>
               <td className="po-party-body">
                 <FieldRow label="Vendor Name">
@@ -226,7 +227,7 @@ export default function PurchaseOrderPreview({
                 <FieldRow label="GSTIN">
                   <Val editable={editable} value={vendor?.gstin} onChange={(v) => onUpdate?.('vendor.gstin', v)} />
                 </FieldRow>
-                <FieldRow label="Contact Person">
+                <FieldRow label="Contact Name">
                   <Val
                     editable={editable}
                     value={vendor?.contactPerson}
@@ -296,45 +297,11 @@ export default function PurchaseOrderPreview({
                 </FieldRow>
               </td>
               <td className="po-party-body">
-                <FieldRow label="Billing Address">
-                  {editable ? (
-                    <InlineTextarea
-                      value={billing?.address || ''}
-                      onChange={(v) => onUpdate?.('billing.address', v)}
-                      rows={2}
-                    />
-                  ) : (
-                    billing?.address || '—'
-                  )}
-                </FieldRow>
-                <FieldRow label="GSTIN">
-                  <Val
-                    editable={editable}
-                    value={billing?.gstin}
-                    onChange={(v) => onUpdate?.('billing.gstin', v)}
-                  />
-                </FieldRow>
-                <FieldRow label="State">
-                  <Val
-                    editable={editable}
-                    value={billing?.state}
-                    onChange={(v) => onUpdate?.('billing.state', v)}
-                  />
-                </FieldRow>
-                <FieldRow label="State Code">
-                  <Val
-                    editable={editable}
-                    value={billing?.stateCode}
-                    onChange={(v) => onUpdate?.('billing.stateCode', v)}
-                  />
-                </FieldRow>
-                <FieldRow label="Place of Supply">
-                  <Val
-                    editable={editable}
-                    value={billing?.placeOfSupply}
-                    onChange={(v) => onUpdate?.('billing.placeOfSupply', v)}
-                  />
-                </FieldRow>
+                <FieldRow label="Billing Address">{billing?.address || '—'}</FieldRow>
+                <FieldRow label="GSTIN">{billing?.gstin || '—'}</FieldRow>
+                <FieldRow label="State">{billing?.state || '—'}</FieldRow>
+                <FieldRow label="State Code">{billing?.stateCode || '—'}</FieldRow>
+                <FieldRow label="Place of Supply">{billing?.placeOfSupply || '—'}</FieldRow>
               </td>
             </tr>
           </tbody>
@@ -397,23 +364,31 @@ export default function PurchaseOrderPreview({
         </table>
 
         <table className="po-grid po-items">
+          <colgroup>
+            <col className="po-col-sr" />
+            <col className="po-col-desc" />
+            <col className="po-col-qty" />
+            <col className="po-col-unit" />
+            <col className="po-col-rate" />
+            <col className="po-col-taxable" />
+            <col className="po-col-gstrate" />
+            <col className="po-col-gstamt" />
+            <col className="po-col-total" />
+          </colgroup>
           <thead>
             <tr>
-              <th colSpan={12}>ITEM DETAILS</th>
+              <th colSpan={9}>ITEM DETAILS</th>
             </tr>
             <tr>
-              <th style={{ width: '4%' }}>Sr</th>
-              <th style={{ width: '16%' }}>Item Description</th>
-              <th style={{ width: '7%' }}>Make</th>
-              <th style={{ width: '7%' }}>Model</th>
-              <th style={{ width: '5%' }}>Qty</th>
-              <th style={{ width: '5%' }}>Unit</th>
-              <th style={{ width: '9%' }}>Unit Rate (₹)</th>
-              <th style={{ width: '8%' }}>Discount (₹)</th>
-              <th style={{ width: '10%' }}>Taxable Value (₹)</th>
-              <th style={{ width: '6%' }}>GST %</th>
-              <th style={{ width: '10%' }}>GST Amount (₹)</th>
-              <th style={{ width: '10%' }}>Total Amount (₹)</th>
+              <th>Sr</th>
+              <th>Item Description</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Unit Rate (₹)</th>
+              <th>Taxable Value (₹)</th>
+              <th>GST Rate %</th>
+              <th>GST Amount (₹)</th>
+              <th>Total Amount (₹)</th>
             </tr>
           </thead>
           <tbody>
@@ -429,30 +404,15 @@ export default function PurchaseOrderPreview({
                   <td className="po-desc">
                     {editable ? (
                       <InlineTextarea
-                        rows={2}
+                        rows={Math.min(2, Math.max(1, String(line.description || '').split('\n').length))}
+                        maxLines={2}
+                        shiftEnterNewline
                         value={line.description || ''}
                         onChange={(v) => onUpdateLine?.(index, { description: v })}
                         placeholder="Item description"
                       />
                     ) : (
                       line.description
-                    )}
-                  </td>
-                  <td>
-                    {editable ? (
-                      <InlineTableInput value={line.make || ''} onChange={(v) => onUpdateLine?.(index, { make: v })} />
-                    ) : (
-                      line.make
-                    )}
-                  </td>
-                  <td>
-                    {editable ? (
-                      <InlineTableInput
-                        value={line.model || ''}
-                        onChange={(v) => onUpdateLine?.(index, { model: v })}
-                      />
-                    ) : (
-                      line.model
                     )}
                   </td>
                   <td className="po-center">
@@ -490,19 +450,6 @@ export default function PurchaseOrderPreview({
                       ''
                     )}
                   </td>
-                  <td className="po-num">
-                    {editable ? (
-                      <InlineTableInput
-                        value={line.discount ?? ''}
-                        onChange={(v) => onUpdateLine?.(index, { discount: Number(v) })}
-                        align="right"
-                      />
-                    ) : hasContent ? (
-                      money(line.discount)
-                    ) : (
-                      ''
-                    )}
-                  </td>
                   <td className="po-num">{hasContent ? money(taxable) : ''}</td>
                   <td className="po-center">
                     {editable ? (
@@ -512,7 +459,10 @@ export default function PurchaseOrderPreview({
                         align="center"
                       />
                     ) : hasContent ? (
-                      getLineGstRateDisplay(line, taxMode) || '0'
+                      (() => {
+                        const rate = getLineGstRateDisplay(line, taxMode);
+                        return rate === '' || rate == null ? '—' : `${rate}%`;
+                      })()
                     ) : (
                       ''
                     )}
@@ -524,46 +474,172 @@ export default function PurchaseOrderPreview({
             })}
           </tbody>
         </table>
-        {editable && filledCount < MAX_PO_LINE_ITEMS ? (
+        {canAddLine ? (
           <div className="po-add-row">
             <InlineAddChip label="Add item row" onClick={() => onAddLine?.()} />
           </div>
         ) : null}
 
-        <div className="po-words-total">
-          <div className="po-words-total__left">
-            <div className="po-amount-words">
-              <strong>Amount In Words:</strong> Rupees {words || '____________________ Only.'}
-            </div>
-          </div>
-          <div className="po-card po-card--totals">
-            <div className="po-card-body po-card-body--totals">
-              <div className="po-totals-row">
-                <span className="po-totals-row__label">Taxable Value</span>
-                <span className="po-totals-row__value">{money(totals.subtotal)}</span>
+        <div className="po-bottom">
+          <div className="po-terms-summary">
+            <div className="po-special-terms">
+              <div className="po-block-head">SPECIAL TERMS &amp; CONDITIONS</div>
+              <div className="po-term-list">
+                {specialTermRows.map((row) => (
+                  <div key={row.key} className="po-term-row">
+                    <span className="po-term-label">{row.label}</span>
+                    <div className="po-term-value">
+                      {editable ? (
+                        <InlineField
+                          className="po-term-input"
+                          value={specialTerms?.[row.key] || ''}
+                          onChange={(v) => onUpdate?.(`specialTerms.${row.key}`, v)}
+                          placeholder=" "
+                        />
+                      ) : (
+                        <span className="po-term-text">{specialTerms?.[row.key] || ''}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="po-totals-row">
-                <span className="po-totals-row__label">Total GST</span>
-                <span className="po-totals-row__value">{money(totals.taxAmount)}</span>
-              </div>
-              <div className="po-totals-row">
-                <span className="po-totals-row__label">Round Off</span>
-                <span className="po-totals-row__value">{money(totals.roundOff)}</span>
-              </div>
             </div>
-            <div className="po-totals-grand">
-              <span className="po-totals-grand__label">GRAND TOTAL</span>
-              <span className="po-totals-grand__value">{money(totals.grandTotal)}</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="po-sign">
-          <div className="po-sign-box">
-            <p className="po-sign-for">For {signature?.companyLabel || legal}</p>
-            <div className="po-sign-line" />
-            <p className="po-sign-label">Authorised Signatory</p>
+            <table className="po-order-summary">
+              <thead>
+                <tr>
+                  <th colSpan={2}>ORDER SUMMARY</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryRows.map((row) => (
+                  <tr key={row.label}>
+                    <td className="po-summary-label">{row.label}</td>
+                    <td className="po-num">{row.value}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="po-summary-label">Round Off</td>
+                  <td className="po-num">
+                    {editable ? (
+                      <InlineTableInput
+                        value={
+                          form.roundOff !== undefined &&
+                          form.roundOff !== null &&
+                          String(form.roundOff).trim() !== ''
+                            ? form.roundOff
+                            : totals.roundOff
+                        }
+                        onChange={(v) => onUpdate?.('roundOff', v)}
+                        align="right"
+                        placeholder="0.00"
+                      />
+                    ) : (
+                      money(totals.roundOff)
+                    )}
+                  </td>
+                </tr>
+                <tr className="po-summary-grand">
+                  <td className="po-summary-label">Grand Total</td>
+                  <td className="po-num">{money(totals.grandTotal)}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+
+          <div className="po-amount-words">
+            <strong>Amount In Words:</strong> Rupees{' '}
+            {words || '________________________________________________'} Only.
+          </div>
+
+          <table className="po-grid po-authorisation">
+            <thead>
+              <tr>
+                <th colSpan={4}>AUTHORISATION (For {legal})</th>
+              </tr>
+              <tr className="po-auth-cols">
+                <th className="po-auth-corner" aria-hidden="true" />
+                {authRoles.map((role) => (
+                  <th key={role.key}>{role.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {authFields.map((field) => (
+                <tr key={field.key}>
+                  <td className="po-auth-row-label">{field.label}</td>
+                  {authRoles.map((role) => (
+                    <td key={`${role.key}-${field.key}`}>
+                      <Val
+                        editable={editable}
+                        type={field.type || 'text'}
+                        value={authorisation?.[role.key]?.[field.key]}
+                        onChange={(v) => onUpdate?.(`authorisation.${role.key}.${field.key}`, v)}
+                        placeholder=" "
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <table className="po-grid po-vendor-accept">
+            <thead>
+              <tr>
+                <th colSpan={4}>VENDOR ACCEPTANCE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span className="po-meta-label">Accepted By</span>
+                  <span className="po-meta-value">
+                    <Val
+                      editable={editable}
+                      value={vendorAcceptance?.acceptedBy}
+                      onChange={(v) => onUpdate?.('vendorAcceptance.acceptedBy', v)}
+                      placeholder=" "
+                    />
+                  </span>
+                </td>
+                <td>
+                  <span className="po-meta-label">Designation</span>
+                  <span className="po-meta-value">
+                    <Val
+                      editable={editable}
+                      value={vendorAcceptance?.designation}
+                      onChange={(v) => onUpdate?.('vendorAcceptance.designation', v)}
+                      placeholder=" "
+                    />
+                  </span>
+                </td>
+                <td>
+                  <span className="po-meta-label">Signature &amp; Company Seal</span>
+                  <span className="po-meta-value">
+                    <Val
+                      editable={editable}
+                      value={vendorAcceptance?.signature}
+                      onChange={(v) => onUpdate?.('vendorAcceptance.signature', v)}
+                      placeholder=" "
+                    />
+                  </span>
+                </td>
+                <td>
+                  <span className="po-meta-label">Date</span>
+                  <span className="po-meta-value">
+                    <Val
+                      editable={editable}
+                      type="date"
+                      value={vendorAcceptance?.date}
+                      onChange={(v) => onUpdate?.('vendorAcceptance.date', v)}
+                      placeholder=" "
+                    />
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </article>
     </div>

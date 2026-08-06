@@ -3,6 +3,10 @@ import { applyOrgMasterToProformaForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
+import {
+  applyProformaPathUpdateWithShipToSync,
+  copyRecipientToShipTo,
+} from '../builder/shipToSameAsBillTo.js';
 import { proformaToInvoiceView } from './proformaFormAdapter.js';
 import {
   defaultLineRow,
@@ -43,14 +47,7 @@ export function useProformaBuilder() {
   const update = useCallback(
     (path, value) => {
       if (readOnly) return;
-      setForm((prev) => {
-        const next = structuredClone(prev);
-        const keys = path.split('.');
-        let cur = next;
-        for (let i = 0; i < keys.length - 1; i += 1) cur = cur[keys[i]];
-        cur[keys[keys.length - 1]] = value;
-        return next;
-      });
+      setForm((prev) => applyProformaPathUpdateWithShipToSync(prev, path, value));
     },
     [readOnly, setForm]
   );
@@ -106,11 +103,8 @@ export function useProformaBuilder() {
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
-      setForm((prev) => ({
-        ...prev,
-        clientMasterId: patch.clientMasterId || '',
-        clientId: patch.clientId || '',
-        recipient: {
+      setForm((prev) => {
+        const recipient = {
           ...prev.recipient,
           ...(patch.recipient || {}),
           name: patch.recipient?.name || patch.billTo?.name || prev.recipient.name,
@@ -121,24 +115,35 @@ export function useProformaBuilder() {
           stateCode: patch.recipient?.stateCode || patch.billTo?.stateCode || prev.recipient.stateCode,
           stateName: patch.billTo?.stateName || prev.recipient.stateName,
           contactPerson:
-            patch.recipient?.contactPerson || patch.billTo?.contactPerson || prev.recipient.contactPerson,
+            patch.recipient?.contactPerson ||
+            patch.billTo?.contactPerson ||
+            prev.recipient.contactPerson,
           contactEmail:
             patch.recipient?.contactEmail || patch.billTo?.email || prev.recipient.contactEmail,
           projectName: patch.projectName || prev.recipient.projectName,
-        },
-        shipTo: {
-          ...prev.shipTo,
-          name: patch.billTo?.name || prev.shipTo?.name || '',
-          address: patch.billTo?.address || prev.shipTo?.address || '',
-          gstin: patch.billTo?.gstin || prev.shipTo?.gstin || '',
-          stateName: patch.billTo?.stateName || prev.shipTo?.stateName || '',
-          stateCode: patch.billTo?.stateCode || prev.shipTo?.stateCode || '',
-        },
-        document: {
-          ...prev.document,
-          servicePeriod: patch.projectName || prev.document.servicePeriod,
-        },
-      }));
+        };
+        return {
+          ...prev,
+          clientMasterId: patch.clientMasterId || '',
+          clientId: patch.clientId || '',
+          recipient,
+          shipTo: prev.shipToSameAsBillTo
+            ? copyRecipientToShipTo(recipient, prev.shipTo)
+            : {
+                ...prev.shipTo,
+                name: patch.billTo?.name || prev.shipTo?.name || '',
+                address: patch.billTo?.address || prev.shipTo?.address || '',
+                contactPerson: patch.billTo?.contactPerson || prev.shipTo?.contactPerson || '',
+                gstin: patch.billTo?.gstin || prev.shipTo?.gstin || '',
+                stateName: patch.billTo?.stateName || prev.shipTo?.stateName || '',
+                stateCode: patch.billTo?.stateCode || prev.shipTo?.stateCode || '',
+              },
+          document: {
+            ...prev.document,
+            servicePeriod: patch.projectName || prev.document.servicePeriod,
+          },
+        };
+      });
     },
     [readOnly, setForm]
   );

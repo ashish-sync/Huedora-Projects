@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   apiDocToForm,
-  downloadServerPdf,
+  fetchServerPdfBlob,
   issueCommercialDocument,
   isEditableStatus,
   loadCommercialDocument,
@@ -11,9 +11,15 @@ import {
   approveCommercialDocument,
   rejectCommercialDocument,
 } from './builderPersistence.js';
+import {
+  hasEnoughCommercialDraftContent,
+  MIN_COMMERCIAL_DRAFT_ENTRIES,
+} from './commercialDraftGate.js';
 
 /**
  * Server-backed draft autosave + lifecycle for Invoice Builder document types.
+ * Applies to all 8 commercial docs. New drafts are not created / autosaved until
+ * ≥2 meaningful fields are filled (seed defaults do not count).
  */
 export function usePersistedCommercialBuilder({
   documentType,
@@ -96,10 +102,17 @@ export function usePersistedCommercialBuilder({
         return null;
       }
       const toSave = applyOrgMaster(nextForm, orgMaster);
+      const creating = !docIdRef.current;
+
+      // Do not create empty / near-empty drafts (open + close with < 2 fills).
+      if (creating && !hasEnoughCommercialDraftContent(toSave, documentType)) {
+        setSaveState('idle');
+        return null;
+      }
+
       setSaveState('saving');
       setError('');
       try {
-        const creating = !docIdRef.current;
         const row = await saveCommercialDocument(documentType, toSave, docIdRef.current);
         docIdRef.current = row._id;
         statusRef.current = row.status || 'Draft';
@@ -133,6 +146,13 @@ export function usePersistedCommercialBuilder({
       return;
     }
     if (!isEditableStatus(status)) return;
+
+    // Skip autosave until a new draft has enough content.
+    if (!docIdRef.current && !hasEnoughCommercialDraftContent(form, documentType)) {
+      setSaveState('idle');
+      return;
+    }
+
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveState('saving');
     saveTimer.current = setTimeout(() => {
@@ -141,7 +161,7 @@ export function usePersistedCommercialBuilder({
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [form, loadingDoc, status]);
+  }, [form, loadingDoc, status, documentType]);
 
   const saveNow = useCallback(async () => {
     if (saveTimer.current) {
@@ -165,58 +185,107 @@ export function usePersistedCommercialBuilder({
     navigate(`/finance-one/billing/${slug}`, { replace: true });
   }, [applyOrgMaster, buildFreshForm, navigate, orgMaster, slug]);
 
-  const runLifecycle = useCallback(async (action) => {
-    setBusyAction(action);
-    setError('');
-    try {
-      let row = null;
-      if (isEditableStatus(statusRef.current)) {
-        row = await persistRef.current(formRef.current, { navigateOnCreate: true });
+  const runLifecycle = useCallback(
+    async (action) => {
+      setBusyAction(action);
+      setError('');
+      try {
+        let row = null;
+        if (isEditableStatus(statusRef.current)) {
+          if (
+            !docIdRef.current &&
+            !hasEnoughCommercialDraftContent(formRef.current, documentType)
+          ) {
+            throw new Error(
+              `Fill at least ${MIN_COMMERCIAL_DRAFT_ENTRIES} fields (for example party name and a line description) before continuing.`
+            );
+          }
+          row = await persistRef.current(formRef.current, { navigateOnCreate: true });
+        }
+        const id = row?._id || docIdRef.current;
+        if (!id) {
+          throw new Error(
+            `Fill at least ${MIN_COMMERCIAL_DRAFT_ENTRIES} fields before continuing.`
+          );
+        }
+
+        if (action === 'submit') row = await submitCommercialDocument(id);
+        else if (action === 'approve') row = await approveCommercialDocument(id);
+        else if (action === 'reject') row = await rejectCommercialDocument(id);
+        else if (action === 'issue') row = await issueCommercialDocument(documentType, id);
+
+        docIdRef.current = row._id;
+        statusRef.current = row.status || statusRef.current;
+        setDocId(row._id);
+        setStatus(row.status || statusRef.current);
+        setDocMeta(row);
+        if (row.documentNumber) {
+          setForm((prev) => {
+            const next = structuredClone(prev);
+            if (next.invoice) {
+              next.invoice.documentNumber = row.documentNumber;
+              if (row.documentDate) next.invoice.issueDate = row.documentDate;
+              if (row.dueDate) next.invoice.dueDate = row.dueDate;
+            }
+            if (next.document) {
+              next.document.documentNumber = row.documentNumber;
+              if (row.documentDate) next.document.issueDate = row.documentDate;
+              if (row.dueDate) next.document.dueDate = row.dueDate;
+            }
+            if (next.po) next.po.documentNumber = row.documentNumber;
+            return next;
+          });
+          skipNextAutosave.current = true;
+        }
+        setSavedAt(new Date());
+        return row;
+      } catch (err) {
+        setError(err.message || `${action} failed`);
+        throw err;
+      } finally {
+        setBusyAction('');
       }
-      const id = row?._id || docIdRef.current;
-      if (!id) throw new Error('Save the document before continuing');
+    },
+    [documentType]
+  );
 
-      if (action === 'submit') row = await submitCommercialDocument(id);
-      else if (action === 'approve') row = await approveCommercialDocument(id);
-      else if (action === 'reject') row = await rejectCommercialDocument(id);
-      else if (action === 'issue') row = await issueCommercialDocument(documentType, id);
-
-      docIdRef.current = row._id;
-      statusRef.current = row.status || statusRef.current;
-      setDocId(row._id);
-      setStatus(row.status || statusRef.current);
-      setDocMeta(row);
-      if (row.documentNumber) {
-        setForm((prev) => {
-          const next = structuredClone(prev);
-          if (next.invoice) next.invoice.documentNumber = row.documentNumber;
-          if (next.document) next.document.documentNumber = row.documentNumber;
-          if (next.po) next.po.documentNumber = row.documentNumber;
-          return next;
-        });
-        skipNextAutosave.current = true;
-      }
-      setSavedAt(new Date());
-      return row;
-    } catch (err) {
-      setError(err.message || `${action} failed`);
-      throw err;
-    } finally {
-      setBusyAction('');
-    }
-  }, [documentType]);
-
-  const exportServerPdf = useCallback(async () => {
+  const resolveServerPdf = useCallback(async () => {
     let row = null;
     if (isEditableStatus(statusRef.current)) {
+      if (
+        !docIdRef.current &&
+        !hasEnoughCommercialDraftContent(formRef.current, documentType)
+      ) {
+        throw new Error(
+          `Fill at least ${MIN_COMMERCIAL_DRAFT_ENTRIES} fields before exporting.`
+        );
+      }
       row = await persistRef.current(formRef.current);
     }
     const id = row?._id || docIdRef.current;
-    if (!id) throw new Error('Save the document before exporting');
+    if (!id) {
+      throw new Error(
+        `Fill at least ${MIN_COMMERCIAL_DRAFT_ENTRIES} fields before exporting.`
+      );
+    }
     const name = row?.documentNumber || docMeta?.documentNumber || slug;
-    await downloadServerPdf(documentType, id, name);
-    return row;
+    const fileName = `${String(name || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+    const blob = await fetchServerPdfBlob(documentType, id);
+    return { blob, fileName, row };
   }, [docMeta, documentType, slug]);
+
+  const exportServerPdf = useCallback(async () => {
+    const { blob, fileName, row } = await resolveServerPdf();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return row;
+  }, [resolveServerPdf]);
 
   const readOnly = !isEditableStatus(status);
 
@@ -239,6 +308,7 @@ export function usePersistedCommercialBuilder({
     approveDocument: () => runLifecycle('approve'),
     rejectDocument: () => runLifecycle('reject'),
     issueDocument: () => runLifecycle('issue'),
+    resolveServerPdf,
     exportServerPdf,
   };
 }

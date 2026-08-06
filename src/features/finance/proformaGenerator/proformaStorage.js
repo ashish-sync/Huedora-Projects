@@ -8,7 +8,7 @@ const NUMBER_KEY = 'tylo_one_proforma_number_seq';
 export const MAX_PROFORMA_LINE_ITEMS = 8;
 
 export const PROFORMA_DECLARATION =
-  'This is a Proforma Invoice issued for quotation, approval or advance payment purposes only. It is not a Tax Invoice under the GST Act and does not create any GST liability. A final Tax Invoice will be issued upon confirmation and/or execution of services, as applicable.';
+  'This is a Proforma Invoice issued for quotation, approval or advance payment purposes only. It is not a Tax Invoice under the GST Act and does not create any GST liability. A final Tax Invoice will be issued upon confirmation and/or execution of services, as applicable.\n\nThis document is a Proforma Invoice and does not constitute a Tax Invoice under GST. Prices are indicative based on the proposed scope. GST, if applicable, will be charged in the final Tax Invoice.';
 
 export const PROFORMA_PAYMENT_TERM =
   'Payment is due within 30 days from the date of the final Tax Invoice unless otherwise agreed.';
@@ -60,6 +60,7 @@ export function defaultProformaForm() {
     },
     clientMasterId: '',
     clientId: '',
+    shipToSameAsBillTo: false,
     recipient: {
       name: '',
       projectName: '',
@@ -74,6 +75,7 @@ export function defaultProformaForm() {
     },
     shipTo: {
       name: '',
+      contactPerson: '',
       address: '',
       gstin: '',
       stateName: '',
@@ -104,12 +106,13 @@ export function defaultProformaForm() {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: 0,
+      roundOff: '',
     },
     rows: [defaultLineRow()],
     terms: [PROFORMA_PAYMENT_TERM],
     declaration: PROFORMA_DECLARATION,
     taxColumnLabels: {
-      rateLabel: 'GST Rate',
+      rateLabel: 'GST Rate %',
       amountLabel: 'GST',
     },
     signature: {

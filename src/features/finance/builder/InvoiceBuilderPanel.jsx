@@ -10,7 +10,10 @@ import {
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_INVOICE_LINE_ITEMS } from '../invoiceGenerator/invoiceStorage.js';
 import { canManageOrganisationMaster } from './commercialApproval.js';
+import { clampTextLines } from '../documentGenerator/inlineEdit.jsx';
+import { formatStateLine, parseStateLine } from './stateLine.js';
 import ClientMasterRecipientPicker from './ClientMasterRecipientPicker.jsx';
+import OriginalTaxInvoicePicker from './OriginalTaxInvoicePicker.jsx';
 
 function Section({ id, title, badge, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -54,13 +57,24 @@ export default function InvoiceBuilderPanel({
     docSectionTitle = 'Invoice',
     docNoLabel = 'Invoice no.',
     projectLabel = 'Project',
+    dateLabel = 'Date',
+    dueLabel = 'Due date',
+    datesFromApproval = false,
+    recipientTitle = 'Bill To',
+    shipToTitle = 'Ship To',
+    termsSectionTitle = 'Adjustments & terms',
+    hideAdjustmentAmounts = false,
+    /** 'default' | 'parties' | 'bos' — Header → Bill To → Ship To → Lines → Terms */
+    panelLayout = 'parties',
     showOriginalInvoice = false,
     originalInvoiceLabel = 'Original invoice',
     showPoFields = false,
-    showShipTo = false,
+    showShipTo = true,
     showCreditReason = false,
     showDebitReason = false,
     showOriginalInvoiceDate = false,
+    /** When true, original invoice no. is a system picker and date is read-only */
+    lockOriginalInvoiceFromSystem = false,
     hideReverseCharge = false,
     hideReceiptVoucher = false,
     hideTaxColumnTitles = false,
@@ -70,24 +84,10 @@ export default function InvoiceBuilderPanel({
   const taxLabels = resolveTaxColumnLabels(form);
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);
+  const isPartiesLayout = panelLayout === 'bos' || panelLayout === 'parties';
 
-  return (
-    <div className="ib-panel-inner">
-      <div className="ib-panel-intro">
-        <p>
-          Letterhead &amp; bank come from{' '}
-          {canOrgMaster ? (
-            <Link to="/finance-one/organisation" className="ib-link">
-              Organisation master
-            </Link>
-          ) : (
-            'Organisation master'
-          )}
-          . Click the document to edit inline.
-        </p>
-      </div>
-
-      <Section id="recipient" title="Recipient" defaultOpen>
+  const recipientSection = (
+      <Section id="recipient" title={recipientTitle} defaultOpen>
         {applyClientMasterRecipient ? (
           <div className="ib-grid" style={{ marginBottom: 12 }}>
             <Field label="Client Master" span={2}>
@@ -100,8 +100,16 @@ export default function InvoiceBuilderPanel({
           </div>
         ) : null}
         <div className="ib-grid">
-          <Field label="Name" span={2}>
+          <Field label="Legal Name">
             <input className={inputCls} value={form.billTo.name} onChange={(e) => update('billTo.name', e.target.value)} />
+          </Field>
+          <Field label="Contact Name">
+            <input
+              className={inputCls}
+              value={form.billTo.contactPerson || ''}
+              onChange={(e) => update('billTo.contactPerson', e.target.value)}
+              placeholder="—"
+            />
           </Field>
           <Field label="Address" span={2}>
             <textarea
@@ -111,27 +119,29 @@ export default function InvoiceBuilderPanel({
               onChange={(e) => update('billTo.address', e.target.value)}
             />
           </Field>
-          <Field label="State">
-            <input className={inputCls} value={form.billTo.stateName || ''} onChange={(e) => update('billTo.stateName', e.target.value)} />
-          </Field>
-          <Field label="State code" title="Different from your state → IGST; same state → CGST + SGST">
-            <input className={inputCls} value={form.billTo.stateCode || ''} onChange={(e) => update('billTo.stateCode', e.target.value)} placeholder="27" />
-          </Field>
           <Field label="GSTIN">
             <input className={inputCls} value={form.billTo.gstin} onChange={(e) => update('billTo.gstin', e.target.value)} />
           </Field>
-          <Field label="PAN">
-            <input className={inputCls} value={form.billTo.pan} onChange={(e) => update('billTo.pan', e.target.value)} />
-          </Field>
-          <Field label="Contact">
-            <input className={inputCls} value={form.billTo.contactPerson} onChange={(e) => update('billTo.contactPerson', e.target.value)} />
-          </Field>
-          <Field label="Email">
-            <input className={inputCls} type="email" value={form.billTo.email} onChange={(e) => update('billTo.email', e.target.value)} />
+          <Field
+            label="State Name / State Code"
+            title="Different from your state → IGST; same state → CGST + SGST"
+          >
+            <input
+              className={inputCls}
+              value={formatStateLine(form.billTo)}
+              onChange={(e) => {
+                const { stateName, stateCode } = parseStateLine(e.target.value);
+                update('billTo.stateName', stateName);
+                update('billTo.stateCode', stateCode);
+              }}
+              placeholder="Maharashtra / 27"
+            />
           </Field>
         </div>
       </Section>
+  );
 
+  const headerSection = (
       <Section id="invoice" title={docSectionTitle} defaultOpen>
         <div className="ib-grid">
           <Field label={docNoLabel}>
@@ -141,6 +151,51 @@ export default function InvoiceBuilderPanel({
               readOnly
               placeholder="Assigned on approval"
               title="Document number is assigned when the document is approved"
+            />
+          </Field>
+          <Field
+            label={dateLabel}
+            title={datesFromApproval ? 'Same as approval date' : undefined}
+          >
+            <input
+              type="date"
+              className={inputCls}
+              value={form.invoice.issueDate || ''}
+              onChange={(e) => update('invoice.issueDate', e.target.value)}
+              readOnly={datesFromApproval}
+              title={datesFromApproval ? 'Set automatically on approval' : undefined}
+            />
+          </Field>
+          {showPoFields ? (
+            <>
+              <Field label="PO / WO No.">
+                <input
+                  className={inputCls}
+                  value={form.invoice.poReference || ''}
+                  onChange={(e) => update('invoice.poReference', e.target.value)}
+                />
+              </Field>
+              <Field label="PO / WO Date">
+                <input
+                  className={inputCls}
+                  value={form.invoice.poDate || ''}
+                  onChange={(e) => update('invoice.poDate', e.target.value)}
+                  placeholder="DD/MM/YYYY"
+                />
+              </Field>
+            </>
+          ) : null}
+          <Field
+            label={dueLabel}
+            title={datesFromApproval ? '30 days from approval' : undefined}
+          >
+            <input
+              type="date"
+              className={inputCls}
+              value={form.invoice.dueDate || ''}
+              onChange={(e) => update('invoice.dueDate', e.target.value)}
+              readOnly={datesFromApproval}
+              title={datesFromApproval ? 'Set automatically on approval (+30 days)' : undefined}
             />
           </Field>
           <Field label={projectLabel}>
@@ -156,28 +211,52 @@ export default function InvoiceBuilderPanel({
           </Field>
           {showOriginalInvoice ? (
             <Field label={originalInvoiceLabel} span={showOriginalInvoiceDate ? 1 : 2}>
-              <input
-                className={inputCls}
-                value={form.invoice[panelConfig.originalInvoiceField || 'cnReference'] || ''}
-                onChange={(e) =>
-                  update(`invoice.${panelConfig.originalInvoiceField || 'cnReference'}`, e.target.value)
-                }
-                placeholder="TYLO/26-27/0001"
-              />
+              {lockOriginalInvoiceFromSystem ? (
+                <OriginalTaxInvoicePicker
+                  value={form.invoice[panelConfig.originalInvoiceField || 'cnReference'] || ''}
+                  onPick={(_row, patch) => {
+                    const field = panelConfig.originalInvoiceField || 'cnReference';
+                    update(`invoice.${field}`, patch.documentNumber || '');
+                    update('invoice.originalInvoiceDate', patch.documentDate || '');
+                  }}
+                  onClear={() => {
+                    const field = panelConfig.originalInvoiceField || 'cnReference';
+                    update(`invoice.${field}`, '');
+                    update('invoice.originalInvoiceDate', '');
+                  }}
+                />
+              ) : (
+                <input
+                  className={inputCls}
+                  value={form.invoice[panelConfig.originalInvoiceField || 'cnReference'] || ''}
+                  onChange={(e) =>
+                    update(`invoice.${panelConfig.originalInvoiceField || 'cnReference'}`, e.target.value)
+                  }
+                  placeholder="TYLO/26-27/0001"
+                />
+              )}
             </Field>
           ) : null}
           {showOriginalInvoiceDate ? (
-            <Field label="Original invoice date">
+            <Field
+              label="Original invoice date"
+              title={
+                lockOriginalInvoiceFromSystem
+                  ? 'Filled automatically from the selected Tax Invoice'
+                  : undefined
+              }
+            >
               <input
                 type="date"
                 className={inputCls}
                 value={form.invoice.originalInvoiceDate || ''}
                 onChange={(e) => update('invoice.originalInvoiceDate', e.target.value)}
+                readOnly={lockOriginalInvoiceFromSystem}
               />
             </Field>
           ) : null}
           {showCreditReason ? (
-            <Field label="Reason for credit note" span={2}>
+            <Field label="Reason for Credit Note" span={2}>
               <select
                 className={inputCls}
                 value={form.invoice.creditReason || 'Rate Revision / Cancellation / Service Adjustment'}
@@ -212,31 +291,6 @@ export default function InvoiceBuilderPanel({
               </select>
             </Field>
           ) : null}
-          {showPoFields ? (
-            <>
-              <Field label="PO / WO No.">
-                <input
-                  className={inputCls}
-                  value={form.invoice.poReference || ''}
-                  onChange={(e) => update('invoice.poReference', e.target.value)}
-                />
-              </Field>
-              <Field label="PO / WO Date">
-                <input
-                  type="date"
-                  className={inputCls}
-                  value={form.invoice.poDate || ''}
-                  onChange={(e) => update('invoice.poDate', e.target.value)}
-                />
-              </Field>
-            </>
-          ) : null}
-          <Field label="Date">
-            <input type="date" className={inputCls} value={form.invoice.issueDate} onChange={(e) => update('invoice.issueDate', e.target.value)} />
-          </Field>
-          <Field label="Due date">
-            <input type="date" className={inputCls} value={form.invoice.dueDate} onChange={(e) => update('invoice.dueDate', e.target.value)} />
-          </Field>
           {!hideReverseCharge ? (
             <>
               <Field label="Place of supply" title="GST Place of Supply — State / State Code">
@@ -266,12 +320,35 @@ export default function InvoiceBuilderPanel({
           ) : null}
         </div>
       </Section>
+  );
 
-      {showShipTo ? (
-        <Section id="shipTo" title="Ship to / Service location">
-          <div className="ib-grid">
-            <Field label="Legal / Location name" span={2}>
-              <input className={inputCls} value={form.shipTo?.name || ''} onChange={(e) => update('shipTo.name', e.target.value)} />
+  const shipToSection = showShipTo ? (
+        <Section id="shipTo" title={shipToTitle} defaultOpen={isPartiesLayout}>
+          <label className="ib-check">
+            <input
+              type="checkbox"
+              checked={Boolean(form.shipToSameAsBillTo)}
+              onChange={(e) => update('shipToSameAsBillTo', e.target.checked)}
+            />
+            <span>Ship To details same as Bill To</span>
+          </label>
+          <div className={`ib-grid${form.shipToSameAsBillTo ? ' ib-grid--locked' : ''}`}>
+            <Field label="Legal / Location name">
+              <input
+                className={inputCls}
+                value={form.shipTo?.name || ''}
+                onChange={(e) => update('shipTo.name', e.target.value)}
+                readOnly={Boolean(form.shipToSameAsBillTo)}
+              />
+            </Field>
+            <Field label="Contact Name">
+              <input
+                className={inputCls}
+                value={form.shipTo?.contactPerson || ''}
+                onChange={(e) => update('shipTo.contactPerson', e.target.value)}
+                placeholder="—"
+                readOnly={Boolean(form.shipToSameAsBillTo)}
+              />
             </Field>
             <Field label="Address" span={2}>
               <textarea
@@ -279,23 +356,36 @@ export default function InvoiceBuilderPanel({
                 rows={2}
                 value={form.shipTo?.address || ''}
                 onChange={(e) => update('shipTo.address', e.target.value)}
+                readOnly={Boolean(form.shipToSameAsBillTo)}
               />
             </Field>
             <Field label="GSTIN">
-              <input className={inputCls} value={form.shipTo?.gstin || ''} onChange={(e) => update('shipTo.gstin', e.target.value)} />
-            </Field>
-            <Field label="State / State code">
               <input
                 className={inputCls}
-                value={[form.shipTo?.stateName, form.shipTo?.stateCode].filter(Boolean).join(' / ')}
-                onChange={(e) => update('shipTo.stateName', e.target.value)}
+                value={form.shipTo?.gstin || ''}
+                onChange={(e) => update('shipTo.gstin', e.target.value)}
+                readOnly={Boolean(form.shipToSameAsBillTo)}
+              />
+            </Field>
+            <Field label="State Name / State Code">
+              <input
+                className={inputCls}
+                value={formatStateLine(form.shipTo)}
+                onChange={(e) => {
+                  const { stateName, stateCode } = parseStateLine(e.target.value);
+                  update('shipTo.stateName', stateName);
+                  update('shipTo.stateCode', stateCode);
+                }}
+                readOnly={Boolean(form.shipToSameAsBillTo)}
+                placeholder="Maharashtra / 27"
               />
             </Field>
           </div>
         </Section>
-      ) : null}
+  ) : null;
 
-      <Section id="lines" title="Line items" badge={form.lineItems.length}>
+  const linesSection = (
+      <Section id="lines" title="Line items" badge={form.lineItems.length} defaultOpen={isPartiesLayout}>
         {!hideTaxColumnTitles ? (
           <div className="ib-grid ib-grid--compact" style={{ marginBottom: 12 }}>
             <Field label="Rate column title">
@@ -303,7 +393,7 @@ export default function InvoiceBuilderPanel({
                 className={inputCls}
                 value={form.taxColumnLabels?.rateLabel ?? taxLabels.rateLabel}
                 onChange={(e) => update('taxColumnLabels.rateLabel', e.target.value)}
-                placeholder="GST %"
+                placeholder="GST Rate %"
               />
             </Field>
             <Field label="Amount column title">
@@ -328,8 +418,22 @@ export default function InvoiceBuilderPanel({
                 ) : null}
               </div>
               <div className="ib-grid">
-                <Field label="Description" span={2}>
-                  <input className={inputCls} value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
+                <Field label="Description of Services" span={2}>
+                  <textarea
+                    className={`${inputCls} ib-textarea`}
+                    rows={2}
+                    value={line.description}
+                    onChange={(e) => updateLine(index, { description: clampTextLines(e.target.value, 2) })}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        return;
+                      }
+                      if (String(line.description || '').split('\n').length >= 2) e.preventDefault();
+                    }}
+                    placeholder="Shift+Enter for a second line"
+                  />
                 </Field>
                 <Field label="SAC">
                   <input className={inputCls} value={line.hsnSac} onChange={(e) => updateLine(index, { hsnSac: e.target.value })} />
@@ -340,19 +444,15 @@ export default function InvoiceBuilderPanel({
                 <Field label="Rate">
                   <input type="number" className={inputCls} value={line.rate} onChange={(e) => updateLine(index, { rate: e.target.value })} />
                 </Field>
-                <Field label="Discount">
-                  <input type="number" className={inputCls} value={line.discount} onChange={(e) => updateLine(index, { discount: e.target.value })} />
+                <Field label="GST Rate %">
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={getLineGstRateDisplay(line, taxMode)}
+                    onChange={(e) => updateLine(index, patchLineGstRate(e.target.value, taxMode))}
+                    placeholder="0"
+                  />
                 </Field>
-                {!hideTaxColumnTitles ? (
-                  <Field label={taxLabels.rateLabel}>
-                    <input
-                      type="number"
-                      className={inputCls}
-                      value={getLineGstRateDisplay(line, taxMode)}
-                      onChange={(e) => updateLine(index, patchLineGstRate(e.target.value, taxMode))}
-                    />
-                  </Field>
-                ) : null}
               </div>
               {totals?.lines?.[index] ? (
                 <div className="ib-line-total">₹ {formatMoney(totals.lines[index].totalAmount)}</div>
@@ -364,19 +464,23 @@ export default function InvoiceBuilderPanel({
           </button>
         </div>
       </Section>
+  );
 
-      <Section id="adjustments" title="Adjustments & terms">
-        <div className="ib-grid">
-          <Field label="CN amount">
-            <input type="number" className={inputCls} value={form.adjustments?.cnAmount || 0} onChange={(e) => update('adjustments.cnAmount', e.target.value)} />
-          </Field>
-          <Field label="DN amount">
-            <input type="number" className={inputCls} value={form.adjustments?.dnAmount || 0} onChange={(e) => update('adjustments.dnAmount', e.target.value)} />
-          </Field>
-          <Field label="Advance">
-            <input type="number" className={inputCls} value={form.adjustments?.advanceReceived || 0} onChange={(e) => update('adjustments.advanceReceived', e.target.value)} />
-          </Field>
-        </div>
+  const termsSection = (
+      <Section id="adjustments" title={termsSectionTitle} defaultOpen={isPartiesLayout}>
+        {!hideAdjustmentAmounts ? (
+          <div className="ib-grid">
+            <Field label="CN amount">
+              <input type="number" className={inputCls} value={form.adjustments?.cnAmount || 0} onChange={(e) => update('adjustments.cnAmount', e.target.value)} />
+            </Field>
+            <Field label="DN amount">
+              <input type="number" className={inputCls} value={form.adjustments?.dnAmount || 0} onChange={(e) => update('adjustments.dnAmount', e.target.value)} />
+            </Field>
+            <Field label="Advance">
+              <input type="number" className={inputCls} value={form.adjustments?.advanceReceived || 0} onChange={(e) => update('adjustments.advanceReceived', e.target.value)} />
+            </Field>
+          </div>
+        ) : null}
         <div className="ib-terms">
           {form.terms.map((term, index) => (
             <div key={index} className="ib-term-row">
@@ -389,6 +493,41 @@ export default function InvoiceBuilderPanel({
           </button>
         </div>
       </Section>
+  );
+
+  return (
+    <div className="ib-panel-inner">
+      <div className="ib-panel-intro">
+        <p>
+          Letterhead &amp; bank come from{' '}
+          {canOrgMaster ? (
+            <Link to="/finance-one/organisation" className="ib-link">
+              Organisation master
+            </Link>
+          ) : (
+            'Organisation master'
+          )}
+          . Click the document to edit inline.
+        </p>
+      </div>
+
+      {isPartiesLayout ? (
+        <>
+          {headerSection}
+          {recipientSection}
+          {shipToSection}
+          {linesSection}
+          {termsSection}
+        </>
+      ) : (
+        <>
+          {recipientSection}
+          {headerSection}
+          {shipToSection}
+          {linesSection}
+          {termsSection}
+        </>
+      )}
     </div>
   );
 }

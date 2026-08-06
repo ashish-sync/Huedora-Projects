@@ -12,7 +12,7 @@
   --ti-accent-light: #e8eef5;
   --ti-header-ink: #1e3a5f;
   --ti-radius: 5px;
-  --ti-gap: 1.4mm;
+  --ti-gap: 0.85mm;
 
   width: 100%;
   height: 100%;
@@ -21,8 +21,8 @@
   max-width: none;
   box-sizing: border-box;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 12.5px;
+  line-height: 1.3;
   color: var(--ti-ink);
   background: #fff;
   border: 1px solid var(--ti-line);
@@ -80,7 +80,7 @@
 }
 
 .ti-logo-text {
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 800;
   letter-spacing: 0.06em;
   color: var(--ti-accent);
@@ -88,7 +88,7 @@
 }
 
 .ti-tagline {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--ti-muted);
   font-style: italic;
   line-height: 1.3;
@@ -97,22 +97,86 @@
 
 .ti-header-company {
   text-align: left;
-  padding-top: 0;
+  padding-top: 0.4mm;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.1mm;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .ti-company-name {
   margin: 0 0 1mm;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--ti-ink);
 }
 
+/* Line 1 — legal name bold, address regular */
+.ti-company-line1 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--ti-ink);
+  max-width: 100%;
+  letter-spacing: 0.01em;
+}
+
+.ti-company-legal {
+  font-weight: 700;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
+  color: var(--ti-header-ink);
+}
+
+.ti-company-sep {
+  font-weight: 400;
+  color: #94a3b8;
+  margin: 0 0.15em;
+}
+
+.ti-company-addr {
+  font-weight: 400;
+  font-size: 13px;
+  color: #334155;
+  letter-spacing: 0.005em;
+}
+
+/* Line 2 — registration / contact meta, scannable chips */
+.ti-company-line2 {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35mm 0;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #475569;
+  max-width: 100%;
+  letter-spacing: 0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ti-company-meta-part {
+  white-space: nowrap;
+}
+
+.ti-company-meta-pipe {
+  display: inline-block;
+  margin: 0 1.6mm;
+  color: #cbd5e1;
+  font-weight: 400;
+}
+
 .ti-company-address {
   margin: 0 0 1.5mm;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
   color: var(--ti-muted);
   max-width: 100%;
@@ -122,7 +186,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1mm 3mm;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--ti-muted);
 }
 
@@ -145,14 +209,16 @@
 .ti-doc-badge {
   display: inline-block;
   padding: 1.5mm 4mm;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #fff;
   background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
   border-radius: 4px;
-  white-space: nowrap;
+  white-space: pre-line;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .ti-doc-meta {
@@ -206,38 +272,74 @@
   flex-shrink: 0;
 }
 
+.ti-meta-grid--bos-header .ti-meta-section-label {
+  grid-column: 1 / -1;
+  padding: 0.6mm 2mm;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ti-header-ink);
+  background: var(--ti-accent-light);
+  border-bottom: 1px solid var(--ti-line-soft);
+}
+
+.ti-meta-hint {
+  display: block;
+  font-size: 8px;
+  font-weight: 500;
+  color: var(--ti-muted);
+  margin: -0.1mm 0 0.35mm;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.ti-meta-placeholder {
+  color: var(--ti-muted);
+  font-weight: 500;
+  font-style: italic;
+}
+
 .ti-meta-cell {
-  padding: 1.2mm 2.5mm;
+  padding: 0.75mm 2mm;
   border-right: 1px solid var(--ti-line-soft);
   border-bottom: 1px solid var(--ti-line-soft);
   min-width: 0;
   background: #fff;
 }
 
-.ti-meta-cell:nth-child(3n) {
+.ti-meta-grid:not(.ti-meta-grid--bos-header) .ti-meta-cell:nth-child(3n) {
+  border-right: none;
+}
+
+/* Header label + 6 cells: end of each row = children 4 and 7 */
+.ti-meta-grid--bos-header .ti-meta-cell:nth-child(4),
+.ti-meta-grid--bos-header .ti-meta-cell:nth-child(7) {
   border-right: none;
 }
 
 .ti-meta-label {
   display: block;
-  font-size: 7.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ti-muted);
-  margin-bottom: 0.4mm;
+  margin-bottom: 0.3mm;
 }
 
 .ti-meta-value {
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--ti-ink);
-  min-height: 3.2mm;
-  line-height: 1.3;
+  min-height: 3mm;
+  line-height: 1.25;
 }
 
 .ti-cards--parties .ti-card-body {
-  min-height: 22mm;
+  min-height: 0;
+  padding: 1.1mm 2mm;
+  gap: 0.85mm;
 }
 
 .ti-amount-words-bar {
@@ -245,30 +347,31 @@
 }
 
 .ti-bank-line {
-  margin: 0 0 0.6mm;
-  font-size: 9.5px;
-  line-height: 1.35;
+  margin: 0 0 0.35mm;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .ti-bank-note {
-  margin: 1.5mm 0 0;
-  font-size: 8px;
+  margin: 0.8mm 0 0;
+  font-size: 9.5px;
   font-style: italic;
   color: var(--ti-muted);
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
 .ti-declaration {
-  margin: 1mm 0 0;
-  font-size: 8px;
-  line-height: 1.35;
+  margin: 0.8mm 0 0;
+  font-size: 9.5px;
+  line-height: 1.3;
   color: var(--ti-ink);
+  white-space: pre-line;
 }
 
 .ti-terms-line {
-  margin: 0 0 1mm;
-  font-size: 9.5px;
-  line-height: 1.35;
+  margin: 0 0 0.8mm;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .ti-card--terms-sign {
@@ -279,30 +382,68 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 3mm;
-  flex: 1;
-  min-height: 42mm;
+  gap: 2mm;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .ti-terms-block {
   flex: 0 0 auto;
 }
 
-.ti-signature--in-card {
-  align-self: flex-end;
+/* Bank Details | Digital Signature — split within left footer card */
+.ti-card--bank-sign {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ti-bank-sign {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: stretch;
+  width: 100%;
+  min-height: 100%;
+}
+
+.ti-bank-sign__bank,
+.ti-bank-sign__sig {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
+}
+
+.ti-bank-sign__sig {
+  border-left: 1px solid var(--ti-line);
+  background: #fff;
+}
+
+.ti-card-body--bank-sig {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
+  flex: 1 1 auto;
+  min-height: 28mm;
+  padding: 1mm 2mm 1.2mm;
+}
+
+.ti-signature.ti-signature--in-card {
+  align-self: center;
+  align-items: center;
+  justify-content: flex-end;
   text-align: center;
   margin-top: auto;
-  padding: 4mm 1mm 0.5mm;
+  padding: 1mm 1mm 0.5mm;
   border-left: none;
   max-width: none;
-  width: auto;
-  min-width: 48mm;
+  width: 100%;
+  min-width: 0;
   gap: 1mm;
 }
 
 .ti-signature--in-card .ti-signature-company {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--ti-ink);
   text-align: center;
@@ -311,21 +452,24 @@
 
 .ti-signature--in-card .ti-signature-line {
   width: 100%;
-  min-width: 42mm;
-  height: 12mm;
+  max-width: 48mm;
+  min-width: 36mm;
+  height: 10mm;
   border-bottom: 1.2px solid var(--ti-ink);
-  margin: 0;
+  margin: 0 auto;
 }
 
 .ti-signature--in-card .ti-signature-img {
-  max-width: 42mm;
-  max-height: 12mm;
+  max-width: 56mm;
+  max-height: 16mm;
+  width: auto;
+  height: auto;
   object-position: center bottom;
   align-self: center;
 }
 
 .ti-signature--in-card .ti-signature-name {
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--ti-ink);
   text-align: center;
@@ -334,7 +478,7 @@
 }
 
 .ti-signature--in-card .ti-signature-label {
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -345,21 +489,21 @@
 
 .ti-amount-words-bar {
   margin: 0;
-  padding: 1.5mm 2.5mm;
+  padding: 1.3mm 2.2mm;
   border: 1px solid var(--ti-line-soft);
   border-radius: var(--ti-radius);
-  font-size: 9.5px;
+  font-size: 11px;
   flex-shrink: 0;
   background: #fafbfc;
 }
 
-.ti-lines--letterhead .ti-col-num { width: 4%; }
-.ti-lines--letterhead .ti-col-desc { width: 36%; }
+.ti-lines--letterhead .ti-col-num { width: 5%; }
+.ti-lines--letterhead .ti-col-desc { width: 35%; }
 .ti-lines--letterhead .ti-col-sac { width: 11%; }
 .ti-lines--letterhead .ti-col-qty { width: 7%; }
 .ti-lines--letterhead .ti-col-rate { width: 14%; }
-.ti-lines--letterhead .ti-col-taxable { width: 16%; }
-.ti-lines--letterhead .ti-col-taxpct { width: 12%; }
+.ti-lines--letterhead .ti-col-taxable { width: 18%; }
+.ti-lines--letterhead .ti-col-taxpct { width: 10%; }
 
 /* Summary in same table as lines — locked to Qty→Taxable; GST Rate stays parallel. */
 .ti-summary-foot .ti-summary-row:first-child .ti-summary-label,
@@ -382,7 +526,7 @@
 }
 
 .ti-summary-foot .ti-summary-label {
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -393,7 +537,7 @@
 }
 
 .ti-summary-foot .ti-summary-value {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 700;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -420,7 +564,7 @@
 .ti-words-total {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.6mm;
+  gap: 1.4mm;
   align-items: stretch;
   width: 100%;
   max-width: 100%;
@@ -440,11 +584,11 @@
   border: 1px solid var(--ti-line-soft);
   border-radius: var(--ti-radius);
   background: #fafbfc;
-  padding: 1.5mm 2.5mm;
-  font-size: 9.5px;
+  padding: 1.3mm 2.2mm;
+  font-size: 11px;
   font-weight: 500;
   color: var(--ti-ink);
-  line-height: 1.35;
+  line-height: 1.3;
   text-align: left;
   box-sizing: border-box;
   display: flex;
@@ -470,12 +614,12 @@
 
 /*
  * Inside totals card: label (SAC+Qty+Rate) | value (Taxable Value) | empty (GST Rate)
- * Matches letterhead: 11+7+14=32 | 16 | 12
+ * Matches letterhead: 11+7+14=32 | 18 | 10
  */
 .ti-totals-row,
 .ti-totals-grand {
   display: grid;
-  grid-template-columns: minmax(0, 32fr) minmax(0, 16fr) minmax(0, 12fr);
+  grid-template-columns: minmax(0, 32fr) minmax(0, 18fr) minmax(0, 10fr);
   align-items: center;
   width: 100%;
   box-sizing: border-box;
@@ -491,36 +635,28 @@
   border-bottom: none;
 }
 
-.ti-totals-row__label,
-.ti-totals-grand__label {
-  font-size: 8px;
+.ti-totals-row__label {
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.15;
-  padding: 0.65mm 1.6mm 0.65mm 2.2mm;
+  padding: 0.55mm 1.5mm 0.55mm 2mm;
   text-align: left;
   min-width: 0;
-}
-
-.ti-totals-row__label {
   color: var(--ti-header-ink);
 }
 
-.ti-totals-row__value,
-.ti-totals-grand__value {
-  font-size: 10px;
+.ti-totals-row__value {
+  font-size: 11.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   line-height: 1.15;
   text-align: right;
-  padding: 0.65mm 2mm;
+  padding: 0.55mm 1.8mm;
   min-width: 0;
   white-space: nowrap;
-}
-
-.ti-totals-row__value {
   color: var(--ti-ink);
 }
 
@@ -529,25 +665,39 @@
   min-width: 0;
 }
 
-/* Dark navy highlight — values stay under Taxable Value, not GST Rate */
+/* Dark navy highlight — match Amount In Words bar height + type */
 .ti-totals-grand {
   margin: 0;
   padding: 0;
   background: #1e3a5f;
   color: #fff;
   flex-shrink: 0;
+  min-height: calc(11px * 1.3 + 2.6mm);
 }
 
 .ti-totals-grand__label {
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+  padding: 1.3mm 1.5mm 1.3mm 2.2mm;
+  text-align: left;
+  min-width: 0;
   color: #fff;
 }
 
 .ti-totals-grand__value {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: normal;
+  line-height: 1.3;
+  text-align: right;
+  padding: 1.3mm 2.2mm;
+  min-width: 0;
+  white-space: nowrap;
   color: #fff;
 }
 
@@ -555,16 +705,16 @@
   background: #1e3a5f;
 }
 
-/* Bank | Payment — 2 equal columns */
+/* Bank | Payment — content height; leftover page space goes to line items */
 .ti-split-stack {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.6mm;
+  gap: 1.4mm;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   align-items: stretch;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   clear: both;
 }
@@ -572,12 +722,12 @@
 .ti-split-stack > .ti-card {
   min-width: 0;
   height: auto;
-  min-height: 100%;
+  min-height: 0;
 }
 
 .ti-signature-name {
   display: block;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--ti-ink);
   text-align: center;
@@ -588,7 +738,7 @@
 .ti-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.6mm;
+  gap: 1.4mm;
   align-items: stretch;
   flex-shrink: 0;
   width: 100%;
@@ -615,8 +765,8 @@
 
 .ti-card-title {
   margin: 0;
-  padding: 1.5mm 2.5mm;
-  font-size: 9px;
+  padding: 1mm 2mm;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -627,10 +777,10 @@
 }
 
 .ti-card-body {
-  padding: 2mm 2.5mm;
+  padding: 1.2mm 2mm;
   display: flex;
   flex-direction: column;
-  gap: 1.5mm;
+  gap: 0.9mm;
   flex: 1;
 }
 
@@ -654,14 +804,14 @@
 }
 
 .ti-card--payment .ti-field-label {
-  font-size: 8px;
+  font-size: 9.5px;
   min-height: auto;
 }
 
 .ti-card--payment .ti-field-value {
-  font-size: 10px;
+  font-size: 11.5px;
   min-height: auto;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .ti-payment-qr {
@@ -693,7 +843,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: 8.5px;
   font-weight: 700;
   color: var(--ti-muted);
   text-transform: uppercase;
@@ -702,7 +852,7 @@
 }
 
 .ti-payment-upi {
-  font-size: 6.5px;
+  font-size: 8px;
   font-weight: 600;
   color: var(--ti-muted);
   text-align: center;
@@ -736,29 +886,29 @@
 }
 
 .ti-field-label {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ti-muted);
-  line-height: 1.2;
-  min-height: 2.5mm;
+  line-height: 1.15;
+  min-height: 2mm;
 }
 
 .ti-field-value {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--ti-ink);
-  line-height: 1.35;
+  line-height: 1.25;
   word-break: break-word;
-  min-height: 3.5mm;
+  min-height: 2.8mm;
 }
 
 .tylo-invoice .ti-field-value .ei-inline--area {
-  min-height: 32px;
-  max-height: 40px;
+  min-height: 20px;
+  max-height: 32px;
   resize: none;
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
 .ti-prefill {
@@ -766,22 +916,26 @@
   font-weight: 500;
 }
 
-/* ─── Line items — compact; do not stretch ─── */
+/* Line items absorb leftover page height (blank area under rows, not empty bank cards) */
 .ti-lines-section {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 1mm;
+  gap: 0.8mm;
   max-width: 100%;
-  min-height: 0;
-  overflow: visible;
+  min-height: 18mm;
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--ti-line-soft);
+  border-radius: var(--ti-radius);
+  background: #fff;
 }
 
 .ti-lines {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
-  font-size: 10.5px;
+  font-size: 12px;
   table-layout: fixed;
   flex: 0 0 auto;
   height: auto !important;
@@ -818,8 +972,8 @@
 .ti-lines .ti-col-total { width: 7%; }
 
 .ti-lines thead th {
-  padding: 1.8mm 1.6mm;
-  font-size: 8.5px;
+  padding: 1.1mm 1.4mm;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -852,14 +1006,14 @@
 }
 
 .ti-lines tbody td {
-  padding: 1.4mm 1.6mm;
+  padding: 0.85mm 1.2mm;
   border-bottom: 1px solid var(--ti-line-soft);
   vertical-align: middle;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ti-ink);
   overflow: hidden;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .ti-lines .ti-r,
@@ -873,12 +1027,12 @@
 }
 
 .ti-lines tbody tr:last-child td {
-  border-bottom: 1px solid var(--ti-line-soft);
+  border-bottom: none;
 }
 
 .ti-lines .ti-desc {
   text-align: left;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ti-ink);
   word-break: break-word;
@@ -895,15 +1049,20 @@
 .ti-lines .ti-tax-rate {
   text-align: center;
   color: var(--ti-ink);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   padding-left: 1.2mm;
   padding-right: 1.2mm;
 }
 
+.ti-lines .ti-num {
+  overflow: visible;
+  white-space: nowrap;
+}
+
 .ti-lines .ti-sac {
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--ti-ink);
   letter-spacing: 0.02em;
@@ -935,15 +1094,18 @@
 
 .tylo-invoice .ti-lines .ti-desc .ei-inline--area {
   resize: none;
-  min-height: 2.6em;
-  max-height: 2.6em;
+  min-height: 1.2em;
+  max-height: 2.55em;
+  height: auto;
   line-height: 1.3;
-  overflow-y: auto;
+  overflow: hidden;
   white-space: pre-wrap;
+  word-break: break-word;
   color: var(--ti-ink);
   font-weight: 500;
   padding: 0;
   margin: 0;
+  field-sizing: content;
 }
 
 .tylo-invoice .ti-lines .ti-r .ei-inline {
@@ -966,7 +1128,7 @@
 .tylo-invoice .ti-th-tax .ei-inline {
   margin: 0;
   padding: 0 1mm;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -978,13 +1140,13 @@
   border: 1px dashed color-mix(in srgb, var(--ti-accent) 40%, var(--ti-line-soft));
   background: #fff;
   color: var(--ti-accent);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 1.2mm 3mm;
+  padding: 1mm 2.5mm;
   border-radius: 4px;
   cursor: pointer;
   flex-shrink: 0;
-  margin: 0.4mm 0 0.2mm;
+  margin: 0.6mm 2mm 1mm;
 }
 
 .ti-add-line:hover {
@@ -1034,7 +1196,7 @@
 
 .ti-words-label {
   display: block;
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1044,8 +1206,8 @@
 
 .ti-words-text {
   margin: 0;
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: 11.5px;
+  line-height: 1.3;
   color: var(--ti-ink);
 }
 
@@ -1068,7 +1230,7 @@
 }
 
 .ti-totals-grand-label {
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1076,7 +1238,7 @@
 }
 
 .ti-totals-grand-value {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -1091,7 +1253,7 @@
 
 .ti-terms-title {
   margin: 0 0 0.5mm;
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1101,8 +1263,8 @@
 .ti-terms ol {
   margin: 0;
   padding-left: 3.5mm;
-  font-size: 8.5px;
-  line-height: 1.35;
+  font-size: 10px;
+  line-height: 1.3;
   color: var(--ti-muted);
 }
 
@@ -1113,7 +1275,7 @@
 .ti-terms--footer .ti-add-term {
   margin-top: 0.5mm;
   padding: 1mm 2mm;
-  font-size: 8.5px;
+  font-size: 10px;
 }
 
 .ti-footer--sign .ti-signature {
@@ -1136,8 +1298,8 @@
 }
 
 .ti-signature-img {
-  max-width: 22mm;
-  max-height: 10mm;
+  max-width: 34mm;
+  max-height: 14mm;
   object-fit: contain;
   object-position: right bottom;
 }
@@ -1150,7 +1312,7 @@
 }
 
 .ti-signature-label {
-  font-size: 7.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1159,8 +1321,8 @@
 
 .ti-signature-name,
 .ti-signature-company {
-  font-size: 9px;
-  line-height: 1.3;
+  font-size: 10.5px;
+  line-height: 1.25;
   color: var(--ti-ink);
 }
 
@@ -1170,18 +1332,18 @@
 
 .ti-signature-company {
   color: var(--ti-muted);
-  font-size: 8.5px;
+  font-size: 10px;
 }
 
 .tylo-invoice .ti-signature .ei-inline {
   margin: 0;
   padding: 0;
   text-align: right;
-  font-size: 9px;
+  font-size: 10.5px;
 }
 
 .tylo-invoice .ti-signature-company-input {
-  font-size: 8.5px;
+  font-size: 10px;
   color: var(--ti-muted);
 }
 
@@ -1236,12 +1398,18 @@
   text-align: right;
   max-width: 22mm;
   margin-left: auto;
+  border-bottom-color: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.tylo-invoice .ti-lines .ti-tax-rate .ei-inline {
+  border-bottom-color: color-mix(in srgb, var(--brand) 22%, transparent);
+  min-width: 3.2em;
 }
 
 @media print {
   @page {
     size: 297mm 210mm landscape;
-    margin: 9mm;
+    margin: 7mm;
   }
 
   .tylo-invoice {
@@ -1249,11 +1417,11 @@
     max-width: 100%;
     height: auto;
     min-height: 0;
-    max-height: 192mm;
+    max-height: 196mm;
     padding: 0;
     border: none;
     border-radius: 0;
-    gap: 2mm;
+    gap: 0.85mm;
     page-break-after: avoid;
     page-break-inside: avoid;
     overflow: hidden;
@@ -1267,5 +1435,10 @@
   .ti-add-line,
   .ti-add-term {
     display: none;
+  }
+
+  .ti-meta-hint,
+  .ti-meta-placeholder {
+    display: none !important;
   }
 }

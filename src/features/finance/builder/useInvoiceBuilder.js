@@ -8,6 +8,10 @@ import {
 } from '../invoiceGenerator/invoiceStorage.js';
 import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import { usePersistedCommercialBuilder } from './usePersistedCommercialBuilder.js';
+import {
+  applyPathUpdateWithShipToSync,
+  syncShipToAfterBillToPatch,
+} from './shipToSameAsBillTo.js';
 
 const applyOrg = (form, org) => applyOrgMasterToInvoiceForm(form, org);
 
@@ -37,14 +41,7 @@ export function useInvoiceBuilder() {
   const update = useCallback(
     (path, value) => {
       if (readOnly) return;
-      setForm((prev) => {
-        const next = structuredClone(prev);
-        const keys = path.split('.');
-        let cur = next;
-        for (let i = 0; i < keys.length - 1; i += 1) cur = cur[keys[i]];
-        cur[keys[keys.length - 1]] = value;
-        return next;
-      });
+      setForm((prev) => applyPathUpdateWithShipToSync(prev, path, value));
     },
     [readOnly, setForm]
   );
@@ -101,23 +98,21 @@ export function useInvoiceBuilder() {
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
-      setForm((prev) => ({
-        ...prev,
-        clientMasterId: patch.clientMasterId || '',
-        clientId: patch.clientId || '',
-        billTo: { ...prev.billTo, ...(patch.billTo || {}) },
-        invoice: {
-          ...prev.invoice,
-          projectName: patch.projectName || prev.invoice.projectName,
-          placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
-        },
-        shipTo: {
-          ...prev.shipTo,
-          name: patch.billTo?.name || prev.shipTo.name,
-          address: patch.billTo?.address || prev.shipTo.address,
-          contactPerson: patch.billTo?.contactPerson || prev.shipTo.contactPerson,
-        },
-      }));
+      setForm((prev) => {
+        const billTo = { ...prev.billTo, ...(patch.billTo || {}) };
+        return {
+          ...prev,
+          clientMasterId: patch.clientMasterId || '',
+          clientId: patch.clientId || '',
+          billTo,
+          invoice: {
+            ...prev.invoice,
+            projectName: patch.projectName || prev.invoice.projectName,
+            placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
+          },
+          shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
+        };
+      });
     },
     [readOnly, setForm]
   );

@@ -86,57 +86,6 @@ export const buildInvoiceExportNode = buildDocumentExportNode;
 /** @deprecated Use removeDocumentExportNode */
 export const removeInvoiceExportNode = removeDocumentExportNode;
 
-function pdfExportOptions(filename = 'document.pdf', orientation = 'landscape') {
-  const { mm, px } = pageSpec(orientation);
-  const width = px.w;
-  const height = px.h;
-  return {
-    margin: 0,
-    filename,
-    image: { type: 'png', quality: 1 },
-    html2canvas: {
-      scale: 4,
-      useCORS: true,
-      allowTaint: true,
-      letterRendering: true,
-      logging: false,
-      width,
-      height,
-      windowWidth: width,
-      windowHeight: height,
-      backgroundColor: '#ffffff',
-      scrollX: 0,
-      scrollY: 0,
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: [mm.widthMm, mm.heightMm],
-      orientation,
-      compress: true,
-      precision: 16,
-    },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-  };
-}
-
-/**
- * Render the on-screen commercial document to a PDF blob (shared by Download + Print).
- */
-export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf', { orientation = 'landscape' } = {}) {
-  const built = buildDocumentExportNode(sourceRoot, { orientation });
-  if (!built) throw new Error('Nothing to export');
-
-  const { host, clone } = built;
-  try {
-    await waitForLayout();
-    const blob = await html2pdf().set(pdfExportOptions(filename, orientation)).from(clone).outputPdf('blob');
-    if (!(blob instanceof Blob)) throw new Error('PDF render failed');
-    return blob;
-  } finally {
-    removeDocumentExportNode(host);
-  }
-}
-
 function triggerBlobDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -149,22 +98,10 @@ function triggerBlobDownload(blob, filename) {
 }
 
 /**
- * Download commercial document PDF — same render pipeline as Print.
+ * Print a PDF blob via a hidden iframe (same path for server PDFKit + client raster).
  */
-export async function exportDocumentPdf(sourceRoot, filename = 'document.pdf', { orientation = 'landscape' } = {}) {
-  const blob = await renderDocumentPdfBlob(sourceRoot, filename, { orientation });
-  triggerBlobDownload(blob, filename);
-}
-
-/** @deprecated Use exportDocumentPdf */
-export const exportInvoicePdf = exportDocumentPdf;
-
-/**
- * Print using the exact same PDF as Download (no separate HTML/server template).
- */
-export async function printDocumentPreview(sourceRoot, { title = 'Document', orientation = 'landscape' } = {}) {
-  const filename = `${String(title || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
-  const blob = await renderDocumentPdfBlob(sourceRoot, filename, { orientation });
+export async function printPdfBlob(blob, { title = 'Document', orientation = 'landscape' } = {}) {
+  if (!(blob instanceof Blob)) throw new Error('Nothing to print');
   const url = URL.createObjectURL(blob);
   const { mm } = pageSpec(orientation);
 
@@ -209,7 +146,6 @@ export async function printDocumentPreview(sourceRoot, { title = 'Document', ori
         const finish = () => done();
         win.addEventListener('afterprint', finish, { once: true });
 
-        // PDF plugin may need a brief moment before print is ready.
         setTimeout(() => {
           try {
             win.focus();
@@ -230,3 +166,99 @@ export async function printDocumentPreview(sourceRoot, { title = 'Document', ori
     if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
   }
 }
+
+async function waitForImages(root) {
+  const imgs = [...(root?.querySelectorAll?.('img') || [])];
+  await Promise.all(
+    imgs.map(async (img) => {
+      try {
+        if (typeof img.decode === 'function') await img.decode();
+        else if (!img.complete) {
+          await new Promise((resolve) => {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+          });
+        }
+      } catch {
+        /* ignore decode errors — still export */
+      }
+    })
+  );
+}
+
+function pdfExportOptions(filename = 'document.pdf', orientation = 'landscape') {
+  const { mm, px } = pageSpec(orientation);
+  const width = px.w;
+  const height = px.h;
+  // ~300–400 DPI capture so print matches the on-screen preview layout.
+  const scale = 4;
+  return {
+    margin: 0,
+    filename,
+    image: { type: 'png', quality: 1 },
+    html2canvas: {
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      letterRendering: true,
+      logging: false,
+      width,
+      height,
+      windowWidth: width,
+      windowHeight: height,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: [mm.widthMm, mm.heightMm],
+      orientation,
+      compress: false,
+      precision: 16,
+    },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+  };
+}
+
+/**
+ * Render the on-screen commercial document to a PDF blob (shared by Download + Print).
+ * Captures the live preview DOM so print/download match what you see.
+ */
+export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf', { orientation = 'landscape' } = {}) {
+  const built = buildDocumentExportNode(sourceRoot, { orientation });
+  if (!built) throw new Error('Nothing to export');
+
+  const { host, clone } = built;
+  try {
+    await waitForImages(clone);
+    await waitForLayout();
+    const blob = await html2pdf().set(pdfExportOptions(filename, orientation)).from(clone).outputPdf('blob');
+    if (!(blob instanceof Blob)) throw new Error('PDF render failed');
+    return blob;
+  } finally {
+    removeDocumentExportNode(host);
+  }
+}
+
+/**
+ * Download commercial document PDF — same render pipeline as Print.
+ */
+export async function exportDocumentPdf(sourceRoot, filename = 'document.pdf', { orientation = 'landscape' } = {}) {
+  const blob = await renderDocumentPdfBlob(sourceRoot, filename, { orientation });
+  triggerBlobDownload(blob, filename);
+}
+
+/** @deprecated Use exportDocumentPdf */
+export const exportInvoicePdf = exportDocumentPdf;
+
+/**
+ * Print using the exact same PDF as Download (no separate HTML/server template).
+ */
+export async function printDocumentPreview(sourceRoot, { title = 'Document', orientation = 'landscape' } = {}) {
+  const filename = `${String(title || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+  const blob = await renderDocumentPdfBlob(sourceRoot, filename, { orientation });
+  await printPdfBlob(blob, { title, orientation });
+}
+
+export { triggerBlobDownload };

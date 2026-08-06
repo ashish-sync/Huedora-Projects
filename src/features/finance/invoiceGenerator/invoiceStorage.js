@@ -10,9 +10,24 @@ export const MAX_INVOICE_LINE_ITEMS = 5;
 export const INVOICE_PAYMENT_TERM = 'Payment is due within 30 days from the date of invoice.';
 
 export function msmeDeclaration(company = {}) {
-  const legal = company.legalName || 'Tylo Care Private Limited';
-  const udyam = company.udyam || 'UDYAM-MH-19-0446179';
+  const legal = String(company.legalName || 'Tylo Care Private Limited').trim();
+  const udyam = String(company.udyam || 'UDYAM-MH-19-0446179').trim();
   return `${legal} is registered as a Micro Enterprise under the MSMED Act, 2006, bearing Udyam Registration No. ${udyam}. Delayed payments shall be governed by applicable provisions of the MSMED Act, 2006.`;
+}
+
+/** True when stored declaration is the old short MSME fallback (no Udyam). */
+export function isStaleMsmeDeclaration(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  return /MSMED Act/i.test(t) && !/Udyam Registration No\./i.test(t);
+}
+
+/** True when stored Proforma declaration is missing the scope / GST follow-on paragraph. */
+export function isStaleProformaDeclaration(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  if (!/Proforma Invoice issued for quotation/i.test(t)) return false;
+  return !/Prices are indicative based on the proposed scope/i.test(t);
 }
 
 export function defaultLineItem(overrides = {}) {
@@ -72,6 +87,7 @@ export function defaultInvoiceForm() {
     },
     clientMasterId: '',
     clientId: '',
+    shipToSameAsBillTo: false,
     billTo: {
       name: '',
       contactPerson: '',
@@ -126,9 +142,10 @@ export function defaultInvoiceForm() {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: 0,
+      roundOff: '',
     },
     taxColumnLabels: {
-      rateLabel: 'GST Rate',
+      rateLabel: 'GST Rate %',
       amountLabel: 'GST',
     },
     signature: {

@@ -8,6 +8,7 @@ import {
 import {
   defaultPoLineItem,
   defaultPurchaseOrderForm,
+  MAX_PO_LINE_ITEMS,
 } from '../purchaseOrder/purchaseOrderStorage.js';
 import { defaultCreditNoteForm } from '../creditNote/creditNoteStorage.js';
 import { defaultDebitNoteForm } from '../debitNote/debitNoteStorage.js';
@@ -60,6 +61,7 @@ function invoiceLikeToPayload(form, documentType) {
     cnAmount: adj.cnAmount,
     dnAmount: adj.dnAmount,
     advanceReceived: adj.advanceReceived,
+    roundOff: adj.roundOff,
     terms: Array.isArray(form.terms) ? form.terms : [],
     customNotes: trim(form.declaration),
     declaration: trim(form.declaration),
@@ -139,6 +141,7 @@ function proformaToPayload(form) {
     cnAmount: adj.cnAmount,
     dnAmount: adj.dnAmount,
     advanceReceived: adj.advanceReceived,
+    roundOff: adj.roundOff,
     terms: Array.isArray(form.terms) ? form.terms : [],
     customNotes: trim(doc.customNotes),
     declaration: trim(form.declaration),
@@ -204,13 +207,12 @@ function poToPayload(form) {
     terms: Array.isArray(form.terms) ? form.terms : [],
     notes: trim(form.notes),
     customNotes: trim(form.notes),
+    roundOff: form.roundOff,
     documentNumber: '',
     lineItems: (form.lineItems || [])
       .filter((row) => trim(row.description) || Number(row.qty) || Number(row.rate))
       .map((row, index) => ({
         description: trim(row.description),
-        make: trim(row.make),
-        model: trim(row.model),
         unit: trim(row.unit || row.uom) || 'Nos',
         qty: row.qty,
         rate: row.rate,
@@ -223,6 +225,7 @@ function poToPayload(form) {
       })),
     builderForm: form,
     documentType: 'purchase_order',
+    contactId: form.contactId || null,
   };
 }
 
@@ -489,6 +492,7 @@ function mergeInvoiceLike(base, doc) {
     cnAmount: doc.cnAmount || 0,
     dnAmount: doc.dnAmount || 0,
     advanceReceived: doc.advanceReceived || 0,
+    roundOff: doc.roundOff ?? '',
   };
   form.terms = Array.isArray(doc.terms) && doc.terms.length ? doc.terms : form.terms;
   form.declaration = doc.declaration || doc.customNotes || form.declaration;
@@ -573,6 +577,7 @@ function mergeProforma(doc) {
     cnAmount: doc.cnAmount || 0,
     dnAmount: doc.dnAmount || 0,
     advanceReceived: doc.advanceReceived || 0,
+    roundOff: doc.roundOff ?? '',
   };
   form.terms = Array.isArray(doc.terms) && doc.terms.length ? doc.terms : form.terms;
   form.rows =
@@ -617,9 +622,20 @@ function mergePo(doc) {
           doc.projectCostCentre || doc.projectName || bf.po?.projectCostCentre || form.po.projectCostCentre,
         revisionNo: doc.revisionNo ?? bf.po?.revisionNo ?? form.po.revisionNo,
       },
-      lineItems: Array.isArray(bf.lineItems) && bf.lineItems.length ? bf.lineItems : form.lineItems,
+      lineItems: Array.isArray(bf.lineItems) && bf.lineItems.length
+        ? bf.lineItems.slice(0, MAX_PO_LINE_ITEMS)
+        : form.lineItems,
+      contactId: bf.contactId || doc.contactId || '',
+      specialTerms: { ...form.specialTerms, ...(bf.specialTerms || {}) },
+      authorisation: {
+        preparedBy: { ...form.authorisation.preparedBy, ...(bf.authorisation?.preparedBy || {}) },
+        checkedBy: { ...form.authorisation.checkedBy, ...(bf.authorisation?.checkedBy || {}) },
+        approvedBy: { ...form.authorisation.approvedBy, ...(bf.authorisation?.approvedBy || {}) },
+      },
+      vendorAcceptance: { ...form.vendorAcceptance, ...(bf.vendorAcceptance || {}) },
     };
   }
+  form.contactId = doc.contactId || '';
   form.vendor = {
     ...form.vendor,
     name: doc.recipientName || '',
@@ -672,14 +688,13 @@ function mergePo(doc) {
     deliveryDate: doc.dueDate || form.po.deliveryDate,
   };
   form.notes = doc.customNotes || '';
+  form.roundOff = doc.roundOff ?? '';
   form.terms = Array.isArray(doc.terms) && doc.terms.length ? doc.terms : form.terms;
   form.lineItems =
     Array.isArray(doc.lineItems) && doc.lineItems.length
-      ? doc.lineItems.map((row) =>
+      ? doc.lineItems.slice(0, MAX_PO_LINE_ITEMS).map((row) =>
           defaultPoLineItem({
             description: row.description || '',
-            make: row.make || '',
-            model: row.model || '',
             unit: row.unit || row.uom || 'Nos',
             uom: row.unit || row.uom || 'Nos',
             qty: row.qty ?? 1,
@@ -791,18 +806,30 @@ export async function deleteCommercialDocument(id) {
   return res.data;
 }
 
-export async function downloadServerPdf(documentType, id, fileName) {
+/** Fetch the sharp PDFKit-rendered PDF as a Blob (vector text — not html2canvas). */
+export async function fetchServerPdfBlob(documentType, id) {
   const cfg = docConfig(documentType);
   if (!cfg) throw new Error('Unknown document type');
   const res = await apiFetch(`${cfg.pdfPath(id)}?download=1`);
   if (!res.ok) throw new Error('PDF download failed');
   const blob = await res.blob();
+  if (!(blob instanceof Blob) || blob.size < 64) {
+    throw new Error('PDF download failed');
+  }
+  return blob;
+}
+
+export async function downloadServerPdf(documentType, id, fileName) {
+  const blob = await fetchServerPdfBlob(documentType, id);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = `${(fileName || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
+  return blob;
 }
 
 export function buildEditPath(documentType, id) {

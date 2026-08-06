@@ -11,6 +11,32 @@ import {
 
 const applyOrg = (form, org) => applyOrgMasterToPurchaseOrderForm(form, org);
 
+/** Identity / bank / tax fields come only from Organisation master. */
+const ORG_LOCKED_PATHS = new Set([
+  'buyer.companyName',
+  'buyer.address',
+  'buyer.gstin',
+  'buyer.mobile',
+  'buyer.email',
+  'billing.address',
+  'billing.gstin',
+  'billing.state',
+  'billing.stateCode',
+  'billing.placeOfSupply',
+  'company.legalName',
+  'company.address',
+  'company.gstin',
+  'company.pan',
+  'company.cin',
+  'company.email',
+  'company.phone',
+  'bank.accountHolder',
+  'bank.bankName',
+  'bank.accountNumber',
+  'bank.branchName',
+  'bank.ifscCode',
+]);
+
 function freshPoForm() {
   const form = defaultPurchaseOrderForm();
   form.po.documentNumber = '';
@@ -32,12 +58,45 @@ export function usePurchaseOrderBuilder() {
 
   const update = useCallback(
     (path, value) => {
-      if (readOnly) return;
+      if (readOnly || ORG_LOCKED_PATHS.has(path) || path.startsWith('company.') || path.startsWith('bank.')) {
+        return;
+      }
       setForm((prev) => {
         const next = structuredClone(prev);
+        if (!next.authorisation) {
+          next.authorisation = {
+            preparedBy: { name: '', designation: '', signature: '', date: '' },
+            checkedBy: { name: '', designation: '', signature: '', date: '' },
+            approvedBy: { name: '', designation: '', signature: '', date: '' },
+          };
+        }
+        if (!next.specialTerms) {
+          next.specialTerms = {
+            deliverySchedule: '',
+            warranty: '',
+            replacementPolicy: '',
+            penaltyClause: '',
+            inspection: '',
+            documentation: '',
+            otherInstructions: '',
+          };
+        }
+        if (!next.vendorAcceptance) {
+          next.vendorAcceptance = {
+            acceptedBy: '',
+            designation: '',
+            signature: '',
+            date: '',
+          };
+        }
         const keys = path.split('.');
         let cur = next;
-        for (let i = 0; i < keys.length - 1; i += 1) cur = cur[keys[i]];
+        for (let i = 0; i < keys.length - 1; i += 1) {
+          if (cur[keys[i]] == null || typeof cur[keys[i]] !== 'object') {
+            cur[keys[i]] = {};
+          }
+          cur = cur[keys[i]];
+        }
         cur[keys[keys.length - 1]] = value;
         return next;
       });
@@ -97,6 +156,23 @@ export function usePurchaseOrderBuilder() {
     setForm((prev) => ({ ...prev, terms: [...(prev.terms || []), ''] }));
   }, [readOnly, setForm]);
 
+  const applyVendorContact = useCallback(
+    (patch) => {
+      if (readOnly || !patch) return;
+      setForm((prev) => ({
+        ...prev,
+        contactId: patch.contactId || '',
+        vendor: { ...prev.vendor, ...(patch.vendor || {}) },
+      }));
+    },
+    [readOnly, setForm]
+  );
+
+  const clearVendorContact = useCallback(() => {
+    if (readOnly) return;
+    setForm((prev) => ({ ...prev, contactId: '' }));
+  }, [readOnly, setForm]);
+
   return {
     ...persistence,
     totals,
@@ -106,6 +182,8 @@ export function usePurchaseOrderBuilder() {
     removeLine,
     updateTerm,
     addTerm,
+    applyVendorContact,
+    clearVendorContact,
     newPurchaseOrder: persistence.newDocument,
     orgMaster,
   };

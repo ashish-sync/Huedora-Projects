@@ -45,21 +45,28 @@ export default function FinanceCommercialMasterPage() {
     <div className="finance-org-master-page">
       <header className="finance-org-master-header">
         <div className="finance-org-master-header-text">
+          <p className="finance-org-master-eyebrow">Finance One · Shared reference</p>
           <h2 className="finance-org-master-heading">Organisation master</h2>
           <p className="finance-org-master-lead">
-            Letterhead, bank, and tax details shared by Invoice, PO, Proforma, and Credit Note.
+            Single source for letterhead, tax IDs, bank details, and digital signature across all
+            commercial documents.
           </p>
         </div>
         <div className="finance-org-master-actions finance-org-master-actions--top">
           <Link to="/finance-one/billing" className="btn secondary btn-compact">
             Back
           </Link>
-          <button type="button" className="btn secondary btn-compact" disabled={loading || busy} onClick={() => reload()}>
+          <button
+            type="button"
+            className="btn secondary btn-compact"
+            disabled={loading || busy}
+            onClick={() => reload()}
+          >
             Reload
           </button>
           {canEdit ? (
             <button type="submit" form="org-master-form" className="btn btn-compact" disabled={busy}>
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? 'Saving…' : 'Save changes'}
             </button>
           ) : null}
         </div>
@@ -69,7 +76,8 @@ export default function FinanceCommercialMasterPage() {
 
       {!canEdit ? (
         <p className="finance-org-master-readonly muted">
-          View-only. Organisation master can be edited by Admin, Operations Head, Senior Manager, or Manager.
+          View-only. Organisation master can be edited by Admin, Operations Head, Senior Manager, or
+          Manager.
         </p>
       ) : null}
 

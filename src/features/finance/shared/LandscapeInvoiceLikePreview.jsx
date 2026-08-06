@@ -10,9 +10,11 @@ import {
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { InlineField, InlineTableInput, InlineTextarea } from '../documentGenerator/inlineEdit.jsx';
 import '../documentGenerator/inline-edit.css';
-import { defaultLineItem, MAX_INVOICE_LINE_ITEMS } from '../invoiceGenerator/invoiceStorage.js';
+import { defaultLineItem, MAX_INVOICE_LINE_ITEMS, isStaleMsmeDeclaration, isStaleProformaDeclaration } from '../invoiceGenerator/invoiceStorage.js';
 import '../invoiceGenerator/tylo-invoice-template.css';
 import { LANDSCAPE_DOC_CONFIGS } from './landscapeDocConfigs.js';
+import { formatCompanyLetterhead } from './companyLetterhead.js';
+import { formatStateLine, parseStateLine } from '../builder/stateLine.js';
 
 const CREDIT_REASONS = [
   'Rate Revision / Cancellation / Service Adjustment',
@@ -33,8 +35,10 @@ function money(n) {
   return formatInr(n);
 }
 
-function stateLine(party) {
-  return [party?.stateName, party?.stateCode].filter(Boolean).join(' / ') || party?.stateCode || '';
+function applyStateLine(onUpdate, prefix, value) {
+  const { stateName, stateCode } = parseStateLine(value);
+  onUpdate?.(`${prefix}.stateName`, stateName);
+  onUpdate?.(`${prefix}.stateCode`, stateCode);
 }
 
 function Field({
@@ -68,29 +72,51 @@ function Field({
   );
 }
 
-function MetaCell({ label, children }) {
+function MetaCell({ label, hint, children }) {
   return (
     <div className="ti-meta-cell">
       <span className="ti-meta-label">{label}</span>
+      {hint ? <span className="ti-meta-hint">{hint}</span> : null}
       <div className="ti-meta-value">{children}</div>
     </div>
   );
 }
 
-function SummaryRow({ label, value }) {
+function SummaryRow({ label, value, editable = false, onChange, placeholder = '0.00' }) {
   return (
     <div className="ti-totals-row">
       <span className="ti-totals-row__label">{label}</span>
-      <span className="ti-totals-row__value">{value}</span>
+      <span className="ti-totals-row__value">
+        {editable ? (
+          <InlineTableInput value={value} onChange={onChange} align="right" placeholder={placeholder} />
+        ) : (
+          value
+        )}
+      </span>
       <span className="ti-totals-row__gst" aria-hidden="true" />
     </div>
   );
 }
 
-function SummaryRows({ totals, isNil, taxMode, showAdjustments, adj, money }) {
-  const cgst = isNil || taxMode !== 'cgst_sgst' ? 0 : totals.totalCgstAmount;
-  const sgst = isNil || taxMode !== 'cgst_sgst' ? 0 : totals.totalSgstAmount;
-  const igst = isNil || taxMode !== 'igst' ? 0 : totals.totalIgstAmount;
+function SummaryRows({
+  totals,
+  isNil,
+  forceNilTax,
+  taxMode,
+  showAdjustments,
+  adj,
+  money,
+  editable = false,
+  onUpdate,
+}) {
+  const nilTax = forceNilTax ?? isNil;
+  const cgst = nilTax || taxMode !== 'cgst_sgst' ? 0 : totals.totalCgstAmount;
+  const sgst = nilTax || taxMode !== 'cgst_sgst' ? 0 : totals.totalSgstAmount;
+  const igst = nilTax || taxMode !== 'igst' ? 0 : totals.totalIgstAmount;
+  const roundOffDisplay =
+    adj?.roundOff !== undefined && adj?.roundOff !== null && String(adj.roundOff).trim() !== ''
+      ? adj.roundOff
+      : totals.roundOff;
 
   return (
     <>
@@ -107,7 +133,12 @@ function SummaryRows({ totals, isNil, taxMode, showAdjustments, adj, money }) {
       {showAdjustments && Number(adj.advanceReceived) ? (
         <SummaryRow label="Less: Advance" value={money(adj.advanceReceived)} />
       ) : null}
-      <SummaryRow label="Round Off" value={money(totals.roundOff)} />
+      <SummaryRow
+        label="Round Off"
+        value={editable ? roundOffDisplay : money(totals.roundOff)}
+        editable={editable}
+        onChange={(v) => onUpdate?.('adjustments.roundOff', v)}
+      />
     </>
   );
 }
@@ -116,12 +147,15 @@ function SummaryRows({ totals, isNil, taxMode, showAdjustments, adj, money }) {
 function WordsAndTotalsBlock({
   totals,
   isNil,
+  forceNilTax,
   taxMode,
   showAdjustments,
   adj,
   totalLabel,
   amountWords,
   money,
+  editable = false,
+  onUpdate,
 }) {
   return (
     <div className="ti-words-total">
@@ -136,10 +170,13 @@ function WordsAndTotalsBlock({
           <SummaryRows
             totals={totals}
             isNil={isNil}
+            forceNilTax={forceNilTax}
             taxMode={taxMode}
             showAdjustments={showAdjustments}
             adj={adj}
             money={money}
+            editable={editable}
+            onUpdate={onUpdate}
           />
         </div>
         <div className="ti-totals-grand">
@@ -192,11 +229,17 @@ export default function LandscapeInvoiceLikePreview({
     originalRefField,
     reasonField,
     reasonLabel,
+    showReasonOnPreview = true,
+    lockOriginalInvoiceDate = false,
     showAdjustments,
     showTermsEditor,
+    metaLayout,
+    datesFromApproval,
   } = cfg;
 
   const isNil = gstMode === 'nil';
+  const isBosHeader = metaLayout === 'bos-header';
+  const datesLockedToApproval = Boolean(datesFromApproval);
   const isCreditDoc = docKey === 'credit-note';
   const REASONS = isCreditDoc ? CREDIT_REASONS : DEBIT_REASONS;
 
@@ -213,37 +256,53 @@ export default function LandscapeInvoiceLikePreview({
             : { description: 'Healthcare Camp / Activation Services', igstRate: 18, cgstRate: 9, sgstRate: 9 }
         ),
       ];
-  const effectiveLines = isNil
-    ? rawLines.map((line) => ({ ...line, igstRate: 0, cgstRate: 0, sgstRate: 0 }))
-    : rawLines.map((line) => ({ ...line, ...resolveLineGstRates(line, taxMode) }));
+  const ratedLines = rawLines.map((line) => ({ ...line, ...resolveLineGstRates(line, taxMode) }));
+  // Bill of Supply defaults to nil tax, but if a GST% is set on any line, apply it so
+  // panel + inline GST Rate % stay connected to taxable amounts on the preview.
+  const hasPositiveGst = ratedLines.some((line) => {
+    const rate =
+      taxMode === 'igst'
+        ? Number(line.igstRate) || 0
+        : (Number(line.cgstRate) || 0) + (Number(line.sgstRate) || 0);
+    return rate > 0;
+  });
+  const forceNilTax = isNil && !hasPositiveGst;
+  const effectiveLines = forceNilTax
+    ? ratedLines.map((line) => ({ ...line, igstRate: 0, cgstRate: 0, sgstRate: 0 }))
+    : ratedLines;
 
   const adj = form?.adjustments || {};
   const totals = computeInvoiceTotals(effectiveLines, taxMode, {
     cnAmount: showAdjustments ? adj.cnAmount || 0 : 0,
     dnAmount: showAdjustments ? adj.dnAmount || 0 : 0,
     advanceReceived: showAdjustments ? adj.advanceReceived || 0 : 0,
+    roundOff: adj.roundOff,
   });
 
-  const legal = company?.legalName || 'Tylo Care Private Limited';
+  const legal = company?.legalName || '—';
   const hasLogo = Boolean(company?.logoDataUrl);
   const words = amountInWordsIndian(totals.grandTotal);
-  const realTerms = Array.isArray(form?.terms) && form.terms.length ? form.terms : [defaultTerms || ''];
+  const realTerms =
+    Array.isArray(form?.terms) && form.terms.length
+      ? form.terms
+      : Array.isArray(defaultTerms)
+        ? defaultTerms
+        : [defaultTerms || ''];
+  const defaultTermFallback = Array.isArray(defaultTerms) ? defaultTerms[0] : defaultTerms;
+  const generatedDeclaration =
+    typeof defaultDeclaration === 'function' ? defaultDeclaration(company) : defaultDeclaration;
   const declarationText =
-    form?.declaration ||
-    (typeof defaultDeclaration === 'function' ? defaultDeclaration(company) : defaultDeclaration) ||
-    '';
+    form?.declaration &&
+    !isStaleMsmeDeclaration(form.declaration) &&
+    !isStaleProformaDeclaration(form.declaration)
+      ? form.declaration
+      : generatedDeclaration || form?.declaration || '';
 
   const handleUpdateTerm =
     onUpdateTerm || ((index, value) => onUpdate?.(`terms.${index}`, value));
   const handleAddTerm = onAddTerm || (() => onUpdate?.(`terms.${realTerms.length}`, ''));
 
-  const companyMeta = [
-    company?.gstin ? `GSTIN: ${company.gstin}` : null,
-    company?.cin ? `CIN: ${company.cin}` : null,
-    company?.udyam ? `Udyam: ${company.udyam}${company.udyamLabel ? ` (${company.udyamLabel})` : ''}` : null,
-    company?.email ? `Email: ${company.email}` : null,
-    company?.website ? `Website: ${company.website}` : null,
-  ].filter(Boolean);
+  const letterhead = formatCompanyLetterhead(company);
 
   const placeOfSupplyDisplay =
     invoice?.placeOfSupplyState ||
@@ -261,21 +320,37 @@ export default function LandscapeInvoiceLikePreview({
             ) : (
               <>
                 <span className="ti-logo-text">TYLO</span>
-                <span className="ti-tagline">{company?.brandLine || '— Bringing Healthcare Closer. —'}</span>
+                <span className="ti-tagline">{company?.brandLine || ''}</span>
               </>
             )}
           </div>
 
           <div className="ti-header-company">
-            <p className="ti-company-address">
-              <strong>Registered Office:</strong> {company?.address || '—'}
-            </p>
-            {companyMeta.length ? (
-              <div className="ti-company-meta">
-                {companyMeta.map((meta) => (
-                  <span key={meta}>{meta}</span>
+            {(letterhead.legalName || letterhead.address) ? (
+              <p className="ti-company-line1">
+                {letterhead.legalName ? (
+                  <strong className="ti-company-legal">{letterhead.legalName}</strong>
+                ) : null}
+                {letterhead.legalName && letterhead.address ? (
+                  <span className="ti-company-sep" aria-hidden="true">
+                    {' '}
+                    •{' '}
+                  </span>
+                ) : null}
+                {letterhead.address ? (
+                  <span className="ti-company-addr">{letterhead.address}</span>
+                ) : null}
+              </p>
+            ) : null}
+            {letterhead.metaParts?.length ? (
+              <p className="ti-company-line2">
+                {letterhead.metaParts.map((part, i) => (
+                  <span key={part} className="ti-company-meta-part">
+                    {i > 0 ? <span className="ti-company-meta-pipe" aria-hidden="true">|</span> : null}
+                    {part}
+                  </span>
                 ))}
-              </div>
+              </p>
             ) : null}
           </div>
 
@@ -284,15 +359,82 @@ export default function LandscapeInvoiceLikePreview({
           </div>
         </header>
 
-        {/* Document meta — matches letterhead grid */}
-        <div className="ti-meta-grid">
+        {/* Document meta — Header for Bill of Supply; shared grid for other docs */}
+        <div className={`ti-meta-grid${isBosHeader ? ' ti-meta-grid--bos-header' : ''}`}>
+          {isBosHeader ? (
+            <>
+              <div className="ti-meta-section-label" aria-hidden="true">
+                Header
+              </div>
+              <MetaCell label={dateLabel} hint={editable ? 'Same as approval date' : undefined}>
+                {invoice?.issueDate ? (
+                  formatDisplayDate(invoice.issueDate)
+                ) : editable ? (
+                  <span className="ti-meta-placeholder">Set on approval</span>
+                ) : (
+                  'DD/MM/YYYY'
+                )}
+              </MetaCell>
+              <MetaCell label="PO / WO No.">
+                {editable ? (
+                  <InlineField
+                    value={invoice?.poReference || ''}
+                    onChange={(v) => onUpdate?.('invoice.poReference', v)}
+                    placeholder="—"
+                  />
+                ) : (
+                  invoice?.poReference || '—'
+                )}
+              </MetaCell>
+              <MetaCell label="PO / WO Date">
+                {editable ? (
+                  <InlineField
+                    value={invoice?.poDate || ''}
+                    onChange={(v) => onUpdate?.('invoice.poDate', v)}
+                    placeholder="DD/MM/YYYY"
+                  />
+                ) : (
+                  invoice?.poDate || 'DD/MM/YYYY'
+                )}
+              </MetaCell>
+              <MetaCell label={dueLabel} hint={editable ? '30 days from approval' : undefined}>
+                {invoice?.dueDate ? (
+                  formatDisplayDate(invoice.dueDate)
+                ) : editable ? (
+                  <span className="ti-meta-placeholder">Set on approval</span>
+                ) : (
+                  'DD/MM/YYYY'
+                )}
+              </MetaCell>
+              <MetaCell label="Project / Service Period">
+                {editable ? (
+                  <InlineField
+                    value={invoice?.servicePeriod || invoice?.projectName || ''}
+                    onChange={(v) => {
+                      onUpdate?.('invoice.servicePeriod', v);
+                      onUpdate?.('invoice.projectName', v);
+                    }}
+                    placeholder="—"
+                  />
+                ) : (
+                  invoice?.servicePeriod || invoice?.projectName || '—'
+                )}
+              </MetaCell>
+              <MetaCell label={docNoLabel}>
+                <span className="ti-doc-meta-value--mono">
+                  {invoice?.documentNumber || (editable ? 'Assigned on approval' : '—')}
+                </span>
+              </MetaCell>
+            </>
+          ) : (
+            <>
           <MetaCell label={docNoLabel}>
             <span className="ti-doc-meta-value--mono">
               {invoice?.documentNumber || (editable ? 'Assigned on approval' : '—')}
             </span>
           </MetaCell>
           <MetaCell label={dateLabel}>
-            {editable ? (
+            {editable && !datesLockedToApproval ? (
               <InlineField
                 type="date"
                 value={invoice?.issueDate || ''}
@@ -303,7 +445,7 @@ export default function LandscapeInvoiceLikePreview({
             )}
           </MetaCell>
           <MetaCell label={dueLabel}>
-            {editable ? (
+            {editable && !datesLockedToApproval ? (
               <InlineField
                 type="date"
                 value={invoice?.dueDate || ''}
@@ -330,12 +472,12 @@ export default function LandscapeInvoiceLikePreview({
               <MetaCell label="PO / WO Date">
                 {editable ? (
                   <InlineField
-                    type="date"
                     value={invoice?.poDate || ''}
                     onChange={(v) => onUpdate?.('invoice.poDate', v)}
+                    placeholder="DD/MM/YYYY"
                   />
                 ) : (
-                  formatDisplayDate(invoice?.poDate) || 'DD/MM/YYYY'
+                  invoice?.poDate || 'DD/MM/YYYY'
                 )}
               </MetaCell>
               <MetaCell label="Project / Service Period">
@@ -412,7 +554,7 @@ export default function LandscapeInvoiceLikePreview({
                 )}
               </MetaCell>
               <MetaCell label="Original Invoice Date">
-                {editable ? (
+                {editable && !lockOriginalInvoiceDate ? (
                   <InlineField
                     type="date"
                     value={invoice?.originalInvoiceDate || ''}
@@ -422,25 +564,29 @@ export default function LandscapeInvoiceLikePreview({
                   formatDisplayDate(invoice?.originalInvoiceDate) || 'DD/MM/YYYY'
                 )}
               </MetaCell>
-              <MetaCell label={reasonLabel || 'Reason'}>
-                {editable ? (
-                  <select
-                    className="ei-inline"
-                    value={invoice?.[reasonField] || REASONS[0]}
-                    onChange={(e) => onUpdate?.(`invoice.${reasonField}`, e.target.value)}
-                  >
-                    {REASONS.map((reason) => (
-                      <option key={reason} value={reason}>
-                        {reason}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  invoice?.[reasonField] || REASONS[0]
-                )}
-              </MetaCell>
+              {showReasonOnPreview && reasonField ? (
+                <MetaCell label={reasonLabel || 'Reason'}>
+                  {editable ? (
+                    <select
+                      className="ei-inline"
+                      value={invoice?.[reasonField] || REASONS[0]}
+                      onChange={(e) => onUpdate?.(`invoice.${reasonField}`, e.target.value)}
+                    >
+                      {REASONS.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    invoice?.[reasonField] || REASONS[0]
+                  )}
+                </MetaCell>
+              ) : null}
             </>
           ) : null}
+            </>
+          )}
         </div>
 
         {/* Parties — letterhead Bill To | Ship To / Service Location */}
@@ -448,13 +594,21 @@ export default function LandscapeInvoiceLikePreview({
           <div className="ti-card">
             <p className="ti-card-title">{leftPartyTitle}</p>
             <div className="ti-card-body">
-              <Field
-                full
-                label={billNameLabel}
-                value={billTo?.name}
-                onChange={(v) => onUpdate?.('billTo.name', v)}
-                editable={editable}
-              />
+              <div className="ti-field-row">
+                <Field
+                  label={billNameLabel}
+                  value={billTo?.name}
+                  onChange={(v) => onUpdate?.('billTo.name', v)}
+                  editable={editable}
+                />
+                <Field
+                  label="Contact Name"
+                  value={billTo?.contactPerson}
+                  onChange={(v) => onUpdate?.('billTo.contactPerson', v)}
+                  editable={editable}
+                  placeholder="—"
+                />
+              </div>
               <Field
                 full
                 area
@@ -471,10 +625,11 @@ export default function LandscapeInvoiceLikePreview({
                   editable={editable}
                 />
                 <Field
-                  label="State / State Code"
-                  value={stateLine(billTo)}
-                  onChange={(v) => onUpdate?.('billTo.stateName', v)}
+                  label="State Name / State Code"
+                  value={formatStateLine(billTo)}
+                  onChange={(v) => applyStateLine(onUpdate, 'billTo', v)}
                   editable={editable}
+                  placeholder="Maharashtra / 27"
                 />
               </div>
             </div>
@@ -483,13 +638,21 @@ export default function LandscapeInvoiceLikePreview({
           <div className="ti-card">
             <p className="ti-card-title">{rightPartyTitle}</p>
             <div className="ti-card-body">
-              <Field
-                full
-                label={shipNameLabel}
-                value={shipTo?.name}
-                onChange={(v) => onUpdate?.('shipTo.name', v)}
-                editable={editable}
-              />
+              <div className="ti-field-row">
+                <Field
+                  label={shipNameLabel}
+                  value={shipTo?.name}
+                  onChange={(v) => onUpdate?.('shipTo.name', v)}
+                  editable={editable}
+                />
+                <Field
+                  label="Contact Name"
+                  value={shipTo?.contactPerson}
+                  onChange={(v) => onUpdate?.('shipTo.contactPerson', v)}
+                  editable={editable}
+                  placeholder="—"
+                />
+              </div>
               <Field
                 full
                 area
@@ -506,10 +669,11 @@ export default function LandscapeInvoiceLikePreview({
                   editable={editable}
                 />
                 <Field
-                  label="State / State Code"
-                  value={stateLine(shipTo)}
-                  onChange={(v) => onUpdate?.('shipTo.stateName', v)}
+                  label="State Name / State Code"
+                  value={formatStateLine(shipTo)}
+                  onChange={(v) => applyStateLine(onUpdate, 'shipTo', v)}
                   editable={editable}
+                  placeholder="Maharashtra / 27"
                 />
               </div>
             </div>
@@ -536,7 +700,7 @@ export default function LandscapeInvoiceLikePreview({
                 <th className="ti-th-qty">Qty</th>
                 <th className="ti-th-r">Rate (₹)</th>
                 <th className="ti-th-r">Taxable Value (₹)</th>
-                <th className="ti-th-tax">GST Rate</th>
+                <th className="ti-th-tax">GST Rate %</th>
               </tr>
             </thead>
             <tbody>
@@ -549,7 +713,9 @@ export default function LandscapeInvoiceLikePreview({
                     <td className="ti-desc">
                       {editable ? (
                         <InlineTextarea
-                          rows={2}
+                          rows={Math.min(2, Math.max(1, String(line.description || '').split('\n').length))}
+                          maxLines={2}
+                          shiftEnterNewline
                           value={line.description || ''}
                           onChange={(v) => onUpdateLine?.(index, { description: v })}
                           placeholder="Healthcare Camp / Activation Services"
@@ -593,16 +759,15 @@ export default function LandscapeInvoiceLikePreview({
                     </td>
                     <td className="ti-r">{money(computed.taxableAmount)}</td>
                     <td className="ti-num ti-tax-rate">
-                      {isNil ? (
-                        '0.00'
-                      ) : editable ? (
+                      {editable ? (
                         <InlineTableInput
                           value={rateDisplay}
                           onChange={(v) => onUpdateLine?.(index, patchLineGstRate(v, taxMode))}
                           align="center"
+                          placeholder="0"
                         />
                       ) : rateDisplay === '' || rateDisplay == null ? (
-                        '—'
+                        isNil ? '0.00' : '—'
                       ) : (
                         `${rateDisplay}%`
                       )}
@@ -618,70 +783,77 @@ export default function LandscapeInvoiceLikePreview({
               + Add line
             </button>
           ) : null}
-
-          <WordsAndTotalsBlock
-            totals={totals}
-            isNil={isNil}
-            taxMode={taxMode}
-            showAdjustments={showAdjustments}
-            adj={adj}
-            totalLabel={totalLabel}
-            amountWords={words}
-            money={money}
-          />
         </section>
 
+        <WordsAndTotalsBlock
+          totals={totals}
+          isNil={isNil}
+          forceNilTax={forceNilTax}
+          taxMode={taxMode}
+          showAdjustments={showAdjustments}
+          adj={adj}
+          totalLabel={totalLabel}
+          amountWords={words}
+          money={money}
+          editable={editable}
+          onUpdate={onUpdate}
+        />
+
         <div className="ti-split-stack">
-          <div className="ti-card">
-            <p className="ti-card-title">Bank Details</p>
-            <div className="ti-card-body">
-              <p className="ti-bank-line">Account Name: {bank?.accountHolder || legal}</p>
-              <p className="ti-bank-line">Bank: {bank?.bankName || '—'}</p>
-              <p className="ti-bank-line">Branch: {bank?.branchName || '—'}</p>
-              <p className="ti-bank-line">Account No.: {bank?.accountNumber || '—'}</p>
-              <p className="ti-bank-line">IFSC: {bank?.ifscCode || '—'}</p>
-              <p className="ti-bank-note">{bankNote}</p>
+          <div className="ti-card ti-card--bank-sign">
+            <div className="ti-bank-sign">
+              <div className="ti-bank-sign__bank">
+                <p className="ti-card-title">Bank Details</p>
+                <div className="ti-card-body">
+                  <p className="ti-bank-line">Account Name: {bank?.accountHolder || legal}</p>
+                  <p className="ti-bank-line">Bank: {bank?.bankName || '—'}</p>
+                  <p className="ti-bank-line">Branch: {bank?.branchName || '—'}</p>
+                  <p className="ti-bank-line">Account No.: {bank?.accountNumber || '—'}</p>
+                  <p className="ti-bank-line">IFSC: {bank?.ifscCode || '—'}</p>
+                  <p className="ti-bank-note">{bankNote}</p>
+                </div>
+              </div>
+              <div className="ti-bank-sign__sig">
+                <p className="ti-card-title">Digital Signature</p>
+                <div className="ti-card-body ti-card-body--bank-sig">
+                  <div className="ti-signature ti-signature--in-card">
+                    {signature?.imageDataUrl ? (
+                      <img src={signature.imageDataUrl} alt="Digital signature" className="ti-signature-img" />
+                    ) : null}
+                    {signature?.signatoryName ? (
+                      <span className="ti-signature-name">{signature.signatoryName}</span>
+                    ) : null}
+                    <span className="ti-signature-label">Authorised Signatory</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="ti-card ti-card--terms-sign">
+          <div className="ti-card ti-card--terms">
             <p className="ti-card-title">{paymentTermsTitle}</p>
-            <div className="ti-card-body ti-card-body--terms-sign">
-              <div className="ti-terms-block">
-                <div className="ti-terms ti-terms--footer">
-                  {realTerms.map((term, index) => (
-                    <p key={index} className="ti-terms-line">
-                      {editable && showTermsEditor ? (
-                        <InlineField
-                          value={term}
-                          onChange={(v) => handleUpdateTerm(index, v)}
-                          placeholder="Payment terms…"
-                        />
-                      ) : (
-                        term || defaultTerms
-                      )}
-                    </p>
-                  ))}
-                  {editable && showTermsEditor ? (
-                    <button type="button" className="ti-add-line ti-add-term" onClick={handleAddTerm}>
-                      + Add term
-                    </button>
-                  ) : null}
-                </div>
-                {declarationText ? <p className="ti-declaration">{declarationText}</p> : null}
-              </div>
-              <div className="ti-signature ti-signature--in-card">
-                <span className="ti-signature-company">For {signature?.companyLabel || legal}</span>
-                {signature?.imageDataUrl ? (
-                  <img src={signature.imageDataUrl} alt="Signature" className="ti-signature-img" />
-                ) : (
-                  <div className="ti-signature-line" />
-                )}
-                {signature?.signatoryName ? (
-                  <span className="ti-signature-name">{signature.signatoryName}</span>
+            <div className="ti-card-body">
+              <div className="ti-terms ti-terms--footer">
+                {realTerms.map((term, index) => (
+                  <p key={index} className="ti-terms-line">
+                    {editable && showTermsEditor ? (
+                      <InlineField
+                        value={term}
+                        onChange={(v) => handleUpdateTerm(index, v)}
+                        placeholder="Payment terms…"
+                      />
+                    ) : (
+                      term || defaultTermFallback
+                    )}
+                  </p>
+                ))}
+                {editable && showTermsEditor ? (
+                  <button type="button" className="ti-add-line ti-add-term" onClick={handleAddTerm}>
+                    + Add term
+                  </button>
                 ) : null}
-                <span className="ti-signature-label">Authorised Signatory</span>
               </div>
+              {declarationText ? <p className="ti-declaration">{declarationText}</p> : null}
             </div>
           </div>
         </div>

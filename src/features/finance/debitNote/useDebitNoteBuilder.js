@@ -5,6 +5,14 @@ import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoic
 import { defaultLineItem } from '../invoiceGenerator/invoiceStorage.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
 import {
+  applyPathUpdateWithShipToSync,
+  syncShipToAfterBillToPatch,
+} from '../builder/shipToSameAsBillTo.js';
+import {
+  findIssuedClientInvoiceByNumber,
+  invoiceDocumentDateIso,
+} from '../builder/lookupTaxInvoices.js';
+import {
   defaultDebitNoteForm,
   MAX_DEBIT_NOTE_LINE_ITEMS,
 } from './debitNoteStorage.js';
@@ -37,14 +45,30 @@ export function useDebitNoteBuilder() {
   const update = useCallback(
     (path, value) => {
       if (readOnly) return;
-      setForm((prev) => {
-        const next = structuredClone(prev);
-        const keys = path.split('.');
-        let cur = next;
-        for (let i = 0; i < keys.length - 1; i += 1) cur = cur[keys[i]];
-        cur[keys[keys.length - 1]] = value;
-        return next;
-      });
+      setForm((prev) => applyPathUpdateWithShipToSync(prev, path, value));
+
+      if (path !== 'invoice.dnReference') return;
+      const num = String(value || '').trim();
+      if (!num) {
+        setForm((prev) => ({
+          ...prev,
+          invoice: { ...prev.invoice, originalInvoiceDate: '' },
+        }));
+        return;
+      }
+      findIssuedClientInvoiceByNumber(num)
+        .then((row) => {
+          const date = invoiceDocumentDateIso(row);
+          if (!date) return;
+          setForm((prev) => {
+            if (String(prev.invoice?.dnReference || '').trim() !== num) return prev;
+            return {
+              ...prev,
+              invoice: { ...prev.invoice, originalInvoiceDate: date },
+            };
+          });
+        })
+        .catch(() => {});
     },
     [readOnly, setForm]
   );
@@ -101,17 +125,21 @@ export function useDebitNoteBuilder() {
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
-      setForm((prev) => ({
-        ...prev,
-        clientMasterId: patch.clientMasterId || '',
-        clientId: patch.clientId || '',
-        billTo: { ...prev.billTo, ...(patch.billTo || {}) },
-        invoice: {
-          ...prev.invoice,
-          projectName: patch.projectName || prev.invoice.projectName,
-          placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
-        },
-      }));
+      setForm((prev) => {
+        const billTo = { ...prev.billTo, ...(patch.billTo || {}) };
+        return {
+          ...prev,
+          clientMasterId: patch.clientMasterId || '',
+          clientId: patch.clientId || '',
+          billTo,
+          invoice: {
+            ...prev.invoice,
+            projectName: patch.projectName || prev.invoice.projectName,
+            placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
+          },
+          shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
+        };
+      });
     },
     [readOnly, setForm]
   );

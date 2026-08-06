@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../../shared/auth.jsx';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
 import { canManageOrganisationMaster } from '../builder/commercialApproval.js';
+import { formatStateLine, parseStateLine } from '../builder/stateLine.js';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
   resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
+import VendorContactPicker from '../builder/VendorContactPicker.jsx';
 import { MAX_PO_LINE_ITEMS } from './purchaseOrderStorage.js';
 
 function Section({ title, badge, defaultOpen = false, children }) {
@@ -42,6 +44,8 @@ export default function PurchaseOrderBuilderPanel({
   updateLine,
   addLine,
   removeLine,
+  applyVendorContact,
+  clearVendorContact,
 }) {
   const taxMode = resolveTaxMode(form.vendor?.stateCode, form.company?.stateCode);
   const { user } = useAuth();
@@ -110,9 +114,19 @@ export default function PurchaseOrderBuilderPanel({
       </Section>
 
       <Section title="Vendor" defaultOpen badge={form.vendor?.name ? 1 : 0}>
-        <div className="ib-fields">
-          <Field label="Vendor name" span={2}>
+        {applyVendorContact ? (
+          <VendorContactPicker
+            value={form.contactId || ''}
+            onPick={(_row, patch) => applyVendorContact(patch)}
+            onClear={() => clearVendorContact?.()}
+          />
+        ) : null}
+        <div className="ib-grid">
+          <Field label="Vendor name">
             <input className={inputCls} value={form.vendor?.name || ''} onChange={(e) => update('vendor.name', e.target.value)} />
+          </Field>
+          <Field label="Contact Name">
+            <input className={inputCls} value={form.vendor?.contactPerson || ''} onChange={(e) => update('vendor.contactPerson', e.target.value)} placeholder="—" />
           </Field>
           <Field label="Vendor code">
             <input className={inputCls} value={form.vendor?.code || ''} onChange={(e) => update('vendor.code', e.target.value)} />
@@ -121,13 +135,19 @@ export default function PurchaseOrderBuilderPanel({
             <input className={inputCls} value={form.vendor?.gstin || ''} onChange={(e) => update('vendor.gstin', e.target.value)} />
           </Field>
           <Field label="Address" span={2}>
-            <textarea className={inputCls} rows={2} value={form.vendor?.address || ''} onChange={(e) => update('vendor.address', e.target.value)} />
+            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.vendor?.address || ''} onChange={(e) => update('vendor.address', e.target.value)} />
           </Field>
-          <Field label="State code">
-            <input className={inputCls} value={form.vendor?.stateCode || ''} onChange={(e) => update('vendor.stateCode', e.target.value)} placeholder="27" />
-          </Field>
-          <Field label="Contact">
-            <input className={inputCls} value={form.vendor?.contactPerson || ''} onChange={(e) => update('vendor.contactPerson', e.target.value)} />
+          <Field label="State Name / State Code">
+            <input
+              className={inputCls}
+              value={formatStateLine(form.vendor)}
+              onChange={(e) => {
+                const { stateName, stateCode } = parseStateLine(e.target.value);
+                update('vendor.stateName', stateName);
+                update('vendor.stateCode', stateCode);
+              }}
+              placeholder="Maharashtra / 27"
+            />
           </Field>
           <Field label="Mobile">
             <input className={inputCls} value={form.vendor?.mobile || ''} onChange={(e) => update('vendor.mobile', e.target.value)} />
@@ -139,12 +159,12 @@ export default function PurchaseOrderBuilderPanel({
       </Section>
 
       <Section title="Delivery">
-        <div className="ib-fields">
+        <div className="ib-grid">
           <Field label="Delivery address" span={2}>
-            <textarea className={inputCls} rows={2} value={form.delivery?.address || ''} onChange={(e) => update('delivery.address', e.target.value)} />
+            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.delivery?.address || ''} onChange={(e) => update('delivery.address', e.target.value)} />
           </Field>
-          <Field label="Contact">
-            <input className={inputCls} value={form.delivery?.contact || ''} onChange={(e) => update('delivery.contact', e.target.value)} />
+          <Field label="Contact Name">
+            <input className={inputCls} value={form.delivery?.contact || ''} onChange={(e) => update('delivery.contact', e.target.value)} placeholder="—" />
           </Field>
           <Field label="Mobile">
             <input className={inputCls} value={form.delivery?.mobile || ''} onChange={(e) => update('delivery.mobile', e.target.value)} />
@@ -196,12 +216,6 @@ export default function PurchaseOrderBuilderPanel({
               <Field label="Description" span={2}>
                 <input className={inputCls} value={line.description || ''} onChange={(e) => updateLine(index, { description: e.target.value })} />
               </Field>
-              <Field label="Make">
-                <input className={inputCls} value={line.make || ''} onChange={(e) => updateLine(index, { make: e.target.value })} />
-              </Field>
-              <Field label="Model">
-                <input className={inputCls} value={line.model || ''} onChange={(e) => updateLine(index, { model: e.target.value })} />
-              </Field>
               <Field label="Qty">
                 <input className={inputCls} value={line.qty ?? ''} onChange={(e) => updateLine(index, { qty: e.target.value })} />
               </Field>
@@ -211,10 +225,7 @@ export default function PurchaseOrderBuilderPanel({
               <Field label="Rate">
                 <input className={inputCls} value={line.rate ?? ''} onChange={(e) => updateLine(index, { rate: e.target.value })} />
               </Field>
-              <Field label="Discount">
-                <input className={inputCls} value={line.discount ?? ''} onChange={(e) => updateLine(index, { discount: e.target.value })} />
-              </Field>
-              <Field label="GST %">
+              <Field label="GST Rate %">
                 <input
                   className={inputCls}
                   value={getLineGstRateDisplay(line, taxMode)}

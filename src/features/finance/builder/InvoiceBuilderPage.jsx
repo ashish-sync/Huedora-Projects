@@ -89,13 +89,19 @@ export default function InvoiceBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
-            docSectionTitle: 'Tax Invoice',
+            panelLayout: 'parties',
+            docSectionTitle: 'Header',
             docNoLabel: 'Invoice no.',
             projectLabel: 'Project / Service Period',
+            dateLabel: 'Invoice Date',
+            dueLabel: 'Due Date',
+            recipientTitle: 'Bill To',
+            shipToTitle: 'Ship To',
+            termsSectionTitle: 'Adjustments & terms',
             showOriginalInvoice: false,
             showPoFields: true,
             showShipTo: true,
-            hideReverseCharge: false,
+            hideReverseCharge: true,
             hideReceiptVoucher: true,
           }}
         />

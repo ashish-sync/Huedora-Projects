@@ -5,6 +5,10 @@ import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoic
 import { defaultLineItem } from '../invoiceGenerator/invoiceStorage.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
 import {
+  applyPathUpdateWithShipToSync,
+  syncShipToAfterBillToPatch,
+} from '../builder/shipToSameAsBillTo.js';
+import {
   defaultBillOfSupplyForm,
   MAX_BILL_OF_SUPPLY_LINE_ITEMS,
 } from './billOfSupplyStorage.js';
@@ -31,30 +35,32 @@ export function useBillOfSupplyBuilder() {
 
   const totals = useMemo(() => {
     const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
-    const zeroTaxLines = (form.lineItems || []).map((line) => ({
-      ...line,
-      igstRate: 0,
-      cgstRate: 0,
-      sgstRate: 0,
-    }));
-    return computeInvoiceTotals(zeroTaxLines, taxMode, {
+    const lines = form.lineItems || [];
+    const hasPositiveGst = lines.some((line) => {
+      const igst = Number(line.igstRate) || 0;
+      const split = (Number(line.cgstRate) || 0) + (Number(line.sgstRate) || 0);
+      return igst > 0 || split > 0 || Number(line.gstRate) > 0;
+    });
+    const taxedLines = hasPositiveGst
+      ? lines
+      : lines.map((line) => ({
+          ...line,
+          igstRate: 0,
+          cgstRate: 0,
+          sgstRate: 0,
+        }));
+    return computeInvoiceTotals(taxedLines, taxMode, {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: form.adjustments?.advanceReceived || 0,
+      roundOff: form.adjustments?.roundOff,
     });
   }, [form.lineItems, form.billTo?.stateCode, form.company?.stateCode, form.adjustments]);
 
   const update = useCallback(
     (path, value) => {
       if (readOnly) return;
-      setForm((prev) => {
-        const next = structuredClone(prev);
-        const keys = path.split('.');
-        let cur = next;
-        for (let i = 0; i < keys.length - 1; i += 1) cur = cur[keys[i]];
-        cur[keys[keys.length - 1]] = value;
-        return next;
-      });
+      setForm((prev) => applyPathUpdateWithShipToSync(prev, path, value));
     },
     [readOnly, setForm]
   );
@@ -114,17 +120,21 @@ export function useBillOfSupplyBuilder() {
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
-      setForm((prev) => ({
-        ...prev,
-        clientMasterId: patch.clientMasterId || '',
-        clientId: patch.clientId || '',
-        billTo: { ...prev.billTo, ...(patch.billTo || {}) },
-        invoice: {
-          ...prev.invoice,
-          projectName: patch.projectName || prev.invoice.projectName,
-          placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
-        },
-      }));
+      setForm((prev) => {
+        const billTo = { ...prev.billTo, ...(patch.billTo || {}) };
+        return {
+          ...prev,
+          clientMasterId: patch.clientMasterId || '',
+          clientId: patch.clientId || '',
+          billTo,
+          invoice: {
+            ...prev.invoice,
+            projectName: patch.projectName || prev.invoice.projectName,
+            placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
+          },
+          shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
+        };
+      });
     },
     [readOnly, setForm]
   );

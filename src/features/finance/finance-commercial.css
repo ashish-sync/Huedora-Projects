@@ -177,40 +177,57 @@
 .finance-org-master-page {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 920px;
+  gap: 16px;
+  max-width: 960px;
 }
 
 .finance-org-master-header {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
 }
 
 .finance-org-master-header-text {
   min-width: 0;
-  flex: 1 1 240px;
+  flex: 1 1 280px;
+}
+
+.finance-org-master-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .finance-org-master-heading {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
 .finance-org-master-lead {
-  margin: 4px 0 0;
-  max-width: 52ch;
-  font-size: 0.8rem;
-  line-height: 1.4;
+  margin: 6px 0 0;
+  max-width: 54ch;
+  font-size: 0.84rem;
+  line-height: 1.45;
   color: var(--muted);
 }
 
 .finance-org-master-readonly {
   margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-sunken);
   font-size: 0.8rem;
 }
 
@@ -224,14 +241,14 @@
 .finance-org-master-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: 8px;
   align-items: center;
 }
 
 .finance-org-master-actions .btn {
   height: var(--control-h-sm, 36px);
   min-height: var(--control-h-sm, 36px);
-  padding: 0 12px;
+  padding: 0 14px;
   font-size: 0.8rem;
   border-radius: var(--dropdown-radius, var(--radius-sm));
 }
@@ -239,33 +256,64 @@
 .org-master-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  min-width: 0;
+}
+
+.org-master-form-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
 }
 
 .org-master-form-section {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--bg-elevated);
-  padding: 12px 14px 14px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 4%, transparent);
 }
 
 .org-master-form-section-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+}
+
+.org-master-form-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.org-master-form-section-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--brand) 88%, #0f172a);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  flex-shrink: 0;
 }
 
 .org-master-form-section-title {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.92rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: -0.01em;
   color: var(--ink);
+  text-transform: none;
 }
 
 .org-master-form-section-note {
@@ -274,17 +322,38 @@
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
-.org-master-form-section-desc {
-  display: none;
+.org-master-field-hint {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--brand) 75%, #0f172a);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  vertical-align: middle;
 }
 
-.org-master-media-row {
+.org-master-identity-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 160px));
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.org-master-identity-fields {
+  min-width: 0;
+}
+
+.org-master-sig-block {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-bottom: 12px;
 }
 
 .org-master-media-field {
@@ -298,20 +367,16 @@
   align-items: start;
 }
 
+.org-master-form-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .org-master-form-grid--3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.org-master-form-grid--4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
 .org-master-form-span-2 {
   grid-column: span 2;
-}
-
-.org-master-form-span-3 {
-  grid-column: 1 / -1;
 }
 
 .org-master-form-grid--3 .org-master-form-span-2 {
@@ -325,25 +390,26 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   line-height: 1.2;
 }
 
 .org-master-input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 34px;
-  padding: 6px 10px;
+  min-height: 36px;
+  padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 7px;
-  font-size: 0.84rem;
+  border-radius: 8px;
+  font-size: 0.86rem;
   line-height: 1.3;
   background: var(--bg-sunken);
   color: var(--ink);
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .org-master-input--textarea {
-  min-height: 56px;
+  min-height: 64px;
   resize: vertical;
   padding-top: 8px;
 }
@@ -367,14 +433,20 @@
   justify-content: center;
   gap: 4px;
   width: 100%;
-  min-height: 72px;
-  max-width: 160px;
-  padding: 8px;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
-  background: var(--bg-sunken);
+  min-height: 112px;
+  max-width: 132px;
+  padding: 10px;
+  border: 1px dashed color-mix(in srgb, var(--brand) 28%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 4%, var(--bg-sunken));
   cursor: pointer;
   text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.org-master-form .doc-file-drop-label:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  background: color-mix(in srgb, var(--brand) 7%, var(--bg-elevated));
 }
 
 .org-master-form .doc-file-drop-label.has-preview {
@@ -382,19 +454,23 @@
   background: var(--bg-elevated);
 }
 
+.org-master-form .doc-file-drop--signature .doc-file-drop-label {
+  max-width: none;
+  min-height: 96px;
+}
+
 .org-master-form .doc-file-drop-preview {
   display: block;
   max-width: 100%;
-  max-height: 44px;
+  max-height: 56px;
   width: auto;
   height: auto;
   object-fit: contain;
   object-position: center;
 }
 
-.org-master-form .doc-file-drop--qr .doc-file-drop-preview {
-  max-width: 56px;
-  max-height: 56px;
+.org-master-form .doc-file-drop--signature .doc-file-drop-preview {
+  max-height: 48px;
 }
 
 .org-master-form .doc-file-drop-replace-hint,
@@ -405,7 +481,8 @@
 }
 
 .org-master-form .doc-file-drop-placeholder {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: var(--ink);
   line-height: 1.25;
 }
@@ -595,8 +672,8 @@
 }
 
 @media (max-width: 900px) {
-  .org-master-form-grid--4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .org-master-form-pair {
+    grid-template-columns: 1fr;
   }
 
   .org-master-form-grid--3 {
@@ -606,23 +683,34 @@
   .org-master-form-grid--3 .org-master-form-span-2 {
     grid-column: 1 / -1;
   }
+
+  .org-master-identity-row {
+    grid-template-columns: 1fr;
+  }
+
+  .org-master-form .doc-file-drop-label {
+    max-width: 160px;
+  }
 }
 
 @media (max-width: 640px) {
   .finance-org-master-header {
     flex-direction: column;
+    align-items: stretch;
   }
 
-  .org-master-media-row,
+  .finance-org-master-actions {
+    width: 100%;
+  }
+
   .org-master-form-grid,
+  .org-master-form-grid--2,
   .org-master-form-grid--3,
-  .org-master-form-grid--4,
   .org-master-card-grid {
     grid-template-columns: 1fr;
   }
 
   .org-master-form-span-2,
-  .org-master-form-span-3,
   .org-master-form-grid--3 .org-master-form-span-2 {
     grid-column: 1 / -1;
   }

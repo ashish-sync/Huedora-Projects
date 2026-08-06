@@ -90,9 +90,17 @@ export default function BillOfSupplyBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
-            docSectionTitle: 'Bill of supply',
+            panelLayout: 'parties',
+            docSectionTitle: 'Header',
             docNoLabel: 'Bill of supply no.',
             projectLabel: 'Project / Service Period',
+            dateLabel: 'Bill of Supply Date',
+            dueLabel: 'Due Date',
+            datesFromApproval: true,
+            recipientTitle: 'Bill To',
+            shipToTitle: 'Ship To',
+            termsSectionTitle: 'Terms',
+            hideAdjustmentAmounts: true,
             showOriginalInvoice: false,
             showPoFields: true,
             showShipTo: true,

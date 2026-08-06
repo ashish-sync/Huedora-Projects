@@ -124,8 +124,14 @@ export function computeInvoiceTotals(lineItems, taxMode = 'igst', adjustments = 
   const dnAmount = Number(adjustments.dnAmount) || 0;
   const advanceReceived = Number(adjustments.advanceReceived) || 0;
   const rawTotal = subtotal + taxAmount + dnAmount - cnAmount - advanceReceived;
-  const rounded = Math.round(rawTotal);
-  const roundOff = Math.round((rounded - rawTotal) * 100) / 100;
+  const autoRoundOff = Math.round((Math.round(rawTotal) - rawTotal) * 100) / 100;
+  const hasManualRoundOff =
+    adjustments.roundOff !== undefined &&
+    adjustments.roundOff !== null &&
+    String(adjustments.roundOff).trim() !== '';
+  const roundOff = hasManualRoundOff
+    ? Math.round((Number(adjustments.roundOff) || 0) * 100) / 100
+    : autoRoundOff;
   const grandTotal = Math.round((rawTotal + roundOff) * 100) / 100;
 
   return {
@@ -206,7 +212,7 @@ export function resolveLineGstRates(line = {}, taxMode = 'igst') {
 
 /** Default GST column headers — user can rename on the document. */
 export const DEFAULT_TAX_COLUMN_LABELS = {
-  rateLabel: 'GST %',
+  rateLabel: 'GST Rate %',
   amountLabel: 'GST',
 };
 
@@ -222,10 +228,13 @@ export function resolveTaxColumnLabels(form) {
 export function getLineGstRateDisplay(line, taxMode = 'igst') {
   const rates = resolveLineGstRates(line, taxMode);
   if (taxMode === 'igst') {
-    return rates.igstRate ? String(rates.igstRate) : '';
+    const n = Number(rates.igstRate);
+    if (!Number.isFinite(n)) return '';
+    return String(n);
   }
   const combined = (Number(rates.cgstRate) || 0) + (Number(rates.sgstRate) || 0);
-  return combined ? String(combined) : '';
+  if (!Number.isFinite(combined)) return '';
+  return String(combined);
 }
 
 /** Map edited GST% to the correct underlying rate fields. */
@@ -233,19 +242,21 @@ export function patchLineGstRate(value, taxMode = 'igst') {
   const trimmed = String(value ?? '').trim();
   if (trimmed === '') {
     return taxMode === 'igst'
-      ? { igstRate: '' }
-      : { cgstRate: '', sgstRate: '' };
+      ? { igstRate: '', cgstRate: 0, sgstRate: 0, gstRate: '' }
+      : { cgstRate: '', sgstRate: '', igstRate: 0, gstRate: '' };
   }
   const rate = Number(trimmed);
   if (!Number.isFinite(rate)) {
-    return taxMode === 'igst' ? { igstRate: value } : { cgstRate: value, sgstRate: value };
+    return taxMode === 'igst'
+      ? { igstRate: value, cgstRate: 0, sgstRate: 0, gstRate: value }
+      : { cgstRate: value, sgstRate: value, igstRate: 0, gstRate: value };
   }
   if (taxMode === 'igst') {
-    return { igstRate: trimmed, cgstRate: 0, sgstRate: 0 };
+    return { igstRate: trimmed, cgstRate: 0, sgstRate: 0, gstRate: trimmed };
   }
   const half = Math.round((rate / 2) * 100) / 100;
   const halfStr = Number.isInteger(half) ? String(half) : String(half);
-  return { cgstRate: halfStr, sgstRate: halfStr, igstRate: 0 };
+  return { cgstRate: halfStr, sgstRate: halfStr, igstRate: 0, gstRate: trimmed };
 }
 
 export function formatGstRateDisplay(line, taxMode = 'igst') {

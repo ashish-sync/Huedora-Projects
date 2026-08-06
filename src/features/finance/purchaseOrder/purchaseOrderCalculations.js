@@ -15,7 +15,9 @@ export function computePurchaseOrderTotals(form) {
     const base = !line.isFoc ? line : { ...line, rate: 0, discount: 0 };
     return { ...base, ...resolveLineGstRates(base, taxMode) };
   });
-  const totals = computeInvoiceTotals(lineItems, taxMode, {});
+  const totals = computeInvoiceTotals(lineItems, taxMode, {
+    roundOff: form.roundOff ?? form.adjustments?.roundOff,
+  });
   return {
     ...totals,
     total: totals.grandTotal,

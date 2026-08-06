@@ -90,9 +90,16 @@ export default function QuotationBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
-            docSectionTitle: 'Quotation',
+            panelLayout: 'parties',
+            docSectionTitle: 'Header',
             docNoLabel: 'Quotation no.',
             projectLabel: 'Project / Service Period',
+            dateLabel: 'Quotation Date',
+            dueLabel: 'Valid Until',
+            recipientTitle: 'Bill To',
+            shipToTitle: 'Ship To',
+            termsSectionTitle: 'Terms',
+            hideAdjustmentAmounts: true,
             showOriginalInvoice: false,
             showPoFields: true,
             showShipTo: true,

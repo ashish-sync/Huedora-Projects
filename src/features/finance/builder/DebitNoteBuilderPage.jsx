@@ -90,9 +90,16 @@ export default function DebitNoteBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
-            docSectionTitle: 'Debit note',
+            panelLayout: 'parties',
+            docSectionTitle: 'Header',
             docNoLabel: 'Debit note no.',
             projectLabel: 'Project / Service Period',
+            dateLabel: 'Debit Note Date',
+            dueLabel: 'Due Date',
+            recipientTitle: 'Bill To',
+            shipToTitle: 'Ship To',
+            termsSectionTitle: 'Terms',
+            hideAdjustmentAmounts: true,
             showOriginalInvoice: true,
             originalInvoiceLabel: 'Original invoice no.',
             originalInvoiceField: 'dnReference',
@@ -100,6 +107,7 @@ export default function DebitNoteBuilderPage() {
             showShipTo: true,
             showDebitReason: true,
             showOriginalInvoiceDate: true,
+            lockOriginalInvoiceFromSystem: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
           }}

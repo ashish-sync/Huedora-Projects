@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { A4_LANDSCAPE_PX, A4_PORTRAIT_PX } from '../shared/a4Landscape.js';
 
-/** Default preview zoom — never auto-fit below this floor. */
-export const DEFAULT_PREVIEW_SCALE = 0.85;
-const MIN_SCALE = 0.85;
-const MAX_SCALE = 1.4;
+/**
+ * Preview zoom for commercial builders.
+ * Default / auto-fit is locked at 88% minimum — never auto-zooms above 88%.
+ * Manual + / − can still go higher (up to MAX) or stay at the 88% floor.
+ */
+export const DEFAULT_PREVIEW_SCALE = 0.88;
+const MIN_SCALE = 0.88;
+const MAX_SCALE = 1.5;
+/** Auto-fit never exceeds this (stops wide canvases jumping to 115%+). */
+const AUTO_FIT_CAP = 0.88;
 
 export function usePreviewScale({
   defaultScale = DEFAULT_PREVIEW_SCALE,
@@ -18,15 +24,13 @@ export function usePreviewScale({
   const fitToWidth = useCallback(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
-    const padX = 24;
-    const padY = 28;
+    const padX = 16;
     const availableW = Math.max(120, wrap.clientWidth - padX);
-    const availableH = Math.max(120, wrap.clientHeight - padY);
     const byWidth = availableW / pagePx.w;
-    const byHeight = availableH / pagePx.h;
-    const next = Math.min(byWidth, byHeight, MAX_SCALE);
+    // Prefer filling width, but lock auto-fit to 88% (MIN = CAP).
+    const next = Math.min(byWidth, AUTO_FIT_CAP, MAX_SCALE);
     setScale(Math.max(MIN_SCALE, Math.round(next * 100) / 100));
-  }, [pagePx.h, pagePx.w]);
+  }, [pagePx.w]);
 
   const resetZoom = useCallback(() => {
     if (autoFit) fitToWidth();

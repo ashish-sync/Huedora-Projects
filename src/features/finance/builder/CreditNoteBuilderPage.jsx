@@ -90,15 +90,23 @@ export default function CreditNoteBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
-            docSectionTitle: 'Credit note',
+            panelLayout: 'parties',
+            docSectionTitle: 'Header',
             docNoLabel: 'Credit note no.',
             projectLabel: 'Project / Service Period',
+            dateLabel: 'Credit Note Date',
+            dueLabel: 'Due Date',
+            recipientTitle: 'Bill To',
+            shipToTitle: 'Ship To',
+            termsSectionTitle: 'Terms',
+            hideAdjustmentAmounts: true,
             showOriginalInvoice: true,
             originalInvoiceLabel: 'Original invoice no.',
             showPoFields: true,
             showShipTo: true,
             showCreditReason: true,
             showOriginalInvoiceDate: true,
+            lockOriginalInvoiceFromSystem: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
           }}

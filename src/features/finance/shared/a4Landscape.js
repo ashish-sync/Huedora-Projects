@@ -4,14 +4,14 @@ export const MM_TO_PX = 96 / 25.4;
 export const A4_LANDSCAPE = {
   widthMm: 297,
   heightMm: 210,
-  /** Normal-to-narrow margin for printer-safe area (7–10 mm range). */
-  marginMm: 9,
+  /** Printer-safe margin (≈ ISO commercial; matches .tylo-invoice --ti-margin). */
+  marginMm: 7,
 };
 
 export const A4_PORTRAIT = {
   widthMm: 210,
   heightMm: 297,
-  marginMm: 9,
+  marginMm: 7,
 };
 
 export const A4_CONTENT = {

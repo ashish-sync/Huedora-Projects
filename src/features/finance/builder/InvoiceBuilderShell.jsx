@@ -7,7 +7,7 @@ import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import './export-invoice.css';
 import './builder.css';
 
-function SaveIndicator({ state, savedAt, status }) {
+function SaveIndicator({ state, savedAt, status, docId }) {
   if (state === 'saving') {
     return <span className="ib-save ib-save--saving">Saving…</span>;
   }
@@ -20,6 +20,13 @@ function SaveIndicator({ state, savedAt, status }) {
   }
   if (status && status !== 'Draft') {
     return <span className="ib-save ib-save--idle">{status}</span>;
+  }
+  if (!docId) {
+    return (
+      <span className="ib-save ib-save--idle" title="Draft is created after at least 2 fields are filled">
+        Not saved yet
+      </span>
+    );
   }
   return <span className="ib-save ib-save--idle">Server autosave</span>;
 }
@@ -67,6 +74,7 @@ export default function InvoiceBuilderShell({
   grandTotal,
   saveState,
   savedAt,
+  docId = null,
   error,
   busyAction = '',
   readOnly = false,
@@ -87,7 +95,7 @@ export default function InvoiceBuilderShell({
   printRef,
   panel,
   children,
-  /** 'landscape' (default) or 'portrait' — Purchase Order only uses portrait. */
+  /** 'landscape' (default) or 'portrait' — Purchase Order uses portrait A4. */
   pageOrientation = 'landscape',
 }) {
   const previewRef = useRef(null);
@@ -124,6 +132,7 @@ export default function InvoiceBuilderShell({
       });
     } catch (err) {
       console.error('Save & export failed', err);
+      window.alert(err?.message || 'PDF download failed');
     } finally {
       setExporting(false);
     }
@@ -151,6 +160,7 @@ export default function InvoiceBuilderShell({
       }
     } catch (err) {
       console.error('Print failed', err);
+      window.alert(err?.message || 'Print failed');
     } finally {
       setPrinting(false);
     }
@@ -211,7 +221,7 @@ export default function InvoiceBuilderShell({
               ) : null}
             </span>
           </div>
-          <SaveIndicator state={saveState} savedAt={savedAt} status={status} />
+          <SaveIndicator state={saveState} savedAt={savedAt} status={status} docId={docId} />
         </div>
 
         <div className="ib-toolbar-center">

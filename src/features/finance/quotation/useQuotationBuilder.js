@@ -4,6 +4,10 @@ import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
 import { defaultLineItem } from '../invoiceGenerator/invoiceStorage.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
+import {
+  applyPathUpdateWithShipToSync,
+  syncShipToAfterBillToPatch,
+} from '../builder/shipToSameAsBillTo.js';
 import { defaultQuotationForm, MAX_QUOTATION_LINE_ITEMS } from './quotationStorage.js';
 
 const applyOrg = (form, org) => applyOrgMasterToInvoiceForm(form, org);
@@ -32,20 +36,14 @@ export function useQuotationBuilder() {
       cnAmount: 0,
       dnAmount: 0,
       advanceReceived: form.adjustments?.advanceReceived || 0,
+      roundOff: form.adjustments?.roundOff,
     });
   }, [form.lineItems, form.billTo?.stateCode, form.company?.stateCode, form.adjustments]);
 
   const update = useCallback(
     (path, value) => {
       if (readOnly) return;
-      setForm((prev) => {
-        const next = structuredClone(prev);
-        const keys = path.split('.');
-        let cur = next;
-        for (let i = 0; i < keys.length - 1; i += 1) cur = cur[keys[i]];
-        cur[keys[keys.length - 1]] = value;
-        return next;
-      });
+      setForm((prev) => applyPathUpdateWithShipToSync(prev, path, value));
     },
     [readOnly, setForm]
   );
@@ -105,26 +103,22 @@ export function useQuotationBuilder() {
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
-      setForm((prev) => ({
-        ...prev,
-        clientMasterId: patch.clientMasterId || '',
-        clientId: patch.clientId || '',
-        billTo: { ...prev.billTo, ...(patch.billTo || {}) },
-        shipTo: {
-          ...prev.shipTo,
-          name: patch.billTo?.name || prev.shipTo.name,
-          address: patch.billTo?.address || prev.shipTo.address,
-          gstin: patch.billTo?.gstin || prev.shipTo.gstin,
-          stateName: patch.billTo?.stateName || prev.shipTo.stateName,
-          stateCode: patch.billTo?.stateCode || prev.shipTo.stateCode,
-        },
-        invoice: {
-          ...prev.invoice,
-          projectName: patch.projectName || prev.invoice.projectName,
-          servicePeriod: patch.projectName || prev.invoice.servicePeriod,
-          placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
-        },
-      }));
+      setForm((prev) => {
+        const billTo = { ...prev.billTo, ...(patch.billTo || {}) };
+        return {
+          ...prev,
+          clientMasterId: patch.clientMasterId || '',
+          clientId: patch.clientId || '',
+          billTo,
+          shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
+          invoice: {
+            ...prev.invoice,
+            projectName: patch.projectName || prev.invoice.projectName,
+            servicePeriod: patch.projectName || prev.invoice.servicePeriod,
+            placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
+          },
+        };
+      });
     },
     [readOnly, setForm]
   );

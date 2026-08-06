@@ -3,7 +3,7 @@ export const TYLO_ORG_SEED = {
   legalName: 'Tylo Care Private Limited',
   brandLine: 'Bringing Healthcare Closer',
   registeredOffice:
-    'C-1207, Sahara Tower, CHS Ltd, C Wing, Sahar Road, International Airport, Mumbai - 400099',
+    'C-1207, Sahara Tower CHS Ltd., C Wing, Sahar Road, International Airport, Mumbai – 400099',
   cin: 'U86909MH2026PTC472417',
   phone: '',
   email: 'growth@tylocare.com',

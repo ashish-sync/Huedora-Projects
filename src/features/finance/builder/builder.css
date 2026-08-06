@@ -338,7 +338,7 @@
   min-width: 0;
   position: relative;
   overflow: auto;
-  padding: 12px;
+  padding: 8px 10px 12px;
   background-color: var(--ib-canvas);
   background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -349,9 +349,9 @@
   min-height: 100%;
   min-width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 4px 8px 12px;
+  padding: 4px 4px 16px;
 }
 
 .ib-page-stage {
@@ -559,9 +559,39 @@
   font-size: 12px;
 }
 
+.ib-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ib-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ib-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--ib-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ib-grid--locked .ib-input,
+.ib-grid--locked .ib-textarea {
+  opacity: 0.72;
+  background: var(--surface-muted);
+  cursor: default;
+}
+
 .ib-textarea {
   resize: vertical;
   min-height: 56px;
+  white-space: pre-wrap;
+  line-height: 1.35;
+  font-family: inherit;
 }
 
 .ib-lines {

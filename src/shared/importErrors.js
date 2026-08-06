@@ -30,7 +30,7 @@ export function validateImportFileClient(file) {
   const name = String(file.name || '');
   const lower = name.toLowerCase();
   if (!lower.endsWith('.csv') && !lower.endsWith('.xlsb')) {
-    return 'This file type is not supported for import. Use a .csv file (preferred) or .xlsb — Excel workbooks (.xlsx/.xls) are not accepted. In Excel: File → Save As → CSV.';
+    return 'This file type is not supported for import. Use a .csv UTF-8 file (preferred) or .xlsb — Excel workbooks (.xlsx/.xls) are not accepted. In Excel: File → Save As → CSV UTF-8 (Comma delimited).';
   }
   if (!file.size || file.size <= 0) {
     return `This file has no data rows to import. Download the sample CSV, add up to ${MAX_IMPORT_ROWS.toLocaleString()} rows under the header, and try again.`;

@@ -1,16 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../shared/auth.jsx';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
 import ClientMasterRecipientPicker from '../builder/ClientMasterRecipientPicker.jsx';
 import { canManageOrganisationMaster } from '../builder/commercialApproval.js';
+import { formatStateLine, parseStateLine } from '../builder/stateLine.js';
+import { clampTextLines } from '../documentGenerator/inlineEdit.jsx';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
-  resolveTaxColumnLabels,
   resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
-import { proformaToInvoiceView } from './proformaFormAdapter.js';
 import { MAX_PROFORMA_LINE_ITEMS } from './proformaStorage.js';
 
 function Section({ title, badge, defaultOpen = false, children }) {
@@ -50,10 +50,8 @@ export default function ProformaBuilderPanel({
   applyClientMasterRecipient,
   clearClientMasterRecipient,
 }) {
-  const invoiceView = useMemo(() => proformaToInvoiceView(form), [form]);
   const lineRows = (form.rows || []).filter((r) => r.type === 'line');
   const taxMode = resolveTaxMode(form.recipient?.stateCode, form.company?.stateCode);
-  const taxLabels = resolveTaxColumnLabels(invoiceView);
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);
 
@@ -73,7 +71,48 @@ export default function ProformaBuilderPanel({
         </p>
       </div>
 
-      <Section title="Recipient" defaultOpen>
+      <Section title="Header" defaultOpen>
+        <div className="ib-grid">
+          <Field label="Proforma no.">
+            <input
+              className={`${inputCls} ib-input--mono`}
+              value={form.document.documentNumber}
+              readOnly
+              placeholder="Assigned on approval"
+              title="Document number is assigned when the document is approved"
+            />
+          </Field>
+          <Field label="Project / Service Period">
+            <input
+              className={inputCls}
+              value={form.document.servicePeriod || form.recipient.projectName || ''}
+              onChange={(e) => {
+                update('document.servicePeriod', e.target.value);
+                update('recipient.projectName', e.target.value);
+              }}
+            />
+          </Field>
+          <Field label="Proforma Date">
+            <input type="date" className={inputCls} value={form.document.issueDate} onChange={(e) => update('document.issueDate', e.target.value)} />
+          </Field>
+          <Field label="Valid Until">
+            <input type="date" className={inputCls} value={form.document.dueDate} onChange={(e) => update('document.dueDate', e.target.value)} />
+          </Field>
+          <Field label="PO / WO No.">
+            <input className={inputCls} value={form.document.reference || ''} onChange={(e) => update('document.reference', e.target.value)} />
+          </Field>
+          <Field label="PO / WO Date">
+            <input
+              className={inputCls}
+              value={form.document.referenceDate || ''}
+              onChange={(e) => update('document.referenceDate', e.target.value)}
+              placeholder="DD/MM/YYYY"
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Bill To" defaultOpen>
         {applyClientMasterRecipient ? (
           <div className="ib-grid" style={{ marginBottom: 12 }}>
             <Field label="Client Master" span={2}>
@@ -86,93 +125,99 @@ export default function ProformaBuilderPanel({
           </div>
         ) : null}
         <div className="ib-grid">
-          <Field label="Name" span={2}>
+          <Field label="Legal Name">
             <input className={inputCls} value={form.recipient.name} onChange={(e) => update('recipient.name', e.target.value)} />
           </Field>
-          <Field label="Place of supply" span={2}>
-            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.recipient.placeOfSupply} onChange={(e) => update('recipient.placeOfSupply', e.target.value)} />
+          <Field label="Contact Name">
+            <input
+              className={inputCls}
+              value={form.recipient.contactPerson || ''}
+              onChange={(e) => update('recipient.contactPerson', e.target.value)}
+              placeholder="—"
+            />
           </Field>
-          <Field label="State code">
-            <input className={inputCls} value={form.recipient.stateCode || ''} onChange={(e) => update('recipient.stateCode', e.target.value)} placeholder="27" />
+          <Field label="Address" span={2}>
+            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.recipient.placeOfSupply} onChange={(e) => update('recipient.placeOfSupply', e.target.value)} />
           </Field>
           <Field label="GSTIN">
             <input className={inputCls} value={form.recipient.recipientGstin} onChange={(e) => update('recipient.recipientGstin', e.target.value)} />
           </Field>
-          <Field label="Contact">
-            <input className={inputCls} value={form.recipient.contactPerson} onChange={(e) => update('recipient.contactPerson', e.target.value)} />
-          </Field>
-          <Field label="Email">
-            <input className={inputCls} type="email" value={form.recipient.contactEmail} onChange={(e) => update('recipient.contactEmail', e.target.value)} />
-          </Field>
-        </div>
-      </Section>
-
-      <Section title="Proforma" defaultOpen>
-        <div className="ib-grid">
-          <Field label="Proforma no.">
-            <input
-              className={`${inputCls} ib-input--mono`}
-              value={form.document.documentNumber}
-              readOnly
-              placeholder="Assigned on approval"
-              title="Document number is assigned when the document is approved"
-            />
-          </Field>
-          <Field label="Project / service period">
+          <Field label="State Name / State Code" title="Different from your state → IGST; same state → CGST + SGST">
             <input
               className={inputCls}
-              value={form.document.servicePeriod || form.recipient.projectName || ''}
+              value={formatStateLine(form.recipient)}
               onChange={(e) => {
-                update('document.servicePeriod', e.target.value);
-                update('recipient.projectName', e.target.value);
+                const { stateName, stateCode } = parseStateLine(e.target.value);
+                update('recipient.stateName', stateName);
+                update('recipient.stateCode', stateCode);
               }}
+              placeholder="Maharashtra / 27"
             />
-          </Field>
-          <Field label="Proforma date">
-            <input type="date" className={inputCls} value={form.document.issueDate} onChange={(e) => update('document.issueDate', e.target.value)} />
-          </Field>
-          <Field label="Valid until">
-            <input type="date" className={inputCls} value={form.document.dueDate} onChange={(e) => update('document.dueDate', e.target.value)} />
-          </Field>
-          <Field label="PO / WO no.">
-            <input className={inputCls} value={form.document.reference || ''} onChange={(e) => update('document.reference', e.target.value)} />
-          </Field>
-          <Field label="PO / WO date">
-            <input type="date" className={inputCls} value={form.document.referenceDate || ''} onChange={(e) => update('document.referenceDate', e.target.value)} />
           </Field>
         </div>
       </Section>
 
-      <Section title="Ship to / service location">
-        <div className="ib-grid">
-          <Field label="Location name" span={2}>
-            <input className={inputCls} value={form.shipTo?.name || ''} onChange={(e) => update('shipTo.name', e.target.value)} />
+      <Section title="Ship To" defaultOpen>
+          <label className="ib-check">
+            <input
+              type="checkbox"
+              checked={Boolean(form.shipToSameAsBillTo)}
+              onChange={(e) => update('shipToSameAsBillTo', e.target.checked)}
+            />
+            <span>Ship To details same as Bill To</span>
+          </label>
+        <div className={`ib-grid${form.shipToSameAsBillTo ? ' ib-grid--locked' : ''}`}>
+          <Field label="Legal / Location name">
+            <input
+              className={inputCls}
+              value={form.shipTo?.name || ''}
+              onChange={(e) => update('shipTo.name', e.target.value)}
+              readOnly={Boolean(form.shipToSameAsBillTo)}
+            />
+          </Field>
+          <Field label="Contact Name">
+            <input
+              className={inputCls}
+              value={form.shipTo?.contactPerson || ''}
+              onChange={(e) => update('shipTo.contactPerson', e.target.value)}
+              placeholder="—"
+              readOnly={Boolean(form.shipToSameAsBillTo)}
+            />
           </Field>
           <Field label="Address" span={2}>
-            <textarea className={`${inputCls} ib-textarea`} rows={2} value={form.shipTo?.address || ''} onChange={(e) => update('shipTo.address', e.target.value)} />
+            <textarea
+              className={`${inputCls} ib-textarea`}
+              rows={2}
+              value={form.shipTo?.address || ''}
+              onChange={(e) => update('shipTo.address', e.target.value)}
+              readOnly={Boolean(form.shipToSameAsBillTo)}
+            />
           </Field>
           <Field label="GSTIN">
-            <input className={inputCls} value={form.shipTo?.gstin || ''} onChange={(e) => update('shipTo.gstin', e.target.value)} />
-          </Field>
-          <Field label="State / code">
             <input
               className={inputCls}
-              value={[form.shipTo?.stateName, form.shipTo?.stateCode].filter(Boolean).join(' / ')}
-              onChange={(e) => update('shipTo.stateName', e.target.value)}
+              value={form.shipTo?.gstin || ''}
+              onChange={(e) => update('shipTo.gstin', e.target.value)}
+              readOnly={Boolean(form.shipToSameAsBillTo)}
+            />
+          </Field>
+          <Field label="State Name / State Code">
+            <input
+              className={inputCls}
+              value={formatStateLine(form.shipTo)}
+              onChange={(e) => {
+                const { stateName, stateCode } = parseStateLine(e.target.value);
+                update('shipTo.stateName', stateName);
+                update('shipTo.stateCode', stateCode);
+              }}
+              readOnly={Boolean(form.shipToSameAsBillTo)}
+              placeholder="Maharashtra / 27"
             />
           </Field>
         </div>
       </Section>
 
-      <Section title="Line items" badge={lineRows.length}>
-        <div className="ib-grid ib-grid--compact" style={{ marginBottom: 12 }}>
-          <Field label="Rate column title">
-            <input className={inputCls} value={form.taxColumnLabels?.rateLabel ?? taxLabels.rateLabel} onChange={(e) => update('taxColumnLabels.rateLabel', e.target.value)} placeholder="GST %" />
-          </Field>
-          <Field label="Amount column title">
-            <input className={inputCls} value={form.taxColumnLabels?.amountLabel ?? taxLabels.amountLabel} onChange={(e) => update('taxColumnLabels.amountLabel', e.target.value)} placeholder="GST" />
-          </Field>
-        </div>
+      <Section title="Line items" badge={lineRows.length} defaultOpen>
         <div className="ib-lines">
           {lineRows.map((line, index) => (
             <div key={line.id} className="ib-line-card">
@@ -185,8 +230,22 @@ export default function ProformaBuilderPanel({
                 ) : null}
               </div>
               <div className="ib-grid">
-                <Field label="Description" span={2}>
-                  <input className={inputCls} value={line.description} onChange={(e) => updateLine(line.id, { description: e.target.value })} />
+                <Field label="Description of Services" span={2}>
+                  <textarea
+                    className={`${inputCls} ib-textarea`}
+                    rows={2}
+                    value={line.description}
+                    onChange={(e) => updateLine(line.id, { description: clampTextLines(e.target.value, 2) })}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        return;
+                      }
+                      if (String(line.description || '').split('\n').length >= 2) e.preventDefault();
+                    }}
+                    placeholder="Shift+Enter for a second line"
+                  />
                 </Field>
                 <Field label="SAC">
                   <input className={inputCls} value={line.hsnSac} onChange={(e) => updateLine(line.id, { hsnSac: e.target.value })} />
@@ -197,10 +256,7 @@ export default function ProformaBuilderPanel({
                 <Field label="Rate">
                   <input type="number" className={inputCls} value={line.rate} onChange={(e) => updateLine(line.id, { rate: e.target.value })} />
                 </Field>
-                <Field label="Discount">
-                  <input type="number" className={inputCls} value={line.discount} onChange={(e) => updateLine(line.id, { discount: e.target.value })} />
-                </Field>
-                <Field label={taxLabels.rateLabel}>
+                <Field label="GST Rate %">
                   <input
                     type="number"
                     className={inputCls}
@@ -220,18 +276,7 @@ export default function ProformaBuilderPanel({
         </div>
       </Section>
 
-      <Section title="Adjustments & terms">
-        <div className="ib-grid">
-          <Field label="CN amount">
-            <input type="number" className={inputCls} value={form.adjustments?.cnAmount || 0} onChange={(e) => update('adjustments.cnAmount', e.target.value)} />
-          </Field>
-          <Field label="DN amount">
-            <input type="number" className={inputCls} value={form.adjustments?.dnAmount || 0} onChange={(e) => update('adjustments.dnAmount', e.target.value)} />
-          </Field>
-          <Field label="Advance">
-            <input type="number" className={inputCls} value={form.adjustments?.advanceReceived || 0} onChange={(e) => update('adjustments.advanceReceived', e.target.value)} />
-          </Field>
-        </div>
+      <Section title="Terms" defaultOpen>
         <div className="ib-terms">
           {form.terms.map((term, index) => (
             <div key={index} className="ib-term-row">

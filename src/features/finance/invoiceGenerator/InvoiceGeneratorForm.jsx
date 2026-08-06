@@ -92,15 +92,6 @@ export default function InvoiceGeneratorForm({ form, setForm, totals }) {
           <Field label="GSTIN">
             <input className="doc-field-input" value={form.billTo.gstin} onChange={(e) => update('billTo.gstin', e.target.value)} />
           </Field>
-          <Field label="PAN">
-            <input className="doc-field-input" value={form.billTo.pan} onChange={(e) => update('billTo.pan', e.target.value)} />
-          </Field>
-          <Field label="Contact person">
-            <input className="doc-field-input" value={form.billTo.contactPerson} onChange={(e) => update('billTo.contactPerson', e.target.value)} />
-          </Field>
-          <Field label="Email">
-            <input className="doc-field-input" value={form.billTo.email} onChange={(e) => update('billTo.email', e.target.value)} />
-          </Field>
         </div>
       </FormSection>
 
@@ -158,10 +149,7 @@ export default function InvoiceGeneratorForm({ form, setForm, totals }) {
                 <Field label="Rate (₹)">
                   <input type="number" className="doc-field-input" value={line.rate} onChange={(e) => updateLine(index, { rate: e.target.value })} />
                 </Field>
-                <Field label="Discount">
-                  <input type="number" className="doc-field-input" value={line.discount} onChange={(e) => updateLine(index, { discount: e.target.value })} />
-                </Field>
-                <Field label="IGST %">
+                <Field label="GST Rate %">
                   <input type="number" className="doc-field-input" value={line.igstRate} onChange={(e) => updateLine(index, { igstRate: e.target.value })} />
                 </Field>
               </div>

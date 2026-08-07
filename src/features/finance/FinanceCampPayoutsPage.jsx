@@ -59,7 +59,7 @@ export default function FinanceCampPayoutsPage() {
       const params = new URLSearchParams({ limit: '100' });
       if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (statusFilter) params.set('status', statusFilter);
-      const { data } = await api(`/finance/payouts?${params}`);
+      const { data } = await api(`/finance/camp-payouts?${params}`);
       setRows(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || 'Could not load camp payouts');
@@ -187,7 +187,7 @@ export default function FinanceCampPayoutsPage() {
     setBusy(true);
     try {
       if (payMode === 'bulk') {
-        const { data: updated, message } = await api('/finance/payouts/bulk', {
+        const { data: updated, message } = await api('/finance/camp-payouts/bulk', {
           method: 'POST',
           body: {
             ids: payTargetRows.map((row) => row._id),
@@ -202,7 +202,7 @@ export default function FinanceCampPayoutsPage() {
         clearSelection();
       } else {
         const selected = payTargetRows[0];
-        const { data: updated } = await api(`/finance/payouts/${selected._id}`, {
+        const { data: updated } = await api(`/finance/camp-payouts/${selected._id}`, {
           method: 'PATCH',
           body: {
             financePaymentStatus: draft.financePaymentStatus,
@@ -231,7 +231,7 @@ export default function FinanceCampPayoutsPage() {
       if (q.trim()) params.set('q', q.trim());
       if (statusFilter) params.set('status', statusFilter);
       const qs = params.toString();
-      const path = qs ? `/finance-one/payouts/export?${qs}` : '/finance-one/payouts/export';
+      const path = qs ? `/finance/camp-payouts/export?${qs}` : '/finance/camp-payouts/export';
       await downloadExcel(path, 'Camp_Finance_Payouts.xlsx');
     } catch (err) {
       setError(err.message || 'Failed to download camp payouts');
@@ -247,7 +247,7 @@ export default function FinanceCampPayoutsPage() {
     try {
       const campId = String(focusRow.campId || focusRow._id).replace(/[^\w.-]+/g, '_');
       await downloadExcel(
-        `/finance-one/payouts/${focusRow._id}/export`,
+        `/finance/camp-payouts/${focusRow._id}/export`,
         `Camp_Finance_${campId}.xlsx`,
       );
     } catch (err) {

@@ -188,6 +188,124 @@
   color: #b91c1c;
 }
 
+.ib-po-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--ib-line, #e2e8f0);
+  border-radius: 10px;
+  background: var(--ib-surface-2, #f8fafc);
+}
+
+.ib-po-tracker.is-over {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.ib-po-tracker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ib-po-tracker-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ib-text, #0f172a);
+}
+
+.ib-po-tracker-meta,
+.ib-po-tracker-empty,
+.ib-po-tracker-hint,
+.ib-po-tracker-alert,
+.ib-po-tracker-error {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ib-muted, #64748b);
+}
+
+.ib-po-tracker-alert,
+.ib-po-tracker-error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.ib-po-tracker-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--ib-line, #e2e8f0);
+  background: #fff;
+}
+
+.ib-po-tracker-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ib-po-tracker-metrics span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ib-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ib-po-tracker-metrics strong {
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ib-text, #0f172a);
+}
+
+.ib-po-tracker-this {
+  grid-column: 1 / -1;
+}
+
+.ib-po-tracker-bar-wrap {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.ib-po-tracker-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: #0a5ac2;
+  transition: width 0.2s ease;
+}
+
+.ib-po-tracker-metrics.tone-warn .ib-po-tracker-bar {
+  background: #d97706;
+}
+
+.ib-po-tracker-metrics.tone-danger .ib-po-tracker-bar,
+.ib-po-tracker.is-over .ib-po-tracker-bar {
+  background: #dc2626;
+}
+
+.ib-po-tracker-metrics.tone-warn strong:last-child,
+.ib-po-tracker-metrics.tone-danger strong {
+  color: inherit;
+}
+
+.ib-po-tracker-hint {
+  grid-column: 1 / -1;
+}
+
+.ib-po-tracker-alert {
+  grid-column: 1 / -1;
+}
+
 .ib-toolbar-sub {
   display: block;
   font-size: 12px;

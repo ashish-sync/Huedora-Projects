@@ -109,7 +109,8 @@ export default function AdaptiveSelect({
     };
   }, [menuWidth, style]);
 
-  if (choices.length < threshold) {
+  // Native <select multiple> is poor UX (Ctrl+click listbox). Always use react-select for multi.
+  if (!multiple && choices.length < threshold) {
     return (
       <select
         {...rest}
@@ -120,7 +121,6 @@ export default function AdaptiveSelect({
         style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', ...style }}
         value={value}
         onChange={onChange}
-        multiple={multiple}
         disabled={disabled}
         required={required}
       >

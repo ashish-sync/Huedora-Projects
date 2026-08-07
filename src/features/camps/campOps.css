@@ -2281,6 +2281,493 @@
   font-weight: 700;
 }
 
+.camp-ops-root .client-master-camp-terms-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin-top: 10px;
+  align-items: end;
+}
+
+.camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-grid {
+  grid-template-columns:
+    minmax(150px, 1.1fr)
+    minmax(120px, 0.9fr)
+    minmax(120px, 0.9fr)
+    minmax(120px, 0.9fr)
+    minmax(110px, 0.85fr);
+}
+
+.camp-ops-root .client-master-camp-terms-box[data-terms='approval_based'] .client-master-camp-terms-grid {
+  grid-template-columns: minmax(180px, 280px) minmax(120px, 200px);
+}
+
+.camp-ops-root .client-master-camp-terms-box[data-terms='po_based'] .client-master-camp-terms-grid,
+.camp-ops-root .client-master-camp-terms-box[data-terms='none'] .client-master-camp-terms-grid {
+  grid-template-columns: minmax(220px, 320px);
+}
+
+.camp-ops-root .client-master-camp-terms-type {
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-camp-terms-type select {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 28px 6px 10px;
+  font-size: 0.875rem;
+}
+
+.camp-ops-root .client-master-camp-terms-none {
+  margin: 0;
+  padding: 8px 0;
+  align-self: center;
+}
+
+.camp-ops-root .client-master-camp-terms-files-wrap {
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-files-wrap,
+.camp-ops-root .client-master-camp-terms-box[data-terms='approval_based'] .client-master-camp-terms-files-wrap {
+  grid-column: auto;
+}
+
+.camp-ops-root .client-master-camp-terms-files.is-compact {
+  gap: 3px;
+}
+
+.camp-ops-root .client-master-camp-terms-files.is-compact .client-master-po-file-row {
+  min-height: 36px;
+}
+
+.camp-ops-root .client-master-camp-terms-files.is-compact .file-picker {
+  width: auto;
+  min-height: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  gap: 0;
+}
+
+.camp-ops-root .client-master-camp-terms-files.is-compact .file-picker--button-only .file-picker__name,
+.camp-ops-root .client-master-camp-terms-files.is-compact .file-picker--button-only .file-picker__clear {
+  display: none;
+}
+
+.camp-ops-root .client-master-camp-terms-files.is-compact .file-picker__browse {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+
+.camp-ops-root .client-master-camp-terms-files.is-compact .client-master-camp-terms-file-list {
+  max-height: 48px;
+  overflow: auto;
+}
+
+@media (max-width: 960px) {
+  .camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-files-wrap {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .camp-ops-root .client-master-camp-terms-grid,
+  .camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-grid,
+  .camp-ops-root .client-master-camp-terms-box[data-terms='approval_based'] .client-master-camp-terms-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.camp-ops-root .client-master-camp-terms-files {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-camp-terms-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.camp-ops-root .client-master-camp-terms-file-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-sunken, #f8fafc);
+}
+
+.camp-ops-root .client-master-po-box {
+  margin-top: 6px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-elevated, #fff);
+}
+
+.camp-ops-root .client-master-po-box-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.camp-ops-root .client-master-po-box-title-wrap {
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-po-box .client-master-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.camp-ops-root .client-master-po-combined-hint {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+}
+
+.camp-ops-root .client-master-po-combined {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bg-sunken, #f8fafc);
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.camp-ops-root .client-master-po-combined strong {
+  margin-left: 4px;
+  color: var(--text, #0f172a);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.camp-ops-root .client-master-po-combined-total strong {
+  font-size: 0.95rem;
+}
+
+.camp-ops-root .client-master-po-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.camp-ops-root .client-master-po-list-head,
+.camp-ops-root .client-master-po-row {
+  display: grid;
+  grid-template-columns:
+    22px
+    minmax(140px, 1.25fr)
+    minmax(96px, 0.7fr)
+    minmax(120px, 1fr)
+    minmax(128px, 0.95fr)
+    minmax(128px, 0.9fr)
+    28px;
+  gap: 8px 10px;
+  align-items: center;
+}
+
+.camp-ops-root .client-master-po-list-head {
+  padding: 0 12px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.camp-ops-root .client-master-po-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.camp-ops-root .client-master-po-row {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-elevated, #fff);
+}
+
+.camp-ops-root .client-master-po-row-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--bg-sunken, #f1f5f9);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.camp-ops-root .client-master-po-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-po-cell input {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 0.875rem;
+}
+
+.camp-ops-root .client-master-po-upload-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-po-upload-controls .file-picker {
+  width: auto;
+  min-height: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  gap: 0;
+}
+
+.camp-ops-root .client-master-po-upload-controls .file-picker--button-only .file-picker__name,
+.camp-ops-root .client-master-po-upload-controls .file-picker--button-only .file-picker__clear {
+  display: none;
+}
+
+.camp-ops-root .client-master-po-upload-controls .file-picker__browse {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+
+.camp-ops-root .client-master-po-upload-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 44px;
+  overflow: auto;
+}
+
+.camp-ops-root .client-master-po-upload-chips li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-po-upload-chip {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font-size: 0.68rem;
+  color: var(--brand, #0a5ac2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.camp-ops-root .client-master-po-upload-chip.is-pending {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.camp-ops-root .client-master-po-upload-chip-x {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.camp-ops-root .client-master-po-tax-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.camp-ops-root .client-master-po-cell--tax.is-on .client-master-po-tax-control {
+  border-color: color-mix(in srgb, var(--brand, #0a5ac2) 35%, var(--line));
+}
+
+.camp-ops-root .client-master-po-gst-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0 8px;
+  min-height: 36px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--bg-sunken, #f8fafc);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.camp-ops-root .client-master-po-gst-toggle input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--brand, #0a5ac2);
+}
+
+.camp-ops-root .client-master-po-gst-toggle.is-checked {
+  background: color-mix(in srgb, var(--brand, #0a5ac2) 10%, #fff);
+  color: var(--brand, #0a5ac2);
+}
+
+.camp-ops-root .client-master-po-tax-amt {
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camp-ops-root .client-master-po-row-footnote {
+  margin: 0 12px 2px 44px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.camp-ops-root .client-master-po-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 4px;
+}
+
+.camp-ops-root .client-master-po-add-btn {
+  min-height: 34px;
+  padding: 0 12px;
+  font-weight: 600;
+}
+
+.camp-ops-root .client-master-po-remove,
+.camp-ops-root .client-master-po-remove-spacer {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.1rem;
+  justify-self: center;
+}
+
+.camp-ops-root .client-master-po-remove-spacer {
+  visibility: hidden;
+}
+
+@media (max-width: 960px) {
+  .camp-ops-root .client-master-po-list-head {
+    display: none;
+  }
+
+  .camp-ops-root .client-master-po-row {
+    grid-template-columns: 22px 1fr 1fr 28px;
+    align-items: start;
+  }
+
+  .camp-ops-root .client-master-po-cell--no {
+    grid-column: 2;
+  }
+
+  .camp-ops-root .client-master-po-upload-cell {
+    grid-column: 3;
+  }
+
+  .camp-ops-root .client-master-po-cell--value,
+  .camp-ops-root .client-master-po-cell--tax,
+  .camp-ops-root .client-master-po-cell--expiry {
+    grid-column: 2 / 4;
+  }
+
+  .camp-ops-root .client-master-po-remove,
+  .camp-ops-root .client-master-po-remove-spacer {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .camp-ops-root .client-master-po-row-footnote {
+    margin-left: 34px;
+  }
+}
+
+@media (max-width: 560px) {
+  .camp-ops-root .client-master-po-row {
+    grid-template-columns: 22px 1fr 28px;
+  }
+
+  .camp-ops-root .client-master-po-cell--no,
+  .camp-ops-root .client-master-po-upload-cell,
+  .camp-ops-root .client-master-po-cell--value,
+  .camp-ops-root .client-master-po-cell--tax,
+  .camp-ops-root .client-master-po-cell--expiry {
+    grid-column: 2;
+  }
+}
+
+
 .camp-ops-root .panel h3, .camp-ops-root .import-card h3, .camp-ops-root .form-card h3 {
   margin: 0 0 16px;
 }
@@ -3034,62 +3521,56 @@
   color: var(--ink-soft, #4b5563);
 }
 
-.camp-ops-root .client-master-program-document {
+.camp-ops-root .client-master-hcw-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  min-height: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elevated, #fff);
-  min-height: 100%;
 }
 
-.camp-ops-root .client-master-program-document-hint {
-  margin: 0;
-  font-size: 0.72rem;
-  line-height: 1.35;
-}
-
-.camp-ops-root .client-master-program-document-current {
-  display: grid;
+.camp-ops-root .client-master-hcw-roles {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.camp-ops-root .client-master-program-document-name {
-  display: block;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-soft, #4b5563);
-  word-break: break-word;
-}
-
-.camp-ops-root .client-master-program-document-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.camp-ops-root .client-master-program-document-upload {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.camp-ops-root .client-master-program-document-upload-btn {
+.camp-ops-root .client-master-hcw-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-elevated, #fff);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  user-select: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
-.camp-ops-root .client-master-program-document-upload input[type='file'] {
-  display: none;
+.camp-ops-root .client-master-hcw-role input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brand, #0a5ac2);
+  cursor: pointer;
 }
 
-.camp-ops-root .client-master-program-document-pending {
-  display: block;
-  word-break: break-word;
+.camp-ops-root .client-master-hcw-role:hover {
+  border-color: color-mix(in srgb, var(--brand, #0a5ac2) 45%, var(--line));
+}
+
+.camp-ops-root .client-master-hcw-role.is-selected {
+  border-color: color-mix(in srgb, var(--brand, #0a5ac2) 55%, var(--line));
+  background: color-mix(in srgb, var(--brand, #0a5ac2) 10%, #fff);
+  color: var(--ink);
+}
+
+.camp-ops-root .client-master-hcw-field.is-invalid .client-master-hcw-role {
+  border-color: var(--danger, #b42318);
 }
 
 .camp-ops-root .camp-consumables-used-remove-btn {
@@ -7434,16 +7915,54 @@
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 !important;
+  overflow: hidden;
   height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
   min-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
   max-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: var(--radius-button, 8px);
+  background: var(--bg-elevated, #fff);
+  box-sizing: border-box;
 }
 
 .camp-ops-root .camps-filter-search.master-search-field:focus-within {
   outline: none;
   border-color: color-mix(in srgb, var(--brand, #0f766e) 45%, var(--line, #e2e8f0));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand, #0f766e) 14%, transparent);
+}
+
+.camp-ops-root .camps-filter-search .master-search-icon {
+  width: 2rem;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted, #64748b);
+}
+
+.camp-ops-root .camps-filter-search .master-search-input,
+.camp-ops-root .camps-filter-search input[type='search'] {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 0.75rem 0 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.2 !important;
 }
 
 .camp-ops-root .camps-filter-status {

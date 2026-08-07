@@ -104,11 +104,13 @@ export function useInvoiceBuilder() {
           ...prev,
           clientMasterId: patch.clientMasterId || '',
           clientId: patch.clientId || '',
+          clientPurchaseOrderId: '',
           billTo,
           invoice: {
             ...prev.invoice,
             projectName: patch.projectName || prev.invoice.projectName,
             placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
+            poReference: '',
           },
           shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
         };
@@ -123,6 +125,11 @@ export function useInvoiceBuilder() {
       ...prev,
       clientMasterId: '',
       clientId: '',
+      clientPurchaseOrderId: '',
+      invoice: {
+        ...prev.invoice,
+        poReference: prev.clientPurchaseOrderId ? '' : prev.invoice.poReference,
+      },
     }));
   }, [readOnly, setForm]);
 

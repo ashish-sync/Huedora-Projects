@@ -31,6 +31,7 @@ export default function BillOfSupplyBuilderPage() {
     busyAction,
     readOnly,
     loadingDoc,
+    docId,
     submitDocument,
     approveDocument,
     rejectDocument,
@@ -89,6 +90,7 @@ export default function BillOfSupplyBuilderPage() {
           addTerm={addTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          docId={docId}
           panelConfig={{
             panelLayout: 'parties',
             docSectionTitle: 'Header',

@@ -158,13 +158,51 @@ export const clientMasterApi = {
   create: (payload) => post(`${BASE}/client-masters`, payload),
   update: (id, payload) => put(`${BASE}/client-masters/${id}`, payload),
   remove: (id) => del(`${BASE}/client-masters/${id}`),
-  downloadDocument: async (id) => ({ data: await getBlob(`${BASE}/client-masters/${id}/document`) }),
-  uploadDocument: (id, file) => {
+  uploadCampTermsFiles: (id, files) => {
     const formData = new FormData();
-    formData.append('document', file);
-    return postForm(`${BASE}/client-masters/${id}/document`, formData);
+    (Array.isArray(files) ? files : [files]).filter(Boolean).forEach((file) => {
+      formData.append('files', file);
+    });
+    return postForm(`${BASE}/client-masters/${id}/camp-terms-files`, formData);
   },
-  deleteDocument: (id) => del(`${BASE}/client-masters/${id}/document`),
+  downloadCampTermsFile: async (id, fileId) => ({
+    data: await getBlob(
+      `${BASE}/client-masters/${id}/camp-terms-files/${encodeURIComponent(fileId)}`
+    ),
+  }),
+  deleteCampTermsFile: (id, fileId) =>
+    del(`${BASE}/client-masters/${id}/camp-terms-files/${encodeURIComponent(fileId)}`),
+  uploadPoFiles: (id, files, poId) => {
+    const formData = new FormData();
+    (Array.isArray(files) ? files : [files]).filter(Boolean).forEach((file) => {
+      formData.append('files', file);
+    });
+    const suffix = poId ? `/po-file/${encodeURIComponent(poId)}` : '/po-file';
+    return postForm(`${BASE}/client-masters/${id}${suffix}`, formData);
+  },
+  // Legacy PO file helpers (older records)
+  uploadPoFile: (id, file, poId) => {
+    const formData = new FormData();
+    formData.append('poFile', file);
+    const suffix = poId ? `/po-file/${encodeURIComponent(poId)}` : '/po-file';
+    return postForm(`${BASE}/client-masters/${id}${suffix}`, formData);
+  },
+  downloadPoFile: async (id, poId) => ({
+    data: await getBlob(
+      `${BASE}/client-masters/${id}${poId ? `/po-file/${encodeURIComponent(poId)}` : '/po-file'}`
+    ),
+  }),
+  downloadPoFileById: async (id, poId, fileId) => ({
+    data: await getBlob(
+      `${BASE}/client-masters/${id}/po-file/${encodeURIComponent(poId)}/${encodeURIComponent(fileId)}`
+    ),
+  }),
+  deletePoFile: (id, poId) =>
+    del(`${BASE}/client-masters/${id}${poId ? `/po-file/${encodeURIComponent(poId)}` : '/po-file'}`),
+  deletePoFileById: (id, poId, fileId) =>
+    del(
+      `${BASE}/client-masters/${id}/po-file/${encodeURIComponent(poId)}/${encodeURIComponent(fileId)}`
+    ),
 };
 
 export const importApi = {

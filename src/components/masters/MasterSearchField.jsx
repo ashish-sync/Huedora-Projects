@@ -26,6 +26,9 @@ export default function MasterSearchField({
         placeholder={placeholder}
         aria-label={ariaLabel || placeholder}
         onKeyDown={onKeyDown}
+        autoComplete="off"
+        spellCheck={false}
+        enterKeyHint="search"
       />
     </div>
   );

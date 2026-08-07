@@ -128,7 +128,6 @@ export function ClientNameSearchInput({
       campName: '',
       campType: '',
       healthcareWorker: [],
-      poAmount: 0,
       campDuration: '4:00',
       spocName: client.contactPerson || '',
       spocNumber: client.phone || '',

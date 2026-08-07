@@ -32,6 +32,7 @@ function invoiceLikeToPayload(form, documentType) {
   return {
     clientMasterId: form.clientMasterId || null,
     clientId: form.clientId || null,
+    clientPurchaseOrderId: form.clientPurchaseOrderId || null,
     recipientName: trim(bill.name),
     contactPerson: trim(bill.contactPerson),
     contactEmail: trim(bill.email),
@@ -424,6 +425,9 @@ function mergeInvoiceLike(base, doc) {
     return {
       ...form,
       ...bf,
+      clientMasterId: bf.clientMasterId || doc.clientMasterId || '',
+      clientId: bf.clientId || doc.clientId || '',
+      clientPurchaseOrderId: bf.clientPurchaseOrderId || doc.clientPurchaseOrderId || '',
       company: { ...form.company, ...(bf.company || {}) },
       bank: { ...form.bank, ...(bf.bank || {}) },
       payment: { ...form.payment, ...(bf.payment || {}) },
@@ -435,6 +439,8 @@ function mergeInvoiceLike(base, doc) {
         documentNumber: docNo,
         issueDate: doc.documentDate || bf.invoice?.issueDate || form.invoice.issueDate,
         dueDate: doc.dueDate || bf.invoice?.dueDate || form.invoice.dueDate,
+        poReference: bf.invoice?.poReference || doc.reference || form.invoice?.poReference || '',
+        poDate: bf.invoice?.poDate || doc.referenceDate || form.invoice?.poDate || '',
       },
       lineItems:
         Array.isArray(bf.lineItems) && bf.lineItems.length
@@ -446,6 +452,9 @@ function mergeInvoiceLike(base, doc) {
     };
   }
 
+  form.clientMasterId = doc.clientMasterId || '';
+  form.clientId = doc.clientId || '';
+  form.clientPurchaseOrderId = doc.clientPurchaseOrderId || '';
   form.billTo = {
     ...form.billTo,
     name: doc.recipientName || '',

@@ -31,6 +31,7 @@ export default function InvoiceBuilderPage() {
     busyAction,
     readOnly,
     loadingDoc,
+    docId,
     submitDocument,
     approveDocument,
     rejectDocument,
@@ -88,6 +89,7 @@ export default function InvoiceBuilderPage() {
           addTerm={addTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          docId={docId}
           panelConfig={{
             panelLayout: 'parties',
             docSectionTitle: 'Header',

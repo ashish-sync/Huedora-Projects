@@ -253,6 +253,19 @@
 /* MasterSearchField wrapper already has its own chrome — don't double-border it */
 .camp-ops-root .camps-filter-search.master-search-field {
   padding: 0 !important;
+  border: 1px solid var(--line) !important;
+  background: var(--bg-elevated) !important;
+}
+
+.camp-ops-root .camps-filter-search.master-search-field .master-search-input,
+.camp-ops-root .camps-filter-search.master-search-field input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-left: 0 !important;
 }
 
 /* ── Toolbar buttons ───────────────────────────────────────── */

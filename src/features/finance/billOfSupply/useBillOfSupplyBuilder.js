@@ -126,11 +126,13 @@ export function useBillOfSupplyBuilder() {
           ...prev,
           clientMasterId: patch.clientMasterId || '',
           clientId: patch.clientId || '',
+          clientPurchaseOrderId: '',
           billTo,
           invoice: {
             ...prev.invoice,
             projectName: patch.projectName || prev.invoice.projectName,
             placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
+            poReference: '',
           },
           shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
         };
@@ -141,7 +143,16 @@ export function useBillOfSupplyBuilder() {
 
   const clearClientMasterRecipient = useCallback(() => {
     if (readOnly) return;
-    setForm((prev) => ({ ...prev, clientMasterId: '', clientId: '' }));
+    setForm((prev) => ({
+      ...prev,
+      clientMasterId: '',
+      clientId: '',
+      clientPurchaseOrderId: '',
+      invoice: {
+        ...prev.invoice,
+        poReference: prev.clientPurchaseOrderId ? '' : prev.invoice.poReference,
+      },
+    }));
   }, [readOnly, setForm]);
 
   return {

@@ -50,6 +50,7 @@ export function defaultBillOfSupplyForm() {
     },
     clientMasterId: '',
     clientId: '',
+    clientPurchaseOrderId: '',
     shipToSameAsBillTo: false,
     billTo: {
       name: '',

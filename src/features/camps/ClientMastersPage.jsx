@@ -7,7 +7,6 @@ import { ClientsPanel } from './components/ClientsPanel';
 import { ClientMasterProgramsFilters } from './components/ClientMasterProgramsFilters';
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
-import { openProgramDocument } from './utils/programDocument';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { MESSAGES, formatApiError } from '../../shared/messages.js';
@@ -19,11 +18,6 @@ import {
   CLIENT_MASTER_NEW_PATH,
 } from './clientMasterPaths.js';
 import { formatHealthcareWorkers } from './utils/healthcareWorkers.js';
-
-function formatAmount(value) {
-  if (value == null || value === '') return '—';
-  return Number(value).toLocaleString('en-IN');
-}
 
 export default function ClientMastersPage({ embedded = false } = {}) {
   const { hasPermission, isSuperAdmin } = useAuth();
@@ -106,18 +100,6 @@ export default function ClientMastersPage({ embedded = false } = {}) {
   function handlePageSizeChange(nextPageSize) {
     setPage(1);
     loadRecords(1, nextPageSize);
-  }
-
-  async function handlePreviewDocument(recordId) {
-    try {
-      await openProgramDocument(recordId);
-      setError('');
-    } catch (err) {
-      setError(formatApiError(err, MESSAGES.actionFailed('open the program document')));
-      if (err.documentCleared) {
-        await loadRecords(page);
-      }
-    }
   }
 
   function clearProgramFilters() {
@@ -221,12 +203,10 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                       <th>Method</th>
                       <th>Service Model</th>
                       <th>HCW</th>
-                      <th>PO Amount</th>
                       <th>Duration</th>
                       <th>SPOC</th>
                       <th>Request Timeline</th>
                       <th>Status</th>
-                      <th>Document</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -238,7 +218,6 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                         <td>{record.campName || '—'}</td>
                         <td>{record.campType || '—'}</td>
                         <td>{formatHealthcareWorkers(record.healthcareWorker) || '—'}</td>
-                        <td>{formatAmount(record.poAmount)}</td>
                         <td>{record.campDuration || '—'}</td>
                         <td>
                           <div>{record.spocName || '—'}</div>
@@ -247,19 +226,6 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                         </td>
                         <td>{record.requestTimeline || '—'}</td>
                         <td>{record.isActive ? 'Active' : 'Inactive'}</td>
-                        <td>
-                          {record.programDocument?.storedName ? (
-                            <button
-                              type="button"
-                              className="btn secondary btn-compact"
-                              onClick={() => handlePreviewDocument(record._id)}
-                            >
-                              View PDF
-                            </button>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
                         <td>
                           <div className="actions">
                             {hasPermission('client-masters:update') && (

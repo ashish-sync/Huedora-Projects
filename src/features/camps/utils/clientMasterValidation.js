@@ -1,8 +1,23 @@
 import { isValidCampMethod } from '../constants/campNames';
-import { emailListError, emailError, isValidPhone, phoneError } from '../../../shared/validation.js';
+import { emailListError, phoneError } from '../../../shared/validation.js';
 import { normalizeHealthcareWorkers } from './healthcareWorkers.js';
+import {
+  CAMP_TERMS,
+  campTermsFieldsFromRecord,
+  normalizeCampTerms,
+  parsePoNetValue,
+} from './clientMasterPo.js';
 
 const DURATION_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function validateOptionalDate(value, label, errors, field) {
+  const raw = String(value || '').trim();
+  if (!raw) return;
+  if (!DATE_PATTERN.test(raw)) {
+    errors[field] = `${label} must be a valid date`;
+  }
+}
 
 export function validateClientMasterForm(form) {
   const errors = {};
@@ -36,8 +51,8 @@ export function validateClientMasterForm(form) {
     campName: 120,
     campType: 80,
     spocName: 80,
-    spocEmail: 120,
     requestTimeline: 80,
+    poNumber: 80,
   };
 
   Object.entries(stringLimits).forEach(([field, max]) => {
@@ -70,7 +85,7 @@ export function validateClientMasterForm(form) {
     errors.spocNumber = spocPhoneError;
   }
 
-  const spocEmailError = emailError(form.spocEmail, 'SPOC email address');
+  const spocEmailError = emailListError(form.spocEmail, 'SPOC email address');
   if (spocEmailError) {
     errors.spocEmail = spocEmailError;
   }
@@ -80,8 +95,41 @@ export function validateClientMasterForm(form) {
     errors.assignedUserEmails = assignedEmailError;
   }
 
+  const campTerms = normalizeCampTerms(form.campTerms);
+  if (campTerms === CAMP_TERMS.PO_BASED) {
+    const orders = Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [];
+    if (!orders.length) {
+      errors.purchaseOrders = 'Add at least one PO, or choose a different Camp Terms type';
+    }
+    orders.forEach((row, index) => {
+      const prefix = `purchaseOrders.${index}`;
+      const poNetRaw = row?.poNetValue;
+      if (poNetRaw !== '' && poNetRaw != null) {
+        const poNet = parsePoNetValue(poNetRaw);
+        if (Number.isNaN(poNet)) {
+          errors[`${prefix}.poNetValue`] = 'Must be a valid amount';
+        } else if (poNet < 0) {
+          errors[`${prefix}.poNetValue`] = 'Must be zero or greater';
+        } else if (poNet > 999999999999) {
+          errors[`${prefix}.poNetValue`] = 'PO Net Value is too large';
+        }
+      }
+      validateOptionalDate(row?.poExpiryDate, 'Expiry', errors, `${prefix}.poExpiryDate`);
+    });
+  }
+
+  if (campTerms === CAMP_TERMS.AGREEMENT_BASED) {
+    validateOptionalDate(form.agreementStartDate, 'Start date', errors, 'agreementStartDate');
+    validateOptionalDate(form.agreementEffectiveDate, 'Effective date', errors, 'agreementEffectiveDate');
+    validateOptionalDate(form.agreementEndDate, 'End date', errors, 'agreementEndDate');
+    const start = String(form.agreementStartDate || '').trim();
+    const end = String(form.agreementEndDate || '').trim();
+    if (start && end && start > end) {
+      errors.agreementEndDate = 'End date must be on or after start date';
+    }
+  }
+
   const nonNegativeNumbers = [
-    'poAmount',
     'executedCampUnit',
     'cancelledCampUnit',
     'otUnit',
@@ -99,10 +147,8 @@ export function validateClientMasterForm(form) {
       errors[field] = 'Must be a valid number';
     } else if (value < 0) {
       errors[field] = 'Must be zero or greater';
-    } else if (!Number.isInteger(value) && field !== 'poAmount') {
+    } else if (!Number.isInteger(value)) {
       errors[field] = 'Must be a whole number';
-    } else if (field === 'poAmount' && value > 999999999) {
-      errors[field] = 'PO amount is too large';
     }
   });
 
@@ -110,7 +156,7 @@ export function validateClientMasterForm(form) {
 }
 
 export function hasValidationErrors(errors) {
-  return Object.keys(errors).length > 0;
+  return Object.keys(errors || {}).length > 0;
 }
 
 export function recordToForm(record, { keepClientName = true } = {}) {
@@ -133,7 +179,6 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     campName: record.campName || 'BMD',
     campType: record.campType || '',
     healthcareWorker: normalizeHealthcareWorkers(record.healthcareWorker),
-    poAmount: String(record.poAmount ?? ''),
     campDuration: record.campDuration || '4:00',
     spocName: record.spocName || billing.contactPerson || '',
     spocNumber: record.spocNumber || billing.phone || '',
@@ -142,6 +187,7 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     assignedUserEmails: Array.isArray(record.assignedUserEmails)
       ? record.assignedUserEmails.join(', ')
       : (record.assignedUserEmails || ''),
+    ...campTermsFieldsFromRecord(record),
     executedCampUnit: String(record.executedCampUnit ?? ''),
     cancelledCampUnit: String(record.cancelledCampUnit ?? ''),
     otUnit: String(record.otUnit ?? ''),

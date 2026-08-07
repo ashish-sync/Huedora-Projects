@@ -1,25 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import FieldError from '../../components/ui/FieldError.jsx';
-import { EmailField } from '../../components/ui/EmailField.jsx';
 import { PhoneField } from '../../components/ui/PhoneField.jsx';
 import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
+import { parseEmailList } from '../../shared/validation.js';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
-import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { CampNameSelect } from './components/CampNameSelect';
 import { ClientNameSearchInput } from './components/ClientNameSearchInput';
 import { SearchableOptionsInput } from './components/SearchableOptionsInput';
 import { ClientMasterConsumablesField } from './components/ClientMasterConsumablesField.jsx';
+import { ClientMasterCampTermsBox } from './components/ClientMasterCampTermsBox.jsx';
 import { clientMasterApi } from './campOpsApi.js';
 import { clientMasterListPath } from './clientMasterPaths.js';
 import { trimFormStrings } from './utils/trimInput';
 import { normalizeHealthcareWorkers } from './utils/healthcareWorkers.js';
 import {
-  getProgramDocumentMeta,
-  openProgramDocument,
-  validateProgramPdfFile,
-} from './utils/programDocument';
+  buildCampTermsPayload,
+  CAMP_TERMS,
+  campTermsFilesFromRecord,
+  combinePurchaseOrders,
+  computePoTaxFields,
+  createEmptyPurchaseOrder,
+  emptyCampTermsFormFields,
+  normalizeCampTerms,
+  poAmountInputValue,
+  purchaseOrdersFromRecord,
+  validateCampTermsFile,
+} from './utils/clientMasterPo.js';
 import {
   hasValidationErrors,
   recordToForm,
@@ -51,10 +59,14 @@ const formStringFields = [
   'spocEmail',
   'requestTimeline',
   'assignedUserEmails',
+  'poNumber',
+  'poExpiryDate',
+  'agreementStartDate',
+  'agreementEffectiveDate',
+  'agreementEndDate',
 ];
 
 const formNumberFields = [
-  'poAmount',
   'executedCampUnit',
   'cancelledCampUnit',
   'otUnit',
@@ -77,13 +89,13 @@ const emptyForm = {
   campName: 'BMD',
   campType: '',
   healthcareWorker: [],
-  poAmount: '',
   campDuration: '4:00',
   spocName: '',
   spocNumber: '',
   spocEmail: '',
   requestTimeline: '',
   assignedUserEmails: '',
+  ...emptyCampTermsFormFields(),
   executedCampUnit: '',
   cancelledCampUnit: '',
   otUnit: '',
@@ -105,6 +117,26 @@ function numberInputProps(field, form, updateField, fieldErrors) {
   };
 }
 
+function healthcareRoleSelected(selected, role) {
+  const want = String(role || '').trim().toLowerCase();
+  return normalizeHealthcareWorkers(selected).some((item) => {
+    const have = String(item || '').trim().toLowerCase();
+    if (have === want) return true;
+    return (
+      (want === 'dietician' || want === 'dietitian') &&
+      (have === 'dietician' || have === 'dietitian')
+    );
+  });
+}
+
+function toggleHealthcareRole(selected, role) {
+  const current = normalizeHealthcareWorkers(selected);
+  if (healthcareRoleSelected(current, role)) {
+    return current.filter((item) => !healthcareRoleSelected([item], role));
+  }
+  return [...current, role];
+}
+
 export default function ClientMasterFormPage() {
   const { id } = useParams();
   const { hasPermission, isSuperAdmin } = useAuth();
@@ -116,10 +148,9 @@ export default function ClientMasterFormPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
-  const [documentMeta, setDocumentMeta] = useState(null);
-  const [pendingPdfFile, setPendingPdfFile] = useState(null);
-  const [documentError, setDocumentError] = useState('');
-  const [documentLoading, setDocumentLoading] = useState(false);
+  const [pendingCampTermsFiles, setPendingCampTermsFiles] = useState([]);
+  const [pendingPoFiles, setPendingPoFiles] = useState({});
+  const [campTermsFileBusy, setCampTermsFileBusy] = useState(false);
   const formRef = useRef(null);
   useSuppressBrowserAutofill(formRef);
 
@@ -130,8 +161,8 @@ export default function ClientMasterFormPage() {
     clientMasterApi.get(id)
       .then(({ data }) => {
         setForm(recordToForm(data.data));
-        setDocumentMeta(getProgramDocumentMeta(data.data));
-        setPendingPdfFile(null);
+        setPendingCampTermsFiles([]);
+        setPendingPoFiles({});
       })
       .catch((err) => {
         setError(err?.message || 'Failed to load client master record');
@@ -142,11 +173,95 @@ export default function ClientMasterFormPage() {
   }, [id, isEdit]);
 
   function updateField(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      if (field !== 'campTerms') {
+        return { ...prev, [field]: value };
+      }
+      const nextTerms = normalizeCampTerms(value);
+      const next = { ...prev, campTerms: nextTerms };
+      if (nextTerms === CAMP_TERMS.PO_BASED) {
+        const orders = Array.isArray(prev.purchaseOrders) ? prev.purchaseOrders : [];
+        next.purchaseOrders = orders.length ? orders : [createEmptyPurchaseOrder()];
+        next.campTermsFiles = [];
+      } else {
+        next.purchaseOrders = [];
+        if (nextTerms === CAMP_TERMS.NONE) {
+          next.campTermsFiles = [];
+        }
+      }
+      return next;
+    });
     setFieldErrors((prev) => {
-      if (!prev[field]) return prev;
+      if (!prev[field] && field !== 'campTerms') return prev;
       const next = { ...prev };
       delete next[field];
+      delete next.purchaseOrders;
+      return next;
+    });
+  }
+
+  function addPurchaseOrder(row = createEmptyPurchaseOrder()) {
+    setForm((prev) => {
+      const orders = Array.isArray(prev.purchaseOrders) ? prev.purchaseOrders : [];
+      return { ...prev, purchaseOrders: [...orders, row] };
+    });
+    setFieldErrors((prev) => {
+      if (!prev.purchaseOrders) return prev;
+      const next = { ...prev };
+      delete next.purchaseOrders;
+      return next;
+    });
+  }
+
+  function removePurchaseOrder(poId) {
+    setForm((prev) => {
+      const orders = (Array.isArray(prev.purchaseOrders) ? prev.purchaseOrders : []).filter(
+        (row) => row.id !== poId
+      );
+      return {
+        ...prev,
+        purchaseOrders: orders.length ? orders : [createEmptyPurchaseOrder()],
+      };
+    });
+    setPendingPoFiles((prev) => {
+      if (!prev[poId]) return prev;
+      const next = { ...prev };
+      delete next[poId];
+      return next;
+    });
+  }
+
+  function updatePurchaseOrder(poId, field, value) {
+    setForm((prev) => {
+      const orders = (Array.isArray(prev.purchaseOrders) ? prev.purchaseOrders : []).map((row) => {
+        if (row.id !== poId) return row;
+        const next = { ...row, [field]: value };
+        if (field === 'poNetValue' || field === 'poAmount' || field === 'poApplyGst18') {
+          const applyNext = field === 'poApplyGst18' ? value : row.poApplyGst18 !== false;
+          const entered =
+            field === 'poApplyGst18'
+              ? poAmountInputValue(row)
+              : value;
+          if (entered === '' || entered == null) {
+            Object.assign(next, {
+              poApplyGst18: applyNext,
+              poNetValue: '',
+              poGstAmount: 0,
+              poGrossValue: '',
+            });
+          } else {
+            Object.assign(next, computePoTaxFields(entered, applyNext));
+          }
+        }
+        return next;
+      });
+      return { ...prev, purchaseOrders: orders, ...combinePurchaseOrders(orders) };
+    });
+    setFieldErrors((prev) => {
+      const keys = Object.keys(prev).filter((key) => key.includes(poId) || key.startsWith('purchaseOrders.'));
+      if (!keys.length) return prev;
+      const next = { ...prev };
+      keys.forEach((key) => delete next[key]);
       return next;
     });
   }
@@ -181,67 +296,165 @@ export default function ClientMasterFormPage() {
     return !hasValidationErrors(errors);
   }
 
-  async function handlePdfSelect(file) {
-    if (!file) {
-      setPendingPdfFile(null);
-      setDocumentError('');
+  async function handleCampTermsFilesSelect(fileList) {
+    const files = Array.isArray(fileList) ? fileList : [];
+    if (!files.length) return;
+
+    for (const file of files) {
+      const message = validateCampTermsFile(file);
+      if (message) {
+        setFieldErrors((prev) => ({ ...prev, campTermsFiles: message }));
+        return;
+      }
+    }
+    setFieldErrors((prev) => {
+      if (!prev.campTermsFiles) return prev;
+      const next = { ...prev };
+      delete next.campTermsFiles;
+      return next;
+    });
+
+    if (isEdit) {
+      setCampTermsFileBusy(true);
+      try {
+        const { data } = await clientMasterApi.uploadCampTermsFiles(id, files);
+        setForm((prev) => ({
+          ...prev,
+          campTermsFiles: campTermsFilesFromRecord(data.data),
+        }));
+        setPendingCampTermsFiles([]);
+      } catch (err) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          campTermsFiles: err?.message || 'Failed to upload files',
+        }));
+      } finally {
+        setCampTermsFileBusy(false);
+      }
       return;
     }
 
-    const validationMessage = validateProgramPdfFile(file);
-    if (validationMessage) {
-      setPendingPdfFile(null);
-      setDocumentError(validationMessage);
-      return;
+    setPendingCampTermsFiles((prev) => [...prev, ...files]);
+  }
+
+  async function handleCampTermsFilePreview(file) {
+    if (!isEdit || (!file?.id && !file?.storedName)) return;
+    try {
+      const fileId = file.id || file.storedName;
+      const { data: blob } = await clientMasterApi.downloadCampTermsFile(id, fileId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError(err?.message || 'Failed to open file');
+    }
+  }
+
+  async function handleCampTermsFileDelete(file) {
+    if (!isSuperAdmin() || !isEdit || !file) return;
+    if (!window.confirm(`Remove “${file.fileName || 'file'}”?`)) return;
+    setCampTermsFileBusy(true);
+    try {
+      const fileId = file.id || file.storedName;
+      const { data } = await clientMasterApi.deleteCampTermsFile(id, fileId);
+      setForm((prev) => ({
+        ...prev,
+        campTermsFiles: campTermsFilesFromRecord(data.data),
+      }));
+    } catch (err) {
+      setError(err?.message || 'Failed to remove file');
+    } finally {
+      setCampTermsFileBusy(false);
+    }
+  }
+
+  async function handlePoFilesSelect(poId, fileList) {
+    const files = Array.isArray(fileList) ? fileList : [];
+    if (!poId || !files.length) return;
+
+    for (const file of files) {
+      const message = validateCampTermsFile(file);
+      if (message) {
+        setFieldErrors((prev) => ({ ...prev, [`purchaseOrders.${poId}.files`]: message }));
+        return;
+      }
     }
 
     if (isEdit) {
-      setDocumentLoading(true);
-      setDocumentError('');
+      setCampTermsFileBusy(true);
       try {
-        const { data } = await clientMasterApi.uploadDocument(id, file);
-        setDocumentMeta(getProgramDocumentMeta(data.data));
-        setPendingPdfFile(null);
+        const { data } = await clientMasterApi.uploadPoFiles(id, files, poId);
+        setForm((prev) => {
+          const nextForm = recordToForm(data.data);
+          return {
+            ...prev,
+            ...combinePurchaseOrders(nextForm.purchaseOrders),
+            purchaseOrders: nextForm.purchaseOrders,
+            campTerms: CAMP_TERMS.PO_BASED,
+          };
+        });
+        setPendingPoFiles((prev) => {
+          if (!prev[poId]) return prev;
+          const next = { ...prev };
+          delete next[poId];
+          return next;
+        });
       } catch (err) {
-        setDocumentError(err?.message || 'Failed to upload program document');
+        setError(err?.message || 'Failed to upload PO files');
       } finally {
-        setDocumentLoading(false);
+        setCampTermsFileBusy(false);
       }
       return;
     }
 
-    setPendingPdfFile(file);
-    setDocumentError('');
+    setPendingPoFiles((prev) => ({
+      ...prev,
+      [poId]: [...(prev[poId] || []), ...files],
+    }));
   }
 
-  async function handleDeleteDocument() {
-    if (!isSuperAdmin() || !isEdit || !documentMeta) return;
-    if (!window.confirm('Delete this program PDF?')) return;
-
-    setDocumentLoading(true);
-    setDocumentError('');
+  async function handlePoFilePreview(poId, file) {
+    if (!isEdit || !poId) return;
     try {
-      const { data } = await clientMasterApi.deleteDocument(id);
-      setDocumentMeta(getProgramDocumentMeta(data.data));
-      setPendingPdfFile(null);
+      const fileId = file?.id || file?.storedName;
+      if (fileId) {
+        const { data: blob } = await clientMasterApi.downloadPoFileById(id, poId, fileId);
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        return;
+      }
+      const { data: blob } = await clientMasterApi.downloadPoFile(id, poId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
-      setDocumentError(err?.message || 'Failed to delete program document');
-    } finally {
-      setDocumentLoading(false);
+      setError(err?.message || 'Failed to open PO file');
     }
   }
 
-  async function handlePreviewDocument() {
-    if (!isEdit || !documentMeta) return;
-    setDocumentError('');
+  async function handlePoFileDelete(poId, file) {
+    if (!isSuperAdmin() || !isEdit || !poId || !file) return;
+    if (!window.confirm(`Remove “${file.fileName || 'file'}”?`)) return;
+    setCampTermsFileBusy(true);
     try {
-      await openProgramDocument(id);
+      const fileId = file.id || file.storedName;
+      const { data } = await clientMasterApi.deletePoFileById(id, poId, fileId);
+      setForm((prev) => {
+        const nextForm = recordToForm(data.data);
+        return {
+          ...prev,
+          ...combinePurchaseOrders(nextForm.purchaseOrders),
+          purchaseOrders: nextForm.purchaseOrders.length
+            ? nextForm.purchaseOrders
+            : [createEmptyPurchaseOrder()],
+          campTerms: CAMP_TERMS.PO_BASED,
+        };
+      });
     } catch (err) {
-      setDocumentError(err.message || 'Failed to open program document');
-      if (err.documentCleared) {
-        setDocumentMeta(null);
-        setPendingPdfFile(null);
-      }
+      setError(err?.message || 'Failed to remove PO file');
+    } finally {
+      setCampTermsFileBusy(false);
     }
   }
 
@@ -258,12 +471,21 @@ export default function ClientMasterFormPage() {
     }
 
     const trimmed = trimFormStrings(form, formStringFields);
+    const spocEmails = parseEmailList(form.spocEmail);
+    const campTermsPayload = buildCampTermsPayload({
+      ...form,
+      ...trimmed,
+      purchaseOrders: form.purchaseOrders,
+      campTermsFiles: form.campTermsFiles,
+    });
     const payload = {
       ...trimmed,
       healthcareWorker: normalizeHealthcareWorkers(form.healthcareWorker),
       clientId: form.clientId || undefined,
       isActive: form.isActive,
       coordinatorName: '',
+      spocEmail: spocEmails.join(', '),
+      ...campTermsPayload,
       billing: {
         address: trimmed.billingAddress || '',
         gstin: trimmed.billingGstin || '',
@@ -271,13 +493,10 @@ export default function ClientMasterFormPage() {
         stateName: trimmed.billingStateName || '',
         stateCode: trimmed.billingStateCode || '',
         contactPerson: trimmed.spocName || '',
-        email: trimmed.spocEmail || '',
+        email: spocEmails[0] || '',
         phone: trimmed.spocNumber || '',
       },
-      assignedUserEmails: String(form.assignedUserEmails || '')
-        .split(/[;,\n]/)
-        .map((email) => email.trim().toLowerCase())
-        .filter(Boolean),
+      assignedUserEmails: parseEmailList(form.assignedUserEmails),
       mappedConsumables: form.mappedConsumables || [],
     };
     formNumberFields.forEach((field) => {
@@ -286,7 +505,6 @@ export default function ClientMasterFormPage() {
 
     setLoading(true);
     setError('');
-    setDocumentError('');
     try {
       let savedId = id;
       if (isEdit) {
@@ -296,19 +514,36 @@ export default function ClientMasterFormPage() {
         savedId = data.data._id;
       }
 
-      if (pendingPdfFile) {
-        const { data } = await clientMasterApi.uploadDocument(savedId, pendingPdfFile);
-        setDocumentMeta(getProgramDocumentMeta(data.data));
+      if (pendingCampTermsFiles.length && savedId) {
+        await clientMasterApi.uploadCampTermsFiles(savedId, pendingCampTermsFiles);
+        setPendingCampTermsFiles([]);
+      }
+
+      const pendingEntries = Object.entries(pendingPoFiles).filter(([, files]) => files?.length);
+      if (pendingEntries.length && savedId) {
+        // Re-fetch so PO ids from server match pending keys when possible; otherwise map by order.
+        let orders = Array.isArray(payload.purchaseOrders) ? payload.purchaseOrders : [];
+        try {
+          const { data } = await clientMasterApi.get(savedId);
+          orders = purchaseOrdersFromRecord(data.data);
+        } catch {
+          /* use payload orders */
+        }
+        for (const [poId, files] of pendingEntries) {
+          const target =
+            orders.find((row) => row.id === poId)
+            || orders.find((row) => String(row.poNumber || '') === String(
+              (form.purchaseOrders || []).find((p) => p.id === poId)?.poNumber || ''
+            ));
+          if (!target?.id) continue;
+          await clientMasterApi.uploadPoFiles(savedId, files, target.id);
+        }
+        setPendingPoFiles({});
       }
 
       navigate(clientMasterListPath());
     } catch (err) {
-      const message = err?.message || 'Failed to save client master record';
-      if (pendingPdfFile && !isEdit && err.response?.status !== 400) {
-        setError(`${message}. Program was created but PDF upload may have failed — edit the program to upload again.`);
-      } else {
-        setError(message);
-      }
+      setError(err?.message || 'Failed to save client master record');
     } finally {
       setLoading(false);
     }
@@ -367,9 +602,6 @@ export default function ClientMasterFormPage() {
       </div>
 
       <h3 className="client-master-section-title">Billing details (Invoice recipient)</h3>
-      <p className="meta-text" style={{ marginTop: 0 }}>
-        Stored on the company and reused by Billing Center when this Client Master is selected.
-      </p>
       <div className="form-grid">
         <label>
           State
@@ -439,30 +671,40 @@ export default function ClientMasterFormPage() {
             error={fieldErrors.campType}
           />
         </label>
-        <label>
-          Healthcare Worker
-          <AdaptiveSelect
-            multiple
-            value={normalizeHealthcareWorkers(form.healthcareWorker)}
-            onChange={(e) => updateField('healthcareWorker', normalizeHealthcareWorkers(e.target.value))}
-            disabled={loading}
-            className={fieldErrors.healthcareWorker ? 'input-invalid' : ''}
-            placeholder="Select one or more roles"
-            aria-label="Healthcare Worker"
+        <div className={`client-master-hcw-field${fieldErrors.healthcareWorker ? ' is-invalid' : ''}`}>
+          <span className="client-master-field-label" id="client-master-hcw-label">
+            Healthcare Worker
+          </span>
+          <div
+            className="client-master-hcw-roles"
+            role="group"
+            aria-labelledby="client-master-hcw-label"
           >
-            <option value="">Select healthcare worker roles</option>
-            {HEALTHCARE_WORKER_OPTIONS.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </AdaptiveSelect>
+            {HEALTHCARE_WORKER_OPTIONS.map((option) => {
+              const checked = healthcareRoleSelected(form.healthcareWorker, option);
+              return (
+                <label
+                  key={option}
+                  className={`client-master-hcw-role${checked ? ' is-selected' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={loading}
+                    onChange={() =>
+                      updateField(
+                        'healthcareWorker',
+                        toggleHealthcareRole(form.healthcareWorker, option)
+                      )
+                    }
+                  />
+                  <span>{option}</span>
+                </label>
+              );
+            })}
+          </div>
           <FieldError message={fieldErrors.healthcareWorker} />
-          <span className="meta-text">You can select multiple roles (e.g. Technician and Phlebotomist).</span>
-        </label>
-        <label>
-          PO Amount
-          <input {...numberInputProps('poAmount', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.poAmount} />
-        </label>
+        </div>
         <label>
           Camp Duration
           <input
@@ -481,7 +723,6 @@ export default function ClientMasterFormPage() {
             className={fieldErrors.spocName ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors.spocName} />
-          <span className="meta-text">SPOC name, email, and phone are also used as billing contact on invoices.</span>
         </label>
         <PhoneField
           label="SPOC Number"
@@ -489,12 +730,17 @@ export default function ClientMasterFormPage() {
           onChange={(value) => updateField('spocNumber', value)}
           error={fieldErrors.spocNumber}
         />
-        <EmailField
-          label="SPOC Email Address"
-          value={form.spocEmail}
-          onChange={(value) => updateField('spocEmail', value)}
-          error={fieldErrors.spocEmail}
-        />
+        <label>
+          SPOC Email Address
+          <input
+            value={form.spocEmail}
+            onChange={(e) => updateField('spocEmail', e.target.value)}
+            placeholder="spoc@client.com, ops@client.com"
+            title="Comma-separated SPOC email addresses"
+            className={fieldErrors.spocEmail ? 'input-invalid' : ''}
+          />
+          <FieldError message={fieldErrors.spocEmail} />
+        </label>
         <label>
           Request Timeline
           <input
@@ -555,51 +801,36 @@ export default function ClientMasterFormPage() {
           value={form.mappedConsumables}
           onChange={(value) => updateField('mappedConsumables', value)}
         />
-        <div className="client-master-program-document">
-          <span className="client-master-field-label">Program Document (PDF)</span>
-          <p className="meta-text client-master-program-document-hint">Max 5 MB. Upload replaces the previous file.</p>
-          {documentError ? <FeedbackBanner variant="error">{documentError}</FeedbackBanner> : null}
-          {documentMeta ? (
-            <div className="client-master-program-document-current">
-              <span className="client-master-program-document-name" title={documentMeta.fileName}>
-                {documentMeta.fileName}
-              </span>
-              <div className="client-master-program-document-actions">
-                <button type="button" className="btn secondary btn-sm" onClick={handlePreviewDocument}>
-                  Preview
-                </button>
-                {isSuperAdmin() ? (
-                  <button
-                    type="button"
-                    className="btn danger btn-sm"
-                    onClick={handleDeleteDocument}
-                    disabled={documentLoading}
-                  >
-                    {documentLoading ? 'Deleting…' : 'Delete'}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-          <div className="client-master-program-document-upload">
-            <label htmlFor="program-pdf-upload" className="btn secondary btn-sm client-master-program-document-upload-btn">
-              {documentLoading ? 'Uploading…' : documentMeta || pendingPdfFile ? 'Replace PDF' : 'Upload PDF'}
-              <input
-                id="program-pdf-upload"
-                type="file"
-                accept="application/pdf,.pdf"
-                disabled={documentLoading}
-                onChange={(e) => handlePdfSelect(e.target.files?.[0] || null)}
-              />
-            </label>
-            {pendingPdfFile ? (
-              <small className="meta-text client-master-program-document-pending">
-                {pendingPdfFile.name} ({Math.round(pendingPdfFile.size / 1024)} KB)
-              </small>
-            ) : null}
-          </div>
-        </div>
       </div>
+
+      <ClientMasterCampTermsBox
+        form={form}
+        fieldErrors={fieldErrors}
+        disabled={loading}
+        pendingFiles={pendingCampTermsFiles}
+        pendingPoFiles={pendingPoFiles}
+        fileBusy={campTermsFileBusy}
+        canDeleteFile={isSuperAdmin()}
+        onFieldChange={updateField}
+        onAddPurchaseOrder={addPurchaseOrder}
+        onRemovePurchaseOrder={removePurchaseOrder}
+        onPurchaseOrderChange={updatePurchaseOrder}
+        onFilesSelect={handleCampTermsFilesSelect}
+        onFilesClearPending={() => setPendingCampTermsFiles([])}
+        onFilePreview={handleCampTermsFilePreview}
+        onFileDelete={handleCampTermsFileDelete}
+        onPoFilesSelect={handlePoFilesSelect}
+        onPoFilesClearPending={(poId) => {
+          setPendingPoFiles((prev) => {
+            if (!prev[poId]) return prev;
+            const next = { ...prev };
+            delete next[poId];
+            return next;
+          });
+        }}
+        onPoFilePreview={handlePoFilePreview}
+        onPoFileDelete={handlePoFileDelete}
+      />
 
       <div className="form-actions">
         <button type="button" className="btn secondary" onClick={() => navigate(clientMasterListPath())}>Cancel</button>

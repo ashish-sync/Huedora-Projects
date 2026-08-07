@@ -87,6 +87,7 @@ export function defaultInvoiceForm() {
     },
     clientMasterId: '',
     clientId: '',
+    clientPurchaseOrderId: '',
     shipToSameAsBillTo: false,
     billTo: {
       name: '',

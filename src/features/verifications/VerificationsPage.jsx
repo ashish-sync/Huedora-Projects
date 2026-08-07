@@ -456,6 +456,7 @@ export default function VerificationsPage() {
 
   return (
     <PageShell
+      className="vf-page"
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_VERIFICATION }]}
       title={MODULE.ASSET_VERIFICATION}
       kpis={[

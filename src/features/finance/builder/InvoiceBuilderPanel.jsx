@@ -13,6 +13,7 @@ import { canManageOrganisationMaster } from './commercialApproval.js';
 import { clampTextLines } from '../documentGenerator/inlineEdit.jsx';
 import { formatStateLine, parseStateLine } from './stateLine.js';
 import ClientMasterRecipientPicker from './ClientMasterRecipientPicker.jsx';
+import ClientMasterPoTracker from './ClientMasterPoTracker.jsx';
 import OriginalTaxInvoicePicker from './OriginalTaxInvoicePicker.jsx';
 
 function Section({ id, title, badge, defaultOpen = false, children }) {
@@ -51,6 +52,7 @@ export default function InvoiceBuilderPanel({
   addTerm,
   applyClientMasterRecipient,
   clearClientMasterRecipient,
+  docId = '',
   panelConfig = {},
 }) {
   const {
@@ -168,11 +170,37 @@ export default function InvoiceBuilderPanel({
           </Field>
           {showPoFields ? (
             <>
+              {applyClientMasterRecipient && form.clientMasterId ? (
+                <div className="ib-field ib-field--span">
+                  <ClientMasterPoTracker
+                    clientMasterId={form.clientMasterId}
+                    selectedPoId={form.clientPurchaseOrderId || ''}
+                    excludeDocId={docId}
+                    totals={totals}
+                    disabled={false}
+                    onSelectPo={(po) => {
+                      update('clientPurchaseOrderId', po?.id || '');
+                      update('invoice.poReference', po?.poNumber || '');
+                    }}
+                  />
+                </div>
+              ) : null}
               <Field label="PO / WO No.">
                 <input
                   className={inputCls}
                   value={form.invoice.poReference || ''}
-                  onChange={(e) => update('invoice.poReference', e.target.value)}
+                  onChange={(e) => {
+                    update('invoice.poReference', e.target.value);
+                    if (form.clientPurchaseOrderId) {
+                      update('clientPurchaseOrderId', '');
+                    }
+                  }}
+                  readOnly={Boolean(form.clientPurchaseOrderId)}
+                  title={
+                    form.clientPurchaseOrderId
+                      ? 'Filled from selected Client Master PO — clear selection above to edit'
+                      : undefined
+                  }
                 />
               </Field>
               <Field label="PO / WO Date">

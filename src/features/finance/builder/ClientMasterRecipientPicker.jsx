@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
+import { parseEmailList } from '../../../shared/validation.js';
 import { clientMasterApi } from '../../camps/campOpsApi.js';
 
 /**
@@ -14,7 +15,10 @@ export function recipientPatchFromClientMaster(row) {
   const contactPerson = String(
     row.spocName || billing.contactPerson || ''
   ).trim();
-  const email = String(row.spocEmail || billing.email || '').trim();
+  const email =
+    parseEmailList(row.spocEmail)[0] ||
+    parseEmailList(billing.email)[0] ||
+    '';
   const phone = String(row.spocNumber || billing.phone || '').trim();
   const projectName = String(row.programName || row.campName || '').trim();
 

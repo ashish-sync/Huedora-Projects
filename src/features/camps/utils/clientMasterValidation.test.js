@@ -51,6 +51,22 @@ describe('validateClientMasterForm', () => {
     expect(errors.spocEmail).toBeUndefined();
   });
 
+  it('accepts comma-separated SPOC email addresses', () => {
+    const errors = validateClientMasterForm({
+      ...validBase,
+      spocEmail: 'spoc@client.com, ops@client.in',
+    });
+    expect(errors.spocEmail).toBeUndefined();
+  });
+
+  it('rejects invalid emails in a SPOC email list', () => {
+    const errors = validateClientMasterForm({
+      ...validBase,
+      spocEmail: 'spoc@client.com, not-an-email',
+    });
+    expect(errors.spocEmail).toContain('not-an-email');
+  });
+
   it('rejects invalid assigned user email lists', () => {
     const errors = validateClientMasterForm({
       ...validBase,

@@ -1,0 +1,117 @@
+/**
+ * Icon + input search fields — single outer chrome only.
+ * Prevents “box in a box” when global / module input borders leak onto the inner <input>.
+ * Loaded after forms / control-inset / filter-toolbar / master-list.
+ * Camp One theme CSS may load later — keep !important so wrapper chrome wins.
+ */
+
+.master-search-field,
+.pm-search-field,
+.communications-search-field,
+.camp-ops-root .communications-search-field,
+.camp-ops-root .camps-filter-search.master-search-field {
+  overflow: hidden;
+}
+
+.master-search-field > input,
+.master-search-field > input[type='search'],
+.master-search-field .master-search-input,
+.pm-search-field > input,
+.pm-search-field > input[type='search'],
+.pm-search-field .pm-search-input,
+.communications-search-field > input,
+.communications-search-field > input[type='search'],
+.communications-search-field .communications-search-input,
+.camp-ops-root .communications-search-field > input,
+.camp-ops-root .communications-search-field > input[type='search'],
+.camp-ops-root .communications-search-field .communications-search-input,
+.camp-ops-root .camps-filter-search.master-search-field > input,
+.camp-ops-root .camps-filter-search.master-search-field > input[type='search'],
+.camp-ops-root .camps-filter-search .master-search-input,
+.camp-ops-root .master-filter-main .master-search-field > input,
+.camp-ops-root .master-filter-main .master-search-field > input[type='search'],
+.camp-ops-root .master-filter-main .master-search-field .master-search-input,
+.master-filter-main .master-search-field > input,
+.master-filter-main .master-search-field > input[type='search'],
+.master-filter-main .master-search-field .master-search-input,
+.pm-filter-main .pm-search-field > input,
+.pm-filter-main .pm-search-field > input[type='search'],
+.pm-filter-main .pm-search-field .pm-search-input,
+.vf-board-search .master-search-field > input,
+.vf-board-search .master-search-field > input[type='search'],
+.vf-board-search .master-search-field .master-search-input,
+.finance-docs-filters .master-search-field > input,
+.finance-docs-filters .master-search-field > input[type='search'],
+.finance-docs-filters .master-search-field .master-search-input,
+.catalog-toolbar .master-search-field > input,
+.catalog-toolbar .master-search-field > input[type='search'],
+.catalog-toolbar .master-search-field .master-search-input,
+.inv-toolbar .master-search-field > input,
+.inv-toolbar .master-search-field > input[type='search'],
+.inv-toolbar .master-search-field .master-search-input,
+.am-toolbar .master-search-field > input,
+.am-toolbar .master-search-field > input[type='search'],
+.am-toolbar .master-search-field .master-search-input,
+.logistics-toolbar .master-search-field > input,
+.logistics-toolbar .master-search-field > input[type='search'],
+.logistics-toolbar .master-search-field .master-search-input,
+.logistics-filter-bar .master-search-field > input,
+.logistics-filter-bar .master-search-field > input[type='search'],
+.logistics-filter-bar .master-search-field .master-search-input,
+.esign-toolbar .master-search-field > input,
+.esign-toolbar .master-search-field > input[type='search'],
+.esign-toolbar .master-search-field .master-search-input,
+.filter-bar .master-search-field > input,
+.filter-bar .master-search-field .master-search-input,
+.agreements-filters .master-search-field > input,
+.agreements-filters .master-search-field .master-search-input,
+.page-metrics-toolbar .master-search-field > input,
+.page-metrics-toolbar .master-search-field .master-search-input {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.master-search-field > input:focus,
+.master-search-field > input[type='search']:focus,
+.master-search-field .master-search-input:focus,
+.pm-search-field > input:focus,
+.pm-search-field > input[type='search']:focus,
+.pm-search-field .pm-search-input:focus,
+.communications-search-field > input:focus,
+.communications-search-field .communications-search-input:focus,
+.camp-ops-root .communications-search-field .communications-search-input:focus,
+.vf-board-search .master-search-field .master-search-input:focus,
+.camp-ops-root .master-search-field .master-search-input:focus,
+.camp-ops-root .camps-filter-search .master-search-input:focus {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Focus ring stays on the wrapper, not the naked input */
+.master-search-field:focus-within,
+.pm-search-field:focus-within,
+.communications-search-field:focus-within,
+.camp-ops-root .communications-search-field:focus-within,
+.camp-ops-root .camps-filter-search.master-search-field:focus-within {
+  outline: none;
+}
+
+.master-search-input::-webkit-search-decoration,
+.master-search-input::-webkit-search-cancel-button,
+.pm-search-input::-webkit-search-decoration,
+.pm-search-input::-webkit-search-cancel-button,
+.communications-search-input::-webkit-search-decoration,
+.communications-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}

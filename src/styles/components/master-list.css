@@ -176,6 +176,8 @@
   height: 100%;
   margin: 0;
   border: none !important;
+  border-width: 0 !important;
+  border-style: none !important;
   border-radius: 0 !important;
   outline: none !important;
   background: transparent !important;
@@ -184,6 +186,19 @@
   color: var(--ink);
   font-size: 0.8125rem;
   line-height: 1.2;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.master-search-field > input,
+.master-search-field > input[type='search'],
+.pm-search-field > input,
+.pm-search-field > input[type='search'] {
+  border: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
   appearance: none !important;
   -webkit-appearance: none !important;
 }

@@ -16,7 +16,7 @@
   color: var(--color-text-secondary);
 }
 
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
+.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
 .field select,
 .field textarea {
   width: 100%;

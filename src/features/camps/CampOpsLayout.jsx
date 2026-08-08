@@ -11,6 +11,7 @@ import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
 import './campOps.css';
 import './campOps.theme.css';
+import '../../styles/components/search-field.css';
 
 const pageTitles = {
   '/camp-one/manage': { title: NAV.CAMP_MANAGE, subtitle: 'Review, approve, execute, and manage camps' },

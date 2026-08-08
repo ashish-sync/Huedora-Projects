@@ -375,11 +375,15 @@
 .camp-ops-root .communications-search-input {
   flex: 1;
   min-width: 0;
-  border: none;
-  border-radius: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
   padding: 14px 0;
-  background: transparent;
+  background: transparent !important;
   font-size: 0.95rem;
+  appearance: none !important;
+  -webkit-appearance: none !important;
 }
 
 .camp-ops-root .communications-search-input:focus {
@@ -3132,6 +3136,30 @@
   margin-bottom: var(--space-4);
 }
 
+/* Client Master list — single-line cells; horizontal scroll for long values */
+.camp-ops-root .client-masters-page .client-masters-table,
+.client-masters-page .client-masters-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.camp-ops-root .client-masters-page .client-masters-table th,
+.camp-ops-root .client-masters-page .client-masters-table td,
+.client-masters-page .client-masters-table th,
+.client-masters-page .client-masters-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.camp-ops-root .client-masters-page .client-masters-table .actions,
+.client-masters-page .client-masters-table .actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .camp-ops-root .camps-search-row {
   display: flex;
   gap: 10px;
@@ -3701,48 +3729,74 @@
 .camp-ops-root .client-master-hcw-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .camp-ops-root .client-master-hcw-roles {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  min-height: var(--control-h);
 }
 
 .camp-ops-root .client-master-hcw-role {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.4rem;
+  width: auto;
+  max-width: none;
   margin: 0;
-  padding: 8px 12px;
+  height: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+  padding: 0 0.7rem 0 0.55rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-full);
+  border-radius: 999px;
   background: var(--bg-elevated);
+  box-shadow: none;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
   color: var(--ink);
   user-select: none;
-  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.camp-ops-root .client-master-hcw-role input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--color-brand-primary);
+.camp-ops-root .client-master-hcw-role input[type='checkbox'] {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 14px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 3px !important;
+  background: var(--bg-elevated) !important;
+  box-shadow: none !important;
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  accent-color: var(--color-brand-primary, var(--brand));
   cursor: pointer;
+}
+
+.camp-ops-root .client-master-hcw-role span {
+  line-height: 1;
 }
 
 .camp-ops-root .client-master-hcw-role:hover {
-  border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--line));
+  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 40%, var(--line));
 }
 
 .camp-ops-root .client-master-hcw-role.is-selected {
-  border-color: color-mix(in srgb, var(--color-brand-primary) 55%, var(--line));
-  background: color-mix(in srgb, var(--color-brand-primary) 10%, #fff);
+  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 50%, var(--line));
+  background: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 8%, var(--bg-elevated));
   color: var(--ink);
 }
 
@@ -3852,7 +3906,7 @@
   color: var(--text-muted);
 }
 
-.camp-ops-root input:not([type='file']):not([type='hidden']):not(.adaptive-select__input):not(.master-search-input):not(.date-input-display):not(.date-input-native):not([aria-hidden='true']),
+.camp-ops-root input:not([type='file']):not([type='hidden']):not([type='checkbox']):not([type='radio']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input):not(.date-input-display):not(.date-input-native):not([aria-hidden='true']),
 .camp-ops-root select,
 .camp-ops-root textarea {
   width: 100%;
@@ -3871,7 +3925,9 @@
 .camp-ops-root .adaptive-select__input-container,
 .camp-ops-root .adaptive-select__input,
 .camp-ops-root .adaptive-select input,
-.camp-ops-root .master-search-input {
+.camp-ops-root .master-search-input,
+.camp-ops-root .master-search-field input,
+.camp-ops-root .master-search-field input[type='search'] {
   width: auto !important;
   min-width: 2px !important;
   max-width: 100% !important;
@@ -3884,6 +3940,16 @@
   margin: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.camp-ops-root .master-search-field .master-search-input,
+.camp-ops-root .master-search-field input[type='search'] {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  padding: 0 0.75rem 0 0 !important;
 }
 
 .camp-ops-root .adaptive-select--multi .adaptive-select__control {
@@ -3891,12 +3957,6 @@
   min-height: var(--control-h) !important;
   max-height: none !important;
   align-items: center;
-}
-
-.camp-ops-root .master-search-input {
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
 }
 
 .camp-ops-root .form-card {
@@ -4203,10 +4263,10 @@
   display: contents;
 }
 
-/* Unified control sizing — text, date, time, select (not react-select internals) */
-.camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input),
+/* Unified control sizing — text, date, time, select (not react-select / search wrappers) */
+.camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
 .camp-ops-root .camp-request-grid select,
-.camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input),
+.camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input):not(.master-search-input),
 .camp-ops-root .camp-request-grid .field select,
 .camp-ops-root .camp-request-grid .date-input-display,
 .camp-ops-root .camp-request-grid .camp-address-autocomplete-host input {

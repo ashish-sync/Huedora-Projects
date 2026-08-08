@@ -3000,7 +3000,7 @@ tr.row-selected {
   letter-spacing: 0.01em;
 }
 
-.field input:not([type='file']):not([type='checkbox']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input),
+.field input:not([type='file']):not([type='checkbox']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
 .field select,
 .field textarea,
 .esign-search,
@@ -3225,7 +3225,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   line-height: 1.5;
 }
 
-.field input:not([type='file']):not([type='checkbox']):not(.file-picker__input):not(.adaptive-select__input):hover,
+.field input:not([type='file']):not([type='checkbox']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input):hover,
 .field select:hover,
 .field textarea:hover,
 .esign-search:hover {
@@ -3233,7 +3233,7 @@ html[data-theme='dark'] .file-picker__browse:hover:not(:disabled) {
   background: var(--surface);
 }
 
-.field input:not([type='file']):not([type='checkbox']):not(.file-picker__input):not(.adaptive-select__input):focus,
+.field input:not([type='file']):not([type='checkbox']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input):focus,
 .field select:focus,
 .field textarea:focus,
 .esign-search:focus,

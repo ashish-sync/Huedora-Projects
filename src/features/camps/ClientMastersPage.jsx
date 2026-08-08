@@ -17,7 +17,23 @@ import {
   clientMasterListPath,
   CLIENT_MASTER_NEW_PATH,
 } from './clientMasterPaths.js';
-import { formatHealthcareWorkers } from './utils/healthcareWorkers.js';
+import { formatPoMoney } from './utils/clientMasterPo.js';
+
+function listPoBalanceLabel(record) {
+  if (record?.poBalance == null || record.poBalance === '') return '—';
+  const amount = Number(record.poBalance);
+  if (!Number.isFinite(amount)) return '—';
+  return formatPoMoney(amount);
+}
+
+function listPoBalanceTitle(record) {
+  if (record?.poBalance == null || record.poBalance === '') return undefined;
+  const total = Number(record.poTotalValue);
+  const billed = Number(record.poBilledAmount);
+  const remaining = Number(record.poBalance);
+  if (![total, billed, remaining].every(Number.isFinite)) return listPoBalanceLabel(record);
+  return `PO ${formatPoMoney(total)} − billed ${formatPoMoney(billed)} = remaining ${formatPoMoney(remaining)}`;
+}
 
 export default function ClientMastersPage({ embedded = false } = {}) {
   const { hasPermission, isSuperAdmin } = useAuth();
@@ -195,17 +211,15 @@ export default function ClientMastersPage({ embedded = false } = {}) {
               />
             ) : (
               <div className="table-scroll">
-                <table>
+                <table className="client-masters-table">
                   <thead>
                     <tr>
                       <th>Client</th>
                       <th>Division / Therapy</th>
                       <th>Method</th>
-                      <th>Service Model</th>
-                      <th>HCW</th>
-                      <th>Duration</th>
                       <th>SPOC</th>
-                      <th>Request Timeline</th>
+                      <th>SPOC Number</th>
+                      <th>PO Balance</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -213,18 +227,12 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                   <tbody>
                     {records.map((record) => (
                       <tr key={record._id}>
-                        <td>{record.clientName}</td>
-                        <td>{record.programName || '—'}</td>
-                        <td>{record.campName || '—'}</td>
-                        <td>{record.campType || '—'}</td>
-                        <td>{formatHealthcareWorkers(record.healthcareWorker) || '—'}</td>
-                        <td>{record.campDuration || '—'}</td>
-                        <td>
-                          <div>{record.spocName || '—'}</div>
-                          {record.spocNumber && <small className="meta-text">{record.spocNumber}</small>}
-                          {record.spocEmail && <small className="meta-text">{record.spocEmail}</small>}
-                        </td>
-                        <td>{record.requestTimeline || '—'}</td>
+                        <td title={record.clientName || undefined}>{record.clientName}</td>
+                        <td title={record.programName || undefined}>{record.programName || '—'}</td>
+                        <td title={record.campName || undefined}>{record.campName || '—'}</td>
+                        <td title={record.spocName || undefined}>{record.spocName || '—'}</td>
+                        <td title={record.spocNumber || undefined}>{record.spocNumber || '—'}</td>
+                        <td title={listPoBalanceTitle(record)}>{listPoBalanceLabel(record)}</td>
                         <td>{record.isActive ? 'Active' : 'Inactive'}</td>
                         <td>
                           <div className="actions">

@@ -1,6 +1,7 @@
 import ClientMastersPage from './ClientMastersPage.jsx';
 import './campOps.css';
 import './campOps.theme.css';
+import '../../styles/components/search-field.css';
 
 /** Client Master list embedded in Master One sidebar. */
 export default function ClientMasterEmbeddedPage() {

@@ -6,6 +6,7 @@ import { useCampOpsAuth } from './useCampOpsAuth.js';
 import { clientMasterListPath } from './clientMasterPaths.js';
 import './campOps.css';
 import './campOps.theme.css';
+import '../../styles/components/search-field.css';
 
 export default function ClientMasterFormRoute() {
   const { id } = useParams();

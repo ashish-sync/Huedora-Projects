@@ -487,12 +487,20 @@ input[type='tel'] {
   opacity: 1;
 }
 
-html[data-theme='dark'] .camp-ops-root input,
+html[data-theme='dark'] .camp-ops-root input:not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input):not(.date-input-native):not(.date-input-display),
 html[data-theme='dark'] .camp-ops-root select,
 html[data-theme='dark'] .camp-ops-root textarea {
   background: var(--color-bg-elevated) !important;
   color: var(--color-text-primary) !important;
   border-color: var(--color-border-default) !important;
+}
+
+html[data-theme='dark'] .camp-ops-root .master-search-field .master-search-input,
+html[data-theme='dark'] .camp-ops-root .master-search-field > input,
+html[data-theme='dark'] .camp-ops-root .communications-search-field .communications-search-input {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 html[data-theme='dark'] .camp-ops-root .panel,

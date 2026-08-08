@@ -24,6 +24,7 @@ import './styles/components/select.css';
 import './styles/components/control-inset.css';
 import './styles/components/filter-toolbar.css';
 import './styles/components/master-list.css';
+import './styles/components/search-field.css';
 import './styles/components/app-error-boundary.css';
 import { applyFinanceLocalResetIfNeeded } from './features/finance/clearFinanceLocalData.js';
 

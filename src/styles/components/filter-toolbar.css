@@ -245,21 +245,55 @@
 }
 
 /* MasterSearchField wrapper already has its own chrome — don't double-border it */
-.camp-ops-root .camps-filter-search.master-search-field {
+.camp-ops-root .camps-filter-search.master-search-field,
+.camp-ops-root .master-filter-main > .master-search-field,
+.master-filter-main > .master-search-field,
+.finance-docs-filters > .master-search-field,
+.catalog-toolbar > .master-search-field,
+.inv-toolbar > .master-search-field,
+.am-toolbar > .master-search-field,
+.logistics-toolbar > .master-search-field,
+.logistics-filter-bar > .master-search-field,
+.esign-toolbar > .master-search-field,
+.vf-toolbar > .master-search-field,
+.filter-bar > .master-search-field,
+.agreements-filters > .master-search-field,
+.page-metrics-toolbar > .master-search-field {
   padding: 0 !important;
   border: 1px solid var(--line) !important;
   background: var(--bg-elevated) !important;
+  overflow: hidden !important;
 }
 
 .camp-ops-root .camps-filter-search.master-search-field .master-search-input,
-.camp-ops-root .camps-filter-search.master-search-field input {
+.camp-ops-root .camps-filter-search.master-search-field input,
+.camp-ops-root .master-filter-main .master-search-field .master-search-input,
+.camp-ops-root .master-filter-main .master-search-field input,
+.master-filter-main .master-search-field .master-search-input,
+.master-filter-main .master-search-field input[type='search'],
+.master-filter-main .master-search-field input,
+.finance-docs-filters .master-search-field .master-search-input,
+.finance-docs-filters .master-search-field input,
+.catalog-toolbar .master-search-field .master-search-input,
+.inv-toolbar .master-search-field .master-search-input,
+.am-toolbar .master-search-field .master-search-input,
+.logistics-toolbar .master-search-field .master-search-input,
+.logistics-filter-bar .master-search-field .master-search-input,
+.esign-toolbar .master-search-field .master-search-input,
+.vf-toolbar .master-search-field .master-search-input,
+.filter-bar .master-search-field .master-search-input,
+.agreements-filters .master-search-field .master-search-input,
+.page-metrics-toolbar .master-search-field .master-search-input {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  outline: none !important;
   appearance: none !important;
   -webkit-appearance: none !important;
   padding-left: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
 }
 
 /* ── Toolbar buttons ───────────────────────────────────────── */

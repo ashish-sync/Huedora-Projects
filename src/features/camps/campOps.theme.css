@@ -139,7 +139,7 @@
   text-transform: uppercase;
 }
 
-.camp-ops-root input:not([type='checkbox']):not([type='radio']),
+.camp-ops-root input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input):not(.date-input-native):not(.date-input-display):not([aria-hidden='true']),
 .camp-ops-root select,
 .camp-ops-root textarea,
 .camp-ops-root .custom-select-trigger {
@@ -150,7 +150,7 @@
   box-shadow: none !important;
 }
 
-.camp-ops-root input:not([type='checkbox']):not([type='radio']):focus,
+.camp-ops-root input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='hidden']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input):not(.date-input-native):not(.date-input-display):not([aria-hidden='true']):focus,
 .camp-ops-root select:focus,
 .camp-ops-root textarea:focus,
 .camp-ops-root .custom-select.is-open .custom-select-trigger,
@@ -159,6 +159,50 @@
   box-shadow: var(--dropdown-focus-ring) !important;
   outline: none;
   background: var(--bg-elevated) !important;
+}
+
+/* Icon+input search wrappers own the chrome — theme must not restyle the inner input */
+.camp-ops-root .master-search-field > input,
+.camp-ops-root .master-search-field > input[type='search'],
+.camp-ops-root .master-search-field .master-search-input,
+.camp-ops-root .communications-search-field > input,
+.camp-ops-root .communications-search-field .communications-search-input,
+.camp-ops-root .adaptive-select__input,
+.camp-ops-root .adaptive-select input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.camp-ops-root .master-search-field > input:focus,
+.camp-ops-root .master-search-field .master-search-input:focus,
+.camp-ops-root .communications-search-field .communications-search-input:focus {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+/* Keep HCW option checkboxes native-sized (global input chrome must not apply) */
+.camp-ops-root .client-master-hcw-role input[type='checkbox'] {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 3px !important;
+  background: var(--bg-elevated) !important;
+  box-shadow: none !important;
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
 }
 
 .camp-ops-root .status-pill,

@@ -141,7 +141,7 @@ select.filter-select,
 .logistics-toolbar select,
 .date-range-filter-field .date-input-display,
 .date-range-filter-field select,
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
+.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
 .field select,
 .adaptive-select__control {
   height: var(--control-h) !important;
@@ -190,7 +190,7 @@ select.filter-select,
 .toolbar select,
 .agreements-filters select,
 .date-range-filter-field .date-input-display,
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input),
+.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
 .field select {
   padding-top: 0 !important;
   padding-bottom: 0 !important;

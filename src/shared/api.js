@@ -101,7 +101,7 @@ function toApiError(json, status) {
     (status === 413
       ? 'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.'
       : status === 429
-        ? 'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or .xlsb file.'
+        ? 'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or Excel file.'
         : `Request failed (${status})`);
   const err = new Error(message);
   err.status = status;
@@ -182,7 +182,7 @@ export async function downloadExcel(path, filename, retried = false) {
           'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.';
       } else if (res.status === 429) {
         message =
-          'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or .xlsb file.';
+          'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or Excel file.';
       }
     }
     throw new Error(message);

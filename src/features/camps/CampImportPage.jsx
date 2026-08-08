@@ -149,7 +149,7 @@ export default function ImportPage() {
       setError(
         getErrorMessage(
           err,
-          'The file could not be read. Use a .csv (preferred) or .xlsb file matching the sample headers.'
+          'The file could not be read. Use a .csv (preferred) or Excel workbook (.xlsx / .xls / .xlsb) matching the sample headers.'
         )
       );
     } finally {
@@ -315,7 +315,7 @@ export default function ImportPage() {
 
           <div className="upload-zone">
             <p><strong>{isAdminImport ? 'Upload your file' : 'Step 2: Upload your completed file'}</strong></p>
-            <p className="import-muted">Supported: .csv (preferred) or .xlsb · max 1,000 rows · max 3 MB</p>
+            <p className="import-muted">{IMPORT_ACCEPT_HINT}</p>
             <label className="btn">
               Choose file
               <input

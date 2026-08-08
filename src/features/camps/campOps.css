@@ -806,52 +806,124 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  height: 2rem;
+  box-sizing: border-box;
+  padding: 0 8px;
+}
+
+.camp-ops-root .email-extraction-toolbar > .meta-text,
+.camp-ops-root .email-extraction-save-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .camp-ops-root .email-extraction-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.camp-ops-root .email-extraction-autosave-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.84rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  height: 100%;
+  margin-left: auto;
 }
 
-.camp-ops-root .email-extraction-autosave-toggle input {
-  accent-color: var(--primary);
+.camp-ops-root .email-extraction-autosave-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem;
+  padding: 0 6px;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.camp-ops-root .email-extraction-autosave-btn:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.camp-ops-root .email-extraction-autosave-btn.is-on {
+  color: var(--primary);
+}
+
+.camp-ops-root .email-extraction-save-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 1.5rem !important;
+  min-height: 1.5rem !important;
+  padding: 0 8px !important;
+  font-size: 0.72rem !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
 }
 
 .camp-ops-root .email-extraction-mode-toggle {
   display: inline-flex;
+  align-items: stretch;
   border: 1px solid var(--border);
-  border-radius: var(--radius-full);
+  border-radius: 999px;
   overflow: hidden;
   background: var(--bg-elevated);
+  flex-shrink: 0;
+  height: 1.5rem;
+  box-sizing: border-box;
 }
 
 .camp-ops-root .email-extraction-mode-btn {
+  appearance: none;
+  -webkit-appearance: none;
   border: 0;
   background: transparent;
-  padding: 8px 14px;
-  font-size: 0.84rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  margin: 0;
+  height: 100%;
+  font-family: inherit;
+  font-size: 0.72rem;
   font-weight: 600;
+  line-height: 1;
   color: var(--text-muted);
   cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .camp-ops-root .email-extraction-mode-btn.is-active {
   background: var(--primary);
   color: var(--color-brand-on-primary);
+}
+
+/* Remove legacy checkbox autosave styles if present in older builds */
+.camp-ops-root .email-extraction-autosave-toggle {
+  display: none;
 }
 
 .camp-ops-root .email-extraction-preview-list, .camp-ops-root .email-extraction-edit-list {
@@ -1647,15 +1719,20 @@
   margin: 0;
 }
 
-.camp-ops-root .paste-workflow-column--review .email-extraction-toolbar {
-  padding: 6px 8px;
+.camp-ops-root .paste-workflow-column--review .email-extraction-toolbar,
+.camp-ops-root .communications-paste-shell .email-detail-panel-extraction .email-extraction-toolbar {
+  height: 2rem;
+  padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-sunken);
+  box-sizing: border-box;
 }
 
-.camp-ops-root .paste-workflow-column--review .email-extraction-toolbar .meta-text {
-  font-size: 0.74rem;
+.camp-ops-root .paste-workflow-column--review .email-extraction-toolbar .meta-text,
+.camp-ops-root .communications-paste-shell .email-detail-panel-extraction .email-extraction-toolbar .meta-text {
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .camp-ops-root .paste-workflow-column--review .email-detail-empty {

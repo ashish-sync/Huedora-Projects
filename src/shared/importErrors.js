@@ -1,4 +1,4 @@
-import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT, MAX_IMPORT_ROWS } from './importFilePolicy.js';
+import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT, IMPORT_ACCEPT_EXTENSIONS, MAX_IMPORT_ROWS } from './importFilePolicy.js';
 
 const MAX_BYTES = 3 * 1024 * 1024;
 
@@ -25,12 +25,12 @@ export function getErrorMessage(err, fallback = 'Something went wrong. Please tr
 /** Validate a browser File before upload; returns one clear sentence or null. */
 export function validateImportFileClient(file) {
   if (!file) {
-    return `Please choose a file to import (.csv preferred, or .xlsb). Maximum ${MAX_IMPORT_ROWS.toLocaleString()} rows and 3 MB.`;
+    return `Please choose a file to import (.csv, .xlsx, .xls, or .xlsb). Maximum ${MAX_IMPORT_ROWS.toLocaleString()} rows and 3 MB.`;
   }
-  const name = String(file.name || '');
-  const lower = name.toLowerCase();
-  if (!lower.endsWith('.csv') && !lower.endsWith('.xlsb')) {
-    return 'This file type is not supported for import. Use a .csv UTF-8 file (preferred) or .xlsb — Excel workbooks (.xlsx/.xls) are not accepted. In Excel: File → Save As → CSV UTF-8 (Comma delimited).';
+  const name = String(file.name || '').toLowerCase();
+  const ok = IMPORT_ACCEPT_EXTENSIONS.some((ext) => name.endsWith(ext));
+  if (!ok) {
+    return 'This file type is not supported for import. Use a .csv UTF-8 file (preferred), or an Excel workbook (.xlsx / .xls / .xlsb).';
   }
   if (!file.size || file.size <= 0) {
     return `This file has no data rows to import. Download the sample CSV, add up to ${MAX_IMPORT_ROWS.toLocaleString()} rows under the header, and try again.`;

@@ -501,7 +501,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv,.xlsb,text/csv"
+                accept=".csv,.xlsx,.xls,.xlsb,text/csv"
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0];

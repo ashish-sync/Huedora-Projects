@@ -14,6 +14,7 @@ import {
   validateImportFileClient,
   formatRowImportError,
 } from '../../shared/importErrors.js';
+import { IMPORT_ACCEPT_ATTR } from '../../shared/importFilePolicy.js';
 import {
   OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -271,7 +272,7 @@ export default function DevicesPage() {
       }
       load();
     } catch (err) {
-      setError(getErrorMessage(err, 'Import failed. Use a .csv or .xlsb file matching the sample format.'));
+      setError(getErrorMessage(err, 'Import failed. Use a .csv or Excel (.xlsx / .xls / .xlsb) file matching the sample format.'));
     } finally {
       setImportBusy(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -307,7 +308,7 @@ export default function DevicesPage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept=".csv,.xlsb,text/csv"
+                accept={IMPORT_ACCEPT_ATTR}
                 hidden
                 onChange={(e) => {
                   const f = e.target.files?.[0];

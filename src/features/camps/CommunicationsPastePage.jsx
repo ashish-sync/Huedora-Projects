@@ -15,6 +15,7 @@ import {
 } from './utils/clientMasterCascade';
 import { confirmPastePreviewDurations } from './utils/campDurationWarning';
 import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
+import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
 
 const PASTE_AUTO_SAVE_KEY = 'connectorsManualPasteAutoSave';
 const PASTE_DRAFT_KEY = 'connectorsManualPasteDraft';
@@ -775,12 +776,12 @@ export default function CommunicationsPastePage() {
             {inputMode === 'file' ? (
               <div className="paste-file-upload-zone">
                 <p><strong>Upload camp file</strong></p>
-                <p className="import-muted">Supported: .csv (preferred) or .xlsb · max 1,000 rows · max 3 MB</p>
+                <p className="import-muted">{IMPORT_ACCEPT_HINT}</p>
                 <label className="btn secondary">
                   Choose file
                   <input
                     type="file"
-                    accept=".csv,.xlsb,text/csv"
+                    accept={IMPORT_ACCEPT_ATTR}
                     disabled={!hasPasteContext || actionLoading || (hasExtracted && !IS_DEMO_SERVER)}
                     onChange={(e) => {
                       handleFileUpload(e.target.files?.[0]);
@@ -844,7 +845,7 @@ export default function CommunicationsPastePage() {
             ) : null}
           </section>
 
-          <section className="paste-workflow-column email-detail-panel email-detail-panel-extraction">
+          <section className="paste-workflow-column paste-workflow-column--review email-detail-panel email-detail-panel-extraction">
             <header className="paste-column-header">
               <div className="paste-column-heading">
                 <span className="paste-column-step">2</span>

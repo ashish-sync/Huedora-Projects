@@ -247,11 +247,11 @@ export function EmailExtractionPanel({
   const bodyRows = useMemo(() => preview?.bodyPreview || [], [preview]);
 
   function getSaveStatusText() {
-    if (savingPreview) return 'Saving changes...';
-    if (previewDirty && autoSavePreview) return 'Unsaved changes — auto-saving shortly';
-    if (previewDirty) return 'You have unsaved edits — save before creating camps';
-    if (autoSavePreview) return 'All changes saved automatically';
-    return 'Review parsed camp details before import';
+    if (savingPreview) return 'Saving…';
+    if (previewDirty && autoSavePreview) return 'Saving…';
+    if (previewDirty) return 'Unsaved edits';
+    if (autoSavePreview) return 'Saved';
+    return 'Review before import';
   }
 
   function updateBodyRow(rowIndex, key, value) {
@@ -283,26 +283,27 @@ export function EmailExtractionPanel({
       <LinkedCampsBanner linkedCamps={linkedCamps} />
 
       <div className="email-extraction-toolbar">
-        <span className="meta-text">{getSaveStatusText()}</span>
+        <span className="meta-text email-extraction-save-status">{getSaveStatusText()}</span>
         <div className="email-extraction-toolbar-actions">
           {onToggleAutoSave && (
-            <label className="email-extraction-autosave-toggle">
-              <input
-                type="checkbox"
-                checked={autoSavePreview}
-                onChange={onToggleAutoSave}
-              />
-              Auto-save
-            </label>
+            <button
+              type="button"
+              className={`email-extraction-autosave-btn${autoSavePreview ? ' is-on' : ''}`}
+              onClick={onToggleAutoSave}
+              aria-pressed={autoSavePreview}
+              title={autoSavePreview ? 'Autosave is on' : 'Autosave is off'}
+            >
+              {autoSavePreview ? 'Autosave on' : 'Autosave off'}
+            </button>
           )}
           {previewDirty && !autoSavePreview && onSavePreview && (
             <button
               type="button"
-              className="btn btn-compact"
+              className="btn btn-compact email-extraction-save-btn"
               onClick={onSavePreview}
               disabled={savingPreview}
             >
-              {savingPreview ? 'Saving...' : 'Save changes'}
+              {savingPreview ? 'Saving…' : 'Save'}
             </button>
           )}
           <div className="email-extraction-mode-toggle" role="group" aria-label="Extraction view mode">

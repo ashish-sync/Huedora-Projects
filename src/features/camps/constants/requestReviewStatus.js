@@ -9,9 +9,17 @@ export const REQUEST_REVIEW_STATUSES = [
 export const REQUEST_REVIEW_LABELS = {
   review_pending: 'Review Pending',
   review_overdue: 'Review Overdue',
-  information_requested: 'Information Requested',
+  information_requested: 'Info Requested',
   request_approved: 'Request Approved',
-  request_rejected: 'Request Refused',
+  request_rejected: 'Refused',
+};
+
+/** Short descriptions for Request Stage filter / badges. */
+export const REQUEST_REVIEW_DESCRIPTIONS = {
+  review_pending: 'Default for requests created within the last 6 working hours',
+  review_overdue: 'Still in Review Pending for more than 6 working hours',
+  information_requested: 'Required camp details are incomplete',
+  request_rejected: 'Request refused',
 };
 
 const WORK_START_HOUR = 9;
@@ -56,15 +64,23 @@ export function isReviewOverdue(submittedAt, now = new Date()) {
   return elapsedWorkingMs(submittedAt, now) >= SIX_WORKING_HOURS_MS;
 }
 
+/**
+ * Client-side resolver mirrors server rules when API enrichment is unavailable.
+ * Incomplete details win over the 6 working-hour clock.
+ */
 export function resolveRequestReviewStatus(camp = {}, now = new Date()) {
-  if (camp.requestReviewStatus === 'information_requested' && camp.status === 'pending_review') {
-    return 'information_requested';
-  }
   if (camp.status === 'approved') return 'request_approved';
   if (camp.status === 'rejected') return 'request_rejected';
   if (camp.status === 'pending_review') {
+    if (
+      camp.requestIncomplete ||
+      camp.requestReviewStatus === 'information_requested' ||
+      (Array.isArray(camp.approvalBlockers) && camp.approvalBlockers.length > 0)
+    ) {
+      return 'information_requested';
+    }
     if (isReviewOverdue(camp.submittedAt, now)) return 'review_overdue';
-    return camp.requestReviewStatus === 'information_requested' ? 'information_requested' : 'review_pending';
+    return 'review_pending';
   }
   return camp.requestReviewStatus || '';
 }

@@ -247,7 +247,7 @@ export function CampHcwAssignPicker({
 
       {masterRoleMissing ? (
         <p className="meta-text camp-hcw-assign-note full">
-          Set Healthcare Worker in Master One → Client Master for this client, division, and method
+          Set Healthcare Worker in Master One → Client Master for this Client, division, and method
           (you can select more than one). Assignment only lists matching Contact Directory contacts.
         </p>
       ) : null}

@@ -44,7 +44,7 @@ export function ClientsPanel({
       setPageSize(nextPageSize);
       setError('');
     } catch (err) {
-      setError(err?.message || 'Failed to load clients');
+      setError(err?.message || 'Failed to load Clients');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export function ClientsPanel({
       cancelEdit();
       await loadClients(page);
     } catch (err) {
-      setError(err?.message || 'Failed to save client');
+      setError(err?.message || 'Failed to save Client');
     } finally {
       setSaving(false);
     }
@@ -192,11 +192,11 @@ export function ClientsPanel({
 
       <div className="card card--flush table-wrap">
         {loading ? (
-          <EmptyState title="Loading…" description="Fetching clients." />
+          <EmptyState title="Loading…" description="Fetching Clients." />
         ) : clients.length === 0 ? (
           <EmptyState
-            title="No clients found"
-            description="Add a client to link program configurations."
+            title="No Clients found"
+            description="Add a Client to link program configurations."
             action={canCreate ? (
               <button type="button" className="btn" onClick={startCreate}>New Client</button>
             ) : null}

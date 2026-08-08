@@ -48,7 +48,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
       setPageSize(nextPageSize);
       setError('');
     } catch (err) {
-      setError(formatApiError(err, MESSAGES.loadFailed('client master records')));
+      setError(formatApiError(err, MESSAGES.loadFailed('Client Master records')));
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
 
   async function handleDelete(id) {
     if (!isSuperAdmin()) return;
-    if (!window.confirm('Archive this client master record?')) return;
+    if (!window.confirm('Archive this Client Master record?')) return;
     try {
       await clientMasterApi.remove(id);
       await loadRecords(page);
@@ -180,10 +180,10 @@ export default function ClientMastersPage({ embedded = false } = {}) {
 
           <div className="card card--flush table-wrap">
             {loading ? (
-              <EmptyState title="Loading…" description="Fetching client master records." />
+              <EmptyState title="Loading…" description="Fetching Client Master records." />
             ) : records.length === 0 ? (
               <EmptyState
-                title="No client master records"
+                title="No Client Master records"
                 description="Create a program configuration to get started."
                 action={
                   hasPermission('client-masters:create') ? (

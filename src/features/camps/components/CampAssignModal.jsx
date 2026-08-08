@@ -176,7 +176,7 @@ export function CampAssignModal({
             ) : (
               <>
                 <p className="camp-approval-issues-lead">
-                  Select resource type, state, and city to find the healthcare worker configured for this client in Client Master.
+                  Select resource type, state, and city to find the healthcare worker configured for this Client in Client Master.
                   After assignment the camp stays in Assignment until one day before the camp date, then moves to Execution.
                 </p>
                 <div className="camp-assignment-toolbar camp-assign-modal-hire">

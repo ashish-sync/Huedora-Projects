@@ -1,7 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CampsFilters } from './components/CampsFilters';
+import {
+  CampsFilters,
+  REQUEST_STATUS_OPTIONS,
+  ASSIGNMENT_STATUS_OPTIONS,
+} from './components/CampsFilters';
+
+const REQUEST_STATUS_LABELS = Object.fromEntries(
+  REQUEST_STATUS_OPTIONS.map((option) => [option.value, option.label])
+);
+const ASSIGNMENT_STATUS_LABELS = Object.fromEntries(
+  ASSIGNMENT_STATUS_OPTIONS.map((option) => [option.value, option.label])
+);
+
+/** Map legacy Request Stage status query values to review-status filters. */
+function normalizeRequestStatusFilter(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw === 'rejected') return 'request_rejected';
+  if (raw === 'pending_review') return 'review_pending';
+  if (raw === 'approved' || raw === 'cancelled') return '';
+  if (REQUEST_STATUS_LABELS[raw]) return raw;
+  return '';
+}
 import { CampTimeFrame } from './components/CampTimeFrame';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
 import { CampCancelRefuseButton } from './components/CampCancelRefuseButton';
@@ -60,10 +82,6 @@ export default function CampsPage() {
   const [camps, setCamps] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [status, setStatus] = useState(searchParams.get('status') || '');
-  const [overdueOnly, setOverdueOnly] = useState(searchParams.get('overdue') === '1');
-  const [reactionRequired, setReactionRequired] = useState(searchParams.get('reactionRequired') === '1');
-  const [offHoursOnly, setOffHoursOnly] = useState(searchParams.get('offHours') === '1');
-  const [weekendAttentionOnly, setWeekendAttentionOnly] = useState(searchParams.get('weekendAttention') === '1');
   const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') || '');
   const [dateTo, setDateTo] = useState(searchParams.get('dateTo') || '');
   const [clientFilter, setClientFilter] = useState(searchParams.get('client') || '');
@@ -100,10 +118,6 @@ export default function CampsPage() {
     findCampFromUrlRef.current = findCampId;
     setWorkingStage('request');
     setStatus('');
-    setOverdueOnly(false);
-    setReactionRequired(false);
-    setOffHoursOnly(false);
-    setWeekendAttentionOnly(false);
     setSearch(findCampId);
     setPage(1);
     loadCamps(1, pageSize, findCampId);
@@ -290,23 +304,15 @@ export default function CampsPage() {
       } else if (workingStage) {
         params.lifecycleStage = workingStage;
       }
-      if (reactionRequired) {
-        params.reactionRequired = '1';
-      } else if (offHoursOnly) {
-        params.offHours = '1';
-      } else if (weekendAttentionOnly) {
-        params.weekendAttention = '1';
-      } else if (overdueOnly) {
-        params.overdue = '1';
-      } else if (status) {
+      if (status) {
         if (workingStage === 'assignment') {
           params.assignmentFilter = status;
         } else if (workingStage === 'execution') {
           params.executionFilter = status;
         } else if (workingStage === 'financial') {
           params.financialFilter = status;
-        } else if (status === 'information_requested') {
-          params.requestReviewStatus = 'information_requested';
+        } else if (workingStage === 'request') {
+          params.requestReviewStatus = status;
         } else {
           params.status = status;
         }
@@ -330,32 +336,22 @@ export default function CampsPage() {
   }
 
   useEffect(() => {
-    const nextOverdue = searchParams.get('overdue') === '1';
-    const nextReactionRequired = searchParams.get('reactionRequired') === '1';
-    const nextOffHours = searchParams.get('offHours') === '1';
-    const nextWeekendAttention = searchParams.get('weekendAttention') === '1';
-    const hasAlertFilter = nextReactionRequired || nextOffHours || nextWeekendAttention;
-    setStatus(hasAlertFilter || nextOverdue ? '' : (searchParams.get('status') || ''));
-    setOverdueOnly(nextOverdue);
-    setReactionRequired(nextReactionRequired);
-    setOffHoursOnly(nextOffHours);
-    setWeekendAttentionOnly(nextWeekendAttention);
+    const rawStatus = searchParams.get('status') || '';
+    setStatus(
+      workingStage === 'request' ? normalizeRequestStatusFilter(rawStatus) : rawStatus
+    );
     setDateFrom(searchParams.get('dateFrom') || '');
     setDateTo(searchParams.get('dateTo') || '');
     setClientFilter(searchParams.get('client') || '');
     setCampaignFilter(searchParams.get('campaign') || '');
     setCampTypeFilter(searchParams.get('campaignType') || '');
-  }, [searchParams]);
+  }, [searchParams, workingStage]);
 
   const previousWorkingStageRef = useRef(workingStage);
   useEffect(() => {
     if (previousWorkingStageRef.current === workingStage) return;
     previousWorkingStageRef.current = workingStage;
     setStatus('');
-    setOverdueOnly(false);
-    setReactionRequired(false);
-    setOffHoursOnly(false);
-    setWeekendAttentionOnly(false);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete('assignmentFilter');
@@ -378,7 +374,7 @@ export default function CampsPage() {
     }
     setPage(1);
     loadCamps(1, pageSize);
-  }, [status, overdueOnly, reactionRequired, offHoursOnly, weekendAttentionOnly, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
+  }, [status, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
 
   useEffect(() => {
     if (workingStage !== 'assignment') return undefined;
@@ -415,10 +411,6 @@ export default function CampsPage() {
 
   function buildFilterParams(overrides = {}) {
     const params = new URLSearchParams();
-    const nextReactionRequired = overrides.reactionRequired ?? reactionRequired;
-    const nextOffHours = overrides.offHours ?? offHoursOnly;
-    const nextWeekendAttention = overrides.weekendAttention ?? weekendAttentionOnly;
-    const nextOverdue = overrides.overdue ?? overdueOnly;
     const nextStatus = overrides.status ?? status;
     const nextDateFrom = overrides.dateFrom ?? dateFrom;
     const nextDateTo = overrides.dateTo ?? dateTo;
@@ -426,11 +418,7 @@ export default function CampsPage() {
     const nextCampaign = overrides.campaign ?? campaignFilter;
     const nextCampType = overrides.campaignType ?? campTypeFilter;
 
-    if (nextReactionRequired) params.set('reactionRequired', '1');
-    else if (nextOffHours) params.set('offHours', '1');
-    else if (nextWeekendAttention) params.set('weekendAttention', '1');
-    else if (nextOverdue) params.set('overdue', '1');
-    else if (nextStatus) params.set('status', nextStatus);
+    if (nextStatus) params.set('status', nextStatus);
     if (nextDateFrom) params.set('dateFrom', nextDateFrom);
     if (nextDateTo) params.set('dateTo', nextDateTo);
     if (nextClient) params.set('client', nextClient);
@@ -453,26 +441,14 @@ export default function CampsPage() {
   }
 
   function handleStatusChange(value) {
-    setOverdueOnly(false);
-    setReactionRequired(false);
-    setOffHoursOnly(false);
-    setWeekendAttentionOnly(false);
-    setStatus(value);
-    updateFilters({
-      status: value,
-      overdue: false,
-      reactionRequired: false,
-      offHours: false,
-      weekendAttention: false,
-    });
+    const nextStatus =
+      workingStage === 'request' ? normalizeRequestStatusFilter(value) : value;
+    setStatus(nextStatus);
+    updateFilters({ status: nextStatus });
   }
 
   function clearFilters() {
     setStatus('');
-    setOverdueOnly(false);
-    setReactionRequired(false);
-    setOffHoursOnly(false);
-    setWeekendAttentionOnly(false);
     setDateFrom('');
     setDateTo('');
     setClientFilter('');
@@ -483,88 +459,19 @@ export default function CampsPage() {
   }
 
   function handleFilterChange(value) {
-    if (value === 'reaction_required') {
-      updateFilters({
-        status: '',
-        overdue: false,
-        reactionRequired: true,
-        offHours: false,
-        weekendAttention: false,
-      });
-      return;
-    }
-    if (value === 'off_hours') {
-      updateFilters({
-        status: '',
-        overdue: false,
-        reactionRequired: false,
-        offHours: true,
-        weekendAttention: false,
-      });
-      return;
-    }
-    if (value === 'weekend_attention') {
-      updateFilters({
-        status: '',
-        overdue: false,
-        reactionRequired: false,
-        offHours: false,
-        weekendAttention: true,
-      });
-      return;
-    }
-    if (value === 'overdue') {
-      updateFilters({
-        status: '',
-        overdue: true,
-        reactionRequired: false,
-        offHours: false,
-        weekendAttention: false,
-      });
-      return;
-    }
     handleStatusChange(value);
   }
 
-  const filterValue = reactionRequired
-    ? 'reaction_required'
-    : offHoursOnly
-      ? 'off_hours'
-      : weekendAttentionOnly
-        ? 'weekend_attention'
-        : overdueOnly
-          ? 'overdue'
-          : status;
+  const filterValue = status;
 
   const activeChips = [];
-  if (reactionRequired) {
-    activeChips.push({
-      key: 'reaction',
-      label: 'Reaction required',
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (offHoursOnly) {
-    activeChips.push({
-      key: 'off_hours',
-      label: 'Off-hours submissions',
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (weekendAttentionOnly) {
-    activeChips.push({
-      key: 'weekend',
-      label: 'Weekend / late Saturday',
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (overdueOnly) {
-    activeChips.push({
-      key: 'overdue',
-      label: 'Overdue — not executed',
-      onRemove: () => handleFilterChange(''),
-    });
-  } else if (status) {
+  if (status) {
     activeChips.push({
       key: 'status',
-      label: status.replaceAll('_', ' '),
+      label:
+        (workingStage === 'request' && REQUEST_STATUS_LABELS[status])
+        || (workingStage === 'assignment' && ASSIGNMENT_STATUS_LABELS[status])
+        || status.replaceAll('_', ' '),
       onRemove: () => handleFilterChange(''),
     });
   }

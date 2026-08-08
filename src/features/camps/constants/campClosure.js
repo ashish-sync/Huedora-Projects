@@ -1,7 +1,7 @@
 export const CAMP_CLOSURE_TYPES = [
   'Cancelled by Client',
   'Refused',
-  'Cancelled by TCPL',
+  'Cancelled by Tylo',
 ];
 
 export const CAMP_CLOSURE_TAXONOMY = {
@@ -20,7 +20,7 @@ export const CAMP_CLOSURE_TAXONOMY = {
       { value: 'non_serviceable_hq', label: 'Non Serviceable HQ' },
     ],
   },
-  'Cancelled by TCPL': {
+  'Cancelled by Tylo': {
     'Resource Issue': [
       { value: 'hcw_unavailability', label: 'HCW Unavailability' },
       { value: 'hcw_backout', label: 'HCW Backout' },
@@ -46,10 +46,19 @@ export const CAMP_CLOSURE_TAXONOMY = {
 };
 
 export const CAMP_CLOSURE_DESCRIPTIONS = {
-  'Cancelled by Client': 'The client requested cancellation.',
+  'Cancelled by Client': 'The Client requested cancellation.',
   Refused: 'Camp request is refused and will not proceed.',
-  'Cancelled by TCPL': 'KHW / TCPL cancelled this camp.',
+  'Cancelled by Tylo': 'KHW / Tylo cancelled this camp.',
 };
+
+const LEGACY_CLOSURE_ALIASES = {
+  'Cancelled by TCPL': 'Cancelled by Tylo',
+};
+
+export function normalizeClosureType(value = '') {
+  const raw = String(value || '').trim();
+  return LEGACY_CLOSURE_ALIASES[raw] || raw;
+}
 
 export function isCampHcwAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
@@ -69,20 +78,21 @@ export function getAvailableClosureTypes(camp = {}, stage = '') {
   if (resolvedStage === 'financial') return [];
 
   if (resolvedStage === 'execution') {
-    return ['Cancelled by TCPL', 'Cancelled by Client'];
+    return ['Cancelled by Tylo', 'Cancelled by Client'];
   }
 
   if (resolvedStage === 'assignment') {
-    return ['Refused', 'Cancelled by TCPL', 'Cancelled by Client'];
+    return ['Refused', 'Cancelled by Tylo', 'Cancelled by Client'];
   }
 
   return ['Refused'];
 }
 
 export function getClosureReasonCategories(closureType, camp = {}, stage = '') {
+  const normalizedType = normalizeClosureType(closureType);
   const allowedTypes = getAvailableClosureTypes(camp, stage);
-  if (!allowedTypes.includes(closureType)) return [];
-  const tree = CAMP_CLOSURE_TAXONOMY[closureType];
+  if (!allowedTypes.includes(normalizedType)) return [];
+  const tree = CAMP_CLOSURE_TAXONOMY[normalizedType];
   return tree ? Object.keys(tree) : [];
 }
 
@@ -99,7 +109,7 @@ export function resolveClosureReasonCategory(closureType, reasonCategory = '', c
 }
 
 export function getClosureSubReasons(closureType, reasonCategory) {
-  const tree = CAMP_CLOSURE_TAXONOMY[closureType];
+  const tree = CAMP_CLOSURE_TAXONOMY[normalizeClosureType(closureType)];
   if (!tree || !reasonCategory) return [];
   return tree[reasonCategory] || [];
 }
@@ -127,7 +137,7 @@ export function buildClosureDetails(camp = {}, stage = '') {
 }
 
 export function isClosureDetailsReady(details = {}, camp = {}, stage = '') {
-  const closureType = String(details.closureType || '').trim();
+  const closureType = normalizeClosureType(details.closureType);
   const reasonCategory = resolveClosureReasonCategory(
     closureType,
     details.reasonCategory,
@@ -145,17 +155,18 @@ export function isClosureDetailsReady(details = {}, camp = {}, stage = '') {
 }
 
 export function buildClosurePayload(details = {}) {
+  const closureType = normalizeClosureType(details.closureType);
   const reasonCategory = resolveClosureReasonCategory(
-    details.closureType,
+    closureType,
     details.reasonCategory,
   );
   const subReasonMeta = findClosureSubReason(
-    details.closureType,
+    closureType,
     reasonCategory,
     details.subReason,
   );
   return {
-    closureType: details.closureType,
+    closureType,
     reasonCategory,
     subReason: details.subReason,
     reasonCode: details.subReason,
@@ -166,7 +177,7 @@ export function buildClosurePayload(details = {}) {
 }
 
 export function formatClosureSummary(camp = {}) {
-  const type = camp.assignmentRefusalReason || camp.closureType || '';
+  const type = normalizeClosureType(camp.assignmentRefusalReason || camp.closureType || '');
   const category = camp.closureReasonCategory || '';
   const subReason = camp.closureSubReasonLabel
     || findClosureSubReason(type, category, camp.closureReasonCode || camp.closureSubReason)?.label

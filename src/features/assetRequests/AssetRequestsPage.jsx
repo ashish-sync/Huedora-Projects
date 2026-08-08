@@ -1249,8 +1249,24 @@ export default function AssetRequestsPage() {
         body.hiringMethod = form.hiringMethod;
         body.hiringState = form.hiringState;
         body.hiringCity = form.hiringCity;
+        body.hiringAddress = form.hiringAddress;
+        body.hiringPinCode = form.hiringPinCode;
+        body.engagementDateTime = form.engagementDateTime;
         body.budgetMin = Number(form.budgetMin);
         body.budgetMax = Number(form.budgetMax);
+        if (linkedCamp?._id) {
+          body.campRecordId = linkedCamp._id;
+          body.campOpsCampId = linkedCamp.campId || '';
+          body.campId = linkedCamp.campId || '';
+        } else {
+          const campRecordId = String(searchParams.get('campRecordId') || '').trim();
+          const campId = String(searchParams.get('campId') || '').trim();
+          if (campRecordId) body.campRecordId = campRecordId;
+          if (campId) {
+            body.campOpsCampId = campId;
+            body.campId = campId;
+          }
+        }
       }
       if (form.requestType === 'OTHER') {
         body.otherCategory = form.otherCategory;
@@ -2183,7 +2199,7 @@ export default function AssetRequestsPage() {
                   </div>
                 ) : null}
                 <div className="field">
-                  <label>Associate this expense with a client?</label>
+                  <label>Associate this expense with a Client?</label>
                   <AdaptiveSelect
                     value={form.associateWithClient}
                     onChange={(e) => {

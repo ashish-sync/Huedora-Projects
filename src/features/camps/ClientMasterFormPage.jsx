@@ -166,7 +166,7 @@ export default function ClientMasterFormPage() {
         setPendingPoFiles({});
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load client master record');
+        setError(err?.message || 'Failed to load Client Master record');
       })
       .finally(() => setFetching(false));
 
@@ -544,14 +544,14 @@ export default function ClientMasterFormPage() {
 
       navigate(clientMasterListPath());
     } catch (err) {
-      setError(err?.message || 'Failed to save client master record');
+      setError(err?.message || 'Failed to save Client Master record');
     } finally {
       setLoading(false);
     }
   }
 
   if (fetching) {
-    return <div className="empty-state">Loading client master record...</div>;
+    return <div className="empty-state">Loading Client Master record...</div>;
   }
 
   return (
@@ -578,7 +578,7 @@ export default function ClientMasterFormPage() {
           <input
             value={form.clientCode}
             onChange={(e) => updateField('clientCode', e.target.value.toUpperCase())}
-            placeholder={canCreateCompany ? 'Optional — auto-generated if new client' : 'Filled when you select a company'}
+            placeholder={canCreateCompany ? 'Optional — auto-generated if new Client' : 'Filled when you select a company'}
             readOnly={!canCreateCompany}
             className={fieldErrors.clientCode ? 'input-invalid' : ''}
           />
@@ -758,7 +758,7 @@ export default function ClientMasterFormPage() {
             value={form.assignedUserEmails}
             onChange={(e) => updateField('assignedUserEmails', e.target.value)}
             placeholder="user@client.com, ops@client.com"
-            title="Comma-separated login emails. These users only see camps for this client."
+            title="Comma-separated login emails. These users only see camps for this Client."
             className={fieldErrors.assignedUserEmails ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors.assignedUserEmails} />

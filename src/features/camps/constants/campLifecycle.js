@@ -160,7 +160,7 @@ export const ASSIGNMENT_DECISIONS = [
 ];
 export const ASSIGNMENT_REFUSAL_REASONS = [
   'Refused',
-  'Cancelled by TCPL',
+  'Cancelled by Tylo',
   'Cancelled by Client',
 ];
 export const ASSIGNMENT_STATUSES = ['Pending', 'Assigned', 'Reassigned', 'Unassigned'];

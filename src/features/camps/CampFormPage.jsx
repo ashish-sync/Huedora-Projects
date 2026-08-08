@@ -52,7 +52,7 @@ import { findAssignableHealthcareWorker } from './utils/campHcwContact.js';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
 const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
-const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for this client and division.';
+const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for this Client and division.';
 
 const formStringFields = [
   'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state', 'district',
@@ -655,7 +655,7 @@ export default function CampFormPage() {
         return;
       }
       if (!campNameOptionsForSave.includes(form.campaignName)) {
-        setError('Please select a method configured for this client and division');
+        setError('Please select a method configured for this Client and division');
         return;
       }
     }

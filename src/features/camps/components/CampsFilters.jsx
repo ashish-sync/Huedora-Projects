@@ -9,35 +9,42 @@ const quickPresets = [
   { key: 'tomorrow', label: 'Tomorrow' },
 ];
 
-const alertOptions = [
-  { value: 'reaction_required', label: 'Reaction required' },
-  { value: 'off_hours', label: 'Off-hours submissions' },
-  { value: 'weekend_attention', label: 'Weekend / late Saturday' },
-  { value: 'overdue', label: 'Overdue — not executed' },
-];
-
-const REQUEST_STATUS_OPTIONS = [
-  { value: 'pending_review', label: 'Pending review' },
-  { value: 'information_requested', label: 'Information requested' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Refused' },
-  { value: 'cancelled', label: 'Cancelled' },
+/** Request Stage status filter — review workflow only. */
+export const REQUEST_STATUS_OPTIONS = [
+  { value: 'request_rejected', label: 'Refused' },
+  {
+    value: 'review_pending',
+    label: 'Review Pending',
+    title: 'Default for requests created within the last 6 working hours',
+  },
+  {
+    value: 'review_overdue',
+    label: 'Review Overdue',
+    title: 'Still in Review Pending for more than 6 working hours',
+  },
+  {
+    value: 'information_requested',
+    label: 'Info Requested',
+    title: 'Required camp details are incomplete',
+  },
 ];
 
 const ASSIGNMENT_STATUS_OPTIONS = [
   { value: 'unassigned', label: 'Unassigned' },
   { value: 'assigned', label: 'Assigned' },
-  { value: 'cancelled_by_tcpl', label: 'Cancelled by TCPL' },
-  { value: 'cancelled_by_client', label: 'Cancelled by client' },
+  { value: 'hiring_requested', label: 'Hiring Requested' },
+  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
+  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
 ];
 
+export { ASSIGNMENT_STATUS_OPTIONS };
+
 const EXECUTION_STATUS_OPTIONS = [
-  { value: 'yet_to_start', label: 'Yet to start' },
+  { value: 'scheduled', label: 'Scheduled' },
   { value: 'ongoing', label: 'Ongoing' },
   { value: 'executed', label: 'Marked executed' },
-  { value: 'completed', label: 'Camp completed' },
-  { value: 'cancelled_by_tcpl', label: 'Cancelled by TCPL' },
-  { value: 'cancelled_by_client', label: 'Cancelled by client' },
+  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
+  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
 ];
 
 const FINANCIAL_STATUS_OPTIONS = [
@@ -73,7 +80,6 @@ export function CampsFilters({
 }) {
   const activePreset = matchQuickPreset(dateFrom, dateTo);
   const statusOptions = statusOptionsForStage(workingStage);
-  const showAlerts = workingStage === 'request' || workingStage === 'execution';
 
   function handleQuickSelect(preset) {
     const range = getQuickDateRange(preset);
@@ -105,16 +111,15 @@ export function CampsFilters({
             <select
               id="camps-status-filter"
               className="camps-filter-control camps-filter-status tylo-select"
-              aria-label="Status and alerts"
+              aria-label="Status"
               value={filterValue}
               onChange={(e) => onFilterChange(e.target.value)}
             >
               <option value="">{FILTER.ALL_STATUSES}</option>
-              {showAlerts && alertOptions.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
               {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+                <option key={option.value} value={option.value} title={option.title || undefined}>
+                  {option.label}
+                </option>
               ))}
             </select>
           )}

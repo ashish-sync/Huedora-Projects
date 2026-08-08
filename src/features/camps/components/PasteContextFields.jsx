@@ -22,7 +22,7 @@ export function PasteContextFields({
     <div className="paste-context-fields" aria-label="Camp context before paste">
       <div className="paste-context-fields-heading">
         <strong>Camp context</strong>
-        <span>Select client, division, and method before pasting</span>
+        <span>Select Client, division, and method before pasting</span>
       </div>
       <div className="paste-context-fields-grid">
         <label className="paste-context-field" htmlFor="paste-context-client">
@@ -35,7 +35,7 @@ export function PasteContextFields({
             className={errors.clientId ? 'input-invalid' : ''}
             required
           >
-            <option value="">{clientsLoading ? 'Loading clients…' : 'Select client'}</option>
+            <option value="">{clientsLoading ? 'Loading Clients…' : 'Select Client'}</option>
             {clients.map((client) => (
               <option key={client._id} value={client._id}>{client.name}</option>
             ))}
@@ -57,7 +57,7 @@ export function PasteContextFields({
               {programsLoading
                 ? 'Loading divisions…'
                 : !clientId
-                  ? 'Select client first'
+                  ? 'Select Client first'
                   : singleDivisionOption
                     ? campaignType
                     : divisionOptions.length
@@ -85,7 +85,7 @@ export function PasteContextFields({
             placeholder="Select method"
             emptyLabel={
               !clientId
-                ? 'Select client first'
+                ? 'Select Client first'
                 : !campaignType
                   ? 'Select division / therapy first'
                   : programsLoading

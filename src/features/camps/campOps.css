@@ -3366,6 +3366,7 @@
 .camp-ops-root .status-cancelled { background: var(--danger-soft); color: var(--danger); }
 .camp-ops-root .status-executed { background: var(--ok-soft); color: var(--ok); }
 .camp-ops-root .status-assigned { background: var(--ok-soft); color: var(--ok); }
+.camp-ops-root .status-hiring-requested { background: var(--info-soft); color: var(--info); }
 .camp-ops-root .status-unassigned { background: var(--surface-muted); color: var(--muted); }
 .camp-ops-root .camp-punctuality-field .camp-field-label-row {
   display: inline-flex;

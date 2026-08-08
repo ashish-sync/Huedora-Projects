@@ -71,8 +71,8 @@ export default function DateRangeFilter({
             {clearLabel}
           </button>
         </div>
+        {hint ? <p className="muted date-range-filter-hint">{hint}</p> : null}
       </div>
-      {hint ? <p className="muted date-range-filter-hint">{hint}</p> : null}
     </form>
   );
 }

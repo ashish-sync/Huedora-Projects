@@ -9,8 +9,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
-import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
-import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import ModalShell from '../../components/ui/ModalShell.jsx';
 
@@ -120,11 +119,10 @@ export default function VerificationsPage() {
   const [activity, setActivity] = useState([]);
   const [busy, setBusy] = useState(false);
   const [gpsBusy, setGpsBusy] = useState(false);
+  const [boardEpoch, setBoardEpoch] = useState(0);
   const fullRef = useRef(null);
   const serialRef = useRef(null);
   const extraRef = useRef(null);
-
-  const periodKey = periodKeyFromIso(appliedTo);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -145,7 +143,7 @@ export default function VerificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [appliedFrom, appliedTo, filter]);
+  }, [appliedFrom, appliedTo, filter, boardEpoch]);
 
   useEffect(() => {
     load();
@@ -161,14 +159,18 @@ export default function VerificationsPage() {
     setAppliedTo(toDate);
   };
 
-  const clearDates = () => {
+  const clearBoard = () => {
     const from = firstDayOfMonth();
     const to = todayIso();
     setFromDate(from);
     setToDate(to);
+    setQ('');
+    setFilter('');
+    setError('');
+    // Always re-apply so Clear reloads even when dates already match defaults
     setAppliedFrom(from);
     setAppliedTo(to);
-    setError('');
+    setBoardEpoch((n) => n + 1);
   };
 
   const rows = useMemo(() => {
@@ -185,6 +187,38 @@ export default function VerificationsPage() {
   }, [board, q]);
 
   const counts = board?.counts || { SAFE: 0, CAUTION: 0, DANGER: 0 };
+  const summaryItems = [
+    {
+      key: 'SAFE',
+      label: 'Safe',
+      value: counts.SAFE || 0,
+      tone: 'ok',
+      active: filter === 'SAFE',
+      onClick: () => setFilter(filter === 'SAFE' ? '' : 'SAFE'),
+    },
+    {
+      key: 'CAUTION',
+      label: 'Caution',
+      value: counts.CAUTION || 0,
+      tone: 'warn',
+      active: filter === 'CAUTION',
+      onClick: () => setFilter(filter === 'CAUTION' ? '' : 'CAUTION'),
+    },
+    {
+      key: 'DANGER',
+      label: 'Danger',
+      value: counts.DANGER || 0,
+      tone: 'danger',
+      active: filter === 'DANGER',
+      onClick: () => setFilter(filter === 'DANGER' ? '' : 'DANGER'),
+    },
+    {
+      key: 'ALL',
+      label: 'Medical devices',
+      value: (board?.rows || []).length,
+      tone: 'neutral',
+    },
+  ];
 
   const loadActivity = async (recordId) => {
     try {
@@ -460,25 +494,6 @@ export default function VerificationsPage() {
       className="vf-page"
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_VERIFICATION }]}
       title={MODULE.ASSET_VERIFICATION}
-      kpis={[
-        { key: 'SAFE', label: 'Safe', value: counts.SAFE || 0, active: filter === 'SAFE', onClick: () => setFilter(filter === 'SAFE' ? '' : 'SAFE') },
-        { key: 'CAUTION', label: 'Caution', value: counts.CAUTION || 0, active: filter === 'CAUTION', onClick: () => setFilter(filter === 'CAUTION' ? '' : 'CAUTION') },
-        { key: 'DANGER', label: 'Danger', value: counts.DANGER || 0, active: filter === 'DANGER', onClick: () => setFilter(filter === 'DANGER' ? '' : 'DANGER') },
-        { key: 'ALL', label: 'Medical devices', value: (board?.rows || []).length },
-      ]}
-      toolbar={
-        <DateRangeFilter
-          className="vf-filters"
-          from={fromDate}
-          to={toDate}
-          onFromChange={setFromDate}
-          onToChange={setToDate}
-          onSubmit={submitDates}
-          onClear={clearDates}
-          submitting={loading}
-          hint={board?.periodKey || periodKey}
-        />
-      }
     >
       {error && !active && (
         <FeedbackBanner variant="error">{error}</FeedbackBanner>
@@ -862,27 +877,91 @@ export default function VerificationsPage() {
         </ModalShell>
       )}
 
-      <section className="vf-catalog card card--flush">
-        <MasterFilterShell
-          actions={
-            <button className="btn secondary btn-compact" type="button" onClick={load} disabled={loading}>
-              {loading ? 'Loading…' : 'Refresh'}
-            </button>
-          }
-        >
-          <MasterSearchField
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search asset, serial, custodian, city…"
-            aria-label="Search verification board"
-          />
-          {filter ? (
-            <button type="button" className="filter-chip" onClick={() => setFilter('')}>
-              {labelFor(filter)}
-              <span aria-hidden="true">×</span>
-            </button>
-          ) : null}
-        </MasterFilterShell>
+      <section className="vf-board card card--flush">
+        <div className="vf-board-chrome">
+          <div
+            className="vf-summary"
+            role="group"
+            aria-label="Verification summary"
+            data-count={summaryItems.length}
+          >
+            {summaryItems.map((item) => {
+              const Comp = item.onClick ? 'button' : 'div';
+              return (
+                <Comp
+                  key={item.key}
+                  type={item.onClick ? 'button' : undefined}
+                  className={`vf-summary-card tone-${item.tone}${item.active ? ' is-active' : ''}${
+                    item.onClick ? ' is-clickable' : ''
+                  }`}
+                  onClick={item.onClick}
+                >
+                  <strong>{item.value}</strong>
+                  <span>{item.label}</span>
+                </Comp>
+              );
+            })}
+          </div>
+
+          <form
+            className="vf-board-toolbar"
+            aria-label="Verification board filters"
+            onSubmit={submitDates}
+          >
+            <div className="vf-board-search">
+              <MasterSearchField
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search asset, serial, custodian, city…"
+                aria-label="Search verification board"
+              />
+              {filter ? (
+                <button type="button" className="filter-chip" onClick={() => setFilter('')}>
+                  {labelFor(filter)}
+                  <span aria-hidden="true">×</span>
+                </button>
+              ) : null}
+            </div>
+
+            <label className="vf-toolbar-field">
+              <span>From</span>
+              <DateInput
+                hideLabel
+                aria-label="From date"
+                value={fromDate}
+                max={toDate || undefined}
+                disabled={loading}
+                onChange={setFromDate}
+              />
+            </label>
+
+            <label className="vf-toolbar-field">
+              <span>To</span>
+              <DateInput
+                hideLabel
+                aria-label="To date"
+                value={toDate}
+                min={fromDate || undefined}
+                disabled={loading}
+                onChange={setToDate}
+              />
+            </label>
+
+            <div className="vf-toolbar-actions">
+              <button className="btn" type="submit" disabled={loading}>
+                {loading ? 'Loading…' : 'Submit'}
+              </button>
+              <button
+                className="btn secondary"
+                type="button"
+                disabled={loading}
+                onClick={clearBoard}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+        </div>
 
         <div className="vf-table-wrap">
           <table className="vf-table">

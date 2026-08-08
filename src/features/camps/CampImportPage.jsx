@@ -348,7 +348,7 @@ export default function ImportPage() {
               </select>
             </div>
             <div className="field field-fixed">
-              <label>Default client (fallback)</label>
+              <label>Default Client (fallback)</label>
               <input
                 value={defaultClientName}
                 onChange={(e) => setDefaultClientName(e.target.value)}
@@ -553,7 +553,7 @@ export default function ImportPage() {
           </div>
           {result.skipped?.length > 0 && (
             <FeedbackBanner variant="info">
-              Some rows were skipped because the client name did not match existing clients.
+              Some rows were skipped because the Client name did not match existing Clients.
             </FeedbackBanner>
           )}
           <div className="form-actions">

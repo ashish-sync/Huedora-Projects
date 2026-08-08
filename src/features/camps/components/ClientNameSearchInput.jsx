@@ -174,7 +174,7 @@ export function ClientNameSearchInput({
           openDropdown();
         }}
         onKeyDown={handleKeyDown}
-        placeholder={requireExistingClient ? 'Search and select an existing company' : 'Search or type client name, e.g. Intas'}
+        placeholder={requireExistingClient ? 'Search and select an existing company' : 'Search or type Client name, e.g. Intas'}
         disabled={disabled}
         {...bindAutofillBlock({
           onFocus: openDropdown,

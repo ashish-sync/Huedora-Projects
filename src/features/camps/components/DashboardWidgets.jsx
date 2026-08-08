@@ -214,12 +214,23 @@ export function isCampAssigned(camp) {
 }
 
 export function AssignmentStatusBadge({ camp }) {
+  if (['cancelled', 'rejected'].includes(camp?.status)) {
+    return <StatusBadge status={camp.status} />;
+  }
   const assigned = isCampAssigned(camp);
-  return (
-    <span className={`status-pill status-${assigned ? 'assigned' : 'unassigned'}`}>
-      {assigned ? 'Assigned' : 'Unassigned'}
-    </span>
-  );
+  if (assigned) {
+    return <span className="status-pill status-assigned">Assigned</span>;
+  }
+  const hiringRequested = camp?.assignmentStatus === 'Hiring Requested'
+    || Boolean(camp?.hiringRequestedAt);
+  if (hiringRequested) {
+    return (
+      <span className="status-pill status-hiring-requested" title={camp?.hiringRequestNumber || undefined}>
+        Hiring Requested
+      </span>
+    );
+  }
+  return <span className="status-pill status-unassigned">Unassigned</span>;
 }
 
 export function ExecutionStatusBadge({ camp }) {

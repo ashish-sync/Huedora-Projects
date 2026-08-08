@@ -26,7 +26,7 @@ export default function ClientMasterFormRoute() {
           ]}
           title={MODULE.CLIENT_MASTER}
         >
-          <p className="muted">You do not have permission to {isEdit ? 'edit' : 'create'} client masters.</p>
+          <p className="muted">You do not have permission to {isEdit ? 'edit' : 'create'} Client Masters.</p>
         </PageShell>
       </div>
     );
@@ -35,7 +35,7 @@ export default function ClientMasterFormRoute() {
   const title = isEdit ? 'Edit Client Master' : 'New Client Master';
   const description = isEdit
     ? 'Update client program and camp configuration'
-    : 'Add client program and camp configuration';
+    : 'Add Client program and camp configuration';
 
   return (
     <div className="camp-ops-root">

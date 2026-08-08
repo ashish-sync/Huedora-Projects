@@ -296,7 +296,7 @@ button.module-kpi.is-clickable:hover {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  align-items: center !important;
+  align-items: flex-end !important;
   gap: var(--stack) !important;
   margin: 0 !important;
   width: 100%;
@@ -307,7 +307,7 @@ button.module-kpi.is-clickable:hover {
   display: flex !important;
   flex-direction: row !important;
   flex-wrap: nowrap !important;
-  align-items: center !important;
+  align-items: flex-end !important;
 }
 
 .page-metrics .module-dash-kpis,
@@ -386,6 +386,23 @@ button.module-kpi.is-clickable:hover {
   align-items: flex-end !important;
   gap: var(--stack-sm) !important;
   width: auto;
+}
+
+.date-range-filter-hint {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h);
+  padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  line-height: 1;
+  align-self: flex-end;
 }
 
 /* Search grows; everything else fixed */

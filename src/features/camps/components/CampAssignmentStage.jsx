@@ -111,8 +111,8 @@ export function CampAssignmentStage({
       <div className="camp-assignment-toolbar">
         <p className="meta-text camp-assignment-intro">
           Select resource type, state, and city to find Contact Directory healthcare workers that match
-          this client’s Healthcare Worker role in Client Master.
-          Before assignment you can refuse the camp. After assignment, only cancel by TCPL or Client is allowed.
+          this Client’s Healthcare Worker role in Client Master.
+          Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.
         </p>
         <CampHireRequestButton
           form={form}

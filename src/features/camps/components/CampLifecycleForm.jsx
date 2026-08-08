@@ -232,7 +232,7 @@ export function CampLifecycleForm({
             <label>
               Client Name
               <select value={form.clientId} onChange={(e) => updateField('clientId', e.target.value)} disabled={disabled} required>
-                <option value="">Select client</option>
+                <option value="">Select Client</option>
                 {clients.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </label>
@@ -258,7 +258,7 @@ export function CampLifecycleForm({
                 disabled={disabled || programsLoading || !form.clientId || !form.campaignType || !campNameOptions.length || singleMethodOption}
                 required
                 options={campNameOptions}
-                emptyLabel={!form.clientId ? 'Select client first' : !form.campaignType ? 'Select division first' : singleMethodOption ? form.campaignName : 'Select method'}
+                emptyLabel={!form.clientId ? 'Select Client first' : !form.campaignType ? 'Select division first' : singleMethodOption ? form.campaignName : 'Select method'}
               />
             </label>
           </div>

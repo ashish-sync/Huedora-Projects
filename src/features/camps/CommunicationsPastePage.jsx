@@ -170,7 +170,7 @@ export default function CommunicationsPastePage() {
 
   const contextErrors = useMemo(() => {
     const errors = {};
-    if (!clientId) errors.clientId = 'Select a client';
+    if (!clientId) errors.clientId = 'Select a Client';
     if (clientId && !programsLoading && !divisionOptions.length) {
       errors.campaignType = 'No division configured in Client Master';
     } else if (clientId && !campaignType) {
@@ -334,7 +334,7 @@ export default function CommunicationsPastePage() {
   const primaryHint = useMemo(() => {
     if (error) return null;
     if (!hasPasteContext) {
-      return 'Select client, division / therapy, and method before pasting.';
+      return 'Select Client, division / therapy, and method before pasting.';
     }
     if (!hasPasteText) return 'Step 1 — Paste camp details on the left to continue.';
     if (isEditMode) return 'Finish field edits or switch to Preview before extracting again.';
@@ -833,7 +833,7 @@ export default function CommunicationsPastePage() {
                       placeholder={
                         hasPasteContext
                           ? 'DATE- 31/05/2025\nDR. NAME :- Dr Example\nDR CODE : 1005012\nADDRESS* - Example Hospital, City'
-                          : 'Select client, division / therapy, and method first'
+                          : 'Select Client, division / therapy, and method first'
                       }
                       spellCheck={false}
                       aria-label="Camp details to paste"

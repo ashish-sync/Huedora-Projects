@@ -5,7 +5,8 @@
  */
 
 :root {
-  --dropdown-chevron-color: #475569;
+  /* Matches --color-text-secondary (#475569); SVG fill cannot use CSS vars */
+  --dropdown-chevron-color: var(--color-text-secondary);
   --tylo-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23475569' d='M1.2 1.1h7.6L5 4.9z'/%3E%3C/svg%3E");
 }
 
@@ -31,7 +32,7 @@ select:not([multiple]):not([size]) {
   box-sizing: border-box;
   height: var(--control-h);
   min-height: var(--control-h);
-  background-color: var(--bg-elevated);
+  background-color: var(--color-bg-elevated);
   background-image: var(--tylo-select-chevron);
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -46,7 +47,7 @@ select:not([multiple]):not([size]) {
   cursor: pointer;
   border-width: 1px !important;
   border-style: solid !important;
-  border-color: var(--line) !important;
+  border-color: var(--color-border-default) !important;
   border-radius: var(--dropdown-radius) !important;
   color: var(--ink);
   transition: var(--dropdown-transition);
@@ -61,9 +62,9 @@ select:not([multiple]):not([size]):hover {
 select.tylo-select:focus,
 select:not([multiple]):not([size]):focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line)) !important;
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default)) !important;
   box-shadow: var(--dropdown-focus-ring) !important;
-  background-color: var(--bg-elevated);
+  background-color: var(--color-bg-elevated);
   background-image: var(--tylo-select-chevron);
 }
 
@@ -96,9 +97,9 @@ select:not([multiple]):not([size]) option {
 .adaptive-select__control {
   min-height: var(--control-h) !important;
   height: var(--control-h) !important;
-  border: 1px solid var(--line) !important;
+  border: 1px solid var(--color-border-default) !important;
   border-radius: var(--dropdown-radius) !important;
-  background: var(--bg-elevated) !important;
+  background: var(--color-bg-elevated) !important;
   color: var(--ink) !important;
   box-shadow: none !important;
   transition: var(--dropdown-transition) !important;
@@ -110,15 +111,15 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select__control--is-focused {
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line)) !important;
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default)) !important;
   box-shadow: var(--dropdown-focus-ring) !important;
-  background: var(--bg-elevated) !important;
+  background: var(--color-bg-elevated) !important;
 }
 
 .adaptive-select__control--is-disabled {
   cursor: not-allowed;
   opacity: 0.68;
-  background: var(--bg-sunken, #f8fafc) !important;
+  background: var(--color-bg-sunken) !important;
 }
 
 .adaptive-select--multi .adaptive-select__control {
@@ -184,9 +185,9 @@ select:not([multiple]):not([size]) option {
   display: inline-flex !important;
   align-items: center !important;
   margin: 0 !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 999px !important;
-  background: var(--surface-muted, #f1f5f9) !important;
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: var(--radius-full) !important;
+  background: var(--color-bg-hover) !important;
   color: var(--ink) !important;
   font-size: 0.75rem !important;
   font-weight: 600 !important;
@@ -207,8 +208,8 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select__multi-value__remove:hover {
-  background: color-mix(in srgb, var(--danger, #b91c1c) 12%, transparent) !important;
-  color: var(--danger, #b91c1c) !important;
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent) !important;
+  color: var(--color-danger) !important;
 }
 
 /* react-select RequiredInput / dummy fields — never show as form chrome */
@@ -260,9 +261,9 @@ select:not([multiple]):not([size]) option {
   margin-top: 4px !important;
   padding: var(--dropdown-menu-pad) !important;
   overflow: hidden;
-  border: 1px solid var(--line) !important;
+  border: 1px solid var(--color-border-default) !important;
   border-radius: var(--dropdown-radius) !important;
-  background: var(--bg-elevated) !important;
+  background: var(--color-bg-elevated) !important;
   color: var(--ink) !important;
   box-shadow: var(--dropdown-menu-shadow) !important;
 }
@@ -285,22 +286,22 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select__option--is-focused {
-  background: var(--bg-sunken, #f1f5f9) !important;
+  background: var(--color-bg-sunken) !important;
   color: var(--ink) !important;
 }
 
 .adaptive-select__option--is-selected {
-  background: color-mix(in srgb, var(--brand, #0f766e) 12%, var(--bg-elevated)) !important;
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-bg-elevated)) !important;
   color: var(--ink) !important;
   font-weight: 600 !important;
 }
 
 .adaptive-select__option--is-selected.adaptive-select__option--is-focused {
-  background: color-mix(in srgb, var(--brand, #0f766e) 18%, var(--bg-elevated)) !important;
+  background: color-mix(in srgb, var(--color-brand-primary) 18%, var(--color-bg-elevated)) !important;
 }
 
 .adaptive-select__option:active {
-  background: color-mix(in srgb, var(--brand, #0f766e) 22%, var(--bg-elevated)) !important;
+  background: color-mix(in srgb, var(--color-brand-primary) 22%, var(--color-bg-elevated)) !important;
 }
 
 .adaptive-select__no-options-message {
@@ -330,9 +331,9 @@ select:not([multiple]):not([size]) option {
   width: 100%;
   min-height: var(--control-h);
   padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--dropdown-radius);
-  background: var(--bg-elevated);
+  background: var(--color-bg-elevated);
   color: var(--ink);
   font-size: var(--text-body-sm-size, 0.8125rem);
   font-weight: 600;
@@ -352,7 +353,7 @@ select:not([multiple]):not([size]) option {
 .custom-select-trigger:focus,
 .custom-select.is-open .custom-select-trigger {
   outline: none;
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
   box-shadow: var(--dropdown-focus-ring);
 }
 
@@ -384,9 +385,9 @@ select:not([multiple]):not([size]) option {
   margin: 0;
   padding: var(--dropdown-menu-pad);
   list-style: none;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--dropdown-radius);
-  background: var(--bg-elevated);
+  background: var(--color-bg-elevated);
   box-shadow: var(--dropdown-menu-shadow);
   max-height: 280px;
   overflow: auto;
@@ -421,12 +422,12 @@ select:not([multiple]):not([size]) option {
 .client-search-item:hover,
 .client-search-item:focus,
 .client-search-item.is-active {
-  background: var(--bg-sunken, #f1f5f9);
+  background: var(--color-bg-sunken);
   outline: none;
 }
 
 .custom-select-option.is-selected {
-  background: color-mix(in srgb, var(--brand, #0f766e) 12%, var(--bg-elevated));
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-bg-elevated));
   color: var(--ink);
   font-weight: 600;
 }
@@ -498,15 +499,15 @@ select:not([multiple]):not([size]) option {
 html[data-theme='dark'] .adaptive-select__menu,
 html[data-theme='dark'] .custom-select-menu,
 html[data-theme='dark'] .client-search-dropdown {
-  background: var(--bg-elevated);
-  border-color: var(--line);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-default);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 html[data-theme='dark'] .adaptive-select__option--is-focused,
 html[data-theme='dark'] .custom-select-option:hover,
 html[data-theme='dark'] .client-search-item.is-active {
-  background: color-mix(in srgb, var(--brand) 14%, var(--bg-elevated)) !important;
+  background: color-mix(in srgb, var(--brand) 14%, var(--color-bg-elevated)) !important;
 }
 
 /* ── Chevron enforcement (wins over background: shorthand overrides) ── */
@@ -546,6 +547,6 @@ select:not([multiple]):not([size]):focus,
 }
 
 html[data-theme='dark'] {
-  --dropdown-chevron-color: #94a3b8;
+  --dropdown-chevron-color: var(--color-text-disabled);
   --tylo-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2394a3b8' d='M1.2 1.1h7.6L5 4.9z'/%3E%3C/svg%3E");
 }

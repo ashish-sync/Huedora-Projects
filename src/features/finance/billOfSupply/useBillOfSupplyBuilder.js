@@ -133,6 +133,7 @@ export function useBillOfSupplyBuilder() {
             projectName: patch.projectName || prev.invoice.projectName,
             placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
             poReference: '',
+            poDate: '',
           },
           shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
         };
@@ -151,6 +152,7 @@ export function useBillOfSupplyBuilder() {
       invoice: {
         ...prev.invoice,
         poReference: prev.clientPurchaseOrderId ? '' : prev.invoice.poReference,
+        poDate: prev.clientPurchaseOrderId ? '' : prev.invoice.poDate,
       },
     }));
   }, [readOnly, setForm]);

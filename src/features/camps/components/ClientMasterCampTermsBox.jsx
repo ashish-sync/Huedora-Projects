@@ -128,7 +128,7 @@ function CompactPoUpload({
           multiple
           accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/*"
           disabled={disabled || fileBusy}
-          buttonLabel={count ? `Upload (${count})` : 'Upload'}
+          buttonLabel={count ? `File (${count})` : 'File'}
           emptyLabel=""
           className="file-picker--button-only"
           onChange={(e) => {
@@ -209,7 +209,7 @@ function PoRow({
           {index + 1}
         </span>
 
-        <div className="client-master-po-cell client-master-po-cell--no">
+        <div className="client-master-po-cell client-master-po-cell--no" data-label="PO No.">
           <input
             value={row.poNumber || ''}
             onChange={(e) => onChange?.('poNumber', e.target.value)}
@@ -233,7 +233,7 @@ function PoRow({
           onDelete={onFileDelete}
         />
 
-        <div className="client-master-po-cell client-master-po-cell--value">
+        <div className="client-master-po-cell client-master-po-cell--value" data-label="PO value">
           <input
             type="text"
             inputMode="decimal"
@@ -249,6 +249,7 @@ function PoRow({
 
         <div
           className={`client-master-po-cell client-master-po-cell--tax${applyGst ? ' is-on' : ''}`}
+          data-label="Tax"
           aria-live="polite"
         >
           <div
@@ -275,7 +276,19 @@ function PoRow({
           </div>
         </div>
 
-        <div className="client-master-po-cell client-master-po-cell--expiry">
+        <div className="client-master-po-cell client-master-po-cell--issue" data-label="Issue">
+          <input
+            type="date"
+            value={row.poIssueDate || ''}
+            onChange={(e) => onChange?.('poIssueDate', e.target.value)}
+            aria-label="PO issue date"
+            disabled={disabled}
+            className={fieldErrors[`${prefix}.poIssueDate`] ? 'input-invalid' : ''}
+          />
+          <FieldError message={fieldErrors[`${prefix}.poIssueDate`]} />
+        </div>
+
+        <div className="client-master-po-cell client-master-po-cell--expiry" data-label="Expiry">
           <input
             type="date"
             value={row.poExpiryDate || ''}
@@ -360,17 +373,23 @@ export function ClientMasterCampTermsBox({
               : 'Fields depend on the selected terms type'}
           </p>
         </div>
-        {terms === CAMP_TERMS.PO_BASED && orders.length > 1 ? (
+        {terms === CAMP_TERMS.PO_BASED && orders.length > 0 ? (
           <div className="client-master-po-combined" aria-live="polite">
+            <span className="client-master-po-combined-count">
+              {orders.length} {orders.length === 1 ? 'PO' : 'POs'}
+            </span>
             <span>
-              {orders.length} POs · Net <strong>{formatPoMoney(combined.poCombinedNet)}</strong>
+              Net <strong>{formatPoMoney(combined.poCombinedNet)}</strong>
             </span>
             {combined.poCombinedGst > 0 ? (
-              <span className="client-master-po-combined-total">
-                GST <strong>{formatPoMoney(combined.poCombinedGst)}</strong>
-                {' · '}
-                Incl. <strong>{formatPoMoney(combined.poCombinedGross)}</strong>
-              </span>
+              <>
+                <span>
+                  GST <strong>{formatPoMoney(combined.poCombinedGst)}</strong>
+                </span>
+                <span className="client-master-po-combined-total">
+                  Incl. <strong>{formatPoMoney(combined.poCombinedGross)}</strong>
+                </span>
+              </>
             ) : null}
           </div>
         ) : null}
@@ -460,10 +479,11 @@ export function ClientMasterCampTermsBox({
           <div className="client-master-po-list-head" aria-hidden="true">
             <span />
             <span>PO No.</span>
-            <span>Upload</span>
+            <span>File</span>
             <span>PO value</span>
-            <span>Tax amt</span>
-            <span>PO expiry</span>
+            <span>Tax</span>
+            <span>Issue</span>
+            <span>Expiry</span>
             <span />
           </div>
           {orders.map((row, index) => (

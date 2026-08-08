@@ -1,6 +1,9 @@
 /**
  * Maps legacy TYLO variable names → semantic tokens.
- * Keeps all existing CSS working during migration.
+ * Keeps existing CSS working during migration.
+ *
+ * Elevation: do NOT remap --shadow-sm/--shadow-lg onto smaller steps —
+ * that flattened the scale. Prefer --shadow-xs|sm|md|lg from elevation.css.
  */
 :root {
   --font: var(--font-family-sans);
@@ -69,9 +72,8 @@
   --line-strong: var(--color-border-strong);
   --focus: var(--color-focus-ring);
 
-  --shadow-sm: var(--shadow-xs);
+  /* Generic shadow alias → sm step (does not redefine --shadow-sm/--shadow-lg) */
   --shadow: var(--shadow-sm);
-  --shadow-lg: var(--shadow-md);
 
   /* Logistics island aliases */
   --ilog-beige: var(--color-bg-sidebar);

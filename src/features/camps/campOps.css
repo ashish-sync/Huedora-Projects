@@ -75,13 +75,13 @@
 .camp-ops-root .camp-ops-brand-mark-letter {
   width: 2.35rem;
   height: 2.35rem;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
   border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
+  color: var(--color-text-on-primary);
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: -0.02em;
@@ -91,7 +91,7 @@
 .camp-ops-root .camp-ops-brand-mark-spectrum {
   width: 2.35rem;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: linear-gradient(
     90deg,
     #ff5f6d 0%,
@@ -139,7 +139,7 @@
   width: 2rem;
   height: 2rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.08);
   color: var(--muted-soft);
   display: inline-flex;
@@ -181,7 +181,7 @@
   align-items: center;
   gap: 12px;
   padding: 11px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--muted-soft);
   transition: background 0.2s ease, color 0.2s ease;
   white-space: nowrap;
@@ -217,7 +217,7 @@
 
 .camp-ops-root .camp-ops-nav-link.is-active, .camp-ops-root .camp-ops-nav-link:hover {
   background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  color: var(--color-text-on-primary);
 }
 
 .camp-ops-root .camp-ops-nav-group {
@@ -233,7 +233,7 @@
   width: 100%;
   padding: 10px 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: rgba(255, 255, 255, 0.88);
   cursor: pointer;
@@ -242,7 +242,7 @@
 
 .camp-ops-root .camp-ops-nav-group.is-active .camp-ops-nav-group-toggle, .camp-ops-root .camp-ops-nav-group-toggle:hover {
   background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  color: var(--color-text-on-primary);
 }
 
 .camp-ops-root .camp-ops-nav-group-caret {
@@ -261,7 +261,7 @@
 .camp-ops-root .camp-ops-nav-sublink {
   display: block;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
   font-size: 0.92rem;
@@ -269,7 +269,7 @@
 
 .camp-ops-root .camp-ops-nav-sublink.is-active, .camp-ops-root .camp-ops-nav-sublink:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-text-on-primary);
 }
 
 .camp-ops-root .communications-toolbar {
@@ -292,7 +292,7 @@
   min-width: 220px;
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .camp-ops-root .communications-email-page .page-tabs,
@@ -333,7 +333,7 @@
   flex: 1;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--bg-elevated);
   overflow: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -388,7 +388,7 @@
 
 .camp-ops-root .communications-search-btn, .camp-ops-root .communications-sync-btn {
   margin: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 0.7rem 1rem;
 }
 
@@ -409,7 +409,7 @@
 
 .camp-ops-root .communications-candidate-btn {
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 8px 14px;
   background: var(--bg-elevated);
   color: var(--text-muted);
@@ -488,7 +488,7 @@
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
 }
 
@@ -550,7 +550,7 @@
   gap: 8px;
   overflow: hidden;
   padding: 4px 6px 4px 2px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .camp-ops-root .email-body-viewer.is-pick-mode {
@@ -561,7 +561,7 @@
 .camp-ops-root .email-body-forward-hint {
   margin: 0;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
   border: 1px solid var(--border);
   flex-shrink: 0;
@@ -577,7 +577,7 @@
   gap: 10px;
   padding: 8px 12px;
   border: 1.5px solid color-mix(in srgb, var(--primary) 45%, var(--border));
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--brand-soft);
 }
 
@@ -593,7 +593,7 @@
   overflow-y: auto;
   padding: 5px 10px;
   border: 1px dashed color-mix(in srgb, var(--primary) 40%, var(--border));
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   font-size: 0.84rem;
   line-height: 1.45;
@@ -619,7 +619,7 @@
   width: 34px;
   height: 34px;
   border: 1.5px solid var(--primary);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   color: var(--primary);
   font-size: 1.15rem;
@@ -640,19 +640,19 @@
 
 .camp-ops-root .email-body-pick-apply-btn:not(:disabled):hover {
   background: var(--primary);
-  color: var(--color-brand-on-primary, #fff);
+  color: var(--color-brand-on-primary);
 }
 
 .camp-ops-root .email-body-segment {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   flex-shrink: 0;
   overflow: visible;
 }
 
 .camp-ops-root .email-body-segment.is-collapsed {
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .camp-ops-root .email-body-segment.is-expanded {
@@ -662,7 +662,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .camp-ops-root .email-body-segment.is-forwarded {
@@ -717,7 +717,7 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--surface-muted);
   color: var(--text-muted);
   font-size: 0.72rem;
@@ -834,7 +834,7 @@
 .camp-ops-root .email-extraction-mode-toggle {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
   background: var(--bg-elevated);
 }
@@ -851,7 +851,7 @@
 
 .camp-ops-root .email-extraction-mode-btn.is-active {
   background: var(--primary);
-  color: var(--color-brand-on-primary, #fff);
+  color: var(--color-brand-on-primary);
 }
 
 .camp-ops-root .email-extraction-preview-list, .camp-ops-root .email-extraction-edit-list {
@@ -862,7 +862,7 @@
 
 .camp-ops-root .email-extraction-card {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   padding: 14px;
 }
@@ -931,7 +931,7 @@
   width: 24px;
   height: 24px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--bg-elevated);
   color: var(--primary);
   cursor: pointer;
@@ -946,7 +946,7 @@
 
 .camp-ops-root .email-linked-camps {
   border: 1px solid color-mix(in srgb, var(--ok) 35%, var(--border));
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--ok-soft);
   padding: 12px;
 }
@@ -976,7 +976,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   border: 1px solid color-mix(in srgb, var(--ok) 30%, var(--border));
 }
@@ -1002,7 +1002,7 @@
   padding: 1rem;
   background: var(--bg-sunken);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 0.88rem;
   line-height: 1.6;
   color: var(--text);
@@ -1024,7 +1024,7 @@
   padding: 0;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
 
@@ -1060,9 +1060,9 @@
 
 .camp-ops-root .email-detail-close {
   width: 40px;
-  height: 40px;
+  height: var(--control-h-sm);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--text-muted);
   font-size: 1.5rem;
@@ -1132,7 +1132,7 @@
   min-height: 280px;
   padding: 20px;
   border: 1px dashed var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
   text-align: center;
 }
@@ -1243,7 +1243,7 @@
   padding: 0;
   overflow: hidden;
   background: var(--bg-elevated);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
 }
 
 /* ── Workflow header & stepper ───────────────────────────────── */
@@ -1281,7 +1281,7 @@
   align-self: center;
   flex-shrink: 0;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--border);
   background: var(--bg-sunken);
   font-size: 0.72rem;
@@ -1324,7 +1324,7 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1.5px solid var(--border);
   background: var(--bg-elevated);
   font-size: 0.78rem;
@@ -1365,7 +1365,7 @@
 .camp-ops-root .paste-workflow-step--active .paste-workflow-step-marker {
   border-color: var(--primary);
   background: var(--primary);
-  color: var(--color-brand-on-primary, #fff);
+  color: var(--color-brand-on-primary);
 }
 
 .camp-ops-root .paste-workflow-step--active .paste-workflow-step-copy strong {
@@ -1373,13 +1373,13 @@
 }
 
 .camp-ops-root .paste-workflow-step--complete .paste-workflow-step-marker {
-  border-color: color-mix(in srgb, var(--ok, #12b76a) 55%, var(--border));
-  background: var(--ok-soft, #ecfdf3);
-  color: var(--ok, #12b76a);
+  border-color: color-mix(in srgb, var(--ok) 55%, var(--border));
+  background: var(--ok-soft);
+  color: var(--ok);
 }
 
 .camp-ops-root .paste-workflow-step--complete .paste-workflow-step-connector {
-  background: color-mix(in srgb, var(--ok, #12b76a) 45%, var(--border));
+  background: color-mix(in srgb, var(--ok) 45%, var(--border));
 }
 
 .camp-ops-root .paste-workflow-alerts {
@@ -1455,12 +1455,12 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
+  height: var(--control-h-sm);
+  min-height: var(--control-h-sm);
+  max-height: var(--control-h-sm);
   padding: 0 36px 0 10px !important;
   border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
+  border-radius: var(--radius-sm) !important;
   background-color: var(--bg-elevated) !important;
   background-image: var(--tylo-select-chevron) !important;
   background-repeat: no-repeat !important;
@@ -1481,12 +1481,12 @@
 
 .camp-ops-root .paste-context-field .field-error {
   font-size: 0.74rem;
-  color: var(--danger, #d92d20);
+  color: var(--danger);
 }
 
 .camp-ops-root .paste-context-banner {
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.82rem;
   line-height: 1.45;
   border: 1px solid transparent;
@@ -1505,20 +1505,20 @@
 }
 
 .camp-ops-root .paste-context-banner--success {
-  background: var(--ok-soft, #ecfdf3);
-  border-color: color-mix(in srgb, var(--ok, #12b76a) 35%, var(--border));
+  background: var(--ok-soft);
+  border-color: color-mix(in srgb, var(--ok) 35%, var(--border));
   color: var(--text);
 }
 
 .camp-ops-root .paste-context-banner--warning {
-  background: var(--warn-soft, #fffaeb);
-  border-color: color-mix(in srgb, var(--warn, #f79009) 35%, var(--border));
+  background: var(--warn-soft);
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
   color: var(--text);
 }
 
 .camp-ops-root .paste-context-banner--error {
-  background: var(--danger-soft, #fef3f2);
-  border-color: color-mix(in srgb, var(--danger, #d92d20) 35%, var(--border));
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
   color: var(--text);
 }
 
@@ -1550,7 +1550,7 @@
   min-height: 0;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
 }
 
@@ -1575,7 +1575,7 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--primary) 12%, var(--bg-sunken));
   color: var(--primary);
   font-size: 0.78rem;
@@ -1600,7 +1600,7 @@
 .camp-ops-root .paste-status-chip {
   flex-shrink: 0;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid var(--border);
@@ -1615,21 +1615,21 @@
 }
 
 .camp-ops-root .paste-status-chip--success {
-  border-color: color-mix(in srgb, var(--ok, #12b76a) 35%, var(--border));
-  background: var(--ok-soft, #ecfdf3);
-  color: var(--ok, #12b76a);
+  border-color: color-mix(in srgb, var(--ok) 35%, var(--border));
+  background: var(--ok-soft);
+  color: var(--ok);
 }
 
 .camp-ops-root .paste-status-chip--warning {
-  border-color: color-mix(in srgb, var(--warn, #f79009) 35%, var(--border));
-  background: var(--warn-soft, #fffaeb);
-  color: var(--warn, #f79009);
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
+  background: var(--warn-soft);
+  color: var(--warn);
 }
 
 .camp-ops-root .paste-status-chip--error {
-  border-color: color-mix(in srgb, var(--danger, #d92d20) 35%, var(--border));
-  background: var(--danger-soft, #fef3f2);
-  color: var(--danger, #d92d20);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .camp-ops-root .paste-status-chip--locked {
@@ -1650,7 +1650,7 @@
 .camp-ops-root .paste-workflow-column--review .email-extraction-toolbar {
   padding: 6px 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--bg-sunken);
 }
 
@@ -1798,7 +1798,7 @@
   display: flex;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--bg-sunken);
 }
 
@@ -1819,7 +1819,7 @@
   margin: 0;
   padding: 16px 18px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: transparent;
   resize: none;
   overflow-y: auto;
@@ -1848,7 +1848,7 @@
   margin: 0;
   padding: 16px 18px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: transparent;
   overflow-y: auto;
   overflow-x: hidden;
@@ -1879,7 +1879,7 @@
 .camp-ops-root .communications-paste-pre::-webkit-scrollbar-thumb,
 .camp-ops-root .communications-paste-textarea::-webkit-scrollbar-thumb,
 .camp-ops-root .communications-paste-shell .email-extraction-panel::-webkit-scrollbar-thumb {
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--text-muted) 45%, var(--border));
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -1889,14 +1889,14 @@
 .camp-ops-root .communications-paste-textarea::-webkit-scrollbar-track,
 .camp-ops-root .communications-paste-shell .email-extraction-panel::-webkit-scrollbar-track {
   background: color-mix(in srgb, var(--bg-sunken) 80%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 .camp-ops-root .communications-paste-shell .email-detail-actions {
   padding-bottom: 20px;
 }
 
-@media (max-width: var(--bp-lg)) {
+@media (max-width: 1024px) {
 
   .camp-ops-root .communications-search-row {
     flex-direction: column;
@@ -1995,7 +1995,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.08);
   color: #f8fafc;
@@ -2034,7 +2034,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -2042,7 +2042,7 @@
 .camp-ops-root .camp-ops-sidebar-user-avatar {
   width: 1.65rem;
   height: 1.65rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2082,7 +2082,7 @@
   background: rgba(255, 255, 255, 0.14);
   color: #ccfbf1;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -2197,7 +2197,7 @@
   gap: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 8px 14px;
   box-shadow: var(--shadow);
   flex-shrink: 0;
@@ -2207,7 +2207,7 @@
   background: var(--surface-muted);
   color: var(--primary);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -2230,7 +2230,7 @@
 .camp-ops-root .widget-card, .camp-ops-root .panel, .camp-ops-root .table-card, .camp-ops-root .form-card, .camp-ops-root .import-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
 
@@ -2313,7 +2313,7 @@
 
 .camp-ops-root .client-master-camp-terms-type select {
   width: 100%;
-  min-height: 36px;
+  min-height: var(--control-h-sm);
   padding: 6px 28px 6px 10px;
   font-size: 0.875rem;
 }
@@ -2338,13 +2338,13 @@
 }
 
 .camp-ops-root .client-master-camp-terms-files.is-compact .client-master-po-file-row {
-  min-height: 36px;
+  min-height: var(--control-h-sm);
 }
 
 .camp-ops-root .client-master-camp-terms-files.is-compact .file-picker {
   width: auto;
-  min-height: 36px;
-  height: 36px;
+  min-height: var(--control-h-sm);
+  height: var(--control-h-sm);
   padding: 0;
   border: 0;
   background: transparent;
@@ -2357,12 +2357,12 @@
 }
 
 .camp-ops-root .client-master-camp-terms-files.is-compact .file-picker__browse {
-  min-height: 36px;
+  min-height: var(--control-h-sm);
   padding: 0 12px;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .camp-ops-root .client-master-camp-terms-files.is-compact .client-master-camp-terms-file-list {
@@ -2412,16 +2412,16 @@
   gap: 6px;
   padding: 4px 8px;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg-sunken, #f8fafc);
+  border-radius: var(--radius-xs);
+  background: var(--bg-sunken);
 }
 
 .camp-ops-root .client-master-po-box {
-  margin-top: 6px;
-  padding: 10px 12px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elevated, #fff);
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
 }
 
 .camp-ops-root .client-master-po-box-head {
@@ -2429,102 +2429,117 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 .camp-ops-root .client-master-po-box-title-wrap {
   min-width: 0;
+  flex: 1 1 12rem;
 }
 
 .camp-ops-root .client-master-po-box .client-master-section-title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
+  color: var(--color-text-primary);
 }
 
 .camp-ops-root .client-master-po-combined-hint {
-  margin: 2px 0 0;
-  font-size: 0.78rem;
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-leading);
+  color: var(--color-text-secondary);
 }
 
 .camp-ops-root .client-master-po-combined {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
-  margin-top: 8px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--bg-sunken, #f8fafc);
-  border: 1px solid var(--line);
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.camp-ops-root .client-master-po-combined-count {
+  font-weight: 650;
+  color: var(--color-text-primary);
 }
 
 .camp-ops-root .client-master-po-combined strong {
-  margin-left: 4px;
-  color: var(--text, #0f172a);
-  font-size: 0.88rem;
+  margin-left: 2px;
+  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .camp-ops-root .client-master-po-combined-total strong {
-  font-size: 0.95rem;
+  color: var(--color-brand-primary);
 }
 
 .camp-ops-root .client-master-po-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-sunken);
 }
 
 .camp-ops-root .client-master-po-list-head,
 .camp-ops-root .client-master-po-row {
   display: grid;
   grid-template-columns:
-    22px
-    minmax(140px, 1.25fr)
-    minmax(96px, 0.7fr)
-    minmax(120px, 1fr)
-    minmax(128px, 0.95fr)
-    minmax(128px, 0.9fr)
-    28px;
-  gap: 8px 10px;
+    1.5rem
+    minmax(5.5rem, 0.9fr)
+    minmax(4.5rem, 5.5rem)
+    minmax(5.5rem, 0.85fr)
+    minmax(7.5rem, 8.5rem)
+    minmax(8.25rem, 8.75rem)
+    minmax(8.25rem, 8.75rem)
+    1.75rem;
+  gap: var(--space-2);
   align-items: center;
 }
 
 .camp-ops-root .client-master-po-list-head {
-  padding: 0 12px;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  padding: 0 var(--space-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption-size);
+  font-weight: var(--text-label-weight);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .camp-ops-root .client-master-po-row-wrap {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .camp-ops-root .client-master-po-row {
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elevated, #fff);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-xs);
 }
 
 .camp-ops-root .client-master-po-row-index {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--bg-sunken, #f1f5f9);
-  color: var(--text-muted);
-  font-size: 0.72rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-sunken));
+  color: var(--color-brand-primary);
+  font-size: var(--text-caption-size);
   font-weight: 700;
 }
 
@@ -2536,24 +2551,44 @@
   min-width: 0;
 }
 
-.camp-ops-root .client-master-po-cell input {
+.camp-ops-root .client-master-po-cell input,
+.camp-ops-root .client-master-po-cell--issue input,
+.camp-ops-root .client-master-po-cell--expiry input {
   width: 100%;
-  min-height: 36px;
-  padding: 7px 10px;
-  font-size: 0.875rem;
+  min-height: var(--control-h-sm);
+  padding: 0.4rem 0.55rem;
+  font-size: var(--text-body-sm-size);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+.camp-ops-root .client-master-po-cell input:focus,
+.camp-ops-root .client-master-po-cell--issue input:focus,
+.camp-ops-root .client-master-po-cell--expiry input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--color-border-default));
+  box-shadow: var(--dropdown-focus-ring);
+}
+
+.camp-ops-root .client-master-po-cell--value input {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .camp-ops-root .client-master-po-upload-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+  align-items: stretch;
 }
 
 .camp-ops-root .client-master-po-upload-controls .file-picker {
-  width: auto;
-  min-height: 36px;
-  height: 36px;
+  width: 100%;
+  min-height: var(--control-h-sm);
+  height: var(--control-h-sm);
   padding: 0;
   border: 0;
   background: transparent;
@@ -2566,12 +2601,16 @@
 }
 
 .camp-ops-root .client-master-po-upload-controls .file-picker__browse {
-  min-height: 36px;
-  padding: 0 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  width: 100%;
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-caption-size);
+  font-weight: 650;
   white-space: nowrap;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border-default));
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-elevated));
+  color: var(--color-brand-primary);
 }
 
 .camp-ops-root .client-master-po-upload-chips {
@@ -2581,7 +2620,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 44px;
+  max-height: var(--control-h);
   overflow: auto;
 }
 
@@ -2599,8 +2638,8 @@
   background: transparent;
   padding: 0;
   text-align: left;
-  font-size: 0.68rem;
-  color: var(--brand, #0a5ac2);
+  font-size: var(--text-caption-size);
+  color: var(--color-brand-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2608,7 +2647,7 @@
 }
 
 .camp-ops-root .client-master-po-upload-chip.is-pending {
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   cursor: default;
 }
 
@@ -2617,9 +2656,9 @@
   width: 18px;
   height: 18px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   line-height: 1;
 }
@@ -2629,30 +2668,30 @@
   align-items: center;
   gap: 0;
   width: 100%;
-  min-height: 36px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  min-height: var(--control-h-sm);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
   overflow: hidden;
 }
 
 .camp-ops-root .client-master-po-cell--tax.is-on .client-master-po-tax-control {
-  border-color: color-mix(in srgb, var(--brand, #0a5ac2) 35%, var(--line));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
 }
 
 .camp-ops-root .client-master-po-gst-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   margin: 0;
-  padding: 0 8px;
-  min-height: 36px;
+  padding: 0 var(--space-2);
+  min-height: var(--control-h-sm);
   border: 0;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--color-border-default);
   border-radius: 0;
-  background: var(--bg-sunken, #f8fafc);
+  background: var(--color-bg-sunken);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: var(--text-caption-size);
   font-weight: 700;
   white-space: nowrap;
   user-select: none;
@@ -2662,60 +2701,78 @@
   width: 13px;
   height: 13px;
   margin: 0;
-  accent-color: var(--brand, #0a5ac2);
+  accent-color: var(--color-brand-primary);
 }
 
 .camp-ops-root .client-master-po-gst-toggle.is-checked {
-  background: color-mix(in srgb, var(--brand, #0a5ac2) 10%, #fff);
-  color: var(--brand, #0a5ac2);
+  background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-bg-elevated));
+  color: var(--color-brand-primary);
 }
 
 .camp-ops-root .client-master-po-tax-amt {
   flex: 1;
   min-width: 0;
-  padding: 0 10px;
-  font-size: 0.875rem;
+  padding: 0 var(--space-2);
+  font-size: var(--text-body-sm-size);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-text-primary);
 }
 
 .camp-ops-root .client-master-po-row-footnote {
-  margin: 0 12px 2px 44px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  line-height: 1.3;
+  margin: 0 var(--space-3) var(--space-1) calc(1.5rem + var(--space-3) + var(--space-2));
+  font-size: var(--text-caption-size);
+  color: var(--color-text-secondary);
+  line-height: 1.35;
 }
 
 .camp-ops-root .client-master-po-list-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  margin-top: 4px;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-1);
+  padding: 0 var(--space-1);
 }
 
 .camp-ops-root .client-master-po-add-btn {
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
   font-weight: 600;
 }
 
 .camp-ops-root .client-master-po-remove,
 .camp-ops-root .client-master-po-remove-spacer {
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
   line-height: 1;
-  font-size: 1.1rem;
+  font-size: 1rem;
   justify-self: center;
+  border-radius: var(--radius-full);
 }
 
 .camp-ops-root .client-master-po-remove-spacer {
   visibility: hidden;
+}
+
+@media (max-width: 1100px) {
+  .camp-ops-root .client-master-po-list-head,
+  .camp-ops-root .client-master-po-row {
+    grid-template-columns:
+      1.5rem
+      minmax(5rem, 1fr)
+      minmax(4.25rem, 5rem)
+      minmax(5rem, 0.9fr)
+      minmax(7rem, 8rem)
+      minmax(7.75rem, 1fr)
+      minmax(7.75rem, 1fr)
+      1.75rem;
+  }
 }
 
 @media (max-width: 960px) {
@@ -2724,8 +2781,9 @@
   }
 
   .camp-ops-root .client-master-po-row {
-    grid-template-columns: 22px 1fr 1fr 28px;
+    grid-template-columns: 1.5rem minmax(0, 1fr) minmax(0, 1fr) 1.75rem;
     align-items: start;
+    gap: var(--space-2);
   }
 
   .camp-ops-root .client-master-po-cell--no {
@@ -2737,9 +2795,44 @@
   }
 
   .camp-ops-root .client-master-po-cell--value,
-  .camp-ops-root .client-master-po-cell--tax,
+  .camp-ops-root .client-master-po-cell--tax {
+    grid-column: span 1;
+  }
+
+  .camp-ops-root .client-master-po-cell--value {
+    grid-column: 2;
+  }
+
+  .camp-ops-root .client-master-po-cell--tax {
+    grid-column: 3;
+  }
+
+  .camp-ops-root .client-master-po-cell--issue,
   .camp-ops-root .client-master-po-cell--expiry {
-    grid-column: 2 / 4;
+    grid-column: span 1;
+  }
+
+  .camp-ops-root .client-master-po-cell--issue {
+    grid-column: 2;
+  }
+
+  .camp-ops-root .client-master-po-cell--expiry {
+    grid-column: 3;
+  }
+
+  .camp-ops-root .client-master-po-cell--issue::before,
+  .camp-ops-root .client-master-po-cell--expiry::before,
+  .camp-ops-root .client-master-po-cell--value::before,
+  .camp-ops-root .client-master-po-cell--tax::before,
+  .camp-ops-root .client-master-po-cell--no::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    font-size: var(--text-caption-size);
+    font-weight: 650;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   .camp-ops-root .client-master-po-remove,
@@ -2749,21 +2842,27 @@
   }
 
   .camp-ops-root .client-master-po-row-footnote {
-    margin-left: 34px;
+    margin-left: calc(1.5rem + var(--space-2));
   }
 }
 
 @media (max-width: 560px) {
   .camp-ops-root .client-master-po-row {
-    grid-template-columns: 22px 1fr 28px;
+    grid-template-columns: 1.5rem minmax(0, 1fr) 1.75rem;
   }
 
   .camp-ops-root .client-master-po-cell--no,
   .camp-ops-root .client-master-po-upload-cell,
   .camp-ops-root .client-master-po-cell--value,
   .camp-ops-root .client-master-po-cell--tax,
+  .camp-ops-root .client-master-po-cell--issue,
   .camp-ops-root .client-master-po-cell--expiry {
     grid-column: 2;
+  }
+
+  .camp-ops-root .client-master-po-remove,
+  .camp-ops-root .client-master-po-remove-spacer {
+    grid-column: 3;
   }
 }
 
@@ -2875,9 +2974,9 @@
   align-items: center;
   justify-content: center;
   width: 42px;
-  height: 42px;
+  height: var(--control-h);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
@@ -2902,9 +3001,9 @@
   top: calc(100% + 8px);
   right: 0;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: #0f172a;
-  color: #fff;
+  color: var(--color-text-on-primary);
   font-size: 0.78rem;
   white-space: nowrap;
   opacity: 0;
@@ -3030,7 +3129,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--brand-soft);
   border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--line));
   font-size: 0.82rem;
@@ -3248,7 +3347,7 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -3335,7 +3434,7 @@
 .camp-ops-root .camp-finance-hcw-blockers {
   padding: 0.85rem 1rem;
   border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--border));
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--warn) 6%, var(--bg-elevated));
 }
 
@@ -3361,8 +3460,8 @@
 .camp-ops-root .camp-consumables-panel {
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elevated, #fff);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
 }
 
 .camp-ops-root .camp-consumables-used-header {
@@ -3429,14 +3528,14 @@
 }
 
 .camp-ops-root .camp-consumables-grid-row.is-incomplete {
-  background: color-mix(in srgb, var(--warn, #f59e0b) 8%, transparent);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
 }
 
 .camp-ops-root .camp-consumables-item-label {
   display: block;
   font-size: 0.84rem;
   font-weight: 600;
-  color: var(--ink-soft, #4b5563);
+  color: var(--ink-soft);
   padding-top: 8px;
 }
 
@@ -3453,8 +3552,8 @@
   min-height: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elevated, #fff);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
 }
 
 .camp-ops-root .client-master-consumables-select {
@@ -3476,7 +3575,7 @@
   gap: 8px;
   max-width: 100%;
   padding: 8px 10px 8px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: #d4d4d4;
   color: #1a1a1a;
   font-size: 0.82rem;
@@ -3502,7 +3601,7 @@
 }
 
 .camp-ops-root .client-master-consumable-pill-remove:hover:not(:disabled) {
-  color: var(--danger, #b42318);
+  color: var(--danger);
 }
 
 .camp-ops-root .client-master-consumable-pill-remove:disabled {
@@ -3518,7 +3617,7 @@
 .camp-ops-root .client-master-field-label {
   font-size: 0.82rem;
   font-weight: 650;
-  color: var(--ink-soft, #4b5563);
+  color: var(--ink-soft);
 }
 
 .camp-ops-root .client-master-hcw-field {
@@ -3541,8 +3640,8 @@
   margin: 0;
   padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--bg-elevated, #fff);
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
@@ -3555,22 +3654,22 @@
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--brand, #0a5ac2);
+  accent-color: var(--color-brand-primary);
   cursor: pointer;
 }
 
 .camp-ops-root .client-master-hcw-role:hover {
-  border-color: color-mix(in srgb, var(--brand, #0a5ac2) 45%, var(--line));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--line));
 }
 
 .camp-ops-root .client-master-hcw-role.is-selected {
-  border-color: color-mix(in srgb, var(--brand, #0a5ac2) 55%, var(--line));
-  background: color-mix(in srgb, var(--brand, #0a5ac2) 10%, #fff);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 55%, var(--line));
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, #fff);
   color: var(--ink);
 }
 
 .camp-ops-root .client-master-hcw-field.is-invalid .client-master-hcw-role {
-  border-color: var(--danger, #b42318);
+  border-color: var(--danger);
 }
 
 .camp-ops-root .camp-consumables-used-remove-btn {
@@ -3602,19 +3701,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
   border: none;
-  border-radius: 12px;
-  padding: 10px 16px;
+  border-radius: var(--radius-button);
+  min-height: var(--control-h);
+  height: var(--control-h);
+  padding: 0 var(--space-4);
   font-weight: 600;
   white-space: nowrap;
   line-height: 1.2;
 }
 
 .camp-ops-root .btn-sm {
-  padding: 7px 12px;
-  font-size: 0.82rem;
-  border-radius: 10px;
+  min-height: var(--control-h-sm);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-body-sm-size);
+  border-radius: var(--radius-button);
 }
 
 .camp-ops-root .btn-primary {
@@ -3675,10 +3778,16 @@
 .camp-ops-root select,
 .camp-ops-root textarea {
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background-color: var(--bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-button);
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  background-color: var(--color-bg-elevated);
+}
+
+.camp-ops-root textarea {
+  min-height: calc(var(--control-h) * 2.5);
+  padding: var(--space-2) var(--space-3);
 }
 
 .camp-ops-root .adaptive-select__input-container,
@@ -3782,7 +3891,7 @@
   max-height: var(--control-h-sm) !important;
   padding: 0 28px 0 10px;
   border: 1px solid var(--border);
-  border-radius: 8px !important;
+  border-radius: var(--radius-sm) !important;
   background: var(--bg-elevated);
   font-size: 0.8125rem !important;
   line-height: 1.2 !important;
@@ -3883,7 +3992,7 @@
   height: 20px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--bg-elevated);
   color: var(--text-muted);
   font-size: 0.95rem;
@@ -4030,7 +4139,7 @@
   max-height: var(--control-h-sm) !important;
   padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
   border: 1px solid var(--border);
-  border-radius: 8px !important;
+  border-radius: var(--radius-sm) !important;
   background: var(--bg-elevated);
   font-size: 0.8125rem !important;
   line-height: 1.2 !important;
@@ -4044,7 +4153,7 @@
   height: auto;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--bg-elevated);
   font-size: 0.8125rem;
   line-height: 1.35;
@@ -4115,7 +4224,7 @@
 }
 
 .camp-ops-root .camp-request-date-warning--error {
-  color: var(--danger, #b42318);
+  color: var(--danger);
 }
 
 .camp-ops-root .camp-form-section {
@@ -4297,7 +4406,7 @@
 
 .camp-ops-root .camp-address-suggestions button:hover,
 .camp-ops-root .camp-address-suggestions button.is-active {
-  background: var(--bg-sunken, #f1f5f9);
+  background: var(--bg-sunken);
   outline: none;
 }
 
@@ -4383,7 +4492,7 @@
 .camp-ops-root .camp-address-map {
   width: 100%;
   height: 220px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid #d7dce5;
   overflow: hidden;
   background: #f8fafc;
@@ -4402,8 +4511,8 @@
 .camp-ops-root .paste-file-upload-zone {
   margin: 12px 0;
   padding: 16px;
-  border: 1px dashed var(--border, #d7dce5);
-  border-radius: 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .camp-ops-root .paste-column-mapper {
@@ -4451,7 +4560,7 @@
 }
 
 .camp-ops-root .client-search-item.is-active {
-  box-shadow: inset 2px 0 0 var(--brand, #0f766e);
+  box-shadow: inset 2px 0 0 var(--brand);
 }
 
 .camp-ops-root .client-search-item strong {
@@ -4531,7 +4640,7 @@
   width: 2rem;
   height: 2rem;
   padding: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: var(--bg-elevated);
   color: var(--ink-soft);
@@ -4666,7 +4775,7 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 16px 24px 20px;
-  border-top: 1px solid var(--border, #e2e8f0);
+  border-top: 1px solid var(--border);
 }
 
 .camp-ops-root .camp-hcw-assign-picker {
@@ -4705,7 +4814,7 @@
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: var(--muted, #64748b);
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -4714,13 +4823,13 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
+  height: var(--control-h-sm);
+  min-height: var(--control-h-sm);
+  max-height: var(--control-h-sm);
   margin: 0;
   padding: 0 36px 0 10px;
   border: 1px solid var(--border, var(--line));
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background-color: var(--bg-elevated);
   color: var(--text, var(--ink));
   font-size: 0.86rem;
@@ -4750,7 +4859,7 @@
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-note {
   margin: 0;
   padding: 0.55rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line, var(--border));
   background: var(--bg-sunken);
   line-height: 1.4;
@@ -4767,7 +4876,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 20px 24px 12px;
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  border-bottom: 1px solid var(--border);
 }
 
 .camp-ops-root .camp-approval-issues-header h2 {
@@ -4778,7 +4887,7 @@
 .camp-ops-root .camp-approval-issues-subtitle {
   margin: 0.35rem 0 0;
   font-size: 0.85rem;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -4792,7 +4901,7 @@
 
 .camp-ops-root .camp-approval-issues-lead {
   margin: 0 0 12px;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -4817,7 +4926,7 @@
   padding: 1rem;
   background: var(--surface-muted);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 
 .camp-ops-root .program-document-section h3 {
@@ -4847,7 +4956,7 @@
 .camp-ops-root .camp-info-btn {
   width: 1.45rem;
   height: 1.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--border);
   background: var(--surface-muted);
   color: var(--accent);
@@ -4877,7 +4986,7 @@
   padding: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow);
 }
 
@@ -4947,7 +5056,7 @@
   width: 2rem;
   height: 2rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--surface-muted);
   color: var(--text-muted);
   font-size: 1.25rem;
@@ -4984,7 +5093,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--danger, #c0392b);
+  color: var(--danger);
 }
 
 .camp-ops-root .camp-info-section-alert {
@@ -5005,7 +5114,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: #fef2f2;
   border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
   color: var(--danger);
@@ -5016,7 +5125,7 @@
 .camp-ops-root .camp-info-blocker-icon {
   width: 1.15rem;
   height: 1.15rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--danger-soft);
   color: #b91c1c;
   font-size: 0.72rem;
@@ -5055,7 +5164,7 @@
 }
 
 .camp-ops-root .camp-info-detail-row-alert .camp-info-value {
-  color: var(--danger, #c0392b);
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -5120,7 +5229,7 @@
 }
 
 .camp-ops-root .camp-info-error {
-  color: var(--danger, #c0392b);
+  color: var(--danger);
 }
 
 .camp-ops-root .camp-info-actions {
@@ -5137,7 +5246,7 @@
 
 .camp-ops-root .camp-info-action-outline {
   background: var(--bg-elevated);
-  color: var(--danger, #b91c1c);
+  color: var(--danger);
   border: 1px solid #fca5a5;
 }
 
@@ -5149,21 +5258,22 @@
 .camp-ops-root .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: rgba(15, 23, 42, 0.45);
+  padding: var(--space-5);
+  background: var(--color-bg-overlay);
 }
 
 .camp-info-portal-root.camp-ops-root .modal-overlay.camp-info-modal-overlay {
-  z-index: 1200;
+  z-index: calc(var(--z-modal) + 200);
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: max(24px, env(safe-area-inset-top, 0px)) 24px max(24px, env(safe-area-inset-bottom, 0px));
+  padding: max(var(--space-5), env(safe-area-inset-top, 0px)) var(--space-5)
+    max(var(--space-5), env(safe-area-inset-bottom, 0px));
   min-height: 100%;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
@@ -5171,11 +5281,11 @@
 
 .camp-ops-root .modal-card {
   width: min(480px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: var(--shadow);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-md);
 }
 
 .camp-ops-root .modal-card h2 {
@@ -5192,7 +5302,7 @@
 .camp-ops-root .modal-camp-summary {
   margin-bottom: 1rem;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
   font-size: 0.9rem;
   line-height: 1.5;
@@ -5223,7 +5333,7 @@
 .camp-ops-root .modal-camp-summary-compact {
   margin: 0 0 12px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--surface-muted);
   font-size: 0.82rem;
   color: var(--text-muted);
@@ -5275,7 +5385,7 @@
   margin-bottom: 1rem;
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
 }
 
@@ -5308,7 +5418,7 @@
   margin: 0 0 0.75rem;
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
   font-size: 0.88rem;
   line-height: 1.45;
@@ -5336,7 +5446,7 @@
   width: 100%;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
   color: var(--text);
   text-align: left;
@@ -5386,7 +5496,7 @@
   min-height: var(--control-h);
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text);
   font-size: 0.9rem;
@@ -5400,7 +5510,7 @@
   color: var(--text-muted);
 }
 
-@media (max-width: var(--bp-xs)) {
+@media (max-width: 560px) {
 
   .camp-ops-root .cancel-source-options {
     grid-template-columns: 1fr;
@@ -5415,7 +5525,7 @@
   margin-bottom: 1rem;
 }
 
-@media (max-width: var(--bp-sm)) {
+@media (max-width: 640px) {
   .camp-ops-root .modal-form-grid {
     grid-template-columns: 1fr;
   }
@@ -5434,7 +5544,7 @@
 .camp-ops-root .modal-radio-group {
   grid-column: 1 / -1;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   margin: 0;
 }
@@ -5497,7 +5607,7 @@
   width: min(420px, 100%);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 32px;
   box-shadow: var(--shadow);
 }
@@ -5527,7 +5637,7 @@
 .camp-ops-root .demo-login-block {
   margin-bottom: 20px;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: #f0fdfa;
   border: 1px solid #99f6e4;
 }
@@ -5535,9 +5645,9 @@
 .camp-ops-root .demo-badge {
   display: inline-block;
   padding: 4px 10px;
-  border-radius: 999px;
-  background: #0f766e;
-  color: #fff;
+  border-radius: var(--radius-full);
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-primary);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -5561,7 +5671,7 @@
   min-width: 120px;
   padding: 9px 12px;
   border: 1px solid #5eead4;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--primary-dark);
   font-size: 0.85rem;
@@ -5685,7 +5795,7 @@
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
@@ -5724,7 +5834,7 @@
   width: 2rem;
   height: 2rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--surface-muted);
   color: var(--text-muted);
   font-size: 1.25rem;
@@ -5745,7 +5855,7 @@
 .camp-ops-root .camps-filter-actions .btn.is-active, .camp-ops-root .users-filter-actions .btn.is-active, .camp-ops-root .toolbar .btn.is-active {
   border-color: var(--brand);
   background: #ecfdf5;
-  color: #0f766e;
+  color: var(--color-brand-primary);
 }
 
 .camp-ops-root .permissions-panel {
@@ -5753,7 +5863,7 @@
   flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   position: sticky;
   top: 16px;
@@ -5848,7 +5958,7 @@
   align-items: stretch;
   gap: 0;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--bg-elevated);
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -5890,7 +6000,7 @@
 
 .camp-ops-root .users-search-btn {
   margin: 6px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   flex-shrink: 0;
 }
 
@@ -5912,7 +6022,7 @@
 
 .camp-ops-root .users-status-btn {
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 8px 14px;
   background: var(--surface-muted);
   color: var(--text-muted);
@@ -5931,7 +6041,7 @@
 .camp-ops-root .users-status-btn.is-active {
   border-color: var(--brand);
   background: #ecfdf5;
-  color: #0f766e;
+  color: var(--color-brand-primary);
 }
 
 .camp-ops-root .users-filter-actions {
@@ -5954,7 +6064,7 @@
 .camp-ops-root .permissions-breakdown {
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
   display: flex;
   flex-direction: column;
@@ -5995,7 +6105,7 @@
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
   font-size: 0.84rem;
   line-height: 1.4;
@@ -6006,7 +6116,7 @@
   flex-shrink: 0;
   width: 1.15rem;
   height: 1.15rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: #dcfce7;
   color: var(--ok);
   font-size: 0.68rem;
@@ -6038,7 +6148,7 @@
 .camp-ops-root .status-pill {
   display: inline-block;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -6063,7 +6173,7 @@
   color: var(--color-danger);
 }
 
-@media (max-width: var(--bp-lg)) {
+@media (max-width: 1024px) {
 
   .camp-ops-root .users-layout, .camp-ops-root .users-layout-with-panel {
     grid-template-columns: 1fr;
@@ -6078,7 +6188,7 @@
 .camp-ops-root .error-banner {
   background: var(--danger-soft);
   color: var(--danger);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   line-height: 1.5;
   margin-bottom: 16px;
@@ -6109,7 +6219,7 @@
 .camp-ops-root .success-banner {
   background: #dcfce7;
   color: var(--ok);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   line-height: 1.5;
   margin-bottom: 16px;
@@ -6119,7 +6229,7 @@
   background: #ecfdf5;
   color: #14532d;
   border: 1px solid #86efac;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   margin-bottom: 16px;
 }
@@ -6159,7 +6269,7 @@
   width: 32px;
   height: 32px;
   border: 1px solid #86efac;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--ok);
   font-size: 1.2rem;
@@ -6206,7 +6316,7 @@
 
 .camp-ops-root .camp-created-copy-btn {
   border: 1px solid #86efac;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-elevated);
   color: var(--ok);
   font-size: 0.78rem;
@@ -6225,7 +6335,7 @@
   display: inline-flex;
   align-items: center;
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-elevated);
   border: 1px solid #86efac;
   font-size: 0.9rem;
@@ -6234,7 +6344,7 @@
 }
 
 .camp-ops-root .camp-created-id-link {
-  color: #0f766e;
+  color: var(--color-brand-primary);
   text-decoration: none;
 }
 
@@ -6246,7 +6356,7 @@
 .camp-ops-root .info-banner {
   background: #e0f2fe;
   color: #075985;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   line-height: 1.5;
   margin-bottom: 16px;
@@ -6272,7 +6382,7 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--brand-soft);
   border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--line));
 }
@@ -6302,7 +6412,7 @@
 
 .camp-ops-root .step-pill {
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--surface-muted);
   color: var(--text-muted);
   font-size: 0.85rem;
@@ -6331,7 +6441,7 @@
   margin-bottom: 16px;
   padding: 16px 18px;
   border: 1px solid #bae6fd;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: #f0f9ff;
 }
 
@@ -6343,7 +6453,7 @@
 
 .camp-ops-root .upload-zone {
   border: 2px dashed var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 36px 24px;
   text-align: center;
   background: var(--surface-muted);
@@ -6371,7 +6481,7 @@
   align-items: end;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: #fafcff;
 }
 
@@ -6397,7 +6507,7 @@
 
 .camp-ops-root .summary-card {
   padding: 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--surface-muted);
 }
 
@@ -6431,7 +6541,7 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
@@ -6492,7 +6602,7 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -6556,7 +6666,7 @@
   );
 }
 
-@media (max-width: var(--bp-xl)) {
+@media (max-width: 1280px) {
 
   .camp-ops-root .charts-grid, .camp-ops-root .mapping-grid, .camp-ops-root .form-grid:not(.camp-execution-fields-grid), .camp-ops-root .grid-hierarchy-cards, .camp-ops-root .grid-alert-cards {
     grid-template-columns: 1fr;
@@ -6573,7 +6683,7 @@
 
 }
 
-@media (max-width: var(--bp-lg)) {
+@media (max-width: 1024px) {
 
   .camp-ops-root .camp-ops-shell, .camp-ops-root .camp-ops-shell.is-sidebar-collapsed {
     flex-direction: column;
@@ -6678,18 +6788,18 @@
 }
 .camp-ops-root .camp-ops-simple-chart-track {
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--surface-muted);
   overflow: hidden;
 }
 .camp-ops-root .camp-ops-simple-chart-bar {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: #0284c7;
 }
 .camp-ops-root .camp-ops-simple-chart-bar.is-line {
-  background: #0f766e;
+  background: var(--color-brand-primary);
 }
 
 /* Camp lifecycle 4-stage form */
@@ -6760,7 +6870,7 @@
 .camp-ops-root .camp-lifecycle-step-marker {
   width: 2rem;
   height: 2rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6790,13 +6900,13 @@
   margin-inline: 0.2rem;
   min-width: 0.75rem;
   background: #e2e8f0;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
 }
 
 .camp-ops-root .camp-lifecycle-step--active .camp-lifecycle-step-marker {
   border-color: var(--brand);
   background: var(--brand);
-  color: #fff;
+  color: var(--color-text-on-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
 }
 
@@ -6809,7 +6919,7 @@
 .camp-ops-root .camp-lifecycle-step--reachable .camp-lifecycle-step-marker {
   border-color: var(--brand);
   background: var(--brand);
-  color: #fff;
+  color: var(--color-text-on-primary);
 }
 
 .camp-ops-root .camp-lifecycle-step--complete .camp-lifecycle-step-title,
@@ -6844,12 +6954,12 @@
   flex-shrink: 0;
   margin-left: 0.5rem;
   padding: 0.3rem 0.7rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.74rem;
   font-weight: 600;
   text-transform: capitalize;
   background: var(--brand-soft);
-  color: #0f766e;
+  color: var(--color-brand-primary);
   white-space: nowrap;
 }
 
@@ -6934,8 +7044,8 @@
 .camp-ops-root .camp-execution-docs-panel {
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--bg-elevated, #fff);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
 }
 
 .camp-ops-root .camp-execution-docs-panel h3 {
@@ -6962,7 +7072,7 @@
 .camp-ops-root .camp-execution-doc-row-label {
   font-size: 0.84rem;
   font-weight: 600;
-  color: var(--ink-soft, #4b5563);
+  color: var(--ink-soft);
 }
 
 .camp-ops-root .camp-execution-doc-other-input {
@@ -6982,20 +7092,20 @@
   min-height: 34px;
   padding: 0 14px;
   border: none;
-  border-radius: 999px;
-  background: var(--brand, #2563eb);
-  color: #fff;
+  border-radius: var(--radius-full);
+  background: var(--brand);
+  color: var(--color-text-on-primary);
   font-size: 0.8rem;
   font-weight: 600;
   line-height: 1;
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--brand, #2563eb) 28%, transparent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--brand) 28%, transparent);
   cursor: pointer;
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .camp-ops-root .camp-execution-doc-upload-btn:hover:not(:disabled) {
-  background: var(--brand-hover, #1d4ed8);
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--brand, #2563eb) 34%, transparent);
+  background: var(--brand-hover);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--brand) 34%, transparent);
 }
 
 .camp-ops-root .camp-execution-doc-upload-btn:active:not(:disabled) {
@@ -7020,17 +7130,17 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.82rem;
   font-weight: 700;
   color: transparent;
-  background: var(--line, #e5e7eb);
+  background: var(--line);
   flex-shrink: 0;
 }
 
 .camp-ops-root .camp-execution-doc-tick.is-uploaded {
-  color: #fff;
-  background: var(--ok, #16a34a);
+  color: var(--color-text-on-primary);
+  background: var(--ok);
 }
 
 .camp-ops-root .camp-execution-doc-save-hint {
@@ -7038,7 +7148,7 @@
 }
 
 .camp-ops-root .camp-execution-doc-hint-warn {
-  color: var(--warn, #b45309);
+  color: var(--warn);
   font-weight: 600;
 }
 
@@ -7051,7 +7161,7 @@
 .camp-ops-root .camp-field-label {
   font-size: 0.82rem;
   font-weight: 650;
-  color: var(--ink-soft, #4b5563);
+  color: var(--ink-soft);
 }
 
 .camp-ops-root .camp-in-time-row {
@@ -7074,9 +7184,9 @@
   width: 72px;
   height: 72px;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--line, #d7dee8);
-  background: var(--bg-muted, #f4f7fb);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--bg-muted);
 }
 
 .camp-ops-root .camp-in-time-selfie--empty {
@@ -7101,7 +7211,7 @@
   align-items: end;
 }
 
-@media (max-width: var(--bp-sm)) {
+@media (max-width: 640px) {
   .camp-ops-root .camp-payout-submit-row {
     grid-template-columns: 1fr;
   }
@@ -7109,9 +7219,9 @@
 
 .camp-ops-root .camp-finance-submitted {
   padding: 0.65rem 0.75rem;
-  border-radius: 10px;
-  background: var(--brand-soft, #eef4ff);
-  border: 1px solid color-mix(in srgb, var(--brand, #0d47a1) 15%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--brand-soft);
+  border: 1px solid color-mix(in srgb, var(--brand) 15%, transparent);
 }
 
 .camp-ops-root .camp-finance-download-actions {
@@ -7177,7 +7287,7 @@
 .camp-ops-root .camp-export-date-inline-label {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--muted, #64748b);
+  color: var(--muted);
   line-height: 1;
   white-space: nowrap;
 }
@@ -7186,7 +7296,7 @@
   display: inline-flex;
   align-items: center;
   height: var(--control-h-sm);
-  color: var(--muted, #64748b);
+  color: var(--muted);
   font-size: 0.8125rem;
   line-height: 1;
   white-space: nowrap;
@@ -7215,7 +7325,7 @@
   min-height: var(--control-h-sm);
   max-height: var(--control-h-sm);
   padding: 0 1.85rem 0 0.6rem;
-  border: 1px solid var(--line, #e2e8f0);
+  border: 1px solid var(--line);
   border-radius: var(--radius-button, 8px);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -7418,9 +7528,9 @@
 .camp-ops-root .camp-export-filter-badge {
   min-width: 1.25rem;
   padding: 0.05rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--brand);
-  color: #fff;
+  color: var(--color-text-on-primary);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -7537,7 +7647,7 @@
   gap: 0.35rem;
   padding: 0.3rem 0.55rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-sunken);
   font-size: 0.78rem;
   font-weight: 600;
@@ -7553,7 +7663,7 @@
 
 .camp-ops-root .camp-export-module-tab-count {
   padding: 0.05rem 0.35rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--bg-elevated);
   font-size: 0.68rem;
   font-weight: 700;
@@ -7661,7 +7771,7 @@
 
 .camp-ops-root .camp-export-sticky-hint {
   font-size: 0.82rem;
-  color: var(--warn, #d97706);
+  color: var(--warn);
 }
 
 .camp-ops-root .camp-export-sticky-bar .btn:disabled {
@@ -7696,7 +7806,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted, #64748b);
+  color: var(--muted);
 }
 
 .camp-ops-root .camp-working-stage-select {
@@ -7710,10 +7820,10 @@
   text-align: center;
   text-align-last: center;
   box-sizing: border-box;
-  border: 1px solid var(--line, #e2e8f0);
+  border: 1px solid var(--line);
   border-radius: var(--dropdown-radius) !important;
-  background-color: var(--bg-elevated, #fff);
-  color: var(--ink, #0f172a);
+  background-color: var(--bg-elevated);
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -7724,7 +7834,7 @@
 
 .camp-ops-root .camp-working-stage-select:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line, #e2e8f0));
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
   box-shadow: var(--dropdown-focus-ring);
 }
 
@@ -7740,7 +7850,7 @@
 .camp-ops-root .camp-ops-strip {
   display: block;
   padding-bottom: 0.65rem;
-  border-bottom: 1px solid var(--line, #e2e8f0);
+  border-bottom: 1px solid var(--line);
 }
 
 .camp-ops-root .camp-ops-strip__main {
@@ -7902,13 +8012,13 @@
   min-height: var(--camps-filter-h);
   max-height: var(--camps-filter-h);
   box-sizing: border-box;
-  border: 1px solid var(--line, #e2e8f0);
+  border: 1px solid var(--line);
   border-radius: var(--radius-button, 8px);
-  background: var(--bg-elevated, #fff);
+  background: var(--bg-elevated);
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.2;
-  color: var(--ink, #0f172a);
+  color: var(--ink);
 }
 
 .camp-ops-root .camps-filter-search.master-search-field {
@@ -7923,16 +8033,16 @@
   height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
   min-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
   max-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
-  border: 1px solid var(--line, #e2e8f0);
+  border: 1px solid var(--line);
   border-radius: var(--radius-button, 8px);
-  background: var(--bg-elevated, #fff);
+  background: var(--bg-elevated);
   box-sizing: border-box;
 }
 
 .camp-ops-root .camps-filter-search.master-search-field:focus-within {
   outline: none;
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 45%, var(--line, #e2e8f0));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand, #0f766e) 14%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 14%, transparent);
 }
 
 .camp-ops-root .camps-filter-search .master-search-icon {
@@ -7941,7 +8051,7 @@
   border: 0;
   background: transparent;
   box-shadow: none;
-  color: var(--muted, #64748b);
+  color: var(--muted);
 }
 
 .camp-ops-root .camps-filter-search .master-search-input,
@@ -8008,9 +8118,9 @@
 }
 
 .camp-ops-root .camps-filter-preset.is-active {
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line, #e2e8f0)) !important;
-  background: color-mix(in srgb, var(--brand, #0f766e) 8%, var(--bg-elevated, #fff)) !important;
-  color: var(--brand, #0f766e) !important;
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line)) !important;
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
+  color: var(--brand) !important;
 }
 
 .camp-ops-root .camps-filter-date-range {
@@ -8028,7 +8138,7 @@
   flex: 0 0 auto;
   height: var(--camps-filter-h);
   padding: 0;
-  color: var(--muted, #64748b);
+  color: var(--muted);
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
@@ -8059,7 +8169,7 @@
   min-height: var(--camps-filter-h);
   max-height: var(--camps-filter-h);
   padding: 0 1.85rem 0 var(--control-pad-inline-start);
-  border: 1px solid var(--line, #e2e8f0);
+  border: 1px solid var(--line);
   border-radius: var(--radius-button, 8px);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -8087,8 +8197,8 @@
   margin: 0;
   padding: 0.5rem 0.75rem;
   border: 0;
-  border-top: 1px solid var(--line, #e2e8f0);
-  background: color-mix(in srgb, var(--surface, #f8fafc) 88%, var(--bg-elevated, #fff));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 88%, var(--bg-elevated));
   box-sizing: border-box;
 }
 
@@ -8113,7 +8223,7 @@
   align-items: center;
   gap: 0.45rem 0.65rem;
   padding: 0.45rem 0.75rem;
-  background: var(--bg-elevated, #fff);
+  background: var(--bg-elevated);
 }
 
 .camp-ops-root .camps-filter-chips--inline {
@@ -8156,7 +8266,7 @@
   }
 }
 
-@media (max-width: var(--bp-xl)) {
+@media (max-width: 1280px) {
   .camp-ops-root .camps-filter-toolbar {
     gap: 0.625rem;
   }
@@ -8188,7 +8298,7 @@
   }
 }
 
-@media (max-width: var(--bp-md)) {
+@media (max-width: 768px) {
   .camp-ops-root .camps-filter-toolbar__filters {
     flex-direction: column;
     align-items: stretch;
@@ -8232,7 +8342,7 @@
   }
 }
 
-@media (max-width: var(--bp-lg)) {
+@media (max-width: 1024px) {
   .camp-ops-root .camp-ops-strip__headline {
     align-items: flex-start;
   }
@@ -8349,7 +8459,7 @@
 
 .camp-ops-root .camp-time-frame-card {
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: #fffbeb;
   border: 1px solid #fde68a;
 }
@@ -8369,7 +8479,7 @@
   gap: 8px;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #0f766e;
+  color: var(--color-brand-primary);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -8392,7 +8502,7 @@
 
 .camp-ops-root .camp-time-frame--compact .camp-time-frame-card {
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .camp-ops-root .camp-time-frame--compact .camp-time-frame-slot {
@@ -8497,7 +8607,7 @@
 .camp-ops-root .camps-table .btn-sm {
   padding: 5px 10px;
   font-size: 0.78rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .camp-ops-root .camps-table .checkbox-col {
@@ -8562,10 +8672,10 @@
 }
 
 .camp-ops-root .camp-assignment-decision-btn {
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   background: var(--bg-elevated);
   color: var(--ink-soft);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 0.45rem 1.1rem;
   font-size: 0.84rem;
   font-weight: 600;
@@ -8574,9 +8684,9 @@
 }
 
 .camp-ops-root .camp-assignment-decision-btn.is-active {
-  border-color: #0f766e;
+  border-color: var(--color-brand-primary);
   background: #ecfdf5;
-  color: #0f766e;
+  color: var(--color-brand-primary);
 }
 
 .camp-ops-root .camp-assignment-decision-btn:disabled {
@@ -8592,7 +8702,7 @@
 .camp-ops-root .camp-assignment-note {
   margin: 0;
   padding: 0.65rem 0.85rem;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--bg-sunken);
   border: 1px solid var(--line);
 }
@@ -8613,7 +8723,7 @@
 .camp-ops-root .camp-assignment-copy-preview {
   margin: 0;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--bg-sunken);
   font-family: var(--font-mono, ui-monospace, monospace);

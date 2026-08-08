@@ -114,7 +114,13 @@ export function validateClientMasterForm(form) {
           errors[`${prefix}.poNetValue`] = 'PO Net Value is too large';
         }
       }
+      validateOptionalDate(row?.poIssueDate, 'Issue date', errors, `${prefix}.poIssueDate`);
       validateOptionalDate(row?.poExpiryDate, 'Expiry', errors, `${prefix}.poExpiryDate`);
+      const issue = String(row?.poIssueDate || '').trim();
+      const expiry = String(row?.poExpiryDate || '').trim();
+      if (issue && expiry && issue > expiry) {
+        errors[`${prefix}.poExpiryDate`] = 'Expiry must be on or after issue date';
+      }
     });
   }
 

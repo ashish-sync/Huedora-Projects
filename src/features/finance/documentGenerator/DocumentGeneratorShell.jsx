@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import html2pdf from 'html2pdf.js';
 import {
   IconBack,
   IconDownload,
@@ -74,7 +73,7 @@ export default function DocumentGeneratorShell({
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
 
-      await html2pdf()
+      await (await import('html2pdf.js')).default()
         .set({
           margin: 0,
           filename: filename || 'document.pdf',

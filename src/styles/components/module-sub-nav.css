@@ -13,7 +13,7 @@
   gap: var(--space-1);
   margin: 0 0 var(--stack-sm);
   padding-bottom: var(--stack-sm);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--color-border-default);
 }
 
 .module-sub-nav--bar .module-sub-nav__link,
@@ -28,7 +28,7 @@
   font-size: var(--text-body-sm-size);
   font-weight: 600;
   line-height: 1.2;
-  color: var(--muted);
+  color: var(--color-text-secondary);
   text-decoration: none;
   border: 1px solid transparent;
   box-sizing: border-box;
@@ -37,15 +37,15 @@
 
 .module-sub-nav--bar .module-sub-nav__link:hover,
 .logistics-nav-link:hover {
-  color: var(--ink);
-  background: color-mix(in srgb, var(--brand-soft) 70%, var(--bg-elevated));
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--brand-soft) 70%, var(--color-bg-elevated));
 }
 
 .module-sub-nav--bar .module-sub-nav__link.is-active,
 .logistics-nav-link.is-active {
-  color: var(--brand);
-  border-color: color-mix(in srgb, var(--brand) 28%, var(--line));
-  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated));
+  color: var(--color-brand-primary);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border-default));
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-elevated));
 }
 
 /* ── Segmented variant (inline pill group) ─────────────────── */
@@ -59,9 +59,9 @@
   gap: var(--space-1);
   margin: 0;
   padding: var(--space-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-border-default);
   border-radius: var(--radius);
-  background: var(--surface-muted);
+  background: var(--color-bg-hover);
 }
 
 .module-sub-nav--segmented .module-sub-nav__link,
@@ -79,7 +79,7 @@ button.page-tab {
   font-size: var(--text-body-sm-size);
   font-weight: 600;
   line-height: 1.2;
-  color: var(--muted);
+  color: var(--color-text-secondary);
   text-decoration: none;
   border: 1px solid transparent;
   box-sizing: border-box;
@@ -96,17 +96,17 @@ button.page-tab {
 .camp-ops-inline-nav-link:hover,
 .page-tab:hover,
 button.page-tab:hover:not(:disabled) {
-  color: var(--ink);
-  background: color-mix(in srgb, var(--brand-soft) 70%, var(--bg-elevated));
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--brand-soft) 70%, var(--color-bg-elevated));
 }
 
 .module-sub-nav--segmented .module-sub-nav__link.is-active,
 .camp-ops-inline-nav-link.is-active,
 .page-tab.is-active,
 button.page-tab.is-active {
-  color: var(--brand);
-  border-color: color-mix(in srgb, var(--brand) 28%, var(--line));
-  background: var(--bg-elevated);
+  color: var(--color-brand-primary);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border-default));
+  background: var(--color-bg-elevated);
 }
 
 button.page-tab:disabled {

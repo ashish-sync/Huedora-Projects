@@ -76,7 +76,7 @@ export default function RepairsPage() {
               }
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Open repair</h3>
+            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Open repair</h3>
             <div className="field">
               <label>Asset</label>
               <AdaptiveSelect required value={fault.assetId} onChange={(e) => setFault({ ...fault, assetId: e.target.value })}>
@@ -111,7 +111,7 @@ export default function RepairsPage() {
               }
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Start maintenance</h3>
+            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Start maintenance</h3>
             <div className="field">
               <label>Asset</label>
               <AdaptiveSelect required value={mnt.assetId} onChange={(e) => setMnt({ ...mnt, assetId: e.target.value })}>

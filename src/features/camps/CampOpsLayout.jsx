@@ -6,6 +6,7 @@ import { CampWorkingStageProvider, useCampWorkingStage } from './CampWorkingStag
 import { useCampOpsAuth } from './useCampOpsAuth.js';
 import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
+import AppErrorBoundary from '../../components/AppErrorBoundary.jsx';
 import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
 import './campOps.css';
@@ -87,7 +88,9 @@ function CampOpsLayoutBody({
           </div>
         </header>
         <div className="camp-ops-page-content">
-          <Outlet />
+          <AppErrorBoundary title="Camp One failed">
+            <Outlet />
+          </AppErrorBoundary>
         </div>
       </PageShell>
     </div>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { renderAsync } from 'docx-preview';
 import { apiFetch } from '../shared/api.js';
 
 const FONT_STACK =
@@ -110,6 +109,8 @@ export default function DocxNativePreview({ file, templateId, className = '' }) 
           if (!res.ok) throw new Error('Could not load Word file for preview');
           data = await res.blob();
         }
+        if (cancelled || !bodyRef.current) return;
+        const { renderAsync } = await import('docx-preview');
         if (cancelled || !bodyRef.current) return;
         await renderAsync(data, bodyRef.current, styleRef.current || bodyRef.current, RENDER_OPTIONS);
         if (cancelled) return;

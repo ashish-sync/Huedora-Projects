@@ -29,6 +29,7 @@ export function emptyCampTermsFormFields() {
     poApplyGst18: true,
     poGstAmount: 0,
     poGrossValue: 0,
+    poIssueDate: '',
     poExpiryDate: '',
     poCombinedNet: 0,
     poCombinedGst: 0,
@@ -163,6 +164,7 @@ export function createEmptyPurchaseOrder(overrides = {}) {
     poApplyGst18: true,
     poGstAmount: 0,
     poGrossValue: '',
+    poIssueDate: '',
     poExpiryDate: '',
     files: [],
     poFile: null,
@@ -240,6 +242,7 @@ function normalizePurchaseOrderRow(row, index = 0) {
     ...tax,
     poNetValue: emptyInput ? '' : tax.poNetValue,
     poGrossValue: emptyInput ? '' : tax.poGrossValue,
+    poIssueDate: String(row.poIssueDate || '').trim().slice(0, 10),
     poExpiryDate: String(row.poExpiryDate || '').trim().slice(0, 10),
     files,
     poFile: files[0] || null,
@@ -259,6 +262,7 @@ export function purchaseOrdersFromRecord(row) {
     Number(row.poNetValue) > 0 ||
     row.poFile ||
     (Array.isArray(row.campTermsFiles) && row.campTermsFiles.length > 0) ||
+    String(row.poIssueDate || '').trim() ||
     String(row.poExpiryDate || '').trim();
   if (!hasLegacy && normalizeCampTerms(row.campTerms) !== CAMP_TERMS.PO_BASED) return [];
   if (!hasLegacy) return [createEmptyPurchaseOrder()];
@@ -270,6 +274,7 @@ export function purchaseOrdersFromRecord(row) {
         poNumber: row.poNumber,
         poNetValue: row.poNetValue,
         poApplyGst18: row.poApplyGst18,
+        poIssueDate: row.poIssueDate,
         poExpiryDate: row.poExpiryDate,
         files,
         poFile: files[0] || row.poFile,
@@ -325,6 +330,7 @@ export function campTermsFieldsFromRecord(row) {
     poApplyGst18: primary ? primary.poApplyGst18 !== false : true,
     poGstAmount: primary?.poGstAmount ?? 0,
     poGrossValue: primary?.poGrossValue ?? 0,
+    poIssueDate: primary?.poIssueDate || '',
     poExpiryDate: primary?.poExpiryDate || '',
     agreementStartDate: String(row?.agreementStartDate || '').trim().slice(0, 10),
     agreementEffectiveDate: String(row?.agreementEffectiveDate || '').trim().slice(0, 10),
@@ -344,6 +350,7 @@ function serializePoForApi(row) {
     id: String(row.id || newPurchaseOrderId()),
     poNumber: String(row.poNumber || '').trim().slice(0, 80),
     ...tax,
+    poIssueDate: String(row.poIssueDate || '').trim().slice(0, 10),
     poExpiryDate: String(row.poExpiryDate || '').trim().slice(0, 10),
     files,
     poFile: files[0] || null,
@@ -379,6 +386,7 @@ export function buildCampTermsPayload(form) {
       poApplyGst18: primary.poApplyGst18,
       poGstAmount: primary.poGstAmount,
       poGrossValue: primary.poGrossValue,
+      poIssueDate: primary.poIssueDate || '',
       poExpiryDate: primary.poExpiryDate || '',
       poFile: primary.poFile || null,
       ...combined,
@@ -398,6 +406,7 @@ export function buildCampTermsPayload(form) {
       poApplyGst18: false,
       poGstAmount: 0,
       poGrossValue: 0,
+      poIssueDate: '',
       poExpiryDate: '',
       poFile: null,
       poCombinedNet: 0,
@@ -419,6 +428,7 @@ export function buildCampTermsPayload(form) {
       poApplyGst18: false,
       poGstAmount: 0,
       poGrossValue: 0,
+      poIssueDate: '',
       poExpiryDate: '',
       poFile: null,
       poCombinedNet: 0,
@@ -439,6 +449,7 @@ export function buildCampTermsPayload(form) {
     poApplyGst18: false,
     poGstAmount: 0,
     poGrossValue: 0,
+    poIssueDate: '',
     poExpiryDate: '',
     poFile: null,
     poCombinedNet: 0,

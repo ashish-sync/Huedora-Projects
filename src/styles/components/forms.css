@@ -23,7 +23,7 @@
   min-height: var(--control-h);
   padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-button);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
   font-size: var(--text-body-sm-size);
@@ -50,7 +50,7 @@
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--brand, #0f766e) 35%, var(--line));
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
   box-shadow: var(--dropdown-focus-ring);
 }
 

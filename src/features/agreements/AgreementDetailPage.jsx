@@ -351,7 +351,7 @@ export default function AgreementDetailPage() {
             <span>{doc.agreementNumber}</span>
           </p>
           <h1>{doc.title}</h1>
-          <div className="row" style={{ marginTop: 6 }}>
+          <div className="row" style={{ marginTop: 'var(--space-2)' }}>
             <span className={`badge tone-${meta.tone}`}>{meta.label}</span>
             <span className={`badge ${isNonSigning ? 'tone-info' : 'tone-ok'}`}>
               {isNonSigning ? 'Non-signing' : 'Signing'}
@@ -599,19 +599,19 @@ export default function AgreementDetailPage() {
           <div className="esign-parties-strip esign-parties-strip-lg">
             <div className="esign-party-card">
               <SignatureMark signer={sender} label="Sender / Owner" />
-              <div className="muted mono-sm" style={{ marginTop: 8 }}>
+              <div className="muted mono-sm" style={{ marginTop: 'var(--space-2)' }}>
                 {sender?.email || '-'}
               </div>
-              <span className="badge" style={{ marginTop: 8 }}>
+              <span className="badge" style={{ marginTop: 'var(--space-2)' }}>
                 {sender?.status || 'PENDING'}
               </span>
             </div>
             <div className="esign-party-card">
               <SignatureMark signer={receiver} label="Receiver" showDate />
-              <div className="muted mono-sm" style={{ marginTop: 8 }}>
+              <div className="muted mono-sm" style={{ marginTop: 'var(--space-2)' }}>
                 {receiver?.email || doc.partyEmail || '-'}
               </div>
-              <span className="badge" style={{ marginTop: 8 }}>
+              <span className="badge" style={{ marginTop: 'var(--space-2)' }}>
                 {receiver?.status || 'PENDING'}
               </span>
             </div>
@@ -649,7 +649,7 @@ export default function AgreementDetailPage() {
             <div style={{ marginTop: 16 }}>
               <p className="muted">Share this link with {receiver?.name || doc.partyName}:</p>
               <code className="mono-sm">{recipientLink}</code>
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 'var(--space-2)' }}>
                 <button className="btn secondary" type="button" onClick={copyRecipientLink}>
                   Copy link
                 </button>

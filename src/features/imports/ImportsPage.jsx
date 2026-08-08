@@ -45,7 +45,10 @@ export default function ImportsPage() {
     >
       {error && <p className="error">{error}</p>}
 
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}
+      >
         <ImportCard
           title={`${MODULE.ASSET_INVENTORY} sheet`}
           hint="Custodian Name, Email/Contact, Asset Name, Serial No, Agreement Status, Custody…"
@@ -64,7 +67,7 @@ export default function ImportsPage() {
 
       {result && (
         <div className="card">
-          <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>
+          <h3 className="card-title" style={{ margin: '0 0 var(--space-3)' }}>
             Last job: {result.type} / {result.mode}
           </h3>
           <p>
@@ -77,7 +80,7 @@ export default function ImportsPage() {
             </p>
           ) : null}
           {result.summary && (
-            <pre style={{ fontFamily: 'var(--mono)', fontSize: '0.85rem', overflow: 'auto' }}>
+            <pre style={{ fontFamily: 'var(--mono)', fontSize: 'var(--text-body-size)', overflow: 'auto' }}>
               {JSON.stringify(result.summary, null, 2)}
             </pre>
           )}
@@ -111,18 +114,18 @@ function ImportCard({ title, hint, busy, onDry, onCommit }) {
   const [file, setFile] = useState(null);
   return (
     <div className="card">
-      <h3 style={{ margin: '0 0 6px', fontSize: '1rem' }}>{title}</h3>
-      <p className="muted" style={{ margin: '0 0 10px' }}>
+      <h3 className="card-title" style={{ margin: '0 0 var(--space-2)' }}>{title}</h3>
+      <p className="muted" style={{ margin: '0 0 var(--space-3)' }}>
         {hint}
       </p>
-      <p className="muted mono-sm" style={{ margin: '0 0 8px' }}>
+      <p className="muted mono-sm" style={{ margin: '0 0 var(--space-2)' }}>
         {IMPORT_ACCEPT_HINT}
       </p>
       <FilePicker
         accept={IMPORT_ACCEPT_ATTR}
         onChange={(e) => setFile(e.target.files?.[0] || null)}
       />
-      <div className="row" style={{ marginTop: 12 }}>
+      <div className="row" style={{ marginTop: 'var(--space-3)' }}>
         <button className="btn secondary" type="button" disabled={!file || busy} onClick={() => onDry(file)}>
           Dry-run
         </button>

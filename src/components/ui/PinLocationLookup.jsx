@@ -128,17 +128,17 @@ export default function PinLocationLookup({
           onChange={(e) => onPinChange(e.target.value)}
         />
         {lookupState === 'loading' ? (
-          <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+          <p className="muted" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-body-size)' }}>
             Looking up PIN…
           </p>
         ) : null}
         {lookupState === 'not-found' ? (
-          <p className="error-text" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+          <p className="error-text" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-body-size)' }}>
             PIN not found in master. Ask an admin to add this PIN in PIN Geography.
           </p>
         ) : null}
         {lookupError ? (
-          <p className="error-text" style={{ margin: '0.35rem 0 0', fontSize: '0.85rem' }}>
+          <p className="error-text" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-body-size)' }}>
             {lookupError}
           </p>
         ) : null}

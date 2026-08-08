@@ -1,9 +1,27 @@
 /** Client Master PO utilization helpers for Billing Center. */
 
+/** Hide POs from Billing PO / WO picker when remaining balance is below this. */
+export const MIN_PO_REMAINING_TO_BILL = 1500;
+
 export function formatPoInr(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '₹0';
   return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+export function poRemainingBalance(po) {
+  const rem = Number(po?.remainingBalance);
+  if (Number.isFinite(rem)) return Math.max(0, Math.round(rem * 100) / 100);
+  const total = Number(po?.totalValue ?? po?.poGrossValue ?? po?.poNetValue) || 0;
+  const billed = Number(po?.billedAmount) || 0;
+  return Math.max(0, Math.round((total - billed) * 100) / 100);
+}
+
+/** True when a Client Master PO may be offered on Tax Invoice / Bill of Supply. */
+export function isPoSelectableForBilling(po, { selectedPoId = '', minRemaining = MIN_PO_REMAINING_TO_BILL } = {}) {
+  if (!po) return false;
+  if (selectedPoId && String(po.id) === String(selectedPoId)) return true;
+  return poRemainingBalance(po) >= minRemaining;
 }
 
 export function utilizationTone(pct, remaining) {
@@ -13,14 +31,14 @@ export function utilizationTone(pct, remaining) {
 }
 
 /**
- * Prefer taxable/subtotal against PO net value (tax is not added to PO ceiling).
+ * Use Total Bill Value (grand total incl. tax) against PO balance.
  */
 export function invoiceAmountAgainstPo(totals) {
   if (!totals) return 0;
+  const grand = Number(totals.grandTotal ?? totals.totalBillValue ?? totals.totalAmount);
+  if (Number.isFinite(grand) && grand > 0) return Math.round(grand * 100) / 100;
   const subtotal = Number(totals.taxableTotal ?? totals.subtotal ?? totals.taxableAmount);
-  if (Number.isFinite(subtotal) && subtotal > 0) return Math.round(subtotal * 100) / 100;
-  const grand = Number(totals.grandTotal);
-  return Number.isFinite(grand) ? Math.round(grand * 100) / 100 : 0;
+  return Number.isFinite(subtotal) ? Math.round(subtotal * 100) / 100 : 0;
 }
 
 export function projectPoUtilization(poRow, thisAmount = 0) {

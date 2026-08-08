@@ -3,6 +3,7 @@ import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
+import AppErrorBoundary from '../../components/AppErrorBoundary.jsx';
 import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
 
@@ -46,7 +47,9 @@ export default function FinanceLayout() {
   if (isEditor) {
     return (
       <div className="finance-shell finance-shell--editor">
-        <Outlet />
+        <AppErrorBoundary title="Billing editor failed">
+          <Outlet />
+        </AppErrorBoundary>
       </div>
     );
   }
@@ -62,7 +65,9 @@ export default function FinanceLayout() {
           ariaLabel={`${MODULE.FINANCE} sections`}
           items={navItems}
         />
-        <Outlet />
+        <AppErrorBoundary title="Finance One failed">
+          <Outlet />
+        </AppErrorBoundary>
       </PageShell>
     </div>
   );

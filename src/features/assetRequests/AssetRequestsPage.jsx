@@ -750,8 +750,8 @@ export default function AssetRequestsPage() {
 
   const loadClientMasterOptions = () =>
     Promise.all([
-      api('/camp-ops/clients?limit=500').then((r) => r.data || []).catch(() => []),
-      api('/camp-ops/client-masters?limit=500').then((r) => r.data || []).catch(() => []),
+      api('/camp-ops/clients?limit=100').then((r) => r.data || []).catch(() => []),
+      api('/camp-ops/client-masters?limit=100').then((r) => r.data || []).catch(() => []),
     ]).then(([clientRows, masterRows]) => {
       setClients(clientRows);
       setClientMasters(masterRows);
@@ -807,22 +807,71 @@ export default function AssetRequestsPage() {
   }, [page, limit, typeFilter]);
 
   useEffect(() => {
-    api('/assets?limit=200')
-      .then((r) => setAssets(r.data || []))
-      .catch(() => {});
-    api('/contacts?limit=500')
-      .then((r) => setContacts(r.data || []))
-      .catch(() => {});
-    api('/contacts?limit=500&contactCategory=Vendor')
-      .then((r) => setVendorContacts((r.data || []).filter((c) => isVendorContact(c))))
-      .catch(() => setVendorContacts([]));
+    // Keep the list route light — load picklist data only when a create type needs it.
     api('/logistics/meta')
       .then((r) => setLogisticsMeta(r.data || null))
       .catch(() => setLogisticsMeta(null));
-    loadExpenseMaster();
-    loadClientMasterOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const type = String(form.requestType || '').toUpperCase();
+    if (!type) return undefined;
+    let cancelled = false;
+
+    const needsContacts =
+      type === 'TRANSFER' ||
+      type === 'RETURN' ||
+      type === 'HIRING' ||
+      type === 'SERVICE' ||
+      type === 'REPAIR' ||
+      type === 'MAINTENANCE' ||
+      type === 'LOGISTICS';
+    const needsAssets =
+      type === 'TRANSFER' ||
+      type === 'RETURN' ||
+      type === 'SERVICE' ||
+      type === 'REPAIR' ||
+      type === 'MAINTENANCE' ||
+      type === 'LOGISTICS';
+    const needsVendors = type === 'LOGISTICS' || type === 'SERVICE' || type === 'REPAIR';
+    const needsClients = type === 'REIMBURSEMENT' || type === 'HIRING' || type === 'LOGISTICS';
+
+    if (needsAssets) {
+      api('/assets?limit=100')
+        .then((r) => {
+          if (!cancelled) setAssets(r.data || []);
+        })
+        .catch(() => {});
+    }
+    if (needsContacts) {
+      api('/contacts?limit=100')
+        .then((r) => {
+          if (!cancelled) setContacts(r.data || []);
+        })
+        .catch(() => {});
+    }
+    if (needsVendors) {
+      api('/contacts?limit=100&contactCategory=Vendor')
+        .then((r) => {
+          if (!cancelled) setVendorContacts((r.data || []).filter((c) => isVendorContact(c)));
+        })
+        .catch(() => {
+          if (!cancelled) setVendorContacts([]);
+        });
+    }
+    if (needsClients) {
+      loadClientMasterOptions();
+    }
+    if (type === 'REIMBURSEMENT') {
+      loadExpenseMaster();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.requestType]);
 
   const applyLinked = (partial) => {
     setForm((prev) => ({ ...prev, ...partial }));
@@ -1437,7 +1486,7 @@ export default function AssetRequestsPage() {
       {jdUploadPrompt && (
         <div className="card arq-jd-prompt" role="dialog" aria-labelledby="arq-jd-prompt-title">
           <h3 id="arq-jd-prompt-title">Upload job description (optional)</h3>
-          <p className="muted" style={{ margin: '0 0 10px' }}>
+          <p className="muted" style={{ margin: '0 0 var(--space-3)' }}>
             Request <strong>{jdUploadPrompt.requestNumber}</strong> was submitted. Attach a JD
             now, or skip and continue.
           </p>
@@ -1451,7 +1500,7 @@ export default function AssetRequestsPage() {
             />
             <span className="muted mono-sm">Image, PDF, Word, Excel, or text file.</span>
           </div>
-          <div className="arq-actions" style={{ marginTop: 10 }}>
+          <div className="arq-actions" style={{ marginTop: 'var(--space-3)' }}>
             <button
               type="button"
               className="btn"
@@ -2299,7 +2348,7 @@ export default function AssetRequestsPage() {
               <>
                 <div className="field arq-span">
                   <h4 className="arq-section-title">Master One Request</h4>
-                  <p className="muted" style={{ margin: '0 0 8px' }}>
+                  <p className="muted" style={{ margin: '0 0 var(--space-2)' }}>
                     Choose the module and reference type. On approval the record is created in Master One.
                   </p>
                 </div>

@@ -7,44 +7,44 @@
   display: flex;
   align-items: stretch;
   width: 100%;
-  min-height: var(--control-h, 40px);
+  min-height: var(--control-h);
 }
 
 .date-input-display {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  min-height: var(--control-h, 40px);
+  min-height: var(--control-h);
   padding: 0 42px 0 var(--control-pad-inline-start);
-  border: 1px solid var(--color-border-default, var(--line, #d0d5dd));
-  border-radius: var(--radius-md, 10px);
-  background: var(--color-bg-elevated, var(--bg-elevated, #fff));
-  color: var(--color-text-primary, var(--ink, #101828));
-  font-size: var(--text-body-sm-size, 0.875rem);
-  line-height: var(--text-body-sm-leading, 1.4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-button);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-leading);
   transition:
-    border-color var(--duration-fast, 0.15s) var(--ease-standard, ease),
-    box-shadow var(--duration-fast, 0.15s) var(--ease-standard, ease);
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .date-input-display::placeholder {
-  color: var(--color-text-muted, var(--muted, #667085));
+  color: var(--color-text-tertiary);
 }
 
 .date-input-display:focus {
   outline: none;
-  border-color: var(--color-brand-primary, var(--brand, #0a5ac2));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary, #0a5ac2) 18%, transparent);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
 }
 
 .date-input-display:disabled {
-  background: var(--color-bg-sunken, var(--bg-sunken, #f9fafb));
-  color: var(--color-text-muted, var(--muted, #667085));
+  background: var(--color-bg-sunken);
+  color: var(--color-text-disabled);
   cursor: not-allowed;
 }
 
 .date-input-display.input-invalid {
-  border-color: var(--color-error, #d92d20);
+  border-color: var(--color-danger);
 }
 
 .date-input-picker-btn {
@@ -59,15 +59,15 @@
   height: 30px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-text-secondary, var(--muted, #475467));
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
 .date-input-picker-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-brand-primary, #0a5ac2) 10%, transparent);
-  color: var(--color-brand-primary, var(--brand, #0a5ac2));
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  color: var(--color-brand-primary);
 }
 
 .date-input-picker-btn:disabled {

@@ -60,6 +60,7 @@ const formStringFields = [
   'requestTimeline',
   'assignedUserEmails',
   'poNumber',
+  'poIssueDate',
   'poExpiryDate',
   'agreementStartDate',
   'agreementEffectiveDate',

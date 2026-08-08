@@ -111,6 +111,7 @@ export function useInvoiceBuilder() {
             projectName: patch.projectName || prev.invoice.projectName,
             placeOfSupply: patch.billTo?.address || prev.invoice.placeOfSupply,
             poReference: '',
+            poDate: '',
           },
           shipTo: syncShipToAfterBillToPatch(prev, patch.billTo || {}),
         };
@@ -129,6 +130,7 @@ export function useInvoiceBuilder() {
       invoice: {
         ...prev.invoice,
         poReference: prev.clientPurchaseOrderId ? '' : prev.invoice.poReference,
+        poDate: prev.clientPurchaseOrderId ? '' : prev.invoice.poDate,
       },
     }));
   }, [readOnly, setForm]);

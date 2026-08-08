@@ -263,7 +263,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
             Save reusable signatures for HR, Director Finance, and other roles. Draw, upload an image, or type a name, then apply when a document needs that sign-off.
           </p>
         </div>
-        <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div className="row" style={{ gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {excelConfig ? (
             <MasterExcelToolbar
               {...excelConfig}
@@ -278,7 +278,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
         </div>
       </div>
       ) : (
-        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="row" style={{ gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
           {excelConfig ? (
             <MasterExcelToolbar
               {...excelConfig}
@@ -452,7 +452,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
                   placeholder="Type the signature name"
                 />
                 {form.typedName && (
-                  <div className="sig-master-preview" style={{ marginTop: 10 }}>
+                  <div className="sig-master-preview" style={{ marginTop: 'var(--space-3)' }}>
                     <div className="esign-typed-sig">{form.typedName}</div>
                   </div>
                 )}
@@ -468,7 +468,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
                   PNG, JPG, or WebP. Transparent PNG works best.
                 </p>
                 {form.uploadPreview?.startsWith('data:image') && (
-                  <div className="sig-master-preview" style={{ marginTop: 10 }}>
+                  <div className="sig-master-preview" style={{ marginTop: 'var(--space-3)' }}>
                     <img src={form.uploadPreview} alt="Upload preview" />
                   </div>
                 )}
@@ -482,7 +482,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
               </div>
             )}
 
-            <div className="row" style={{ marginTop: 12 }}>
+            <div className="row" style={{ marginTop: 'var(--space-3)' }}>
               <button className="btn" type="submit" disabled={busy}>
                 {busy ? 'Saving…' : editId ? 'Save changes' : 'Save signature'}
               </button>

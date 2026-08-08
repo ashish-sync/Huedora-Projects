@@ -15,6 +15,7 @@ import { defaultDebitNoteForm } from '../debitNote/debitNoteStorage.js';
 import { defaultDeliveryChallanForm } from '../deliveryChallan/deliveryChallanStorage.js';
 import { defaultBillOfSupplyForm } from '../billOfSupply/billOfSupplyStorage.js';
 import { defaultQuotationForm } from '../quotation/quotationStorage.js';
+import { builderFormForPersist } from './builderFormPersist.js';
 
 export function docConfig(documentType) {
   return COMMERCIAL_DOC_TYPES.find((t) => t.key === documentType) || null;
@@ -89,7 +90,7 @@ function invoiceLikeToPayload(form, documentType) {
         sgstRate: row.sgstRate,
         sortOrder: index + 1,
       })),
-    builderForm: form,
+    builderForm: builderFormForPersist(form),
     documentType,
   };
 }
@@ -153,7 +154,7 @@ function proformaToPayload(form) {
     shipToStateName: trim(ship.stateName),
     documentNumber: '',
     lineItems,
-    builderForm: form,
+    builderForm: builderFormForPersist(form),
     documentType: 'proforma',
   };
 }
@@ -224,7 +225,7 @@ function poToPayload(form) {
         isFoc: Boolean(row.isFoc),
         sortOrder: index + 1,
       })),
-    builderForm: form,
+    builderForm: builderFormForPersist(form),
     documentType: 'purchase_order',
     contactId: form.contactId || null,
   };
@@ -299,7 +300,7 @@ function deliveryChallanToPayload(form) {
         remarks: trim(row.remarks),
         sortOrder: index + 1,
       })),
-    builderForm: form,
+    builderForm: builderFormForPersist(form),
     documentType: 'delivery_challan',
   };
 }

@@ -12,6 +12,7 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import ModalShell from '../../components/ui/ModalShell.jsx';
 
 function currentPeriod() {
   return new Date().toISOString().slice(0, 7);
@@ -487,13 +488,12 @@ export default function VerificationsPage() {
       )}
 
       {active && canWrite && (
-        <div className="vf-modal-backdrop" role="presentation" onClick={closeVerify}>
-          <div
-            className={`vf-modal card${verifyStep === 'choose' ? ' is-compact' : ''}`}
-            role="dialog"
-            aria-labelledby="vf-modal-title"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <ModalShell
+          onClose={closeVerify}
+          titleId="vf-modal-title"
+          overlayClassName="vf-modal-backdrop"
+          panelClassName={`vf-modal card${verifyStep === 'choose' ? ' is-compact' : ''}`}
+        >
             <div className="vf-verify-head">
               <div>
                 <h2 id="vf-modal-title">
@@ -859,8 +859,7 @@ export default function VerificationsPage() {
                 </ul>
               </div>
             )}
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       <section className="vf-catalog card card--flush">

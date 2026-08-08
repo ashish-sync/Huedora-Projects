@@ -1,11 +1,22 @@
 /**
  * TYLO One design tokens — import hub
- * Semantic tokens → legacy aliases → existing CSS keeps working
+ *
+ * Canonical contract (prefer these in new CSS):
+ *   Color   --color-*          (aliases: --ink, --brand, --line, --muted)
+ *   Type    --font-family-* / --text-*-size|weight|leading
+ *   Space   --space-0…10       (aliases: --pad, --stack*)
+ *   Control --control-h (44) / --control-h-sm (36)
+ *   Radius  --radius-xs|sm|md|lg|full  (--radius-button, --radius-card)
+ *   Shadow  --shadow-xs|sm|md|lg       (alias: --shadow → sm)
+ *   Z       --z-dropdown|sticky|header|sidebar|modal|toast
+ *   Break   @media literals: 560 / 640 / 768 / 1024 / 1280 (= --bp-*)
+ *
+ * Load order: colors/type → elevation/motion → layout (may reference them) → aliases.
  */
 
 @import './tokens/colors.css';
 @import './tokens/typography.css';
-@import './tokens/layout.css';
 @import './tokens/elevation.css';
 @import './tokens/motion.css';
+@import './tokens/layout.css';
 @import './tokens/legacy-aliases.css';

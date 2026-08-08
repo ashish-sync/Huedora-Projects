@@ -1,6 +1,10 @@
-import html2pdf from 'html2pdf.js';
 import { pageSpec } from '../shared/a4Landscape.js';
 import { formatDisplayDate } from '../invoiceGenerator/invoiceCalculations.js';
+
+async function loadHtml2Pdf() {
+  const mod = await import('html2pdf.js');
+  return mod.default || mod;
+}
 
 function waitForLayout() {
   return new Promise((resolve) => {
@@ -233,6 +237,7 @@ export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf
   try {
     await waitForImages(clone);
     await waitForLayout();
+    const html2pdf = await loadHtml2Pdf();
     const blob = await html2pdf().set(pdfExportOptions(filename, orientation)).from(clone).outputPdf('blob');
     if (!(blob instanceof Blob)) throw new Error('PDF render failed');
     return blob;

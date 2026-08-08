@@ -88,17 +88,70 @@ export default function InvoiceBuilderPanel({
   const canOrgMaster = canManageOrganisationMaster(user);
   const isPartiesLayout = panelLayout === 'bos' || panelLayout === 'parties';
 
+  const poFields = showPoFields ? (
+    form.clientMasterId && applyClientMasterRecipient ? (
+      <ClientMasterPoTracker
+        clientMasterId={form.clientMasterId}
+        selectedPoId={form.clientPurchaseOrderId || ''}
+        poReference={form.invoice.poReference || ''}
+        poDate={form.invoice.poDate || ''}
+        excludeDocId={docId}
+        totals={totals}
+        disabled={false}
+                onSelectPo={(po) => {
+                  update('clientPurchaseOrderId', po?.id || '');
+                  update('invoice.poReference', po?.poNumber || '');
+                  // PO / WO Date always follows Client Master PO Issue Date
+                  update(
+                    'invoice.poDate',
+                    po?.poIssueDate ? String(po.poIssueDate).slice(0, 10) : ''
+                  );
+                }}
+                onPoReferenceChange={(value) => {
+                  update('invoice.poReference', value);
+                  if (form.clientPurchaseOrderId) update('clientPurchaseOrderId', '');
+                }}
+                onPoDateChange={(value) => update('invoice.poDate', value)}
+              />
+            ) : (
+              <>
+                <Field label="PO / WO No.">
+                  <input
+                    className={inputCls}
+                    value={form.invoice.poReference || ''}
+                    onChange={(e) => update('invoice.poReference', e.target.value)}
+                    placeholder={
+                      applyClientMasterRecipient
+                        ? 'Select Client Master above to pick PO / WO'
+                        : undefined
+                    }
+                  />
+                </Field>
+                <Field label="PO / WO Date">
+                  <input
+                    type="date"
+                    className={inputCls}
+                    value={form.invoice.poDate || ''}
+                    onChange={(e) => update('invoice.poDate', e.target.value)}
+                  />
+                </Field>
+              </>
+            )
+  ) : null;
+
   const recipientSection = (
       <Section id="recipient" title={recipientTitle} defaultOpen>
         {applyClientMasterRecipient ? (
-          <div className="ib-grid" style={{ marginBottom: 12 }}>
-            <Field label="Client Master" span={2}>
+          <div className="ib-client-po-stack">
+            <label className="ib-field">
+              <span className="ib-field-label">Client Master</span>
               <ClientMasterRecipientPicker
                 value={form.clientMasterId || ''}
                 onPick={(_row, patch) => applyClientMasterRecipient(patch)}
                 onClear={() => clearClientMasterRecipient?.()}
               />
-            </Field>
+            </label>
+            {poFields}
           </div>
         ) : null}
         <div className="ib-grid">
@@ -139,6 +192,7 @@ export default function InvoiceBuilderPanel({
               placeholder="Maharashtra / 27"
             />
           </Field>
+          {!applyClientMasterRecipient ? poFields : null}
         </div>
       </Section>
   );
@@ -168,51 +222,6 @@ export default function InvoiceBuilderPanel({
               title={datesFromApproval ? 'Set automatically on approval' : undefined}
             />
           </Field>
-          {showPoFields ? (
-            <>
-              {applyClientMasterRecipient && form.clientMasterId ? (
-                <div className="ib-field ib-field--span">
-                  <ClientMasterPoTracker
-                    clientMasterId={form.clientMasterId}
-                    selectedPoId={form.clientPurchaseOrderId || ''}
-                    excludeDocId={docId}
-                    totals={totals}
-                    disabled={false}
-                    onSelectPo={(po) => {
-                      update('clientPurchaseOrderId', po?.id || '');
-                      update('invoice.poReference', po?.poNumber || '');
-                    }}
-                  />
-                </div>
-              ) : null}
-              <Field label="PO / WO No.">
-                <input
-                  className={inputCls}
-                  value={form.invoice.poReference || ''}
-                  onChange={(e) => {
-                    update('invoice.poReference', e.target.value);
-                    if (form.clientPurchaseOrderId) {
-                      update('clientPurchaseOrderId', '');
-                    }
-                  }}
-                  readOnly={Boolean(form.clientPurchaseOrderId)}
-                  title={
-                    form.clientPurchaseOrderId
-                      ? 'Filled from selected Client Master PO — clear selection above to edit'
-                      : undefined
-                  }
-                />
-              </Field>
-              <Field label="PO / WO Date">
-                <input
-                  className={inputCls}
-                  value={form.invoice.poDate || ''}
-                  onChange={(e) => update('invoice.poDate', e.target.value)}
-                  placeholder="DD/MM/YYYY"
-                />
-              </Field>
-            </>
-          ) : null}
           <Field
             label={dueLabel}
             title={datesFromApproval ? '30 days from approval' : undefined}
@@ -539,23 +548,13 @@ export default function InvoiceBuilderPanel({
         </p>
       </div>
 
-      {isPartiesLayout ? (
-        <>
-          {headerSection}
-          {recipientSection}
-          {shipToSection}
-          {linesSection}
-          {termsSection}
-        </>
-      ) : (
-        <>
-          {recipientSection}
-          {headerSection}
-          {shipToSection}
-          {linesSection}
-          {termsSection}
-        </>
-      )}
+      <>
+        {recipientSection}
+        {headerSection}
+        {shipToSection}
+        {linesSection}
+        {termsSection}
+      </>
     </div>
   );
 }

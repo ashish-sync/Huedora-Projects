@@ -49,11 +49,11 @@
 
 .btn.danger {
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-text-on-primary);
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-danger) 88%, #000);
+  background: color-mix(in srgb, var(--color-danger) 88%, rgb(0 0 0));
 }
 
 .app-header .btn.secondary {

@@ -250,7 +250,7 @@ function TemplatePreviewModal({ template, onClose }) {
               {useNativeDocx ? 'Word document preview' : 'Customer-facing preview'}
             </p>
             <h2>{template.name}</h2>
-            <p className="muted" style={{ margin: '4px 0 0' }}>
+            <p className="muted" style={{ margin: 'var(--space-1) 0 0' }}>
               {typeLabel(template.documentType || template.agreementType)} ·{' '}
               {signingLabel(template.signingType)}
               {useNativeDocx
@@ -383,7 +383,7 @@ function TemplatePreviewModal({ template, onClose }) {
         {(template.repeatableTables || []).length > 0 && (
           <footer className="dm-modal-fields">
             <strong>Repeatable line tables</strong>
-            <p className="muted" style={{ margin: '6px 0 0' }}>
+            <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
               {(template.repeatableTables || [])
                 .map(
                   (t) =>
@@ -564,7 +564,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
             Click a template to preview pages as the recipient will see them.
           </p>
         </div>
-        <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div className="row" style={{ gap: 'var(--space-2)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {excelConfig ? (
             <MasterExcelToolbar
               {...excelConfig}
@@ -579,7 +579,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
         </div>
       </div>
       ) : (
-        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="row" style={{ gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
           {excelConfig ? (
             <MasterExcelToolbar
               {...excelConfig}
@@ -687,7 +687,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                 </tbody>
               </table>
               {!rows.length && (
-                <p className="muted" style={{ padding: '1rem' }}>
+                <p className="muted" style={{ padding: 'var(--space-4)' }}>
                   No templates yet. Upload a Word file to get started.
                 </p>
               )}
@@ -726,7 +726,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                 onChange={(e) => onPickFile(e.target.files?.[0] || null)}
               />
               {file && analyzeBusy ? (
-                <span className="muted" style={{ fontSize: '0.85rem' }}>
+                <span className="muted" style={{ fontSize: 'var(--text-body-size)' }}>
                   Reading preview…
                 </span>
               ) : null}
@@ -775,7 +775,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                   </option>
                 ))}
               </AdaptiveSelect>
-              <span className="muted" style={{ fontSize: '0.82rem' }}>
+              <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
                 Used as the owner/sender mark for this template (left side).{' '}
                 <Link to="/master-one?scope=document&entity=signatures">Manage signatures</Link>
               </span>
@@ -808,7 +808,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
             {uploadRepeatableTables.length > 0 && (
               <div className="field">
                 <label>Repeatable line table detected</label>
-                <p className="muted" style={{ margin: '0 0 8px' }}>
+                <p className="muted" style={{ margin: '0 0 var(--space-2)' }}>
                   {uploadRepeatableTables
                     .map(
                       (t) =>

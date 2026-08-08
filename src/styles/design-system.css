@@ -39,6 +39,7 @@
   font-weight: var(--text-h2-weight) !important;
   line-height: var(--text-h2-leading) !important;
   letter-spacing: var(--text-h2-tracking);
+  color: var(--color-text-primary);
 }
 
 .topbar-desc {
@@ -85,8 +86,8 @@
 .logistics-form h3,
 .arq-form h3 {
   margin: 0 0 var(--stack-sm);
-  font-size: 1rem;
-  font-weight: 650;
+  font-size: var(--text-h3-size);
+  font-weight: var(--text-h3-weight);
   color: var(--ink);
 }
 
@@ -148,7 +149,7 @@ select.filter-select,
   max-height: var(--control-h) !important;
   box-sizing: border-box !important;
   border-radius: var(--dropdown-radius) !important;
-  font-size: 0.8125rem !important;
+  font-size: var(--text-body-sm-size) !important;
   line-height: 1.2 !important;
 }
 

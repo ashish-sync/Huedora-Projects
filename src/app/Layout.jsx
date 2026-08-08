@@ -10,6 +10,8 @@ import {
   NOTIFICATIONS_CHANGED_EVENT,
   playNotificationSound,
 } from '../shared/notificationSound.js';
+import AppErrorBoundary from '../components/AppErrorBoundary.jsx';
+import ModalShell from '../components/ui/ModalShell.jsx';
 
 function initials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -249,31 +251,31 @@ export default function Layout({ children }) {
       </header>
 
       <main id="main-content" className={`main${isHome ? ' main--home' : ''}`} tabIndex={-1}>
-        {children}
+        <AppErrorBoundary title="This page failed to render" detail="The rest of TYLO One is still available — try again or open another module.">
+          {children}
+        </AppErrorBoundary>
       </main>
 
-      {confirmLogout && (
-        <div className="confirm-backdrop" role="presentation" onClick={() => setConfirmLogout(false)}>
-          <div
-            className="confirm-dialog card"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="logout-confirm-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="logout-confirm-title">Log out?</h3>
-            <p>Are you sure you want to log out?</p>
-            <div className="confirm-actions">
-              <button type="button" className="btn secondary" onClick={() => setConfirmLogout(false)}>
-                Cancel
-              </button>
-              <button type="button" className="btn" onClick={confirmAndLogout} disabled={logoutBusy}>
-                {logoutBusy ? 'Logging out…' : 'Log out'}
-              </button>
-            </div>
+      {confirmLogout ? (
+        <ModalShell
+          onClose={() => setConfirmLogout(false)}
+          titleId="logout-confirm-title"
+          overlayClassName="confirm-backdrop"
+          panelClassName="confirm-dialog card"
+          closeOnOverlayClick={!logoutBusy}
+        >
+          <h3 id="logout-confirm-title">Log out?</h3>
+          <p>Are you sure you want to log out?</p>
+          <div className="confirm-actions">
+            <button type="button" className="btn secondary" onClick={() => setConfirmLogout(false)}>
+              Cancel
+            </button>
+            <button type="button" className="btn" onClick={confirmAndLogout} disabled={logoutBusy}>
+              {logoutBusy ? 'Logging out…' : 'Log out'}
+            </button>
           </div>
-        </div>
-      )}
+        </ModalShell>
+      ) : null}
     </div>
   );
 }

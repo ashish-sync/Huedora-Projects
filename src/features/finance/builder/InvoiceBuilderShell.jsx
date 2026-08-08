@@ -4,6 +4,7 @@ import { useAuth } from '../../../shared/auth.jsx';
 import { usePreviewScale } from '../documentGenerator/usePreviewScale.js';
 import { canApproveCommercialDocument } from './commercialApproval.js';
 import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
+import ModalShell from '../../../components/ui/ModalShell.jsx';
 import './export-invoice.css';
 import './builder.css';
 
@@ -42,24 +43,28 @@ function ShortcutsModal({ open, onClose, newDocLabel = 'New document' }) {
     ['?', 'Show shortcuts'],
   ];
   return (
-    <div className="ib-modal-backdrop" onClick={onClose} role="presentation">
-      <div className="ib-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Keyboard shortcuts">
-        <div className="ib-modal-head">
-          <h2>Keyboard shortcuts</h2>
-          <button type="button" className="ib-icon-btn" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-        <ul className="ib-shortcuts">
-          {rows.map(([key, desc]) => (
-            <li key={key}>
-              <kbd>{key}</kbd>
-              <span>{desc}</span>
-            </li>
-          ))}
-        </ul>
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      titleId="ib-shortcuts-title"
+      overlayClassName="ib-modal-backdrop"
+      panelClassName="ib-modal"
+    >
+      <div className="ib-modal-head">
+        <h2 id="ib-shortcuts-title">Keyboard shortcuts</h2>
+        <button type="button" className="ib-icon-btn" onClick={onClose} aria-label="Close">
+          ×
+        </button>
       </div>
-    </div>
+      <ul className="ib-shortcuts">
+        {rows.map(([key, desc]) => (
+          <li key={key}>
+            <kbd>{key}</kbd>
+            <span>{desc}</span>
+          </li>
+        ))}
+      </ul>
+    </ModalShell>
   );
 }
 
@@ -309,6 +314,7 @@ export default function InvoiceBuilderShell({
             className={`ib-icon-btn ib-panel-btn${panelOpen ? ' is-active' : ''}`}
             onClick={onTogglePanel}
             title="Toggle panel (⌘\)"
+            aria-label={panelOpen ? 'Hide edit panel' : 'Show edit panel'}
             aria-pressed={panelOpen}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

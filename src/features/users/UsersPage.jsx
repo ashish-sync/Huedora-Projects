@@ -52,7 +52,7 @@ export default function UsersPage() {
           }
         }}
       >
-        <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Create user</h3>
+        <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Create user</h3>
         <div className="row">
           <div className="field">
             <label>Email</label>

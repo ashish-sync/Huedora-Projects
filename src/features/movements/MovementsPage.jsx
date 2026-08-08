@@ -93,7 +93,7 @@ export default function MovementsPage() {
             }
           }}
         >
-          <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Request movement</h3>
+          <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Request movement</h3>
           <div className="row">
             <div className="field">
               <label>Asset</label>

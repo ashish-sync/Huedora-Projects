@@ -40,9 +40,9 @@
 
 .feedback-banner.is-warning,
 .warning-banner {
-  background: var(--color-warning-subtle, color-mix(in srgb, var(--color-warning, #d97706) 12%, transparent));
-  color: var(--color-warning, #b45309);
-  border-color: color-mix(in srgb, var(--color-warning, #d97706) 28%, transparent);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 28%, transparent);
 }
 
 .am-banner {
@@ -77,21 +77,21 @@
 html[data-theme='dark'] .feedback-banner.is-error,
 html[data-theme='dark'] .error-banner,
 html[data-theme='dark'] .am-banner.is-error {
-  color: color-mix(in srgb, var(--color-danger) 88%, #fff);
+  color: color-mix(in srgb, var(--color-danger) 88%, var(--color-text-on-primary));
 }
 
 html[data-theme='dark'] .feedback-banner.is-success,
 html[data-theme='dark'] .success-banner {
-  color: color-mix(in srgb, var(--color-success) 88%, #fff);
+  color: color-mix(in srgb, var(--color-success) 88%, var(--color-text-on-primary));
 }
 
 html[data-theme='dark'] .feedback-banner.is-info,
 html[data-theme='dark'] .info-banner,
 html[data-theme='dark'] .am-banner.is-info {
-  color: color-mix(in srgb, var(--color-info) 88%, #fff);
+  color: color-mix(in srgb, var(--color-info) 88%, var(--color-text-on-primary));
 }
 
 html[data-theme='dark'] .feedback-banner.is-warning,
 html[data-theme='dark'] .warning-banner {
-  color: color-mix(in srgb, var(--color-warning, #f59e0b) 90%, #fff);
+  color: color-mix(in srgb, var(--color-warning) 90%, var(--color-text-on-primary));
 }

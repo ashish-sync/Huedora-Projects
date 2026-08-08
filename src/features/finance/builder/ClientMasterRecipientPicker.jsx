@@ -89,12 +89,11 @@ export default function ClientMasterRecipientPicker({
   const options = useMemo(
     () =>
       rows.map((row) => {
-        const code = row.clientCode || '—';
-        const division = row.programName || row.drugTherapyName || '—';
-        const company = row.clientName || '—';
+        const code = String(row.clientCode || '').trim() || '—';
+        const division = String(row.programName || row.drugTherapyName || '').trim() || '—';
         return {
           id: String(row._id),
-          label: `${company} · ${code} · ${division}`,
+          label: `${code} · ${division}`,
           row,
         };
       }),
@@ -133,10 +132,6 @@ export default function ClientMasterRecipientPicker({
         ))}
       </AdaptiveSelect>
       {error ? <p className="ib-client-master-pick-error">{error}</p> : null}
-      <p className="ib-client-master-pick-hint">
-        Pick a program to autofill recipient details from Client Master. Contact Name uses SPOC Name.
-        You can still edit fields below.
-      </p>
     </div>
   );
 }

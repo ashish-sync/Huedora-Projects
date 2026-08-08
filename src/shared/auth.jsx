@@ -32,7 +32,8 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     const { data } = await api('/auth/login', { method: 'POST', body: { email, password } });
     setAccessToken(data.accessToken);
-    const { data: me } = await api('/auth/me');
+    // Login already returns the public user — skip a second /auth/me round-trip.
+    const me = data.user || (await api('/auth/me')).data;
     setUser(me);
     if (loginExperience.healthcareInsights) {
       beginInsightSession();

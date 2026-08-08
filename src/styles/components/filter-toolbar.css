@@ -1,14 +1,8 @@
 /**
  * Enterprise filter toolbar — neat single-baseline rows matching MasterFilterShell.
  * Search grows; filters share a fixed width; actions sit on the right.
- * Loaded last so it wins over legacy global/toolbar rules.
+ * Gap / control tokens come from tokens/layout.css — do not redefine here.
  */
-
-:root {
-  --filter-toolbar-gap: 0.625rem;
-  --filter-control-h: var(--control-h, 2.25rem);
-  --filter-control-min-w: 10.5rem;
-}
 
 /* ── Shell look for every list filter bar ──────────────────── */
 
@@ -49,10 +43,10 @@
 .logistics-filter-bar,
 .finance-docs-filters,
 .camp-ops-root .communications-filter-panel {
-  margin-bottom: var(--space-3, 0.75rem) !important;
-  padding: 0.625rem 0.75rem !important;
+  margin-bottom: var(--space-3) !important;
+  padding: var(--space-2) var(--space-3) !important;
   border: 1px solid var(--line) !important;
-  border-radius: var(--radius-sm, 10px) !important;
+  border-radius: var(--radius-sm) !important;
   background: var(--bg-elevated) !important;
 }
 
@@ -67,7 +61,7 @@
   margin-bottom: var(--space-3, 0.75rem) !important;
   padding: 0 !important;
   border: 1px solid var(--line) !important;
-  border-radius: var(--radius-sm, 10px) !important;
+  border-radius: var(--radius-sm) !important;
   background: var(--bg-elevated) !important;
   overflow: hidden !important;
 }

@@ -1,6 +1,9 @@
 /**
- * TYLO One — radius, shadows, z-index
- * Buttons: 12px · Cards: 16px · Subtle layered surfaces
+ * TYLO One — radius, shadows, z-index (canonical)
+ *
+ * Radius: xs 4 · sm 8 · md 12 (buttons) · lg 16 (cards) · full
+ * Shadows: xs → lg (do not flatten via aliases)
+ * Z: dropdown 40 · sticky/header 50 · sidebar 45 · modal 1000 · toast 1100
  */
 
 :root {
@@ -10,7 +13,6 @@
   --radius-lg: 16px;
   --radius-full: 9999px;
 
-  /* Legacy aliases */
   --radius: var(--radius-lg);
   --radius-button: var(--radius-md);
   --radius-card: var(--radius-lg);

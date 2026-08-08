@@ -835,7 +835,7 @@ export default function AgreementCreatePage() {
                 <div className="muted">
                   {recipientPerson.contact || recipientPerson.mobile || 'No mobile'}
                 </div>
-                <p className="muted" style={{ marginBottom: 0, marginTop: 8 }}>
+                <p className="muted" style={{ marginBottom: 0, marginTop: 'var(--space-2)' }}>
                   This person will receive the document and complete Sign / I acknowledge.
                 </p>
               </div>
@@ -957,14 +957,14 @@ export default function AgreementCreatePage() {
                 value={startDate}
                 onChange={setStartDate}
               />
-              <span className="muted" style={{ fontSize: '0.82rem' }}>
+              <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
                 Defaults to today. Change only if the agreement starts on another day.
               </span>
             </div>
 
             <div className="field">
               <label>Should this document expire?</label>
-              <div className="esign-sign-modes" style={{ marginTop: 6 }}>
+              <div className="esign-sign-modes" style={{ marginTop: 'var(--space-2)' }}>
                 <button
                   type="button"
                   className={`btn secondary ${!hasExpiry ? 'is-selected' : ''}`}
@@ -1011,7 +1011,7 @@ export default function AgreementCreatePage() {
                   <div className="muted">{newContact.contact || '-'}</div>
                 </>
               )}
-              <div className="muted" style={{ marginTop: 6 }}>
+              <div className="muted" style={{ marginTop: 'var(--space-2)' }}>
                 Deliver via {[deliverEmail && 'Email', deliverSms && 'SMS'].filter(Boolean).join(' + ') || 'none'}
               </div>
             </div>
@@ -1037,13 +1037,13 @@ export default function AgreementCreatePage() {
           <div className="ph-step-head">
             <h3 style={{ margin: 0 }}>Fill placeholders</h3>
             {assetPlaceholders.length > 0 && (
-              <p className="muted" style={{ margin: '6px 0 0' }}>
+              <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
                 Asset Name, Model, and Serial Number fields search the Asset Registry and auto-fill
                 when you pick a match.
               </p>
             )}
             {hasLineTables ? (
-              <p className="muted" style={{ margin: '6px 0 0' }}>
+              <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
                 Line items use the template table row as a prototype. Add rows as needed; each is
                 included in the PDF.
               </p>

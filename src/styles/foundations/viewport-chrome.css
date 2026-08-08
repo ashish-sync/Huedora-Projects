@@ -45,7 +45,7 @@ body {
 /* Subtle scrollbars — Chromium / WebKit */
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--ink, #334155) 28%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -58,14 +58,14 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--ink, #334155) 24%, transparent);
+  background: color-mix(in srgb, var(--ink) 24%, transparent);
   border: 2px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--ink, #334155) 38%, transparent);
+  background: color-mix(in srgb, var(--ink) 38%, transparent);
   background-clip: padding-box;
 }
 

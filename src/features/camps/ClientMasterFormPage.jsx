@@ -106,6 +106,7 @@ const emptyForm = {
   kmsUnit: '',
   mappedConsumables: [],
   isActive: true,
+  updatedAt: '',
 };
 
 function numberInputProps(field, form, updateField, fieldErrors) {
@@ -498,7 +499,10 @@ export default function ClientMasterFormPage() {
         phone: trimmed.spocNumber || '',
       },
       assignedUserEmails: parseEmailList(form.assignedUserEmails),
-      mappedConsumables: form.mappedConsumables || [],
+      ...(Array.isArray(form.mappedConsumables) && form.mappedConsumables.length
+        ? { mappedConsumables: form.mappedConsumables }
+        : {}),
+      expectedUpdatedAt: form.updatedAt || undefined,
     };
     formNumberFields.forEach((field) => {
       payload[field] = trimmed[field] === '' ? 0 : Number(form[field]) || 0;
@@ -592,7 +596,7 @@ export default function ClientMasterFormPage() {
           </select>
         </label>
         <label>
-          Billing address
+          Billing Address
           <textarea
             rows={2}
             value={form.billingAddress}
@@ -613,7 +617,7 @@ export default function ClientMasterFormPage() {
           />
         </label>
         <label>
-          State code
+          State Code
           <input
             value={form.billingStateCode}
             onChange={(e) => updateField('billingStateCode', e.target.value)}
@@ -753,7 +757,7 @@ export default function ClientMasterFormPage() {
           <FieldError message={fieldErrors.requestTimeline} />
         </label>
         <label>
-          Assigned user login emails
+          Assigned User Login Emails
           <input
             value={form.assignedUserEmails}
             onChange={(e) => updateField('assignedUserEmails', e.target.value)}

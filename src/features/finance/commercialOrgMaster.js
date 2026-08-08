@@ -143,7 +143,10 @@ export async function saveCommercialOrgMaster(payload) {
 function orgVal(master, key, formFallback = '') {
   if (!master) return formFallback ?? '';
   const v = master[key];
-  if (v == null) return '';
+  // Null/undefined/blank master values must not wipe a non-blank form value.
+  if (v == null || (typeof v === 'string' && !v.trim())) {
+    return formFallback ?? '';
+  }
   return typeof v === 'string' ? v : String(v);
 }
 

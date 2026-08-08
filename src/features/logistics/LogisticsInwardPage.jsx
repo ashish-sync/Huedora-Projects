@@ -339,9 +339,13 @@ export default function LogisticsInwardPage() {
           : form.remark;
 
       const capturedAt = nowLocal();
+      const submitKey =
+        (typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID())
+        || `inout-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const fd = new FormData();
       const payload = {
         ...form,
+        uniqueKey: submitKey,
         entryType: source.entryType,
         warehouseId: defaultWarehouseId || form.warehouseId || '',
         sourceWarehouseId: defaultWarehouseId || form.warehouseId || '',

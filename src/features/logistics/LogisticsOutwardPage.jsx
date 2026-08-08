@@ -889,6 +889,9 @@ export default function LogisticsOutwardPage() {
         lastResult = await api('/logistics/in-out', {
           method: 'POST',
           body: {
+            uniqueKey:
+              (typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID())
+              || `out-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
             entryType,
             logisticsKind: kind,
             priority: form.priority || 'Medium',

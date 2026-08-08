@@ -209,12 +209,12 @@ function PoRow({
           {index + 1}
         </span>
 
-        <div className="client-master-po-cell client-master-po-cell--no" data-label="PO No.">
+        <div className="client-master-po-cell client-master-po-cell--no" data-label="PO Number">
           <input
             value={row.poNumber || ''}
             onChange={(e) => onChange?.('poNumber', e.target.value)}
             placeholder="PO number"
-            aria-label="PO number"
+            aria-label="PO Number"
             disabled={disabled}
             className={fieldErrors[`${prefix}.poNumber`] || fieldErrors.poNumber ? 'input-invalid' : ''}
           />
@@ -233,14 +233,14 @@ function PoRow({
           onDelete={onFileDelete}
         />
 
-        <div className="client-master-po-cell client-master-po-cell--value" data-label="PO value">
+        <div className="client-master-po-cell client-master-po-cell--value" data-label="PO Net Value">
           <input
             type="text"
             inputMode="decimal"
             value={amountDisplay}
             onChange={(e) => onChange?.('poAmount', sanitizePoNetInput(e.target.value))}
             placeholder={applyGst ? 'Incl. GST' : '0.00'}
-            aria-label={applyGst ? 'PO value inclusive of GST' : 'PO value'}
+            aria-label={applyGst ? 'PO Net Value inclusive of GST' : 'PO Net Value'}
             disabled={disabled}
             className={fieldErrors[`${prefix}.poNetValue`] ? 'input-invalid' : ''}
           />
@@ -249,7 +249,7 @@ function PoRow({
 
         <div
           className={`client-master-po-cell client-master-po-cell--tax${applyGst ? ' is-on' : ''}`}
-          data-label="Tax"
+          data-label="PO Apply 18% GST"
           aria-live="polite"
         >
           <div
@@ -266,7 +266,7 @@ function PoRow({
                 checked={applyGst}
                 disabled={disabled}
                 onChange={(e) => onChange?.('poApplyGst18', e.target.checked)}
-                aria-label={`Apply ${gstPct}% GST inclusive`}
+                aria-label="PO Apply 18% GST"
               />
               <span>{gstPct}%</span>
             </label>
@@ -276,24 +276,24 @@ function PoRow({
           </div>
         </div>
 
-        <div className="client-master-po-cell client-master-po-cell--issue" data-label="Issue">
+        <div className="client-master-po-cell client-master-po-cell--issue" data-label="PO Issue Date">
           <input
             type="date"
             value={row.poIssueDate || ''}
             onChange={(e) => onChange?.('poIssueDate', e.target.value)}
-            aria-label="PO issue date"
+            aria-label="PO Issue Date"
             disabled={disabled}
             className={fieldErrors[`${prefix}.poIssueDate`] ? 'input-invalid' : ''}
           />
           <FieldError message={fieldErrors[`${prefix}.poIssueDate`]} />
         </div>
 
-        <div className="client-master-po-cell client-master-po-cell--expiry" data-label="Expiry">
+        <div className="client-master-po-cell client-master-po-cell--expiry" data-label="PO Expiry Date">
           <input
             type="date"
             value={row.poExpiryDate || ''}
             onChange={(e) => onChange?.('poExpiryDate', e.target.value)}
-            aria-label="PO expiry"
+            aria-label="PO Expiry Date"
             disabled={disabled}
             className={fieldErrors[`${prefix}.poExpiryDate`] ? 'input-invalid' : ''}
           />
@@ -420,7 +420,7 @@ export function ClientMasterCampTermsBox({
         {terms === CAMP_TERMS.AGREEMENT_BASED ? (
           <>
             <label className="client-master-po-cell">
-              <span className="client-master-po-cell-label">Start date</span>
+              <span className="client-master-po-cell-label">Agreement Start Date</span>
               <input
                 type="date"
                 value={form.agreementStartDate || ''}
@@ -431,7 +431,7 @@ export function ClientMasterCampTermsBox({
               <FieldError message={fieldErrors.agreementStartDate} />
             </label>
             <label className="client-master-po-cell">
-              <span className="client-master-po-cell-label">Effective date</span>
+              <span className="client-master-po-cell-label">Agreement Effective Date</span>
               <input
                 type="date"
                 value={form.agreementEffectiveDate || ''}
@@ -442,7 +442,7 @@ export function ClientMasterCampTermsBox({
               <FieldError message={fieldErrors.agreementEffectiveDate} />
             </label>
             <label className="client-master-po-cell">
-              <span className="client-master-po-cell-label">End date</span>
+              <span className="client-master-po-cell-label">Agreement End Date</span>
               <input
                 type="date"
                 value={form.agreementEndDate || ''}

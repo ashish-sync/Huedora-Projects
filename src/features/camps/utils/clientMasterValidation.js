@@ -203,5 +203,6 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     kmsUnit: String(record.kmsUnit ?? ''),
     mappedConsumables: Array.isArray(record.mappedConsumables) ? record.mappedConsumables : [],
     isActive: record.isActive !== false,
+    updatedAt: record.updatedAt || '',
   };
 }

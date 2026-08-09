@@ -22,7 +22,11 @@ export function confirmCampDurationIfNeeded(durationHours, { plural = false } = 
 }
 
 export function confirmPastePreviewDurations(bodyPreview = []) {
-  const creatable = bodyPreview.filter((entry) => (entry.valid || entry.partial) && !entry.duplicateOf && entry.row);
+  const creatable = bodyPreview.filter(
+    (entry) => (entry.creationEligible || entry.valid || entry.partial)
+      && !entry.duplicateOf
+      && entry.row,
+  );
   const outOfRange = creatable
     .map((entry) => getCampDurationHours(entry.row))
     .filter((hours) => isCampDurationOutOfRange(hours));

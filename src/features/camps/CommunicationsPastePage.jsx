@@ -14,6 +14,10 @@ import {
   resolveCampNameOptions,
 } from './utils/clientMasterCascade';
 import { confirmPastePreviewDurations } from './utils/campDurationWarning';
+import {
+  refreshPastePreviewEligibility,
+  withPasteCreationFlags,
+} from './utils/pasteCreationEligibility';
 import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
 
@@ -209,14 +213,16 @@ export default function CommunicationsPastePage() {
 
   const previewSummary = useMemo(() => {
     if (!preview?.summary && !preview?.bodyPreview) return null;
-    const bodyPreview = preview.bodyPreview || [];
+    const bodyPreview = (preview.bodyPreview || []).map((entry) => withPasteCreationFlags(entry));
     const creatable = bodyPreview.filter(
-      (entry) => (entry.valid || entry.partial) && !entry.duplicateOf && !entry.historicalDateBlocked,
+      (entry) => entry.creationEligible && !entry.duplicateOf && !entry.historicalDateBlocked,
     );
     const validBodyRows = creatable.filter((entry) => entry.valid).length;
-    const partialBodyRows = creatable.filter((entry) => entry.partial).length;
+    const partialBodyRows = creatable.filter((entry) => !entry.valid).length;
     const historicalBlocked = bodyPreview.filter((entry) => entry.historicalDateBlocked).length;
-    const invalidBodyRows = (preview.summary?.invalidBodyRows || 0) + historicalBlocked;
+    const invalidBodyRows = bodyPreview.filter(
+      (entry) => !entry.creationEligible && !entry.duplicateOf,
+    ).length;
     const duplicateBodyRows = preview.summary?.duplicateBodyRows
       ?? bodyPreview.filter((entry) => entry.duplicateOf).length
       ?? 0;
@@ -229,19 +235,21 @@ export default function CommunicationsPastePage() {
       : '';
 
     return {
-      validBodyRows: validBodyRows + partialBodyRows,
+      validBodyRows: creatable.length,
       invalidBodyRows,
       partialBodyRows,
       duplicateBodyRows,
       historicalBlocked,
       sampleLabel,
-      label: `${validBodyRows + partialBodyRows} importable · ${invalidBodyRows} invalid${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}${partialBodyRows ? ` · ${partialBodyRows} partial` : ''}${historicalHint}`,
+      label: `${creatable.length} importable · ${invalidBodyRows} need review${duplicateBodyRows ? ` · ${duplicateBodyRows} duplicate` : ''}${partialBodyRows ? ` · ${partialBodyRows} partial OK` : ''}${historicalHint}`,
     };
   }, [preview]);
 
   const hasCreatableRows = useMemo(
     () => preview?.bodyPreview?.some(
-      (entry) => (entry.valid || entry.partial) && !entry.duplicateOf && !entry.historicalDateBlocked,
+      (entry) => withPasteCreationFlags(entry).creationEligible
+        && !entry.duplicateOf
+        && !entry.historicalDateBlocked,
     ) ?? false,
     [preview],
   );
@@ -478,12 +486,12 @@ export default function CommunicationsPastePage() {
     if (!activeField || !preview?.bodyPreview) return null;
     const nextRows = preview.bodyPreview.map((entry, index) => {
       if (index !== activeField.rowIndex) return entry;
-      return {
+      return withPasteCreationFlags({
         ...entry,
         row: { ...(entry.row || {}), [activeField.key]: selection },
-      };
+      });
     });
-    const nextPreview = { ...preview, bodyPreview: nextRows };
+    const nextPreview = refreshPastePreviewEligibility({ ...preview, bodyPreview: nextRows });
     setPreview(nextPreview);
     setPendingSelection('');
     setActiveField(null);
@@ -533,6 +541,7 @@ export default function CommunicationsPastePage() {
         });
         previewData = response.data?.data || response.data;
       }
+      previewData = refreshPastePreviewEligibility(previewData);
       setPreview(previewData);
       setHasExtracted(true);
       setSavedPreviewSnapshot(JSON.stringify(previewData));
@@ -584,8 +593,9 @@ export default function CommunicationsPastePage() {
     setProcessing(true);
     setError('');
     try {
+      const eligiblePreview = refreshPastePreviewEligibility(preview);
       const { data } = await communicationsApi.processManualPaste({
-        previewData: preview,
+        previewData: eligiblePreview,
         text: pasteText,
         ...pasteDefaults,
       });
@@ -664,7 +674,9 @@ export default function CommunicationsPastePage() {
       return;
     }
     setError('');
-    if (!confirmPastePreviewDurations(preview?.bodyPreview || [])) return;
+    const eligiblePreview = refreshPastePreviewEligibility(preview);
+    if (eligiblePreview !== preview) setPreview(eligiblePreview);
+    if (!confirmPastePreviewDurations(eligiblePreview?.bodyPreview || [])) return;
     setConfirmAction('process');
   }
 

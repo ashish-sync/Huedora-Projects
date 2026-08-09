@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDateDDMMYYYY } from '../utils/dateFormat';
+import {
+  labelPasteCreationField,
+  refreshPastePreviewEligibility,
+  withPasteCreationFlags,
+} from '../utils/pasteCreationEligibility';
 
 const PASTE_MANDATORY_KEYS = new Set(['doctorName', 'pincode', 'campDate', 'startTime']);
 
@@ -26,10 +31,10 @@ const BODY_FIELDS = [
 ];
 
 const MANDATORY_FIELD_LABELS = {
-  doctorName: 'Doctor Name',
-  pincode: 'PIN Code',
-  campDate: 'Camp Date',
-  startTime: 'Camp Start Time',
+  doctorName: labelPasteCreationField('doctorName'),
+  pincode: labelPasteCreationField('pincode'),
+  campDate: labelPasteCreationField('campDate'),
+  startTime: labelPasteCreationField('startTime'),
 };
 
 function formatFieldValue(key, value, entry) {
@@ -134,25 +139,25 @@ function getBodyRowStatus(entry) {
       label: `Duplicate of ${entry.duplicateOf.campId}`,
     };
   }
-  if (entry.valid) {
+  const flagged = withPasteCreationFlags(entry);
+  if (flagged.valid) {
     return { className: 'status-pill-success', label: 'Ready' };
   }
-  if (entry.partial || entry.creationEligible) {
-    const pct = entry.completionPercent ? `${entry.completionPercent}%` : 'partial';
+  if (flagged.creationEligible || flagged.partial) {
     return {
-      className: 'status-pill-warning',
-      label: `Creatable (${pct}) — complete before approval`,
+      className: 'status-pill-success',
+      label: 'Ready to create (optional fields can be completed later)',
     };
   }
-  const missing = (entry.mandatoryMissing || [])
+  const missing = (flagged.mandatoryMissing || [])
     .map((key) => MANDATORY_FIELD_LABELS[key] || key)
     .filter(Boolean);
   return {
     className: 'status-pill-muted',
     label: missing.length
       ? `Review required — missing ${missing.join(', ')}`
-      : (entry.errors?.filter((err) => /doctor name|pin code|camp date|start time/i.test(err)).join('; ')
-        || entry.errors?.[0]
+      : (flagged.errors?.filter((err) => /doctor name|pin code|camp date|start time/i.test(err)).join('; ')
+        || flagged.errors?.[0]
         || 'Review required'),
   };
 }
@@ -171,7 +176,8 @@ function BodyExtractionForm({
   if (mode === 'preview') {
     return (
       <div className="email-extraction-preview-list">
-        {rows.map((entry) => {
+        {rows.map((rawEntry) => {
+          const entry = withPasteCreationFlags(rawEntry);
           const rowStatus = getBodyRowStatus(entry);
           return (
           <article key={entry.rowNumber} className="email-extraction-card">
@@ -181,14 +187,18 @@ function BodyExtractionForm({
                 {rowStatus.label}
               </span>
             </header>
-            {(entry.mandatoryMissing || []).length > 0 || (!entry.valid && !entry.creationEligible && !entry.partial) ? (
+            {entry.creationEligible ? (
+              <p className="meta-text">
+                Mandatory fields present — optional details can be filled later before approval.
+              </p>
+            ) : (
               <p className="error email-extraction-mandatory-banner">
                 Mandatory for creation: Doctor Name, PIN Code, Camp Date, Camp Start Time.
                 {(entry.mandatoryMissing || []).length
                   ? ` Missing/invalid: ${(entry.mandatoryMissing || []).map((key) => MANDATORY_FIELD_LABELS[key] || key).join(', ')}.`
                   : ''}
               </p>
-            ) : null}
+            )}
             <dl className="email-extraction-dl">
               {BODY_FIELDS.map((field) => {
                 const missing = isMandatoryMissing(entry, field.key);
@@ -331,15 +341,15 @@ export function EmailExtractionPanel({
     if (!preview?.bodyPreview) return;
     const nextRows = preview.bodyPreview.map((entry, index) => {
       if (index !== rowIndex) return entry;
-      return {
+      return withPasteCreationFlags({
         ...entry,
         row: {
           ...(entry.row || {}),
           [key]: value,
         },
-      };
+      });
     });
-    onPreviewChange({ ...preview, bodyPreview: nextRows });
+    onPreviewChange(refreshPastePreviewEligibility({ ...preview, bodyPreview: nextRows }));
   }
 
   if (!preview) {

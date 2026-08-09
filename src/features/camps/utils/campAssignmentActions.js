@@ -28,13 +28,18 @@ export function getAssignmentBlockers(camp = {}) {
     return blockers;
   }
 
-  if (isCampAssigned(camp)) {
-    blockers.push('A healthcare worker is already assigned to this camp.');
+  if (camp.submittedToFinanceAt) {
+    blockers.push('HCW cannot be changed after the camp was submitted to Finance.');
   }
 
   return blockers;
 }
 
+/** First-time assign or change HCW after assignment (unless finance-locked / terminal). */
 export function canAssignCamp(camp = {}) {
   return getAssignmentBlockers(camp).length === 0;
+}
+
+export function canReassignCamp(camp = {}) {
+  return isCampAssigned(camp) && canAssignCamp(camp);
 }

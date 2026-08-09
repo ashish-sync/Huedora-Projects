@@ -257,16 +257,21 @@ export function purchaseOrdersFromRecord(row) {
   if (Array.isArray(row.purchaseOrders) && row.purchaseOrders.length > 0) {
     return row.purchaseOrders.map((item, i) => normalizePurchaseOrderRow(item, i)).filter(Boolean);
   }
+  const terms = normalizeCampTerms(row.campTerms);
   const hasLegacy =
     String(row.poNumber || '').trim() ||
     Number(row.poNetValue) > 0 ||
     row.poFile ||
-    (Array.isArray(row.campTermsFiles) && row.campTermsFiles.length > 0) ||
     String(row.poIssueDate || '').trim() ||
-    String(row.poExpiryDate || '').trim();
-  if (!hasLegacy && normalizeCampTerms(row.campTerms) !== CAMP_TERMS.PO_BASED) return [];
-  if (!hasLegacy) return [createEmptyPurchaseOrder()];
-  const files = campTermsFilesFromRecord(row);
+    String(row.poExpiryDate || '').trim() ||
+    // Only treat shared campTermsFiles as legacy PO uploads when terms is PO Based.
+    (terms === CAMP_TERMS.PO_BASED
+      && Array.isArray(row.campTermsFiles)
+      && row.campTermsFiles.length > 0);
+  if (!hasLegacy) return [];
+  const files = terms === CAMP_TERMS.PO_BASED
+    ? campTermsFilesFromRecord(row)
+    : (normalizeStoredFile(row?.poFile) ? [normalizeStoredFile(row.poFile)] : []);
   return [
     normalizePurchaseOrderRow(
       {
@@ -309,10 +314,8 @@ export function combinePurchaseOrders(orders) {
 export function campTermsFieldsFromRecord(row) {
   const campTerms = normalizeCampTerms(row?.campTerms);
   const files = campTermsFilesFromRecord(row);
-  const purchaseOrders =
-    campTerms === CAMP_TERMS.PO_BASED
-      ? purchaseOrdersFromRecord(row)
-      : [];
+  // Always hydrate both PO and Agreement details so switching terms never loses them.
+  const purchaseOrders = purchaseOrdersFromRecord(row);
 
   if (campTerms === CAMP_TERMS.PO_BASED && purchaseOrders.length === 0) {
     purchaseOrders.push(createEmptyPurchaseOrder());
@@ -320,11 +323,15 @@ export function campTermsFieldsFromRecord(row) {
 
   const primary = purchaseOrders[0] || null;
   const combined = combinePurchaseOrders(purchaseOrders);
+  // Prefer dedicated agreement/approval uploads; avoid treating PO flat-files as agreement docs.
+  const agreementFiles = Array.isArray(row?.campTermsFiles)
+    ? row.campTermsFiles.map(normalizeStoredFile).filter(Boolean)
+    : (campTerms === CAMP_TERMS.PO_BASED ? [] : files);
 
   return {
     campTerms,
     purchaseOrders,
-    campTermsFiles: campTerms === CAMP_TERMS.PO_BASED ? [] : files,
+    campTermsFiles: agreementFiles,
     poNumber: primary?.poNumber || '',
     poNetValue: primary?.poNetValue ?? '',
     poApplyGst18: primary ? primary.poApplyGst18 !== false : true,
@@ -358,106 +365,44 @@ function serializePoForApi(row) {
 }
 
 /**
- * Build API payload for Camp Terms. PO Based sends the full purchaseOrders array
- * so existing POs are preserved and new ones are appended as separate records.
+ * Build API payload for Camp Terms.
+ * Always includes both PO rows and Agreement dates from the form so switching
+ * the active terms type never wipes the other side’s entered data.
  */
 export function buildCampTermsPayload(form) {
   const campTerms = normalizeCampTerms(form.campTerms);
   const sharedFiles = Array.isArray(form.campTermsFiles) ? form.campTermsFiles : [];
+  const purchaseOrders = (Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [])
+    .map(serializePoForApi)
+    .filter((row) => row.poNumber || row.poNetValue > 0 || (row.files && row.files.length));
 
-  if (campTerms === CAMP_TERMS.PO_BASED) {
-    const purchaseOrders = (Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [])
-      .map(serializePoForApi)
-      .filter((row) => row.poNumber || row.poNetValue > 0 || (row.files && row.files.length));
+  const toSave = campTerms === CAMP_TERMS.PO_BASED && purchaseOrders.length === 0
+    ? [serializePoForApi(createEmptyPurchaseOrder({ poApplyGst18: form.poApplyGst18 !== false }))]
+    : purchaseOrders;
 
-    const toSave =
-      purchaseOrders.length > 0
-        ? purchaseOrders
-        : [serializePoForApi(createEmptyPurchaseOrder({ poApplyGst18: form.poApplyGst18 !== false }))];
-
-    const combined = combinePurchaseOrders(toSave);
-    const primary = toSave[0];
-    return {
-      campTerms,
-      purchaseOrders: toSave,
-      campTermsFiles: toSave.flatMap((row) => row.files || []),
-      poNumber: primary.poNumber,
-      poNetValue: primary.poNetValue,
-      poApplyGst18: primary.poApplyGst18,
-      poGstAmount: primary.poGstAmount,
-      poGrossValue: primary.poGrossValue,
-      poIssueDate: primary.poIssueDate || '',
-      poExpiryDate: primary.poExpiryDate || '',
-      poFile: primary.poFile || null,
-      ...combined,
-      agreementStartDate: '',
-      agreementEffectiveDate: '',
-      agreementEndDate: '',
-    };
-  }
-
-  if (campTerms === CAMP_TERMS.AGREEMENT_BASED) {
-    return {
-      campTerms,
-      purchaseOrders: [],
-      campTermsFiles: sharedFiles,
-      poNumber: '',
-      poNetValue: 0,
-      poApplyGst18: false,
-      poGstAmount: 0,
-      poGrossValue: 0,
-      poIssueDate: '',
-      poExpiryDate: '',
-      poFile: null,
-      poCombinedNet: 0,
-      poCombinedGst: 0,
-      poCombinedGross: 0,
-      agreementStartDate: String(form.agreementStartDate || '').trim().slice(0, 10),
-      agreementEffectiveDate: String(form.agreementEffectiveDate || '').trim().slice(0, 10),
-      agreementEndDate: String(form.agreementEndDate || '').trim().slice(0, 10),
-    };
-  }
-
-  if (campTerms === CAMP_TERMS.APPROVAL_BASED) {
-    return {
-      campTerms,
-      purchaseOrders: [],
-      campTermsFiles: sharedFiles,
-      poNumber: '',
-      poNetValue: 0,
-      poApplyGst18: false,
-      poGstAmount: 0,
-      poGrossValue: 0,
-      poIssueDate: '',
-      poExpiryDate: '',
-      poFile: null,
-      poCombinedNet: 0,
-      poCombinedGst: 0,
-      poCombinedGross: 0,
-      agreementStartDate: '',
-      agreementEffectiveDate: '',
-      agreementEndDate: '',
-    };
-  }
+  const combined = combinePurchaseOrders(toSave);
+  const primary = toSave[0] || null;
+  const agreementStartDate = String(form.agreementStartDate || '').trim().slice(0, 10);
+  const agreementEffectiveDate = String(form.agreementEffectiveDate || '').trim().slice(0, 10);
+  const agreementEndDate = String(form.agreementEndDate || '').trim().slice(0, 10);
 
   return {
-    campTerms: CAMP_TERMS.NONE,
-    purchaseOrders: [],
-    campTermsFiles: [],
-    poNumber: '',
-    poNetValue: 0,
-    poApplyGst18: false,
-    poGstAmount: 0,
-    poGrossValue: 0,
-    poIssueDate: '',
-    poExpiryDate: '',
-    poFile: null,
-    poCombinedNet: 0,
-    poCombinedGst: 0,
-    poCombinedGross: 0,
-    agreementStartDate: '',
-    agreementEffectiveDate: '',
-    agreementEndDate: '',
+    campTerms,
+    purchaseOrders: toSave,
+    // Agreement / Approval uploads stay on campTermsFiles; PO files live on each PO row.
+    campTermsFiles: sharedFiles,
+    poNumber: primary?.poNumber || '',
+    poNetValue: primary?.poNetValue ?? 0,
+    poApplyGst18: primary ? primary.poApplyGst18 !== false : false,
+    poGstAmount: primary?.poGstAmount ?? 0,
+    poGrossValue: primary?.poGrossValue ?? 0,
+    poIssueDate: primary?.poIssueDate || '',
+    poExpiryDate: primary?.poExpiryDate || '',
+    poFile: primary?.poFile || null,
+    ...combined,
+    agreementStartDate,
+    agreementEffectiveDate,
+    agreementEndDate,
   };
 }
 

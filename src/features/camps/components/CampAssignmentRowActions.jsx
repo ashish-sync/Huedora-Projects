@@ -50,8 +50,8 @@ export function CampAssignmentRowActions({
         <Link
           to={`/camp-one/manage/${camp._id}/edit`}
           className="camp-row-icon-btn camp-row-icon-btn--assign"
-          title="Assign healthcare worker"
-          aria-label="Assign healthcare worker"
+          title={assigned ? 'Change healthcare worker' : 'Assign healthcare worker'}
+          aria-label={assigned ? 'Change healthcare worker' : 'Assign healthcare worker'}
         >
           <span className="camp-row-icon-btn__glyph" aria-hidden="true">
             <UserCheck size={17} strokeWidth={2} />

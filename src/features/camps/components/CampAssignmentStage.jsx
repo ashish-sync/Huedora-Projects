@@ -14,6 +14,18 @@ function ReadOnlyField({ label, value }) {
   );
 }
 
+function snapshotAssignedHcw(form = {}) {
+  return {
+    hcwContactId: form.hcwContactId || '',
+    hcwCategory: form.hcwCategory || '',
+    hcwName: form.hcwName || '',
+    hcwContact: form.hcwContact || '',
+    assignmentDecision: form.assignmentDecision || 'assign',
+    assignmentStatus: form.assignmentStatus || 'Assigned',
+    assignmentRefusalReason: form.assignmentRefusalReason || '',
+  };
+}
+
 export function CampAssignmentStage({
   form,
   updateFields,
@@ -28,14 +40,18 @@ export function CampAssignmentStage({
   excludeCampId = '',
 }) {
   const [copyState, setCopyState] = useState('');
+  const [reassigning, setReassigning] = useState(false);
+  const [assignedSnapshot, setAssignedSnapshot] = useState(null);
   const isTerminal = ['cancelled', 'rejected'].includes(campStatus);
   const isAssigned = form.assignmentDecision === 'assign'
     && (form.assignmentStatus === 'Assigned'
       || Boolean(form.hcwContactId)
       || form.lifecycleStage === 'execution');
-  const fieldsDisabled = disabled || isTerminal;
+  const financeLocked = Boolean(form.submittedToFinanceAt);
+  const fieldsDisabled = disabled || isTerminal || financeLocked;
   const canCopyDetails = Boolean(form.hcwName || form.hcwContactId);
   const canRaiseHireRequest = !isTerminal;
+  const canChangeHcw = isAssigned && !fieldsDisabled;
 
   async function handleCopyDetails() {
     const didCopy = await copyCampAssignmentDetails(form);
@@ -55,31 +71,66 @@ export function CampAssignmentStage({
   function handleSelect(nextFields) {
     updateFields?.({
       ...nextFields,
-      assignmentDecision: nextFields.hcwContactId ? 'assign' : '',
+      assignmentDecision: nextFields.hcwContactId ? 'assign' : (reassigning ? 'assign' : ''),
+      assignmentStatus: nextFields.hcwContactId || reassigning ? 'Assigned' : form.assignmentStatus,
       assignmentRefusalReason: '',
     });
   }
 
-  if (isAssigned) {
+  function startReassign() {
+    setAssignedSnapshot(snapshotAssignedHcw(form));
+    setReassigning(true);
+  }
+
+  function cancelReassign() {
+    if (assignedSnapshot) {
+      updateFields?.(assignedSnapshot);
+    }
+    setAssignedSnapshot(null);
+    setReassigning(false);
+  }
+
+  if (isTerminal) {
+    return (
+      <p className="meta-text camp-assignment-note">
+        Assignment closed: {form.assignmentRefusalReason || form.cancellationReason || campStatus}.
+      </p>
+    );
+  }
+
+  if (isAssigned && !reassigning) {
     const inExecution = form.lifecycleStage === 'execution'
       || isCampDateDueForExecution(form);
     return (
       <div className="camp-assignment-stage">
         <div className="camp-assignment-toolbar">
           <p className="meta-text camp-assignment-note">
-            {inExecution
-              ? 'HCW assigned. This camp is in the Execution stage (opens one day before the camp date).'
-              : 'HCW assigned. This camp stays in Assignment until one day before the camp date, then moves to Execution.'}
+            {financeLocked
+              ? 'HCW assigned. Resource cannot be changed after Finance submit.'
+              : inExecution
+                ? 'HCW assigned. You can change the healthcare worker if needed; this camp is in Execution.'
+                : 'HCW assigned. You can change the healthcare worker if needed. This camp stays in Assignment until one day before the camp date.'}
           </p>
-          {canRaiseHireRequest ? (
-            <CampHireRequestButton
-              form={form}
-              professions={clientMasterProfessions.length
-                ? clientMasterProfessions
-                : clientMasterProfession}
-              label="Raise hiring request"
-            />
-          ) : null}
+          <div className="camp-assignment-toolbar-actions">
+            {canChangeHcw ? (
+              <button
+                type="button"
+                className="btn secondary btn-compact"
+                onClick={startReassign}
+              >
+                Change HCW
+              </button>
+            ) : null}
+            {canRaiseHireRequest ? (
+              <CampHireRequestButton
+                form={form}
+                professions={clientMasterProfessions.length
+                  ? clientMasterProfessions
+                  : clientMasterProfession}
+                label="Raise hiring request"
+              />
+            ) : null}
+          </div>
         </div>
         <div className="form-grid camp-assignment-assign-panel">
           <ReadOnlyField label="HCW Category" value={form.hcwCategory || '—'} />
@@ -101,33 +152,34 @@ export function CampAssignmentStage({
     );
   }
 
-  if (isTerminal) {
-    return (
-      <p className="meta-text camp-assignment-note">
-        Assignment closed: {form.assignmentRefusalReason || form.cancellationReason || campStatus}.
-      </p>
-    );
-  }
-
   return (
     <div className="camp-assignment-stage">
       <div className="camp-assignment-toolbar">
         <p className="meta-text camp-assignment-intro">
-          Select resource type, state, and city to find Contact Directory healthcare workers that match
-          this Client’s Healthcare Worker role in Client Master.
-          Same HCW on the same date needs at least 1 hour 30 minutes between one camp’s end and the next start
-          (e.g. 8:00–14:00 → next earliest 15:30).
-          Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.
+          {reassigning
+            ? 'Select a different healthcare worker, then save the camp to apply the change. Same-day assignments still need a 1 hour 30 minutes gap.'
+            : 'Select resource type, state, and city to find Contact Directory healthcare workers that match this Client’s Healthcare Worker role in Client Master. Same HCW on the same date needs at least 1 hour 30 minutes between one camp’s end and the next start (e.g. 8:00–14:00 → next earliest 15:30). Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.'}
         </p>
-        <CampHireRequestButton
-          form={form}
-          professions={clientMasterProfessions.length
-            ? clientMasterProfessions
-            : clientMasterProfession}
-          disabled={fieldsDisabled}
-          variant="button"
-          label="Raise hiring request"
-        />
+        <div className="camp-assignment-toolbar-actions">
+          {reassigning ? (
+            <button
+              type="button"
+              className="btn secondary btn-compact"
+              onClick={cancelReassign}
+            >
+              Cancel change
+            </button>
+          ) : null}
+          <CampHireRequestButton
+            form={form}
+            professions={clientMasterProfessions.length
+              ? clientMasterProfessions
+              : clientMasterProfession}
+            disabled={fieldsDisabled}
+            variant="button"
+            label="Raise hiring request"
+          />
+        </div>
       </div>
       <CampHcwAssignPicker
         hcwContacts={hcwContacts}

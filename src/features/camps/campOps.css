@@ -2391,22 +2391,65 @@
   align-items: end;
 }
 
-.camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-grid {
+.camp-ops-root .client-master-camp-terms-grid.is-type-only {
+  grid-template-columns: minmax(220px, 320px) minmax(160px, 1fr);
+}
+
+.camp-ops-root .client-master-camp-terms-panel {
+  margin-top: 14px;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--line, var(--border));
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated, #fff);
+}
+
+.camp-ops-root .client-master-camp-terms-panel.is-active {
+  border-color: color-mix(in srgb, var(--primary, #0b5fff) 35%, var(--line, var(--border)));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--primary, #0b5fff) 70%, transparent);
+}
+
+.camp-ops-root .client-master-camp-terms-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.camp-ops-root .client-master-camp-terms-panel-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.camp-ops-root .client-master-camp-terms-active-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary, #0b5fff) 30%, transparent);
+  background: color-mix(in srgb, var(--primary, #0b5fff) 10%, transparent);
+  color: var(--primary, #0b5fff);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.camp-ops-root .client-master-camp-terms-panel-hint {
+  margin: 0 0 8px;
+}
+
+.camp-ops-root .client-master-camp-terms-panel .client-master-camp-terms-grid.has-upload {
   grid-template-columns:
-    minmax(150px, 1.1fr)
     minmax(120px, 0.9fr)
     minmax(120px, 0.9fr)
     minmax(120px, 0.9fr)
     minmax(110px, 0.85fr);
 }
 
-.camp-ops-root .client-master-camp-terms-box[data-terms='approval_based'] .client-master-camp-terms-grid {
-  grid-template-columns: minmax(180px, 280px) minmax(120px, 200px);
-}
-
-.camp-ops-root .client-master-camp-terms-box[data-terms='po_based'] .client-master-camp-terms-grid,
-.camp-ops-root .client-master-camp-terms-box[data-terms='none'] .client-master-camp-terms-grid {
-  grid-template-columns: minmax(220px, 320px);
+.camp-ops-root .client-master-camp-terms-box[data-terms='none'] .client-master-camp-terms-grid.is-type-only {
+  grid-template-columns: minmax(220px, 320px) minmax(160px, 1fr);
 }
 
 .camp-ops-root .client-master-camp-terms-type {
@@ -2473,19 +2516,19 @@
 }
 
 @media (max-width: 960px) {
-  .camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-grid {
+  .camp-ops-root .client-master-camp-terms-panel .client-master-camp-terms-grid.has-upload {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-files-wrap {
+  .camp-ops-root .client-master-camp-terms-panel .client-master-camp-terms-files-wrap {
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 560px) {
   .camp-ops-root .client-master-camp-terms-grid,
-  .camp-ops-root .client-master-camp-terms-box[data-terms='agreement_based'] .client-master-camp-terms-grid,
-  .camp-ops-root .client-master-camp-terms-box[data-terms='approval_based'] .client-master-camp-terms-grid {
+  .camp-ops-root .client-master-camp-terms-grid.is-type-only,
+  .camp-ops-root .client-master-camp-terms-panel .client-master-camp-terms-grid.has-upload {
     grid-template-columns: 1fr;
   }
 }
@@ -8943,6 +8986,15 @@
 .camp-ops-root .camp-assignment-toolbar .camp-assignment-note {
   flex: 1 1 240px;
   margin: 0;
+}
+
+.camp-ops-root .camp-assignment-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .camp-ops-root .camp-hire-request-btn {

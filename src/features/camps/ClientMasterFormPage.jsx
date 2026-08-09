@@ -179,17 +179,12 @@ export default function ClientMasterFormPage() {
       if (field !== 'campTerms') {
         return { ...prev, [field]: value };
       }
+      // Keep PO + Agreement details in form state when switching terms type.
       const nextTerms = normalizeCampTerms(value);
       const next = { ...prev, campTerms: nextTerms };
-      if (nextTerms === CAMP_TERMS.PO_BASED) {
+      if (nextTerms === CAMP_TERMS.PO_BASED || nextTerms === CAMP_TERMS.AGREEMENT_BASED) {
         const orders = Array.isArray(prev.purchaseOrders) ? prev.purchaseOrders : [];
-        next.purchaseOrders = orders.length ? orders : [createEmptyPurchaseOrder()];
-        next.campTermsFiles = [];
-      } else {
-        next.purchaseOrders = [];
-        if (nextTerms === CAMP_TERMS.NONE) {
-          next.campTermsFiles = [];
-        }
+        if (!orders.length) next.purchaseOrders = [createEmptyPurchaseOrder()];
       }
       return next;
     });

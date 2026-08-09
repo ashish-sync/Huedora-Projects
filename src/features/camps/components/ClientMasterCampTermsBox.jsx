@@ -326,8 +326,8 @@ function PoRow({
 }
 
 /**
- * Camp Terms — conditional fields by terms type.
- * PO Based supports multiple separate PO records (add without overwrite).
+ * Camp Terms — PO Based and Agreement stay visible together so users can
+ * switch the active type without losing entered details.
  */
 export function ClientMasterCampTermsBox({
   form,
@@ -353,8 +353,12 @@ export function ClientMasterCampTermsBox({
   const terms = form.campTerms || CAMP_TERMS.NONE;
   const orders = Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [];
   const combined = combinePurchaseOrders(orders);
-  const showSharedFiles =
-    terms === CAMP_TERMS.AGREEMENT_BASED || terms === CAMP_TERMS.APPROVAL_BASED;
+  const showDetailPanels = terms !== CAMP_TERMS.NONE;
+  const poActive = terms === CAMP_TERMS.PO_BASED;
+  const agreementActive = terms === CAMP_TERMS.AGREEMENT_BASED;
+  const approvalActive = terms === CAMP_TERMS.APPROVAL_BASED;
+  const showAgreementPanel = showDetailPanels && (agreementActive || poActive || approvalActive);
+  const showPoPanel = showDetailPanels && (poActive || agreementActive);
 
   return (
     <section
@@ -368,12 +372,12 @@ export function ClientMasterCampTermsBox({
             Camp Terms
           </h3>
           <p className="meta-text client-master-po-combined-hint">
-            {terms === CAMP_TERMS.PO_BASED
-              ? 'PO value is GST-inclusive when 18% is on · each PO is saved separately'
-              : 'Fields depend on the selected terms type'}
+            {showDetailPanels
+              ? 'PO Based and Agreement details stay available — choose which type is active without re-entering data'
+              : 'Select a terms type to enter PO or Agreement details'}
           </p>
         </div>
-        {terms === CAMP_TERMS.PO_BASED && orders.length > 0 ? (
+        {poActive && orders.length > 0 ? (
           <div className="client-master-po-combined" aria-live="polite">
             <span className="client-master-po-combined-count">
               {orders.length} {orders.length === 1 ? 'PO' : 'POs'}
@@ -395,9 +399,9 @@ export function ClientMasterCampTermsBox({
         ) : null}
       </div>
 
-      <div className={`client-master-camp-terms-grid${showSharedFiles ? ' has-upload' : ''}`}>
+      <div className="client-master-camp-terms-grid is-type-only">
         <label className="client-master-po-cell client-master-camp-terms-type">
-          <span className="client-master-po-cell-label">Camp Terms</span>
+          <span className="client-master-po-cell-label">Active Camp Terms</span>
           <select
             value={terms}
             disabled={disabled}
@@ -412,13 +416,26 @@ export function ClientMasterCampTermsBox({
           </select>
           <FieldError message={fieldErrors.campTerms} />
         </label>
-
         {terms === CAMP_TERMS.NONE ? (
           <p className="meta-text client-master-camp-terms-none">No additional fields</p>
         ) : null}
+      </div>
 
-        {terms === CAMP_TERMS.AGREEMENT_BASED ? (
-          <>
+      {showAgreementPanel ? (
+        <div
+          className={`client-master-camp-terms-panel${agreementActive || approvalActive ? ' is-active' : ''}`}
+        >
+          <div className="client-master-camp-terms-panel-head">
+            <h4 className="client-master-camp-terms-panel-title">
+              {approvalActive ? 'Approval Based' : 'Agreement Based'}
+            </h4>
+            {agreementActive || approvalActive ? (
+              <span className="client-master-camp-terms-active-pill">Active</span>
+            ) : (
+              <span className="meta-text">Kept for switching</span>
+            )}
+          </div>
+          <div className="client-master-camp-terms-grid has-upload">
             <label className="client-master-po-cell">
               <span className="client-master-po-cell-label">Agreement Start Date</span>
               <input
@@ -452,69 +469,79 @@ export function ClientMasterCampTermsBox({
               />
               <FieldError message={fieldErrors.agreementEndDate} />
             </label>
-          </>
-        ) : null}
+            <div className="client-master-camp-terms-files-wrap">
+              <MultiFileField
+                files={form.campTermsFiles || []}
+                pendingFiles={pendingFiles}
+                disabled={disabled}
+                fileBusy={fileBusy}
+                canDeleteFile={canDeleteFile}
+                compact
+                error={fieldErrors.campTermsFiles || ''}
+                onSelect={onFilesSelect}
+                onClearPending={onFilesClearPending}
+                onPreview={onFilePreview}
+                onDelete={onFileDelete}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-        {showSharedFiles ? (
-          <div className="client-master-camp-terms-files-wrap">
-            <MultiFileField
-              files={form.campTermsFiles || []}
-              pendingFiles={pendingFiles}
-              disabled={disabled}
-              fileBusy={fileBusy}
-              canDeleteFile={canDeleteFile}
-              compact
-              error={fieldErrors.campTermsFiles || ''}
-              onSelect={onFilesSelect}
-              onClearPending={onFilesClearPending}
-              onPreview={onFilePreview}
-              onDelete={onFileDelete}
-            />
+      {showPoPanel ? (
+        <div className={`client-master-camp-terms-panel${poActive ? ' is-active' : ''}`}>
+          <div className="client-master-camp-terms-panel-head">
+            <h4 className="client-master-camp-terms-panel-title">PO Based</h4>
+            {poActive ? (
+              <span className="client-master-camp-terms-active-pill">Active</span>
+            ) : (
+              <span className="meta-text">Kept for switching</span>
+            )}
           </div>
-        ) : null}
-      </div>
-
-      {terms === CAMP_TERMS.PO_BASED ? (
-        <div className="client-master-po-list">
-          <div className="client-master-po-list-head" aria-hidden="true">
-            <span />
-            <span>PO No.</span>
-            <span>File</span>
-            <span>PO value</span>
-            <span>Tax</span>
-            <span>Issue</span>
-            <span>Expiry</span>
-            <span />
+          <p className="meta-text client-master-camp-terms-panel-hint">
+            PO value is GST-inclusive when 18% is on · each PO is saved separately
+          </p>
+          <div className="client-master-po-list">
+            <div className="client-master-po-list-head" aria-hidden="true">
+              <span />
+              <span>PO No.</span>
+              <span>File</span>
+              <span>PO value</span>
+              <span>Tax</span>
+              <span>Issue</span>
+              <span>Expiry</span>
+              <span />
+            </div>
+            {orders.map((row, index) => (
+              <PoRow
+                key={row.id || `po-row-${index}`}
+                row={row}
+                index={index}
+                canRemove={orders.length > 1}
+                disabled={disabled}
+                fieldErrors={fieldErrors}
+                pendingFiles={pendingPoFiles[row.id] || []}
+                fileBusy={fileBusy}
+                canDeleteFile={canDeleteFile}
+                onChange={(field, value) => onPurchaseOrderChange?.(row.id, field, value)}
+                onRemove={() => onRemovePurchaseOrder?.(row.id)}
+                onFilesSelect={(files) => onPoFilesSelect?.(row.id, files)}
+                onFilePreview={(file) => onPoFilePreview?.(row.id, file)}
+                onFileDelete={(file) => onPoFileDelete?.(row.id, file)}
+              />
+            ))}
+            <div className="client-master-po-list-actions">
+              <button
+                type="button"
+                className="btn secondary client-master-po-add-btn"
+                disabled={disabled}
+                onClick={() => onAddPurchaseOrder?.(createEmptyPurchaseOrder())}
+              >
+                {orders.length ? '+ Add another PO' : '+ Add PO'}
+              </button>
+            </div>
+            <FieldError message={fieldErrors.purchaseOrders || ''} />
           </div>
-          {orders.map((row, index) => (
-            <PoRow
-              key={row.id || `po-row-${index}`}
-              row={row}
-              index={index}
-              canRemove={orders.length > 1}
-              disabled={disabled}
-              fieldErrors={fieldErrors}
-              pendingFiles={pendingPoFiles[row.id] || []}
-              fileBusy={fileBusy}
-              canDeleteFile={canDeleteFile}
-              onChange={(field, value) => onPurchaseOrderChange?.(row.id, field, value)}
-              onRemove={() => onRemovePurchaseOrder?.(row.id)}
-              onFilesSelect={(files) => onPoFilesSelect?.(row.id, files)}
-              onFilePreview={(file) => onPoFilePreview?.(row.id, file)}
-              onFileDelete={(file) => onPoFileDelete?.(row.id, file)}
-            />
-          ))}
-          <div className="client-master-po-list-actions">
-            <button
-              type="button"
-              className="btn secondary client-master-po-add-btn"
-              disabled={disabled}
-              onClick={() => onAddPurchaseOrder?.(createEmptyPurchaseOrder())}
-            >
-              + Add another PO
-            </button>
-          </div>
-          <FieldError message={fieldErrors.purchaseOrders || ''} />
         </div>
       ) : null}
     </section>

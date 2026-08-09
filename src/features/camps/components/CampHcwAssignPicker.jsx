@@ -54,6 +54,7 @@ export function CampHcwAssignPicker({
   clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
+  clientMasterHcwGap = '',
   onSelect,
 }) {
   const selectedContact = useMemo(
@@ -247,8 +248,13 @@ export function CampHcwAssignPicker({
 
       {masterRoleMissing ? (
         <p className="meta-text camp-hcw-assign-note full">
-          Set Healthcare Worker in Master One → Client Master for this Client, division, and method
-          (you can select more than one). Assignment only lists matching Contact Directory contacts.
+          {clientMasterHcwGap === 'load_failed'
+            ? 'Could not load Client Master for this camp. Refresh and try again.'
+            : clientMasterHcwGap === 'missing_hcw_roles'
+              ? 'Client Master exists for this client, but Healthcare Worker roles are not set. Open Master One → Client Master for this Client + Division + Method and select Technician / Phlebotomist / Dietician (Contact Directory alone is not enough).'
+              : clientMasterHcwGap === 'division_method_mismatch'
+                ? 'Client Master has Healthcare Worker roles, but none match this camp’s Division and Method. Align Client Master Division/Method with the camp, or set roles on the matching row.'
+                : 'Set Healthcare Worker roles in Master One → Client Master for this Client, Division, and Method. Assignment then lists matching Contact Directory contacts.'}
         </p>
       ) : null}
 

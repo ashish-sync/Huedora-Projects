@@ -16,6 +16,7 @@ import {
   CAMP_FINANCE_EXPENSE_CATEGORY,
   CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
 } from '../utils/campFinanceExpense.js';
+import { resolveCampClientId } from '../utils/clientMasterCascade.js';
 
 export { CONTACT_PERSON_LEVEL_OPTIONS };
 
@@ -513,7 +514,7 @@ export function campToForm(camp) {
     ...emptyLifecycleForm(),
     _id: camp._id || '',
     campId: camp.campId || '',
-    clientId: camp.client?._id || camp.client || '',
+    clientId: resolveCampClientId(camp),
     clientName: camp.clientName || camp.client?.name || '',
     campaignName: camp.campaignName || '',
     campaignType: camp.campaignType || '',

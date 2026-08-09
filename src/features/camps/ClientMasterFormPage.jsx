@@ -494,10 +494,12 @@ export default function ClientMasterFormPage() {
         pan: trimmed.billingPan || '',
         stateName: trimmed.billingStateName || '',
         stateCode: trimmed.billingStateCode || '',
-        contactPerson: trimmed.spocName || '',
-        email: spocEmails[0] || '',
-        phone: trimmed.spocNumber || '',
       },
+      billingAddress: trimmed.billingAddress || '',
+      billingGstin: (trimmed.billingGstin || '').toUpperCase(),
+      billingPan: (trimmed.billingPan || '').toUpperCase(),
+      billingStateName: trimmed.billingStateName || '',
+      billingStateCode: trimmed.billingStateCode || '',
       assignedUserEmails: parseEmailList(form.assignedUserEmails),
       ...(Array.isArray(form.mappedConsumables) && form.mappedConsumables.length
         ? { mappedConsumables: form.mappedConsumables }

@@ -169,26 +169,26 @@ export function recordToForm(record, { keepClientName = true } = {}) {
   const clientRef = record.client;
   const clientId = typeof clientRef === 'object' && clientRef?._id
     ? clientRef._id
-    : (clientRef || '');
+    : (clientRef || record.clientId || '');
 
   const billing = record.billing || record.client || {};
   return {
     clientId: clientId ? String(clientId) : '',
     clientName: keepClientName ? (record.clientName || '') : '',
     clientCode: record.clientCode || record.client?.code || '',
-    billingAddress: billing.address || '',
-    billingGstin: billing.gstin || '',
-    billingPan: billing.pan || '',
-    billingStateName: billing.stateName || '',
-    billingStateCode: billing.stateCode || '',
+    billingAddress: record.billingAddress || billing.address || '',
+    billingGstin: record.billingGstin || billing.gstin || '',
+    billingPan: record.billingPan || billing.pan || '',
+    billingStateName: record.billingStateName || billing.stateName || '',
+    billingStateCode: record.billingStateCode || billing.stateCode || '',
     programName: record.programName || '',
     campName: record.campName || 'BMD',
     campType: record.campType || '',
     healthcareWorker: normalizeHealthcareWorkers(record.healthcareWorker),
     campDuration: record.campDuration || '4:00',
-    spocName: record.spocName || billing.contactPerson || '',
-    spocNumber: record.spocNumber || billing.phone || '',
-    spocEmail: record.spocEmail || billing.email || '',
+    spocName: record.spocName || '',
+    spocNumber: record.spocNumber || '',
+    spocEmail: record.spocEmail || '',
     requestTimeline: record.requestTimeline || '',
     assignedUserEmails: Array.isArray(record.assignedUserEmails)
       ? record.assignedUserEmails.join(', ')

@@ -99,7 +99,7 @@ export const campApi = {
   },
   consumableOptions: () => get(`${BASE}/consumables/options`),
   consumablesForCamp: (clientId, params = {}) => get(`${BASE}/consumables/for-camp`, {
-    clientId,
+    ...(clientId ? { clientId } : {}),
     ...params,
   }),
   submitToFinance: (id, payload) => post(`${BASE}/camps/${id}/submit-to-finance`, payload),
@@ -152,8 +152,11 @@ export const clientApi = {
 
 export const clientMasterApi = {
   list: (params) => get(`${BASE}/client-masters`, params),
-  listByClient: (clientId) => get(`${BASE}/client-masters/by-client/${clientId}`),
-  listDivisionsByClient: (clientId) => get(`${BASE}/client-masters/by-client/${clientId}/divisions`),
+  listByClient: (clientId, params) => get(`${BASE}/client-masters/by-client/${clientId}`, params),
+  listDivisionsByClient: (clientId, params) => get(
+    `${BASE}/client-masters/by-client/${clientId}/divisions`,
+    params,
+  ),
   get: (id) => get(`${BASE}/client-masters/${id}`),
   create: (payload) => post(`${BASE}/client-masters`, payload),
   update: (id, payload) => put(`${BASE}/client-masters/${id}`, payload),
@@ -234,6 +237,7 @@ export const communicationsApi = {
   restoreEmailMessage: (id) => post(`${BASE}/communications/email/messages/${id}/restore`),
   extractManualPaste: (payload) => post(`${BASE}/communications/paste/extract`, payload),
   processManualPaste: (payload) => post(`${BASE}/communications/paste/process`, payload),
+  extractEvents: (payload) => post(`${BASE}/communications/event-extractor/extract`, payload),
   parsePasteFile: (file) => {
     const formData = new FormData();
     formData.append('file', file);

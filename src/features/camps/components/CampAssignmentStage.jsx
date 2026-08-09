@@ -21,6 +21,7 @@ export function CampAssignmentStage({
   clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
+  clientMasterHcwGap = '',
   disabled = false,
   campStatus = 'pending_review',
 }) {
@@ -132,6 +133,7 @@ export function CampAssignmentStage({
         clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
+        clientMasterHcwGap={clientMasterHcwGap}
         onSelect={handleSelect}
       />
     </div>

@@ -4,7 +4,12 @@ import { createPortal } from 'react-dom';
 import { AutofillDecoyFields, patchAutofillContainer } from '../../../shared/suppressBrowserAutofill.js';
 import { contactToHcwFields } from '../utils/campHcwContact';
 import { campApi, clientMasterApi } from '../campOpsApi';
-import { resolveClientMasterHealthcareWorkers, parseClientMasterListResponse } from '../utils/clientMasterCascade';
+import {
+  diagnoseClientMasterHcwGap,
+  resolveCampClientId,
+  resolveClientMasterHealthcareWorkers,
+  parseClientMasterListResponse,
+} from '../utils/clientMasterCascade';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
 import { CampHireRequestButton } from './CampHireRequestButton';
 import {
@@ -24,6 +29,7 @@ export function CampAssignModal({
     hcwContacts.find((c) => String(c._id) === String(camp?.hcwContactId)),
   ));
   const [clientMasterProfessions, setClientMasterProfessions] = useState([]);
+  const [clientMasterHcwGap, setClientMasterHcwGap] = useState('no_records');
   const [clientMasterLoading, setClientMasterLoading] = useState(false);
   const [savedCamp, setSavedCamp] = useState(null);
   const [copyState, setCopyState] = useState('');
@@ -51,33 +57,41 @@ export function CampAssignModal({
   }, [savedCamp]);
 
   useEffect(() => {
-    const clientId = camp?.client?._id || camp?.client || camp?.clientId || '';
-    if (!clientId) {
+    const clientId = resolveCampClientId(camp);
+    const clientName = String(camp?.clientName || camp?.client?.name || '').trim();
+    if (!clientId && !clientName) {
       setClientMasterProfessions([]);
+      setClientMasterHcwGap('no_records');
       setClientMasterLoading(false);
       return undefined;
     }
 
     let cancelled = false;
     setClientMasterLoading(true);
-    clientMasterApi.listByClient(clientId)
+    const pathId = clientId || encodeURIComponent(clientName);
+    clientMasterApi.listByClient(pathId, clientName ? { clientName } : undefined)
       .then((response) => {
         if (cancelled) return;
         const records = parseClientMasterListResponse(response);
-        setClientMasterProfessions(resolveClientMasterHealthcareWorkers(records, {
+        const filters = {
           campaignType: camp?.campaignType,
           campaignName: camp?.campaignName,
-        }));
+        };
+        setClientMasterProfessions(resolveClientMasterHealthcareWorkers(records, filters));
+        setClientMasterHcwGap(diagnoseClientMasterHcwGap(records, filters));
       })
-      .catch(() => {
-        if (!cancelled) setClientMasterProfessions([]);
+      .catch((err) => {
+        if (cancelled) return;
+        setClientMasterProfessions([]);
+        setClientMasterHcwGap('load_failed');
+        setError(err?.message || 'Failed to load Client Master for this camp');
       })
       .finally(() => {
         if (!cancelled) setClientMasterLoading(false);
       });
 
     return () => { cancelled = true; };
-  }, [camp?.client, camp?.clientId, camp?.campaignType, camp?.campaignName]);
+  }, [camp?.client, camp?.clientId, camp?.clientName, camp?.campaignType, camp?.campaignName]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -195,6 +209,7 @@ export function CampAssignModal({
                   selectedContactId={fields.hcwContactId}
                   clientMasterProfessions={clientMasterProfessions}
                   clientMasterLoading={clientMasterLoading}
+                  clientMasterHcwGap={clientMasterHcwGap}
                   onSelect={(nextFields) => {
                     setFields(nextFields);
                     setError('');

@@ -977,6 +977,27 @@
   color: var(--text-muted);
 }
 
+.camp-ops-root .email-extraction-meta {
+  margin-top: 0.5rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--camp-border, #d8dde6) 80%, transparent);
+}
+
+.camp-ops-root .email-extraction-warning {
+  color: color-mix(in srgb, #a15c00 85%, #333);
+}
+
+.camp-ops-root .email-extraction-mandatory-banner {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.camp-ops-root .email-extraction-dl-row.is-mandatory-missing dt,
+.camp-ops-root .email-extraction-dl-row.is-mandatory-missing dd {
+  color: #b42318;
+  font-weight: 600;
+}
+
 .camp-ops-root .email-extraction-dl-row dd {
   margin: 0;
   font-size: 0.9rem;

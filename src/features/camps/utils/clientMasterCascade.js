@@ -115,6 +115,26 @@ export function normalizeMasterMethodKey(value) {
 
 
 
+/**
+ * Resolve a camp's company id for Client Master lookups.
+ * Never returns "[object Object]" when `client` is a populated object without _id first.
+ */
+export function resolveCampClientId(camp = {}) {
+  const candidates = [camp?.clientId, camp?.client?._id, camp?.client];
+  for (const raw of candidates) {
+    if (raw == null || raw === '') continue;
+    if (typeof raw === 'object') {
+      const nested = raw._id ?? raw.id;
+      if (nested != null && nested !== '') return String(nested).trim();
+      continue;
+    }
+    const value = String(raw).trim();
+    if (!value || value === '[object Object]' || value === 'undefined') continue;
+    return value;
+  }
+  return '';
+}
+
 export function parseClientMasterListResponse(response) {
 
   const payload = response?.data;
@@ -153,7 +173,10 @@ function recordHealthcareWorkerRole(record) {
   return recordHealthcareWorkerRoles(record)[0] || '';
 }
 
-
+/** Union role labels across Client Master rows (multi-GSTIN / multi-select). */
+function unionHealthcareWorkerRoles(entries = []) {
+  return normalizeHealthcareWorkers(entries.flatMap((entry) => entry.roles || []));
+}
 
 function recordMatchesDivision(record, divisionKey) {
 
@@ -190,6 +213,7 @@ function recordMatchesMethod(record, methodKey) {
 /**
  * Healthcare worker role(s) configured on Client Master for this client + division + method.
  * Returns an array (multi-select). Empty when not configured.
+ * When several GSTIN rows share the same division + method, roles are unioned.
  */
 export function resolveClientMasterHealthcareWorkers(records = [], {
   campaignType = '',
@@ -205,21 +229,21 @@ export function resolveClientMasterHealthcareWorkers(records = [], {
   if (!withRole.length) return [];
 
   if (divisionKey && methodKey) {
-    const exact = withRole.find(({ record }) => (
+    const exact = withRole.filter(({ record }) => (
       recordMatchesDivision(record, divisionKey)
       && recordMatchesMethod(record, methodKey)
     ));
-    if (exact) return exact.roles;
+    if (exact.length) return unionHealthcareWorkerRoles(exact);
   }
 
   if (divisionKey) {
-    const byDivision = withRole.find(({ record }) => recordMatchesDivision(record, divisionKey));
-    if (byDivision) return byDivision.roles;
+    const byDivision = withRole.filter(({ record }) => recordMatchesDivision(record, divisionKey));
+    if (byDivision.length) return unionHealthcareWorkerRoles(byDivision);
   }
 
   if (methodKey) {
-    const byMethod = withRole.find(({ record }) => recordMatchesMethod(record, methodKey));
-    if (byMethod) return byMethod.roles;
+    const byMethod = withRole.filter(({ record }) => recordMatchesMethod(record, methodKey));
+    if (byMethod.length) return unionHealthcareWorkerRoles(byMethod);
   }
 
   if (withRole.length === 1) return withRole[0].roles;
@@ -228,6 +252,25 @@ export function resolveClientMasterHealthcareWorkers(records = [], {
   if (uniqueJoined.length === 1) return withRole[0].roles;
 
   return [];
+}
+
+/**
+ * Why assignment cannot resolve Client Master HCW roles (for UI diagnostics).
+ * @returns {'ok'|'no_records'|'missing_hcw_roles'|'division_method_mismatch'}
+ */
+export function diagnoseClientMasterHcwGap(records = [], {
+  campaignType = '',
+  campaignName = '',
+} = {}) {
+  if (resolveClientMasterHealthcareWorkers(records, { campaignType, campaignName }).length) {
+    return 'ok';
+  }
+  const activeRecords = (Array.isArray(records) ? records : [])
+    .filter((record) => record?.isActive !== false);
+  if (!activeRecords.length) return 'no_records';
+  const anyRoles = activeRecords.some((record) => recordHealthcareWorkerRoles(record).length > 0);
+  if (!anyRoles) return 'missing_hcw_roles';
+  return 'division_method_mismatch';
 }
 
 /**

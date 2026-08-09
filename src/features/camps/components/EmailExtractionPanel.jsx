@@ -2,26 +2,35 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDateDDMMYYYY } from '../utils/dateFormat';
 
+const PASTE_MANDATORY_KEYS = new Set(['doctorName', 'pincode', 'campDate', 'startTime']);
+
 const BODY_FIELDS = [
-  { key: 'clientName', label: 'Client Name', required: true },
+  { key: 'clientName', label: 'Client Name' },
   { key: 'campaignType', label: 'Division / Therapy' },
   { key: 'campaignName', label: 'Method' },
-  { key: 'campDate', label: 'Camp Date' },
-  { key: 'startTime', label: 'Camp Start Time' },
+  { key: 'campDate', label: 'Camp Date', required: true },
+  { key: 'startTime', label: 'Camp Start Time', required: true },
   { key: 'endTime', label: 'Camp End Time' },
-  { key: 'doctorName', label: 'Doctor Name' },
+  { key: 'doctorName', label: 'Doctor Name', required: true },
   { key: 'doctorCode', label: 'Doctor Code' },
   { key: 'campAddress', label: 'Camp / Clinic Address' },
   { key: 'state', label: 'State' },
   { key: 'zone', label: 'Zone' },
   { key: 'city', label: 'City' },
   { key: 'hq', label: 'HQ' },
-  { key: 'pincode', label: 'PIN Code' },
+  { key: 'pincode', label: 'PIN Code', required: true },
   { key: 'expectedPatients', label: 'Expected Patients' },
   { key: 'fieldPersonName', label: 'Contact Person Name' },
   { key: 'fieldPersonPhone', label: 'Contact Person Number' },
   { key: 'remarks', label: 'Remarks' },
 ];
+
+const MANDATORY_FIELD_LABELS = {
+  doctorName: 'Doctor Name',
+  pincode: 'PIN Code',
+  campDate: 'Camp Date',
+  startTime: 'Camp Start Time',
+};
 
 function formatFieldValue(key, value, entry) {
   const display = entry?.pasteDisplay?.[key];
@@ -29,6 +38,15 @@ function formatFieldValue(key, value, entry) {
   if (!value && value !== 0) return '—';
   if (key === 'campDate') return formatDateDDMMYYYY(value) || '—';
   return String(value);
+}
+
+function isMandatoryMissing(entry, key) {
+  if (entry?.mandatoryMissing?.includes(key)) return true;
+  if (!PASTE_MANDATORY_KEYS.has(key)) return false;
+  if (entry?.valid || entry?.creationEligible) return false;
+  const value = entry?.row?.[key];
+  if (key === 'pincode') return !/^\d{6}$/.test(String(value || '').trim());
+  return value == null || String(value).trim() === '';
 }
 
 function LinkedCampsBanner({ linkedCamps = [] }) {
@@ -116,20 +134,27 @@ function getBodyRowStatus(entry) {
       label: `Duplicate of ${entry.duplicateOf.campId}`,
     };
   }
-  if (entry.partial) {
+  if (entry.valid) {
+    return { className: 'status-pill-success', label: 'Ready' };
+  }
+  if (entry.partial || entry.creationEligible) {
     const pct = entry.completionPercent ? `${entry.completionPercent}%` : 'partial';
     return {
       className: 'status-pill-warning',
-      label: `Partial import (${pct}) — complete before approval`,
+      label: `Creatable (${pct}) — complete before approval`,
     };
   }
-  if (!entry.valid) {
-    return {
-      className: 'status-pill-muted',
-      label: entry.errors?.join(', ') || 'Invalid',
-    };
-  }
-  return { className: 'status-pill-success', label: 'Ready' };
+  const missing = (entry.mandatoryMissing || [])
+    .map((key) => MANDATORY_FIELD_LABELS[key] || key)
+    .filter(Boolean);
+  return {
+    className: 'status-pill-muted',
+    label: missing.length
+      ? `Review required — missing ${missing.join(', ')}`
+      : (entry.errors?.filter((err) => /doctor name|pin code|camp date|start time/i.test(err)).join('; ')
+        || entry.errors?.[0]
+        || 'Review required'),
+  };
 }
 
 function BodyExtractionForm({
@@ -156,14 +181,62 @@ function BodyExtractionForm({
                 {rowStatus.label}
               </span>
             </header>
+            {(entry.mandatoryMissing || []).length > 0 || (!entry.valid && !entry.creationEligible && !entry.partial) ? (
+              <p className="error email-extraction-mandatory-banner">
+                Mandatory for creation: Doctor Name, PIN Code, Camp Date, Camp Start Time.
+                {(entry.mandatoryMissing || []).length
+                  ? ` Missing/invalid: ${(entry.mandatoryMissing || []).map((key) => MANDATORY_FIELD_LABELS[key] || key).join(', ')}.`
+                  : ''}
+              </p>
+            ) : null}
             <dl className="email-extraction-dl">
-              {BODY_FIELDS.map((field) => (
-                <div key={field.key} className="email-extraction-dl-row">
-                  <dt>{field.label}</dt>
+              {BODY_FIELDS.map((field) => {
+                const missing = isMandatoryMissing(entry, field.key);
+                return (
+                <div
+                  key={field.key}
+                  className={`email-extraction-dl-row${missing ? ' is-mandatory-missing' : ''}${field.required ? ' is-mandatory' : ''}`}
+                >
+                  <dt>{field.label}{field.required ? ' *' : ''}</dt>
                   <dd>{formatFieldValue(field.key, entry.row?.[field.key], entry)}</dd>
                 </div>
-              ))}
+                );
+              })}
             </dl>
+            {entry.extraction ? (
+              <div className="email-extraction-meta">
+                <p className="meta-text">
+                  Extraction: {entry.extraction.method || entry.extraction.extractionMethod || 'deterministic'}
+                  {entry.extraction.usedLlm ? ' (AI-assisted)' : ''}
+                  {entry.extraction.confidence != null
+                    ? ` · confidence ${Math.round(Number(entry.extraction.confidence) * 100)}%`
+                    : ''}
+                  {entry.extraction.status ? ` · ${entry.extraction.status}` : ''}
+                </p>
+                {Object.entries(entry.extraction.fieldProvenance || {})
+                  .filter(([, provenance]) => provenance === 'inferred' || provenance === 'fuzzy_matched')
+                  .slice(0, 6)
+                  .map(([field, provenance]) => (
+                    <p key={field} className="meta-text email-extraction-warning">
+                      Low-confidence field: {field} ({provenance})
+                    </p>
+                  ))}
+                {(entry.extraction.peopleMatches || [])
+                  .filter((match) => match.status === 'AMBIGUOUS' || match.status === 'REVIEW')
+                  .slice(0, 3)
+                  .map((match) => (
+                    <p key={`${match.name}-${match.status}`} className="meta-text email-extraction-warning">
+                      Contact match needs review: {match.name || match.role || 'person'} ({match.status})
+                    </p>
+                  ))}
+                {(entry.extraction.warnings || []).slice(0, 4).map((warning) => (
+                  <p key={warning} className="meta-text email-extraction-warning">{warning}</p>
+                ))}
+                {(entry.extraction.conflicts || []).slice(0, 4).map((conflict) => (
+                  <p key={conflict} className="error meta-text">{conflict}</p>
+                ))}
+              </div>
+            ) : null}
             {entry.pasteDisplay?.locationSource === 'pin-master' ? (
               <p className="meta-text">City, state, and zone matched from PIN master.</p>
             ) : null}

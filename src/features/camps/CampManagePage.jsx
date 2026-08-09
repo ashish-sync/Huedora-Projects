@@ -34,6 +34,7 @@ import { CampFinancialRowActions } from './components/CampFinancialRowActions';
 import { CampAssignModal } from './components/CampAssignModal';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { api } from '../../shared/api.js';
+import { fetchAllHealthcareWorkerContacts } from './utils/fetchHcwContacts.js';
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import {
@@ -380,9 +381,9 @@ export default function CampsPage() {
     if (workingStage !== 'assignment') return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    api('/contacts?contactCategory=Healthcare Worker&limit=500')
-      .then((res) => {
-        if (!cancelled) setHcwContacts(res.data || []);
+    fetchAllHealthcareWorkerContacts()
+      .then((contacts) => {
+        if (!cancelled) setHcwContacts(contacts);
       })
       .catch(() => {
         if (!cancelled) setHcwContacts([]);
@@ -567,6 +568,7 @@ export default function CampsPage() {
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
           onAction={requestCampAction}
+          onAssign={setAssignCamp}
         />
       );
     }

@@ -16,12 +16,14 @@ import { CampRowIconButton } from './components/CampRowIconButton';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
+import { fetchAllHealthcareWorkerContacts } from './utils/fetchHcwContacts.js';
 import {
   parseClientMasterDivisions,
   applyClientMasterCascade,
   pickSingleOption,
   resolveCampNameOptions,
   resolveClientMasterHealthcareWorkers,
+  diagnoseClientMasterHcwGap,
   parseClientMasterListResponse,
 } from './utils/clientMasterCascade';
 import {
@@ -111,6 +113,7 @@ export default function CampFormPage() {
   const [mappedConsumables, setMappedConsumables] = useState([]);
   const [clientMasterRecords, setClientMasterRecords] = useState([]);
   const [clientMasterLoading, setClientMasterLoading] = useState(false);
+  const [clientMasterLoadFailed, setClientMasterLoadFailed] = useState(false);
   const hcwContactsLoadedRef = useRef(false);
 
   const campStatus = campMeta?.status || 'pending_review';
@@ -159,15 +162,18 @@ export default function CampFormPage() {
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    api('/contacts?contactCategory=Healthcare Worker&limit=500')
-      .then((res) => {
+    fetchAllHealthcareWorkerContacts()
+      .then((contacts) => {
         if (!cancelled) {
-          setHcwContacts(res.data || []);
+          setHcwContacts(contacts);
           hcwContactsLoadedRef.current = true;
         }
       })
-      .catch(() => {
-        if (!cancelled) setHcwContacts([]);
+      .catch((err) => {
+        if (!cancelled) {
+          setHcwContacts([]);
+          setError(err?.message || 'Failed to load Healthcare Worker contacts');
+        }
       })
       .finally(() => {
         if (!cancelled) setContactsLoading(false);
@@ -279,7 +285,10 @@ export default function CampFormPage() {
 
     let cancelled = false;
     setProgramsLoading(true);
-    clientMasterApi.listDivisionsByClient(form.clientId)
+    clientMasterApi.listDivisionsByClient(
+      form.clientId,
+      form.clientName ? { clientName: form.clientName } : undefined,
+    )
       .then(({ data }) => {
         if (cancelled) return;
         const { programs, divisions } = parseClientMasterDivisions(data);
@@ -315,21 +324,24 @@ export default function CampFormPage() {
       });
 
     return () => { cancelled = true; };
-  }, [form.clientId]);
+  }, [form.clientId, form.clientName]);
 
   useEffect(() => {
-    if (!form.clientId) {
+    if (!form.clientId && !form.clientName) {
       setMappedConsumables([]);
       setClientMasterRecords([]);
+      setClientMasterLoadFailed(false);
       setClientMasterLoading(false);
       return undefined;
     }
 
     let cancelled = false;
     setClientMasterLoading(true);
+    setClientMasterLoadFailed(false);
     campApi.consumablesForCamp(form.clientId, {
       campaignType: form.campaignType,
       campaignName: form.campaignName,
+      clientName: form.clientName || undefined,
     })
       .then(({ data }) => {
         if (!cancelled) setMappedConsumables(data?.data || []);
@@ -338,19 +350,27 @@ export default function CampFormPage() {
         if (!cancelled) setMappedConsumables([]);
       });
 
-    clientMasterApi.listByClient(form.clientId)
+    clientMasterApi.listByClient(
+      form.clientId || encodeURIComponent(form.clientName),
+      form.clientName ? { clientName: form.clientName } : undefined,
+    )
       .then((response) => {
-        if (!cancelled) setClientMasterRecords(parseClientMasterListResponse(response));
+        if (cancelled) return;
+        setClientMasterRecords(parseClientMasterListResponse(response));
+        setClientMasterLoadFailed(false);
       })
-      .catch(() => {
-        if (!cancelled) setClientMasterRecords([]);
+      .catch((err) => {
+        if (cancelled) return;
+        setClientMasterRecords([]);
+        setClientMasterLoadFailed(true);
+        setError(err?.message || 'Failed to load Client Master for this camp');
       })
       .finally(() => {
         if (!cancelled) setClientMasterLoading(false);
       });
 
     return () => { cancelled = true; };
-  }, [form.clientId, form.campaignType, form.campaignName]);
+  }, [form.clientId, form.clientName, form.campaignType, form.campaignName]);
 
   useEffect(() => {
     if (!mappedConsumables.length) return undefined;
@@ -758,6 +778,13 @@ export default function CampFormPage() {
     [clientMasterRecords, form.campaignType, form.campaignName],
   );
   const clientMasterProfession = clientMasterProfessions[0] || '';
+  const clientMasterHcwGap = useMemo(() => {
+    if (clientMasterLoadFailed) return 'load_failed';
+    return diagnoseClientMasterHcwGap(clientMasterRecords, {
+      campaignType: form.campaignType,
+      campaignName: form.campaignName,
+    });
+  }, [clientMasterLoadFailed, clientMasterRecords, form.campaignType, form.campaignName]);
 
   const stageReadOnly = useMemo(() => ({
     request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage),
@@ -908,6 +935,7 @@ export default function CampFormPage() {
         clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
+        clientMasterHcwGap={clientMasterHcwGap}
         onValidationError={setError}
         reachedLifecycleStage={reachedLifecycleStage}
         assignedHcwContact={assignedHcwContact}

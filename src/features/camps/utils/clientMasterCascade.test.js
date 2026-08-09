@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyClientMasterCascade,
+  diagnoseClientMasterHcwGap,
   parseClientMasterDivisions,
   pickSingleOption,
+  resolveCampClientId,
   resolveClientMasterHealthcareWorker,
   resolveClientMasterHealthcareWorkers,
 } from './clientMasterCascade.js';
@@ -153,6 +155,47 @@ describe('resolveClientMasterHealthcareWorker', () => {
       campaignType: 'Ortho',
       campaignName: 'BMD',
     })).toEqual(['Technician', 'Phlebotomist']);
+  });
+
+  it('resolves camp client id from clientId before populated client object', () => {
+    expect(resolveCampClientId({
+      clientId: 'abc123',
+      client: { name: 'Acme' },
+    })).toBe('abc123');
+    expect(resolveCampClientId({
+      client: { _id: 'nested-id', name: 'Acme' },
+    })).toBe('nested-id');
+    expect(resolveCampClientId({
+      client: { name: 'Acme' },
+    })).toBe('');
+  });
+
+  it('unions roles across multi-GSTIN rows for the same division and method', () => {
+    expect(resolveClientMasterHealthcareWorkers([
+      {
+        programName: 'Ortho',
+        campName: 'BMD',
+        billingGstin: 'GSTIN-A',
+        healthcareWorker: ['Technician'],
+        isActive: true,
+      },
+      {
+        programName: 'Ortho',
+        campName: 'BMD',
+        billingGstin: 'GSTIN-B',
+        healthcareWorker: ['Phlebotomist'],
+        isActive: true,
+      },
+    ], {
+      campaignType: 'Ortho',
+      campaignName: 'BMD',
+    })).toEqual(['Technician', 'Phlebotomist']);
+  });
+
+  it('diagnoses missing Client Master healthcare worker roles', () => {
+    expect(diagnoseClientMasterHcwGap([
+      { programName: 'Ortho', campName: 'BMD', healthcareWorker: '', isActive: true },
+    ], { campaignType: 'Ortho', campaignName: 'BMD' })).toBe('missing_hcw_roles');
   });
 
   it('normalizes legacy comma-separated healthcare worker strings', () => {

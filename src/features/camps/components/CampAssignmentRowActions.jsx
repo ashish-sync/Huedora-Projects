@@ -19,6 +19,7 @@ export function CampAssignmentRowActions({
   canRejectCamps,
   hasPermission,
   onAction,
+  onAssign,
 }) {
   const navigate = useNavigate();
   const [copyState, setCopyState] = useState('');
@@ -47,16 +48,25 @@ export function CampAssignmentRowActions({
   return (
     <div className="actions camp-row-actions camp-row-icon-actions">
       {canEdit && !isTerminal && (
-        <Link
-          to={`/camp-one/manage/${camp._id}/edit`}
-          className="camp-row-icon-btn camp-row-icon-btn--assign"
-          title="Open assignment"
-          aria-label="Open assignment"
-        >
-          <span className="camp-row-icon-btn__glyph" aria-hidden="true">
-            <UserCheck size={17} strokeWidth={2} />
-          </span>
-        </Link>
+        onAssign ? (
+          <CampRowIconButton
+            icon={UserCheck}
+            label="Assign healthcare worker"
+            variant="assign"
+            onClick={() => onAssign(camp)}
+          />
+        ) : (
+          <Link
+            to={`/camp-one/manage/${camp._id}/edit?stage=assignment`}
+            className="camp-row-icon-btn camp-row-icon-btn--assign"
+            title="Open assignment"
+            aria-label="Open assignment"
+          >
+            <span className="camp-row-icon-btn__glyph" aria-hidden="true">
+              <UserCheck size={17} strokeWidth={2} />
+            </span>
+          </Link>
+        )
       )}
       {canHireRequest && (
         <CampRowIconButton

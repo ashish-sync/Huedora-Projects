@@ -529,6 +529,7 @@ export default function CommunicationsPastePage() {
         const response = await communicationsApi.extractManualPaste({
           text: pasteText,
           ...pasteDefaults,
+          timezone: 'Asia/Kolkata',
         });
         previewData = response.data?.data || response.data;
       }

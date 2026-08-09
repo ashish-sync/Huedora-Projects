@@ -170,6 +170,7 @@ export function CampLifecycleForm({
   clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
+  clientMasterHcwGap = '',
   onValidationError,
   reachedLifecycleStage = 'request',
   mappedConsumables = [],
@@ -506,6 +507,7 @@ export function CampLifecycleForm({
         clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
+        clientMasterHcwGap={clientMasterHcwGap}
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
       />

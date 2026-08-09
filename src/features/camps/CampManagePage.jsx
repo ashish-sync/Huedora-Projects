@@ -31,10 +31,8 @@ import { CampRequestRowActions } from './components/CampRequestRowActions';
 import { CampAssignmentRowActions } from './components/CampAssignmentRowActions';
 import { CampExecutionRowActions } from './components/CampExecutionRowActions';
 import { CampFinancialRowActions } from './components/CampFinancialRowActions';
-import { CampAssignModal } from './components/CampAssignModal';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { api } from '../../shared/api.js';
-import { fetchAllHealthcareWorkerContacts } from './utils/fetchHcwContacts.js';
 import { Pagination } from './components/Pagination';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
 import {
@@ -101,9 +99,6 @@ export default function CampsPage() {
   const [confirmClosureDetails, setConfirmClosureDetails] = useState(null);
   const [confirmReasonDetails, setConfirmReasonDetails] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [assignCamp, setAssignCamp] = useState(null);
-  const [hcwContacts, setHcwContacts] = useState([]);
-  const [contactsLoading, setContactsLoading] = useState(false);
 
   const dismissError = useCallback(() => setError(''), []);
   const dismissBulkMessage = useCallback(() => setBulkMessage(''), []);
@@ -377,25 +372,6 @@ export default function CampsPage() {
     loadCamps(1, pageSize);
   }, [status, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
 
-  useEffect(() => {
-    if (workingStage !== 'assignment') return undefined;
-    let cancelled = false;
-    setContactsLoading(true);
-    fetchAllHealthcareWorkerContacts()
-      .then((contacts) => {
-        if (!cancelled) setHcwContacts(contacts);
-      })
-      .catch(() => {
-        if (!cancelled) setHcwContacts([]);
-      })
-      .finally(() => {
-        if (!cancelled) setContactsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [workingStage]);
-
   function handleSearch() {
     setPage(1);
     loadCamps(1, pageSize);
@@ -568,7 +544,6 @@ export default function CampsPage() {
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
           onAction={requestCampAction}
-          onAssign={setAssignCamp}
         />
       );
     }
@@ -846,18 +821,6 @@ export default function CampsPage() {
         loading={confirmLoading}
       />
 
-      {assignCamp && (
-        <CampAssignModal
-          camp={assignCamp}
-          hcwContacts={hcwContacts}
-          contactsLoading={contactsLoading}
-          onClose={() => setAssignCamp(null)}
-          onSaved={() => {
-            setAssignCamp(null);
-            loadCamps(page, pageSize);
-          }}
-        />
-      )}
     </>
   );
 }

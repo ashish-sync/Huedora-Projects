@@ -46,6 +46,8 @@ import {
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { validateRequestStageForm } from './utils/validateRequestStage';
 import { confirmCampDurationIfNeeded } from './utils/campDurationWarning';
+import { findHcwAssignmentGapConflict } from './utils/hcwAssignmentGap.js';
+import { HcwAssignmentGapAlert } from './components/HcwAssignmentGapAlert.jsx';
 import { syncPrimaryContactFields, normalizeContactPersons } from './utils/campContactPersons.js';
 import { mergeConsumablesWithTemplate, normalizeConsumablesUsed } from './utils/campConsumables.js';
 import { getHcwFinanceBlockers, isHcwReadyForFinance } from './utils/hcwFinanceReadiness.js';
@@ -93,6 +95,7 @@ export default function CampFormPage() {
   const [campMeta, setCampMeta] = useState(null);
   const [readOnly, setReadOnly] = useState(false);
   const [error, setError] = useState('');
+  const [hcwGapConflict, setHcwGapConflict] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [submitFinanceBusy, setSubmitFinanceBusy] = useState(false);
@@ -648,6 +651,7 @@ export default function CampFormPage() {
     e.preventDefault();
     if (readOnly && campStatus === 'cancelled') return;
     if (activeStage === 'financial') return;
+    setHcwGapConflict(null);
 
     if (!isEdit && activeStage !== 'request') {
       setError('New camps can only be created at the Request stage.');
@@ -684,6 +688,45 @@ export default function CampFormPage() {
       if (!form.hcwCategory || !form.hcwName || !form.hcwContact) {
         setError('HCW Category, Name, and Contact are required when assigning');
         return;
+      }
+    }
+
+    const assigningHcw = Boolean(
+      form.hcwContactId
+      && (activeStage === 'assignment' || form.assignmentDecision === 'assign' || form.assignmentStatus === 'Assigned'),
+    );
+    if (assigningHcw && form.campDate) {
+      try {
+        const campDate = toApiDateValue(form.campDate);
+        const { data } = await campApi.list({
+          hcwContactId: form.hcwContactId,
+          dateFrom: campDate,
+          dateTo: campDate,
+          limit: 200,
+        });
+        const peers = Array.isArray(data?.data) ? data.data : [];
+        const gapConflict = findHcwAssignmentGapConflict(
+          {
+            _id: id,
+            campId: campMeta?.campId || form.campId,
+            hcwContactId: form.hcwContactId,
+            assignmentDecision: 'assign',
+            status: campStatus === 'cancelled' || campStatus === 'rejected' ? campStatus : 'approved',
+            campDate,
+            startTime: form.startTime,
+            endTime: form.endTime,
+            durationHours: form.durationHours,
+          },
+          peers,
+        );
+        if (gapConflict) {
+          setHcwGapConflict(gapConflict);
+          setError('');
+          return;
+        }
+        setHcwGapConflict(null);
+      } catch {
+        // Server still enforces the gap on save if the list pre-check fails.
       }
     }
 
@@ -741,6 +784,7 @@ export default function CampFormPage() {
 
     setLoading(true);
     setError('');
+    setHcwGapConflict(null);
     try {
       if (isEdit) {
         const res = await campApi.update(id, payload);
@@ -751,6 +795,7 @@ export default function CampFormPage() {
             setCampMeta((prev) => ({ ...prev, ...camp }));
             setActiveStage('financial');
             setError('');
+            setHcwGapConflict(null);
             return;
           }
         }
@@ -759,7 +804,18 @@ export default function CampFormPage() {
       }
       navigate('/camp-one/manage');
     } catch (err) {
-      setError(err?.message || 'Failed to save camp');
+      const code = err?.code || err?.error?.code || '';
+      const message = err?.message || 'Failed to save camp';
+      if (code === 'HCW_ASSIGNMENT_GAP' || /1 hour 30 minutes|HCW already has camp|schedule gap/i.test(message)) {
+        setHcwGapConflict({
+          title: 'HCW schedule conflict',
+          summary: message,
+          message,
+        });
+        setError('');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -893,7 +949,13 @@ export default function CampFormPage() {
           },
           hasNoDivisions && activeStage === 'request' && { variant: 'error', message: NO_DIVISION_MESSAGE },
           hasNoMethods && activeStage === 'request' && { variant: 'error', message: NO_METHOD_MESSAGE },
-          error && { variant: 'error', message: error },
+          hcwGapConflict && {
+            key: 'hcw-gap-conflict',
+            variant: 'error',
+            className: 'hcw-gap-alert-banner',
+            message: <HcwAssignmentGapAlert conflict={hcwGapConflict} />,
+          },
+          error && !hcwGapConflict && { variant: 'error', message: error },
         ].filter(Boolean)}
       />
 

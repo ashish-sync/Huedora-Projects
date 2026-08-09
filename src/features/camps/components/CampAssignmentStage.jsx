@@ -3,6 +3,7 @@ import { copyCampAssignmentDetails } from '../utils/campAssignmentCopy';
 import { isCampDateDueForExecution } from '../utils/campAssignmentActions.js';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
 import { CampHireRequestButton } from './CampHireRequestButton';
+import { HcwSameDayCampsPanel } from './HcwSameDayCampsPanel';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -24,6 +25,7 @@ export function CampAssignmentStage({
   clientMasterHcwGap = '',
   disabled = false,
   campStatus = 'pending_review',
+  excludeCampId = '',
 }) {
   const [copyState, setCopyState] = useState('');
   const isTerminal = ['cancelled', 'rejected'].includes(campStatus);
@@ -113,6 +115,8 @@ export function CampAssignmentStage({
         <p className="meta-text camp-assignment-intro">
           Select resource type, state, and city to find Contact Directory healthcare workers that match
           this Client’s Healthcare Worker role in Client Master.
+          Same HCW on the same date needs at least 1 hour 30 minutes between one camp’s end and the next start
+          (e.g. 8:00–14:00 → next earliest 15:30).
           Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.
         </p>
         <CampHireRequestButton
@@ -136,6 +140,15 @@ export function CampAssignmentStage({
         clientMasterHcwGap={clientMasterHcwGap}
         onSelect={handleSelect}
       />
+      {form.hcwContactId ? (
+        <HcwSameDayCampsPanel
+          hcwContactId={form.hcwContactId}
+          hcwName={form.hcwName}
+          campDate={form.campDate}
+          excludeCampId={excludeCampId}
+          excludeCampKey={form.campId}
+        />
+      ) : null}
     </div>
   );
 }

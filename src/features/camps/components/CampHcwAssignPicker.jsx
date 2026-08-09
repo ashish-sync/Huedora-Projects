@@ -228,7 +228,6 @@ export function CampHcwAssignPicker({
         hint={serviceProviderSelected
           ? 'Employees under Service Providers in Contact Directory (not the agency itself).'
           : undefined}
-        className="full"
       >
         <select
           className="tylo-select"

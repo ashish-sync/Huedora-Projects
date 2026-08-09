@@ -510,6 +510,7 @@ export function CampLifecycleForm({
         clientMasterHcwGap={clientMasterHcwGap}
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
+        excludeCampId={campId || ''}
       />
     );
   }

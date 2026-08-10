@@ -30,6 +30,6 @@ describe('hcwFinanceReadiness', () => {
 
   it('flags missing banking documents', () => {
     const blockers = getHcwFinanceBlockers({ ...completeHcw, passbookCopyUrl: '' });
-    expect(blockers).toContain('HCW passbook copy is not uploaded in Contact Directory');
+    expect(blockers).toContain('HCW bank account proof is not uploaded in Contact Directory');
   });
 });

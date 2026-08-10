@@ -780,9 +780,9 @@ export default function FinanceVendorBillDetailPage() {
                   <button
                     type="button"
                     className="btn ghost"
-                    onClick={() => openDoc(bill?.vendorPassbookCopyUrl, 'Passbook')}
+                    onClick={() => openDoc(bill?.vendorPassbookCopyUrl, 'Bank Account Proof')}
                   >
-                    View Passbook
+                    View Bank Account Proof
                   </button>
                 </div>
               </div>

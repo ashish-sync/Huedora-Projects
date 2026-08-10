@@ -14,6 +14,12 @@ import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { validateUploadFile } from '../../shared/importErrors.js';
+import {
+  CONTACT_KYC_ACCEPT_ATTR,
+  CONTACT_KYC_ACCEPT_EXTENSIONS,
+  CONTACT_KYC_HINT,
+  CONTACT_KYC_MAX_BYTES,
+} from './contactKycUpload.js';
 import ServiceProviderProfile from './ServiceProviderProfile.jsx';
 import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
@@ -283,8 +289,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   async function uploadKycDocument(docType, file) {
     if (!editId || !file) return;
     const pre = validateUploadFile(file, {
-      maxBytes: 5 * 1024 * 1024,
-      acceptExt: ['.pdf', '.png', '.jpg', '.jpeg', '.webp'],
+      maxBytes: CONTACT_KYC_MAX_BYTES,
+      acceptExt: CONTACT_KYC_ACCEPT_EXTENSIONS,
       label: 'KYC document',
     });
     if (pre) {
@@ -738,12 +744,12 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     />
                   </div>
                   <div className="field">
-                    <label>Passbook Copy</label>
+                    <label>Bank Account Proof</label>
                     {editId ? (
                       <>
                         <input
                           type="file"
-                          accept="image/*,application/pdf"
+                          accept={CONTACT_KYC_ACCEPT_ATTR}
                           disabled={Boolean(kycUploadBusy)}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -758,11 +764,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                             <a href={form.passbookCopyUrl} target="_blank" rel="noreferrer">View</a>
                           </p>
                         ) : (
-                          <p className="cd-form-hint">Image or PDF required for Finance payout.</p>
+                          <p className="cd-form-hint">{CONTACT_KYC_HINT}. Required for Finance payout.</p>
                         )}
                       </>
                     ) : (
-                      <p className="cd-form-hint">Save the contact first, then upload passbook copy.</p>
+                      <p className="cd-form-hint">Save the contact first, then upload bank account proof.</p>
                     )}
                   </div>
                   <div className="field">
@@ -771,7 +777,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       <>
                         <input
                           type="file"
-                          accept="image/*,application/pdf"
+                          accept={CONTACT_KYC_ACCEPT_ATTR}
                           disabled={Boolean(kycUploadBusy)}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
@@ -786,7 +792,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                             <a href={form.panCardCopyUrl} target="_blank" rel="noreferrer">View</a>
                           </p>
                         ) : (
-                          <p className="cd-form-hint">Image or PDF required for Finance payout.</p>
+                          <p className="cd-form-hint">{CONTACT_KYC_HINT}. Required for Finance payout.</p>
                         )}
                       </>
                     ) : (

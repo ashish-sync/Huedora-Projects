@@ -568,15 +568,15 @@ export default function FinanceCampPayoutsPage() {
                         disabled={!payTargetRows[0].panCardCopyUrl}
                         onClick={() => openPayeeDoc(payTargetRows[0].panCardCopyUrl, 'PAN Card')}
                       >
-                        View PAN Card photo
+                        View PAN Card
                       </button>
                       <button
                         type="button"
                         className="btn secondary btn-compact"
                         disabled={!payTargetRows[0].passbookCopyUrl}
-                        onClick={() => openPayeeDoc(payTargetRows[0].passbookCopyUrl, 'Passbook')}
+                        onClick={() => openPayeeDoc(payTargetRows[0].passbookCopyUrl, 'Bank Account Proof')}
                       >
-                        View Passbook photo
+                        View Bank Account Proof
                       </button>
                     </div>
                   </>

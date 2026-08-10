@@ -1,3 +1,7 @@
+import { CHARGEABLE_STATUSES } from './campLifecycle';
+
+export { CHARGEABLE_STATUSES };
+
 export const CAMP_CLOSURE_TYPES = [
   'Cancelled by Client',
   'Refused',
@@ -123,9 +127,14 @@ export function closureSubReasonRequiresRemarks(subReasonValue) {
   return subReasonValue === 'other_mandatory_remarks';
 }
 
+export function closureRequiresChargeableStatus(camp = {}, stage = '') {
+  return resolveClosureStage(camp, stage) === 'execution';
+}
+
 export function buildClosureDetails(camp = {}, stage = '') {
   const availableTypes = getAvailableClosureTypes(camp, stage);
   const closureType = availableTypes.length === 1 ? availableTypes[0] : '';
+  const existingChargeable = String(camp.chargeableStatus || '').trim();
   return {
     closureType,
     reasonCategory: closureType
@@ -133,6 +142,9 @@ export function buildClosureDetails(camp = {}, stage = '') {
       : '',
     subReason: '',
     remarks: '',
+    chargeableStatus: CHARGEABLE_STATUSES.includes(existingChargeable)
+      ? existingChargeable
+      : '',
   };
 }
 
@@ -151,6 +163,10 @@ export function isClosureDetailsReady(details = {}, camp = {}, stage = '') {
   if (closureSubReasonRequiresRemarks(subReason) && !String(details.remarks || '').trim()) {
     return false;
   }
+  if (closureRequiresChargeableStatus(camp, stage)) {
+    const chargeableStatus = String(details.chargeableStatus || '').trim();
+    if (!CHARGEABLE_STATUSES.includes(chargeableStatus)) return false;
+  }
   return true;
 }
 
@@ -165,7 +181,8 @@ export function buildClosurePayload(details = {}) {
     reasonCategory,
     details.subReason,
   );
-  return {
+  const chargeableStatus = String(details.chargeableStatus || '').trim();
+  const payload = {
     closureType,
     reasonCategory,
     subReason: details.subReason,
@@ -174,6 +191,10 @@ export function buildClosurePayload(details = {}) {
     closureRemarks: String(details.remarks || '').trim(),
     subReasonLabel: subReasonMeta?.label || '',
   };
+  if (CHARGEABLE_STATUSES.includes(chargeableStatus)) {
+    payload.chargeableStatus = chargeableStatus;
+  }
+  return payload;
 }
 
 export function formatClosureSummary(camp = {}) {

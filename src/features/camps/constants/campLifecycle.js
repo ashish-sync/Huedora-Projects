@@ -17,6 +17,7 @@ import {
   CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
 } from '../utils/campFinanceExpense.js';
 import { resolveCampClientId } from '../utils/clientMasterCascade.js';
+import { computeCampRevenueFromPricing } from '../utils/campClientMasterPricing.js';
 
 export { CONTACT_PERSON_LEVEL_OPTIONS };
 
@@ -343,7 +344,7 @@ export function resolvePunctuality(campStartTime, inTime) {
   return 'Poor';
 }
 
-export function computeLifecycleDerived(form = {}) {
+export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
   const durationHours = Number(form.durationHours) || 0;
   const campSlot = resolveCampSlot(form.startTime);
 
@@ -363,9 +364,15 @@ export function computeLifecycleDerived(form = {}) {
     extraHours = Math.max(0, Math.round((totalHours - durationHours) * 100) / 100);
   }
 
-  const campRevenue = Number(form.campRevenue) || 0;
-  const overtimeRevenue = Number(form.overtimeRevenue) || 0;
-  const otherRevenue = Number(form.otherRevenue) || 0;
+  const autoRevenue = pricing
+    ? computeCampRevenueFromPricing({ ...form, totalHours, extraHours }, pricing)
+    : null;
+
+  const campRevenue = autoRevenue ? autoRevenue.campRevenue : (Number(form.campRevenue) || 0);
+  const overtimeRevenue = autoRevenue ? autoRevenue.overtimeRevenue : (Number(form.overtimeRevenue) || 0);
+  const otherRevenue = autoRevenue ? autoRevenue.otherRevenue : (Number(form.otherRevenue) || 0);
+  const otherRevenuePatients = autoRevenue ? autoRevenue.otherRevenuePatients : 0;
+  const otherRevenueDistance = autoRevenue ? autoRevenue.otherRevenueDistance : 0;
   const totalRevenue = Math.round((campRevenue + overtimeRevenue + otherRevenue) * 100) / 100;
 
   const campAmount = Number(form.campAmount) || 0;
@@ -383,10 +390,16 @@ export function computeLifecycleDerived(form = {}) {
     campSlot,
     totalHours: totalHours ?? '',
     extraHours,
+    campRevenue,
+    overtimeRevenue,
+    otherRevenue,
+    otherRevenuePatients,
+    otherRevenueDistance,
     totalRevenue,
     totalPayout,
     balance,
     punctuality,
+    revenueAutoCalculated: Boolean(autoRevenue),
   };
 }
 

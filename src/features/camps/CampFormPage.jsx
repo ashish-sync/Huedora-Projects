@@ -626,6 +626,7 @@ export default function CampFormPage() {
         assignmentRefusalReason: camp.assignmentRefusalReason || '',
         cancelledBy: camp.cancelledBy || '',
         remarks: camp.remarks || '',
+        chargeableStatus: camp.chargeableStatus || prev?.chargeableStatus || '',
       }));
       setForm(campToForm(camp));
       applyCampAccess(camp);
@@ -1004,6 +1005,7 @@ export default function CampFormPage() {
         assignedHcwLoading={assignedHcwLoading}
         hcwFinanceBlockers={hcwFinanceBlockers}
         mappedConsumables={mappedConsumables}
+        clientMasterRecords={clientMasterRecords}
         canSetHistoricalCampDates={canSetHistoricalCampDates()}
       />
 

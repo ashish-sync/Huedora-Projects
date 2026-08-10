@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { bindAutofillBlock, bindAutofillBlockSelect } from '../../../shared/suppressBrowserAutofill.js';
 import CampAddressField from './CampAddressField.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
@@ -56,6 +56,7 @@ import {
   CAMP_FINANCE_EXPENSE_CATEGORY,
   CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
 } from '../utils/campFinanceExpense.js';
+import { resolveClientMasterPricingFromRecords } from '../utils/campClientMasterPricing.js';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -174,10 +175,47 @@ export function CampLifecycleForm({
   onValidationError,
   reachedLifecycleStage = 'request',
   mappedConsumables = [],
+  clientMasterRecords = [],
   canSetHistoricalCampDates = false,
 }) {
   const resolvedActiveStage = normalizeLifecycleStage(activeStage, 'request');
-  const derived = useMemo(() => computeLifecycleDerived(form), [form]);
+  const clientMasterPricing = useMemo(
+    () => resolveClientMasterPricingFromRecords(clientMasterRecords, {
+      campaignType: form.campaignType,
+      campaignName: form.campaignName,
+    }),
+    [clientMasterRecords, form.campaignType, form.campaignName],
+  );
+  const derived = useMemo(
+    () => computeLifecycleDerived(form, { pricing: clientMasterPricing }),
+    [form, clientMasterPricing],
+  );
+
+  useEffect(() => {
+    if (!clientMasterPricing || !updateFields) return;
+    const next = {
+      campRevenue: derived.campRevenue,
+      overtimeRevenue: derived.overtimeRevenue,
+      otherRevenue: derived.otherRevenue,
+      totalRevenue: derived.totalRevenue,
+    };
+    const same = FINANCE_REVENUE_PART_FIELDS.every(
+      (key) => Number(form[key] || 0) === Number(next[key] || 0),
+    ) && Number(form.totalRevenue || 0) === Number(next.totalRevenue || 0);
+    if (same) return;
+    updateFields(next);
+  }, [
+    clientMasterPricing,
+    derived.campRevenue,
+    derived.overtimeRevenue,
+    derived.otherRevenue,
+    derived.totalRevenue,
+    form.campRevenue,
+    form.overtimeRevenue,
+    form.otherRevenue,
+    form.totalRevenue,
+    updateFields,
+  ]);
   const { options: specialtyOptions } = usePicklistOptions('camp.doctorSpecialty', DOCTOR_SPECIALTY_OPTIONS);
   const requestDateWarning = isRequestDateFarFromToday(form.requestDate)
     && !isHistoricalCampDate(form.requestDate);
@@ -628,7 +666,7 @@ export function CampLifecycleForm({
       const isPayoutPart = FINANCE_PAYOUT_PART_FIELDS.includes(field);
       if (isRevenuePart || isPayoutPart) {
         const nextForm = { ...form, [field]: nextValue };
-        const nextDerived = computeLifecycleDerived(nextForm);
+        const nextDerived = computeLifecycleDerived(nextForm, { pricing: clientMasterPricing });
         updateFields?.({
           [field]: nextValue,
           ...(isRevenuePart ? { totalRevenue: nextDerived.totalRevenue } : {}),
@@ -671,24 +709,36 @@ export function CampLifecycleForm({
           label="Expense Sub-Category *"
           value={form.expenseSubCategory || CAMP_FINANCE_EXPENSE_SUB_CATEGORY}
         />
-        <FinanceAmountField
-          label="Camp Revenue"
-          value={form.campRevenue}
-          onChange={(v) => updateFinanceAmount('campRevenue', v)}
-          disabled={disabled}
+        <ReadOnlyField
+          label="Camp Revenue (Auto)"
+          value={formatFinanceAmountValue(form.campRevenue ?? derived.campRevenue)}
         />
-        <FinanceAmountField
-          label="Overtime Revenue"
-          value={form.overtimeRevenue}
-          onChange={(v) => updateFinanceAmount('overtimeRevenue', v)}
-          disabled={disabled}
+        <ReadOnlyField
+          label="Overtime Revenue (Auto)"
+          value={formatFinanceAmountValue(form.overtimeRevenue ?? derived.overtimeRevenue)}
         />
-        <FinanceAmountField
-          label="Other Revenue"
-          value={form.otherRevenue}
-          onChange={(v) => updateFinanceAmount('otherRevenue', v)}
-          disabled={disabled}
+        <ReadOnlyField
+          label="Other Revenue (Auto)"
+          value={formatFinanceAmountValue(form.otherRevenue ?? derived.otherRevenue)}
         />
+        {clientMasterPricing ? (
+          <p className="meta-text full">
+            Other Revenue breakdown: patient excess
+            {' '}
+            {formatFinanceAmountValue(derived.otherRevenuePatients)}
+            {' · '}
+            distance excess
+            {' '}
+            {formatFinanceAmountValue(derived.otherRevenueDistance)}
+            {clientMasterPricing.programName || clientMasterPricing.campName
+              ? ` · from Client Master ${[clientMasterPricing.programName, clientMasterPricing.campName].filter(Boolean).join(' / ')}`
+              : ''}
+          </p>
+        ) : (
+          <p className="meta-text full">
+            Link Client Master units (Executed / Cancelled / OT / Patients / KMs) for this client’s division and method to auto-calculate revenue.
+          </p>
+        )}
         <FinanceAmountField
           label="Total Revenue (Auto)"
           value={form.totalRevenue ?? derived.totalRevenue}

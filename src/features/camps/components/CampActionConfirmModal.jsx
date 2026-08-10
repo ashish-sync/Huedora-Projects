@@ -1,5 +1,7 @@
 import { createPortal } from 'react-dom';
 import {
+  CHARGEABLE_STATUSES,
+  closureRequiresChargeableStatus,
   closureSubReasonRequiresRemarks,
   getAvailableClosureTypes,
   getClosureReasonCategories,
@@ -192,6 +194,8 @@ export function CampActionConfirmModal({
   const showClosureReasonCategory = showClosureForm
     && effectiveClosureType
     && !hasSingleClosureReasonCategory(effectiveClosureType, request.camp, closureStage);
+  const showChargeableStatus = showClosureForm
+    && closureRequiresChargeableStatus(request.camp, closureStage);
   const cancelReady = !showCancelForm
     || (cancelDetails.cancelledBy && String(cancelDetails.remarks || '').trim());
   const closureReady = !showClosureForm || isClosureDetailsReady(closureDetails, request.camp, closureStage);
@@ -344,6 +348,27 @@ export function CampActionConfirmModal({
                       />
                     </label>
                   )}
+
+                  {showChargeableStatus ? (
+                    <label className="modal-cancel-remark-field">
+                      Chargeable Status
+                      <select
+                        value={closureDetails.chargeableStatus || ''}
+                        onChange={(e) => onClosureDetailsChange({
+                          ...closureDetails,
+                          closureType: effectiveClosureType,
+                          reasonCategory: effectiveReasonCategory,
+                          chargeableStatus: e.target.value,
+                        })}
+                        required
+                      >
+                        <option value="">Select chargeable status</option>
+                        {CHARGEABLE_STATUSES.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
                 </div>
               </>
             )}

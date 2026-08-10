@@ -51,6 +51,8 @@ export const MASTER_EXCEL = {
     importPath: '/geo/pin-codes/import',
     downloadFilename: 'Pin_Code_Master.csv',
     sampleFilename: 'Pin_Code_Master_Sample.csv',
+    importHint:
+      'Supported: .csv UTF-8 (preferred), .xlsx, .xls, or .xlsb · columns State, District, Pin Codes · no 1,000-row limit · max 3 MB.',
   },
   'client-masters': {
     exportPath: '/camp-ops/client-masters/export',

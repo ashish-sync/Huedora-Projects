@@ -25,6 +25,7 @@ export default function MasterExcelToolbar({
   toolbarClassName = '',
   compact = false,
   downloadLabel = ACTION.DOWNLOAD,
+  importHint = IMPORT_ACCEPT_HINT,
 }) {
   const fileRef = useRef(null);
   const [exportBusy, setExportBusy] = useState(false);
@@ -35,9 +36,10 @@ export default function MasterExcelToolbar({
   const compactClass = compact ? ' btn-compact' : '';
   const downloadBtnClass = `btn${compactClass}`;
   const secondaryBtnClass = `btn secondary${compactClass}`;
+  const acceptHint = importHint || IMPORT_ACCEPT_HINT;
 
   const reportError = (err) => {
-    const message = getErrorMessage(err, IMPORT_ACCEPT_HINT);
+    const message = getErrorMessage(err, acceptHint);
     if (onError) onError(message);
     else setMsg('');
     return message;
@@ -151,7 +153,7 @@ export default function MasterExcelToolbar({
             type="button"
             disabled={importBusy}
             onClick={() => fileRef.current?.click()}
-            title={IMPORT_ACCEPT_HINT}
+            title={acceptHint}
           >
             {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
           </button>

@@ -219,7 +219,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         </table>
         {!rows.length ? (
           <p className="muted" style={{ padding: '1rem' }}>
-            No PIN codes yet. Add mappings below or import Excel with columns: PIN Code, State, Zone, District.
+            No PIN codes yet. Add mappings below or import Excel with columns: State, District, Pin Codes.
           </p>
         ) : null}
       </div>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
-import { api, downloadExcel } from '../../shared/api.js';
+import { api, downloadExcel, apiUrl } from '../../shared/api.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { MODULE, ACTION, FILTER, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -258,7 +258,7 @@ export default function FinanceCampPayoutsPage() {
   }
 
   function openPayeeDoc(url, label) {
-    const href = String(url || '').trim();
+    const href = apiUrl(String(url || '').trim());
     if (!href) {
       setError(`${label} is not uploaded in Contact Directory`);
       return;

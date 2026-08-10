@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { DateInput } from '../../components/ui/DateInput.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
-import { api } from '../../shared/api.js';
+import { api, apiUrl } from '../../shared/api.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { NAV } from '../../shared/labels.js';
@@ -400,7 +400,7 @@ export default function FinanceVendorBillDetailPage() {
   }
 
   function openDoc(url, label) {
-    const href = String(url || '').trim();
+    const href = apiUrl(String(url || '').trim());
     if (!href) {
       setError(`${label} is not available`);
       return;

@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { CampNameSelect } from './components/CampNameSelect';
 import { ClientNameSearchInput } from './components/ClientNameSearchInput';
+import { AssignedSystemUserPicker } from './components/AssignedSystemUserPicker.jsx';
 import { SearchableOptionsInput } from './components/SearchableOptionsInput';
 import { ClientMasterConsumablesField } from './components/ClientMasterConsumablesField.jsx';
 import { ClientMasterCampTermsBox } from './components/ClientMasterCampTermsBox.jsx';
@@ -755,12 +756,10 @@ export default function ClientMasterFormPage() {
         </label>
         <label>
           Assigned User Login Emails
-          <input
+          <AssignedSystemUserPicker
             value={form.assignedUserEmails}
-            onChange={(e) => updateField('assignedUserEmails', e.target.value)}
-            placeholder="user@client.com, ops@client.com"
-            title="Comma-separated login emails. These users only see camps for this Client."
-            className={fieldErrors.assignedUserEmails ? 'input-invalid' : ''}
+            onChange={(next) => updateField('assignedUserEmails', next)}
+            error={fieldErrors.assignedUserEmails}
           />
           <FieldError message={fieldErrors.assignedUserEmails} />
         </label>

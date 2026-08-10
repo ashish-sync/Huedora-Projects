@@ -4761,6 +4761,24 @@
   position: relative;
 }
 
+.camp-ops-root .assigned-user-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.camp-ops-root .assigned-user-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.camp-ops-root .assigned-user-picker-chip {
+  max-width: 100%;
+}
+
 .camp-ops-root .client-search-item.is-active {
   box-shadow: inset 2px 0 0 var(--brand);
 }

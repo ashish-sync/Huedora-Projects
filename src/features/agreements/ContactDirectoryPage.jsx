@@ -13,6 +13,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 import { validateUploadFile } from '../../shared/importErrors.js';
 import {
   CONTACT_KYC_ACCEPT_ATTR,
@@ -291,7 +292,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     const pre = validateUploadFile(file, {
       maxBytes: CONTACT_KYC_MAX_BYTES,
       acceptExt: CONTACT_KYC_ACCEPT_EXTENSIONS,
-      label: 'KYC document',
+      label: docType === 'passbook' ? 'Bank Account Proof' : 'PAN Card Copy',
     });
     if (pre) {
       setError(pre);
@@ -747,10 +748,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     <label>Bank Account Proof</label>
                     {editId ? (
                       <>
-                        <input
-                          type="file"
+                        <FilePicker
                           accept={CONTACT_KYC_ACCEPT_ATTR}
                           disabled={Boolean(kycUploadBusy)}
+                          buttonLabel={kycUploadBusy === 'passbook' ? 'Uploading…' : 'Browse'}
+                          emptyLabel="No file chosen"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) uploadKycDocument('passbook', file);
@@ -775,10 +777,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     <label>PAN Card Copy</label>
                     {editId ? (
                       <>
-                        <input
-                          type="file"
+                        <FilePicker
                           accept={CONTACT_KYC_ACCEPT_ATTR}
                           disabled={Boolean(kycUploadBusy)}
+                          buttonLabel={kycUploadBusy === 'pan_card' ? 'Uploading…' : 'Browse'}
+                          emptyLabel="No file chosen"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) uploadKycDocument('pan_card', file);

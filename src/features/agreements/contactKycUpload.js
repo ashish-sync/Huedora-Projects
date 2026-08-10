@@ -15,24 +15,8 @@ export const CONTACT_KYC_ACCEPT_EXTENSIONS = [
   '.tiff',
 ];
 
-export const CONTACT_KYC_ACCEPT_ATTR = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/bmp',
-  'image/tiff',
-  '.pdf',
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.bmp',
-  '.tif',
-  '.tiff',
-].join(',');
+/** Prefer broad wildcards so Windows file dialogs reliably list images + PDFs. */
+export const CONTACT_KYC_ACCEPT_ATTR = 'image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff';
 
 export const CONTACT_KYC_MAX_BYTES = 10 * 1024 * 1024;
 

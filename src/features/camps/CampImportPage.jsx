@@ -11,6 +11,7 @@ import { formatDateDDMMYYYY } from './utils/dateFormat';
 import { downloadCampSampleFile } from './utils/campSampleDownload.js';
 import { getErrorMessage, validateImportFileClient } from '../../shared/importErrors.js';
 import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
+import { importInvalidRowView, importPreviewSummary } from './utils/campImportPreview.js';
 
 const STEPS_ADMIN = ['Upload', 'Map Headers', 'Preview', 'Import'];
 const STEPS_EMPLOYEE = ['Upload', 'Preview', 'Import'];
@@ -88,6 +89,15 @@ export default function ImportPage() {
 
   const previewStep = isAdminImport ? 2 : 1;
   const resultStep = isAdminImport ? 3 : 2;
+
+  const previewDisplay = useMemo(() => {
+    if (!preview) return null;
+    return {
+      summary: importPreviewSummary(preview),
+      invalidRows: Array.isArray(preview.invalidRows) ? preview.invalidRows : [],
+      validRows: Array.isArray(preview.validRows) ? preview.validRows : [],
+    };
+  }, [preview]);
 
   async function runPreview(nextRows, nextMapping) {
     const clientName = trimString(defaultClientName);
@@ -421,7 +431,7 @@ export default function ImportPage() {
         </div>
       )}
 
-      {step >= previewStep && preview && (
+      {step >= previewStep && preview && previewDisplay && (
         <div className="import-card">
           <h3>Preview & Validation</h3>
           {!isAdminImport && fileMeta && (
@@ -432,23 +442,23 @@ export default function ImportPage() {
           <div className="summary-grid">
             <div className="summary-card">
               <span>Total rows</span>
-              <strong>{preview.summary.total}</strong>
+              <strong>{previewDisplay.summary.total}</strong>
             </div>
             <div className="summary-card">
               <span>Valid rows</span>
-              <strong>{preview.summary.valid}</strong>
+              <strong>{previewDisplay.summary.valid}</strong>
             </div>
             <div className="summary-card">
               <span>Invalid rows</span>
-              <strong>{preview.summary.invalid}</strong>
+              <strong>{previewDisplay.summary.invalid}</strong>
             </div>
           </div>
 
-          {preview.invalidRows.length > 0 && (
+          {previewDisplay.invalidRows.length > 0 && (
             <>
               <h3>Validation report</h3>
               <ClientPaginatedTable
-                rows={preview.invalidRows}
+                rows={previewDisplay.invalidRows}
                 page={invalidPage}
                 pageSize={invalidPageSize}
                 onPageChange={setInvalidPage}
@@ -467,14 +477,17 @@ export default function ImportPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {pageRows.map((row) => (
-                            <tr key={row.rowNumber} className="validation-row-error">
-                              <td>{row.rowNumber}</td>
-                              <td>{row.data.clientName || '-'}</td>
-                              <td>{row.data.campDate ? formatDateDDMMYYYY(row.data.campDate) : '-'}</td>
-                              <td>{row.errors.join(', ')}</td>
-                            </tr>
-                          ))}
+                          {pageRows.map((row, index) => {
+                            const view = importInvalidRowView(row, index);
+                            return (
+                              <tr key={view.rowNumber} className="validation-row-error">
+                                <td>{view.rowNumber}</td>
+                                <td>{view.clientName}</td>
+                                <td>{view.campDate ? formatDateDDMMYYYY(view.campDate) : '-'}</td>
+                                <td>{view.errors.join(', ') || '—'}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -484,11 +497,11 @@ export default function ImportPage() {
             </>
           )}
 
-          {preview.validRows.length > 0 && (
+          {previewDisplay.validRows.length > 0 && (
             <>
               <h3>Valid preview</h3>
               <ClientPaginatedTable
-                rows={preview.validRows}
+                rows={previewDisplay.validRows}
                 page={validPage}
                 pageSize={validPageSize}
                 onPageChange={setValidPage}
@@ -509,7 +522,7 @@ export default function ImportPage() {
                         </thead>
                         <tbody>
                           {pageRows.map((row) => (
-                            <tr key={row.rowNumber}>
+                            <tr key={row.rowNumber ?? `${row.clientName}-${row.campDate}`}>
                               <td>{row.clientName}</td>
                               <td>{row.campaignType}</td>
                               <td>{row.doctorName}</td>
@@ -527,8 +540,8 @@ export default function ImportPage() {
           )}
 
           <div className="form-actions">
-            <button className="btn" onClick={handleImport} disabled={loading || preview.summary.valid === 0}>
-              {loading ? 'Importing...' : `Import ${preview.summary.valid} Camps`}
+            <button className="btn" onClick={handleImport} disabled={loading || previewDisplay.summary.valid === 0}>
+              {loading ? 'Importing...' : `Import ${previewDisplay.summary.valid} Camps`}
             </button>
             {isAdminImport ? (
               <button className="btn secondary" onClick={() => setStep(1)}>

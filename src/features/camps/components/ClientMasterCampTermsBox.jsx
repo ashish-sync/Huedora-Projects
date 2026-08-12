@@ -333,6 +333,7 @@ export function ClientMasterCampTermsBox({
   form,
   fieldErrors = {},
   disabled = false,
+  embedded = false,
   pendingFiles = [],
   pendingPoFiles = {},
   fileBusy = false,
@@ -362,42 +363,44 @@ export function ClientMasterCampTermsBox({
 
   return (
     <section
-      className="client-master-po-box client-master-camp-terms-box"
+      className={`client-master-po-box client-master-camp-terms-box${embedded ? ' is-embedded' : ''}`}
       data-terms={terms}
-      aria-labelledby="client-master-camp-terms-title"
+      aria-labelledby={embedded ? undefined : 'client-master-camp-terms-title'}
     >
-      <div className="client-master-po-box-head">
-        <div className="client-master-po-box-title-wrap">
-          <h3 className="client-master-section-title" id="client-master-camp-terms-title">
-            Camp Terms
-          </h3>
-          <p className="meta-text client-master-po-combined-hint">
-            {showDetailPanels
-              ? 'PO Based and Agreement details stay available — choose which type is active without re-entering data'
-              : 'Select a terms type to enter PO or Agreement details'}
-          </p>
-        </div>
-        {poActive && orders.length > 0 ? (
-          <div className="client-master-po-combined" aria-live="polite">
-            <span className="client-master-po-combined-count">
-              {orders.length} {orders.length === 1 ? 'PO' : 'POs'}
-            </span>
-            <span>
-              Net <strong>{formatPoMoney(combined.poCombinedNet)}</strong>
-            </span>
-            {combined.poCombinedGst > 0 ? (
-              <>
-                <span>
-                  GST <strong>{formatPoMoney(combined.poCombinedGst)}</strong>
-                </span>
-                <span className="client-master-po-combined-total">
-                  Incl. <strong>{formatPoMoney(combined.poCombinedGross)}</strong>
-                </span>
-              </>
-            ) : null}
+      {!embedded ? (
+        <div className="client-master-po-box-head">
+          <div className="client-master-po-box-title-wrap">
+            <h3 className="client-master-section-title" id="client-master-camp-terms-title">
+              Camp Terms
+            </h3>
+            <p className="meta-text client-master-po-combined-hint">
+              {showDetailPanels
+                ? 'PO Based and Agreement details stay available — choose which type is active without re-entering data'
+                : 'Select a terms type to enter PO or Agreement details'}
+            </p>
           </div>
-        ) : null}
-      </div>
+          {poActive && orders.length > 0 ? (
+            <div className="client-master-po-combined" aria-live="polite">
+              <span className="client-master-po-combined-count">
+                {orders.length} {orders.length === 1 ? 'PO' : 'POs'}
+              </span>
+              <span>
+                Net <strong>{formatPoMoney(combined.poCombinedNet)}</strong>
+              </span>
+              {combined.poCombinedGst > 0 ? (
+                <>
+                  <span>
+                    GST <strong>{formatPoMoney(combined.poCombinedGst)}</strong>
+                  </span>
+                  <span className="client-master-po-combined-total">
+                    Incl. <strong>{formatPoMoney(combined.poCombinedGross)}</strong>
+                  </span>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="client-master-camp-terms-grid is-type-only">
         <label className="client-master-po-cell client-master-camp-terms-type">

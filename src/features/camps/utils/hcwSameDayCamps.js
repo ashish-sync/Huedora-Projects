@@ -1,8 +1,7 @@
 import { computeEndTime } from './campSchedule.js';
+import { isActiveHcwAssignedCamp } from './campHcwAssignmentActive.js';
 
-function trimStr(value) {
-  return value == null ? '' : String(value).trim();
-}
+export { isActiveHcwAssignedCamp } from './campHcwAssignmentActive.js';
 
 function parseTimeToMinutes(timeStr) {
   if (!timeStr) return null;
@@ -24,11 +23,8 @@ export function formatCampTimeLabel(timeStr) {
   return `${hours12}:${String(mins).padStart(2, '0')} ${meridiem}`;
 }
 
-function isActiveHcwAssignedCamp(camp = {}) {
-  if (['cancelled', 'rejected'].includes(trimStr(camp.status))) return false;
-  if (!trimStr(camp.hcwContactId)) return false;
-  if (trimStr(camp.assignmentDecision) === 'refuse') return false;
-  return true;
+function trimStr(value) {
+  return value == null ? '' : String(value).trim();
 }
 
 /**

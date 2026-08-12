@@ -2378,9 +2378,206 @@
 }
 
 .camp-ops-root .client-master-section-title {
-  margin: 1.25rem 0 0.35rem;
+  margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
+}
+
+.camp-ops-root .client-master-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  --client-master-cols: 4;
+  --client-master-field-gap-x: 18px;
+  --client-master-field-gap-y: 10px;
+}
+
+.camp-ops-root .client-master-section {
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface-raised, #fff);
+  padding: 12px 14px 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.camp-ops-root .client-master-section.is-editing {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent, #2563eb) 25%, transparent);
+}
+
+.camp-ops-root .client-master-section.is-locked {
+  opacity: 0.72;
+}
+
+.camp-ops-root .client-master-section-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 2rem;
+}
+
+.camp-ops-root .client-master-section-head-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-section-step {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  background: var(--surface-muted, #f1f5f9);
+}
+
+.camp-ops-root .client-master-section.is-editing .client-master-section-step {
+  color: var(--accent, #2563eb);
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
+}
+
+.camp-ops-root .client-master-section-desc {
+  margin: 1px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.camp-ops-root .client-master-section-actions,
+.camp-ops-root .client-master-section-edit-btn {
+  justify-self: end;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .client-master-section-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.camp-ops-root .client-master-section-summary {
+  display: grid;
+  grid-template-columns: repeat(var(--client-master-cols), minmax(0, 1fr));
+  gap: var(--client-master-field-gap-y) var(--client-master-field-gap-x);
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.camp-ops-root .client-master-section-summary-row {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.camp-ops-root .client-master-section-summary-row.span-2 {
+  grid-column: span 2;
+}
+
+.camp-ops-root .client-master-section-summary-row.span-3 {
+  grid-column: span 3;
+}
+
+.camp-ops-root .client-master-section-summary-row.span-4 {
+  grid-column: span 4;
+}
+
+.camp-ops-root .client-master-section-summary dt {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted, #64748b);
+  line-height: 1.25;
+}
+
+.camp-ops-root .client-master-section-summary dd {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.camp-ops-root .client-master-section-body {
+  margin-top: 10px;
+}
+
+.camp-ops-root .form-grid.client-master-section-grid {
+  grid-template-columns: repeat(var(--client-master-cols), minmax(0, 1fr));
+  gap: var(--client-master-field-gap-y) var(--client-master-field-gap-x);
+}
+
+.camp-ops-root .client-master-section-span-2 {
+  grid-column: span 2;
+}
+
+.camp-ops-root .client-master-section-span-full {
+  grid-column: 1 / -1;
+}
+
+.camp-ops-root .client-master-camp-terms-box.is-embedded {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.camp-ops-root .client-master-camp-terms-box.is-embedded .client-master-section-title {
+  margin-top: 0;
+}
+
+@media (max-width: 960px) {
+  .camp-ops-root .client-master-sections {
+    --client-master-cols: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .camp-ops-root .client-master-sections {
+    --client-master-cols: 1;
+    --client-master-field-gap-x: 12px;
+  }
+
+  .camp-ops-root .client-master-section-span-2,
+  .camp-ops-root .client-master-section-summary-row.span-2,
+  .camp-ops-root .client-master-section-summary-row.span-3,
+  .camp-ops-root .client-master-section-summary-row.span-4 {
+    grid-column: span 1;
+  }
+
+  .camp-ops-root .client-master-section-head {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .camp-ops-root .client-master-section-actions,
+  .camp-ops-root .client-master-section-edit-btn {
+    justify-self: start;
+  }
+}
+
+.camp-ops-root .client-master-sections.form-card {
+  padding: 16px 18px;
+}
+
+.camp-ops-root .client-master-sections .form-actions {
+  margin-top: 10px;
+  padding-top: 0;
+}
+
+.camp-ops-root .client-master-section-flow-hint {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-muted, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  font-size: 0.82rem;
 }
 
 .camp-ops-root .client-master-camp-terms-grid {

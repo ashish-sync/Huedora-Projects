@@ -33,7 +33,7 @@ describe('findHcwAssignmentGapConflict', () => {
       endTime: '18:00',
     }, [existing]);
     expect(conflict).toMatchObject({
-      title: 'HCW schedule conflict',
+      title: 'HCW Schedule Conflict',
       campId: 'CAMP-A',
       pincode: '641045',
       earliestStartTime: '15:30',
@@ -41,7 +41,9 @@ describe('findHcwAssignmentGapConflict', () => {
       timeRangeLabel: '8:00 AM – 2:00 PM',
       endsAtLabel: '2:00 PM',
     });
-    expect(conflict.summary).toMatch(/1 hour 30 minutes/i);
+    expect(conflict.message).toMatch(
+      /HCW Schedule Conflict: This HCW has another camp scheduled until 2:00 PM\. A mandatory 1h 30m gap is required, so the earliest available start time is 3:30 PM\./,
+    );
   });
 
   it('labels overnight conflicting camps clearly', () => {
@@ -74,6 +76,6 @@ describe('getHcwAssignmentGapError', () => {
       startTime: '15:00',
       endTime: '18:00',
     }, [existing]);
-    expect(error).toMatch(/3:30 PM/);
+    expect(error).toMatch(/earliest available start time is 3:30 PM/);
   });
 });

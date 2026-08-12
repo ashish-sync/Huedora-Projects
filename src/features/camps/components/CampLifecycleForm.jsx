@@ -546,6 +546,7 @@ export function CampLifecycleForm({
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}
         clientMasterHcwGap={clientMasterHcwGap}
+        clientMasterRecords={clientMasterRecords}
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
         excludeCampId={campId || ''}

@@ -5,6 +5,7 @@ import {
   parseClientMasterDivisions,
   pickSingleOption,
   resolveCampClientId,
+  resolveClientMasterAssignedUserEmails,
   resolveClientMasterHealthcareWorker,
   resolveClientMasterHealthcareWorkers,
 } from './clientMasterCascade.js';
@@ -198,17 +199,37 @@ describe('resolveClientMasterHealthcareWorker', () => {
     ], { campaignType: 'Ortho', campaignName: 'BMD' })).toBe('missing_hcw_roles');
   });
 
-  it('normalizes legacy comma-separated healthcare worker strings', () => {
-    expect(resolveClientMasterHealthcareWorkers([
+  it('unions assigned login emails for the same client + division + method', () => {
+    expect(resolveClientMasterAssignedUserEmails([
       {
         programName: 'Ortho',
         campName: 'BMD',
-        healthcareWorker: 'Technician, Phlebotomist',
+        assignedUserEmails: ['ops@client.com'],
+        isActive: true,
+      },
+      {
+        programName: 'Ortho',
+        campName: 'BMD',
+        assignedUserEmails: 'ops@client.com, user@client.in',
         isActive: true,
       },
     ], {
-      campaignType: 'Ortho',
-      campaignName: 'BMD',
-    })).toEqual(['Technician', 'Phlebotomist']);
+      programName: 'Ortho',
+      campName: 'BMD',
+    })).toEqual(['ops@client.com', 'user@client.in']);
+  });
+
+  it('returns empty assigned emails when division or method is missing', () => {
+    expect(resolveClientMasterAssignedUserEmails([
+      {
+        programName: 'Ortho',
+        campName: 'BMD',
+        assignedUserEmails: ['ops@client.com'],
+        isActive: true,
+      },
+    ], {
+      programName: '',
+      campName: 'BMD',
+    })).toEqual([]);
   });
 });

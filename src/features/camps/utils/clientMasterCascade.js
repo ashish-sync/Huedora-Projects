@@ -280,6 +280,68 @@ export function resolveClientMasterHealthcareWorker(records = [], filters = {}) 
   return resolveClientMasterHealthcareWorkers(records, filters)[0] || '';
 }
 
+/**
+ * Display name from Client Master for client + division + method.
+ */
+export function resolveClientMasterDisplayName(records = [], {
+  campaignType = '',
+  campaignName = '',
+} = {}) {
+  const divisionKey = normalizeMasterDivisionKey(campaignType);
+  const methodKey = normalizeMasterMethodKey(campaignName);
+  if (!divisionKey || !methodKey) return '';
+
+  const activeRecords = (Array.isArray(records) ? records : []).filter(
+    (record) => record?.isActive !== false,
+  );
+  const exact = activeRecords.filter((record) => (
+    recordMatchesDivision(record, divisionKey)
+    && recordMatchesMethod(record, methodKey)
+  ));
+  for (const record of exact) {
+    const name = String(record.displayName || '').trim();
+    if (name) return name;
+  }
+  return '';
+}
+
+/**
+ * Assigned login emails for client + division + method (union across multi-GSTIN rows).
+ */
+export function resolveClientMasterAssignedUserEmails(records = [], {
+  programName = '',
+  campName = '',
+} = {}) {
+  const divisionKey = normalizeMasterDivisionKey(programName);
+  const methodKey = normalizeMasterMethodKey(campName);
+  if (!divisionKey || !methodKey) return [];
+
+  const activeRecords = (Array.isArray(records) ? records : []).filter(
+    (record) => record?.isActive !== false,
+  );
+  const exact = activeRecords.filter((record) => (
+    recordMatchesDivision(record, divisionKey)
+    && recordMatchesMethod(record, methodKey)
+  ));
+  if (!exact.length) return [];
+
+  const seen = new Set();
+  const emails = [];
+  for (const record of exact) {
+    const raw = record?.assignedUserEmails;
+    const list = Array.isArray(raw)
+      ? raw
+      : String(raw || '').split(/[;,\n]/).map((item) => item.trim()).filter(Boolean);
+    for (const email of list) {
+      const key = String(email || '').trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      emails.push(String(email).trim());
+    }
+  }
+  return emails;
+}
+
 
 
 /**

@@ -1,23 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
-import FieldError from '../../components/ui/FieldError.jsx';
-import { PhoneField } from '../../components/ui/PhoneField.jsx';
 import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
-import { parseEmailList } from '../../shared/validation.js';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
-import { CampNameSelect } from './components/CampNameSelect';
-import { ClientNameSearchInput } from './components/ClientNameSearchInput';
-import { AssignedSystemUserPicker } from './components/AssignedSystemUserPicker.jsx';
-import { SearchableOptionsInput } from './components/SearchableOptionsInput';
-import { ClientMasterConsumablesField } from './components/ClientMasterConsumablesField.jsx';
 import { ClientMasterCampTermsBox } from './components/ClientMasterCampTermsBox.jsx';
+import { ClientMasterFormSectionFields } from './components/ClientMasterFormSections.jsx';
+import { ClientMasterSectionCard } from './components/ClientMasterSectionCard.jsx';
 import { clientMasterApi } from './campOpsApi.js';
-import { clientMasterListPath } from './clientMasterPaths.js';
-import { trimFormStrings } from './utils/trimInput';
-import { normalizeHealthcareWorkers } from './utils/healthcareWorkers.js';
+import { clientMasterEditPath, clientMasterListPath } from './clientMasterPaths.js';
 import {
-  buildCampTermsPayload,
   CAMP_TERMS,
   campTermsFilesFromRecord,
   combinePurchaseOrders,
@@ -30,58 +21,27 @@ import {
   validateCampTermsFile,
 } from './utils/clientMasterPo.js';
 import {
+  CLIENT_MASTER_SECTIONS,
+  buildSectionPayload,
+  buildSectionSummary,
+  restoreSectionFromSnapshot,
+  validateClientMasterSection,
+  validateSectionsForCreate,
+} from './utils/clientMasterSections.js';
+import {
   hasValidationErrors,
   recordToForm,
-  validateClientMasterForm,
 } from './utils/clientMasterValidation';
-
-const SERVICE_MODEL_OPTIONS = [
-  'HCW Only',
-  'Rented',
-  'HCW + Device (Light Device)',
-  'HCW + Device (Heavy Device)',
-];
-const HEALTHCARE_WORKER_OPTIONS = ['Technician', 'Phlebotomist', 'Dietician'];
-
-const formStringFields = [
-  'clientName',
-  'clientCode',
-  'billingAddress',
-  'billingGstin',
-  'billingPan',
-  'billingStateName',
-  'billingStateCode',
-  'programName',
-  'campName',
-  'campType',
-  'campDuration',
-  'spocName',
-  'spocNumber',
-  'spocEmail',
-  'requestTimeline',
-  'assignedUserEmails',
-  'poNumber',
-  'poIssueDate',
-  'poExpiryDate',
-  'agreementStartDate',
-  'agreementEffectiveDate',
-  'agreementEndDate',
-];
-
-const formNumberFields = [
-  'executedCampUnit',
-  'cancelledCampUnit',
-  'otUnit',
-  'minimumPatientCovered',
-  'minimumKmsCovered',
-  'extPatientUnit',
-  'kmsUnit',
-];
+import {
+  parseClientMasterListResponse,
+  resolveClientMasterAssignedUserEmails,
+} from './utils/clientMasterCascade.js';
 
 const emptyForm = {
   clientId: '',
   clientName: '',
   clientCode: '',
+  displayName: '',
   billingAddress: '',
   billingGstin: '',
   billingPan: '',
@@ -110,58 +70,57 @@ const emptyForm = {
   updatedAt: '',
 };
 
-function numberInputProps(field, form, updateField, fieldErrors) {
-  return {
-    type: 'text',
-    inputMode: 'numeric',
-    value: form[field],
-    onChange: (e) => updateField(field, e.target.value.replace(/[^\d]/g, '')),
-    className: fieldErrors[field] ? 'input-invalid' : '',
-  };
-}
-
-function healthcareRoleSelected(selected, role) {
-  const want = String(role || '').trim().toLowerCase();
-  return normalizeHealthcareWorkers(selected).some((item) => {
-    const have = String(item || '').trim().toLowerCase();
-    if (have === want) return true;
-    return (
-      (want === 'dietician' || want === 'dietitian') &&
-      (have === 'dietician' || have === 'dietitian')
-    );
+function sectionFieldErrors(sectionId, allErrors) {
+  const section = CLIENT_MASTER_SECTIONS.find((s) => s.id === sectionId);
+  if (!section) return {};
+  const picked = {};
+  Object.entries(allErrors || {}).forEach(([key, message]) => {
+    if (section.fields.includes(key)) {
+      picked[key] = message;
+      return;
+    }
+    if (sectionId === 'campTerms' && (key.startsWith('purchaseOrders') || key === 'campTermsFiles')) {
+      picked[key] = message;
+    }
   });
-}
-
-function toggleHealthcareRole(selected, role) {
-  const current = normalizeHealthcareWorkers(selected);
-  if (healthcareRoleSelected(current, role)) {
-    return current.filter((item) => !healthcareRoleSelected([item], role));
-  }
-  return [...current, role];
+  return picked;
 }
 
 export default function ClientMasterFormPage() {
-  const { id } = useParams();
+  const { id: routeId } = useParams();
   const { hasPermission, isSuperAdmin } = useAuth();
-  const isEdit = Boolean(id);
   const navigate = useNavigate();
   const canCreateCompany = hasPermission('clients:create');
+
+  const [recordId, setRecordId] = useState(routeId || '');
+  const isPersisted = Boolean(recordId);
+  const isEditRoute = Boolean(routeId);
+
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(isEdit);
+  const [fetching, setFetching] = useState(isEditRoute);
+  const [activeSection, setActiveSection] = useState(isEditRoute ? null : 'clientInfo');
+  const [editSnapshot, setEditSnapshot] = useState(null);
+  const [sectionSaving, setSectionSaving] = useState(false);
   const [pendingCampTermsFiles, setPendingCampTermsFiles] = useState([]);
   const [pendingPoFiles, setPendingPoFiles] = useState({});
   const [campTermsFileBusy, setCampTermsFileBusy] = useState(false);
+  const [clientMasterRecords, setClientMasterRecords] = useState([]);
+  const assignedUsersTouchedRef = useRef(false);
+  const programScopeKeyRef = useRef('');
   const formRef = useRef(null);
   useSuppressBrowserAutofill(formRef);
 
   useEffect(() => {
-    if (!isEdit) return undefined;
+    setRecordId(routeId || '');
+  }, [routeId]);
+
+  useEffect(() => {
+    if (!isEditRoute) return undefined;
 
     setFetching(true);
-    clientMasterApi.get(id)
+    clientMasterApi.get(routeId)
       .then(({ data }) => {
         setForm(recordToForm(data.data));
         setPendingCampTermsFiles([]);
@@ -173,14 +132,56 @@ export default function ClientMasterFormPage() {
       .finally(() => setFetching(false));
 
     return undefined;
-  }, [id, isEdit]);
+  }, [routeId, isEditRoute]);
+
+  useEffect(() => {
+    const clientId = String(form.clientId || '').trim();
+    const clientName = String(form.clientName || '').trim();
+    if (!clientId && !clientName) {
+      setClientMasterRecords([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = clientId
+          ? await clientMasterApi.listByClient(clientId, clientName ? { clientName } : undefined)
+          : { data: { data: [] } };
+        if (!cancelled) {
+          setClientMasterRecords(parseClientMasterListResponse(res));
+        }
+      } catch {
+        if (!cancelled) setClientMasterRecords([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.clientId, form.clientName]);
+
+  const mappedAssignedUserEmails = useMemo(
+    () => resolveClientMasterAssignedUserEmails(clientMasterRecords, {
+      programName: form.programName,
+      campName: form.campName,
+    }),
+    [clientMasterRecords, form.programName, form.campName],
+  );
+
+  useEffect(() => {
+    const key = [form.clientName, form.programName, form.campName].join('\0');
+    if (programScopeKeyRef.current && programScopeKeyRef.current !== key) {
+      assignedUsersTouchedRef.current = false;
+    }
+    programScopeKeyRef.current = key;
+  }, [form.clientName, form.programName, form.campName]);
 
   function updateField(field, value) {
     setForm((prev) => {
       if (field !== 'campTerms') {
         return { ...prev, [field]: value };
       }
-      // Keep PO + Agreement details in form state when switching terms type.
       const nextTerms = normalizeCampTerms(value);
       const next = { ...prev, campTerms: nextTerms };
       if (nextTerms === CAMP_TERMS.PO_BASED || nextTerms === CAMP_TERMS.AGREEMENT_BASED) {
@@ -214,7 +215,7 @@ export default function ClientMasterFormPage() {
   function removePurchaseOrder(poId) {
     setForm((prev) => {
       const orders = (Array.isArray(prev.purchaseOrders) ? prev.purchaseOrders : []).filter(
-        (row) => row.id !== poId
+        (row) => row.id !== poId,
       );
       return {
         ...prev,
@@ -236,10 +237,7 @@ export default function ClientMasterFormPage() {
         const next = { ...row, [field]: value };
         if (field === 'poNetValue' || field === 'poAmount' || field === 'poApplyGst18') {
           const applyNext = field === 'poApplyGst18' ? value : row.poApplyGst18 !== false;
-          const entered =
-            field === 'poApplyGst18'
-              ? poAmountInputValue(row)
-              : value;
+          const entered = field === 'poApplyGst18' ? poAmountInputValue(row) : value;
           if (entered === '' || entered == null) {
             Object.assign(next, {
               poApplyGst18: applyNext,
@@ -288,10 +286,155 @@ export default function ClientMasterFormPage() {
     });
   }
 
-  function validateForm() {
-    const errors = validateClientMasterForm(form);
-    setFieldErrors(errors);
-    return !hasValidationErrors(errors);
+  function updateAssignedUserEmails(value) {
+    assignedUsersTouchedRef.current = true;
+    updateField('assignedUserEmails', value);
+  }
+
+  function sectionRequiresRecord(sectionId) {
+    return ['spoc', 'commercial', 'campTerms'].includes(sectionId);
+  }
+
+  function isSectionLocked(sectionId) {
+    if (activeSection && activeSection !== sectionId) return true;
+    if (!isPersisted && sectionRequiresRecord(sectionId)) return true;
+    return false;
+  }
+
+  function beginSectionEdit(sectionId) {
+    if (isSectionLocked(sectionId) && sectionRequiresRecord(sectionId) && !isPersisted) {
+      setError('Save Program Configuration first to create this record.');
+      return;
+    }
+    if (activeSection && activeSection !== sectionId) return;
+    setEditSnapshot(JSON.parse(JSON.stringify(form)));
+    if (sectionId === 'spoc' && mappedAssignedUserEmails.length && !assignedUsersTouchedRef.current) {
+      setForm((prev) => ({
+        ...prev,
+        assignedUserEmails: mappedAssignedUserEmails.join(', '),
+      }));
+    }
+    setActiveSection(sectionId);
+    setFieldErrors({});
+    setError('');
+  }
+
+  function cancelSectionEdit() {
+    if (editSnapshot && activeSection) {
+      setForm(restoreSectionFromSnapshot(form, editSnapshot, activeSection));
+      if (activeSection === 'campTerms') {
+        setPendingCampTermsFiles([]);
+        setPendingPoFiles({});
+      }
+    }
+    setActiveSection(null);
+    setEditSnapshot(null);
+    setFieldErrors({});
+  }
+
+  async function uploadPendingCampFiles(savedId) {
+    if (!pendingCampTermsFiles.length || !savedId) return;
+    await clientMasterApi.uploadCampTermsFiles(savedId, pendingCampTermsFiles);
+    setPendingCampTermsFiles([]);
+  }
+
+  async function uploadPendingPoFiles(savedId) {
+    const pendingEntries = Object.entries(pendingPoFiles).filter(([, files]) => files?.length);
+    if (!pendingEntries.length || !savedId) return;
+
+    let orders = Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [];
+    try {
+      const { data } = await clientMasterApi.get(savedId);
+      orders = purchaseOrdersFromRecord(data.data);
+    } catch {
+      /* use form orders */
+    }
+
+    for (const [poId, files] of pendingEntries) {
+      const target =
+        orders.find((row) => row.id === poId)
+        || orders.find((row) => String(row.poNumber || '') === String(
+          (form.purchaseOrders || []).find((p) => p.id === poId)?.poNumber || '',
+        ));
+      if (!target?.id) continue;
+      await clientMasterApi.uploadPoFiles(savedId, files, target.id);
+    }
+    setPendingPoFiles({});
+  }
+
+  async function handleSectionSave(sectionId) {
+    const errors = !isPersisted && sectionId === 'program'
+      ? validateSectionsForCreate(form)
+      : validateClientMasterSection(sectionId, form);
+
+    if (hasValidationErrors(errors)) {
+      setFieldErrors(errors);
+      setError('Please fix the highlighted fields');
+      return;
+    }
+
+    if (!canCreateCompany && !form.clientId && (sectionId === 'clientInfo' || sectionId === 'program')) {
+      setError('Select an existing company from the search list. New companies can only be created by an administrator.');
+      return;
+    }
+
+    // Local draft saves before record exists
+    if (!isPersisted && (sectionId === 'clientInfo' || sectionId === 'billing')) {
+      setActiveSection(null);
+      setEditSnapshot(null);
+      setFieldErrors({});
+      setError('');
+      return;
+    }
+
+    setSectionSaving(true);
+    setError('');
+    try {
+      let savedId = recordId;
+
+      if (!isPersisted && sectionId === 'program') {
+        const payload = buildSectionPayload('program', form, { forCreate: true });
+        const { data } = await clientMasterApi.create(payload);
+        savedId = data.data._id;
+        setRecordId(savedId);
+        setForm(recordToForm(data.data));
+        await uploadPendingCampFiles(savedId);
+        await uploadPendingPoFiles(savedId);
+        navigate(clientMasterEditPath(savedId), { replace: true });
+      } else {
+        const payload = buildSectionPayload(sectionId, form);
+        const { data } = await clientMasterApi.update(savedId, payload);
+        setForm(recordToForm(data.data));
+
+        if (sectionId === 'campTerms') {
+          await uploadPendingCampFiles(savedId);
+          await uploadPendingPoFiles(savedId);
+          const { data: refreshed } = await clientMasterApi.get(savedId);
+          setForm(recordToForm(refreshed.data));
+        }
+      }
+
+      setActiveSection(null);
+      setEditSnapshot(null);
+      setFieldErrors({});
+      if (sectionId === 'spoc') {
+        assignedUsersTouchedRef.current = false;
+        if (form.clientId) {
+          try {
+            const res = await clientMasterApi.listByClient(form.clientId, {
+              clientName: form.clientName || undefined,
+            });
+            setClientMasterRecords(parseClientMasterListResponse(res));
+          } catch {
+            /* keep existing records */
+          }
+        }
+      }
+    } catch (err) {
+      setError(err?.message || 'Failed to save section');
+    } finally {
+      setSectionSaving(false);
+    }
   }
 
   async function handleCampTermsFilesSelect(fileList) {
@@ -312,10 +455,10 @@ export default function ClientMasterFormPage() {
       return next;
     });
 
-    if (isEdit) {
+    if (isPersisted) {
       setCampTermsFileBusy(true);
       try {
-        const { data } = await clientMasterApi.uploadCampTermsFiles(id, files);
+        const { data } = await clientMasterApi.uploadCampTermsFiles(recordId, files);
         setForm((prev) => ({
           ...prev,
           campTermsFiles: campTermsFilesFromRecord(data.data),
@@ -336,10 +479,10 @@ export default function ClientMasterFormPage() {
   }
 
   async function handleCampTermsFilePreview(file) {
-    if (!isEdit || (!file?.id && !file?.storedName)) return;
+    if (!isPersisted || (!file?.id && !file?.storedName)) return;
     try {
       const fileId = file.id || file.storedName;
-      const { data: blob } = await clientMasterApi.downloadCampTermsFile(id, fileId);
+      const { data: blob } = await clientMasterApi.downloadCampTermsFile(recordId, fileId);
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank', 'noopener,noreferrer');
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -349,12 +492,12 @@ export default function ClientMasterFormPage() {
   }
 
   async function handleCampTermsFileDelete(file) {
-    if (!isSuperAdmin() || !isEdit || !file) return;
+    if (!isSuperAdmin() || !isPersisted || !file) return;
     if (!window.confirm(`Remove “${file.fileName || 'file'}”?`)) return;
     setCampTermsFileBusy(true);
     try {
       const fileId = file.id || file.storedName;
-      const { data } = await clientMasterApi.deleteCampTermsFile(id, fileId);
+      const { data } = await clientMasterApi.deleteCampTermsFile(recordId, fileId);
       setForm((prev) => ({
         ...prev,
         campTermsFiles: campTermsFilesFromRecord(data.data),
@@ -378,10 +521,10 @@ export default function ClientMasterFormPage() {
       }
     }
 
-    if (isEdit) {
+    if (isPersisted) {
       setCampTermsFileBusy(true);
       try {
-        const { data } = await clientMasterApi.uploadPoFiles(id, files, poId);
+        const { data } = await clientMasterApi.uploadPoFiles(recordId, files, poId);
         setForm((prev) => {
           const nextForm = recordToForm(data.data);
           return {
@@ -412,17 +555,17 @@ export default function ClientMasterFormPage() {
   }
 
   async function handlePoFilePreview(poId, file) {
-    if (!isEdit || !poId) return;
+    if (!isPersisted || !poId) return;
     try {
       const fileId = file?.id || file?.storedName;
       if (fileId) {
-        const { data: blob } = await clientMasterApi.downloadPoFileById(id, poId, fileId);
+        const { data: blob } = await clientMasterApi.downloadPoFileById(recordId, poId, fileId);
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank', 'noopener,noreferrer');
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
         return;
       }
-      const { data: blob } = await clientMasterApi.downloadPoFile(id, poId);
+      const { data: blob } = await clientMasterApi.downloadPoFile(recordId, poId);
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank', 'noopener,noreferrer');
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -432,12 +575,12 @@ export default function ClientMasterFormPage() {
   }
 
   async function handlePoFileDelete(poId, file) {
-    if (!isSuperAdmin() || !isEdit || !poId || !file) return;
+    if (!isSuperAdmin() || !isPersisted || !poId || !file) return;
     if (!window.confirm(`Remove “${file.fileName || 'file'}”?`)) return;
     setCampTermsFileBusy(true);
     try {
       const fileId = file.id || file.storedName;
-      const { data } = await clientMasterApi.deletePoFileById(id, poId, fileId);
+      const { data } = await clientMasterApi.deletePoFileById(recordId, poId, fileId);
       setForm((prev) => {
         const nextForm = recordToForm(data.data);
         return {
@@ -456,389 +599,107 @@ export default function ClientMasterFormPage() {
     }
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!validateForm()) {
-      setError('Please fix the highlighted fields');
-      return;
-    }
-
-    if (!canCreateCompany && !form.clientId) {
-      setError('Select an existing company from the search list. New companies can only be created by an administrator.');
-      return;
-    }
-
-    const trimmed = trimFormStrings(form, formStringFields);
-    const spocEmails = parseEmailList(form.spocEmail);
-    const campTermsPayload = buildCampTermsPayload({
-      ...form,
-      ...trimmed,
-      purchaseOrders: form.purchaseOrders,
-      campTermsFiles: form.campTermsFiles,
-    });
-    const payload = {
-      ...trimmed,
-      healthcareWorker: normalizeHealthcareWorkers(form.healthcareWorker),
-      clientId: form.clientId || undefined,
-      isActive: form.isActive,
-      coordinatorName: '',
-      spocEmail: spocEmails.join(', '),
-      ...campTermsPayload,
-      billing: {
-        address: trimmed.billingAddress || '',
-        gstin: trimmed.billingGstin || '',
-        pan: trimmed.billingPan || '',
-        stateName: trimmed.billingStateName || '',
-        stateCode: trimmed.billingStateCode || '',
-      },
-      billingAddress: trimmed.billingAddress || '',
-      billingGstin: (trimmed.billingGstin || '').toUpperCase(),
-      billingPan: (trimmed.billingPan || '').toUpperCase(),
-      billingStateName: trimmed.billingStateName || '',
-      billingStateCode: trimmed.billingStateCode || '',
-      assignedUserEmails: parseEmailList(form.assignedUserEmails),
-      ...(Array.isArray(form.mappedConsumables) && form.mappedConsumables.length
-        ? { mappedConsumables: form.mappedConsumables }
-        : {}),
-      expectedUpdatedAt: form.updatedAt || undefined,
-    };
-    formNumberFields.forEach((field) => {
-      payload[field] = trimmed[field] === '' ? 0 : Number(form[field]) || 0;
-    });
-
-    setLoading(true);
-    setError('');
-    try {
-      let savedId = id;
-      if (isEdit) {
-        await clientMasterApi.update(id, payload);
-      } else {
-        const { data } = await clientMasterApi.create(payload);
-        savedId = data.data._id;
-      }
-
-      if (pendingCampTermsFiles.length && savedId) {
-        await clientMasterApi.uploadCampTermsFiles(savedId, pendingCampTermsFiles);
-        setPendingCampTermsFiles([]);
-      }
-
-      const pendingEntries = Object.entries(pendingPoFiles).filter(([, files]) => files?.length);
-      if (pendingEntries.length && savedId) {
-        // Re-fetch so PO ids from server match pending keys when possible; otherwise map by order.
-        let orders = Array.isArray(payload.purchaseOrders) ? payload.purchaseOrders : [];
-        try {
-          const { data } = await clientMasterApi.get(savedId);
-          orders = purchaseOrdersFromRecord(data.data);
-        } catch {
-          /* use payload orders */
-        }
-        for (const [poId, files] of pendingEntries) {
-          const target =
-            orders.find((row) => row.id === poId)
-            || orders.find((row) => String(row.poNumber || '') === String(
-              (form.purchaseOrders || []).find((p) => p.id === poId)?.poNumber || ''
-            ));
-          if (!target?.id) continue;
-          await clientMasterApi.uploadPoFiles(savedId, files, target.id);
-        }
-        setPendingPoFiles({});
-      }
-
-      navigate(clientMasterListPath());
-    } catch (err) {
-      setError(err?.message || 'Failed to save Client Master record');
-    } finally {
-      setLoading(false);
-    }
-  }
-
   if (fetching) {
     return <div className="empty-state">Loading Client Master record...</div>;
   }
 
   return (
-    <form ref={formRef} className="form-card" onSubmit={handleSubmit} noValidate autoComplete="off" data-form-type="other">
+    <div ref={formRef} className="form-card client-master-sections" autoComplete="off" data-form-type="other">
       <AutofillDecoyFields />
-      {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
+      {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
 
-      <div className="form-grid">
-        <label>
-          Client Name
-          <ClientNameSearchInput
-            value={form.clientName}
-            error={fieldErrors.clientName}
-            onChange={updateClientName}
-            onSelectRecord={applySuggestion}
-            requireExistingClient={!canCreateCompany}
-          />
-          {!canCreateCompany && (
-            <small className="meta-text">Select an existing company. You cannot create new companies.</small>
-          )}
-        </label>
-        <label>
-          Client Code
-          <input
-            value={form.clientCode}
-            onChange={(e) => updateField('clientCode', e.target.value.toUpperCase())}
-            placeholder={canCreateCompany ? 'Optional — auto-generated if new Client' : 'Filled when you select a company'}
-            readOnly={!canCreateCompany}
-            className={fieldErrors.clientCode ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.clientCode} />
-        </label>
-        <label>
-          Status
-          <select value={form.isActive ? 'active' : 'inactive'} onChange={(e) => updateField('isActive', e.target.value === 'active')}>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </label>
-        <label>
-          Billing Address
-          <textarea
-            rows={2}
-            value={form.billingAddress}
-            onChange={(e) => updateField('billingAddress', e.target.value)}
-            placeholder="Registered / billing address for GST invoices"
-          />
-        </label>
-      </div>
+      {!isPersisted ? (
+        <p className="meta-text client-master-section-flow-hint">
+          Complete Client Information and Billing locally, then save Program Configuration to create the record.
+          SPOC, Commercial, and Camp Terms unlock after creation.
+        </p>
+      ) : null}
 
-      <h3 className="client-master-section-title">Billing details (Invoice recipient)</h3>
-      <div className="form-grid">
-        <label>
-          State
-          <input
-            value={form.billingStateName}
-            onChange={(e) => updateField('billingStateName', e.target.value)}
-            placeholder="Maharashtra"
-          />
-        </label>
-        <label>
-          State Code
-          <input
-            value={form.billingStateCode}
-            onChange={(e) => updateField('billingStateCode', e.target.value)}
-            placeholder="27"
-            maxLength={2}
-          />
-        </label>
-        <label>
-          GSTIN
-          <input
-            value={form.billingGstin}
-            onChange={(e) => updateField('billingGstin', e.target.value.toUpperCase())}
-            placeholder="15-character GSTIN"
-            maxLength={15}
-          />
-        </label>
-        <label>
-          PAN
-          <input
-            value={form.billingPan}
-            onChange={(e) => updateField('billingPan', e.target.value.toUpperCase())}
-            placeholder="AAAAA0000A"
-            maxLength={10}
-          />
-        </label>
-      </div>
+      {CLIENT_MASTER_SECTIONS.map((section, index) => {
+        const isEditing = activeSection === section.id;
+        const editLocked = isSectionLocked(section.id);
+        let summary = buildSectionSummary(section.id, form);
+        if (section.id === 'spoc') {
+          const displayEmails = mappedAssignedUserEmails.length
+            ? mappedAssignedUserEmails.join(', ')
+            : (form.assignedUserEmails || '—');
+          summary = summary.map((row) => (
+            row.label === 'Assigned Users' ? { ...row, value: displayEmails || '—' } : row
+          ));
+        }
+        const sectionErrors = sectionFieldErrors(section.id, fieldErrors);
 
-      <h3 className="client-master-section-title">Program</h3>
-      <div className="form-grid">
-        <label>
-          Division / Therapy
-          <input
-            value={form.programName}
-            onChange={(e) => updateField('programName', e.target.value)}
-            placeholder="e.g. Viva BMD Camps, Ortreso"
-            className={fieldErrors.programName ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.programName} />
-        </label>
-        <label>
-          Method
-          <CampNameSelect
-            value={form.campName}
-            onChange={(value) => updateField('campName', value)}
-            error={fieldErrors.campName}
-          />
-        </label>
-        <label>
-          Service Model
-          <SearchableOptionsInput
-            value={form.campType}
-            onChange={(value) => updateField('campType', value)}
-            options={SERVICE_MODEL_OPTIONS}
-            placeholder="e.g. HCW + Device (Light Device)"
-            groupLabel="Service models"
-            error={fieldErrors.campType}
-          />
-        </label>
-        <div className={`client-master-hcw-field${fieldErrors.healthcareWorker ? ' is-invalid' : ''}`}>
-          <span className="client-master-field-label" id="client-master-hcw-label">
-            Healthcare Worker
-          </span>
-          <div
-            className="client-master-hcw-roles"
-            role="group"
-            aria-labelledby="client-master-hcw-label"
+        return (
+          <ClientMasterSectionCard
+            key={section.id}
+            step={index + 1}
+            title={section.title}
+            description={section.description}
+            isEditing={isEditing}
+            editLocked={editLocked}
+            saving={sectionSaving}
+            summary={summary}
+            onEdit={() => beginSectionEdit(section.id)}
+            onSave={() => handleSectionSave(section.id)}
+            onCancel={cancelSectionEdit}
           >
-            {HEALTHCARE_WORKER_OPTIONS.map((option) => {
-              const checked = healthcareRoleSelected(form.healthcareWorker, option);
-              return (
-                <label
-                  key={option}
-                  className={`client-master-hcw-role${checked ? ' is-selected' : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={loading}
-                    onChange={() =>
-                      updateField(
-                        'healthcareWorker',
-                        toggleHealthcareRole(form.healthcareWorker, option)
-                      )
-                    }
-                  />
-                  <span>{option}</span>
-                </label>
-              );
-            })}
-          </div>
-          <FieldError message={fieldErrors.healthcareWorker} />
-        </div>
-        <label>
-          Camp Duration
-          <input
-            value={form.campDuration}
-            onChange={(e) => updateField('campDuration', e.target.value)}
-            placeholder="4:00"
-            className={fieldErrors.campDuration ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.campDuration} />
-        </label>
-        <label>
-          SPOC Name
-          <input
-            value={form.spocName}
-            onChange={(e) => updateField('spocName', e.target.value)}
-            className={fieldErrors.spocName ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.spocName} />
-        </label>
-        <PhoneField
-          label="SPOC Number"
-          value={form.spocNumber}
-          onChange={(value) => updateField('spocNumber', value)}
-          error={fieldErrors.spocNumber}
-        />
-        <label>
-          SPOC Email Address
-          <input
-            value={form.spocEmail}
-            onChange={(e) => updateField('spocEmail', e.target.value)}
-            placeholder="spoc@client.com, ops@client.com"
-            title="Comma-separated SPOC email addresses"
-            className={fieldErrors.spocEmail ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.spocEmail} />
-        </label>
-        <label>
-          Request Timeline
-          <input
-            value={form.requestTimeline}
-            onChange={(e) => updateField('requestTimeline', e.target.value)}
-            placeholder="5 Days Before"
-            className={fieldErrors.requestTimeline ? 'input-invalid' : ''}
-          />
-          <FieldError message={fieldErrors.requestTimeline} />
-        </label>
-        <label>
-          Assigned User Login Emails
-          <AssignedSystemUserPicker
-            value={form.assignedUserEmails}
-            onChange={(next) => updateField('assignedUserEmails', next)}
-            error={fieldErrors.assignedUserEmails}
-          />
-          <FieldError message={fieldErrors.assignedUserEmails} />
-        </label>
-        <label>
-          Executed Camp Unit
-          <input {...numberInputProps('executedCampUnit', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.executedCampUnit} />
-        </label>
-        <label>
-          Cancelled Camp Unit
-          <input {...numberInputProps('cancelledCampUnit', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.cancelledCampUnit} />
-        </label>
-        <label>
-          OT Unit
-          <input {...numberInputProps('otUnit', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.otUnit} />
-        </label>
-        <label>
-          Minimum Patient Covered
-          <input {...numberInputProps('minimumPatientCovered', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.minimumPatientCovered} />
-        </label>
-        <label>
-          Minimum Kms Covered
-          <input {...numberInputProps('minimumKmsCovered', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.minimumKmsCovered} />
-        </label>
-        <label>
-          Ext. Patient Unit
-          <input {...numberInputProps('extPatientUnit', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.extPatientUnit} />
-        </label>
-        <label>
-          Kms Unit
-          <input {...numberInputProps('kmsUnit', form, updateField, fieldErrors)} />
-          <FieldError message={fieldErrors.kmsUnit} />
-        </label>
-        <ClientMasterConsumablesField
-          value={form.mappedConsumables}
-          onChange={(value) => updateField('mappedConsumables', value)}
-        />
-      </div>
-
-      <ClientMasterCampTermsBox
-        form={form}
-        fieldErrors={fieldErrors}
-        disabled={loading}
-        pendingFiles={pendingCampTermsFiles}
-        pendingPoFiles={pendingPoFiles}
-        fileBusy={campTermsFileBusy}
-        canDeleteFile={isSuperAdmin()}
-        onFieldChange={updateField}
-        onAddPurchaseOrder={addPurchaseOrder}
-        onRemovePurchaseOrder={removePurchaseOrder}
-        onPurchaseOrderChange={updatePurchaseOrder}
-        onFilesSelect={handleCampTermsFilesSelect}
-        onFilesClearPending={() => setPendingCampTermsFiles([])}
-        onFilePreview={handleCampTermsFilePreview}
-        onFileDelete={handleCampTermsFileDelete}
-        onPoFilesSelect={handlePoFilesSelect}
-        onPoFilesClearPending={(poId) => {
-          setPendingPoFiles((prev) => {
-            if (!prev[poId]) return prev;
-            const next = { ...prev };
-            delete next[poId];
-            return next;
-          });
-        }}
-        onPoFilePreview={handlePoFilePreview}
-        onPoFileDelete={handlePoFileDelete}
-      />
+            {section.id === 'campTerms' ? (
+              <ClientMasterCampTermsBox
+                embedded
+                form={form}
+                fieldErrors={sectionErrors}
+                disabled={sectionSaving || campTermsFileBusy}
+                pendingFiles={pendingCampTermsFiles}
+                pendingPoFiles={pendingPoFiles}
+                fileBusy={campTermsFileBusy}
+                canDeleteFile={isSuperAdmin()}
+                onFieldChange={updateField}
+                onAddPurchaseOrder={addPurchaseOrder}
+                onRemovePurchaseOrder={removePurchaseOrder}
+                onPurchaseOrderChange={updatePurchaseOrder}
+                onFilesSelect={handleCampTermsFilesSelect}
+                onFilesClearPending={() => setPendingCampTermsFiles([])}
+                onFilePreview={handleCampTermsFilePreview}
+                onFileDelete={handleCampTermsFileDelete}
+                onPoFilesSelect={handlePoFilesSelect}
+                onPoFilesClearPending={(poId) => {
+                  setPendingPoFiles((prev) => {
+                    if (!prev[poId]) return prev;
+                    const next = { ...prev };
+                    delete next[poId];
+                    return next;
+                  });
+                }}
+                onPoFilePreview={handlePoFilePreview}
+                onPoFileDelete={handlePoFileDelete}
+              />
+            ) : (
+              <ClientMasterFormSectionFields
+                sectionId={section.id}
+                form={form}
+                fieldErrors={sectionErrors}
+                loading={sectionSaving}
+                canCreateCompany={canCreateCompany}
+                onFieldChange={updateField}
+                onClientNameChange={updateClientName}
+                onSelectRecord={applySuggestion}
+                onAssignedUsersChange={updateAssignedUserEmails}
+                programScopeLabel={
+                  form.clientName && form.programName && form.campName
+                    ? `${form.clientName} · ${form.programName} · ${form.campName}`
+                    : ''
+                }
+              />
+            )}
+          </ClientMasterSectionCard>
+        );
+      })}
 
       <div className="form-actions">
-        <button type="button" className="btn secondary" onClick={() => navigate(clientMasterListPath())}>Cancel</button>
-        <button type="submit" className="btn" disabled={loading}>
-          {loading ? 'Saving...' : isEdit ? 'Update Configuration' : 'Create Configuration'}
+        <button type="button" className="btn secondary" onClick={() => navigate(clientMasterListPath())}>
+          {isPersisted ? 'Back to list' : 'Cancel'}
         </button>
       </div>
-    </form>
+    </div>
   );
 }

@@ -35,6 +35,7 @@ export function CampAssignmentStage({
   clientMasterProfession = '',
   clientMasterLoading = false,
   clientMasterHcwGap = '',
+  clientMasterRecords = [],
   disabled = false,
   campStatus = 'pending_review',
   excludeCampId = '',
@@ -54,7 +55,7 @@ export function CampAssignmentStage({
   const canChangeHcw = isAssigned && !fieldsDisabled;
 
   async function handleCopyDetails() {
-    const didCopy = await copyCampAssignmentDetails(form);
+    const didCopy = await copyCampAssignmentDetails(form, { clientMasterRecords });
     if (!didCopy) return;
     setCopyState('copied');
     window.setTimeout(() => setCopyState(''), 2000);

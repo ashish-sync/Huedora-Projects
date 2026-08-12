@@ -48,6 +48,7 @@ export function validateClientMasterForm(form) {
 
   const stringLimits = {
     programName: 160,
+    displayName: 120,
     campName: 120,
     campType: 80,
     spocName: 80,
@@ -182,6 +183,7 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     billingStateName: record.billingStateName || billing.stateName || '',
     billingStateCode: record.billingStateCode || billing.stateCode || '',
     programName: record.programName || '',
+    displayName: record.displayName || '',
     campName: record.campName || 'BMD',
     campType: record.campType || '',
     healthcareWorker: normalizeHealthcareWorkers(record.healthcareWorker),

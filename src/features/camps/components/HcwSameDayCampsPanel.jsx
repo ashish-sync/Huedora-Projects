@@ -82,7 +82,7 @@ export function HcwSameDayCampsPanel({
       <div className="hcw-same-day-camps-header">
         <strong>Assigned camps on this date{who}</strong>
         <span className="meta-text">
-          Use Start / End / PIN to keep the 1 hour 30 minutes gap between camps.
+          Use Start / End / PIN to keep the 30-minute gap between camps.
         </span>
       </div>
 

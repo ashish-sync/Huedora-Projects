@@ -14,36 +14,39 @@ const existing = {
 };
 
 describe('findHcwAssignmentGapConflict', () => {
-  it('allows 15:30 after a 14:00 end', () => {
+  it('allows 14:30 after a 14:00 end', () => {
     expect(findHcwAssignmentGapConflict({
       ...existing,
       _id: 'b',
       campId: 'CAMP-B',
-      startTime: '15:30',
+      startTime: '14:30',
       endTime: '18:00',
     }, [existing])).toBeNull();
   });
 
-  it('returns structured details before 15:30', () => {
+  it('returns soft warning details before 14:30', () => {
     const conflict = findHcwAssignmentGapConflict({
       ...existing,
       _id: 'b',
       campId: 'CAMP-B',
-      startTime: '15:00',
+      startTime: '14:15',
       endTime: '18:00',
     }, [existing]);
     expect(conflict).toMatchObject({
       title: 'HCW Schedule Conflict',
+      softWarning: true,
       campId: 'CAMP-A',
       pincode: '641045',
-      earliestStartTime: '15:30',
-      earliestStartLabel: '3:30 PM',
+      earliestStartTime: '14:30',
+      earliestStartLabel: '2:30 PM',
       timeRangeLabel: '8:00 AM – 2:00 PM',
       endsAtLabel: '2:00 PM',
+      gapMinutes: 30,
     });
     expect(conflict.message).toMatch(
-      /HCW Schedule Conflict: This HCW has another camp scheduled until 2:00 PM\. A mandatory 1h 30m gap is required, so the earliest available start time is 3:30 PM\./,
+      /HCW Schedule Conflict: This HCW has another camp scheduled until 2:00 PM\. A 30m gap is recommended, so the earliest available start time is 2:30 PM\./,
     );
+    expect(conflict.approvalMessage).toMatch(/Reporting Manager/);
   });
 
   it('labels overnight conflicting camps clearly', () => {
@@ -62,20 +65,20 @@ describe('findHcwAssignmentGapConflict', () => {
     expect(conflict).toMatchObject({
       campId: 'CAMP-A',
       timeRangeLabel: '11:50 AM – 5:00 AM (next day)',
-      earliestStartLabel: '6:30 AM (next day)',
+      earliestStartLabel: '5:30 AM (next day)',
     });
   });
 });
 
 describe('getHcwAssignmentGapError', () => {
-  it('returns message string for blocked assignment', () => {
+  it('returns message string for gap warning', () => {
     const error = getHcwAssignmentGapError({
       ...existing,
       _id: 'b',
       campId: 'CAMP-B',
-      startTime: '15:00',
+      startTime: '14:15',
       endTime: '18:00',
     }, [existing]);
-    expect(error).toMatch(/earliest available start time is 3:30 PM/);
+    expect(error).toMatch(/earliest available start time is 2:30 PM/);
   });
 });

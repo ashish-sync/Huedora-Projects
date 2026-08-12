@@ -4,7 +4,10 @@ import { isActiveHcwAssignedCamp } from './campHcwAssignmentActive.js';
 
 export { isActiveHcwAssignedCamp } from './campHcwAssignmentActive.js';
 
-export const HCW_ASSIGNMENT_GAP_MINUTES = 90;
+export const HCW_ASSIGNMENT_GAP_MINUTES = 30;
+
+export const HCW_GAP_APPROVAL_MESSAGE =
+  'This assignment requires approval from your Reporting Manager.';
 
 function trimStr(value) {
   return value == null ? '' : String(value).trim();
@@ -77,13 +80,14 @@ function buildHcwAssignmentGapMessage({
 }) {
   const gapLabel = formatGapDurationLabel(gapMinutes);
   if (isCandidate) {
-    return `HCW Schedule Conflict: This camp is scheduled until ${endsAtLabel}. A mandatory ${gapLabel} gap is required before the next camp for this HCW, so the earliest available start time for that camp is ${earliestStartLabel}.`;
+    return `HCW Schedule Conflict: This camp is scheduled until ${endsAtLabel}. A ${gapLabel} gap is recommended before the next camp for this HCW, so the earliest available start time for that camp is ${earliestStartLabel}.`;
   }
-  return `HCW Schedule Conflict: This HCW has another camp scheduled until ${endsAtLabel}. A mandatory ${gapLabel} gap is required, so the earliest available start time is ${earliestStartLabel}.`;
+  return `HCW Schedule Conflict: This HCW has another camp scheduled until ${endsAtLabel}. A ${gapLabel} gap is recommended, so the earliest available start time is ${earliestStartLabel}.`;
 }
 
 /**
  * Structured gap conflict for UI, or null when OK.
+ * Soft warning: assignment may proceed with Reporting Manager approval.
  */
 export function findHcwAssignmentGapConflict(candidate = {}, others = []) {
   if (!isActiveHcwAssignedCamp(candidate)) return null;
@@ -137,6 +141,8 @@ export function findHcwAssignmentGapConflict(candidate = {}, others = []) {
     return {
       title: 'HCW Schedule Conflict',
       message,
+      approvalMessage: HCW_GAP_APPROVAL_MESSAGE,
+      softWarning: true,
       campId: trimStr(conflicting.campId) || '—',
       pincode: trimStr(conflicting.pincode) || '—',
       timeRangeLabel: formatTimeRange(conflictingBounds),
@@ -150,7 +156,7 @@ export function findHcwAssignmentGapConflict(candidate = {}, others = []) {
   return null;
 }
 
-/** Returns a user-facing error string when candidate violates the 1h30 gap rule. */
+/** Returns a user-facing warning string when candidate violates the 30m gap rule. */
 export function getHcwAssignmentGapError(candidate = {}, others = []) {
   return findHcwAssignmentGapConflict(candidate, others)?.message || '';
 }

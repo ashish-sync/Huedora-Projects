@@ -5520,6 +5520,21 @@
   color: var(--text-muted, var(--muted));
 }
 
+.camp-ops-root .hcw-gap-alert-approval {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink, #0f172a);
+}
+
+.camp-ops-root .hcw-gap-alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .camp-ops-root .camp-approval-issues-header {
   display: flex;
   align-items: flex-start;

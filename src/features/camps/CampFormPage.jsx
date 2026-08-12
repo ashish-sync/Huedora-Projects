@@ -96,6 +96,7 @@ export default function CampFormPage() {
   const [readOnly, setReadOnly] = useState(false);
   const [error, setError] = useState('');
   const [hcwGapConflict, setHcwGapConflict] = useState(null);
+  const [hcwGapApprovalNotice, setHcwGapApprovalNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [submitFinanceBusy, setSubmitFinanceBusy] = useState(false);
@@ -423,8 +424,16 @@ export default function CampFormPage() {
           clientName: camp.clientName || '',
           campaignName: camp.campaignName || '',
           campaignType: camp.campaignType || '',
+          hcwGapOverridePendingApproval: Boolean(camp.hcwGapOverridePendingApproval),
         });
         setForm(campToForm(camp));
+        if (camp.hcwGapOverridePendingApproval) {
+          setHcwGapApprovalNotice(
+            'This assignment requires approval from your Reporting Manager.',
+          );
+        } else {
+          setHcwGapApprovalNotice('');
+        }
         applyCampAccess(camp);
         if (!canEditCampRecord(camp) && !(workingStage === 'assignment' && camp.status === 'approved')) {
           setError('You can only edit camps that are pending review.');
@@ -650,11 +659,11 @@ export default function CampFormPage() {
     openCampActionConfirm(action);
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(e, { acknowledgeGapOverride = false } = {}) {
+    if (e?.preventDefault) e.preventDefault();
     if (readOnly && campStatus === 'cancelled') return;
     if (activeStage === 'financial') return;
-    setHcwGapConflict(null);
+    if (!acknowledgeGapOverride) setHcwGapConflict(null);
 
     if (!isEdit && activeStage !== 'request') {
       setError('New camps can only be created at the Request stage.');
@@ -722,14 +731,14 @@ export default function CampFormPage() {
           },
           peers,
         );
-        if (gapConflict) {
+        if (gapConflict && !acknowledgeGapOverride) {
           setHcwGapConflict(gapConflict);
           setError('');
           return;
         }
-        setHcwGapConflict(null);
+        if (!gapConflict) setHcwGapConflict(null);
       } catch {
-        // Server still enforces the gap on save if the list pre-check fails.
+        // Server still checks the gap on save if the list pre-check fails.
       }
     }
 
@@ -768,6 +777,7 @@ export default function CampFormPage() {
       ...(activeStage === 'assignment' && form.hcwContactId
         ? { assignmentDecision: 'assign', assignmentRefusalReason: '' }
         : {}),
+      ...(acknowledgeGapOverride ? { hcwGapOverrideAcknowledged: true } : {}),
       clientId: form.clientId,
       campDate: toApiDateValue(form.campDate),
       requestDate: toApiDateValue(form.requestDate) || todayIsoDate(),
@@ -787,33 +797,44 @@ export default function CampFormPage() {
 
     setLoading(true);
     setError('');
-    setHcwGapConflict(null);
     try {
+      let savedCamp = null;
       if (isEdit) {
         const res = await campApi.update(id, payload);
-        if (executionComplete) {
-          const camp = res.data?.data || res.data;
-          if (camp) {
-            setForm(campToForm(camp));
-            setCampMeta((prev) => ({ ...prev, ...camp }));
-            setActiveStage('financial');
-            setError('');
-            setHcwGapConflict(null);
-            return;
-          }
+        savedCamp = res.data?.data || res.data;
+        if (executionComplete && savedCamp) {
+          setForm(campToForm(savedCamp));
+          setCampMeta((prev) => ({ ...prev, ...savedCamp }));
+          setActiveStage('financial');
+          setError('');
+          setHcwGapConflict(null);
+          return;
         }
       } else {
         await campApi.create(payload);
       }
+
+      if (savedCamp?.hcwGapOverridePendingApproval) {
+        setForm(campToForm(savedCamp));
+        setCampMeta((prev) => ({ ...prev, ...savedCamp }));
+        setHcwGapConflict(null);
+        setHcwGapApprovalNotice(
+          'Assignment saved. This assignment requires approval from your Reporting Manager.',
+        );
+        setError('');
+        return;
+      }
+
       navigate('/camp-one/manage');
     } catch (err) {
       const code = err?.code || err?.error?.code || '';
       const message = err?.message || 'Failed to save camp';
-      if (code === 'HCW_ASSIGNMENT_GAP' || /1 hour 30 minutes|HCW already has camp|schedule gap/i.test(message)) {
+      if (code === 'HCW_ASSIGNMENT_GAP' || /schedule gap|HCW Schedule Conflict|HCW already has camp/i.test(message)) {
         setHcwGapConflict({
-          title: 'HCW schedule conflict',
-          summary: message,
+          title: 'HCW Schedule Conflict',
           message,
+          approvalMessage: 'If you proceed, this assignment requires approval from your Reporting Manager.',
+          softWarning: true,
         });
         setError('');
       } else {
@@ -954,9 +975,22 @@ export default function CampFormPage() {
           hasNoMethods && activeStage === 'request' && { variant: 'error', message: NO_METHOD_MESSAGE },
           hcwGapConflict && {
             key: 'hcw-gap-conflict',
-            variant: 'error',
+            variant: 'warning',
             className: 'hcw-gap-alert-banner',
-            message: <HcwAssignmentGapAlert conflict={hcwGapConflict} />,
+            message: (
+              <HcwAssignmentGapAlert
+                conflict={hcwGapConflict}
+                proceeding={loading}
+                onCancel={() => setHcwGapConflict(null)}
+                onProceed={() => handleSubmit(null, { acknowledgeGapOverride: true })}
+              />
+            ),
+          },
+          !hcwGapConflict && (hcwGapApprovalNotice || campMeta?.hcwGapOverridePendingApproval) && {
+            key: 'hcw-gap-approval',
+            variant: 'warning',
+            message: hcwGapApprovalNotice
+              || 'This assignment requires approval from your Reporting Manager.',
           },
           error && !hcwGapConflict && { variant: 'error', message: error },
         ].filter(Boolean)}

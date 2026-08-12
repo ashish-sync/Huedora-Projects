@@ -158,8 +158,8 @@ export function CampAssignmentStage({
       <div className="camp-assignment-toolbar">
         <p className="meta-text camp-assignment-intro">
           {reassigning
-            ? 'Select a different healthcare worker, then save the camp to apply the change. Same-day assignments still need a 1 hour 30 minutes gap.'
-            : 'Select resource type, state, and city to find Contact Directory healthcare workers that match this Client’s Healthcare Worker role in Client Master. Same HCW on the same date needs at least 1 hour 30 minutes between one camp’s end and the next start (e.g. 8:00–14:00 → next earliest 15:30). Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.'}
+            ? 'Select a different healthcare worker, then save the camp to apply the change. Same-day assignments should keep a 30-minute gap.'
+            : 'Select resource type, state, and city to find Contact Directory healthcare workers that match this Client’s Healthcare Worker role in Client Master. Same HCW on the same date should keep at least 30 minutes between one camp’s end and the next start (e.g. 8:00–14:00 → next earliest 14:30). A shorter gap can proceed but needs Reporting Manager approval. Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.'}
         </p>
         <div className="camp-assignment-toolbar-actions">
           {reassigning ? (

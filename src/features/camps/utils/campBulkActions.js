@@ -5,12 +5,14 @@ const PERMISSION_MESSAGES = {
   approve: 'You do not have permission to approve camps',
   reject: 'You do not have permission to refuse camps',
   execute: 'You do not have permission to mark camps as executed',
+  delete: 'Only administrators can delete camps',
 };
 
 const BULK_ACTION_PAST_TENSE = {
   approve: 'approved',
   reject: 'refused',
   execute: 'executed',
+  delete: 'deleted',
 };
 
 function campLabel(camp) {
@@ -48,10 +50,15 @@ function getCampBulkIssue(action, camp, auth) {
     return null;
   }
 
+  if (action === 'delete') {
+    return null;
+  }
+
   return 'Unsupported bulk action';
 }
 
 function canPerformBulkCampAction(action, auth) {
+  if (action === 'delete') return auth.isSuperAdmin?.() === true;
   if (action === 'approve') return auth.canApproveCamps();
   if (action === 'reject') return auth.canRejectCamps();
   if (action === 'execute') return auth.hasPermission('camps:execute');

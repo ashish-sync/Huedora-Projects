@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Eye, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CampAdminDeleteButton } from './CampAdminDeleteButton';
 import { CampRowIconButton } from './CampRowIconButton';
 import { CampFinanceViewModal } from './CampFinanceViewModal';
 
-export function CampFinancialRowActions({ camp, canEdit }) {
+export function CampFinancialRowActions({ camp, canEdit, canDelete = false, onAction }) {
   const [financeOpen, setFinanceOpen] = useState(false);
 
   return (
@@ -28,6 +29,7 @@ export function CampFinancialRowActions({ camp, canEdit }) {
             </span>
           </Link>
         )}
+        <CampAdminDeleteButton canDelete={canDelete} campId={camp._id} onDelete={onAction} />
       </div>
       {financeOpen && (
         <CampFinanceViewModal

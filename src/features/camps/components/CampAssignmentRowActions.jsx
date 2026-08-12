@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ClipboardCopy, UserCheck, Briefcase, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { CampAdminDeleteButton } from './CampAdminDeleteButton';
 import { CampRowIconButton } from './CampRowIconButton';
 import {
   canCancelOrRefuseCamp,
@@ -18,6 +19,7 @@ export function CampAssignmentRowActions({
   canEdit,
   canRejectCamps,
   hasPermission,
+  canDelete = false,
   onAction,
 }) {
   const navigate = useNavigate();
@@ -40,7 +42,7 @@ export function CampAssignmentRowActions({
     navigate(buildCampHireRequestPath(camp));
   }
 
-  if (!canEdit && !showCross && !assigned && !canHireRequest) {
+  if (!canEdit && !showCross && !assigned && !canHireRequest && !canDelete) {
     return <span className="camps-cell-empty">—</span>;
   }
 
@@ -82,6 +84,7 @@ export function CampAssignmentRowActions({
           onClick={() => onAction(camp._id, closeAction)}
         />
       )}
+      <CampAdminDeleteButton canDelete={canDelete} campId={camp._id} onDelete={onAction} />
     </div>
   );
 }

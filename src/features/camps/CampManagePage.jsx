@@ -31,6 +31,7 @@ import { CampRequestRowActions } from './components/CampRequestRowActions';
 import { CampAssignmentRowActions } from './components/CampAssignmentRowActions';
 import { CampExecutionRowActions } from './components/CampExecutionRowActions';
 import { CampFinancialRowActions } from './components/CampFinancialRowActions';
+import { CampAdminDeleteButton } from './components/CampAdminDeleteButton';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { api } from '../../shared/api.js';
 import { Pagination } from './components/Pagination';
@@ -313,6 +314,7 @@ export default function CampsPage() {
       closeCamp: campApi.close,
       execute: campApi.execute,
       submitReview: campApi.submitReview,
+      delete: campApi.delete,
     };
 
     const handler = handlers[action];
@@ -556,19 +558,23 @@ export default function CampsPage() {
   const canBulkManage = canApproveCamps()
     || canRejectCamps()
     || hasPermission('camps:update')
-    || hasPermission('camps:execute');
+    || hasPermission('camps:execute')
+    || isSuperAdmin();
 
   const selectedCamps = camps.filter((camp) => selectedIds.includes(camp._id));
   const bulkAuth = getBulkAuth();
   const bulkApproveValidation = validateBulkCampAction('approve', selectedCamps, bulkAuth);
   const bulkRejectValidation = validateBulkCampAction('reject', selectedCamps, bulkAuth);
-  const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
+  const canAdminDeleteCamps = isSuperAdmin();
+  const bulkDeleteValidation = validateBulkCampAction('delete', selectedCamps, bulkAuth);
 
   const isRequestStage = workingStage === 'request';
   const isAssignmentStage = workingStage === 'assignment';
   const isExecutionStage = workingStage === 'execution';
   const isFinancialStage = workingStage === 'financial';
   const canExecuteCamps = hasPermission('camps:execute');
+
+  const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
 
   function renderCampActions(camp) {
     const cancelRefuse = (
@@ -588,6 +594,7 @@ export default function CampsPage() {
           canApprove={canApproveCamps()}
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
+          canDelete={canAdminDeleteCamps}
           onApprove={() => openCampActionConfirm('approve', camp)}
           onAction={requestCampAction}
         />
@@ -601,6 +608,7 @@ export default function CampsPage() {
           canEdit={canEditCampRecord(camp)}
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
+          canDelete={canAdminDeleteCamps}
           onAction={requestCampAction}
         />
       );
@@ -614,6 +622,7 @@ export default function CampsPage() {
           canExecute={canExecuteCamps}
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
+          canDelete={canAdminDeleteCamps}
           onExecute={() => openCampActionConfirm('execute', camp)}
           onAction={requestCampAction}
         />
@@ -625,6 +634,8 @@ export default function CampsPage() {
         <CampFinancialRowActions
           camp={camp}
           canEdit={canEditCampRecord(camp)}
+          canDelete={canAdminDeleteCamps}
+          onAction={requestCampAction}
         />
       );
     }
@@ -657,6 +668,11 @@ export default function CampsPage() {
           </button>
         )}
         {cancelRefuse}
+        <CampAdminDeleteButton
+          canDelete={canAdminDeleteCamps}
+          campId={camp._id}
+          onDelete={requestCampAction}
+        />
         <CampRowInfoMenu
           camp={camp}
           hasPermission={hasPermission}
@@ -713,10 +729,10 @@ export default function CampsPage() {
           onClearAll={clearFilters}
         />
 
-        {canBulkManage && selectedIds.length > 0 && !isAssignmentStage && (
+        {selectedIds.length > 0 && (canBulkManage || canAdminDeleteCamps) && (!isAssignmentStage || canAdminDeleteCamps) && (
           <div className="bulk-bar camps-manage-bulk-bar">
           <span>{selectedIds.length} selected</span>
-          {canApproveCamps() && (
+          {canApproveCamps() && !isAssignmentStage && (
             <button
               className="btn btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkApproveValidation.ok}
@@ -726,7 +742,7 @@ export default function CampsPage() {
               Approve Selected
             </button>
           )}
-          {canRejectCamps() && (
+          {canRejectCamps() && !isAssignmentStage && (
             <button
               className="btn danger btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkRejectValidation.ok}
@@ -736,7 +752,7 @@ export default function CampsPage() {
               Refuse Selected
             </button>
           )}
-          {hasPermission('camps:execute') && (
+          {hasPermission('camps:execute') && !isAssignmentStage && (
             <button
               className="btn btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkExecuteValidation.ok}
@@ -744,6 +760,16 @@ export default function CampsPage() {
               onClick={() => handleBulk('execute')}
             >
               Mark Executed
+            </button>
+          )}
+          {canAdminDeleteCamps && (
+            <button
+              className="btn danger btn-compact"
+              disabled={bulkLoading || confirmLoading || !bulkDeleteValidation.ok}
+              title={!bulkDeleteValidation.ok ? bulkDeleteValidation.message : undefined}
+              onClick={() => handleBulk('delete')}
+            >
+              Delete Selected
             </button>
           )}
         </div>

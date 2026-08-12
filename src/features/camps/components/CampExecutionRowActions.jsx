@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, Eye, Pencil, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CampAdminDeleteButton } from './CampAdminDeleteButton';
 import { CampRowIconButton } from './CampRowIconButton';
 import { CampIssuesModal } from './CampIssuesModal';
 import {
@@ -18,6 +19,7 @@ export function CampExecutionRowActions({
   canExecute,
   canRejectCamps,
   hasPermission,
+  canDelete = false,
   onExecute,
   onAction,
 }) {
@@ -32,7 +34,7 @@ export function CampExecutionRowActions({
   const closeAction = resolveCancelOrRefuseAction(camp, STAGE);
   const closeLabel = cancelOrRefuseLabel(camp, STAGE);
 
-  if (!showTick && !showCross && !canEdit) {
+  if (!showTick && !showCross && !canEdit && !canDelete) {
     return <span className="camps-cell-empty">—</span>;
   }
 
@@ -76,6 +78,7 @@ export function CampExecutionRowActions({
             </span>
           </Link>
         )}
+        <CampAdminDeleteButton canDelete={canDelete} campId={camp._id} onDelete={onAction} />
       </div>
       {issuesOpen && (
         <CampIssuesModal

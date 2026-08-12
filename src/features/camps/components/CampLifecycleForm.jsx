@@ -650,6 +650,7 @@ export function CampLifecycleForm({
             onChange={(rows) => updateField('consumablesUsed', rows)}
             disabled={disabled}
             mappedItems={mappedConsumables}
+            patientsScreened={form.patientsCount}
           />
         </div>
       </>

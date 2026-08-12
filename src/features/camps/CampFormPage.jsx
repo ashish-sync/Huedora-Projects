@@ -378,7 +378,9 @@ export default function CampFormPage() {
   useEffect(() => {
     if (!mappedConsumables.length) return undefined;
     setForm((prev) => {
-      const merged = mergeConsumablesWithTemplate(mappedConsumables, prev.consumablesUsed);
+      const merged = mergeConsumablesWithTemplate(mappedConsumables, prev.consumablesUsed, {
+        patientsScreened: prev.patientsCount,
+      });
       if (JSON.stringify(merged) === JSON.stringify(prev.consumablesUsed)) return prev;
       return { ...prev, consumablesUsed: merged };
     });

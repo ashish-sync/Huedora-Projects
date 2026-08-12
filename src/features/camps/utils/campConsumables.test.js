@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyDefaultUsageToRows,
   emptyConsumableRow,
   formatConsumablesUsedSummary,
   getConsumablesCompletionBlockers,
@@ -20,12 +21,60 @@ describe('camp consumables', () => {
         { productId: 'p1', quantityUsed: '20', wastage: '2' },
       ]),
     ).toEqual([
-      { productId: 'p1', itemName: 'Test Strip', unit: 'Strip', uomId: 'u1', quantityUsed: '20', wastage: '2' },
-      { productId: 'p2', itemName: 'Device Battery', unit: 'Watt', uomId: 'u2', quantityUsed: '', wastage: '' },
+      {
+        productId: 'p1',
+        itemName: 'Test Strip',
+        unit: 'Strip',
+        uomId: 'u1',
+        quantityUsed: '20',
+        wastage: '2',
+        excluded: false,
+        usageManual: false,
+      },
+      {
+        productId: 'p2',
+        itemName: 'Device Battery',
+        unit: 'Watt',
+        uomId: 'u2',
+        quantityUsed: '',
+        wastage: '0',
+        excluded: false,
+        usageManual: false,
+      },
     ]);
   });
 
-  it('flags incomplete mapped consumables', () => {
+  it('defaults usage from patients screened when merging mapped rows', () => {
+    expect(
+      mergeConsumablesWithTemplate(mapped, [], { patientsScreened: 42 }),
+    ).toEqual([
+      expect.objectContaining({ productId: 'p1', quantityUsed: '42', wastage: '0' }),
+      expect.objectContaining({ productId: 'p2', quantityUsed: '42', wastage: '0' }),
+    ]);
+  });
+
+  it('syncs usage when patients screened changes for auto rows', () => {
+    expect(
+      applyDefaultUsageToRows([
+        { productId: 'p1', quantityUsed: '10', usageManual: false, wastage: '0' },
+        { productId: 'p2', quantityUsed: '5', usageManual: true, wastage: '0' },
+      ], 25),
+    ).toEqual([
+      expect.objectContaining({ productId: 'p1', quantityUsed: '25' }),
+      expect.objectContaining({ productId: 'p2', quantityUsed: '5', usageManual: true }),
+    ]);
+  });
+
+  it('flags incomplete mapped consumables but skips excluded rows', () => {
+    expect(
+      getConsumablesCompletionBlockers(mapped, [
+        { productId: 'p1', quantityUsed: '20', wastage: '2' },
+        { productId: 'p2', quantityUsed: '', wastage: '', excluded: true },
+      ]),
+    ).toEqual([]);
+  });
+
+  it('still flags incomplete active mapped consumables', () => {
     expect(
       getConsumablesCompletionBlockers(mapped, [
         { productId: 'p1', quantityUsed: '20', wastage: '2' },
@@ -40,6 +89,7 @@ describe('camp consumables', () => {
         { productId: 'p1', itemName: 'Test Strip', quantityUsed: '20', wastage: '2', unit: 'Strip' },
         { productId: '', itemName: 'Ignored', quantityUsed: 1, wastage: 0, unit: 'Each' },
         { productId: 'p2', itemName: 'Device Battery', quantityUsed: 0, wastage: 0, unit: 'Watt' },
+        { productId: 'p3', itemName: 'Removed', quantityUsed: 5, wastage: 0, excluded: true },
       ], { requiredProductIds: ['p1'] }),
     ).toEqual([
       { productId: 'p1', itemName: 'Test Strip', quantityUsed: 20, wastage: 2, unit: 'Strip', uomId: '' },
@@ -60,13 +110,19 @@ describe('camp consumables', () => {
       productId: '',
       itemName: '',
       quantityUsed: '',
-      wastage: '',
+      wastage: '0',
       unit: '',
       uomId: '',
+      excluded: false,
+      usageManual: false,
     });
   });
 
   it('accepts zero values as complete rows', () => {
     expect(isConsumableRowComplete({ quantityUsed: 0, wastage: 0 })).toBe(true);
+  });
+
+  it('treats excluded rows as complete', () => {
+    expect(isConsumableRowComplete({ quantityUsed: '', wastage: '', excluded: true })).toBe(true);
   });
 });

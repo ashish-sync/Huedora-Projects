@@ -1,80 +1,117 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { campApi } from '../campOpsApi.js';
 import {
+  applyDefaultUsageToRows,
   emptyConsumableRow,
   isConsumableRowComplete,
   mergeConsumablesWithTemplate,
 } from '../utils/campConsumables.js';
 
-function ConsumableQtyInput({ value, onChange, disabled, label, ariaLabel }) {
+function ConsumableQtyInput({ value, onChange, disabled, ariaLabel }) {
   return (
-    <label className="camp-consumables-qty-field">
-      <span className="sr-only">{label}</span>
-      <input
-        type="number"
-        className="camp-consumables-qty-input"
-        min="0"
-        step="1"
-        inputMode="numeric"
-        value={value}
-        onChange={onChange}
-        onFocus={(e) => e.target.select()}
-        disabled={disabled}
-        placeholder="0"
-        aria-label={ariaLabel}
-      />
-    </label>
+    <input
+      type="number"
+      className="camp-consumables-qty-input"
+      min="0"
+      step="1"
+      inputMode="numeric"
+      value={value}
+      onChange={onChange}
+      onFocus={(e) => e.target.select()}
+      disabled={disabled}
+      placeholder="0"
+      aria-label={ariaLabel}
+    />
   );
 }
 
-function MappedConsumablesTable({ rows, disabled, onUpdateRow }) {
+function ConsumablesGrid({
+  rows,
+  disabled,
+  mappedMode = false,
+  onUpdateRow,
+  onRemoveRow,
+}) {
+  const visible = rows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => !row.excluded);
+
   return (
-    <div className="camp-consumables-table-wrap">
-      <table className="camp-consumables-table">
-        <thead>
-          <tr>
-            <th scope="col">Item</th>
-            <th scope="col" className="camp-consumables-table-qty">Usage</th>
-            <th scope="col" className="camp-consumables-table-qty">Wastage</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => {
-            const rowComplete = isConsumableRowComplete(row);
-            const itemLabel = row.itemName || 'Consumable';
-            return (
-              <tr
-                key={`consumable-${row.productId || index}`}
-                className={!rowComplete ? 'is-incomplete' : undefined}
-              >
-                <td className="camp-consumables-table-item">
-                  <span className="camp-consumables-item-label" title={itemLabel}>
-                    {itemLabel}
-                  </span>
-                </td>
-                <td className="camp-consumables-table-qty">
-                  <ConsumableQtyInput
-                    label="Usage"
-                    ariaLabel={`Usage for ${itemLabel}`}
-                    value={row.quantityUsed}
-                    onChange={(e) => onUpdateRow(index, { quantityUsed: e.target.value })}
-                    disabled={disabled}
-                  />
-                </td>
-                <td className="camp-consumables-table-qty">
-                  <ConsumableQtyInput
-                    label="Wastage"
-                    ariaLabel={`Wastage for ${itemLabel}`}
-                    value={row.wastage ?? ''}
-                    onChange={(e) => onUpdateRow(index, { wastage: e.target.value })}
-                    disabled={disabled}
-                  />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="camp-consumables-grid" role="table" aria-label="Consumables tracking">
+      <div className="camp-consumables-grid-head" role="row">
+        <span role="columnheader">Item</span>
+        <span role="columnheader">Usage</span>
+        <span role="columnheader">Wastage</span>
+        {!disabled ? (
+          <span className="camp-consumables-grid-actions-head" role="columnheader" aria-label="Actions" />
+        ) : null}
+      </div>
+
+      {visible.map(({ row, index }) => {
+        const rowComplete = isConsumableRowComplete(row);
+        const itemLabel = row.itemName || 'Consumable';
+        return (
+          <div
+            key={`consumable-${row.productId || index}`}
+            className={`camp-consumables-grid-row ${!rowComplete ? 'is-incomplete' : ''}`}
+            role="row"
+          >
+            <div className="camp-consumables-grid-item" role="cell">
+              {mappedMode ? (
+                <span className="camp-consumables-item-label" title={itemLabel}>
+                  {itemLabel}
+                </span>
+              ) : (
+                <ConsumableItemSelect
+                  value={row.productId || ''}
+                  onChange={(product) => onUpdateRow(index, {
+                    productId: product?.id || '',
+                    itemName: product?.name || '',
+                    unit: product?.unit || '',
+                    uomId: product?.uomId || '',
+                  })}
+                  disabled={disabled}
+                />
+              )}
+            </div>
+            <div className="camp-consumables-grid-qty" role="cell">
+              <ConsumableQtyInput
+                ariaLabel={`Usage for ${itemLabel}`}
+                value={row.quantityUsed}
+                onChange={(e) => onUpdateRow(index, {
+                  quantityUsed: e.target.value,
+                  usageManual: true,
+                })}
+                disabled={disabled}
+              />
+            </div>
+            <div className="camp-consumables-grid-qty" role="cell">
+              <ConsumableQtyInput
+                ariaLabel={`Wastage for ${itemLabel}`}
+                value={row.wastage ?? '0'}
+                onChange={(e) => onUpdateRow(index, { wastage: e.target.value })}
+                disabled={disabled}
+              />
+            </div>
+            {!disabled ? (
+              <div className="camp-consumables-grid-actions" role="cell">
+                <button
+                  type="button"
+                  className="camp-consumables-used-remove-btn"
+                  onClick={() => {
+                    if (!window.confirm(`Do you want to remove ${itemLabel}?`)) return;
+                    onRemoveRow(index);
+                  }}
+                  aria-label={`Remove ${itemLabel}`}
+                  title={`Remove ${itemLabel}`}
+                >
+                  ×
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -84,12 +121,27 @@ export default function CampConsumablesUsed({
   onChange,
   disabled = false,
   mappedItems = [],
+  patientsScreened = '',
 }) {
   const isMappedMode = Array.isArray(mappedItems) && mappedItems.length > 0;
   const rows = useMemo(
-    () => mergeConsumablesWithTemplate(mappedItems, value),
-    [mappedItems, value],
+    () => mergeConsumablesWithTemplate(mappedItems, value, { patientsScreened }),
+    [mappedItems, value, patientsScreened],
   );
+
+  const prevPatientsRef = useRef(undefined);
+
+  useEffect(() => {
+    if (disabled || !onChange) return undefined;
+    const prev = prevPatientsRef.current;
+    prevPatientsRef.current = patientsScreened;
+    if (prev === undefined || prev === patientsScreened) return undefined;
+
+    const synced = applyDefaultUsageToRows(rows, patientsScreened);
+    const changed = synced.some((row, index) => row.quantityUsed !== rows[index]?.quantityUsed);
+    if (changed) onChange(synced);
+    return undefined;
+  }, [disabled, onChange, patientsScreened, rows]);
 
   function updateRow(index, patch) {
     onChange?.(rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
@@ -100,9 +152,15 @@ export default function CampConsumablesUsed({
   }
 
   function removeRow(index) {
+    if (isMappedMode) {
+      updateRow(index, { excluded: true });
+      return;
+    }
     const next = rows.filter((_, rowIndex) => rowIndex !== index);
     onChange?.(next.length ? next : [emptyConsumableRow()]);
   }
+
+  const activeCount = rows.filter((row) => !row.excluded).length;
 
   return (
     <section className="camp-consumables-used camp-consumables-panel">
@@ -111,7 +169,7 @@ export default function CampConsumablesUsed({
           <h3>Consumables Tracking</h3>
           <p className="meta-text">
             {isMappedMode
-              ? 'Enter usage and wastage for each mapped consumable.'
+              ? 'Usage defaults to Patients Screened. Add wastage and remove unused items.'
               : 'Select items from Consumables Master.'}
           </p>
         </div>
@@ -122,80 +180,16 @@ export default function CampConsumablesUsed({
         ) : null}
       </div>
 
-      {isMappedMode ? (
-        <MappedConsumablesTable
+      {isMappedMode && !activeCount ? (
+        <p className="meta-text">All mapped consumables removed.</p>
+      ) : (
+        <ConsumablesGrid
           rows={rows}
           disabled={disabled}
+          mappedMode={isMappedMode}
           onUpdateRow={updateRow}
+          onRemoveRow={removeRow}
         />
-      ) : (
-      <div className="camp-consumables-grid" role="table" aria-label="Consumables tracking">
-        <div className="camp-consumables-grid-head" role="row">
-          <span role="columnheader">Item</span>
-          <span role="columnheader">Usage</span>
-          <span role="columnheader">Wastage</span>
-          {!disabled ? (
-            <span className="camp-consumables-grid-actions-head" role="columnheader" aria-label="Actions" />
-          ) : null}
-        </div>
-
-        {rows.map((row, index) => {
-          const rowComplete = isConsumableRowComplete(row);
-          return (
-            <div
-              key={`consumable-${row.productId || index}`}
-              className={`camp-consumables-grid-row ${!rowComplete ? 'is-incomplete' : ''}`}
-              role="row"
-            >
-              <div className="camp-consumables-grid-item" role="cell">
-                <label>
-                  <span className="sr-only">Item</span>
-                  <ConsumableItemSelect
-                    value={row.productId || ''}
-                    onChange={(product) => updateRow(index, {
-                      productId: product?.id || '',
-                      itemName: product?.name || '',
-                      unit: product?.unit || '',
-                      uomId: product?.uomId || '',
-                    })}
-                    disabled={disabled}
-                  />
-                </label>
-              </div>
-              <div className="camp-consumables-grid-qty" role="cell">
-                <ConsumableQtyInput
-                  label="Usage"
-                  ariaLabel={`Usage for row ${index + 1}`}
-                  value={row.quantityUsed}
-                  onChange={(e) => updateRow(index, { quantityUsed: e.target.value })}
-                  disabled={disabled}
-                />
-              </div>
-              <div className="camp-consumables-grid-qty" role="cell">
-                <ConsumableQtyInput
-                  label="Wastage"
-                  ariaLabel={`Wastage for row ${index + 1}`}
-                  value={row.wastage ?? ''}
-                  onChange={(e) => updateRow(index, { wastage: e.target.value })}
-                  disabled={disabled}
-                />
-              </div>
-              {!disabled ? (
-                <div className="camp-consumables-grid-actions" role="cell">
-                  <button
-                    type="button"
-                    className="btn secondary btn-sm camp-consumables-used-remove-btn"
-                    onClick={() => removeRow(index)}
-                    aria-label={`Remove consumable row ${index + 1}`}
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
       )}
     </section>
   );

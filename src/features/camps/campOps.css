@@ -4134,12 +4134,27 @@
 }
 
 .camp-ops-root .camp-consumables-used-remove-btn {
-  min-width: 28px;
-  width: 28px;
-  height: 28px;
+  appearance: none;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  min-width: 1.25rem;
+  width: auto;
+  height: auto;
   padding: 0;
+  margin: 0;
   line-height: 1;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--danger, #dc2626);
+  cursor: pointer;
+}
+
+.camp-ops-root .camp-consumables-used-remove-btn:hover,
+.camp-ops-root .camp-consumables-used-remove-btn:focus-visible {
+  color: color-mix(in srgb, var(--danger, #dc2626) 82%, #000);
+  background: transparent;
+  outline: none;
 }
 
 @media (max-width: 720px) {

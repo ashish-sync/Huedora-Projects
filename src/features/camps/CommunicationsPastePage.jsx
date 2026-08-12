@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ImportInProgressGuard from '../../components/ui/ImportInProgressGuard.jsx';
 import { communicationsApi, clientApi, clientMasterApi } from './campOpsApi.js';
 import { EmailPickBuffer } from './components/EmailPickBuffer';
 import { EmailExtractionPanel } from './components/EmailExtractionPanel';
@@ -204,7 +205,7 @@ export default function CommunicationsPastePage() {
   const hasFileReady = inputMode === 'file' && Boolean(fileParse?.rows?.length);
   const isEditMode = extractionMode === 'edit';
   const showReadablePaste = hasPasteText && (isEditMode || hasExtracted);
-  const actionLoading = extracting || processing;
+  const actionLoading = extracting || processing || fileUploading;
 
   const previewDirty = useMemo(() => {
     if (!preview) return false;
@@ -696,6 +697,8 @@ export default function CommunicationsPastePage() {
 
   return (
     <div className="communications-paste-page">
+      <ImportInProgressGuard active={actionLoading} />
+
       {createdCamps.length > 0 && (
         <CampCreatedBanner camps={createdCamps} onDismiss={() => setCreatedCamps([])} />
       )}
@@ -802,7 +805,6 @@ export default function CommunicationsPastePage() {
                     }}
                   />
                 </label>
-                {fileUploading ? <p className="muted">Parsing file…</p> : null}
                 {fileParse ? (
                   <p className="muted">
                     {fileParse.fileName} · {fileParse.totalRows} rows · sheet {fileParse.sheetName}

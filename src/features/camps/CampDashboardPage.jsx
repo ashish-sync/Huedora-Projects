@@ -4,7 +4,6 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { DateRangeFilters } from './components/DateRangeFilters';
 import { ChartPanel, HierarchyCard, StatWidget } from './components/DashboardWidgets';
 import { dashboardApi } from './campOpsApi.js';
-import { getDefaultMonthDateRange } from './utils/dateRange';
 import { clientMasterListPath } from './clientMasterPaths.js';
 
 function buildClientMastersLink({ tab = 'clients', search } = {}) {
@@ -71,14 +70,16 @@ const alertCards = [
   },
 ];
 
+const EMPTY_DATE_RANGE = { dateFrom: '', dateTo: '' };
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { showCharts = false } = useOutletContext() || {};
-  const defaults = getDefaultMonthDateRange();
+  // Date filter starts empty and only applies after the user sets/applies a range.
   const [stats, setStats] = useState(null);
-  const [dateFrom, setDateFrom] = useState(defaults.dateFrom);
-  const [dateTo, setDateTo] = useState(defaults.dateTo);
-  const [appliedRange, setAppliedRange] = useState(defaults);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [appliedRange, setAppliedRange] = useState(EMPTY_DATE_RANGE);
   const [error, setError] = useState('');
 
   async function loadStats(range = appliedRange) {

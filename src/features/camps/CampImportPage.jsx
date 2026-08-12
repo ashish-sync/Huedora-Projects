@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import FeedbackBanner, { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
+import ImportInProgressGuard from '../../components/ui/ImportInProgressGuard.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { ClientPaginatedTable } from './components/ClientPaginatedTable';
@@ -277,7 +278,9 @@ export default function ImportPage() {
 
   return (
     <>
-      <div className="import-steps">
+      <ImportInProgressGuard active={loading} />
+
+      <div className="import-steps" aria-disabled={loading}>
         {steps.map((label, index) => (
           <span key={label} className={`step-pill${step === index ? ' active' : ''}`}>
             {index + 1}. {label}
@@ -318,7 +321,7 @@ export default function ImportPage() {
                 State, zone, district, and HQ are filled from PIN Code during import.
               </p>
             </div>
-            <button type="button" className="btn secondary" onClick={handleDownloadSample}>
+            <button type="button" className="btn secondary" onClick={handleDownloadSample} disabled={loading}>
               {ACTION.SAMPLE_FORMAT}
             </button>
           </div>
@@ -326,17 +329,17 @@ export default function ImportPage() {
           <div className="upload-zone">
             <p><strong>{isAdminImport ? 'Upload your file' : 'Step 2: Upload your completed file'}</strong></p>
             <p className="import-muted">{IMPORT_ACCEPT_HINT}</p>
-            <label className="btn">
+            <label className={`btn${loading ? ' is-disabled' : ''}`}>
               Choose file
               <input
                 type="file"
                 accept={IMPORT_ACCEPT_ATTR}
+                disabled={loading}
                 onChange={(e) => handleUpload(e.target.files?.[0])}
                 title={IMPORT_ACCEPT_HINT}
               />
             </label>
           </div>
-          {loading && <div className="empty-state">Parsing file...</div>}
         </div>
       )}
 
@@ -350,7 +353,11 @@ export default function ImportPage() {
           <div className="template-bar">
             <div className="field field-fixed">
               <label>Load saved template</label>
-              <select value={selectedTemplateId} onChange={(e) => applyTemplate(e.target.value)}>
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => applyTemplate(e.target.value)}
+                disabled={loading}
+              >
                 <option value="">Select template</option>
                 {templates.map((template) => (
                   <option key={template.id} value={template.id}>{template.name}</option>
@@ -363,6 +370,7 @@ export default function ImportPage() {
                 value={defaultClientName}
                 onChange={(e) => setDefaultClientName(e.target.value)}
                 onBlur={(e) => setDefaultClientName(trimString(e.target.value))}
+                disabled={loading}
               />
             </div>
             <div className="field field-fixed">
@@ -372,6 +380,7 @@ export default function ImportPage() {
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 onBlur={(e) => setTemplateName(trimString(e.target.value))}
+                disabled={loading}
               />
             </div>
             <button className="btn secondary" onClick={saveTemplateOnly} disabled={loading}>
@@ -393,6 +402,7 @@ export default function ImportPage() {
                   <label>Excel column</label>
                   <select
                     value={mapping[field.key] || ''}
+                    disabled={loading}
                     onChange={(e) => setMapping((prev) => ({ ...prev, [field.key]: e.target.value }))}
                   >
                     <option value="">Not mapped</option>
@@ -544,11 +554,11 @@ export default function ImportPage() {
               {loading ? 'Importing...' : `Import ${previewDisplay.summary.valid} Camps`}
             </button>
             {isAdminImport ? (
-              <button className="btn secondary" onClick={() => setStep(1)}>
+              <button className="btn secondary" onClick={() => setStep(1)} disabled={loading}>
                 Back to Mapping
               </button>
             ) : (
-              <button className="btn secondary" onClick={resetImport}>
+              <button className="btn secondary" onClick={resetImport} disabled={loading}>
                 Upload Another File
               </button>
             )}

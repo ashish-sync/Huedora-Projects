@@ -191,3 +191,57 @@
 .modal-overlay-nested {
   z-index: calc(var(--z-modal) + 10);
 }
+
+/* Blocks all UI while upload/import is running */
+.import-in-progress-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--color-bg-overlay);
+  cursor: wait;
+  user-select: none;
+}
+
+.import-in-progress-card {
+  width: min(100%, 22rem);
+  padding: var(--space-5);
+  text-align: center;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.import-in-progress-spinner {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto var(--space-3);
+  border: 3px solid color-mix(in srgb, var(--color-brand-primary) 25%, transparent);
+  border-top-color: var(--color-brand-primary);
+  border-radius: 50%;
+  animation: import-in-progress-spin 0.8s linear infinite;
+}
+
+.import-in-progress-title {
+  margin: 0;
+  font-size: var(--text-h3-size, 1.125rem);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.import-in-progress-detail {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-body-sm-size, 0.875rem);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+@keyframes import-in-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

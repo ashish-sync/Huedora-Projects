@@ -51,6 +51,11 @@ import { canMarkCampExecuted, getExecutionBlockers } from './utils/campExecution
 import { useAutoDismiss } from './hooks/useAutoDismiss';
 
 import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
+import {
+  clearStoredManageDateFilter,
+  readStoredManageDateFilter,
+  writeStoredManageDateFilter,
+} from './utils/campManageDateFilterStorage.js';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
@@ -107,6 +112,7 @@ export default function CampsPage() {
   useAutoDismiss(bulkMessage, dismissBulkMessage);
 
   const findCampFromUrlRef = useRef('');
+  const dateFilterReadyRef = useRef(false);
 
   useEffect(() => {
     const findCampId = searchParams.get('findCampId') || searchParams.get('q') || '';
@@ -119,6 +125,44 @@ export default function CampsPage() {
     loadCamps(1, pageSize, findCampId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Restore date filter from session when URL has none (e.g. return from Edit Camp).
+  // Once set, dates stay until the user clears them.
+  useEffect(() => {
+    if (dateFilterReadyRef.current) return;
+    dateFilterReadyRef.current = true;
+
+    const urlFrom = searchParams.get('dateFrom') || '';
+    const urlTo = searchParams.get('dateTo') || '';
+    if (urlFrom || urlTo) {
+      writeStoredManageDateFilter({ dateFrom: urlFrom, dateTo: urlTo });
+      return;
+    }
+
+    const stored = readStoredManageDateFilter();
+    if (!stored.dateFrom && !stored.dateTo) return;
+
+    setDateFrom(stored.dateFrom);
+    setDateTo(stored.dateTo);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (stored.dateFrom) next.set('dateFrom', stored.dateFrom);
+      else next.delete('dateFrom');
+      if (stored.dateTo) next.set('dateTo', stored.dateTo);
+      else next.delete('dateTo');
+      return next;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!dateFilterReadyRef.current) return;
+    if (dateFrom || dateTo) {
+      writeStoredManageDateFilter({ dateFrom, dateTo });
+    } else {
+      clearStoredManageDateFilter();
+    }
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
     const refresh = () => {
@@ -336,8 +380,21 @@ export default function CampsPage() {
     setStatus(
       workingStage === 'request' ? normalizeRequestStatusFilter(rawStatus) : rawStatus
     );
-    setDateFrom(searchParams.get('dateFrom') || '');
-    setDateTo(searchParams.get('dateTo') || '');
+    const urlFrom = searchParams.get('dateFrom') || '';
+    const urlTo = searchParams.get('dateTo') || '';
+    if (urlFrom || urlTo) {
+      setDateFrom(urlFrom);
+      setDateTo(urlTo);
+    } else {
+      // Empty URL: clear only when session has no dates (user cleared, or never set).
+      // If session still has a range, keep local state until restore writes it back to the URL
+      // (e.g. returning from Edit Camp without query params).
+      const stored = readStoredManageDateFilter();
+      if (!stored.dateFrom && !stored.dateTo) {
+        setDateFrom('');
+        setDateTo('');
+      }
+    }
     setClientFilter(searchParams.get('client') || '');
     setCampaignFilter(searchParams.get('campaign') || '');
     setCampTypeFilter(searchParams.get('campaignType') || '');
@@ -432,6 +489,7 @@ export default function CampsPage() {
     setCampaignFilter('');
     setCampTypeFilter('');
     setSearch('');
+    clearStoredManageDateFilter();
     setSearchParams({});
   }
 

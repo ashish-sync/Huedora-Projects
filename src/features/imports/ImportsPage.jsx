@@ -4,6 +4,7 @@ import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
+import ImportInProgressGuard from '../../components/ui/ImportInProgressGuard.jsx';
 import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
 import { getErrorMessage, validateImportFileClient } from '../../shared/importErrors.js';
 
@@ -43,6 +44,7 @@ export default function ImportsPage() {
       title="Excel import"
       description="Validate rows first, then commit to Contact Directory, Asset Register, or verification."
     >
+      <ImportInProgressGuard active={busy} />
       {error && <p className="error">{error}</p>}
 
       <div

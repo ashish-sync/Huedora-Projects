@@ -9072,9 +9072,14 @@
   width: 6.5rem;
 }
 
-.camp-ops-root .camps-table--request .col-date {
-  width: 6.25rem;
+/* Keep DD-MM-YYYY on one line in every lifecycle stage (Request, Assignment, …). */
+.camp-ops-root .camps-table .col-date,
+.camp-ops-root .camps-table .date-cell {
+  width: 6.75rem;
+  min-width: 6.75rem;
   white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .camp-ops-root .camps-table--request .col-timeframe {

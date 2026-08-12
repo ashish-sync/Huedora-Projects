@@ -841,9 +841,7 @@ export default function CampsPage() {
                         </td>
                         <td>{camp.doctorName}</td>
                         <td className="col-city">{cellText(camp.city)}</td>
-                        <td className="col-date date-cell">
-                          <div>{formatDateDDMMYYYY(camp.campDate)}</div>
-                        </td>
+                        <td className="col-date date-cell">{formatDateDDMMYYYY(camp.campDate) || '—'}</td>
                       </>
                     )}
                     <td className="col-status">

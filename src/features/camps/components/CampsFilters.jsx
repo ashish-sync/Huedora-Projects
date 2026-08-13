@@ -52,6 +52,8 @@ const FINANCIAL_STATUS_OPTIONS = [
   { value: 'payment_confirmed', label: 'Validation Completed' },
   { value: 'payment_hold', label: 'Payment On Hold' },
   { value: 'payment_completed', label: 'Payment Completed' },
+  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
+  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
 ];
 
 function statusOptionsForStage(stage) {

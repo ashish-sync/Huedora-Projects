@@ -252,6 +252,16 @@ export function ExecutionStatusBadge({ camp }) {
 
 export function FinanceSettlementStatusBadge({ camp }) {
   if (['cancelled', 'rejected'].includes(camp?.status)) {
+    const cancelLabel = normalizeExecutionStatus(
+      camp.executionStatus || camp.assignmentRefusalReason || '',
+    );
+    if (cancelLabel && cancelLabel !== 'Cancelled' && cancelLabel !== 'Refused') {
+      return (
+        <span className={`status-pill status-${camp.status}`} title={cancelLabel}>
+          {cancelLabel}
+        </span>
+      );
+    }
     return <StatusBadge status={camp.status} />;
   }
   if (camp?.submittedToFinanceAt) {

@@ -258,7 +258,7 @@
   color: var(--color-text-primary);
   opacity: 1;
   cursor: default;
-  background: var(--color-bg-sunken, var(--surface-muted, #f3f4f6));
+  background: var(--color-bg-sunken);
 }
 
 .ib-po-select {

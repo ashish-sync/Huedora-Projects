@@ -48,6 +48,10 @@
   --sand-deep: var(--color-bg-hover);
   --surface: var(--color-bg-sidebar);
   --surface-muted: var(--color-bg-hover);
+  /* Raised cards / panels — must track theme (never fall back to #fff) */
+  --surface-raised: var(--color-bg-elevated);
+  --border-subtle: var(--color-border-default);
+  --text-muted: var(--color-text-secondary);
 
   --brand: var(--color-brand-primary);
   --brand-hover: var(--color-brand-primary-hover);

@@ -134,6 +134,13 @@ export function formatTextValue(value, fieldKey = '') {
   return toProperTitleCase(value);
 }
 
+/** Asset One serial numbers: trim, remove all spaces, uppercase. */
+export function normalizeSerialNumber(value) {
+  const formatted = formatTextValue(String(value ?? ''), 'serialNumber');
+  if (typeof formatted !== 'string') return '';
+  return formatted.replace(/\s+/g, '');
+}
+
 export function formatFormFields(form = {}, keys = []) {
   const next = { ...form };
   keys.forEach((key) => {

@@ -4,7 +4,7 @@ import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 
 import { MODULE, FIELD, NAV, ACTION } from '../../shared/labels.js';
-import { formatTextValue } from '../../shared/textFormat.js';
+import { formatTextValue, normalizeSerialNumber } from '../../shared/textFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -324,7 +324,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         name: form.name.trim(),
         assetType: form.assetType,
         productType: scopedType || form.productType || 'Medical Device',
-        serialNumber: form.serialNumber.trim(),
+        serialNumber: normalizeSerialNumber(form.serialNumber),
         purchaseMonth: form.purchaseMonth,
         cost: Number(form.cost),
         agreementStatus: form.agreementStatus,

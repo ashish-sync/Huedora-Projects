@@ -175,7 +175,7 @@ function uniqueSorted(values = []) {
 export function normalizeHcwProfessionKey(value = '') {
   const key = String(value || '').trim().toLowerCase();
   if (!key) return '';
-  if (key === 'dietician' || key === 'dietitian') return 'dietitian';
+  if (key === 'dietician' || key === 'dietitian') return 'dietician';
   return key;
 }
 

@@ -8,7 +8,7 @@ import { campToForm } from '../constants/campLifecycle.js';
 import { normalizeCampMethodKey } from '../constants/campNames.js';
 import { normalizeHealthcareWorkers } from './healthcareWorkers.js';
 
-const HIRING_HCW_TYPES = ['Phlebotomist', 'Technician', 'Dietitian', 'Physio', 'Others'];
+const HIRING_HCW_TYPES = ['Phlebotomist', 'Technician', 'Dietician', 'Physio', 'Others'];
 const HIRING_CAMP_TYPES = ['No Device', 'Light Device (1-5 KG)', 'Heavy Device (5-12 KG)'];
 
 function hireRequestSource(source = {}) {
@@ -26,7 +26,7 @@ function mapHcwTypeFromRoles(roles = []) {
   const normalized = normalizeHealthcareWorkers(roles);
   for (const role of normalized) {
     const key = String(role || '').trim().toLowerCase();
-    if (key === 'dietician' || key === 'dietitian') return 'Dietitian';
+    if (key === 'dietician' || key === 'dietitian') return 'Dietician';
     const match = HIRING_HCW_TYPES.find((option) => option.toLowerCase() === key);
     if (match) return match;
   }

@@ -35,7 +35,7 @@ export function isServiceProviderContact(contact) {
 export const PROFESSIONS = [
   'Technician',
   'Phlebotomist',
-  'Dietitian',
+  'Dietician',
   'Doctor',
   'Nurse',
   'Biomedical Engineer',
@@ -74,7 +74,7 @@ export const HEALTHCARE_WORKER_PROFESSIONS = [
   'Nurse',
   'Phlebotomist',
   'Technician',
-  'Dietitian',
+  'Dietician',
   'Physio',
   'Biomedical Engineer',
   'Other',

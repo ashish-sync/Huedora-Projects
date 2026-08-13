@@ -76,7 +76,7 @@ function isNonDeviceRefresher(trainingType) {
   return value === 'non device refresher' || value === 'refresher non device';
 }
 const HIRING_TYPES = ['Full Timer', 'Freelancer'];
-const HCW_TYPES = ['Phlebotomist', 'Technician', 'Dietitian', 'Physio', 'Others'];
+const HCW_TYPES = ['Phlebotomist', 'Technician', 'Dietician', 'Physio', 'Others'];
 const CAMP_TYPES = ['No Device', 'Light Device (1-5 KG)', 'Heavy Device (5-12 KG)'];
 const HIRING_METHODS = ['BMD', 'Neuro & Physio', 'Uroflowmetery', 'Diagnostics', 'Dietician', 'Others'];
 const OTHER_REQUEST_OPTIONS = {

@@ -131,7 +131,7 @@ export const MASTER_ENTITIES = [
         options: [
           'Technician',
           'Phlebotomist',
-          'Dietitian',
+          'Dietician',
           'Doctor',
           'Nurse',
           'Physio',

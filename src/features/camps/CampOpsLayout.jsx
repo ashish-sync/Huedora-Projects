@@ -52,7 +52,6 @@ function CampOpsLayoutBody({
   const campRootRef = useRef(null);
   useSuppressBrowserAutofill(campRootRef);
   const isRequestStage = workingStage === 'request';
-  // Camps are only added at Request; other stages are progression views.
   const showRequestToolbar = showCampToolbar && isRequestStage;
 
   return (

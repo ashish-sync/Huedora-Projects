@@ -1,4 +1,4 @@
-/* Camp One component styles — layout chrome is TYLO PageShell (see campOps.theme.css). */
+/* Camp One component styles â layout chrome is TYLO PageShell (see campOps.theme.css). */
 
 .camp-ops-root .autofill-decoy-fields,
 .autofill-decoy-fields {
@@ -518,7 +518,7 @@
   text-decoration: underline;
 }
 
-/* ── Email detail modal layout ─────────────────────────────────── */
+/* ââ Email detail modal layout âââââââââââââââââââââââââââââââââââ */
 
 .camp-ops-root .email-detail-layout {
   display: grid;
@@ -544,7 +544,7 @@
   overflow: hidden;
 }
 
-/* ── Message viewer (left panel) ───────────────────────────────── */
+/* ââ Message viewer (left panel) âââââââââââââââââââââââââââââââââ */
 
 .camp-ops-root .email-body-viewer {
   flex: 1 1 0;
@@ -571,7 +571,7 @@
   flex-shrink: 0;
 }
 
-/* ── Pick-from-message buffer (shows at TOP, above the viewer) ── */
+/* ââ Pick-from-message buffer (shows at TOP, above the viewer) ââ */
 
 .camp-ops-root .email-body-pick-buffer {
   flex-shrink: 0;
@@ -1343,7 +1343,7 @@
   border-radius: var(--radius-md);
 }
 
-/* ── Workflow header & stepper ───────────────────────────────── */
+/* ââ Workflow header & stepper âââââââââââââââââââââââââââââââââ */
 
 .camp-ops-root .paste-workflow-header {
   display: flex;
@@ -1487,7 +1487,7 @@
   flex-shrink: 0;
 }
 
-/* Full-bleed band — same left/right edges as header + stepper */
+/* Full-bleed band â same left/right edges as header + stepper */
 .camp-ops-root .paste-context-fields {
   flex-shrink: 0;
   margin: 0;
@@ -1631,7 +1631,7 @@
   color: var(--text-muted);
 }
 
-/* ── Two-column workflow grid ──────────────────────────────────── */
+/* ââ Two-column workflow grid ââââââââââââââââââââââââââââââââââââ */
 
 .camp-ops-root .paste-workflow-grid {
   flex: 1 1 auto;
@@ -3422,7 +3422,7 @@
   margin-bottom: var(--space-4);
 }
 
-/* Client Master list — single-line cells; horizontal scroll for long values */
+/* Client Master list â single-line cells; horizontal scroll for long values */
 .camp-ops-root .client-masters-page .client-masters-table,
 .client-masters-page .client-masters-table {
   width: max-content;
@@ -4638,7 +4638,7 @@
   display: contents;
 }
 
-/* Unified control sizing — text, date, time, select (not react-select / search wrappers) */
+/* Unified control sizing â text, date, time, select (not react-select / search wrappers) */
 .camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
 .camp-ops-root .camp-request-grid select,
 .camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input):not(.master-search-input),
@@ -8694,7 +8694,7 @@
 }
 
 .camp-ops-root .camps-filter-card {
-  /* Shell styles live in filter-toolbar.css — keep manage card flush. */
+  /* Shell styles live in filter-toolbar.css â keep manage card flush. */
   border-bottom: 0;
 }
 
@@ -9095,7 +9095,7 @@
   }
 }
 
-/* Camps manage table — compact request-stage layout */
+/* Camps manage table â compact request-stage layout */
 .camp-ops-root .camps-table {
   width: 100%;
   min-width: 0;
@@ -9139,7 +9139,7 @@
   width: 6.5rem;
 }
 
-/* Keep DD-MM-YYYY on one line in every lifecycle stage (Request, Assignment, …). */
+/* Keep DD-MM-YYYY on one line in every lifecycle stage (Request, Assignment, â¦). */
 .camp-ops-root .camps-table .col-date,
 .camp-ops-root .camps-table .date-cell {
   width: 6.75rem;
@@ -9481,4 +9481,397 @@
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/*  Operations Board (Team Leader)  */
+.camp-ops-root .ops-board {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.camp-ops-root .ops-board--split {
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 1.15fr);
+  align-items: start;
+}
+
+.camp-ops-root .ops-board__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.camp-ops-root .ops-board-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.15rem 1.75rem;
+  padding: 1.15rem 1.25rem 1.2rem;
+  border-radius: var(--radius-card, var(--radius-lg, 12px));
+  border: 1px solid var(--line);
+  background: var(--bg-elevated, #fff);
+  box-shadow: none;
+}
+
+.camp-ops-root .ops-board-hero__total {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+}
+
+.camp-ops-root .ops-board-hero__total:hover .ops-board-hero__value {
+  color: var(--brand);
+}
+
+.camp-ops-root .ops-board-hero__label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, var(--text-muted, #64748b));
+}
+
+.camp-ops-root .ops-board-hero__value {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: clamp(2.15rem, 3.4vw, 2.85rem);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--ink, var(--text, #0f172a));
+  font-variant-numeric: tabular-nums;
+  transition: color 120ms ease;
+}
+
+.camp-ops-root .ops-board-hero__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.camp-ops-root .ops-board-hero__meta .meta-text {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted, var(--text-muted, #64748b));
+}
+
+.camp-ops-root .ops-board-hero--embedded {
+  align-items: center;
+}
+
+.camp-ops-root .ops-board-hero--embedded .ops-board-hero__meta {
+  align-items: flex-end;
+}
+
+.camp-ops-root .ops-board-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.camp-ops-root .ops-board-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card, var(--radius-lg, 12px));
+  background: var(--bg-elevated, #fff);
+  overflow: hidden;
+}
+
+.camp-ops-root .ops-board-card__header {
+  flex-shrink: 0;
+  min-height: 3.15rem;
+  background: color-mix(in srgb, var(--brand) 4%, var(--bg-elevated, #fff));
+  color: var(--ink, var(--text, #0f172a));
+  border-bottom: 1px solid var(--line);
+}
+
+.camp-ops-root .ops-board-card--request .ops-board-card__header,
+.camp-ops-root .ops-board-card--assignment .ops-board-card__header,
+.camp-ops-root .ops-board-card--execution .ops-board-card__header,
+.camp-ops-root .ops-board-card--financial .ops-board-card__header {
+  background: color-mix(in srgb, var(--brand) 4%, var(--bg-elevated, #fff));
+}
+
+.camp-ops-root .ops-board-card__stage {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.15rem;
+  padding: 0 0.95rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.camp-ops-root .ops-board-card__stage:hover span {
+  color: var(--brand);
+}
+
+.camp-ops-root .ops-board-card__stage span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft, var(--ink, #0f172a));
+  transition: color 120ms ease;
+}
+
+.camp-ops-root .ops-board-card__stage strong {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--ink, var(--text, #0f172a));
+  font-variant-numeric: tabular-nums;
+}
+
+.camp-ops-root .ops-board-card__statuses {
+  --ops-board-row-h: 2.75rem;
+  --ops-board-row-gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ops-board-row-gap);
+  flex: 1;
+}
+
+.camp-ops-root .ops-board-card__statuses > li {
+  height: var(--ops-board-row-h);
+  flex: 0 0 var(--ops-board-row-h);
+  min-height: var(--ops-board-row-h);
+  max-height: var(--ops-board-row-h);
+}
+
+.camp-ops-root .ops-board-status {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.65rem;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.camp-ops-root .ops-board-status:hover {
+  background: var(--bg-sunken, var(--surface-muted, #f8fafc));
+  border-color: var(--line);
+}
+
+.camp-ops-root .ops-board-status.is-active {
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated, #fff));
+}
+
+.camp-ops-root .ops-board-status.is-attention {
+  background: color-mix(in srgb, var(--warn, #ca8a04) 10%, var(--bg-elevated, #fff));
+  border-color: color-mix(in srgb, var(--warn, #ca8a04) 22%, var(--line));
+}
+
+.camp-ops-root .ops-board-status.is-attention.is-active {
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated, #fff));
+}
+
+.camp-ops-root .ops-board-status__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-soft, var(--ink, #0f172a));
+  line-height: 1.25;
+  max-height: 2.5em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+}
+
+.camp-ops-root .ops-board-status__count {
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 1.65rem;
+  margin: 0;
+  padding: 0;
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ink, var(--text, #0f172a));
+}
+
+.camp-ops-root .ops-board-status--review_overdue .ops-board-status__count,
+.camp-ops-root .ops-board-status--payment_hold .ops-board-status__count,
+.camp-ops-root .ops-board-status--cancelled_by_tylo .ops-board-status__count,
+.camp-ops-root .ops-board-status--cancelled_by_client .ops-board-status__count,
+.camp-ops-root .ops-board-status--request_rejected .ops-board-status__count {
+  color: var(--danger, var(--color-danger, #b91c1c));
+}
+
+.camp-ops-root .ops-board-status--payment_confirmed .ops-board-status__count,
+.camp-ops-root .ops-board-status--payment_done .ops-board-status__count,
+.camp-ops-root .ops-board-status--executed .ops-board-status__count {
+  color: var(--ok, var(--success, #15803d));
+}
+
+.camp-ops-root .ops-board-card__footer {
+  flex-shrink: 0;
+  min-height: 2.35rem;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  padding: 0 0.95rem;
+  border-top: 1px solid var(--line);
+  box-sizing: border-box;
+}
+
+.camp-ops-root .ops-board-card__footer .meta-text {
+  font-size: 0.75rem;
+  font-weight: 550;
+  color: var(--muted, var(--text-muted, #64748b));
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+
+.camp-ops-root .ops-board-card__footer .meta-text:hover {
+  color: var(--brand);
+}
+
+.camp-ops-root .ops-board-pivot {
+  position: sticky;
+  top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 24rem;
+  max-height: calc(100vh - 7rem);
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card, var(--radius-lg, 12px));
+  background: var(--bg-elevated, #fff);
+  overflow: hidden;
+}
+
+.camp-ops-root .ops-board-pivot__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.15rem;
+}
+
+.camp-ops-root .ops-board-pivot__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, var(--text-muted, #64748b));
+}
+
+.camp-ops-root .ops-board-pivot__header h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink, var(--text, #0f172a));
+}
+
+.camp-ops-root .ops-board-pivot__filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.camp-ops-root .ops-board-pivot__filters .search-field {
+  flex: 1;
+}
+
+.camp-ops-root .ops-board-pivot__table-wrap {
+  overflow: auto;
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 8px);
+}
+
+.camp-ops-root .ops-board-pivot__table {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.camp-ops-root .ops-board-pivot__table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-sunken, #f8fafc);
+  z-index: 1;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, var(--text-muted, #64748b));
+}
+
+.camp-ops-root .ops-board-pivot__pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.camp-ops-root .ops-board-pivot__empty {
+  margin: 1rem 0;
+}
+
+@media (max-width: 1100px) {
+  .camp-ops-root .ops-board-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .camp-ops-root .ops-board--split {
+    grid-template-columns: 1fr;
+  }
+
+  .camp-ops-root .ops-board-pivot {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .camp-ops-root .ops-board-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .camp-ops-root .ops-board-hero__meta {
+    align-items: stretch;
+    width: 100%;
+  }
 }

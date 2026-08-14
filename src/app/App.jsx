@@ -191,6 +191,14 @@ export default function App() {
                   <Route path="manage" element={<CampManagePage />} />
                   <Route path="manage/new" element={<CampFormPage />} />
                   <Route path="manage/:id/edit" element={<CampFormPage />} />
+                  <Route
+                    path="operations"
+                    element={<Navigate to={`${MODULE_PATH.DASHBOARD}?tab=drilldown&module=camps`} replace />}
+                  />
+                  <Route
+                    path="dashboard"
+                    element={<Navigate to={`${MODULE_PATH.DASHBOARD}?tab=drilldown&module=camps`} replace />}
+                  />
                   <Route path="import" element={<Navigate to={CAMP_PATH.UPLOAD} replace />} />
                   <Route path="chargesheet" element={<Navigate to={CAMP_PATH.MANAGE} replace />} />
                   <Route path="payout" element={<Navigate to={FINANCE_PATH.PAYOUTS} replace />} />

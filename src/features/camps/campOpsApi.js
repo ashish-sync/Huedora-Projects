@@ -73,6 +73,7 @@ const BASE = '/camp-ops';
 
 export const dashboardApi = {
   stats: (params) => get(`${BASE}/dashboard/stats`, params),
+  operations: (params) => get(`${BASE}/dashboard/operations`, params),
   clients: () => get(`${BASE}/dashboard/clients`),
 };
 

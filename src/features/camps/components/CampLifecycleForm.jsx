@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { bindAutofillBlock, bindAutofillBlockSelect } from '../../../shared/suppressBrowserAutofill.js';
 import CampAddressField from './CampAddressField.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
@@ -192,28 +192,52 @@ export function CampLifecycleForm({
     () => computeLifecycleDerived(form, { pricing: clientMasterPricing }),
     [form, clientMasterPricing],
   );
+  const revenueAutoSyncRef = useRef(true);
+  const revenueSyncCampKeyRef = useRef('');
 
   useEffect(() => {
-    if (!clientMasterPricing || !updateFields) return;
-    const next = {
-      campRevenue: derived.campRevenue,
-      travelRevenue: derived.travelRevenue,
-      overtimeRevenue: derived.overtimeRevenue,
-      otherRevenue: derived.otherRevenue,
-      totalRevenue: derived.totalRevenue,
+    const campKey = String(campId || form._id || form.campId || '');
+    if (revenueSyncCampKeyRef.current !== campKey) {
+      revenueSyncCampKeyRef.current = campKey;
+      revenueAutoSyncRef.current = true;
+    }
+  }, [campId, form._id, form.campId]);
+
+  useEffect(() => {
+    if (!clientMasterPricing || !updateFields || !derived.revenueAutoCalculated) return;
+    if (!revenueAutoSyncRef.current) return;
+
+    const formula = {
+      campRevenue: derived.formulaCampRevenue,
+      travelRevenue: derived.formulaTravelRevenue,
+      overtimeRevenue: derived.formulaOvertimeRevenue,
+      otherRevenue: derived.formulaOtherRevenue,
+      totalRevenue: derived.formulaTotalRevenue,
     };
+    const hasStoredRevenue = FINANCE_REVENUE_PART_FIELDS.some(
+      (key) => Number(form[key] || 0) !== 0,
+    );
+    const differsFromFormula = FINANCE_REVENUE_PART_FIELDS.some(
+      (key) => Number(form[key] || 0) !== Number(formula[key] || 0),
+    );
+    if (hasStoredRevenue && differsFromFormula) {
+      revenueAutoSyncRef.current = false;
+      return;
+    }
+
     const same = FINANCE_REVENUE_PART_FIELDS.every(
-      (key) => Number(form[key] || 0) === Number(next[key] || 0),
-    ) && Number(form.totalRevenue || 0) === Number(next.totalRevenue || 0);
+      (key) => Number(form[key] || 0) === Number(formula[key] || 0),
+    ) && Number(form.totalRevenue || 0) === Number(formula.totalRevenue || 0);
     if (same) return;
-    updateFields(next);
+    updateFields(formula);
   }, [
     clientMasterPricing,
-    derived.campRevenue,
-    derived.travelRevenue,
-    derived.overtimeRevenue,
-    derived.otherRevenue,
-    derived.totalRevenue,
+    derived.revenueAutoCalculated,
+    derived.formulaCampRevenue,
+    derived.formulaTravelRevenue,
+    derived.formulaOvertimeRevenue,
+    derived.formulaOtherRevenue,
+    derived.formulaTotalRevenue,
     form.campRevenue,
     form.travelRevenue,
     form.overtimeRevenue,
@@ -690,6 +714,9 @@ export function CampLifecycleForm({
       const nextValue = sanitizeFinanceAmountInput(raw);
       const isRevenuePart = FINANCE_REVENUE_PART_FIELDS.includes(field);
       const isPayoutPart = FINANCE_PAYOUT_PART_FIELDS.includes(field);
+      if (isRevenuePart || field === 'totalRevenue') {
+        revenueAutoSyncRef.current = false;
+      }
       if (isRevenuePart || isPayoutPart) {
         const nextForm = { ...form, [field]: nextValue };
         const nextDerived = computeLifecycleDerived(nextForm, { pricing: clientMasterPricing });
@@ -730,39 +757,48 @@ export function CampLifecycleForm({
         <div className="camp-finance-section full">
           <p className="camp-finance-section__title">Revenue</p>
           <div className="camp-finance-section__row camp-finance-section__row--4">
-            <ReadOnlyField
+            <FinanceAmountField
               label="Camp Revenue"
-              value={formatFinanceAmountValue(form.campRevenue ?? derived.campRevenue)}
+              value={form.campRevenue ?? derived.campRevenue}
+              onChange={(v) => updateFinanceAmount('campRevenue', v)}
+              disabled={disabled}
             />
-            <ReadOnlyField
+            <FinanceAmountField
               label="Travel Revenue"
-              value={formatFinanceAmountValue(form.travelRevenue ?? derived.travelRevenue)}
+              value={form.travelRevenue ?? derived.travelRevenue}
+              onChange={(v) => updateFinanceAmount('travelRevenue', v)}
+              disabled={disabled}
             />
-            <ReadOnlyField
+            <FinanceAmountField
               label="Overtime Revenue"
-              value={formatFinanceAmountValue(form.overtimeRevenue ?? derived.overtimeRevenue)}
+              value={form.overtimeRevenue ?? derived.overtimeRevenue}
+              onChange={(v) => updateFinanceAmount('overtimeRevenue', v)}
+              disabled={disabled}
             />
-            <ReadOnlyField
+            <FinanceAmountField
               label="Other Revenue"
-              value={formatFinanceAmountValue(form.otherRevenue ?? derived.otherRevenue)}
+              value={form.otherRevenue ?? derived.otherRevenue}
+              onChange={(v) => updateFinanceAmount('otherRevenue', v)}
+              disabled={disabled}
             />
           </div>
           {clientMasterPricing ? (
             <p className="meta-text">
-              Travel Revenue is distance excess
+              Defaults from Client Master — Travel (distance excess)
               {' '}
               {formatFinanceAmountValue(derived.otherRevenueDistance)}
               {' · '}
-              Other Revenue is patient excess
+              Other (patient excess)
               {' '}
               {formatFinanceAmountValue(derived.otherRevenuePatients)}
               {clientMasterPricing.programName || clientMasterPricing.campName
-                ? ` · from Client Master ${[clientMasterPricing.programName, clientMasterPricing.campName].filter(Boolean).join(' / ')}`
+                ? ` · ${[clientMasterPricing.programName, clientMasterPricing.campName].filter(Boolean).join(' / ')}`
                 : ''}
+              . You can override any revenue amount.
             </p>
           ) : (
             <p className="meta-text">
-              Link Client Master units (Executed / Cancelled / OT / Patients / KMs) for this client’s division and method to auto-calculate revenue.
+              Link Client Master units (Executed / Cancelled / OT / Patients / KMs) for this client’s division and method to auto-calculate revenue defaults. Amounts stay editable either way.
             </p>
           )}
         </div>

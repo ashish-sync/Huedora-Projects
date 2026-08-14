@@ -378,9 +378,13 @@ export default function CampsPage() {
   }
 
   useEffect(() => {
+    const stageFromUrl = searchParams.get('stage') || searchParams.get('lifecycleStage') || '';
+    if (stageFromUrl) setWorkingStage(stageFromUrl);
     const rawStatus = searchParams.get('status') || '';
     setStatus(
-      workingStage === 'request' ? normalizeRequestStatusFilter(rawStatus) : rawStatus
+      (stageFromUrl || workingStage) === 'request'
+        ? normalizeRequestStatusFilter(rawStatus)
+        : rawStatus
     );
     const urlFrom = searchParams.get('dateFrom') || '';
     const urlTo = searchParams.get('dateTo') || '';
@@ -400,7 +404,7 @@ export default function CampsPage() {
     setClientFilter(searchParams.get('client') || '');
     setCampaignFilter(searchParams.get('campaign') || '');
     setCampTypeFilter(searchParams.get('campaignType') || '');
-  }, [searchParams, workingStage]);
+  }, [searchParams, workingStage, setWorkingStage]);
 
   const previousWorkingStageRef = useRef(workingStage);
   useEffect(() => {

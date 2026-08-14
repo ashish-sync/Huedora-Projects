@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
-import { Link } from 'react-router-dom';
-import { api, downloadExcel } from '../../shared/api.js';
-import { formatDateRangeLabel } from '../../shared/dateFormat.js';
 import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
+import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import { Link, useSearchParams } from 'react-router-dom';
+import { api, downloadExcel } from '../../shared/api.js';
+import { formatDateRangeLabel } from '../../shared/dateFormat.js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import LogisticsHubPage from '../logistics/LogisticsHubPage.jsx';
+import CampOperationsBoard from '../camps/components/CampOperationsBoard.jsx';
+import { getQuickDateRange } from '../camps/utils/dateRange.js';
 
 function toYmd(d) {
   const y = d.getFullYear();
@@ -36,6 +38,12 @@ const PRESETS = [
   { id: 'custom', label: 'Custom' },
 ];
 
+const CAMP_DAY_PRESETS = [
+  { id: 'today', label: 'Today' },
+  { id: 'yesterday', label: 'Yesterday' },
+  { id: 'tomorrow', label: 'Tomorrow' },
+];
+
 function rangeForPreset(id) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -43,11 +51,15 @@ function rangeForPreset(id) {
   if (id === 'month') return { from: toYmd(startOfMonth(today)), to: toYmd(today) };
   if (id === '30') return { from: toYmd(daysAgo(29)), to: toYmd(today) };
   if (id === '90') return { from: toYmd(daysAgo(89)), to: toYmd(today) };
+  if (id === 'today' || id === 'yesterday' || id === 'tomorrow') {
+    const range = getQuickDateRange(id);
+    return { from: range.dateFrom, to: range.dateTo };
+  }
   return null;
 }
 
 function detectPreset(from, to) {
-  for (const p of PRESETS) {
+  for (const p of [...CAMP_DAY_PRESETS, ...PRESETS]) {
     if (p.id === 'custom') continue;
     const r = rangeForPreset(p.id);
     if (r && r.from === from && r.to === to) return p.id;
@@ -218,15 +230,27 @@ function insightLine(overview) {
 
 export default function TrackingDashboardPage() {
   const { can } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const canDownload = can('dashboards:read') || can('*');
+  const canSeeCampOps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
 
-  const [view, setView] = useState('overview');
+  const moduleParam = searchParams.get('module');
+  const tabParam = searchParams.get('tab');
+  const wantsCampReview =
+    canSeeCampOps
+    && (moduleParam === 'camps' || tabParam === 'campOne' || tabParam === 'drilldown' && moduleParam === 'camps');
+
+  const initialView =
+    tabParam === 'drilldown' || tabParam === 'campOne' || moduleParam
+      ? 'drilldown'
+      : 'overview';
+  const [view, setView] = useState(initialView);
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState('');
 
   const [modules, setModules] = useState([]);
-  const [moduleId, setModuleId] = useState('');
+  const [moduleId, setModuleId] = useState(wantsCampReview ? 'camps' : '');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [preset, setPreset] = useState('month');
@@ -235,7 +259,9 @@ export default function TrackingDashboardPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(Boolean(wantsCampReview));
+
+  const isEmbeddedModule = moduleId === 'logistics' || moduleId === 'camps';
 
   const loadOverview = useCallback(async () => {
     setOverviewLoading(true);
@@ -262,10 +288,30 @@ export default function TrackingDashboardPage() {
       .then((r) => {
         const list = r.data || [];
         setModules(list);
-        if (list.length) setModuleId((prev) => prev || list[0].id);
+        if (list.length) {
+          setModuleId((prev) => {
+            if (prev && list.some((m) => m.id === prev)) return prev;
+            if (wantsCampReview && list.some((m) => m.id === 'camps')) return 'camps';
+            return list[0].id;
+          });
+        }
       })
       .catch((e) => setError(e.message));
-  }, [loadOverview]);
+  }, [loadOverview, wantsCampReview]);
+
+  useEffect(() => {
+    if (!wantsCampReview) return;
+    setView('drilldown');
+    setModuleId('camps');
+    setSubmitted(true);
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (params.get('tab') === 'drilldown' && params.get('module') === 'camps') return prev;
+      params.set('tab', 'drilldown');
+      params.set('module', 'camps');
+      return params;
+    }, { replace: true });
+  }, [wantsCampReview, setSearchParams]);
 
   const applyPreset = (id) => {
     setPreset(id);
@@ -281,11 +327,35 @@ export default function TrackingDashboardPage() {
     return formatDateRangeLabel(from, to).replace(' to ', ' → ');
   }, [from, to]);
 
+  const setDashboardView = (next) => {
+    setView(next);
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (next === 'drilldown') {
+        params.set('tab', 'drilldown');
+        if (moduleId) params.set('module', moduleId);
+      } else {
+        params.delete('tab');
+        params.delete('module');
+      }
+      return params;
+    }, { replace: true });
+  };
+
   const openDrilldown = (nextModuleId) => {
-    if (nextModuleId) setModuleId(nextModuleId);
+    const next = nextModuleId || moduleId;
+    if (next) setModuleId(next);
     setView('drilldown');
-    setSubmitted(false);
     setData(null);
+    const autoSubmit = next === 'camps' || next === 'logistics';
+    setSubmitted(autoSubmit);
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.set('tab', 'drilldown');
+      if (next) params.set('module', next);
+      else params.delete('module');
+      return params;
+    }, { replace: true });
   };
 
   const submitReview = async (e) => {
@@ -297,7 +367,13 @@ export default function TrackingDashboardPage() {
     setError('');
     setSubmitted(true);
     setView('drilldown');
-    if (moduleId === 'logistics') {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.set('tab', 'drilldown');
+      params.set('module', moduleId);
+      return params;
+    }, { replace: true });
+    if (moduleId === 'logistics' || moduleId === 'camps') {
       setData(null);
       setLoading(false);
       return;
@@ -318,7 +394,7 @@ export default function TrackingDashboardPage() {
   };
 
   const downloadReview = async () => {
-    if (!moduleId || moduleId === 'logistics') return;
+    if (!moduleId || isEmbeddedModule) return;
     setExportBusy(true);
     setError('');
     try {
@@ -363,6 +439,10 @@ export default function TrackingDashboardPage() {
     [overview]
   );
   const insight = useMemo(() => insightLine(overview), [overview]);
+  const reviewPresets = useMemo(
+    () => (moduleId === 'camps' ? [...CAMP_DAY_PRESETS, ...PRESETS] : PRESETS),
+    [moduleId]
+  );
 
   return (
     <PageShell
@@ -377,7 +457,7 @@ export default function TrackingDashboardPage() {
               role="tab"
               aria-selected={view === 'overview'}
               className={`ops-view-chip${view === 'overview' ? ' is-active' : ''}`}
-              onClick={() => setView('overview')}
+              onClick={() => setDashboardView('overview')}
             >
               Overview
             </button>
@@ -386,7 +466,7 @@ export default function TrackingDashboardPage() {
               role="tab"
               aria-selected={view === 'drilldown'}
               className={`ops-view-chip${view === 'drilldown' ? ' is-active' : ''}`}
-              onClick={() => setView('drilldown')}
+              onClick={() => setDashboardView('drilldown')}
             >
               Module review
             </button>
@@ -406,12 +486,17 @@ export default function TrackingDashboardPage() {
               Open Movement One
             </Link>
           ) : null}
-          {view === 'drilldown' && data?.linkTo && moduleId !== 'logistics' ? (
+          {view === 'drilldown' && submitted && moduleId === 'camps' ? (
+            <Link className="btn secondary" to="/camp-one/manage">
+              Open Camp One
+            </Link>
+          ) : null}
+          {view === 'drilldown' && data?.linkTo && !isEmbeddedModule ? (
             <Link className="btn secondary" to={data.linkTo}>
               Open module
             </Link>
           ) : null}
-          {view === 'drilldown' && canDownload && data && moduleId !== 'logistics' ? (
+          {view === 'drilldown' && canDownload && data && !isEmbeddedModule ? (
             <button
               className="btn secondary"
               type="button"
@@ -481,7 +566,7 @@ export default function TrackingDashboardPage() {
                   <button
                     type="button"
                     className="btn btn-compact ops-hero-cta"
-                    onClick={() => setView('drilldown')}
+                    onClick={() => setDashboardView('drilldown')}
                   >
                     Module review
                   </button>
@@ -738,7 +823,7 @@ export default function TrackingDashboardPage() {
         <>
           <div className="card track-range ops-review-filters" aria-label="Module review filters">
         <div className="track-range-presets" role="group" aria-label="Quick ranges">
-          {PRESETS.map((p) => (
+          {reviewPresets.map((p) => (
             <button
               key={p.id}
               type="button"
@@ -766,14 +851,29 @@ export default function TrackingDashboardPage() {
           onClear={clearReview}
           submitting={loading}
           disabled={!moduleId}
-          hint={`Review uses each module's activity date (${data?.dateFieldLabel || 'created / transaction date'}). Current range: ${rangeLabel}.`}
         >
           <label className="date-range-filter-field module-review-module">
             <span>Module</span>
             <AdaptiveSelect
               required
               value={moduleId}
-              onChange={(e) => setModuleId(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setModuleId(next);
+                setData(null);
+                setError('');
+                if (next === 'camps' || next === 'logistics') {
+                  setSubmitted(true);
+                  setSearchParams((prev) => {
+                    const params = new URLSearchParams(prev);
+                    params.set('tab', 'drilldown');
+                    params.set('module', next);
+                    return params;
+                  }, { replace: true });
+                } else {
+                  setSubmitted(false);
+                }
+              }}
               aria-label="Module"
             >
               <option value="">Select module</option>
@@ -792,14 +892,14 @@ export default function TrackingDashboardPage() {
           title="Choose a module and date range"
               description="Pick what you want to review, set From and To, then submit — or return to Overview for the full project picture."
               action={
-                <button type="button" className="btn secondary" onClick={() => setView('overview')}>
+                <button type="button" className="btn secondary" onClick={() => setDashboardView('overview')}>
                   Back to overview
                 </button>
               }
         />
       ) : null}
 
-          {loading && !data && moduleId !== 'logistics' ? (
+          {loading && !data && !isEmbeddedModule ? (
             <p className="muted">Loading review…</p>
           ) : null}
 
@@ -821,7 +921,13 @@ export default function TrackingDashboardPage() {
         </div>
       ) : null}
 
-      {data && moduleId !== 'logistics' ? (
+      {submitted && moduleId === 'camps' && canSeeCampOps ? (
+        <div className="module-review-logistics module-review-camps">
+          <CampOperationsBoard embedded initialFrom={from} initialTo={to} />
+        </div>
+      ) : null}
+
+      {data && !isEmbeddedModule ? (
         <div className="track-sections module-review-results">
           {summaryBlocks.map((block) => (
             <section className="card track-panel" key={block.title}>

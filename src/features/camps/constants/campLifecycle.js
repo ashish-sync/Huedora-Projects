@@ -460,10 +460,11 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
     ? computeCampRevenueFromPricing({ ...form, totalHours, extraHours }, pricing)
     : null;
 
-  const campRevenue = autoRevenue ? autoRevenue.campRevenue : (Number(form.campRevenue) || 0);
-  const travelRevenue = autoRevenue ? autoRevenue.travelRevenue : (Number(form.travelRevenue) || 0);
-  const overtimeRevenue = autoRevenue ? autoRevenue.overtimeRevenue : (Number(form.overtimeRevenue) || 0);
-  const otherRevenue = autoRevenue ? autoRevenue.otherRevenue : (Number(form.otherRevenue) || 0);
+  // Editable persisted values win; Client Master formula is only a default/suggestion.
+  const campRevenue = Number(form.campRevenue) || 0;
+  const travelRevenue = Number(form.travelRevenue) || 0;
+  const overtimeRevenue = Number(form.overtimeRevenue) || 0;
+  const otherRevenue = Number(form.otherRevenue) || 0;
   const otherRevenuePatients = autoRevenue ? autoRevenue.otherRevenuePatients : 0;
   const otherRevenueDistance = autoRevenue ? autoRevenue.otherRevenueDistance : 0;
   const totalRevenue = Math.round((campRevenue + travelRevenue + overtimeRevenue + otherRevenue) * 100) / 100;
@@ -496,6 +497,11 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
     balance,
     punctuality,
     revenueAutoCalculated: Boolean(autoRevenue),
+    formulaCampRevenue: autoRevenue ? autoRevenue.campRevenue : 0,
+    formulaTravelRevenue: autoRevenue ? autoRevenue.travelRevenue : 0,
+    formulaOvertimeRevenue: autoRevenue ? autoRevenue.overtimeRevenue : 0,
+    formulaOtherRevenue: autoRevenue ? autoRevenue.otherRevenue : 0,
+    formulaTotalRevenue: autoRevenue ? autoRevenue.totalRevenue : 0,
   };
 }
 

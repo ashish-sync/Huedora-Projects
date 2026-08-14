@@ -4,6 +4,7 @@ import {
   EXECUTION_STATUS,
   getExecutionFinanceBlockers,
   hasReachedLifecycleStage,
+  isExecutionCancellationForFinance,
   isExecutionReadyForFinance,
 } from '../constants/campLifecycle.js';
 
@@ -36,5 +37,26 @@ describe('camp lifecycle finance transition', () => {
         executionDocuments: [{ docType: 'doctor_form' }],
       }),
     ).toEqual(['Upload at least one PF (patient form) document']);
+  });
+
+  it('skips execution completion fields for Cancelled by Tylo/Client', () => {
+    const cancelledCamp = {
+      executionStatus: 'Cancelled by Client',
+      chargeableStatus: 'Non-Chargeable',
+    };
+    expect(isExecutionReadyForFinance(cancelledCamp)).toBe(true);
+    expect(getExecutionFinanceBlockers(cancelledCamp)).toEqual([]);
+    expect(isExecutionCancellationForFinance(cancelledCamp)).toBe(true);
+  });
+
+  it('recognizes legacy cancelled camps from assignment refusal reason', () => {
+    const legacy = {
+      status: 'cancelled',
+      lifecycleStage: 'execution',
+      assignmentRefusalReason: 'Cancelled by Tylo',
+      executionStatus: 'Camp Ongoing',
+    };
+    expect(isExecutionCancellationForFinance(legacy)).toBe(true);
+    expect(getExecutionFinanceBlockers(legacy)).toEqual([]);
   });
 });

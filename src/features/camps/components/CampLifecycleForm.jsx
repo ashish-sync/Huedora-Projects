@@ -21,6 +21,8 @@ import {
   lifecycleStageIndex,
   normalizeLifecycleStage,
   isExecutionReadyForFinance,
+  isExecutionCancellationForFinance,
+  resolveCancelledClosureExecutionStatus,
   normalizeExecutionDocType,
   EXECUTION_STATUS,
   normalizeExecutionStatus,
@@ -556,8 +558,12 @@ export function CampLifecycleForm({
 
   function renderExecutionStage() {
     const disabled = stageDisabled('execution');
-    const effectiveStatus = resolveEffectiveExecutionStatus(form);
-    const canMarkCompleted = effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED;
+    const cancelledClosure = campStatus === 'cancelled'
+      && isExecutionCancellationForFinance({ status: campStatus, ...form });
+    const effectiveStatus = cancelledClosure
+      ? (resolveCancelledClosureExecutionStatus({ status: campStatus, ...form }) || resolveEffectiveExecutionStatus(form))
+      : resolveEffectiveExecutionStatus(form);
+    const canMarkCompleted = !cancelledClosure && effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED;
     const docs = Array.isArray(form.executionDocuments) ? form.executionDocuments : [];
     const doctorForms = docs.filter((d) => normalizeExecutionDocType(d.docType) === 'doctor_form').length;
     const patientForms = docs.filter((d) => normalizeExecutionDocType(d.docType) === 'patient_form').length;
@@ -598,7 +604,21 @@ export function CampLifecycleForm({
               </button>
             </div>
           ) : null}
-          {effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED && !isExecutionReadyForFinance(form, mappedConsumables) ? (
+          {cancelledClosure ? (
+            <div className="full camp-execution-action-note-wrap">
+              <p className="meta-text camp-execution-action-note">
+                This camp was cancelled. Open Finance &amp; Settlement to complete closure billing.
+              </p>
+              <button
+                type="button"
+                className="btn secondary btn-sm"
+                onClick={() => onStageChange?.('financial')}
+              >
+                Go to Finance &amp; Settlement
+              </button>
+            </div>
+          ) : null}
+          {!cancelledClosure && effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED && !isExecutionReadyForFinance(form, mappedConsumables) ? (
             <p className="meta-text camp-execution-action-note full">
               Action required: complete mandatory execution details and mark as Camp Completed for Finance.
             </p>

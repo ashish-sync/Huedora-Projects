@@ -35,6 +35,7 @@ import {
   hasReachedLifecycleStage,
   canVisitLifecycleStage,
   isExecutionReadyForFinance,
+  isExecutionCancellationForFinance,
   getExecutionFinanceBlockers,
   getExecutionConsumablesBlockers,
   todayIsoDate,
@@ -124,31 +125,56 @@ export default function CampFormPage() {
 
   function applyCampAccess(camp) {
     const loadedStage = normalizeLifecycleStage(camp.lifecycleStage, 'request');
-    const preferredStage = workingStage && canVisitLifecycleStage(loadedStage, workingStage)
-      ? normalizeLifecycleStage(workingStage, loadedStage)
+    const cancelledClosure = isExecutionCancellationForFinance(camp);
+    const effectiveReached = cancelledClosure
+      ? maxLifecycleStage(loadedStage, 'financial')
       : loadedStage;
+    let preferredStage = workingStage && canVisitLifecycleStage(effectiveReached, workingStage)
+      ? normalizeLifecycleStage(workingStage, effectiveReached)
+      : loadedStage;
+    if (cancelledClosure && camp.status === 'cancelled' && loadedStage !== 'financial') {
+      preferredStage = 'financial';
+    }
     setActiveStage(preferredStage);
 
     const assignmentEditable = hasReachedLifecycleStage(loadedStage, 'assignment')
       && camp.status === 'approved'
-      && canEditLifecycleStage(camp.status, 'assignment', loadedStage);
+      && canEditLifecycleStage(camp.status, 'assignment', effectiveReached, camp);
 
-    if (!canEditCampRecord(camp) && !assignmentEditable) {
+    const financialEditable = cancelledClosure
+      && camp.status === 'cancelled'
+      && canEditLifecycleStage(camp.status, 'financial', effectiveReached, camp);
+
+    if (!canEditCampRecord(camp) && !assignmentEditable && !financialEditable) {
       setReadOnly(true);
       return;
     }
 
     setReadOnly(
-      assignmentEditable
+      assignmentEditable || financialEditable
         ? false
         : (!EDITABLE_STATUSES.includes(camp.status) && camp.status !== 'executed'),
     );
   }
 
-  const reachedLifecycleStage = normalizeLifecycleStage(
-    campMeta?.lifecycleStage || form.lifecycleStage,
-    'request',
-  );
+  const campLifecycleContext = useMemo(() => ({
+    executionStatus: form.executionStatus,
+    assignmentRefusalReason: form.assignmentRefusalReason,
+    cancelledBy: campMeta?.cancelledBy || form.cancelledBy || '',
+  }), [
+    form.executionStatus,
+    form.assignmentRefusalReason,
+    form.cancelledBy,
+    campMeta?.cancelledBy,
+  ]);
+
+  const reachedLifecycleStage = useMemo(() => {
+    const raw = normalizeLifecycleStage(campMeta?.lifecycleStage || form.lifecycleStage, 'request');
+    if (campStatus === 'cancelled' && isExecutionCancellationForFinance({ status: campStatus, ...campLifecycleContext })) {
+      return maxLifecycleStage(raw, 'financial');
+    }
+    return raw;
+  }, [campMeta?.lifecycleStage, form.lifecycleStage, campStatus, campLifecycleContext]);
 
   useEffect(() => {
     if (!isEdit) {
@@ -742,7 +768,7 @@ export default function CampFormPage() {
       }
     }
 
-    if (activeStage === 'execution') {
+    if (activeStage === 'execution' && !isExecutionCancellationForFinance(form)) {
       const consumableBlockers = getExecutionConsumablesBlockers(form, mappedConsumables);
       if (consumableBlockers.length) {
         setError(consumableBlockers[0]);
@@ -750,7 +776,11 @@ export default function CampFormPage() {
       }
     }
 
-    if (activeStage === 'execution' && normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED) {
+    if (
+      activeStage === 'execution'
+      && normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
+      && !isExecutionCancellationForFinance(form)
+    ) {
       const blockers = getExecutionFinanceBlockers(form, mappedConsumables);
       if (blockers.length) {
         setError(`Complete execution before Finance: ${blockers.join('; ')}.`);
@@ -760,7 +790,10 @@ export default function CampFormPage() {
 
     const trimmed = trimFormStrings(form, formStringFields);
     const contactFields = syncPrimaryContactFields(normalizeContactPersons(form));
-    const executionComplete = activeStage === 'execution' && isExecutionReadyForFinance(form, mappedConsumables);
+    const executionComplete = activeStage === 'execution' && (
+      isExecutionCancellationForFinance(form)
+      || isExecutionReadyForFinance(form, mappedConsumables)
+    );
     const executionStatus = activeStage === 'execution'
       ? syncExecutionStatusForSave(form)
       : form.executionStatus;
@@ -867,11 +900,11 @@ export default function CampFormPage() {
   }, [clientMasterLoadFailed, clientMasterRecords, form.campaignType, form.campaignName]);
 
   const stageReadOnly = useMemo(() => ({
-    request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage),
-    assignment: readOnly || !canEditLifecycleStage(campStatus, 'assignment', reachedLifecycleStage),
-    execution: readOnly || !canEditLifecycleStage(campStatus, 'execution', reachedLifecycleStage),
-    financial: readOnly || !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage),
-  }), [readOnly, campStatus, reachedLifecycleStage]);
+    request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage, campLifecycleContext),
+    assignment: readOnly || !canEditLifecycleStage(campStatus, 'assignment', reachedLifecycleStage, campLifecycleContext),
+    execution: readOnly || !canEditLifecycleStage(campStatus, 'execution', reachedLifecycleStage, campLifecycleContext),
+    financial: readOnly || !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext),
+  }), [readOnly, campStatus, reachedLifecycleStage, campLifecycleContext]);
 
   if (fetching) {
     return <div className="empty-state">Loading camp...</div>;
@@ -906,27 +939,29 @@ export default function CampFormPage() {
   const hasNoDivisions = Boolean(form.clientId) && !programsLoading && divisionOptions.length === 0;
   const hasNoMethods = Boolean(form.clientId) && Boolean(form.campaignType) && !programsLoading && campNameOptions.length === 0;
   const financeSubmitted = Boolean(form.submittedToFinanceAt);
+  const isCancelledForFinance = campStatus === 'cancelled'
+    && isExecutionCancellationForFinance({ status: campStatus, ...campLifecycleContext });
   const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
   const payeeContact = payoutPayeeContact || payeeResolved.payeeContact;
   const payeeLabel = payeeResolved.payeeIsServiceProvider ? 'Service Provider' : 'HCW';
-  const hcwFinanceBlockers = activeStage === 'financial' && !financeSubmitted
+  const hcwFinanceBlockers = activeStage === 'financial' && !financeSubmitted && !isCancelledForFinance
     ? getHcwFinanceBlockers(payeeContact, { label: payeeLabel })
     : [];
   const showFinanceSubmit = isEdit
     && activeStage === 'financial'
     && !financeSubmitted
-    && canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage)
+    && canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext)
     && !readOnly;
   const canSubmitFinance = showFinanceSubmit
     && Boolean(form.paymentSubmitStatus)
-    && isHcwReadyForFinance(payeeContact, { label: payeeLabel })
+    && (isCancelledForFinance || isHcwReadyForFinance(payeeContact, { label: payeeLabel }))
     && !assignedHcwLoading
     && !payoutPayeeLoading
     && !submitFinanceBusy;
   const canSubmit = campStatus !== 'cancelled'
     && campStatus !== 'rejected'
     && activeStage !== 'financial'
-    && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage)
+    && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext)
     && (!hasNoDivisions || activeStage !== 'request')
     && (!hasNoMethods || activeStage !== 'request')
     && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus));

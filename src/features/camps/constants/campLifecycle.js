@@ -97,6 +97,9 @@ function hasExecutionDocType(docs, targetType) {
 }
 
 export function getExecutionFinanceBlockers(camp = {}, mappedConsumables = []) {
+  if (isExecutionCancellationForFinance(camp)) {
+    return [];
+  }
   const blockers = [];
   if (isExecutionClosedOut(camp.executionStatus)) {
     blockers.push('Execution is cancelled or refused');
@@ -126,6 +129,7 @@ export function getExecutionFinanceBlockers(camp = {}, mappedConsumables = []) {
 }
 
 export function getExecutionConsumablesBlockers(camp = {}, mappedConsumables = []) {
+  if (isExecutionCancellationForFinance(camp)) return [];
   if (!Array.isArray(mappedConsumables) || !mappedConsumables.length) return [];
   const normalized = normalizeExecutionStatus(camp.executionStatus);
   const effective = normalized === EXECUTION_STATUS.CAMP_COMPLETED
@@ -212,6 +216,34 @@ export function isExecutionClosedOut(executionStatus) {
     || EXECUTION_CANCELLATION_STATUSES.includes(normalized);
 }
 
+export function isExecutionCancellationStatus(executionStatus) {
+  return EXECUTION_CANCELLATION_STATUSES.includes(normalizeExecutionStatus(executionStatus));
+}
+
+export function isExecutionCancellationForFinance(camp = {}) {
+  if (isExecutionCancellationStatus(camp.executionStatus)) return true;
+  const reason = normalizeExecutionStatus(camp.assignmentRefusalReason || '');
+  if (EXECUTION_CANCELLATION_STATUSES.includes(reason)) return true;
+  if (String(camp.status || '').trim() === 'cancelled') {
+    if (camp.cancelledBy === 'brand') return true;
+    if (camp.cancelledBy === 'khw') return true;
+  }
+  return false;
+}
+
+export function resolveCancelledClosureExecutionStatus(camp = {}) {
+  if (isExecutionCancellationStatus(camp.executionStatus)) {
+    return normalizeExecutionStatus(camp.executionStatus);
+  }
+  const reason = normalizeExecutionStatus(camp.assignmentRefusalReason || '');
+  if (EXECUTION_CANCELLATION_STATUSES.includes(reason)) return reason;
+  if (String(camp.status || '').trim() === 'cancelled') {
+    if (camp.cancelledBy === 'brand') return 'Cancelled by Client';
+    if (camp.cancelledBy === 'khw') return 'Cancelled by Tylo';
+  }
+  return '';
+}
+
 export function resolveScheduledExecutionStatus(camp = {}, now = new Date()) {
   const start = getCampStartDateTime(camp);
   const end = getCampEndDateTime(camp);
@@ -224,6 +256,8 @@ export function resolveScheduledExecutionStatus(camp = {}, now = new Date()) {
 }
 
 export function resolveEffectiveExecutionStatus(camp = {}, now = new Date()) {
+  const closureStatus = resolveCancelledClosureExecutionStatus(camp);
+  if (closureStatus) return closureStatus;
   const normalized = normalizeExecutionStatus(camp.executionStatus);
   if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
   if (isExecutionClosedOut(normalized)) return normalized;
@@ -412,8 +446,13 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
   };
 }
 
-export function canEditLifecycleStage(campStatus, stage, reachedStage = stage) {
-  if (campStatus === 'cancelled') return false;
+export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, campContext = {}) {
+  const context = { status: campStatus, ...campContext };
+  if (campStatus === 'cancelled') {
+    if (stage !== 'financial') return false;
+    if (!isExecutionCancellationForFinance(context)) return false;
+    return hasReachedLifecycleStage(reachedStage, 'assignment');
+  }
   const stageReachable = stage === 'financial'
     ? hasReachedLifecycleStage(reachedStage, 'execution')
     : hasReachedLifecycleStage(reachedStage, stage);

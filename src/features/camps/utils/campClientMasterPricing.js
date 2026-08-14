@@ -119,6 +119,7 @@ export function isCampChargeable(camp = {}) {
 export function computeCampRevenueFromPricing(camp = {}, pricing = null) {
   const empty = {
     campRevenue: 0,
+    travelRevenue: 0,
     overtimeRevenue: 0,
     otherRevenuePatients: 0,
     otherRevenueDistance: 0,
@@ -156,11 +157,13 @@ export function computeCampRevenueFromPricing(camp = {}, pricing = null) {
   const otherRevenueDistance = roundMoney(
     Math.max(0, kmRoundTrip - num(pricing.minimumKmsCovered)) * num(pricing.kmsUnit),
   );
-  const otherRevenue = roundMoney(otherRevenuePatients + otherRevenueDistance);
-  const totalRevenue = roundMoney(campRevenue + overtimeRevenue + otherRevenue);
+  const travelRevenue = otherRevenueDistance;
+  const otherRevenue = otherRevenuePatients;
+  const totalRevenue = roundMoney(campRevenue + travelRevenue + overtimeRevenue + otherRevenue);
 
   return {
     campRevenue: roundMoney(campRevenue),
+    travelRevenue,
     overtimeRevenue,
     otherRevenuePatients,
     otherRevenueDistance,

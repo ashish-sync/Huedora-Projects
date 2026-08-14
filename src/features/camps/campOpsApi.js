@@ -88,6 +88,9 @@ export const campApi = {
   cancel: (id, payload = {}) => post(`${BASE}/camps/${id}/cancel`, payload),
   close: (id, payload = {}) => post(`${BASE}/camps/${id}/close`, payload),
   execute: (id, payload = {}) => post(`${BASE}/camps/${id}/execute`, payload),
+  confirmPayment: (id, payload = {}) => post(`${BASE}/camps/${id}/confirm-payment`, payload),
+  holdPayment: (id, payload = {}) => post(`${BASE}/camps/${id}/hold`, payload),
+  releaseHold: (id, payload = {}) => post(`${BASE}/camps/${id}/release-hold`, payload),
   delete: (id) => del(`${BASE}/camps/${id}`),
   bulkAction: (payload) => post(`${BASE}/camps/bulk-action`, payload),
   uploadExecutionDocuments: (id, files, docType, docNote = '') => {

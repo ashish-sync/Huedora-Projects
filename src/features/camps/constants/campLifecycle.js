@@ -75,12 +75,12 @@ export function hasReachedLifecycleStage(reachedStage, targetStage) {
   return target <= reached;
 }
 
-/** Financial opens once execution stage has been reached (not only after lifecycle is already financial). */
+/** Financial opens only after the camp has entered the Financial lifecycle stage. */
 export function canVisitLifecycleStage(reachedStage, targetStage) {
   const target = normalizeLifecycleStage(targetStage, '');
   if (!target) return false;
   if (target === 'financial') {
-    return hasReachedLifecycleStage(reachedStage, 'execution');
+    return normalizeLifecycleStage(reachedStage, 'request') === 'financial';
   }
   return hasReachedLifecycleStage(reachedStage, target);
 }
@@ -105,8 +105,12 @@ export function getExecutionFinanceBlockers(camp = {}, mappedConsumables = []) {
     blockers.push('Execution is cancelled or refused');
     return blockers;
   }
-  if (normalizeExecutionStatus(camp.executionStatus) !== EXECUTION_STATUS.CAMP_COMPLETED) {
-    blockers.push('Set execution status to Camp Completed');
+  const execStatus = normalizeExecutionStatus(camp.executionStatus);
+  if (
+    execStatus !== EXECUTION_STATUS.CAMP_COMPLETED
+    && execStatus !== EXECUTION_STATUS.MARKED_EXECUTED
+  ) {
+    blockers.push('Complete Chargeable Status, In Time, and Attire before Mark Complete');
   }
   if (!String(camp.chargeableStatus || '').trim()) {
     blockers.push('Select chargeable status');
@@ -114,8 +118,21 @@ export function getExecutionFinanceBlockers(camp = {}, mappedConsumables = []) {
   if (!String(camp.inTime || '').trim()) {
     blockers.push('Enter in time on the execution form');
   }
+  if (!String(camp.attire || '').trim()) {
+    blockers.push('Select attire on the execution form');
+  }
   if (!String(camp.outTime || '').trim()) {
     blockers.push('Enter out time on the execution form');
+  }
+  if (camp.kmRoundTrip === '' || camp.kmRoundTrip == null || Number.isNaN(Number(camp.kmRoundTrip))) {
+    blockers.push('Enter Travelled Kms (Round Trip)');
+  }
+  const patients = camp.actualPatients ?? camp.patientsCount;
+  if (patients === '' || patients == null || Number.isNaN(Number(patients))) {
+    blockers.push('Enter Patients Screened');
+  }
+  if (camp.rxCount === '' || camp.rxCount == null || Number.isNaN(Number(camp.rxCount))) {
+    blockers.push('Enter Product Count');
   }
   const docs = Array.isArray(camp.executionDocuments) ? camp.executionDocuments : [];
   if (!hasExecutionDocType(docs, 'doctor_form')) {
@@ -260,10 +277,46 @@ export function resolveEffectiveExecutionStatus(camp = {}, now = new Date()) {
   if (closureStatus) return closureStatus;
   const normalized = normalizeExecutionStatus(camp.executionStatus);
   if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
+  if (normalized === EXECUTION_STATUS.MARKED_EXECUTED) return EXECUTION_STATUS.MARKED_EXECUTED;
   if (isExecutionClosedOut(normalized)) return normalized;
-  return resolveScheduledExecutionStatus(camp, now);
+  // Field-driven Planned → Executed (guide): do not rely on clock alone for Executed.
+  if (
+    String(camp.chargeableStatus || '').trim()
+    && String(camp.inTime || '').trim()
+    && String(camp.attire || '').trim()
+  ) {
+    return EXECUTION_STATUS.MARKED_EXECUTED;
+  }
+  return EXECUTION_STATUS.CAMP_SCHEDULED;
 }
 
+export function executionStatusLabel(status) {
+  const normalized = normalizeExecutionStatus(status);
+  const labels = {
+    [EXECUTION_STATUS.CAMP_SCHEDULED]: 'Planned',
+    [EXECUTION_STATUS.CAMP_ONGOING]: 'Planned',
+    [EXECUTION_STATUS.MARKED_EXECUTED]: 'Executed',
+    [EXECUTION_STATUS.CAMP_COMPLETED]: 'Executed',
+    'Cancelled by Tylo': 'Cancelled by Tylo',
+    'Cancelled by TCPL': 'Cancelled by Tylo',
+    'Cancelled by Client': 'Cancelled by Client',
+  };
+  return labels[normalized] || normalized || '—';
+}
+
+export function syncExecutionStatusForSave(camp = {}, now = new Date()) {
+  const normalized = normalizeExecutionStatus(camp.executionStatus);
+  if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
+  if (isExecutionClosedOut(normalized)) return normalized;
+  if (
+    String(camp.chargeableStatus || '').trim()
+    && String(camp.inTime || '').trim()
+    && String(camp.attire || '').trim()
+  ) {
+    return EXECUTION_STATUS.MARKED_EXECUTED;
+  }
+  return EXECUTION_STATUS.CAMP_SCHEDULED;
+}
 export function executionStatusClass(status) {
   return `execution-${String(status || '')
     .trim()
@@ -271,12 +324,6 @@ export function executionStatusClass(status) {
     .replace(/\s+/g, '-')}`;
 }
 
-export function syncExecutionStatusForSave(camp = {}, now = new Date()) {
-  const normalized = normalizeExecutionStatus(camp.executionStatus);
-  if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
-  if (isExecutionClosedOut(normalized)) return normalized;
-  return resolveScheduledExecutionStatus(camp, now);
-}
 export const CHARGEABLE_STATUSES = ['Chargeable', 'Non-Chargeable', 'Partial'];
 export const QUALITY_RATINGS = ['Good', 'Average', 'Poor'];
 export const ATTIRE_CHECK_OPTIONS = ['No Issues', 'Issues'];
@@ -288,24 +335,26 @@ export const EXECUTION_DOC_TYPES = [
   { value: 'other', label: 'Other document (OT)' },
 ];
 
+/** Selectable Camp One payment-check statuses (Payment Done is Finance One only). */
 export const PAYMENT_SUBMIT_STATUSES = [
-  { value: 'payment_confirmed', label: 'Validation Completed' },
-  { value: 'payment_not_checked', label: 'Validation Pending' },
-  { value: 'payment_hold', label: 'Payment On Hold' },
+  { value: 'payment_not_checked', label: 'Pending Confirmation' },
+  { value: 'payment_confirmed', label: 'Confirmed Payment' },
+  { value: 'payment_hold', label: 'Hold' },
 ];
 
+/** Internal Finance One codes — do not expose Not Paid / Under Review as Camp One statuses. */
 export const FINANCE_PAYMENT_STATUSES = [
-  { value: 'not_paid', label: 'Not Paid' },
-  { value: 'under_review', label: 'Under Review' },
-  { value: 'paid', label: 'Payment Completed' },
+  { value: 'paid', label: 'Payment Done' },
 ];
 
 export function paymentSubmitStatusLabel(value) {
+  if (!value) return 'Pending Confirmation';
   return PAYMENT_SUBMIT_STATUSES.find((o) => o.value === value)?.label || value || '—';
 }
 
 export function financePaymentStatusLabel(value) {
-  return FINANCE_PAYMENT_STATUSES.find((o) => o.value === value)?.label || value || '—';
+  if (String(value || '').trim() === 'paid') return 'Payment Done';
+  return '';
 }
 
 export function resolveInTimeSelfieUrl(campOrForm = {}) {
@@ -412,11 +461,12 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
     : null;
 
   const campRevenue = autoRevenue ? autoRevenue.campRevenue : (Number(form.campRevenue) || 0);
+  const travelRevenue = autoRevenue ? autoRevenue.travelRevenue : (Number(form.travelRevenue) || 0);
   const overtimeRevenue = autoRevenue ? autoRevenue.overtimeRevenue : (Number(form.overtimeRevenue) || 0);
   const otherRevenue = autoRevenue ? autoRevenue.otherRevenue : (Number(form.otherRevenue) || 0);
   const otherRevenuePatients = autoRevenue ? autoRevenue.otherRevenuePatients : 0;
   const otherRevenueDistance = autoRevenue ? autoRevenue.otherRevenueDistance : 0;
-  const totalRevenue = Math.round((campRevenue + overtimeRevenue + otherRevenue) * 100) / 100;
+  const totalRevenue = Math.round((campRevenue + travelRevenue + overtimeRevenue + otherRevenue) * 100) / 100;
 
   const campAmount = Number(form.campAmount) || 0;
   const travelling = Number(form.travelling) || 0;
@@ -426,6 +476,7 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
 
   const paidAmount = Number(form.paidAmount) || 0;
   const balance = Math.round((totalPayout - paidAmount) * 100) / 100;
+  const netContribution = Math.round((totalRevenue - totalPayout) * 100) / 100;
 
   const punctuality = resolvePunctuality(form.startTime, form.inTime);
 
@@ -434,29 +485,42 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
     totalHours: totalHours ?? '',
     extraHours,
     campRevenue,
+    travelRevenue,
     overtimeRevenue,
     otherRevenue,
     otherRevenuePatients,
     otherRevenueDistance,
     totalRevenue,
     totalPayout,
+    netContribution,
     balance,
     punctuality,
     revenueAutoCalculated: Boolean(autoRevenue),
   };
 }
 
-export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, campContext = {}) {
+export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, campContext = {}, { isAdmin = false } = {}) {
   const context = { status: campStatus, ...campContext };
+  const reached = normalizeLifecycleStage(reachedStage, 'request');
+  const paymentDone = String(context.financePaymentStatus || '').trim() === 'paid';
+  if (paymentDone && !isAdmin) return false;
+
   if (campStatus === 'cancelled') {
     if (stage !== 'financial') return false;
     if (!isExecutionCancellationForFinance(context)) return false;
-    return hasReachedLifecycleStage(reachedStage, 'assignment');
+    return reached === 'financial' || hasReachedLifecycleStage(reached, 'execution');
   }
-  const stageReachable = stage === 'financial'
-    ? hasReachedLifecycleStage(reachedStage, 'execution')
-    : hasReachedLifecycleStage(reachedStage, stage);
-  if (!stageReachable) return false;
+
+  if (stage === 'financial') {
+    if (reached !== 'financial') return false;
+    return ['executed', 'approved', 'cancelled'].includes(campStatus);
+  }
+
+  if (reached === 'financial' && !isAdmin) {
+    if (stage === 'execution' || stage === 'assignment') return false;
+  }
+
+  if (!hasReachedLifecycleStage(reached, stage)) return false;
   if (stage === 'request') {
     return ['pending_review', 'approved', 'rejected', 'executed'].includes(campStatus);
   }
@@ -465,10 +529,6 @@ export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, c
     return ['approved', 'executed'].includes(campStatus);
   }
   if (stage === 'execution') return ['approved', 'executed'].includes(campStatus);
-  if (stage === 'financial') {
-    if (!hasReachedLifecycleStage(reachedStage, 'execution')) return false;
-    return ['approved', 'executed'].includes(campStatus);
-  }
   return false;
 }
 
@@ -541,6 +601,7 @@ export function emptyLifecycleForm() {
     executionDocuments: [],
     consumablesUsed: [],
     campRevenue: 0,
+    travelRevenue: 0,
     overtimeRevenue: 0,
     otherRevenue: 0,
     totalRevenue: 0,
@@ -632,6 +693,7 @@ export function campToForm(camp) {
     executionDocuments: Array.isArray(camp.executionDocuments) ? camp.executionDocuments : [],
     consumablesUsed: Array.isArray(camp.consumablesUsed) ? camp.consumablesUsed : [],
     campRevenue: camp.campRevenue ?? 0,
+    travelRevenue: camp.travelRevenue ?? 0,
     overtimeRevenue: camp.overtimeRevenue ?? 0,
     otherRevenue: camp.otherRevenue ?? 0,
     totalRevenue: camp.totalRevenue ?? 0,

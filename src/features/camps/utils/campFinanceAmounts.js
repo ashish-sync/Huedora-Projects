@@ -20,5 +20,5 @@ export function parseFinanceAmount(value) {
   return Number.isFinite(num) ? num : 0;
 }
 
-export const FINANCE_REVENUE_PART_FIELDS = ['campRevenue', 'overtimeRevenue', 'otherRevenue'];
+export const FINANCE_REVENUE_PART_FIELDS = ['campRevenue', 'travelRevenue', 'overtimeRevenue', 'otherRevenue'];
 export const FINANCE_PAYOUT_PART_FIELDS = ['campAmount', 'travelling', 'overtimeExpense', 'otherExpenses'];

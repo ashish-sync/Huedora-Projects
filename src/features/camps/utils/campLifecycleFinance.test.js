@@ -9,9 +9,10 @@ import {
 } from '../constants/campLifecycle.js';
 
 describe('camp lifecycle finance transition', () => {
-  it('allows visiting financial when execution stage is reached', () => {
+  it('allows visiting financial only when lifecycle is already financial', () => {
     expect(hasReachedLifecycleStage('execution', 'financial')).toBe(false);
-    expect(canVisitLifecycleStage('execution', 'financial')).toBe(true);
+    expect(canVisitLifecycleStage('execution', 'financial')).toBe(false);
+    expect(canVisitLifecycleStage('financial', 'financial')).toBe(true);
   });
 
   it('detects execution ready for finance', () => {
@@ -20,7 +21,11 @@ describe('camp lifecycle finance transition', () => {
         executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
         chargeableStatus: 'Chargeable',
         inTime: '09:00',
+        attire: 'No Issues',
         outTime: '12:00',
+        kmRoundTrip: 10,
+        actualPatients: 5,
+        rxCount: 2,
         executionDocuments: [
           { docType: 'doctor_form' },
           { docType: 'patient_form' },
@@ -33,7 +38,11 @@ describe('camp lifecycle finance transition', () => {
         executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
         chargeableStatus: 'Chargeable',
         inTime: '09:00',
+        attire: 'No Issues',
         outTime: '12:00',
+        kmRoundTrip: 10,
+        actualPatients: 5,
+        rxCount: 2,
         executionDocuments: [{ docType: 'doctor_form' }],
       }),
     ).toEqual(['Upload at least one PF (patient form) document']);

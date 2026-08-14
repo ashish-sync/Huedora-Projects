@@ -85,10 +85,7 @@ export function getAvailableClosureTypes(camp = {}, stage = '') {
     return ['Cancelled by Tylo', 'Cancelled by Client'];
   }
 
-  if (resolvedStage === 'assignment') {
-    return ['Refused', 'Cancelled by Tylo', 'Cancelled by Client'];
-  }
-
+  // Assignment and Request: Refuse only.
   return ['Refused'];
 }
 

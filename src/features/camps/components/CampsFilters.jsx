@@ -2,6 +2,12 @@ import { DateInput } from './DateInput';
 import { FILTER } from '../../../shared/labels.js';
 import { getQuickDateRange, matchQuickPreset } from '../utils/dateRange';
 import MasterSearchField from '../../../components/masters/MasterSearchField.jsx';
+import {
+  ASSIGNMENT_WORKFLOW_STATUSES,
+  EXECUTION_WORKFLOW_STATUSES,
+  FINANCIAL_WORKFLOW_STATUSES,
+  REQUEST_WORKFLOW_STATUSES,
+} from '../constants/campWorkflowStatuses.js';
 
 const quickPresets = [
   { key: 'today', label: 'Today' },
@@ -9,52 +15,28 @@ const quickPresets = [
   { key: 'tomorrow', label: 'Tomorrow' },
 ];
 
-/** Request Stage status filter — review workflow only. */
-export const REQUEST_STATUS_OPTIONS = [
-  { value: 'request_rejected', label: 'Refused' },
-  {
-    value: 'review_pending',
-    label: 'Review Pending',
-    title: 'Default for requests created within the last 6 working hours',
-  },
-  {
-    value: 'review_overdue',
-    label: 'Review Overdue',
-    title: 'Still in Review Pending for more than 6 working hours',
-  },
-  {
-    value: 'information_requested',
-    label: 'Info Requested',
-    title: 'Required camp details are incomplete',
-  },
-];
+/** Request Stage status filter — guide vocabulary only. */
+export const REQUEST_STATUS_OPTIONS = REQUEST_WORKFLOW_STATUSES.map((row) => ({
+  ...row,
+  ...(row.value === 'review_pending'
+    ? { title: 'Default for requests created within the last 6 working hours' }
+    : {}),
+  ...(row.value === 'review_overdue'
+    ? { title: 'Still in Review Pending for more than 6 working hours' }
+    : {}),
+  ...(row.value === 'information_requested'
+    ? { title: 'Required camp details are incomplete' }
+    : {}),
+}));
 
-const ASSIGNMENT_STATUS_OPTIONS = [
-  { value: 'unassigned', label: 'Unassigned' },
-  { value: 'assigned', label: 'Assigned' },
-  { value: 'hiring_requested', label: 'Hiring Requested' },
-  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
-  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
-];
+const ASSIGNMENT_STATUS_OPTIONS = [...ASSIGNMENT_WORKFLOW_STATUSES];
 
 export { ASSIGNMENT_STATUS_OPTIONS };
 
-const EXECUTION_STATUS_OPTIONS = [
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'ongoing', label: 'Ongoing' },
-  { value: 'executed', label: 'Marked executed' },
-  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
-  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
-];
+const EXECUTION_STATUS_OPTIONS = [...EXECUTION_WORKFLOW_STATUSES];
 
-const FINANCIAL_STATUS_OPTIONS = [
-  { value: 'payment_not_checked', label: 'Validation Pending' },
-  { value: 'payment_confirmed', label: 'Validation Completed' },
-  { value: 'payment_hold', label: 'Payment On Hold' },
-  { value: 'payment_completed', label: 'Payment Completed' },
-  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
-  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
-];
+/** Payment Done is filterable (Finance One outcome) but not a Camp One manual select. */
+const FINANCIAL_STATUS_OPTIONS = [...FINANCIAL_WORKFLOW_STATUSES];
 
 function statusOptionsForStage(stage) {
   if (stage === 'assignment') return ASSIGNMENT_STATUS_OPTIONS;

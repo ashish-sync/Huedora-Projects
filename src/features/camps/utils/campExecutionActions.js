@@ -1,27 +1,17 @@
-import { campStatusLabel, isExecutionClosedOut } from '../constants/campLifecycle.js';
-import { getCampStartDateTime } from './campSchedule.js';
-
-/** Mark executed is allowed only after this many minutes past camp start time. */
-export const MARK_EXECUTED_MINUTES_AFTER_START = 30;
+import { campStatusLabel, isExecutionClosedOut, EXECUTION_STATUS } from '../constants/campLifecycle.js';
 
 function isCampAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
   if (camp.lifecycleStage === 'execution' && camp.assignmentDecision === 'assign') return true;
-  return false;
+  return Boolean(camp.hcwContactId || camp.hcwName);
 }
 
 function hasFilled(value) {
   return Boolean(String(value || '').trim());
 }
 
-export function isMarkExecutedTimingOpen(camp = {}, now = new Date()) {
-  const start = getCampStartDateTime(camp);
-  if (!start) return false;
-  const earliest = start.getTime() + MARK_EXECUTED_MINUTES_AFTER_START * 60 * 1000;
-  return now.getTime() >= earliest;
-}
-
-export function getExecutionBlockers(camp = {}, now = new Date()) {
+/** Planned → Executed requires Chargeable + In Time + Attire (no timing gate). */
+export function getExecutionBlockers(camp = {}) {
   const blockers = [];
 
   if (['cancelled', 'rejected'].includes(camp.status)) {
@@ -34,13 +24,17 @@ export function getExecutionBlockers(camp = {}, now = new Date()) {
     return blockers;
   }
 
-  if (camp.status === 'executed') {
-    blockers.push('This camp is already marked executed.');
+  if (
+    camp.executionStatus === EXECUTION_STATUS.MARKED_EXECUTED
+    || camp.executionStatus === EXECUTION_STATUS.CAMP_COMPLETED
+    || camp.status === 'executed'
+  ) {
+    blockers.push('Camp is already marked executed.');
     return blockers;
   }
 
-  if (camp.status !== 'approved') {
-    blockers.push('Camp must be approved before it can be marked executed.');
+  if (!['approved', 'executed'].includes(camp.status) && camp.lifecycleStage !== 'execution') {
+    blockers.push('Camp must be approved before execution.');
     return blockers;
   }
 
@@ -58,15 +52,16 @@ export function getExecutionBlockers(camp = {}, now = new Date()) {
     blockers.push('Select Attire');
   }
 
-  if (!isMarkExecutedTimingOpen(camp, now)) {
-    blockers.push(
-      `Camp can be marked executed only after ${MARK_EXECUTED_MINUTES_AFTER_START} minutes from start time`,
-    );
-  }
-
   return blockers;
 }
 
-export function canMarkCampExecuted(camp = {}, now = new Date()) {
-  return getExecutionBlockers(camp, now).length === 0;
+export function canMarkCampExecuted(camp = {}) {
+  return getExecutionBlockers(camp).length === 0;
+}
+
+/** @deprecated Timing gate removed per lifecycle guide. */
+export const MARK_EXECUTED_MINUTES_AFTER_START = 0;
+
+export function isMarkExecutedTimingOpen() {
+  return true;
 }

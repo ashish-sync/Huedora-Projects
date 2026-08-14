@@ -2,6 +2,7 @@ import {
   getAvailableClosureTypes,
   resolveClosureStage,
 } from '../constants/campClosure.js';
+import { EXECUTION_STATUS, normalizeExecutionStatus } from '../constants/campLifecycle.js';
 
 export function isCampClosed(camp = {}) {
   return ['cancelled', 'rejected'].includes(camp.status);
@@ -29,7 +30,13 @@ export function canCancelOrRefuseCamp(camp = {}, { hasPermission, canRejectCamps
   }
 
   if (resolvedStage === 'execution') {
-    if (['cancelled', 'rejected', 'executed'].includes(camp.status)) return false;
+    // Allow cancel from Planned and Executed until Mark Complete / Financial.
+    if (['cancelled', 'rejected'].includes(camp.status)) return false;
+    const exec = normalizeExecutionStatus(camp.executionStatus);
+    if (exec === EXECUTION_STATUS.CAMP_COMPLETED || camp.status === 'executed') {
+      // HueDora executed + Camp Completed = Mark Complete done → no cancel
+      if (exec === EXECUTION_STATUS.CAMP_COMPLETED) return false;
+    }
     return hasPermission('camps:cancel') || hasPermission('camps:approve');
   }
 
@@ -43,26 +50,18 @@ export function resolveCancelOrRefuseAction() {
 export function cancelOrRefuseLabel(camp = {}, stage = '') {
   const resolvedStage = resolveClosureStage(camp, stage);
   if (resolvedStage === 'request') return 'Refuse camp';
-  if (resolvedStage === 'assignment') return 'Cancel or refuse camp';
+  if (resolvedStage === 'assignment') return 'Refuse camp';
   return 'Cancel camp';
 }
 
 export function closeCampModalCopy(camp = {}, stage = '') {
   const resolvedStage = resolveClosureStage(camp, stage);
 
-  if (resolvedStage === 'request') {
+  if (resolvedStage === 'request' || resolvedStage === 'assignment') {
     return {
       title: 'Refuse camp',
       message: '',
       confirmLabel: 'Refuse',
-    };
-  }
-
-  if (resolvedStage === 'assignment') {
-    return {
-      title: 'Close camp',
-      message: '',
-      confirmLabel: 'Confirm',
     };
   }
 

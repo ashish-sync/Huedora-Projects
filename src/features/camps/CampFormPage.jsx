@@ -83,7 +83,8 @@ function filterApprovalBlockers(blockers, form, campNameOptions) {
 
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord, hasPermission, canSetHistoricalCampDates } = useAuth();
+  const { canEditCampRecord, hasPermission, canSetHistoricalCampDates, isSuperAdmin } = useAuth();
+  const isCampAdmin = Boolean(isSuperAdmin?.());
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { workingStage } = useCampWorkingStage();
@@ -101,6 +102,7 @@ export default function CampFormPage() {
   const [loading, setLoading] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [submitFinanceBusy, setSubmitFinanceBusy] = useState(false);
+  const [financialActionBusy, setFinancialActionBusy] = useState(false);
   const [downloadFinanceBusy, setDownloadFinanceBusy] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
   const [showSourcePreview, setShowSourcePreview] = useState(false);
@@ -139,11 +141,11 @@ export default function CampFormPage() {
 
     const assignmentEditable = hasReachedLifecycleStage(loadedStage, 'assignment')
       && camp.status === 'approved'
-      && canEditLifecycleStage(camp.status, 'assignment', effectiveReached, camp);
+      && canEditLifecycleStage(camp.status, 'assignment', effectiveReached, camp, { isAdmin: isCampAdmin });
 
     const financialEditable = cancelledClosure
       && camp.status === 'cancelled'
-      && canEditLifecycleStage(camp.status, 'financial', effectiveReached, camp);
+      && canEditLifecycleStage(camp.status, 'financial', effectiveReached, camp, { isAdmin: isCampAdmin });
 
     if (!canEditCampRecord(camp) && !assignmentEditable && !financialEditable) {
       setReadOnly(true);
@@ -161,12 +163,17 @@ export default function CampFormPage() {
     executionStatus: form.executionStatus,
     assignmentRefusalReason: form.assignmentRefusalReason,
     cancelledBy: campMeta?.cancelledBy || form.cancelledBy || '',
+    financePaymentStatus: form.financePaymentStatus || campMeta?.financePaymentStatus || '',
   }), [
     form.executionStatus,
     form.assignmentRefusalReason,
     form.cancelledBy,
+    form.financePaymentStatus,
     campMeta?.cancelledBy,
+    campMeta?.financePaymentStatus,
   ]);
+
+  const lifecycleEditOpts = useMemo(() => ({ isAdmin: isCampAdmin }), [isCampAdmin]);
 
   const reachedLifecycleStage = useMemo(() => {
     const raw = normalizeLifecycleStage(campMeta?.lifecycleStage || form.lifecycleStage, 'request');
@@ -534,8 +541,13 @@ export default function CampFormPage() {
 
   async function handleSubmitToFinance() {
     if (!id) return;
-    if (!form.paymentSubmitStatus) {
-      setError('Select Validation Completed, Validation Pending, or Payment On Hold');
+    const submitStatus = form.paymentSubmitStatus || 'payment_not_checked';
+    if (submitStatus === 'payment_hold') {
+      setError('Release Hold before submitting to Finance One');
+      return;
+    }
+    if (submitStatus !== 'payment_confirmed') {
+      setError('Confirm Payment before submitting to Finance One');
       return;
     }
     const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
@@ -570,6 +582,60 @@ export default function CampFormPage() {
       setError(err?.message || 'Failed to submit to Finance One');
     } finally {
       setSubmitFinanceBusy(false);
+    }
+  }
+
+  async function handleConfirmPayment() {
+    if (!id) return;
+    setFinancialActionBusy(true);
+    setError('');
+    try {
+      const res = await campApi.confirmPayment(id);
+      const camp = res.data?.data || res.data;
+      setForm(campToForm(camp));
+      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+    } catch (err) {
+      setError(err?.message || 'Failed to confirm payment');
+    } finally {
+      setFinancialActionBusy(false);
+    }
+  }
+
+  async function handleHoldPayment(remark) {
+    if (!id) return;
+    if (!String(remark || form.paymentRemark || '').trim()) {
+      setError('Hold Remark is required');
+      return;
+    }
+    setFinancialActionBusy(true);
+    setError('');
+    try {
+      const res = await campApi.holdPayment(id, {
+        paymentRemark: String(remark || form.paymentRemark || '').trim(),
+      });
+      const camp = res.data?.data || res.data;
+      setForm(campToForm(camp));
+      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+    } catch (err) {
+      setError(err?.message || 'Failed to put payment on hold');
+    } finally {
+      setFinancialActionBusy(false);
+    }
+  }
+
+  async function handleReleaseHold() {
+    if (!id) return;
+    setFinancialActionBusy(true);
+    setError('');
+    try {
+      const res = await campApi.releaseHold(id);
+      const camp = res.data?.data || res.data;
+      setForm(campToForm(camp));
+      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+    } catch (err) {
+      setError(err?.message || 'Failed to release hold');
+    } finally {
+      setFinancialActionBusy(false);
     }
   }
 
@@ -824,6 +890,7 @@ export default function CampFormPage() {
           : maxLifecycleStage(reachedLifecycleStage, activeStage)
         : 'request',
       lifecycleOnly: isEdit && activeStage !== 'request',
+      ...(executionComplete || form.markComplete ? { markComplete: true } : {}),
     };
     delete payload.hqManuallyEdited;
     delete payload.addressPlacesAvailable;
@@ -900,11 +967,11 @@ export default function CampFormPage() {
   }, [clientMasterLoadFailed, clientMasterRecords, form.campaignType, form.campaignName]);
 
   const stageReadOnly = useMemo(() => ({
-    request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage, campLifecycleContext),
-    assignment: readOnly || !canEditLifecycleStage(campStatus, 'assignment', reachedLifecycleStage, campLifecycleContext),
-    execution: readOnly || !canEditLifecycleStage(campStatus, 'execution', reachedLifecycleStage, campLifecycleContext),
-    financial: readOnly || !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext),
-  }), [readOnly, campStatus, reachedLifecycleStage, campLifecycleContext]);
+    request: readOnly || !canEditLifecycleStage(campStatus, 'request', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts),
+    assignment: readOnly || !canEditLifecycleStage(campStatus, 'assignment', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts),
+    execution: readOnly || !canEditLifecycleStage(campStatus, 'execution', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts),
+    financial: readOnly || !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts),
+  }), [readOnly, campStatus, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts]);
 
   if (fetching) {
     return <div className="empty-state">Loading camp...</div>;
@@ -950,10 +1017,10 @@ export default function CampFormPage() {
   const showFinanceSubmit = isEdit
     && activeStage === 'financial'
     && !financeSubmitted
-    && canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext)
+    && canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
     && !readOnly;
   const canSubmitFinance = showFinanceSubmit
-    && Boolean(form.paymentSubmitStatus)
+    && form.paymentSubmitStatus === 'payment_confirmed'
     && (isCancelledForFinance || isHcwReadyForFinance(payeeContact, { label: payeeLabel }))
     && !assignedHcwLoading
     && !payoutPayeeLoading
@@ -961,7 +1028,7 @@ export default function CampFormPage() {
   const canSubmit = campStatus !== 'cancelled'
     && campStatus !== 'rejected'
     && activeStage !== 'financial'
-    && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext)
+    && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
     && (!hasNoDivisions || activeStage !== 'request')
     && (!hasNoMethods || activeStage !== 'request')
     && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus));
@@ -1078,6 +1145,10 @@ export default function CampFormPage() {
         mappedConsumables={mappedConsumables}
         clientMasterRecords={clientMasterRecords}
         canSetHistoricalCampDates={canSetHistoricalCampDates()}
+        onConfirmPayment={isEdit ? handleConfirmPayment : null}
+        onHoldPayment={isEdit ? handleHoldPayment : null}
+        onReleaseHold={isEdit ? handleReleaseHold : null}
+        financialActionBusy={financialActionBusy}
       />
 
       <div className="form-actions">
@@ -1088,7 +1159,7 @@ export default function CampFormPage() {
             disabled={!canSubmitFinance}
             title={!canSubmitFinance && hcwFinanceBlockers.length
               ? hcwFinanceBlockers.join(' ')
-              : (!form.paymentSubmitStatus ? 'Select a payment check status' : undefined)}
+              : (form.paymentSubmitStatus !== 'payment_confirmed' ? 'Confirm Payment before submitting' : undefined)}
             onClick={handleSubmitToFinance}
           >
             {submitFinanceBusy ? 'Submitting…' : 'Submit to Finance One'}

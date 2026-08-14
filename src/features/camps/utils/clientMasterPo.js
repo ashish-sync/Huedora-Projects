@@ -366,44 +366,56 @@ function serializePoForApi(row) {
 
 /**
  * Build API payload for Camp Terms.
- * Always includes both PO rows and Agreement dates from the form so switching
- * the active terms type never wipes the other side’s entered data.
+ * Always includes Agreement dates from the form so switching the active terms
+ * type never wipes them. Meaningful PO rows are included when present; empty
+ * placeholder rows are omitted so the server can preserve existing POs.
  */
 export function buildCampTermsPayload(form) {
   const campTerms = normalizeCampTerms(form.campTerms);
   const sharedFiles = Array.isArray(form.campTermsFiles) ? form.campTermsFiles : [];
   const purchaseOrders = (Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [])
     .map(serializePoForApi)
-    .filter((row) => row.poNumber || row.poNetValue > 0 || (row.files && row.files.length));
+    .filter(
+      (row) =>
+        row.poNumber
+        || row.poNetValue > 0
+        || (row.files && row.files.length)
+        || row.poIssueDate
+        || row.poExpiryDate
+    );
 
-  const toSave = campTerms === CAMP_TERMS.PO_BASED && purchaseOrders.length === 0
-    ? [serializePoForApi(createEmptyPurchaseOrder({ poApplyGst18: form.poApplyGst18 !== false }))]
-    : purchaseOrders;
-
-  const combined = combinePurchaseOrders(toSave);
-  const primary = toSave[0] || null;
   const agreementStartDate = String(form.agreementStartDate || '').trim().slice(0, 10);
   const agreementEffectiveDate = String(form.agreementEffectiveDate || '').trim().slice(0, 10);
   const agreementEndDate = String(form.agreementEndDate || '').trim().slice(0, 10);
 
-  return {
+  const payload = {
     campTerms,
-    purchaseOrders: toSave,
-    // Agreement / Approval uploads stay on campTermsFiles; PO files live on each PO row.
+    // Dedicated agreement/approval attachments (server preserves when empty).
     campTermsFiles: sharedFiles,
-    poNumber: primary?.poNumber || '',
-    poNetValue: primary?.poNetValue ?? 0,
-    poApplyGst18: primary ? primary.poApplyGst18 !== false : false,
-    poGstAmount: primary?.poGstAmount ?? 0,
-    poGrossValue: primary?.poGrossValue ?? 0,
-    poIssueDate: primary?.poIssueDate || '',
-    poExpiryDate: primary?.poExpiryDate || '',
-    poFile: primary?.poFile || null,
-    ...combined,
     agreementStartDate,
     agreementEffectiveDate,
     agreementEndDate,
   };
+
+  if (purchaseOrders.length) {
+    const combined = combinePurchaseOrders(purchaseOrders);
+    const primary = purchaseOrders[0];
+    Object.assign(payload, {
+      purchaseOrders,
+      poNumber: primary?.poNumber || '',
+      poNetValue: primary?.poNetValue ?? 0,
+      poApplyGst18: primary ? primary.poApplyGst18 !== false : false,
+      poGstAmount: primary?.poGstAmount ?? 0,
+      poGrossValue: primary?.poGrossValue ?? 0,
+      poIssueDate: primary?.poIssueDate || '',
+      poExpiryDate: primary?.poExpiryDate || '',
+      poFile: primary?.poFile || null,
+      ...combined,
+    });
+  }
+  // Omit empty purchaseOrders so agreement-only saves never wipe stored POs.
+
+  return payload;
 }
 
 /** @deprecated Use campTermsLabel / campTermsFieldsFromRecord */

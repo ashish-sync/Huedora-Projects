@@ -1,8 +1,5 @@
 import { createPortal } from 'react-dom';
-import {
-  financePaymentStatusLabel,
-  paymentSubmitStatusLabel,
-} from '../constants/campLifecycle.js';
+import { financialWorkflowStatus } from '../constants/campWorkflowStatuses.js';
 import { formatDateDDMMYYYY } from '../utils/dateFormat.js';
 
 function DetailRow({ label, children }) {
@@ -17,9 +14,7 @@ function DetailRow({ label, children }) {
 export function CampFinanceViewModal({ camp, onClose }) {
   if (!camp) return null;
 
-  const paymentStatus = financePaymentStatusLabel(camp.financePaymentStatus) || 'Not submitted';
-  const submitStatus = paymentSubmitStatusLabel(camp.paymentSubmitStatus) || '—';
-
+  const paymentStatus = financialWorkflowStatus(camp).label;
   return createPortal(
     <div className="camp-ops-root camp-info-portal-root">
       <div className="modal-overlay camp-info-modal-overlay" onClick={onClose}>
@@ -43,7 +38,6 @@ export function CampFinanceViewModal({ camp, onClose }) {
             <div className="modal-camp-summary modal-camp-summary-grid">
               <DetailRow label="Payment status">{paymentStatus}</DetailRow>
               <DetailRow label="UTR / Transaction ID">{camp.transactionId || '—'}</DetailRow>
-              <DetailRow label="Payment submit status">{submitStatus}</DetailRow>
               <DetailRow label="Submitted to finance">
                 {camp.submittedToFinanceAt
                   ? formatDateDDMMYYYY(camp.submittedToFinanceAt)

@@ -52,7 +52,7 @@ describe('CampLifecycleForm execution stage', () => {
 
   it('renders execution fields with consumables section', async () => {
     renderExecutionForm();
-    expect(screen.getByDisplayValue(EXECUTION_STATUS.CAMP_SCHEDULED)).toBeTruthy();
+    expect(screen.getByDisplayValue('Planned')).toBeTruthy();
     expect(screen.getByText('Chargeable Status')).toBeTruthy();
     expect(screen.getByText('In Time')).toBeTruthy();
     expect(screen.getByText('Execution Documents')).toBeTruthy();

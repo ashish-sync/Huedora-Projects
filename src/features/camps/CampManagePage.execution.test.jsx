@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import CampsPage from './CampManagePage.jsx';
-import { EXECUTION_STATUS } from './constants/campLifecycle.js';
 
 vi.mock('./useCampOpsAuth.js', () => ({
   useAuth: () => ({
@@ -76,6 +75,6 @@ describe('CampManagePage execution stage', () => {
     renderExecutionManagePage();
     expect(await screen.findByText('Demo')).toBeTruthy();
     expect(screen.getByLabelText('Cannot mark executed yet')).toBeTruthy();
-    expect(screen.getByTitle(EXECUTION_STATUS.CAMP_SCHEDULED)).toBeTruthy();
+    expect(screen.getByTitle('Planned')).toBeTruthy();
   });
 });

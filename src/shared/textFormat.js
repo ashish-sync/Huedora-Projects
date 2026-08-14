@@ -16,6 +16,9 @@ const PLAIN_FIELDS = new Set([
   'resourceType', 'contactCategory', 'productType', 'assignmentStatus', 'executionStatus',
   'chargeableStatus', 'attire', 'labCoat', 'speciality', 'profession', 'supplyCategory',
   'healthcareWorker', 'hcwCategory', 'zone', 'method', 'remarks', 'hcwContactId',
+  // Client Master Camp Terms — dates / PO identifiers must stay verbatim
+  'campTerms', 'poNumber', 'poIssueDate', 'poExpiryDate',
+  'agreementStartDate', 'agreementEffectiveDate', 'agreementEndDate',
 ]);
 
 const CODE_FIELDS = new Set([

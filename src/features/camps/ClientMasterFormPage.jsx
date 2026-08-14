@@ -11,6 +11,7 @@ import { clientMasterEditPath, clientMasterListPath } from './clientMasterPaths.
 import {
   CAMP_TERMS,
   campTermsFilesFromRecord,
+  campTermsFieldsFromRecord,
   combinePurchaseOrders,
   computePoTaxFields,
   createEmptyPurchaseOrder,
@@ -529,9 +530,10 @@ export default function ClientMasterFormPage() {
           const nextForm = recordToForm(data.data);
           return {
             ...prev,
-            ...combinePurchaseOrders(nextForm.purchaseOrders),
-            purchaseOrders: nextForm.purchaseOrders,
-            campTerms: CAMP_TERMS.PO_BASED,
+            ...campTermsFieldsFromRecord(data.data),
+            purchaseOrders: nextForm.purchaseOrders.length
+              ? nextForm.purchaseOrders
+              : (prev.purchaseOrders?.length ? prev.purchaseOrders : [createEmptyPurchaseOrder()]),
           };
         });
         setPendingPoFiles((prev) => {
@@ -585,11 +587,10 @@ export default function ClientMasterFormPage() {
         const nextForm = recordToForm(data.data);
         return {
           ...prev,
-          ...combinePurchaseOrders(nextForm.purchaseOrders),
+          ...campTermsFieldsFromRecord(data.data),
           purchaseOrders: nextForm.purchaseOrders.length
             ? nextForm.purchaseOrders
             : [createEmptyPurchaseOrder()],
-          campTerms: CAMP_TERMS.PO_BASED,
         };
       });
     } catch (err) {

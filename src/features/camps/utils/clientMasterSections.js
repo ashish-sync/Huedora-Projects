@@ -300,9 +300,28 @@ export function buildSectionSummary(sectionId, form) {
       const terms = normalizeCampTerms(form.campTerms);
       const rows = [{ label: 'Camp Terms', value: campTermsLabel(terms) || '—' }];
       if (terms !== 'none') {
-        const poCount = Array.isArray(form.purchaseOrders) ? form.purchaseOrders.length : 0;
+        const start = String(form.agreementStartDate || '').trim();
+        const end = String(form.agreementEndDate || '').trim();
+        if (start || end || String(form.agreementEffectiveDate || '').trim()) {
+          const effective = String(form.agreementEffectiveDate || '').trim();
+          rows.push({
+            label: 'Agreement',
+            value: [start, effective, end].filter(Boolean).join(' → ') || '—',
+          });
+        }
+        const orders = (Array.isArray(form.purchaseOrders) ? form.purchaseOrders : [])
+          .filter((row) => row?.poNumber || Number(row?.poNetValue) > 0 || Number(row?.poGrossValue) > 0);
+        if (orders.length) {
+          const labels = orders
+            .map((row) => row.poNumber || 'PO')
+            .slice(0, 3)
+            .join(', ');
+          rows.push({
+            label: 'Purchase Orders',
+            value: orders.length > 3 ? `${labels} +${orders.length - 3}` : labels,
+          });
+        }
         const fileCount = Array.isArray(form.campTermsFiles) ? form.campTermsFiles.length : 0;
-        if (poCount) rows.push({ label: 'Purchase Orders', value: `${poCount} PO(s)` });
         if (fileCount) rows.push({ label: 'Attachments', value: `${fileCount} file(s)` });
       }
       return rows;

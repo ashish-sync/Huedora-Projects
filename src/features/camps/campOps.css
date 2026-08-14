@@ -7909,8 +7909,46 @@
   align-items: end;
 }
 
+.camp-ops-root .camp-finance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.camp-ops-root .camp-finance-section__title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+}
+
+.camp-ops-root .camp-finance-section__row {
+  display: grid;
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+
+.camp-ops-root .camp-finance-section__row--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.camp-ops-root .camp-finance-section__row--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .camp-ops-root .camp-finance-section__row--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
-  .camp-ops-root .camp-payout-submit-row {
+  .camp-ops-root .camp-payout-submit-row,
+  .camp-ops-root .camp-finance-section__row--3,
+  .camp-ops-root .camp-finance-section__row--4 {
     grid-template-columns: 1fr;
   }
 }

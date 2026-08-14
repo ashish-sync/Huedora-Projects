@@ -16,7 +16,7 @@ const approvedAssignedCamp = {
 };
 
 describe('campExecutionActions', () => {
-  it('allows mark executed when fields are filled and 30 minutes after start have passed', () => {
+  it('allows mark executed when required fields are filled (no timing gate)', () => {
     expect(canMarkCampExecuted(approvedAssignedCamp, now)).toBe(true);
     expect(getExecutionBlockers(approvedAssignedCamp, now)).toEqual([]);
   });
@@ -47,13 +47,10 @@ describe('campExecutionActions', () => {
     ]);
   });
 
-  it('blocks mark executed until 30 minutes after camp start time', () => {
+  it('does not require waiting 30 minutes after camp start time', () => {
     const tooEarly = new Date('2026-08-03T09:20:00');
-    const justReady = new Date('2026-08-03T09:30:00');
-    expect(canMarkCampExecuted(approvedAssignedCamp, tooEarly)).toBe(false);
-    expect(getExecutionBlockers(approvedAssignedCamp, tooEarly).join(' '))
-      .toMatch(/30 minutes from start time/i);
-    expect(canMarkCampExecuted(approvedAssignedCamp, justReady)).toBe(true);
+    expect(canMarkCampExecuted(approvedAssignedCamp, tooEarly)).toBe(true);
+    expect(getExecutionBlockers(approvedAssignedCamp, tooEarly)).toEqual([]);
   });
 
   it('blocks cancelled or refused execution statuses', () => {

@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { REQUEST_REVIEW_LABELS } from '../constants/requestReviewStatus.js';
-import { campStatusLabel, financePaymentStatusLabel, EXECUTION_STATUS, normalizeExecutionStatus, resolveEffectiveExecutionStatus, executionStatusClass, isExecutionClosedOut } from '../constants/campLifecycle.js';
+import {
+  campStatusLabel,
+  EXECUTION_STATUS,
+  normalizeExecutionStatus,
+  resolveEffectiveExecutionStatus,
+  executionStatusClass,
+  executionStatusLabel,
+  isExecutionClosedOut,
+} from '../constants/campLifecycle.js';
+import { financialWorkflowStatus } from '../constants/campWorkflowStatuses.js';
 
 export function ChartsEyeToggle({ showCharts, onToggle }) {
   const label = showCharts ? 'Hide charts' : 'Show charts';
@@ -214,16 +223,13 @@ export function isCampAssigned(camp) {
 }
 
 export function AssignmentStatusBadge({ camp }) {
-  if (['cancelled', 'rejected'].includes(camp?.status)) {
-    return <StatusBadge status={camp.status} />;
+  if (camp?.status === 'rejected') {
+    return <span className="status-pill status-rejected">Refused</span>;
   }
-  const assigned = isCampAssigned(camp);
-  if (assigned) {
-    return <span className="status-pill status-assigned">Assigned</span>;
-  }
+  // Assigned is a trigger (moves to Execution) — never a selectable Assignment status.
   const hiringRequested = camp?.assignmentStatus === 'Hiring Requested'
     || Boolean(camp?.hiringRequestedAt);
-  if (hiringRequested) {
+  if (hiringRequested && !isCampAssigned(camp)) {
     return (
       <span className="status-pill status-hiring-requested" title={camp?.hiringRequestNumber || undefined}>
         Hiring Requested
@@ -235,39 +241,26 @@ export function AssignmentStatusBadge({ camp }) {
 
 export function ExecutionStatusBadge({ camp }) {
   const executionStatus = resolveEffectiveExecutionStatus(camp);
-  if (isExecutionClosedOut(camp?.executionStatus)) {
-    const normalized = normalizeExecutionStatus(camp.executionStatus);
+  if (isExecutionClosedOut(camp?.executionStatus) || camp?.status === 'cancelled') {
+    const normalized = normalizeExecutionStatus(
+      camp.executionStatus || camp.assignmentRefusalReason || '',
+    );
+    const label = executionStatusLabel(normalized);
     const statusClass = normalized === 'Refused' ? 'rejected' : 'cancelled';
-    return <span className={`status-pill status-${statusClass}`}>{normalized}</span>;
+    return <span className={`status-pill status-${statusClass}`}>{label}</span>;
   }
-  if (['cancelled', 'rejected'].includes(camp?.status)) {
-    return <StatusBadge status={camp.status} />;
+  if (camp?.status === 'rejected') {
+    return <span className="status-pill status-rejected">Refused</span>;
   }
+  const label = executionStatusLabel(executionStatus);
   return (
-    <span className={`status-pill ${executionStatusClass(executionStatus)}`} title={executionStatus}>
-      {executionStatus}
+    <span className={`status-pill ${executionStatusClass(executionStatus)}`} title={label}>
+      {label}
     </span>
   );
 }
 
 export function FinanceSettlementStatusBadge({ camp }) {
-  if (['cancelled', 'rejected'].includes(camp?.status)) {
-    const cancelLabel = normalizeExecutionStatus(
-      camp.executionStatus || camp.assignmentRefusalReason || '',
-    );
-    if (cancelLabel && cancelLabel !== 'Cancelled' && cancelLabel !== 'Refused') {
-      return (
-        <span className={`status-pill status-${camp.status}`} title={cancelLabel}>
-          {cancelLabel}
-        </span>
-      );
-    }
-    return <StatusBadge status={camp.status} />;
-  }
-  if (camp?.submittedToFinanceAt) {
-    const label = financePaymentStatusLabel(camp.financePaymentStatus) || 'Under Review';
-    const statusClass = camp.financePaymentStatus || 'under_review';
-    return <span className={`status-pill status-${statusClass}`}>{label}</span>;
-  }
-  return <span className="status-pill status-pending-finance">Pending submission</span>;
+  const { value, label } = financialWorkflowStatus(camp);
+  return <span className={`status-pill status-${value}`}>{label}</span>;
 }

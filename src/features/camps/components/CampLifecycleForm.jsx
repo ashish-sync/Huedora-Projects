@@ -27,13 +27,13 @@ import {
   EXECUTION_STATUS,
   normalizeExecutionStatus,
   resolveEffectiveExecutionStatus,
+  executionStatusLabel,
   getExecutionConsumablesBlockers,
+  getExecutionFinanceBlockers,
   computePunctualityLateness,
   formatLatenessHhMm,
-  PAYMENT_SUBMIT_STATUSES,
-  financePaymentStatusLabel,
-  paymentSubmitStatusLabel,
 } from '../constants/campLifecycle';
+import { financialWorkflowStatus } from '../constants/campWorkflowStatuses.js';
 import { ACTION } from '../../../shared/labels.js';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
 import { DOCTOR_SPECIALTY_OPTIONS, isRequestDateFarFromToday, isHistoricalCampDate } from '../constants/doctorSpecialty';
@@ -54,10 +54,6 @@ import {
   formatFinanceAmountValue,
   sanitizeFinanceAmountInput,
 } from '../utils/campFinanceAmounts.js';
-import {
-  CAMP_FINANCE_EXPENSE_CATEGORY,
-  CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
-} from '../utils/campFinanceExpense.js';
 import { resolveClientMasterPricingFromRecords } from '../utils/campClientMasterPricing.js';
 
 function ReadOnlyField({ label, value }) {
@@ -127,7 +123,7 @@ function ExecutionStatusField({
 }) {
   return (
     <div className="camp-execution-status-field">
-      <ReadOnlyField label="Execution Status" value={effectiveStatus} />
+      <ReadOnlyField label="Execution Status" value={executionStatusLabel(effectiveStatus)} />
     </div>
   );
 }
@@ -178,6 +174,10 @@ export function CampLifecycleForm({
   reachedLifecycleStage = 'request',
   mappedConsumables = [],
   clientMasterRecords = [],
+  onConfirmPayment = null,
+  onHoldPayment = null,
+  onReleaseHold = null,
+  financialActionBusy = false,
   canSetHistoricalCampDates = false,
 }) {
   const resolvedActiveStage = normalizeLifecycleStage(activeStage, 'request');
@@ -197,6 +197,7 @@ export function CampLifecycleForm({
     if (!clientMasterPricing || !updateFields) return;
     const next = {
       campRevenue: derived.campRevenue,
+      travelRevenue: derived.travelRevenue,
       overtimeRevenue: derived.overtimeRevenue,
       otherRevenue: derived.otherRevenue,
       totalRevenue: derived.totalRevenue,
@@ -209,10 +210,12 @@ export function CampLifecycleForm({
   }, [
     clientMasterPricing,
     derived.campRevenue,
+    derived.travelRevenue,
     derived.overtimeRevenue,
     derived.otherRevenue,
     derived.totalRevenue,
     form.campRevenue,
+    form.travelRevenue,
     form.overtimeRevenue,
     form.otherRevenue,
     form.totalRevenue,
@@ -569,13 +572,14 @@ export function CampLifecycleForm({
     const patientForms = docs.filter((d) => normalizeExecutionDocType(d.docType) === 'patient_form').length;
 
     function handleMarkCompleted() {
-      const consumableBlockers = getExecutionConsumablesBlockers(form, mappedConsumables);
-      if (consumableBlockers.length) {
-        onValidationError?.(consumableBlockers[0]);
+      const blockers = getExecutionFinanceBlockers(form, mappedConsumables);
+      if (blockers.length) {
+        onValidationError?.(blockers[0]);
         return;
       }
       updateFields?.({
         executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
+        markComplete: true,
         inTime: form.inTime || form.startTime || '',
         outTime: form.outTime || form.endTime || '',
       });
@@ -600,7 +604,7 @@ export function CampLifecycleForm({
                 disabled={disabled}
                 onClick={handleMarkCompleted}
               >
-                Mark as Camp Completed
+                Mark Complete
               </button>
             </div>
           ) : null}
@@ -620,7 +624,7 @@ export function CampLifecycleForm({
           ) : null}
           {!cancelledClosure && effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED && !isExecutionReadyForFinance(form, mappedConsumables) ? (
             <p className="meta-text camp-execution-action-note full">
-              Action required: complete mandatory execution details and mark as Camp Completed for Finance.
+              Action required: complete Out Time, Travelled Kms, Patients, Product Count, documents, and consumables, then Mark Complete.
             </p>
           ) : null}
         </div>
@@ -723,91 +727,151 @@ export function CampLifecycleForm({
             ) : null}
           </div>
         ) : null}
-        <ReadOnlyField
-          label="Expense Category *"
-          value={form.expenseCategory || CAMP_FINANCE_EXPENSE_CATEGORY}
-        />
-        <ReadOnlyField
-          label="Expense Sub-Category *"
-          value={form.expenseSubCategory || CAMP_FINANCE_EXPENSE_SUB_CATEGORY}
-        />
-        <ReadOnlyField
-          label="Camp Revenue (Auto)"
-          value={formatFinanceAmountValue(form.campRevenue ?? derived.campRevenue)}
-        />
-        <ReadOnlyField
-          label="Overtime Revenue (Auto)"
-          value={formatFinanceAmountValue(form.overtimeRevenue ?? derived.overtimeRevenue)}
-        />
-        <ReadOnlyField
-          label="Other Revenue (Auto)"
-          value={formatFinanceAmountValue(form.otherRevenue ?? derived.otherRevenue)}
-        />
-        {clientMasterPricing ? (
-          <p className="meta-text full">
-            Other Revenue breakdown: patient excess
-            {' '}
-            {formatFinanceAmountValue(derived.otherRevenuePatients)}
-            {' · '}
-            distance excess
-            {' '}
-            {formatFinanceAmountValue(derived.otherRevenueDistance)}
-            {clientMasterPricing.programName || clientMasterPricing.campName
-              ? ` · from Client Master ${[clientMasterPricing.programName, clientMasterPricing.campName].filter(Boolean).join(' / ')}`
-              : ''}
-          </p>
-        ) : (
-          <p className="meta-text full">
-            Link Client Master units (Executed / Cancelled / OT / Patients / KMs) for this client’s division and method to auto-calculate revenue.
-          </p>
-        )}
-        <FinanceAmountField
-          label="Total Revenue (Auto)"
-          value={form.totalRevenue ?? derived.totalRevenue}
-          onChange={(v) => updateFinanceAmount('totalRevenue', v)}
-          disabled={disabled}
-        />
-        <FinanceAmountField
-          label="Camp Amount"
-          value={form.campAmount}
-          onChange={(v) => updateFinanceAmount('campAmount', v)}
-          disabled={disabled}
-        />
-        <FinanceAmountField
-          label="Travelling"
-          value={form.travelling}
-          onChange={(v) => updateFinanceAmount('travelling', v)}
-          disabled={disabled}
-        />
-        <FinanceAmountField
-          label="Overtime"
-          value={form.overtimeExpense}
-          onChange={(v) => updateFinanceAmount('overtimeExpense', v)}
-          disabled={disabled}
-        />
-        <FinanceAmountField
-          label="Other Expenses"
-          value={form.otherExpenses}
-          onChange={(v) => updateFinanceAmount('otherExpenses', v)}
-          disabled={disabled}
-        />
-
-        <div className="camp-payout-submit-row full">
-          <FinanceAmountField
-            label="Total Payout (Auto)"
-            value={form.totalPayout ?? derived.totalPayout}
-            onChange={(v) => updateFinanceAmount('totalPayout', v)}
-            disabled={disabled}
-          />
-          <SelectField
-            label="Payment check"
-            value={form.paymentSubmitStatus}
-            onChange={(v) => updateField('paymentSubmitStatus', v)}
-            options={PAYMENT_SUBMIT_STATUSES}
-            disabled={disabled || submitted}
-            required={!submitted}
-          />
+        <div className="camp-finance-section full">
+          <p className="camp-finance-section__title">Revenue</p>
+          <div className="camp-finance-section__row camp-finance-section__row--4">
+            <ReadOnlyField
+              label="Camp Revenue"
+              value={formatFinanceAmountValue(form.campRevenue ?? derived.campRevenue)}
+            />
+            <ReadOnlyField
+              label="Travel Revenue"
+              value={formatFinanceAmountValue(form.travelRevenue ?? derived.travelRevenue)}
+            />
+            <ReadOnlyField
+              label="Overtime Revenue"
+              value={formatFinanceAmountValue(form.overtimeRevenue ?? derived.overtimeRevenue)}
+            />
+            <ReadOnlyField
+              label="Other Revenue"
+              value={formatFinanceAmountValue(form.otherRevenue ?? derived.otherRevenue)}
+            />
+          </div>
+          {clientMasterPricing ? (
+            <p className="meta-text">
+              Travel Revenue is distance excess
+              {' '}
+              {formatFinanceAmountValue(derived.otherRevenueDistance)}
+              {' · '}
+              Other Revenue is patient excess
+              {' '}
+              {formatFinanceAmountValue(derived.otherRevenuePatients)}
+              {clientMasterPricing.programName || clientMasterPricing.campName
+                ? ` · from Client Master ${[clientMasterPricing.programName, clientMasterPricing.campName].filter(Boolean).join(' / ')}`
+                : ''}
+            </p>
+          ) : (
+            <p className="meta-text">
+              Link Client Master units (Executed / Cancelled / OT / Patients / KMs) for this client’s division and method to auto-calculate revenue.
+            </p>
+          )}
         </div>
+
+        <div className="camp-finance-section full">
+          <p className="camp-finance-section__title">Payout</p>
+          <div className="camp-finance-section__row camp-finance-section__row--4">
+            <FinanceAmountField
+              label="Camp Payout"
+              value={form.campAmount}
+              onChange={(v) => updateFinanceAmount('campAmount', v)}
+              disabled={disabled}
+            />
+            <FinanceAmountField
+              label="Travel Payout"
+              value={form.travelling}
+              onChange={(v) => updateFinanceAmount('travelling', v)}
+              disabled={disabled}
+            />
+            <FinanceAmountField
+              label="Overtime Payout"
+              value={form.overtimeExpense}
+              onChange={(v) => updateFinanceAmount('overtimeExpense', v)}
+              disabled={disabled}
+            />
+            <FinanceAmountField
+              label="Other Payouts"
+              value={form.otherExpenses}
+              onChange={(v) => updateFinanceAmount('otherExpenses', v)}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+
+        <div className="camp-finance-section full">
+          <p className="camp-finance-section__title">Summary</p>
+          <div className="camp-finance-section__row camp-finance-section__row--4">
+            <FinanceAmountField
+              label="Total Revenue"
+              value={form.totalRevenue ?? derived.totalRevenue}
+              onChange={(v) => updateFinanceAmount('totalRevenue', v)}
+              disabled={disabled}
+            />
+            <FinanceAmountField
+              label="Total Payout"
+              value={form.totalPayout ?? derived.totalPayout}
+              onChange={(v) => updateFinanceAmount('totalPayout', v)}
+              disabled={disabled}
+            />
+            <ReadOnlyField
+              label="Net Contribution"
+              value={formatFinanceAmountValue(
+                Math.round((
+                  (Number(form.totalRevenue ?? derived.totalRevenue) || 0)
+                  - (Number(form.totalPayout ?? derived.totalPayout) || 0)
+                ) * 100) / 100,
+              )}
+            />
+            <ReadOnlyField
+              label="Payment Check"
+              value={financialWorkflowStatus(form).label}
+            />
+          </div>
+        </div>
+
+        {!submitted && form.financePaymentStatus !== 'paid' ? (
+          <div className="full camp-finance-workflow-actions">
+            {(form.paymentSubmitStatus === 'payment_not_checked' || !form.paymentSubmitStatus) ? (
+              <button
+                type="button"
+                className="btn secondary btn-sm"
+                disabled={disabled || financialActionBusy || !onConfirmPayment}
+                onClick={() => onConfirmPayment?.()}
+              >
+                Confirm Payment
+              </button>
+            ) : null}
+            {form.paymentSubmitStatus === 'payment_hold' ? (
+              <button
+                type="button"
+                className="btn secondary btn-sm"
+                disabled={disabled || financialActionBusy || !onReleaseHold}
+                onClick={() => onReleaseHold?.()}
+              >
+                Release Hold
+              </button>
+            ) : (
+              <>
+                <label className="camp-hold-remark-field">
+                  Hold Remark
+                  <CampFormInput
+                    value={form.paymentRemark || ''}
+                    onChange={(e) => updateField('paymentRemark', e.target.value)}
+                    disabled={disabled || form.financePaymentStatus === 'paid'}
+                    placeholder="Required when placing on Hold"
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn secondary btn-sm"
+                  disabled={disabled || financialActionBusy || !onHoldPayment}
+                  onClick={() => onHoldPayment?.(form.paymentRemark)}
+                >
+                  Hold
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
 
         {submitted && (
           <div className="camp-finance-submitted full">
@@ -815,9 +879,7 @@ export function CampLifecycleForm({
               Submitted to Finance One
               {form.submittedToFinanceAt ? ` on ${new Date(form.submittedToFinanceAt).toLocaleString()}` : ''}.
               {' '}
-              Check: <strong>{paymentSubmitStatusLabel(form.paymentSubmitStatus)}</strong>
-              {' · '}
-              Finance status: <strong>{financePaymentStatusLabel(form.financePaymentStatus)}</strong>
+              Payment Check: <strong>{financialWorkflowStatus(form).label}</strong>
             </p>
             {form.financePaymentStatus === 'paid' && (
               <p className="meta-text">

@@ -1222,9 +1222,70 @@
   margin: 0 0 1rem;
 }
 
+/* Billing Center saved-documents grid — single-line cells + horizontal scroll */
+.finance-docs-table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.finance-docs-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.finance-docs-table th,
+.finance-docs-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.finance-docs-table .finance-docs-col-number {
+  min-width: 11.5rem;
+}
+
+.finance-docs-table .finance-docs-col-type {
+  min-width: 8.5rem;
+}
+
+.finance-docs-table .finance-docs-col-recipient {
+  min-width: 14rem;
+}
+
+.finance-docs-table .finance-docs-col-date {
+  min-width: 6.5rem;
+}
+
+.finance-docs-table .finance-docs-col-amount,
+.finance-docs-table .finance-docs-col-net {
+  min-width: 7.5rem;
+}
+
+.finance-docs-table .finance-docs-col-stage {
+  min-width: 5.5rem;
+}
+
+.finance-docs-table .finance-docs-col-status {
+  min-width: 8.5rem;
+}
+
+.finance-docs-table .finance-docs-col-actions {
+  min-width: 14rem;
+  text-align: right;
+}
+
+.finance-docs-table .status-pill,
+.finance-docs-table .finance-pay-status {
+  white-space: nowrap;
+  display: inline-block;
+}
+
 .finance-docs-row-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   align-items: center;
   justify-content: flex-end;

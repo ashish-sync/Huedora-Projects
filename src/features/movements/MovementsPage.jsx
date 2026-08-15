@@ -5,6 +5,8 @@ import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
+import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
+import '../notifications/notifications.css';
 
 export default function MovementsPage() {
   const { can, user } = useAuth();
@@ -167,6 +169,7 @@ export default function MovementsPage() {
                 <td>{m.requestorId?.fullName || '-'}</td>
                 <td>{m.reason}</td>
                 <td className="row">
+                  <WatchFollowButton entityType="Movement" entityId={m._id} />
                   {can('movements:approve') &&
                     m.status === 'REQUESTED' &&
                     String(m.requestorId?._id || m.requestorId) !== String(user.id) && (

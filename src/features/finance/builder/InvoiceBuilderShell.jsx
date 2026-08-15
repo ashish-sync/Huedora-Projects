@@ -5,8 +5,10 @@ import { usePreviewScale } from '../documentGenerator/usePreviewScale.js';
 import { canApproveCommercialDocument } from './commercialApproval.js';
 import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import ModalShell from '../../../components/ui/ModalShell.jsx';
+import WatchFollowButton from '../../notifications/WatchFollowButton.jsx';
 import './export-invoice.css';
 import './builder.css';
+import '../../notifications/notifications.css';
 
 function SaveIndicator({ state, savedAt, status, docId }) {
   if (state === 'saving') {
@@ -252,6 +254,7 @@ export default function InvoiceBuilderShell({
         </div>
 
         <div className="ib-toolbar-right">
+          {docId ? <WatchFollowButton entityType="FinanceCommercialDocument" entityId={docId} /> : null}
           {!isDraftLike ? (
             <button type="button" className="ib-text-btn" onClick={onNewInvoice} title={newDocLabel} disabled={busy}>
               {newDocLabel}

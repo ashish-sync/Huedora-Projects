@@ -12,6 +12,9 @@ import {
 } from '../shared/notificationSound.js';
 import AppErrorBoundary from '../components/AppErrorBoundary.jsx';
 import ModalShell from '../components/ui/ModalShell.jsx';
+import { formatDateTime } from '../shared/dateFormat.js';
+import { priorityClass, priorityLabel } from '../features/notifications/notificationLinks.js';
+import '../features/notifications/notifications.css';
 
 function initials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -31,7 +34,10 @@ export default function Layout({ children }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [previewRows, setPreviewRows] = useState([]);
   const menuRef = useRef(null);
+  const bellRef = useRef(null);
   const knownUnreadIdsRef = useRef(null);
   const lastUnreadPollRef = useRef(0);
   const unreadAbortRef = useRef(null);
@@ -78,8 +84,36 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     setMenuOpen(false);
+    setBellOpen(false);
     setConfirmLogout(false);
   }, [pathname]);
+
+  const loadPreview = useCallback(async () => {
+    if (!canSeeNotifications) return;
+    try {
+      const res = await api('/notifications?unread=true');
+      setPreviewRows((res.data || []).slice(0, 8));
+    } catch {
+      setPreviewRows([]);
+    }
+  }, [canSeeNotifications]);
+
+  useEffect(() => {
+    if (!bellOpen) return undefined;
+    loadPreview();
+    const onDoc = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setBellOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [bellOpen, loadPreview]);
 
   useEffect(() => {
     if (!canSeeNotifications) return undefined;
@@ -177,32 +211,72 @@ export default function Layout({ children }) {
             )}
           </button>
           {canSeeNotifications && (
-            <Link
-              to="/notifications"
-              className={`header-bell${pathname.startsWith('/notifications') ? ' is-active' : ''}${
-                unreadCount ? ' has-unread' : ''
-              }`}
-              aria-label={
-                unreadCount
-                  ? `Notifications, ${unreadCount} unread`
-                  : 'Notifications'
-              }
-              title={unreadCount ? `${unreadCount} unread` : 'Notifications'}
-              onClick={() => emitNotificationsChanged()}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-                <path
-                  d="M6.5 10.5a5.5 5.5 0 0 1 11 0c0 4.2 1.5 5.5 1.5 5.5H5s1.5-1.3 1.5-5.5Z"
-                  strokeLinejoin="round"
-                />
-                <path d="M10 17.75a2 2 0 0 0 4 0" strokeLinecap="round" />
-              </svg>
-              {unreadLabel ? (
-                <span className="header-bell-badge" aria-hidden="true">
-                  {unreadLabel}
-                </span>
+            <div className="header-bell-wrap" ref={bellRef}>
+              <button
+                type="button"
+                className={`header-bell${pathname.startsWith('/notifications') || bellOpen ? ' is-active' : ''}${
+                  unreadCount ? ' has-unread' : ''
+                }`}
+                aria-label={
+                  unreadCount
+                    ? `Notifications, ${unreadCount} unread`
+                    : 'Notifications'
+                }
+                aria-expanded={bellOpen}
+                aria-haspopup="dialog"
+                title={unreadCount ? `${unreadCount} unread` : 'Notifications'}
+                onClick={() => {
+                  setBellOpen((v) => !v);
+                  emitNotificationsChanged();
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                  <path
+                    d="M6.5 10.5a5.5 5.5 0 0 1 11 0c0 4.2 1.5 5.5 1.5 5.5H5s1.5-1.3 1.5-5.5Z"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M10 17.75a2 2 0 0 0 4 0" strokeLinecap="round" />
+                </svg>
+                {unreadLabel ? (
+                  <span className="header-bell-badge" aria-hidden="true">
+                    {unreadLabel}
+                  </span>
+                ) : null}
+              </button>
+              {bellOpen ? (
+                <div className="header-notif-panel" role="dialog" aria-label="Recent notifications">
+                  <div className="header-notif-panel-head">
+                    <span>Notifications</span>
+                    <span className="muted">{unreadCount} unread</span>
+                  </div>
+                  {previewRows.length ? (
+                    previewRows.map((n) => (
+                      <Link
+                        key={n._id}
+                        to="/notifications"
+                        className={`header-notif-item${n.readAt ? '' : ' is-unread'}`}
+                        onClick={() => setBellOpen(false)}
+                      >
+                        <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
+                        <span className="header-notif-item-title">{n.title}</span>
+                        <div className="header-notif-item-meta">
+                          {formatDateTime(n.groupedAt || n.createdAt)}
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="header-notif-empty">No unread notifications</div>
+                  )}
+                  <Link
+                    to="/notifications"
+                    className="header-notif-footer"
+                    onClick={() => setBellOpen(false)}
+                  >
+                    View all
+                  </Link>
+                </div>
               ) : null}
-            </Link>
+            </div>
           )}
           <div className="header-user" ref={menuRef}>
             <button

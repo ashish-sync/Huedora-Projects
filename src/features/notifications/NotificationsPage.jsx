@@ -1,26 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
+import {
+  notificationEntityPath,
+  priorityClass,
+  priorityLabel,
+} from './notificationLinks.js';
+import './notifications.css';
 
 export default function NotificationsPage() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [downloadingId, setDownloadingId] = useState('');
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [priority, setPriority] = useState('');
+  const [module, setModule] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [q, setQ] = useState('');
+  const [expandedId, setExpandedId] = useState('');
 
-  const load = () =>
-    api('/notifications')
+  const load = useCallback(() => {
+    const params = new URLSearchParams();
+    if (unreadOnly) params.set('unread', 'true');
+    if (priority) params.set('priority', priority);
+    if (module) params.set('module', module);
+    if (showArchived) params.set('archive', '1');
+    if (q.trim()) params.set('q', q.trim());
+    return api(`/notifications?${params}`)
       .then((r) => {
-        setRows(r.data);
+        setRows(r.data || []);
         emitNotificationsChanged();
       })
       .catch((e) => setError(e.message));
+  }, [unreadOnly, priority, module, showArchived, q]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const unread = rows.filter((n) => !n.readAt).length;
 
@@ -67,67 +90,146 @@ export default function NotificationsPage() {
   return (
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Notifications' }]}
-      title="Notifications"
-      description="Alerts for agreements, movements, verification, imports, and system events."
+      title="Notification Center"
+      description="Platform alerts with priority, change detail, and 7-day auto-archive."
       actions={
         <button className="btn secondary" type="button" onClick={markAllRead} disabled={!unread}>
           Mark all read
         </button>
       }
       kpis={[
-        { label: 'Total', value: rows.length },
+        { label: 'Showing', value: rows.length },
         { label: 'Unread', value: unread },
       ]}
     >
       {error && <p className="error">{error}</p>}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        {rows.map((n) => (
-          <div
-            key={n._id}
-            className={`notification-row${n.readAt ? '' : ' is-unread'}`}
-            role="button"
-            tabIndex={0}
-            onClick={() => markRead(n)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                markRead(n);
-              }
-            }}
-            style={{
-              paddingBottom: 'var(--space-3)',
-              borderBottom: '1px solid var(--line)',
-              opacity: n.readAt ? 0.65 : 1,
-              cursor: n.readAt ? 'default' : 'pointer',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              {!n.readAt ? <span className="header-bell-badge notification-unread-dot" aria-hidden="true" /> : null}
-              <strong>{n.title}</strong>
-            </div>
-            <div className="muted">{n.body}</div>
-            <div className="muted" style={{ fontSize: 'var(--text-body-sm-size)', marginTop: 'var(--space-1)' }}>
-              {n.type} · {formatDateTime(n.createdAt)}
-            </div>
-            {n.type === 'IMPORT_ERRORS' && n.meta?.downloadPath ? (
-              <div style={{ marginTop: 'var(--space-3)' }}>
-                <button
-                  type="button"
-                  className="btn secondary btn-compact"
-                  disabled={downloadingId === n._id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    downloadReport(n);
-                  }}
-                >
-                  {downloadingId === n._id
-                    ? 'Downloading…'
-                    : `Download error report${n.meta?.errorRows ? ` (${n.meta.errorRows})` : ''}`}
-                </button>
+
+      <MasterFilterShell>
+        <MasterSearchField
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search title, body, type…"
+          aria-label="Search notifications"
+        />
+        <AdaptiveSelect
+          value={unreadOnly ? 'unread' : 'all'}
+          onChange={(e) => setUnreadOnly(e.target.value === 'unread')}
+          aria-label="Filter by read state"
+        >
+          <option value="all">All</option>
+          <option value="unread">Unread only</option>
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          aria-label="Filter by priority"
+        >
+          <option value="">All priorities</option>
+          <option value="informational">Informational</option>
+          <option value="important">Important</option>
+          <option value="critical">Critical</option>
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          value={module}
+          onChange={(e) => setModule(e.target.value)}
+          aria-label="Filter by module"
+        >
+          <option value="">All modules</option>
+          <option value="camp">Camp</option>
+          <option value="finance">Finance</option>
+          <option value="assets">Assets / Requests</option>
+          <option value="documents">Documents</option>
+          <option value="masters">Masters</option>
+          <option value="system">System</option>
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          value={showArchived ? 'archived' : 'active'}
+          onChange={(e) => setShowArchived(e.target.value === 'archived')}
+          aria-label="Filter by archive"
+        >
+          <option value="active">Active</option>
+          <option value="archived">Archived (7+ days)</option>
+        </AdaptiveSelect>
+      </MasterFilterShell>
+
+      <div className="card nc-list">
+        {rows.map((n) => {
+          const href = notificationEntityPath(n);
+          const changes = Array.isArray(n.changes) ? n.changes : [];
+          const open = expandedId === n._id;
+          return (
+            <div
+              key={n._id}
+              className={`nc-row notification-row${n.readAt ? '' : ' is-unread'}`}
+            >
+              <button
+                type="button"
+                className="nc-row-main"
+                onClick={() => {
+                  markRead(n);
+                  setExpandedId(open ? '' : n._id);
+                }}
+              >
+                <div className="nc-row-head">
+                  {!n.readAt ? (
+                    <span className="header-bell-badge notification-unread-dot" aria-hidden="true" />
+                  ) : null}
+                  <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
+                  <strong className="nc-title">{n.title}</strong>
+                  {n.groupCount > 1 ? (
+                    <span className="nc-group-count">{n.groupCount} updates</span>
+                  ) : null}
+                </div>
+                {n.body ? <div className="muted nc-body">{n.body}</div> : null}
+                <div className="muted nc-meta">
+                  {n.module || 'system'} · {n.type}
+                  {n.actorEmail ? ` · ${n.actorEmail}` : ''}
+                  {' · '}
+                  {formatDateTime(n.groupedAt || n.createdAt)}
+                </div>
+              </button>
+
+              {open && changes.length ? (
+                <ul className="nc-changes">
+                  {changes.map((c) => (
+                    <li key={`${c.field}-${c.to}`}>
+                      <span className="nc-change-label">{c.label || c.field}</span>
+                      <span className="nc-change-values">
+                        <span className="nc-from">{c.from == null || c.from === '' ? '—' : c.from}</span>
+                        <span aria-hidden="true"> → </span>
+                        <span className="nc-to">{c.to == null || c.to === '' ? '—' : c.to}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              <div className="nc-row-actions">
+                {href ? (
+                  <Link
+                    to={href}
+                    className="btn secondary btn-compact"
+                    onClick={() => markRead(n)}
+                  >
+                    Open
+                  </Link>
+                ) : null}
+                {n.type === 'IMPORT_ERRORS' && (n.meta?.downloadPath || n._id) ? (
+                  <button
+                    type="button"
+                    className="btn secondary btn-compact"
+                    disabled={downloadingId === n._id}
+                    onClick={() => downloadReport(n)}
+                  >
+                    {downloadingId === n._id
+                      ? 'Downloading…'
+                      : `Download error report${n.meta?.errorRows ? ` (${n.meta.errorRows})` : ''}`}
+                  </button>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-        ))}
+            </div>
+          );
+        })}
         {!rows.length && (
           <EmptyState title="No notifications" description="New alerts will appear here." />
         )}

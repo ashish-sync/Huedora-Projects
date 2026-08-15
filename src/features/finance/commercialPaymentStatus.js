@@ -54,6 +54,16 @@ export function resolveCommercialPaymentDisplayStatus(row, now = new Date()) {
   return paymentStatusFromAgeingDays(days == null ? 0 : days);
 }
 
+/** Billing Center Status filter options (payment / ageing). */
+export const COMMERCIAL_PAYMENT_STATUS_FILTERS = [
+  'Invoice Sent',
+  'Invoice Due',
+  'Invoice Overdue',
+  'MSME Breach',
+  'Partially Paid',
+  'Paid',
+];
+
 /** CSS modifier for Status (payment) pills. */
 export function paymentStatusPillClass(displayStatus) {
   switch (displayStatus) {

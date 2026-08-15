@@ -12,6 +12,8 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import ModalShell from '../../components/ui/ModalShell.jsx';
+import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
+import '../notifications/notifications.css';
 
 function currentPeriod() {
   return new Date().toISOString().slice(0, 7);
@@ -523,9 +525,15 @@ export default function VerificationsPage() {
                   {active.holder?.name ? ` · ${active.holder.name}` : ''}
                 </p>
               </div>
-              <button type="button" className="btn secondary btn-compact" onClick={closeVerify}>
-                Close
-              </button>
+              <div className="row" style={{ gap: 8 }}>
+                <WatchFollowButton
+                  entityType="VerificationRecord"
+                  entityId={active.record?._id}
+                />
+                <button type="button" className="btn secondary btn-compact" onClick={closeVerify}>
+                  Close
+                </button>
+              </div>
             </div>
 
             {error && (

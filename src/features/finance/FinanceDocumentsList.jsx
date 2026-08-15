@@ -18,6 +18,7 @@ import {
   recordCommercialPayment,
 } from './builder/builderPersistence.js';
 import {
+  COMMERCIAL_PAYMENT_STATUS_FILTERS,
   netReceivableFromPreGst,
   paymentStatusPillClass,
   resolveCommercialPaymentDisplayStatus,
@@ -52,6 +53,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [q, setQ] = useState('');
   const debouncedQ = useDebouncedValue(q, 300);
   const [status, setStatus] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
   const [error, setError] = useState('');
   const [listLoading, setListLoading] = useState(false);
@@ -70,6 +72,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (status) params.set('status', status);
+      if (paymentStatus) params.set('paymentStatus', paymentStatus);
       if (documentType) params.set('documentType', documentType);
       const res = await api(`/finance/commercial-documents?${params}`);
       setRows(res.data || []);
@@ -80,7 +83,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     } finally {
       setListLoading(false);
     }
-  }, [page, limit, debouncedQ, status, documentType]);
+  }, [page, limit, debouncedQ, status, paymentStatus, documentType]);
 
   useEffect(() => {
     load();
@@ -179,6 +182,21 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           aria-label="Search documents"
         />
         <AdaptiveSelect
+          value={documentType}
+          onChange={(e) => {
+            setDocumentType(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filter by type"
+        >
+          <option value="">{FILTER.ALL_TYPES}</option>
+          {COMMERCIAL_DOC_TYPES.map((t) => (
+            <option key={t.key} value={t.key}>
+              {t.label}
+            </option>
+          ))}
+        </AdaptiveSelect>
+        <AdaptiveSelect
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
@@ -194,17 +212,17 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           <option value="Cancelled">Cancelled</option>
         </AdaptiveSelect>
         <AdaptiveSelect
-          value={documentType}
+          value={paymentStatus}
           onChange={(e) => {
-            setDocumentType(e.target.value);
+            setPaymentStatus(e.target.value);
             setPage(1);
           }}
-          aria-label="Filter by type"
+          aria-label="Filter by status"
         >
-          <option value="">{FILTER.ALL_TYPES}</option>
-          {COMMERCIAL_DOC_TYPES.map((t) => (
-            <option key={t.key} value={t.key}>
-              {t.label}
+          <option value="">All statuses</option>
+          {COMMERCIAL_PAYMENT_STATUS_FILTERS.map((label) => (
+            <option key={label} value={label}>
+              {label}
             </option>
           ))}
         </AdaptiveSelect>
@@ -213,19 +231,19 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
       {payMsg ? <FeedbackBanner variant="success">{payMsg}</FeedbackBanner> : null}
 
-      <div className="table-wrap">
-        <table className="data-table">
+      <div className="table-wrap finance-docs-table-wrap">
+        <table className="data-table finance-docs-table">
           <thead>
             <tr>
-              <th>Number</th>
-              <th>Type</th>
-              <th>Recipient</th>
-              <th>Date</th>
-              <th className="num">Amount</th>
-              <th className="num">Net Receivable</th>
-              <th>Stage</th>
-              <th>Status</th>
-              <th />
+              <th className="finance-docs-col-number">Number</th>
+              <th className="finance-docs-col-type">Type</th>
+              <th className="finance-docs-col-recipient">Recipient</th>
+              <th className="finance-docs-col-date">Date</th>
+              <th className="num finance-docs-col-amount">Amount</th>
+              <th className="num finance-docs-col-net">Net Receivable</th>
+              <th className="finance-docs-col-stage">Stage</th>
+              <th className="finance-docs-col-status">Status</th>
+              <th className="finance-docs-col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -254,27 +272,27 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                 const paymentDisplay = resolveCommercialPaymentDisplayStatus(row);
                 return (
                   <tr key={row._id}>
-                    <td className="mono-sm">{displayDocumentNumber(row)}</td>
-                    <td>{docTypeLabel(row.documentType)}</td>
-                    <td>{row.recipientName || '—'}</td>
-                    <td>{formatDate(row.documentDate)}</td>
-                    <td className="num">₹ {formatMoney(row.grandTotal)}</td>
-                    <td className="num">
+                    <td className="mono-sm finance-docs-col-number">{displayDocumentNumber(row)}</td>
+                    <td className="finance-docs-col-type">{docTypeLabel(row.documentType)}</td>
+                    <td className="finance-docs-col-recipient">{row.recipientName || '—'}</td>
+                    <td className="finance-docs-col-date">{formatDate(row.documentDate)}</td>
+                    <td className="num finance-docs-col-amount">₹ {formatMoney(row.grandTotal)}</td>
+                    <td className="num finance-docs-col-net">
                       {netReceivable == null ? '—' : `₹ ${formatMoney(netReceivable)}`}
                     </td>
-                    <td>
+                    <td className="finance-docs-col-stage">
                       <span className={`status-pill status-pill--${String(row.status || '').toLowerCase()}`}>
                         {row.status || '—'}
                       </span>
                     </td>
-                    <td>
+                    <td className="finance-docs-col-status">
                       {paymentDisplay ? (
                         <span className={paymentStatusPillClass(paymentDisplay)}>{paymentDisplay}</span>
                       ) : (
                         <span className="muted">—</span>
                       )}
                     </td>
-                    <td>
+                    <td className="finance-docs-col-actions">
                       <div className="finance-docs-row-actions">
                         <Link to={buildEditPath(row.documentType, row._id)}>
                           {editable ? 'Edit' : 'View'}

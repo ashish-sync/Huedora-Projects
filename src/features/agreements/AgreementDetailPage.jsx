@@ -6,6 +6,7 @@ import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -363,6 +364,7 @@ export default function AgreementDetailPage() {
           </div>
         </div>
         <div className="row">
+          <WatchFollowButton entityType="Agreement" entityId={id} />
           {canWrite && doc.status === 'DRAFT' && (
             <button
               className="btn"

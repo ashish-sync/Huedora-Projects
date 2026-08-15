@@ -14,6 +14,7 @@ import { CampLifecycleForm } from './components/CampLifecycleForm';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
 import { CampRowIconButton } from './components/CampRowIconButton';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
+import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
 import { fetchAllHealthcareWorkerContacts } from './utils/fetchHcwContacts.js';
@@ -1040,6 +1041,7 @@ export default function CampFormPage() {
         <FormPageHeader title={isEdit ? 'Edit Camp' : 'Create Camp'} backTo="/camp-one/manage" />
         {isEdit && campMeta && (
           <div className="camp-form-header-actions">
+            <WatchFollowButton entityType="camp_ops_camp" entityId={campMeta._id || id} />
             <CampRowIconButton
               icon={X}
               label="Close"

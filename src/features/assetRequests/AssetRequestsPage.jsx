@@ -15,6 +15,9 @@ import DateInput from '../../components/ui/DateInput.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
+import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
+import '../notifications/notifications.css';
+import { canApproveRequestType, approvalRuleLabel } from './requestApproval.js';
 import {
   MASTER_MODULES,
   entitiesForModule,
@@ -439,6 +442,7 @@ export default function AssetRequestsPage() {
     can('*');
   const canApprove =
     can('asset-requests:approve') || can('movements:approve') || can('*');
+  const userCanApproveType = (requestType) => canApproveRequestType(user, can, requestType);
 
   const [rows, setRows] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -2995,6 +2999,7 @@ export default function AssetRequestsPage() {
                       {r.requestType === 'HIRING' ? (
                         <>
                           {canApprove &&
+                            userCanApproveType(r.requestType) &&
                             ['REQUESTED', 'APPROVED'].includes(r.status) &&
                             !isMine && (
                               <>
@@ -3018,6 +3023,12 @@ export default function AssetRequestsPage() {
                             )}
                           {r.status === 'REQUESTED' && isMine && (
                             <span className="muted mono-sm">Awaiting fulfillment</span>
+                          )}
+                          {r.status === 'REQUESTED' &&
+                            !isMine &&
+                            canApprove &&
+                            !userCanApproveType(r.requestType) && (
+                            <span className="muted mono-sm">Awaiting Operations Leader</span>
                           )}
                           {isActive && (canApprove || (canRequest && isMine)) && (
                             <button
@@ -3058,7 +3069,11 @@ export default function AssetRequestsPage() {
                         </>
                       ) : (
                         <>
-                      {canApprove && r.status === 'REQUESTED' && !isMine && (
+                      <WatchFollowButton entityType="AssetRequest" entityId={r._id} />
+                      {canApprove &&
+                        userCanApproveType(r.requestType) &&
+                        r.status === 'REQUESTED' &&
+                        !isMine && (
                         <>
                           <button type="button" className="btn btn-compact" onClick={() => act(r._id, 'approve')}>
                             Approve
@@ -3071,6 +3086,14 @@ export default function AssetRequestsPage() {
                             Reject
                           </button>
                         </>
+                      )}
+                      {r.status === 'REQUESTED' &&
+                        !isMine &&
+                        canApprove &&
+                        !userCanApproveType(r.requestType) && (
+                        <span className="muted mono-sm">
+                          Awaiting {approvalRuleLabel(r.requestType)}
+                        </span>
                       )}
                       {canApprove && r.status === 'APPROVED' && (
                         <button type="button" className="btn secondary btn-compact" onClick={() => act(r._id, 'complete')}>

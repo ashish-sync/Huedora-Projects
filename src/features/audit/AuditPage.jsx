@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
@@ -6,6 +6,27 @@ import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import '../notifications/notifications.css';
+
+function buildChangeRows(before, after) {
+  if (!before && !after) return [];
+  const b = before && typeof before === 'object' ? before : {};
+  const a = after && typeof after === 'object' ? after : {};
+  const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
+  const skip = new Set(['_id', '__v', 'createdAt', 'updatedAt', 'builderForm', 'passwordHash']);
+  const rows = [];
+  for (const key of keys) {
+    if (skip.has(key)) continue;
+    const from = b[key];
+    const to = a[key];
+    const fs = from == null ? '' : typeof from === 'object' ? JSON.stringify(from) : String(from);
+    const ts = to == null ? '' : typeof to === 'object' ? JSON.stringify(to) : String(to);
+    if (fs === ts) continue;
+    rows.push({ field: key, from: fs || '—', to: ts || '—' });
+    if (rows.length >= 40) break;
+  }
+  return rows;
+}
 
 export default function AuditPage() {
   const { can } = useAuth();
@@ -19,6 +40,7 @@ export default function AuditPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [expandedId, setExpandedId] = useState('');
   const canRead = can('audit:read');
 
   const load = (filters = applied, pageNum = page, pageLimit = limit) => {
@@ -74,7 +96,7 @@ export default function AuditPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Audit log' }]}
       title="Audit log"
-      description="Activity history for agreements, assets, and administration."
+      description="Activity history with old → new values when recorded."
       toolbar={
         <DateRangeFilter
           from={from}
@@ -107,22 +129,65 @@ export default function AuditPage() {
               <th>Action</th>
               <th>Entity</th>
               <th>Result</th>
+              <th>Changes</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((a) => (
-              <tr key={a._id}>
-                <td>{formatDateTime(a.at)}</td>
-                <td>{a.actorEmail || a.actorType}</td>
-                <td>
-                  <code className="mono-sm">{a.action}</code>
-                </td>
-                <td>
-                  {a.entityType || '-'} {a.entityId ? String(a.entityId).slice(-6) : ''}
-                </td>
-                <td>{a.result}</td>
-              </tr>
-            ))}
+            {rows.map((a) => {
+              const changes = buildChangeRows(a.before, a.after);
+              const open = expandedId === a._id;
+              return (
+                <Fragment key={a._id}>
+                  <tr>
+                    <td>{formatDateTime(a.at)}</td>
+                    <td>{a.actorEmail || a.actorType}</td>
+                    <td>
+                      <code className="mono-sm">{a.action}</code>
+                    </td>
+                    <td>
+                      {a.entityType || '-'} {a.entityId ? String(a.entityId).slice(-6) : ''}
+                    </td>
+                    <td>{a.result}</td>
+                    <td>
+                      {changes.length || a.message ? (
+                        <button
+                          type="button"
+                          className="btn secondary btn-compact"
+                          onClick={() => setExpandedId(open ? '' : a._id)}
+                        >
+                          {open ? 'Hide' : changes.length ? `${changes.length} fields` : 'Details'}
+                        </button>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                  {open ? (
+                    <tr>
+                      <td colSpan={6}>
+                        {a.message ? <p className="muted" style={{ marginTop: 0 }}>{a.message}</p> : null}
+                        {changes.length ? (
+                          <ul className="nc-changes">
+                            {changes.map((c) => (
+                              <li key={c.field}>
+                                <span className="nc-change-label">{c.field}</span>
+                                <span className="nc-change-values">
+                                  <span className="nc-from">{c.from}</span>
+                                  <span aria-hidden="true"> → </span>
+                                  <span className="nc-to">{c.to}</span>
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="muted">No field-level snapshot for this event.</p>
+                        )}
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
         {!rows.length && !loading ? (

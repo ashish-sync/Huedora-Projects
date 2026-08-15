@@ -1,5 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
-import { fiscalYearLabel } from '../documentNumbering.js';
+import { formatLocalDocumentNumber, localDocumentPeriodKey } from '../documentNumbering.js';
 import {
   defaultLineItem,
   MAX_INVOICE_LINE_ITEMS,
@@ -136,16 +136,16 @@ function readSeqMap() {
 
 export function peekQuotationNumber(dateIso) {
   const seqMap = readSeqMap();
-  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
-  const next = (seqMap[fy] || 0) + 1;
-  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
+  const key = localDocumentPeriodKey(dateIso);
+  const next = (seqMap[key] || 0) + 1;
+  return formatLocalDocumentNumber('TCQT', dateIso, next);
 }
 
 export function nextQuotationNumber(dateIso) {
   const num = peekQuotationNumber(dateIso);
-  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
+  const key = localDocumentPeriodKey(dateIso);
   const seqMap = readSeqMap();
-  seqMap[fy] = (seqMap[fy] || 0) + 1;
+  seqMap[key] = (seqMap[key] || 0) + 1;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
   return num;
 }

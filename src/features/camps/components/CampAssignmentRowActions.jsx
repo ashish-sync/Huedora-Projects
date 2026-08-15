@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClipboardCopy, UserCheck, Briefcase, X } from 'lucide-react';
+import { ClipboardCopy, Check, UserCheck, Briefcase, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CampAdminDeleteButton } from './CampAdminDeleteButton';
 import { CampRowIconButton } from './CampRowIconButton';
@@ -70,9 +70,9 @@ export function CampAssignmentRowActions({
       )}
       {assigned && (
         <CampRowIconButton
-          icon={ClipboardCopy}
+          icon={copyState === 'copied' ? Check : ClipboardCopy}
           label={copyState === 'copied' ? 'Copied' : 'Copy details'}
-          variant="neutral"
+          variant={copyState === 'copied' ? 'approve' : 'neutral'}
           onClick={handleCopyDetails}
         />
       )}

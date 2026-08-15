@@ -49,8 +49,9 @@ function resolveDisplayName(form = {}, options = {}) {
 
 /** Plain-text block for WhatsApp / email when sharing an assigned camp. */
 export function formatCampAssignmentDetails(form = {}, options = {}) {
+  const displayName = String(resolveDisplayName(form, options) || '').trim() || '—';
   const lines = [
-    detailLine('Display Name', resolveDisplayName(form, options)),
+    displayName === '—' ? displayName : `*${displayName}*`,
     detailLine('Doctor Name', formatDoctorName(form.doctorName)),
     detailLine('Clinic Date', formatDate(form.campDate) || form.campDate),
     detailLine('Clinic Timing', formatClinicTiming(form)),

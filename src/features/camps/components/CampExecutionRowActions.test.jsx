@@ -3,6 +3,10 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CampExecutionRowActions } from './CampExecutionRowActions.jsx';
 
+vi.mock('../utils/campAssignmentCopy', () => ({
+  copyCampAssignmentDetailsFromRecord: vi.fn().mockResolvedValue(true),
+}));
+
 const baseCamp = {
   _id: 'camp-1',
   status: 'approved',
@@ -14,6 +18,8 @@ const baseCamp = {
   attire: 'No Issues',
   campDate: '2000-01-01',
   startTime: '09:00',
+  hcwName: 'Ravi',
+  hcwContact: '9999999999',
 };
 
 function renderActions(overrides = {}) {
@@ -22,10 +28,8 @@ function renderActions(overrides = {}) {
       <CampExecutionRowActions
         camp={{ ...baseCamp, ...overrides }}
         canEdit
-        canExecute
         canRejectCamps
         hasPermission={() => true}
-        onExecute={vi.fn()}
         onAction={vi.fn()}
       />
     </MemoryRouter>,
@@ -37,21 +41,16 @@ describe('CampExecutionRowActions', () => {
     cleanup();
   });
 
-  it('renders execution row actions without runtime errors', () => {
+  it('renders copy details instead of mark executed', () => {
     renderActions();
-    expect(screen.getByLabelText('Mark executed')).toBeTruthy();
+    expect(screen.getByLabelText('Copy details')).toBeTruthy();
+    expect(screen.queryByLabelText('Mark executed')).toBeNull();
     expect(screen.getByLabelText('Edit camp')).toBeTruthy();
   });
 
-  it('greys out mark executed until required execution fields are filled', () => {
-    renderActions({ chargeableStatus: '', inTime: '', attire: '' });
-    expect(screen.getByLabelText('Cannot mark executed yet').disabled).toBe(true);
-    expect(screen.getByLabelText('View execution issues')).toBeTruthy();
-  });
-
-  it('shows issues action when execution is blocked', () => {
-    renderActions({ assignmentStatus: 'Pending', chargeableStatus: '', inTime: '', attire: '' });
-    expect(screen.getByLabelText('View execution issues')).toBeTruthy();
-    expect(screen.getByLabelText('Cannot mark executed yet').disabled).toBe(true);
+  it('hides copy details when camp is not assigned', () => {
+    renderActions({ assignmentStatus: 'Pending', hcwName: '', hcwContact: '' });
+    expect(screen.queryByLabelText('Copy details')).toBeNull();
+    expect(screen.getByLabelText('Edit camp')).toBeTruthy();
   });
 });

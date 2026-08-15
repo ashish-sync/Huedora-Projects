@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Check, ClipboardCopy } from 'lucide-react';
 import { copyCampAssignmentDetails } from '../utils/campAssignmentCopy';
 import { isCampDateDueForExecution } from '../utils/campAssignmentActions.js';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
@@ -141,9 +142,14 @@ export function CampAssignmentStage({
             <div className="camp-assignment-copy-wrap full">
               <button
                 type="button"
-                className="btn secondary btn-compact"
+                className={`btn secondary btn-compact camp-assignment-copy-btn${copyState === 'copied' ? ' is-copied' : ''}`}
                 onClick={handleCopyDetails}
               >
+                {copyState === 'copied' ? (
+                  <Check size={16} strokeWidth={2.25} aria-hidden="true" />
+                ) : (
+                  <ClipboardCopy size={16} strokeWidth={2} aria-hidden="true" />
+                )}
                 {copyState === 'copied' ? 'Copied' : 'Copy details'}
               </button>
             </div>

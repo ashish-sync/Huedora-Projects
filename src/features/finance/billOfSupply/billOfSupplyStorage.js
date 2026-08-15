@@ -1,5 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
-import { fiscalYearLabel } from '../documentNumbering.js';
+import { formatLocalDocumentNumber, localDocumentPeriodKey } from '../documentNumbering.js';
 import {
   defaultLineItem,
   MAX_INVOICE_LINE_ITEMS,
@@ -131,24 +131,20 @@ function readSeqMap() {
   }
 }
 
-function periodKey(dateIso) {
-  return fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
-}
-
 export function peekBillOfSupplyNumber(dateIso) {
   const seqMap = readSeqMap();
-  const fy = periodKey(dateIso);
-  const next = (seqMap[fy] || 0) + 1;
-  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
+  const key = localDocumentPeriodKey(dateIso);
+  const next = (seqMap[key] || 0) + 1;
+  return formatLocalDocumentNumber('TCBS', dateIso, next);
 }
 
 export function nextBillOfSupplyNumber(dateIso) {
   const seqMap = readSeqMap();
-  const fy = periodKey(dateIso);
-  const next = (seqMap[fy] || 0) + 1;
-  seqMap[fy] = next;
+  const key = localDocumentPeriodKey(dateIso);
+  const next = (seqMap[key] || 0) + 1;
+  seqMap[key] = next;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
-  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
+  return formatLocalDocumentNumber('TCBS', dateIso, next);
 }
 
 export function loadBillOfSupplyDraft() {

@@ -16,6 +16,7 @@ import {
   computePoTaxFields,
   createEmptyPurchaseOrder,
   emptyCampTermsFormFields,
+  mergePoFilesFromServerRecord,
   normalizeCampTerms,
   poAmountInputValue,
   purchaseOrdersFromRecord,
@@ -527,13 +528,11 @@ export default function ClientMasterFormPage() {
       try {
         const { data } = await clientMasterApi.uploadPoFiles(recordId, files, poId);
         setForm((prev) => {
-          const nextForm = recordToForm(data.data);
+          const orders = mergePoFilesFromServerRecord(prev.purchaseOrders, poId, data.data);
           return {
             ...prev,
-            ...campTermsFieldsFromRecord(data.data),
-            purchaseOrders: nextForm.purchaseOrders.length
-              ? nextForm.purchaseOrders
-              : (prev.purchaseOrders?.length ? prev.purchaseOrders : [createEmptyPurchaseOrder()]),
+            purchaseOrders: orders,
+            ...combinePurchaseOrders(orders),
           };
         });
         setPendingPoFiles((prev) => {
@@ -584,13 +583,11 @@ export default function ClientMasterFormPage() {
       const fileId = file.id || file.storedName;
       const { data } = await clientMasterApi.deletePoFileById(recordId, poId, fileId);
       setForm((prev) => {
-        const nextForm = recordToForm(data.data);
+        const orders = mergePoFilesFromServerRecord(prev.purchaseOrders, poId, data.data);
         return {
           ...prev,
-          ...campTermsFieldsFromRecord(data.data),
-          purchaseOrders: nextForm.purchaseOrders.length
-            ? nextForm.purchaseOrders
-            : [createEmptyPurchaseOrder()],
+          purchaseOrders: orders,
+          ...combinePurchaseOrders(orders),
         };
       });
     } catch (err) {

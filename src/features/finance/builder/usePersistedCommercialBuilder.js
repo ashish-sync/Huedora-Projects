@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../../shared/auth.jsx';
 import {
   apiDocToForm,
   fetchServerPdfBlob,
@@ -30,6 +31,8 @@ export function usePersistedCommercialBuilder({
 }) {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const admin = Boolean(isAdmin?.());
   const [docId, setDocId] = useState(routeId || null);
   const [status, setStatus] = useState('Draft');
   const [docMeta, setDocMeta] = useState(null);
@@ -52,9 +55,9 @@ export function usePersistedCommercialBuilder({
   statusRef.current = status;
 
   useEffect(() => {
-    if (!orgMaster || !isEditableStatus(statusRef.current)) return;
+    if (!orgMaster || !isEditableStatus(statusRef.current, { isAdmin: admin })) return;
     setForm((prev) => applyOrgMaster(prev, orgMaster));
-  }, [orgMaster, applyOrgMaster]);
+  }, [orgMaster, applyOrgMaster, admin]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +101,7 @@ export function usePersistedCommercialBuilder({
 
   const persist = useCallback(
     async (nextForm, { navigateOnCreate = true } = {}) => {
-      if (!isEditableStatus(statusRef.current)) {
+      if (!isEditableStatus(statusRef.current, { isAdmin: admin })) {
         return null;
       }
       const toSave = applyOrgMaster(nextForm, orgMaster);
@@ -133,7 +136,7 @@ export function usePersistedCommercialBuilder({
         throw err;
       }
     },
-    [applyOrgMaster, documentType, navigate, orgMaster, routeId, slug]
+    [applyOrgMaster, documentType, navigate, orgMaster, routeId, slug, admin]
   );
 
   const persistRef = useRef(persist);
@@ -145,7 +148,7 @@ export function usePersistedCommercialBuilder({
       skipNextAutosave.current = false;
       return;
     }
-    if (!isEditableStatus(status)) return;
+    if (!isEditableStatus(status, { isAdmin: admin })) return;
 
     // Skip autosave until a new draft has enough content.
     if (!docIdRef.current && !hasEnoughCommercialDraftContent(form, documentType)) {
@@ -161,7 +164,7 @@ export function usePersistedCommercialBuilder({
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [form, loadingDoc, status, documentType]);
+  }, [form, loadingDoc, status, documentType, admin]);
 
   const saveNow = useCallback(async () => {
     if (saveTimer.current) {
@@ -191,7 +194,7 @@ export function usePersistedCommercialBuilder({
       setError('');
       try {
         let row = null;
-        if (isEditableStatus(statusRef.current)) {
+        if (isEditableStatus(statusRef.current, { isAdmin: admin })) {
           if (
             !docIdRef.current &&
             !hasEnoughCommercialDraftContent(formRef.current, documentType)
@@ -246,12 +249,12 @@ export function usePersistedCommercialBuilder({
         setBusyAction('');
       }
     },
-    [documentType]
+    [documentType, admin]
   );
 
   const resolveServerPdf = useCallback(async () => {
     let row = null;
-    if (isEditableStatus(statusRef.current)) {
+    if (isEditableStatus(statusRef.current, { isAdmin: admin })) {
       if (
         !docIdRef.current &&
         !hasEnoughCommercialDraftContent(formRef.current, documentType)
@@ -287,7 +290,7 @@ export function usePersistedCommercialBuilder({
     return row;
   }, [resolveServerPdf]);
 
-  const readOnly = !isEditableStatus(status);
+  const readOnly = !isEditableStatus(status, { isAdmin: admin });
 
   return {
     form,

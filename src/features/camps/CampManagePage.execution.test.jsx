@@ -74,7 +74,8 @@ describe('CampManagePage execution stage', () => {
   it('renders execution stage table and row actions without crashing', async () => {
     renderExecutionManagePage();
     expect(await screen.findByText('Demo')).toBeTruthy();
-    expect(screen.getByLabelText('Cannot mark executed yet')).toBeTruthy();
+    expect(screen.getByLabelText('Copy details')).toBeTruthy();
+    expect(screen.queryByLabelText('Cannot mark executed yet')).toBeNull();
     expect(screen.getByTitle('Planned')).toBeTruthy();
   });
 });

@@ -1,4 +1,4 @@
-/* Camp One component styles â layout chrome is TYLO PageShell (see campOps.theme.css). */
+/* Camp One component styles Ã¢ÂÂ layout chrome is TYLO PageShell (see campOps.theme.css). */
 
 .camp-ops-root .autofill-decoy-fields,
 .autofill-decoy-fields {
@@ -518,7 +518,7 @@
   text-decoration: underline;
 }
 
-/* ââ Email detail modal layout âââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Email detail modal layout Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 .camp-ops-root .email-detail-layout {
   display: grid;
@@ -544,7 +544,7 @@
   overflow: hidden;
 }
 
-/* ââ Message viewer (left panel) âââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Message viewer (left panel) Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 .camp-ops-root .email-body-viewer {
   flex: 1 1 0;
@@ -571,7 +571,7 @@
   flex-shrink: 0;
 }
 
-/* ââ Pick-from-message buffer (shows at TOP, above the viewer) ââ */
+/* Ã¢ÂÂÃ¢ÂÂ Pick-from-message buffer (shows at TOP, above the viewer) Ã¢ÂÂÃ¢ÂÂ */
 
 .camp-ops-root .email-body-pick-buffer {
   flex-shrink: 0;
@@ -1343,7 +1343,7 @@
   border-radius: var(--radius-md);
 }
 
-/* ââ Workflow header & stepper âââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Workflow header & stepper Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 .camp-ops-root .paste-workflow-header {
   display: flex;
@@ -1487,7 +1487,7 @@
   flex-shrink: 0;
 }
 
-/* Full-bleed band â same left/right edges as header + stepper */
+/* Full-bleed band Ã¢ÂÂ same left/right edges as header + stepper */
 .camp-ops-root .paste-context-fields {
   flex-shrink: 0;
   margin: 0;
@@ -1631,7 +1631,7 @@
   color: var(--text-muted);
 }
 
-/* ââ Two-column workflow grid ââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂ Two-column workflow grid Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 .camp-ops-root .paste-workflow-grid {
   flex: 1 1 auto;
@@ -3422,7 +3422,7 @@
   margin-bottom: var(--space-4);
 }
 
-/* Client Master list â single-line cells; horizontal scroll for long values */
+/* Client Master list Ã¢ÂÂ single-line cells; horizontal scroll for long values */
 .camp-ops-root .client-masters-page .client-masters-table,
 .client-masters-page .client-masters-table {
   width: max-content;
@@ -4638,7 +4638,7 @@
   display: contents;
 }
 
-/* Unified control sizing â text, date, time, select (not react-select / search wrappers) */
+/* Unified control sizing Ã¢ÂÂ text, date, time, select (not react-select / search wrappers) */
 .camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
 .camp-ops-root .camp-request-grid select,
 .camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input):not(.master-search-input),
@@ -8694,7 +8694,7 @@
 }
 
 .camp-ops-root .camps-filter-card {
-  /* Shell styles live in filter-toolbar.css â keep manage card flush. */
+  /* Shell styles live in filter-toolbar.css Ã¢ÂÂ keep manage card flush. */
   border-bottom: 0;
 }
 
@@ -9095,7 +9095,7 @@
   }
 }
 
-/* Camps manage table â compact request-stage layout */
+/* Camps manage table Ã¢ÂÂ compact request-stage layout */
 .camp-ops-root .camps-table {
   width: 100%;
   min-width: 0;
@@ -9139,7 +9139,7 @@
   width: 6.5rem;
 }
 
-/* Keep DD-MM-YYYY on one line in every lifecycle stage (Request, Assignment, â¦). */
+/* Keep DD-MM-YYYY on one line in every lifecycle stage (Request, Assignment, Ã¢ÂÂ¦). */
 .camp-ops-root .camps-table .col-date,
 .camp-ops-root .camps-table .date-cell {
   width: 6.75rem;
@@ -9465,6 +9465,17 @@
   margin-top: 4px;
 }
 
+.camp-ops-root .camp-assignment-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.camp-ops-root .camp-assignment-copy-btn.is-copied {
+  border-color: color-mix(in srgb, var(--ok, #15803d) 45%, var(--line));
+  color: var(--ok, #15803d);
+}
+
 .camp-ops-root .camp-assignment-copy-hint {
   margin: 0;
   font-size: 0.82rem;
@@ -9483,7 +9494,7 @@
   word-break: break-word;
 }
 
-/*  Operations Board (Team Leader)  */
+/* ÂÂ Operations Board (Team Leader) ÂÂ */
 .camp-ops-root .ops-board {
   display: grid;
   gap: 1.25rem;

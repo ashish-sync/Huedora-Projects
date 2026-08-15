@@ -848,6 +848,8 @@ export function buildEditPath(documentType, id) {
   return `/finance-one/billing/${cfg.slug}/${id}`;
 }
 
-export function isEditableStatus(status) {
+/** Draft/Uploaded: any finance writer. Other statuses: Admin only. */
+export function isEditableStatus(status, { isAdmin = false } = {}) {
+  if (isAdmin) return true;
   return status === 'Draft' || status === 'Uploaded' || !status;
 }

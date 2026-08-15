@@ -210,11 +210,9 @@ function normalizeStoredFile(raw) {
 }
 
 export function campTermsFilesFromRecord(row) {
+  // Dedicated Agreement/Approval attachments only — never fall back to PO uploads.
   const list = Array.isArray(row?.campTermsFiles) ? row.campTermsFiles : [];
-  const fromList = list.map(normalizeStoredFile).filter(Boolean);
-  if (fromList.length) return fromList;
-  const legacy = normalizeStoredFile(row?.poFile);
-  return legacy ? [legacy] : [];
+  return list.map(normalizeStoredFile).filter(Boolean);
 }
 
 function filesFromPoRow(row) {
@@ -313,7 +311,6 @@ export function combinePurchaseOrders(orders) {
 
 export function campTermsFieldsFromRecord(row) {
   const campTerms = normalizeCampTerms(row?.campTerms);
-  const files = campTermsFilesFromRecord(row);
   // Always hydrate both PO and Agreement details so switching terms never loses them.
   const purchaseOrders = purchaseOrdersFromRecord(row);
 
@@ -323,10 +320,8 @@ export function campTermsFieldsFromRecord(row) {
 
   const primary = purchaseOrders[0] || null;
   const combined = combinePurchaseOrders(purchaseOrders);
-  // Prefer dedicated agreement/approval uploads; avoid treating PO flat-files as agreement docs.
-  const agreementFiles = Array.isArray(row?.campTermsFiles)
-    ? row.campTermsFiles.map(normalizeStoredFile).filter(Boolean)
-    : (campTerms === CAMP_TERMS.PO_BASED ? [] : files);
+  // Agreement files are dedicated campTermsFiles only — never PO row uploads.
+  const agreementFiles = campTermsFilesFromRecord(row);
 
   return {
     campTerms,
@@ -344,6 +339,42 @@ export function campTermsFieldsFromRecord(row) {
     agreementEndDate: String(row?.agreementEndDate || '').trim().slice(0, 10),
     ...combined,
   };
+}
+
+/**
+ * After a PO file upload/delete, merge server files into the matching local row.
+ * Preserves unsaved PO No. / Value / dates that the upload response would otherwise wipe.
+ */
+export function mergePoFilesFromServerRecord(prevOrders, poId, serverRow) {
+  const localOrders = Array.isArray(prevOrders) ? prevOrders : [];
+  const serverOrders = purchaseOrdersFromRecord(serverRow);
+  const serverPo =
+    serverOrders.find((row) => String(row.id) === String(poId))
+    || (serverOrders.length === 1 ? serverOrders[0] : null);
+  const serverFiles = serverPo ? filesFromPoRow(serverPo) : [];
+
+  let matched = false;
+  const nextOrders = localOrders.map((row) => {
+    if (String(row.id) !== String(poId)) return row;
+    matched = true;
+    return {
+      ...row,
+      id: serverPo?.id || row.id,
+      files: serverFiles,
+      poFile: serverFiles[0] || null,
+    };
+  });
+
+  if (!matched && serverPo) {
+    nextOrders.push({
+      ...createEmptyPurchaseOrder({ id: String(poId) }),
+      ...serverPo,
+      files: serverFiles,
+      poFile: serverFiles[0] || null,
+    });
+  }
+
+  return nextOrders.length ? nextOrders : [createEmptyPurchaseOrder({ id: poId })];
 }
 
 function serializePoForApi(row) {

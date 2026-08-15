@@ -576,7 +576,6 @@ export default function CampsPage() {
   const isAssignmentStage = workingStage === 'assignment';
   const isExecutionStage = workingStage === 'execution';
   const isFinancialStage = workingStage === 'financial';
-  const canExecuteCamps = hasPermission('camps:execute');
 
   const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
 
@@ -623,11 +622,9 @@ export default function CampsPage() {
         <CampExecutionRowActions
           camp={camp}
           canEdit={canEditCampRecord(camp)}
-          canExecute={canExecuteCamps}
           canRejectCamps={canRejectCamps()}
           hasPermission={hasPermission}
           canDelete={canAdminDeleteCamps}
-          onExecute={() => openCampActionConfirm('execute', camp)}
           onAction={requestCampAction}
         />
       );

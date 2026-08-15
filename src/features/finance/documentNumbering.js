@@ -1,21 +1,22 @@
 /** Commercial document numbering — keep in sync with server documentNumbering.js */
 
 /**
- * PREFIX/FY/SEQ — e.g. TYLO/26-27/0001 (Tax Invoice, Quotation, Proforma, CN/DN, Bill of Supply)
- * PO/FY/SEQ · DC/FY/SEQ
+ * PREFIX/FY/MM/SEQ — e.g. TCIN/26-27/08/001
+ * TCIN Tax Invoice · TCPO Purchase Order · TCPI Proforma · TCQT Quotation
+ * TCCN Credit Note · TCDN Debit Note · TCDC Delivery Challan · TCBS Bill of Supply
  */
 export const DOCUMENT_NUMBER_STANDARDS = [
-  { documentType: 'purchase_order', prefix: 'PO', label: 'Purchase Order', example: 'PO/26-27/0001' },
-  { documentType: 'quotation', prefix: 'TYLO', label: 'Quotation', example: 'TYLO/26-27/0001' },
-  { documentType: 'proforma', prefix: 'TYLO', label: 'Proforma Invoice', example: 'TYLO/26-27/0001' },
-  { documentType: 'client_invoice', prefix: 'TYLO', label: 'Tax Invoice', example: 'TYLO/26-27/0001' },
-  { documentType: 'credit_note', prefix: 'TYLO', label: 'Credit Note', example: 'TYLO/26-27/0001' },
-  { documentType: 'debit_note', prefix: 'TYLO', label: 'Debit Note', example: 'TYLO/26-27/0001' },
-  { documentType: 'delivery_challan', prefix: 'DC', label: 'Delivery Challan', example: 'DC/26-27/0001' },
-  { documentType: 'bill_of_supply', prefix: 'TYLO', label: 'Bill of Supply', example: 'TYLO/26-27/0001' },
+  { documentType: 'purchase_order', prefix: 'TCPO', label: 'Purchase Order', example: 'TCPO/26-27/08/001' },
+  { documentType: 'quotation', prefix: 'TCQT', label: 'Quotation', example: 'TCQT/26-27/08/001' },
+  { documentType: 'proforma', prefix: 'TCPI', label: 'Proforma Invoice', example: 'TCPI/26-27/08/001' },
+  { documentType: 'client_invoice', prefix: 'TCIN', label: 'Tax Invoice', example: 'TCIN/26-27/08/001' },
+  { documentType: 'credit_note', prefix: 'TCCN', label: 'Credit Note', example: 'TCCN/26-27/08/001' },
+  { documentType: 'debit_note', prefix: 'TCDN', label: 'Debit Note', example: 'TCDN/26-27/08/001' },
+  { documentType: 'delivery_challan', prefix: 'TCDC', label: 'Delivery Challan', example: 'TCDC/26-27/08/001' },
+  { documentType: 'bill_of_supply', prefix: 'TCBS', label: 'Bill of Supply', example: 'TCBS/26-27/08/001' },
 ];
 
-export const DOCUMENT_NUMBER_FORMAT = 'PREFIX/FY/SEQ';
+export const DOCUMENT_NUMBER_FORMAT = 'PREFIX/FY/MM/SEQ';
 
 /** Indian FY label e.g. 26-27 for Apr 2026 – Mar 2027 */
 export function fiscalYearLabel(dateIso) {
@@ -30,53 +31,52 @@ function numberExample(prefix, dateIso) {
   const d = dateIso ? new Date(dateIso) : new Date();
   const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${prefix}/${fy}/${mm}/0001`;
+  return `${prefix}/${fy}/${mm}/001`;
 }
 
 export function proformaNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `TYLO/${fy}/0001`;
+  return numberExample('TCPI', dateIso);
 }
 
 export function purchaseOrderNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `PO/${fy}/0001`;
+  return numberExample('TCPO', dateIso);
 }
 
 export function invoiceNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `TYLO/${fy}/0001`;
+  return numberExample('TCIN', dateIso);
 }
 
 export function creditNoteNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `TYLO/${fy}/0001`;
+  return numberExample('TCCN', dateIso);
 }
 
 export function debitNoteNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `TYLO/${fy}/0001`;
+  return numberExample('TCDN', dateIso);
 }
 
 export function deliveryChallanNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `DC/${fy}/0001`;
+  return numberExample('TCDC', dateIso);
 }
 
 export function billOfSupplyNumberExample(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
-  return `TYLO/${fy}/0001`;
+  return numberExample('TCBS', dateIso);
 }
 
 export function quotationNumberExample(dateIso) {
+  return numberExample('TCQT', dateIso);
+}
+
+/** Local preview helper — PREFIX/FY/MM/SEQ with 3-digit sequence. */
+export function formatLocalDocumentNumber(prefix, dateIso, sequence = 1) {
   const d = dateIso ? new Date(dateIso) : new Date();
   const fy = fiscalYearLabel(d);
-  return `TYLO/${fy}/0001`;
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${prefix}/${fy}/${mm}/${String(sequence).padStart(3, '0')}`;
+}
+
+export function localDocumentPeriodKey(dateIso) {
+  const d = dateIso ? new Date(dateIso) : new Date();
+  const fy = fiscalYearLabel(d);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${fy}_${mm}`;
 }

@@ -1,5 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
-import { fiscalYearLabel } from '../documentNumbering.js';
+import { formatLocalDocumentNumber, localDocumentPeriodKey } from '../documentNumbering.js';
 
 const STORAGE_KEY = 'tylo_one_proforma_generator_v1';
 const NUMBER_KEY = 'tylo_one_proforma_number_seq';
@@ -124,29 +124,27 @@ export function defaultProformaForm() {
 }
 
 export function peekProformaNumber(dateIso) {
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
+  const key = localDocumentPeriodKey(dateIso);
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
   } catch {
     seqMap = {};
   }
-  const next = (seqMap[fy] || 0) + 1;
-  return `TYLO/${fy}/${String(next).padStart(4, '0')}`;
+  const next = (seqMap[key] || 0) + 1;
+  return formatLocalDocumentNumber('TCPI', dateIso, next);
 }
 
 export function nextProformaNumber(dateIso) {
   const num = peekProformaNumber(dateIso);
-  const d = dateIso ? new Date(dateIso) : new Date();
-  const fy = fiscalYearLabel(d);
+  const key = localDocumentPeriodKey(dateIso);
   let seqMap = {};
   try {
     seqMap = JSON.parse(localStorage.getItem(NUMBER_KEY) || '{}');
   } catch {
     seqMap = {};
   }
-  seqMap[fy] = (seqMap[fy] || 0) + 1;
+  seqMap[key] = (seqMap[key] || 0) + 1;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
   return num;
 }

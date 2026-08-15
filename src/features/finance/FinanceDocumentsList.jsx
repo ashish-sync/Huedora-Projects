@@ -11,7 +11,17 @@ import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FILTER } from '../../shared/labels.js';
 import { COMMERCIAL_DOC_TYPES, docTypeLabel } from './commercialDocumentConfig.js';
-import { buildEditPath, recordCommercialPayment } from './builder/builderPersistence.js';
+import {
+  buildEditPath,
+  deleteCommercialDocument,
+  isEditableStatus,
+  recordCommercialPayment,
+} from './builder/builderPersistence.js';
+import {
+  netReceivableFromPreGst,
+  paymentStatusPillClass,
+  resolveCommercialPaymentDisplayStatus,
+} from './commercialPaymentStatus.js';
 
 function formatMoney(n) {
   const num = Number(n);
@@ -31,7 +41,8 @@ function canRecordPayment(row) {
 
 export default function FinanceDocumentsList({ embedded = false, showCreateLink = true }) {
   const navigate = useNavigate();
-  const { can } = useAuth();
+  const { can, isAdmin } = useAuth();
+  const admin = Boolean(isAdmin?.());
   const canWrite = can('finance:write') || can('*');
 
   const [rows, setRows] = useState([]);
@@ -44,6 +55,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [documentType, setDocumentType] = useState('');
   const [error, setError] = useState('');
   const [listLoading, setListLoading] = useState(false);
+  const [deleteBusyId, setDeleteBusyId] = useState('');
 
   const [payRow, setPayRow] = useState(null);
   const [payAmount, setPayAmount] = useState('');
@@ -78,9 +90,14 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     setPayError('');
     setPayMsg('');
     setPayRow(row);
+    const netReceivable = netReceivableFromPreGst(row.subtotal);
     const existing = Number(row.paidAmount);
     setPayAmount(
-      Number.isFinite(existing) && existing > 0 ? String(existing) : String(row.grandTotal ?? ''),
+      Number.isFinite(existing) && existing > 0
+        ? String(existing)
+        : netReceivable != null
+          ? String(netReceivable)
+          : '',
     );
   }
 
@@ -98,10 +115,13 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     setPayMsg('');
     try {
       const updated = await recordCommercialPayment(payRow._id, payAmount);
+      const display = resolveCommercialPaymentDisplayStatus(updated);
       setPayMsg(
-        updated.paymentStatus === 'Fully paid'
-          ? 'Marked fully paid.'
-          : 'Marked partially paid.',
+        display === 'Paid'
+          ? 'Marked Paid.'
+          : display === 'Partially Paid'
+            ? 'Marked Partially Paid.'
+            : 'Payment saved.',
       );
       setPayRow(null);
       setPayAmount('');
@@ -112,6 +132,30 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       setPayBusy(false);
     }
   }
+
+  async function handleDelete(row) {
+    if (!admin || !row?._id) return;
+    const label = displayDocumentNumber(row);
+    const confirmMsg =
+      label && label !== '—'
+        ? `Delete ${label}? Its invoice number will be released for reuse.`
+        : 'Delete this billing document?';
+    if (!window.confirm(confirmMsg)) return;
+    setDeleteBusyId(row._id);
+    setError('');
+    try {
+      await deleteCommercialDocument(row._id);
+      setPayMsg('Document deleted.');
+      await load();
+    } catch (e) {
+      setError(e.message || 'Failed to delete document');
+    } finally {
+      setDeleteBusyId('');
+    }
+  }
+
+  const payNetReceivable = payRow ? netReceivableFromPreGst(payRow.subtotal) : null;
+  const payDisplayStatus = payRow ? resolveCommercialPaymentDisplayStatus(payRow) : '';
 
   const content = (
     <>
@@ -140,9 +184,9 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
             setStatus(e.target.value);
             setPage(1);
           }}
-          aria-label="Filter by status"
+          aria-label="Filter by stage"
         >
-          <option value="">{FILTER.ALL_STATUSES}</option>
+          <option value="">All stages</option>
           <option value="Draft">Draft</option>
           <option value="Submitted">Submitted</option>
           <option value="Approved">Approved</option>
@@ -178,6 +222,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
               <th>Recipient</th>
               <th>Date</th>
               <th className="num">Amount</th>
+              <th className="num">Net Receivable</th>
+              <th>Stage</th>
               <th>Status</th>
               <th />
             </tr>
@@ -185,13 +231,13 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           <tbody>
             {listLoading ? (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={9} className="muted">
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={9} className="muted">
                   No saved documents yet.
                   {showCreateLink && canWrite ? (
                     <>
@@ -202,36 +248,63 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
-                <tr key={row._id}>
-                  <td className="mono-sm">{displayDocumentNumber(row)}</td>
-                  <td>{docTypeLabel(row.documentType)}</td>
-                  <td>{row.recipientName || '—'}</td>
-                  <td>{formatDate(row.documentDate)}</td>
-                  <td className="num">₹ {formatMoney(row.grandTotal)}</td>
-                  <td>
-                    <span className={`status-pill status-pill--${String(row.status || '').toLowerCase()}`}>
-                      {row.status || '—'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="finance-docs-row-actions">
-                      <Link to={buildEditPath(row.documentType, row._id)}>Edit</Link>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`${buildEditPath(row.documentType, row._id)}?print=1`)}
-                      >
-                        Print
-                      </button>
-                      {canWrite && canRecordPayment(row) ? (
-                        <button type="button" onClick={() => openPayment(row)}>
-                          Payment
+              rows.map((row) => {
+                const editable = isEditableStatus(row.status, { isAdmin: admin });
+                const netReceivable = netReceivableFromPreGst(row.subtotal);
+                const paymentDisplay = resolveCommercialPaymentDisplayStatus(row);
+                return (
+                  <tr key={row._id}>
+                    <td className="mono-sm">{displayDocumentNumber(row)}</td>
+                    <td>{docTypeLabel(row.documentType)}</td>
+                    <td>{row.recipientName || '—'}</td>
+                    <td>{formatDate(row.documentDate)}</td>
+                    <td className="num">₹ {formatMoney(row.grandTotal)}</td>
+                    <td className="num">
+                      {netReceivable == null ? '—' : `₹ ${formatMoney(netReceivable)}`}
+                    </td>
+                    <td>
+                      <span className={`status-pill status-pill--${String(row.status || '').toLowerCase()}`}>
+                        {row.status || '—'}
+                      </span>
+                    </td>
+                    <td>
+                      {paymentDisplay ? (
+                        <span className={paymentStatusPillClass(paymentDisplay)}>{paymentDisplay}</span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="finance-docs-row-actions">
+                        <Link to={buildEditPath(row.documentType, row._id)}>
+                          {editable ? 'Edit' : 'View'}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`${buildEditPath(row.documentType, row._id)}?print=1`)}
+                        >
+                          Print
                         </button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {canWrite && canRecordPayment(row) ? (
+                          <button type="button" onClick={() => openPayment(row)}>
+                            Payment
+                          </button>
+                        ) : null}
+                        {admin ? (
+                          <button
+                            type="button"
+                            className="danger-text"
+                            disabled={deleteBusyId === row._id}
+                            onClick={() => handleDelete(row)}
+                          >
+                            {deleteBusyId === row._id ? 'Deleting…' : 'Delete'}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -262,9 +335,17 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
             <p className="muted finance-payment-modal-meta">
               {docTypeLabel(payRow.documentType)} · {displayDocumentNumber(payRow)}
             </p>
+            {payDisplayStatus ? (
+              <p className="finance-payment-modal-status">
+                <span className={paymentStatusPillClass(payDisplayStatus)}>{payDisplayStatus}</span>
+              </p>
+            ) : null}
             <div className="field">
-              <label>Invoice amount</label>
-              <input readOnly value={`₹ ${formatMoney(payRow.grandTotal)}`} />
+              <label>Net Receivable</label>
+              <input
+                readOnly
+                value={payNetReceivable == null ? '—' : `₹ ${formatMoney(payNetReceivable)}`}
+              />
             </div>
             <div className="field">
               <label>Payment amount *</label>
@@ -278,7 +359,9 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                 disabled={payBusy}
               />
               <p className="field-hint muted">
-                Same as invoice amount → Fully paid. Any other amount → Partially paid.
+                Same as Net Receivable → Paid. Any other amount → Partially Paid. While unpaid,
+                Status ages from approval: Sent (0–10) → Due (11–30) → Overdue (31–45) → MSME Breach
+                (46+).
               </p>
             </div>
             {payError ? <FeedbackBanner variant="error">{payError}</FeedbackBanner> : null}

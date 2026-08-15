@@ -1265,12 +1265,63 @@
 }
 
 .finance-payment-modal-meta {
-  margin: -0.25rem 0 1rem;
+  margin: -0.25rem 0 0.75rem;
+}
+
+.finance-payment-modal-status {
+  margin: 0 0 1rem;
 }
 
 .finance-payment-modal .field-hint {
   margin: 0.35rem 0 0;
   font-size: 0.8rem;
+}
+
+/* Status (payment / ageing) colours */
+.finance-pay-status--paid,
+.finance-pay-status--fully-paid {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.finance-pay-status--invoice-sent {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.finance-pay-status--invoice-due {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.finance-pay-status--invoice-overdue {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.finance-pay-status--msme-breach {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.finance-pay-status--partially-paid {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.finance-pay-status--overdue,
+.finance-pay-status--unpaid {
+  background: var(--color-bg-sunken, #f3f4f6);
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.finance-docs-row-actions .danger-text {
+  color: var(--color-danger, #b91c1c);
+}
+
+.status-pill.status-pill-danger {
+  background: var(--color-danger-subtle, #fee2e2);
+  color: var(--color-danger, #b91c1c);
 }
 
 .finance-billing-center {

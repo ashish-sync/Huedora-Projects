@@ -411,6 +411,11 @@ function detailSummary(r) {
     r.hcwType,
     r.campType,
     r.hiringMethod,
+    r.hireeName
+      ? `Hiree: ${r.hireeName}${r.hireeContact ? ` · ${r.hireeContact}` : ''}${
+          r.payableAmount != null && r.payableAmount !== '' ? ` · ₹${r.payableAmount}` : ''
+        }`
+      : '',
     r.requestType === 'MASTER_ADD'
       ? `${r.masterModule || ''} · ${getMasterEntity(r.masterEntity)?.label || r.masterEntity || ''}`
       : '',
@@ -458,6 +463,13 @@ export default function AssetRequestsPage() {
   const [jdUploadPrompt, setJdUploadPrompt] = useState(null);
   const [jdFile, setJdFile] = useState(null);
   const [jdBusy, setJdBusy] = useState(false);
+  const [fulfillTarget, setFulfillTarget] = useState(null);
+  const [fulfillForm, setFulfillForm] = useState({
+    hireeName: '',
+    hireeContact: '',
+    payableAmount: '',
+  });
+  const [fulfillBusy, setFulfillBusy] = useState(false);
   const [generatedLinks, setGeneratedLinks] = useState({});
   const [linkBusyId, setLinkBusyId] = useState('');
   const [linkedCamp, setLinkedCamp] = useState(null);
@@ -1454,6 +1466,57 @@ export default function AssetRequestsPage() {
     }
   };
 
+  const openFulfill = (request) => {
+    setError('');
+    setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
+    setFulfillTarget({
+      id: request._id,
+      requestNumber: request.requestNumber || request._id,
+    });
+  };
+
+  const closeFulfill = () => {
+    if (fulfillBusy) return;
+    setFulfillTarget(null);
+    setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
+  };
+
+  const submitFulfill = async (e) => {
+    e?.preventDefault?.();
+    if (!fulfillTarget?.id) return;
+    const hireeName = String(fulfillForm.hireeName || '').trim();
+    const hireeContact = String(fulfillForm.hireeContact || '').trim();
+    const payableAmount = Number(fulfillForm.payableAmount);
+    if (!hireeName) {
+      setError('Enter the hiree Name to fulfill this request.');
+      return;
+    }
+    if (!hireeContact) {
+      setError('Enter the Contact Number to fulfill this request.');
+      return;
+    }
+    if (!Number.isFinite(payableAmount) || payableAmount < 0) {
+      setError('Enter a valid Payable Amount.');
+      return;
+    }
+    setError('');
+    setFulfillBusy(true);
+    try {
+      await api(`/asset-requests/${fulfillTarget.id}/fulfill`, {
+        method: 'POST',
+        body: { hireeName, hireeContact, payableAmount },
+      });
+      setMsg(`Request ${fulfillTarget.requestNumber} fulfilled.`);
+      setFulfillTarget(null);
+      setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setFulfillBusy(false);
+    }
+  };
+
   const cancelRequest = async (request) => {
     if (!window.confirm(`Cancel request ${request.requestNumber || request._id}?`)) return;
     setError('');
@@ -1534,6 +1597,71 @@ export default function AssetRequestsPage() {
               Skip
             </button>
           </div>
+        </div>
+      )}
+
+      {fulfillTarget && (
+        <div className="card arq-jd-prompt" role="dialog" aria-labelledby="arq-fulfill-title">
+          <h3 id="arq-fulfill-title">Fulfill hiring request</h3>
+          <p className="muted" style={{ margin: '0 0 var(--space-3)' }}>
+            Enter hiree details for <strong>{fulfillTarget.requestNumber}</strong>, then submit.
+          </p>
+          <form className="arq-grid" onSubmit={submitFulfill}>
+            <div className="field">
+              <label htmlFor="hiring-fulfill-name">Name</label>
+              <input
+                id="hiring-fulfill-name"
+                required
+                autoComplete="off"
+                value={fulfillForm.hireeName}
+                onChange={(e) =>
+                  setFulfillForm((prev) => ({ ...prev, hireeName: e.target.value }))
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="hiring-fulfill-contact">Contact Number</label>
+              <input
+                id="hiring-fulfill-contact"
+                required
+                inputMode="tel"
+                autoComplete="off"
+                value={fulfillForm.hireeContact}
+                onChange={(e) =>
+                  setFulfillForm((prev) => ({ ...prev, hireeContact: e.target.value }))
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="hiring-fulfill-payable">Payable Amount</label>
+              <input
+                id="hiring-fulfill-payable"
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                autoComplete="off"
+                value={fulfillForm.payableAmount}
+                onChange={(e) =>
+                  setFulfillForm((prev) => ({ ...prev, payableAmount: e.target.value }))
+                }
+              />
+            </div>
+            <div className="arq-actions arq-span" style={{ marginTop: 'var(--space-2)' }}>
+              <button type="submit" className="btn" disabled={fulfillBusy}>
+                {fulfillBusy ? 'Submitting…' : 'Submit'}
+              </button>
+              <button
+                type="button"
+                className="btn secondary"
+                disabled={fulfillBusy}
+                onClick={closeFulfill}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
@@ -2837,6 +2965,7 @@ export default function AssetRequestsPage() {
                     <strong>
                       {r.assetName ||
                         r.trainingTopic ||
+                        r.hireeName ||
                         r.hiringName ||
                         (r.requestType === 'MASTER_ADD'
                           ? getMasterEntity(r.masterEntity)?.label || r.masterEntity
@@ -2863,6 +2992,72 @@ export default function AssetRequestsPage() {
                   <td className="arq-reason">{r.reason || '-'}</td>
                   <td>
                     <div className="arq-actions">
+                      {r.requestType === 'HIRING' ? (
+                        <>
+                          {canApprove &&
+                            ['REQUESTED', 'APPROVED'].includes(r.status) &&
+                            !isMine && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn btn-compact"
+                                  onClick={() => openFulfill(r)}
+                                >
+                                  Fulfill
+                                </button>
+                                {r.status === 'REQUESTED' && (
+                                  <button
+                                    type="button"
+                                    className="btn secondary btn-compact"
+                                    onClick={() => act(r._id, 'reject')}
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          {r.status === 'REQUESTED' && isMine && (
+                            <span className="muted mono-sm">Awaiting fulfillment</span>
+                          )}
+                          {isActive && (canApprove || (canRequest && isMine)) && (
+                            <button
+                              type="button"
+                              className="btn secondary btn-compact"
+                              onClick={() => cancelRequest(r)}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          {r.jdAttachment && (
+                            <button
+                              type="button"
+                              className="btn secondary btn-compact"
+                              onClick={() => openJd(r)}
+                            >
+                              View JD
+                            </button>
+                          )}
+                          {!r.jdAttachment &&
+                            isActive &&
+                            (canApprove || (canRequest && isMine)) && (
+                              <button
+                                type="button"
+                                className="btn secondary btn-compact"
+                                onClick={() => {
+                                  setJdFile(null);
+                                  if (jdFileRef.current) jdFileRef.current.value = '';
+                                  setJdUploadPrompt({
+                                    id: r._id,
+                                    requestNumber: r.requestNumber || r._id,
+                                  });
+                                }}
+                              >
+                                Upload JD
+                              </button>
+                            )}
+                        </>
+                      ) : (
+                        <>
                       {canApprove && r.status === 'REQUESTED' && !isMine && (
                         <>
                           <button type="button" className="btn btn-compact" onClick={() => act(r._id, 'approve')}>
@@ -2923,34 +3118,6 @@ export default function AssetRequestsPage() {
                           View attachment
                         </button>
                       )}
-                      {r.requestType === 'HIRING' && r.jdAttachment && (
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          onClick={() => openJd(r)}
-                        >
-                          View JD
-                        </button>
-                      )}
-                      {r.requestType === 'HIRING' &&
-                        !r.jdAttachment &&
-                        isActive &&
-                        (canApprove || (canRequest && isMine)) && (
-                          <button
-                            type="button"
-                            className="btn secondary btn-compact"
-                            onClick={() => {
-                              setJdFile(null);
-                              if (jdFileRef.current) jdFileRef.current.value = '';
-                              setJdUploadPrompt({
-                                id: r._id,
-                                requestNumber: r.requestNumber || r._id,
-                              });
-                            }}
-                          >
-                            Upload JD
-                          </button>
-                        )}
                       {isServiceRequest &&
                         isActive &&
                         (canApprove || (canRequest && isMine)) && (
@@ -2982,6 +3149,8 @@ export default function AssetRequestsPage() {
                               </button>
                             </div>
                           )}
+                        </>
+                      )}
                         </>
                       )}
                     </div>

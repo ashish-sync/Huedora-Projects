@@ -1,5 +1,5 @@
 import { todayIso } from '../../../shared/dateFormat.js';
-import { fiscalYearLabel } from '../documentNumbering.js';
+import { formatLocalDocumentNumber, localDocumentPeriodKey } from '../documentNumbering.js';
 
 const STORAGE_KEY = 'tylo_one_purchase_order_generator_v1';
 const NUMBER_KEY = 'tylo_one_purchase_order_number_seq';
@@ -243,16 +243,16 @@ function readSeqMap() {
 
 export function peekPONumber(dateIso) {
   const seqMap = readSeqMap();
-  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
-  const next = (seqMap[fy] || 0) + 1;
-  return `PO/${fy}/${String(next).padStart(4, '0')}`;
+  const key = localDocumentPeriodKey(dateIso);
+  const next = (seqMap[key] || 0) + 1;
+  return formatLocalDocumentNumber('TCPO', dateIso, next);
 }
 
 export function nextPONumber(dateIso) {
   const num = peekPONumber(dateIso);
-  const fy = fiscalYearLabel(dateIso ? new Date(dateIso) : new Date());
+  const key = localDocumentPeriodKey(dateIso);
   const seqMap = readSeqMap();
-  seqMap[fy] = (seqMap[fy] || 0) + 1;
+  seqMap[key] = (seqMap[key] || 0) + 1;
   localStorage.setItem(NUMBER_KEY, JSON.stringify(seqMap));
   return num;
 }

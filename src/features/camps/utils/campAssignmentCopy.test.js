@@ -22,7 +22,7 @@ describe('formatCampAssignmentDetails', () => {
 
     expect(text).toBe(
       [
-        '*Display Name:* Viva BMD Program',
+        '*Viva BMD Program*',
         '*Doctor Name:* Balkrishna Patil',
         '*Clinic Date:* 10-08-2026',
         '*Clinic Timing:* 09:00 – 12:00',
@@ -51,7 +51,8 @@ describe('formatCampAssignmentDetails', () => {
       hcwContact: '9999999999',
     });
 
-    expect(text).toContain('*Display Name:* Ortho Camps');
+    expect(text.startsWith('*Ortho Camps*\n')).toBe(true);
+    expect(text).not.toContain('Display Name');
     expect(text).not.toContain('Expected Patients');
     expect(text).toContain('*Contact Person:* Amit Sharma');
   });
@@ -76,7 +77,8 @@ describe('formatCampAssignmentDetails', () => {
       }],
     });
 
-    expect(text).toContain('*Display Name:* Ortho BMD Label');
+    expect(text.startsWith('*Ortho BMD Label*\n')).toBe(true);
+    expect(text).not.toContain('Display Name');
   });
 });
 

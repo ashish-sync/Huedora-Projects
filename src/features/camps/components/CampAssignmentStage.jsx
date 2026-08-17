@@ -111,7 +111,7 @@ export function CampAssignmentStage({
               ? 'HCW assigned. Resource cannot be changed after Finance submit.'
               : inExecution
                 ? 'HCW assigned. You can change the healthcare worker if needed; this camp is in Execution.'
-                : 'HCW assigned. You can change the healthcare worker if needed. This camp stays in Assignment until one day before the camp date.'}
+                : 'HCW assigned. You can change the healthcare worker if needed. Assigned camps move to Execution immediately.'}
           </p>
           <div className="camp-assignment-toolbar-actions">
             {canChangeHcw ? (

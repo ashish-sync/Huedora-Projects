@@ -1007,6 +1007,7 @@ export default function CampFormPage() {
   const hasNoDivisions = Boolean(form.clientId) && !programsLoading && divisionOptions.length === 0;
   const hasNoMethods = Boolean(form.clientId) && Boolean(form.campaignType) && !programsLoading && campNameOptions.length === 0;
   const financeSubmitted = Boolean(form.submittedToFinanceAt);
+  const canManageFinancialStatus = hasPermission('finance:write');
   const isCancelledForFinance = campStatus === 'cancelled'
     && isExecutionCancellationForFinance({ status: campStatus, ...campLifecycleContext });
   const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
@@ -1147,9 +1148,9 @@ export default function CampFormPage() {
         mappedConsumables={mappedConsumables}
         clientMasterRecords={clientMasterRecords}
         canSetHistoricalCampDates={canSetHistoricalCampDates()}
-        onConfirmPayment={isEdit ? handleConfirmPayment : null}
-        onHoldPayment={isEdit ? handleHoldPayment : null}
-        onReleaseHold={isEdit ? handleReleaseHold : null}
+        onConfirmPayment={isEdit && canManageFinancialStatus ? handleConfirmPayment : null}
+        onHoldPayment={isEdit && canManageFinancialStatus ? handleHoldPayment : null}
+        onReleaseHold={isEdit && canManageFinancialStatus ? handleReleaseHold : null}
         financialActionBusy={financialActionBusy}
       />
 

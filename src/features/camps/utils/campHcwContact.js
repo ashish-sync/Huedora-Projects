@@ -129,12 +129,17 @@ export function isHcwContact(contact) {
 }
 
 export function mapProfessionToHcwCategory(profession) {
-  const value = String(profession || '').trim().toLowerCase();
+  const raw = String(profession || '').trim();
+  const value = raw.toLowerCase();
   if (value === 'technician') return 'Technician';
   if (value === 'phlebotomist') return 'Phlebotomist';
   if (value === 'dietitian' || value === 'dietician') return 'Dietician';
-  if (HCW_CATEGORIES.includes(profession)) return profession;
-  return profession ? 'Other' : '';
+  if (value === 'doctor') return 'Doctor';
+  if (value === 'nurse') return 'Nurse';
+  if (value === 'physio' || value === 'physiotherapist') return 'Physio';
+  if (value === 'biomedical engineer' || value === 'biomedicalengineer') return 'Biomedical Engineer';
+  if (HCW_CATEGORIES.includes(raw)) return raw;
+  return raw ? 'Other' : '';
 }
 
 export function contactPhone(contact) {

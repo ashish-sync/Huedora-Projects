@@ -1,7 +1,7 @@
 import { daysFromToday } from './campDatePolicy.js';
 
-/** Assigned camps enter Execution starting one calendar day before camp date. */
-export const EXECUTION_ADVANCE_DAYS_BEFORE = 1;
+/** Assigned camps move into Execution immediately after assignment. */
+export const EXECUTION_ADVANCE_DAYS_BEFORE = 0;
 
 export function isCampAssigned(camp = {}) {
   if (camp.assignmentStatus === 'Assigned') return true;
@@ -10,8 +10,10 @@ export function isCampAssigned(camp = {}) {
 }
 
 export function isCampDateDueForExecution(camp = {}, now = new Date()) {
+  if (String(camp?.lifecycleStage || '').trim() === 'execution') return true;
+  if (!isCampAssigned(camp)) return false;
   const campDate = String(camp?.campDate || '').trim();
-  if (!campDate) return false;
+  if (!campDate) return true;
   return daysFromToday(campDate, now) <= EXECUTION_ADVANCE_DAYS_BEFORE;
 }
 

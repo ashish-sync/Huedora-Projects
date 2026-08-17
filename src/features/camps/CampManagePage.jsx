@@ -280,12 +280,12 @@ export default function CampsPage() {
       setConfirmClosureDetails(null);
       setConfirmReasonDetails(null);
       if (executedAction) {
-        setWorkingStage('financial');
         setBulkMessage(
           executedBulk
-            ? 'Camps marked executed. They are now in Finance & Settlement.'
-            : 'Camp marked executed. It is now in Finance & Settlement — complete payout details there.'
+            ? 'Camp execution action completed for the selected camps.'
+            : 'Camp execution action completed.'
         );
+        await loadCamps();
       } else {
         await loadCamps();
       }

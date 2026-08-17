@@ -327,7 +327,16 @@ export function executionStatusClass(status) {
 export const CHARGEABLE_STATUSES = ['Chargeable', 'Non-Chargeable', 'Partial'];
 export const QUALITY_RATINGS = ['Good', 'Average', 'Poor'];
 export const ATTIRE_CHECK_OPTIONS = ['No Issues', 'Issues'];
-export const HCW_CATEGORIES = ['Technician', 'Phlebotomist', 'Dietician', 'Other'];
+export const HCW_CATEGORIES = [
+  'Doctor',
+  'Nurse',
+  'Phlebotomist',
+  'Technician',
+  'Dietician',
+  'Physio',
+  'Biomedical Engineer',
+  'Other',
+];
 export const EXECUTION_DOC_TYPES = [
   { value: 'doctor_form', label: 'Doctor Form (DF)' },
   { value: 'patient_form', label: 'Patient Form (PF)' },

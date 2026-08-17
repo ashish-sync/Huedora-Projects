@@ -59,9 +59,3 @@ export function canMarkCampExecuted(camp = {}) {
   return getExecutionBlockers(camp).length === 0;
 }
 
-/** @deprecated Timing gate removed per lifecycle guide. */
-export const MARK_EXECUTED_MINUTES_AFTER_START = 0;
-
-export function isMarkExecutedTimingOpen() {
-  return true;
-}

@@ -886,9 +886,7 @@ export default function CampFormPage() {
       patientsCount: form.patientsCount,
       editingStage: isEdit ? activeStage : 'request',
       lifecycleStage: isEdit
-        ? executionComplete
-          ? maxLifecycleStage(reachedLifecycleStage, 'financial')
-          : maxLifecycleStage(reachedLifecycleStage, activeStage)
+        ? maxLifecycleStage(reachedLifecycleStage, activeStage)
         : 'request',
       lifecycleOnly: isEdit && activeStage !== 'request',
       ...(executionComplete || form.markComplete ? { markComplete: true } : {}),

@@ -670,17 +670,27 @@ export default function AgreementDetailPage() {
                 <tr>
                   <th>Tag</th>
                   <th>{FIELD.ASSET_NAME}</th>
+                  <th>{FIELD.ASSET_TYPE}</th>
+                  <th>{FIELD.OWNERSHIP_TYPE}</th>
+                  <th>Serial Number</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {(doc.assets || []).map((l) => (
+                {(doc.assets || []).map((l) => {
+                  const snap = l.assetSnapshot || {};
+                  const live = l.assetId || {};
+                  return (
                   <tr key={l._id}>
-                    <td>{l.assetId?.assetTag || '-'}</td>
-                    <td>{l.assetId?.deviceNameSnapshot || '-'}</td>
-                    <td>{l.assetId?.status || '-'}</td>
+                    <td>{live.assetTag || snap.assetTag || '-'}</td>
+                    <td>{snap.assetName || live.deviceNameSnapshot || '-'}</td>
+                    <td>{snap.productType || live.productType || '-'}</td>
+                    <td>{snap.ownershipType || live.assetType || '-'}</td>
+                    <td>{snap.serialNumber || live.serialNumber || '-'}</td>
+                    <td>{live.status || '-'}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             {!doc.assets?.length && <p className="muted">No assets linked.</p>}

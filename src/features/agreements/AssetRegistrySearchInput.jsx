@@ -74,6 +74,8 @@ export default function AssetRegistrySearchInput({
         model: '',
         serialNumber: asset.serialNumber || '',
         assetTag: asset.assetTag || '',
+        productType: asset.productType || '',
+        ownershipType: asset.assetType || '',
       });
     }
   };
@@ -139,12 +141,18 @@ export default function AssetRegistrySearchInput({
 
 export function AssetRegistryPickerSummary({ snapshot, onClear }) {
   if (!snapshot?.assetId) return null;
+  const details = [
+    snapshot.productType,
+    snapshot.ownershipType,
+    snapshot.serialNumber,
+    snapshot.model,
+  ].filter(Boolean);
   return (
     <div className="asset-registry-picked">
       <div>
         <strong>{snapshot.assetName || assetSearchLabel(snapshot)}</strong>
         <div className="muted">
-          {[snapshot.serialNumber, snapshot.model].filter(Boolean).join(' · ') || 'Linked asset'}
+          {details.join(' · ') || 'Linked asset'}
         </div>
       </div>
       {onClear ? (

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams, useLocation } from 'react-router-do
 import { useAuth } from '../shared/auth.jsx';
 import { isBootSequenceEnabled } from '../shared/loginExperienceConfig.js';
 import Layout from './Layout.jsx';
+import RequirePermission from './RequirePermission.jsx';
 import { CLIENT_MASTER_ENTITY, CLIENT_MASTER_SCOPE } from '../features/camps/clientMasterPaths.js';
 import {
   CAMP_PATH,
@@ -159,7 +160,11 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<ModulesHomePage />} />
                 <Route path={MODULE_PATH.DASHBOARD} element={<TrackingDashboardPage />} />
-                <Route path={MODULE_PATH.ACCESS_CONTROL} element={<RolePermissionMasterPage />} />
+                <Route path={MODULE_PATH.ACCESS_CONTROL} element={
+                  <RequirePermission anyOf={['users:read', 'users:write']}>
+                    <RolePermissionMasterPage />
+                  </RequirePermission>
+                } />
 
                 {/* Master One */}
                 <Route path={MODULE_PATH.MASTER_ONE} element={<MasterDataPage />} />
@@ -167,7 +172,11 @@ export default function App() {
                 <Route path={`${MODULE_PATH.MASTER_ONE}/client-masters/:id/edit`} element={<ClientMasterFormRoute />} />
 
                 {/* Asset One */}
-                <Route path={MODULE_PATH.ASSET_ONE} element={<AssetInventoryLayout />}>
+                <Route path={MODULE_PATH.ASSET_ONE} element={
+                  <RequirePermission anyOf={['assets:read', 'assets:write', 'assets:transition']}>
+                    <AssetInventoryLayout />
+                  </RequirePermission>
+                }>
                   <Route index element={<AssetOverviewPage />} />
                   <Route path="types/:typeSlug" element={<Navigate to={MODULE_PATH.ASSET_ONE} replace />} />
                   <Route path="balance" element={<Navigate to={MODULE_PATH.ASSET_ONE} replace />} />
@@ -179,14 +188,34 @@ export default function App() {
                 <Route path={`${MODULE_PATH.ASSET_ONE}/assets/:id`} element={<AssetDetailPage />} />
 
                 {/* Document One */}
-                <Route path={MODULE_PATH.DOCUMENT_ONE} element={<AgreementsPage />} />
-                <Route path={`${MODULE_PATH.DOCUMENT_ONE}/new`} element={<AgreementCreatePage />} />
-                <Route path={`${MODULE_PATH.DOCUMENT_ONE}/:id`} element={<AgreementDetailPage />} />
+                <Route path={MODULE_PATH.DOCUMENT_ONE} element={
+                  <RequirePermission anyOf={['agreements:read', 'agreements:write']}>
+                    <AgreementsPage />
+                  </RequirePermission>
+                } />
+                <Route path={`${MODULE_PATH.DOCUMENT_ONE}/new`} element={
+                  <RequirePermission anyOf={['agreements:write']}>
+                    <AgreementCreatePage />
+                  </RequirePermission>
+                } />
+                <Route path={`${MODULE_PATH.DOCUMENT_ONE}/:id`} element={
+                  <RequirePermission anyOf={['agreements:read', 'agreements:write']}>
+                    <AgreementDetailPage />
+                  </RequirePermission>
+                } />
 
-                <Route path={MODULE_PATH.VERIFICATION_ONE} element={<VerificationsPage />} />
+                <Route path={MODULE_PATH.VERIFICATION_ONE} element={
+                  <RequirePermission anyOf={['verifications:read', 'verifications:write']}>
+                    <VerificationsPage />
+                  </RequirePermission>
+                } />
 
                 {/* Camp One */}
-                <Route path={MODULE_PATH.CAMP_ONE} element={<CampOpsLayout />}>
+                <Route path={MODULE_PATH.CAMP_ONE} element={
+                  <RequirePermission anyOf={['camps:read', 'camps:request', 'camps:approve']}>
+                    <CampOpsLayout />
+                  </RequirePermission>
+                }>
                   <Route index element={<Navigate to="manage" replace />} />
                   <Route path="manage" element={<CampManagePage />} />
                   <Route path="manage/new" element={<CampFormPage />} />
@@ -220,7 +249,11 @@ export default function App() {
                 </Route>
 
                 {/* Finance One */}
-                <Route path={MODULE_PATH.FINANCE_ONE} element={<FinanceLayout />}>
+                <Route path={MODULE_PATH.FINANCE_ONE} element={
+                  <RequirePermission anyOf={['finance:read', 'finance:write', 'finance:verify', 'finance:approve', 'finance:pay']}>
+                    <FinanceLayout />
+                  </RequirePermission>
+                }>
                   <Route index element={<Navigate to={FINANCE_PATH.BILLING} replace />} />
                   <Route path="billing" element={<FinanceBuilderPickerPage />} />
                   <Route path="billing/invoice" element={<InvoiceBuilderPage />} />
@@ -260,10 +293,18 @@ export default function App() {
                   <Route path="camp-payouts" element={<Navigate to={FINANCE_PATH.PAYOUTS} replace />} />
                 </Route>
 
-                <Route path={MODULE_PATH.REQUEST_ONE} element={<AssetRequestsPage />} />
+                <Route path={MODULE_PATH.REQUEST_ONE} element={
+                  <RequirePermission anyOf={['asset-requests:read', 'asset-requests:request', 'asset-requests:approve', 'movements:read', 'movements:request', 'movements:approve']}>
+                    <AssetRequestsPage />
+                  </RequirePermission>
+                } />
 
                 {/* Movement One */}
-                <Route path={MODULE_PATH.MOVEMENT_ONE} element={<LogisticsLayout />}>
+                <Route path={MODULE_PATH.MOVEMENT_ONE} element={
+                  <RequirePermission anyOf={['logistics:read', 'logistics:write', 'logistics:master']}>
+                    <LogisticsLayout />
+                  </RequirePermission>
+                }>
                   <Route index element={<LogisticsHubPage />} />
                   <Route path="inward" element={<LogisticsInwardPage />} />
                   <Route path="outward" element={<LogisticsOutwardPage />} />

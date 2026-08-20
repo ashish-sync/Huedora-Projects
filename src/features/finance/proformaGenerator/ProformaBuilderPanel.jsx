@@ -12,6 +12,7 @@ import {
   resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_PROFORMA_LINE_ITEMS } from './proformaStorage.js';
+import DateInput from '../../../components/ui/DateInput.jsx';
 
 function Section({ title, badge, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -93,20 +94,30 @@ export default function ProformaBuilderPanel({
             />
           </Field>
           <Field label="Proforma Date">
-            <input type="date" className={inputCls} value={form.document.issueDate} onChange={(e) => update('document.issueDate', e.target.value)} />
+            <DateInput
+              value={form.document.issueDate}
+              onChange={(v) => update('document.issueDate', v)}
+              inputClassName={inputCls}
+              hideLabel
+            />
           </Field>
           <Field label="Valid Until">
-            <input type="date" className={inputCls} value={form.document.dueDate} onChange={(e) => update('document.dueDate', e.target.value)} />
+            <DateInput
+              value={form.document.dueDate}
+              onChange={(v) => update('document.dueDate', v)}
+              inputClassName={inputCls}
+              hideLabel
+            />
           </Field>
           <Field label="PO / WO No.">
             <input className={inputCls} value={form.document.reference || ''} onChange={(e) => update('document.reference', e.target.value)} />
           </Field>
           <Field label="PO / WO Date">
-            <input
-              className={inputCls}
+            <DateInput
               value={form.document.referenceDate || ''}
-              onChange={(e) => update('document.referenceDate', e.target.value)}
-              placeholder="DD/MM/YYYY"
+              onChange={(v) => update('document.referenceDate', v)}
+              inputClassName={inputCls}
+              hideLabel
             />
           </Field>
         </div>

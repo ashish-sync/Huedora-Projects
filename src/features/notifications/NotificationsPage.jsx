@@ -9,14 +9,19 @@ import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
 import {
+  categoryLabel,
   notificationEntityPath,
   priorityClass,
   priorityLabel,
 } from './notificationLinks.js';
 import './notifications.css';
 
+const PAGE_SIZE = 25;
+
 export default function NotificationsPage() {
   const [rows, setRows] = useState([]);
+  const [meta, setMeta] = useState({ page: 1, limit: PAGE_SIZE, total: 0, pages: 0 });
+  const [page, setPage] = useState(1);
   const [error, setError] = useState('');
   const [downloadingId, setDownloadingId] = useState('');
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -28,6 +33,8 @@ export default function NotificationsPage() {
 
   const load = useCallback(() => {
     const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(PAGE_SIZE));
     if (unreadOnly) params.set('unread', 'true');
     if (priority) params.set('priority', priority);
     if (module) params.set('module', module);
@@ -36,9 +43,14 @@ export default function NotificationsPage() {
     return api(`/notifications?${params}`)
       .then((r) => {
         setRows(r.data || []);
+        setMeta(r.meta || { page, limit: PAGE_SIZE, total: (r.data || []).length, pages: 1 });
         emitNotificationsChanged();
       })
       .catch((e) => setError(e.message));
+  }, [unreadOnly, priority, module, showArchived, q, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [unreadOnly, priority, module, showArchived, q]);
 
   useEffect(() => {
@@ -91,15 +103,16 @@ export default function NotificationsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Notifications' }]}
       title="Notification Center"
-      description="Platform alerts with priority, change detail, and 7-day auto-archive."
+      description="Latest alerts first — by severity, module, and read state. Routine camp saves stay in Audit Trail."
       actions={
         <button className="btn secondary" type="button" onClick={markAllRead} disabled={!unread}>
           Mark all read
         </button>
       }
       kpis={[
-        { label: 'Showing', value: rows.length },
-        { label: 'Unread', value: unread },
+        { label: 'On page', value: rows.length },
+        { label: 'Unread (page)', value: unread },
+        { label: 'Total', value: meta.total ?? rows.length },
       ]}
     >
       {error && <p className="error">{error}</p>}
@@ -122,9 +135,9 @@ export default function NotificationsPage() {
         <AdaptiveSelect
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
-          aria-label="Filter by priority"
+          aria-label="Filter by severity"
         >
-          <option value="">All priorities</option>
+          <option value="">All severities</option>
           <option value="informational">Informational</option>
           <option value="important">Important</option>
           <option value="critical">Critical</option>
@@ -175,6 +188,7 @@ export default function NotificationsPage() {
                     <span className="header-bell-badge notification-unread-dot" aria-hidden="true" />
                   ) : null}
                   <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
+                  <span className="nc-category">{categoryLabel(n)}</span>
                   <strong className="nc-title">{n.title}</strong>
                   {n.groupCount > 1 ? (
                     <span className="nc-group-count">{n.groupCount} updates</span>
@@ -182,7 +196,7 @@ export default function NotificationsPage() {
                 </div>
                 {n.body ? <div className="muted nc-body">{n.body}</div> : null}
                 <div className="muted nc-meta">
-                  {n.module || 'system'} · {n.type}
+                  {n.readAt ? 'Read' : 'Unread'} · {n.module || 'system'} · {n.type}
                   {n.actorEmail ? ` · ${n.actorEmail}` : ''}
                   {' · '}
                   {formatDateTime(n.groupedAt || n.createdAt)}
@@ -234,6 +248,30 @@ export default function NotificationsPage() {
           <EmptyState title="No notifications" description="New alerts will appear here." />
         )}
       </div>
+
+      {(meta.pages || 0) > 1 ? (
+        <div className="nc-pagination">
+          <button
+            type="button"
+            className="btn secondary btn-compact"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Newer
+          </button>
+          <span className="muted">
+            Page {meta.page || page} of {meta.pages}
+          </span>
+          <button
+            type="button"
+            className="btn secondary btn-compact"
+            disabled={page >= (meta.pages || 1)}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Older
+          </button>
+        </div>
+      ) : null}
     </PageShell>
   );
 }

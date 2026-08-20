@@ -17,6 +17,8 @@ import {
   ASSET_STATUS_OPTIONS,
   ASSET_CUSTODY_OPTIONS,
   formatOwnershipType,
+  custodyRequiresCustodianContact,
+  contactMatchesCustody,
 } from '../devices/assetMasterOptions.js';
 import { PAGE_SIZES } from '../../shared/validation.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
@@ -35,6 +37,7 @@ const emptyForm = {
   cost: '',
   agreementStatus: 'Not Initiated',
   custody: '',
+  contactId: '',
   peripheralRemarks: '',
 };
 
@@ -114,6 +117,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const [loading, setLoading] = useState(true);
 
   const [products, setProducts] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(emptyForm);
@@ -220,6 +224,9 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     api('/logistics/products?limit=500&isActive=true')
       .then((r) => setProducts(r.data || []))
       .catch(() => {});
+    api('/contacts?limit=500')
+      .then((r) => setContacts(r.data || []))
+      .catch(() => {});
   }, []);
 
   const productsForType = products.filter(
@@ -289,6 +296,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             : '',
       agreementStatus: row.agreementStatus || 'Not Initiated',
       custody: row.custody || '',
+      contactId: row.contactId?._id || row.contactId || '',
       peripheralRemarks: row.remarks || master?.description || '',
     });
     setFormOpen(true);
@@ -319,6 +327,27 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         setBusy(false);
         return;
       }
+      if (custodyRequiresCustodianContact(form.custody) && !form.contactId) {
+        setError(
+          form.custody === 'Service Provider'
+            ? 'Select a Healthcare Worker with Type “Service Provider” from Contact Directory.'
+            : 'Select a Healthcare Worker with Type “Individual” from Contact Directory.'
+        );
+        setBusy(false);
+        return;
+      }
+      if (custodyRequiresCustodianContact(form.custody) && form.contactId) {
+        const selected = contacts.find((c) => c._id === form.contactId);
+        if (selected && !contactMatchesCustody(selected, form.custody)) {
+          setError(
+            form.custody === 'Service Provider'
+              ? 'Custodian Contact must be a Healthcare Worker with Type “Service Provider”.'
+              : 'Custodian Contact must be a Healthcare Worker with Type “Individual”.'
+          );
+          setBusy(false);
+          return;
+        }
+      }
       const shared = {
         ...(form.productId ? { productId: form.productId } : {}),
         name: form.name.trim(),
@@ -330,6 +359,9 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         agreementStatus: form.agreementStatus,
         custody: form.custody,
         description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
+        ...(custodyRequiresCustodianContact(form.custody) || form.contactId
+          ? { contactId: form.contactId || null }
+          : {}),
       };
       if (editingId) {
         await api(`/assets/${editingId}`, {
@@ -664,7 +696,21 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     id="asset-custody"
                     required
                     value={form.custody}
-                    onChange={(e) => setForm({ ...form, custody: e.target.value })}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setForm((f) => {
+                        const patch = { ...f, custody: next };
+                        if (!custodyRequiresCustodianContact(next)) {
+                          patch.contactId = '';
+                        } else if (f.contactId) {
+                          const current = contacts.find((c) => c._id === f.contactId);
+                          if (!current || !contactMatchesCustody(current, next)) {
+                            patch.contactId = '';
+                          }
+                        }
+                        return patch;
+                      });
+                    }}
                   >
                     <option value="">Select custody</option>
                     {ASSET_CUSTODY_OPTIONS.map((o) => (
@@ -674,17 +720,59 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     ))}
                   </AdaptiveSelect>
                 </div>
-                <div className="field">
-                  <label htmlFor="asset-peripheral-remarks">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
-                  <input
-                    id="asset-peripheral-remarks"
-                    type="text"
-                    value={form.peripheralRemarks}
-                    onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
-                    placeholder="Optional remarks about asset or peripherals"
-                  />
-                </div>
+                {custodyRequiresCustodianContact(form.custody) ? (
+                  <div className="field">
+                    <label htmlFor="asset-custodian-contact">{FIELD.CUSTODIAN_CONTACT} *</label>
+                    <AdaptiveSelect
+                      id="asset-custodian-contact"
+                      required
+                      value={form.contactId}
+                      onChange={(e) => setForm({ ...form, contactId: e.target.value })}
+                    >
+                      <option value="">Select Contact Directory record</option>
+                      {contacts
+                        .filter((contact) => contactMatchesCustody(contact, form.custody))
+                        .map((contact) => (
+                        <option key={contact._id} value={contact._id}>
+                          {contact.name}
+                          {contact.contact ? ` · ${contact.contact}` : contact.email ? ` · ${contact.email}` : ''}
+                          {contact.resourceType ? ` · ${contact.resourceType}` : ''}
+                        </option>
+                      ))}
+                    </AdaptiveSelect>
+                    <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
+                      {form.custody === 'Service Provider'
+                        ? 'Only Healthcare Worker contacts with Type “Service Provider” are listed.'
+                        : 'Only Healthcare Worker contacts with Type “Individual” are listed.'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="field">
+                    <label htmlFor="asset-peripheral-remarks">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
+                    <input
+                      id="asset-peripheral-remarks"
+                      type="text"
+                      value={form.peripheralRemarks}
+                      onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
+                      placeholder="Optional remarks about asset or peripherals"
+                    />
+                  </div>
+                )}
               </div>
+              {custodyRequiresCustodianContact(form.custody) ? (
+                <div className="asset-form-row asset-form-row-1">
+                  <div className="field">
+                    <label htmlFor="asset-peripheral-remarks">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
+                    <input
+                      id="asset-peripheral-remarks"
+                      type="text"
+                      value={form.peripheralRemarks}
+                      onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
+                      placeholder="Optional remarks about asset or peripherals"
+                    />
+                  </div>
+                </div>
+              ) : null}
               {form.productId && selectedProductImages.length > 0 ? (
                 <div className="asset-form-row asset-form-row-1">
                   <div className="field asset-product-images-field">

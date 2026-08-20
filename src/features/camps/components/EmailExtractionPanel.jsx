@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDateDDMMYYYY } from '../utils/dateFormat';
+import { DateInput } from './DateInput';
 import {
   labelPasteCreationField,
   refreshPastePreviewEligibility,
@@ -291,11 +292,20 @@ function BodyExtractionForm({
                       ↖
                     </button>
                   </span>
-                  <input
-                    value={entry.row?.[field.key] ?? ''}
-                    onChange={(e) => onRowChange(rowIndex, field.key, e.target.value)}
-                    placeholder={field.label}
-                  />
+                  {field.key === 'campDate' ? (
+                    <DateInput
+                      value={entry.row?.[field.key] ?? ''}
+                      onChange={(v) => onRowChange(rowIndex, field.key, v)}
+                      hideLabel
+                      aria-label={field.label}
+                    />
+                  ) : (
+                    <input
+                      value={entry.row?.[field.key] ?? ''}
+                      onChange={(e) => onRowChange(rowIndex, field.key, e.target.value)}
+                      placeholder={field.label}
+                    />
+                  )}
                 </label>
               );
             })}

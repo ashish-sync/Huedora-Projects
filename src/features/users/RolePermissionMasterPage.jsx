@@ -89,6 +89,7 @@ export default function RolePermissionMasterPage() {
   const { can, user: me } = useAuth();
   const canWrite = can('users:write') || can('*');
   const canDelete = can('*');
+  const canGrantAdmin = can('*');
   const canViewUsers = canWrite || can('users:read');
   const [tab, setTab] = useState('users');
 
@@ -208,6 +209,10 @@ export default function RolePermissionMasterPage() {
     const id = String(roleId);
     const role = roles.find((r) => roleIdOf(r) === id);
     const isAdmin = role?.permissions?.includes('*');
+    if (isAdmin && !canGrantAdmin) {
+      setError('Only an Admin can assign Admin all Access');
+      return;
+    }
     setUserDraft((prev) => {
       const has = prev.roleIds.includes(id);
       if (isAdmin) {
@@ -408,7 +413,7 @@ export default function RolePermissionMasterPage() {
                   <input
                     type="checkbox"
                     checked={hasAdmin}
-                    disabled={!canWrite}
+                    disabled={!canWrite || !canGrantAdmin}
                     onChange={() => toggleUserRole(adminRoleId)}
                   />
                   Admin

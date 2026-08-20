@@ -184,8 +184,8 @@ export default function PurchaseOrderPreview({
         </table>
 
         <table className="po-grid">
-          <thead>
-            <tr>
+            <thead>
+              <tr>
               <th style={{ width: '50%' }}>BUYER DETAILS</th>
               <th style={{ width: '50%' }}>VENDOR DETAILS</th>
             </tr>
@@ -389,20 +389,20 @@ export default function PurchaseOrderPreview({
               <th>GST Rate %</th>
               <th>GST Amount (₹)</th>
               <th>Total Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
+              </tr>
+            </thead>
+            <tbody>
             {lines.map((line, index) => {
               const taxable = lineTaxable(line);
               const computed = totals.lines[index] || {};
               const gstAmt = computed.taxAmount || 0;
               const total = computed.totalAmount || 0;
               const hasContent = Boolean(line.description || Number(line.qty) || Number(line.rate));
-              return (
+                return (
                 <tr key={line.id || index}>
                   <td className="po-center">{index + 1}</td>
                   <td className="po-desc">
-                    {editable ? (
+                      {editable ? (
                       <InlineTextarea
                         rows={Math.min(2, Math.max(1, String(line.description || '').split('\n').length))}
                         maxLines={2}
@@ -410,35 +410,35 @@ export default function PurchaseOrderPreview({
                         value={line.description || ''}
                         onChange={(v) => onUpdateLine?.(index, { description: v })}
                         placeholder="Item description"
-                      />
-                    ) : (
+                        />
+                      ) : (
                       line.description
-                    )}
-                  </td>
+                      )}
+                    </td>
                   <td className="po-center">
-                    {editable ? (
-                      <InlineTableInput
+                      {editable ? (
+                        <InlineTableInput
                         value={line.qty ?? ''}
                         onChange={(v) => onUpdateLine?.(index, { qty: Number(v) })}
                         align="center"
                       />
-                    ) : (
-                      line.qty
-                    )}
-                  </td>
+                      ) : (
+                        line.qty
+                      )}
+                    </td>
                   <td className="po-center">
-                    {editable ? (
-                      <InlineTableInput
+                      {editable ? (
+                        <InlineTableInput
                         value={line.unit || line.uom || ''}
                         onChange={(v) => onUpdateLine?.(index, { unit: v, uom: v })}
-                        align="center"
-                      />
-                    ) : (
+                          align="center"
+                        />
+                      ) : (
                       line.unit || line.uom
-                    )}
-                  </td>
+                      )}
+                    </td>
                   <td className="po-num">
-                    {editable ? (
+                      {editable ? (
                       <InlineTableInput
                         value={line.rate ?? ''}
                         onChange={(v) => onUpdateLine?.(index, { rate: Number(v) })}
@@ -448,37 +448,37 @@ export default function PurchaseOrderPreview({
                       money(line.rate)
                     ) : (
                       ''
-                    )}
-                  </td>
+                      )}
+                    </td>
                   <td className="po-num">{hasContent ? money(taxable) : ''}</td>
                   <td className="po-center">
-                    {editable ? (
-                      <InlineTableInput
-                        value={getLineGstRateDisplay(line, taxMode)}
+                      {editable ? (
+                        <InlineTableInput
+                          value={getLineGstRateDisplay(line, taxMode)}
                         onChange={(v) => onUpdateLine?.(index, patchLineGstRate(v, taxMode))}
                         align="center"
-                      />
+                        />
                     ) : hasContent ? (
                       (() => {
                         const rate = getLineGstRateDisplay(line, taxMode);
                         return rate === '' || rate == null ? '—' : `${rate}%`;
                       })()
-                    ) : (
+                      ) : (
                       ''
-                    )}
-                  </td>
+                      )}
+                    </td>
                   <td className="po-num">{hasContent ? money(gstAmt) : ''}</td>
                   <td className="po-num">{hasContent ? money(total) : ''}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         {canAddLine ? (
           <div className="po-add-row">
             <InlineAddChip label="Add item row" onClick={() => onAddLine?.()} />
           </div>
-        ) : null}
+          ) : null}
 
         <div className="po-bottom">
           <div className="po-terms-summary">
@@ -640,7 +640,7 @@ export default function PurchaseOrderPreview({
               </tr>
             </tbody>
           </table>
-        </div>
+          </div>
       </article>
     </div>
   );

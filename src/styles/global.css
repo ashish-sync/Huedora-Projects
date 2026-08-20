@@ -5472,12 +5472,12 @@ body:has(.login-page),
 }
 
 .ph-step-card--wide {
-  max-width: 920px;
+  max-width: min(1280px, calc(100vw - 2rem));
 }
 
 .ph-line-table {
-  margin: 16px 0 8px;
-  padding-top: 14px;
+  margin: 20px 0 10px;
+  padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
@@ -5486,64 +5486,163 @@ body:has(.login-page),
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .ph-line-table-head h4 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 650;
 }
 
 .ph-line-table-scroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-elevated, var(--surface));
 }
 
 .ph-line-table table {
   width: 100%;
+  min-width: 820px;
   border-collapse: collapse;
-  min-width: 480px;
+  table-layout: fixed;
+}
+
+.ph-line-table col.ph-line-colgroup-sr {
+  width: 3rem;
+}
+
+.ph-line-table col.ph-line-col-name {
+  width: 20%;
+}
+
+.ph-line-table col.ph-line-col-serial {
+  width: 16%;
+}
+
+.ph-line-table col.ph-line-col-amount {
+  width: 13%;
+}
+
+.ph-line-table col.ph-line-col-distance,
+.ph-line-table col.ph-line-col-kms {
+  width: 12.5rem;
+}
+
+.ph-line-table col.ph-line-col-remarks,
+.ph-line-table col.ph-line-col {
+  width: auto;
+}
+
+.ph-line-table col.ph-line-colgroup-actions {
+  width: 5.5rem;
 }
 
 .ph-line-table th,
 .ph-line-table td {
-  padding: 8px 10px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
 }
 
 .ph-line-table th {
-  background: color-mix(in srgb, var(--bg-elevated) 80%, var(--line));
+  background: color-mix(in srgb, var(--bg-sunken, #0f172a) 55%, var(--bg-elevated));
   font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
   white-space: nowrap;
+  color: var(--ink-soft, var(--muted));
 }
 
 .ph-line-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+.ph-line-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--brand, #3b82f6) 4%, transparent);
+}
+
 .ph-line-table input {
+  display: block;
   width: 100%;
-  min-width: 72px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.4rem;
+  padding: 0.55rem 0.7rem;
   box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg, #0b1220);
+  color: inherit;
+  font: inherit;
+}
+
+.ph-line-table input:focus {
+  outline: 2px solid color-mix(in srgb, var(--brand, #3b82f6) 55%, transparent);
+  outline-offset: 1px;
+  border-color: color-mix(in srgb, var(--brand, #3b82f6) 50%, var(--line));
+}
+
+.ph-line-table input::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
 }
 
 .ph-line-sr {
-  width: 36px;
+  width: 3rem;
   text-align: center !important;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ph-line-col-amount input,
+.ph-line-col-distance input,
+.ph-line-col-kms input {
+  font-variant-numeric: tabular-nums;
 }
 
 .ph-line-actions {
-  width: 88px;
+  width: 5.5rem;
   white-space: nowrap;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.ph-line-remove {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 4px;
+  white-space: nowrap;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.ph-line-remove:hover {
+  color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
 }
 
 .ph-line-add {
-  margin-top: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .ph-line-table table {
+    min-width: 680px;
+  }
+
+  .ph-line-table th,
+  .ph-line-table td {
+    padding: 10px 10px;
+  }
 }
 
 .ph-step-head {
@@ -9013,25 +9112,113 @@ button.vf-summary-card.is-clickable:hover,
   gap: 16px;
 }
 
-.dm-upload-card {
-  max-width: 480px;
+.dm-upload-layout {
+  grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 20px;
 }
 
-.dm-upload-layout {
-  align-items: start;
+.dm-upload-card {
+  max-width: none;
+  height: fit-content;
 }
 
 .dm-upload-preview-card {
-  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  min-height: min(88vh, 920px);
+  padding: 0;
+  overflow: hidden;
 }
 
-.dm-upload-preview-scroll {
+.dm-preview-head {
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-elevated);
+}
+
+.dm-preview-head h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.05rem;
+}
+
+.dm-preview-head .muted {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.dm-preview-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #525659;
+}
+
+.dm-pdf-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: min(78vh, 840px);
+  height: 100%;
+  border: 0;
   display: block;
-  max-height: min(75vh, 900px);
+  background: #525659;
+}
+
+.dm-preview-placeholder,
+.dm-preview-fallback {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: var(--bg-sunken);
+  min-height: min(60vh, 640px);
+}
+
+.dm-preview-fallback {
+  align-items: stretch;
+  justify-content: flex-start;
   overflow: auto;
-  padding: 4px 2px 8px;
-  background: #e8e8e8;
-  border-radius: var(--radius);
+}
+
+.dm-preview-fallback-note {
+  margin: 0 0 var(--space-3);
+}
+
+.dm-modal.dm-modal-pdf {
+  width: min(1120px, 96vw);
+  max-height: min(94vh, 980px);
+}
+
+.dm-modal-stage.dm-modal-stage-pdf {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #525659;
+}
+
+.dm-modal-stage.dm-modal-stage-pdf .dm-pdf-preview-frame {
+  min-height: 0;
+  height: 100%;
+}
+
+/* Legacy scroll wrapper — keep for any older markup paths */
+.dm-upload-preview-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  background: #525659;
+  border-radius: 0;
 }
 
 .docx-native-preview {

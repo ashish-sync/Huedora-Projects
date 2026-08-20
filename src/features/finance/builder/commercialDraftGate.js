@@ -61,7 +61,7 @@ function countInvoiceLikeLineItems(lineItems) {
     if (isUserLineDescription(line?.description)) n += 1;
     else if (filled(line?.hsnSac) && trim(line.hsnSac) !== '999316') n += 1;
     else if (Number(line?.rate) > 0) n += 1;
-    else if (Number(line?.qty) > 0 && Number(line?.qty) !== 1 && isUserLineDescription(line?.description)) {
+    else if (Number(line?.qty) > 0 && Number(line?.qty) !== 1) {
       n += 1;
     }
   }

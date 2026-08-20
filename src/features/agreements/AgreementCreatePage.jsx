@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { CONTACT_CATEGORIES, HCW_RESOURCE_TYPES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey, resourceTypesForCategory, isHcwStaffResourceType } from './contactPicklists.js';
@@ -9,15 +9,19 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
+import { isDatePlaceholder, isTodayDatePlaceholder } from './datePlaceholderFields.js';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
 import AssetRegistrySearchInput, {
   AssetRegistryPickerSummary,
 } from './AssetRegistrySearchInput.jsx';
 import {
+  applyAssetSnapshotToLineRows,
   applyAssetSnapshotToPlaceholders,
   isAssetRegistryPlaceholder,
   placeholderAssetField,
 } from './assetPlaceholderFields.js';
+import { applyContactSnapshotToPlaceholders } from './contactPlaceholderFields.js';
+import { displayLineColumnLabel, lineColumnClass } from './serviceAgreementLineColumns.js';
 
 const emptyContact = {
   name: '',
@@ -129,6 +133,7 @@ export default function AgreementCreatePage() {
   const [filledDocxBlob, setFilledDocxBlob] = useState(null);
   const [pdfEngine, setPdfEngine] = useState('');
   const [previewMode, setPreviewMode] = useState('word'); // word | pdf
+  const lastPlaceholderTemplateId = useRef('');
 
   const loadContacts = (q = '') => {
     const params = q ? `?q=${encodeURIComponent(q)}&limit=100` : '?limit=100';
@@ -184,18 +189,19 @@ export default function AgreementCreatePage() {
   const hasLineTables = docMode === 'template' && repeatableTables.length > 0;
   const hasPlaceholders =
     docMode === 'template' && (placeholders.length > 0 || repeatableTables.length > 0);
-  const assetPlaceholders = useMemo(
-    () => placeholders.filter((p) => isAssetRegistryPlaceholder(p)),
-    [placeholders]
-  );
 
   useEffect(() => {
-    if (selectedTemplate && docMode === 'template') {
+    if (!selectedTemplate || docMode !== 'template') return;
+    const templateId = selectedTemplate._id;
+    const switched = lastPlaceholderTemplateId.current !== templateId;
+    lastPlaceholderTemplateId.current = templateId;
+
+    if (switched) {
       setTitle(selectedTemplate.name);
       setType(selectedTemplate.agreementType || 'LEASE');
       const next = {};
       (selectedTemplate.placeholders || []).forEach((p) => {
-        next[p.key] = '';
+        next[p.key] = isTodayDatePlaceholder(p) ? todayISODate() : '';
       });
       setPlaceholderValues(next);
       const nextLines = {};
@@ -212,7 +218,28 @@ export default function AgreementCreatePage() {
       setFilledDocxBlob(null);
       setPdfEngine('');
       setPreviewMode('word');
+      return;
     }
+
+    setPlaceholderValues((prev) => {
+      const next = { ...prev };
+      (selectedTemplate.placeholders || []).forEach((p) => {
+        if (next[p.key] == null) next[p.key] = '';
+      });
+      return next;
+    });
+    setLineRowsByTable((prev) => {
+      const next = { ...prev };
+      (selectedTemplate.repeatableTables || []).forEach((table) => {
+        if (next[table.id]?.length) return;
+        const empty = {};
+        (table.columns || []).forEach((col) => {
+          empty[col.key] = '';
+        });
+        next[table.id] = [empty];
+      });
+      return next;
+    });
   }, [selectedTemplate, docMode]);
 
   const recipientPerson = useMemo(() => {
@@ -245,24 +272,12 @@ export default function AgreementCreatePage() {
     return true;
   };
 
-  const seedPlaceholdersFromAsset = async () => {
-    const assetId = selectedLinkAssetId || linkAssetId;
-    if (!assetId || !hasPlaceholders) return;
-    try {
-      const { data: snap } = await api(`/assets/${assetId}/placeholder-snapshot`);
-      setSelectedAssetSnapshot(snap);
-      setSelectedLinkAssetId(snap?.assetId || assetId);
-      setPlaceholderValues((prev) => applyAssetSnapshotToPlaceholders(placeholders, snap, prev));
-    } catch {
-      /* optional prefill */
-    }
-  };
-
   const handleAssetSelected = (snapshot) => {
     if (!snapshot?.assetId) return;
     setSelectedAssetSnapshot(snapshot);
     setSelectedLinkAssetId(snapshot.assetId);
     setPlaceholderValues((prev) => applyAssetSnapshotToPlaceholders(placeholders, snapshot, prev));
+    setLineRowsByTable((prev) => applyAssetSnapshotToLineRows(repeatableTables, snapshot, prev));
   };
 
   const resolveLinkAssetId = async () => {
@@ -278,38 +293,6 @@ export default function AgreementCreatePage() {
     } catch {
       return '';
     }
-  };
-
-  const seedPlaceholdersFromRecipient = () => {
-    if (!hasPlaceholders) return;
-    const person = recipientMode === 'directory' ? selectedContact : newContact;
-    if (!person?.name) return;
-    setPlaceholderValues((prev) => {
-      const next = { ...prev };
-      (selectedTemplate?.placeholders || []).forEach((p) => {
-        const key = String(p.key || p.label || '').toLowerCase();
-        const label = String(p.label || '').toLowerCase();
-        const isNameField =
-          key === 'name' ||
-          label === 'name' ||
-          key.includes('signer') ||
-          key.includes('recipient') ||
-          key.includes('party') ||
-          label.includes('signer') ||
-          label.includes('recipient');
-        if (isNameField && !String(next[p.key] || '').trim()) {
-          next[p.key] = person.name;
-        }
-        if (
-          (key === 'email' || label === 'email') &&
-          person.email &&
-          !String(next[p.key] || '').trim()
-        ) {
-          next[p.key] = person.email;
-        }
-      });
-      return next;
-    });
   };
 
   const appendRecipientFields = (fd) => {
@@ -368,17 +351,25 @@ export default function AgreementCreatePage() {
         return;
       }
       if (docMode === 'template' && selectedTemplateId) {
-        seedPlaceholdersFromRecipient();
-        seedPlaceholdersFromAsset();
         setBusy(true);
         try {
+          let person = recipientPerson;
+          if (recipientMode === 'directory' && selectedContactId) {
+            try {
+              const { data } = await api(`/contacts/${selectedContactId}`);
+              if (data) person = data;
+            } catch {
+              /* use the directory row already in memory */
+            }
+          }
+
           const { data: fresh } = await api(`/templates/${selectedTemplateId}`);
+          const tpl = fresh || selectedTemplate;
           if (fresh) {
             setTemplates((prev) =>
               prev.map((t) => (t._id === fresh._id ? { ...t, ...fresh } : t))
             );
             const tables = fresh.repeatableTables || [];
-            const docFields = fresh.placeholders || [];
             if (tables.length) {
               setLineRowsByTable((prev) => {
                 const next = { ...prev };
@@ -393,11 +384,59 @@ export default function AgreementCreatePage() {
                 return next;
               });
             }
-            if (!docFields.length && !tables.length) {
-              await submit();
-              return;
-            }
           }
+
+          const docFields = tpl?.placeholders || [];
+          const tables = tpl?.repeatableTables || [];
+          if (!docFields.length && !tables.length) {
+            await submit();
+            return;
+          }
+
+          let nextValues = { ...placeholderValues };
+          docFields.forEach((p) => {
+            if (nextValues[p.key] == null) nextValues[p.key] = '';
+          });
+          nextValues = applyContactSnapshotToPlaceholders(docFields, person, nextValues);
+
+          let nextLineRows = lineRowsByTable;
+          const assetId = selectedLinkAssetId || linkAssetId;
+          if (assetId) {
+            try {
+              const { data: snap } = await api(`/assets/${assetId}/placeholder-snapshot`);
+              setSelectedAssetSnapshot(snap);
+              setSelectedLinkAssetId(snap?.assetId || assetId);
+              nextValues = applyAssetSnapshotToPlaceholders(docFields, snap, nextValues);
+              nextLineRows = applyAssetSnapshotToLineRows(tables, snap, nextLineRows);
+            } catch {
+              if (selectedAssetSnapshot) {
+                nextValues = applyAssetSnapshotToPlaceholders(
+                  docFields,
+                  selectedAssetSnapshot,
+                  nextValues
+                );
+                nextLineRows = applyAssetSnapshotToLineRows(
+                  tables,
+                  selectedAssetSnapshot,
+                  nextLineRows
+                );
+              }
+            }
+          } else if (selectedAssetSnapshot) {
+            nextValues = applyAssetSnapshotToPlaceholders(
+              docFields,
+              selectedAssetSnapshot,
+              nextValues
+            );
+            nextLineRows = applyAssetSnapshotToLineRows(
+              tables,
+              selectedAssetSnapshot,
+              nextLineRows
+            );
+          }
+
+          setPlaceholderValues(nextValues);
+          setLineRowsByTable(nextLineRows);
           setStep(3);
         } catch (err) {
           setError(err.message);
@@ -430,7 +469,7 @@ export default function AgreementCreatePage() {
       for (let i = 0; i < rows.length; i += 1) {
         for (const col of table.columns || []) {
           if (!String(rows[i]?.[col.key] || '').trim()) {
-            setError(`Fill Row ${i + 1} · ${col.label}`);
+            setError(`Fill Row ${i + 1} · ${displayLineColumnLabel(col)}`);
             return;
           }
         }
@@ -450,7 +489,7 @@ export default function AgreementCreatePage() {
       if (data.filledDocxUrl) {
         const docxBlob = await fetchDocxBlob(data.filledDocxUrl);
         setFilledDocxBlob(docxBlob);
-        setPreviewMode('word');
+        setPreviewMode(data.pdfEngine === 'pdfkit' ? 'word' : 'pdf');
       } else {
         setFilledDocxBlob(null);
         setPreviewMode('pdf');
@@ -996,6 +1035,31 @@ export default function AgreementCreatePage() {
               />
             )}
 
+            <div className="field">
+              <label htmlFor="agr-asset-picker">Linked Asset One record</label>
+              <AssetRegistrySearchInput
+                id="agr-asset-picker"
+                value={assetPickerQuery}
+                onChange={setAssetPickerQuery}
+                onSelectAsset={(snapshot) => {
+                  handleAssetSelected(snapshot);
+                  setAssetPickerQuery(snapshot.assetName || snapshot.serialNumber || '');
+                }}
+                placeholder="Search by asset name or serial number…"
+              />
+              <AssetRegistryPickerSummary
+                snapshot={selectedAssetSnapshot}
+                onClear={() => {
+                  setSelectedAssetSnapshot(null);
+                  setSelectedLinkAssetId(linkAssetId || '');
+                  setAssetPickerQuery('');
+                }}
+              />
+              <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
+                Selecting an asset fills Asset Type/Product Type, Asset Name, Ownership Type, and Serial Number.
+              </span>
+            </div>
+
             <div className="recipient-summary">
               <h4>Receives &amp; signs</h4>
               {recipientMode === 'directory' && selectedContact ? (
@@ -1036,23 +1100,24 @@ export default function AgreementCreatePage() {
         <div className={`card ph-step-card${hasLineTables ? ' ph-step-card--wide' : ''}`}>
           <div className="ph-step-head">
             <h3 style={{ margin: 0 }}>Fill placeholders</h3>
-            {assetPlaceholders.length > 0 && (
+            {hasPlaceholders && (
               <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
-                Asset Name, Model, and Serial Number fields search the Asset Registry and auto-fill
-                when you pick a match.
+                Linking a Contact Directory record fills Name, Address, City, State, and related
+                fields. Linking an Asset One record fills Asset Type/Product Type, Asset Name,
+                Ownership Type, and Serial Number. You do not need to re-type them.
               </p>
             )}
             {hasLineTables ? (
               <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
-                Line items use the template table row as a prototype. Add rows as needed; each is
-                included in the PDF.
+                Line items are Display Name, Serial No., Per Camp (INR), Kms Covered, and Additional
+                Remarks. Add rows as needed; each is included in the PDF.
               </p>
             ) : null}
           </div>
 
-          {assetPlaceholders.length > 0 && (
+          {hasPlaceholders && (
             <div className="field ph-field ph-asset-picker">
-              <label htmlFor="ph-asset-picker">Link from Asset Registry</label>
+              <label htmlFor="ph-asset-picker">Link from Asset One</label>
               <AssetRegistrySearchInput
                 id="ph-asset-picker"
                 value={assetPickerQuery}
@@ -1088,6 +1153,17 @@ export default function AgreementCreatePage() {
                     }
                     onSelectAsset={handleAssetSelected}
                     placeholder={`Search ${p.label} in Asset Registry…`}
+                  />
+                ) : isDatePlaceholder(p) ? (
+                  <DateInput
+                    id={`ph-${p.key}`}
+                    hideLabel
+                    required
+                    aria-label={p.label}
+                    value={placeholderValues[p.key] || ''}
+                    onChange={(v) =>
+                      setPlaceholderValues({ ...placeholderValues, [p.key]: v })
+                    }
                   />
                 ) : (
                   <input
@@ -1129,6 +1205,8 @@ export default function AgreementCreatePage() {
             const rows = lineRowsByTable[table.id] || [];
             const maxRows = Number(table.maxRows) > 0 ? Number(table.maxRows) : 20;
             const minRows = Number(table.minRows) > 0 ? Number(table.minRows) : 1;
+            const canRemoveRows = rows.length > minRows;
+            const columns = table.columns || [];
             return (
               <div className="ph-line-table" key={table.id}>
                 <div className="ph-line-table-head">
@@ -1137,23 +1215,34 @@ export default function AgreementCreatePage() {
                     {rows.length} / {maxRows} rows
                   </span>
                 </div>
-                <div className="ph-line-table-scroll">
+                <div className={`ph-line-table-scroll${canRemoveRows ? ' has-actions' : ''}`}>
                   <table>
+                    <colgroup>
+                      <col className="ph-line-colgroup-sr" />
+                      {columns.map((col) => (
+                        <col key={col.key} className={lineColumnClass(col)} />
+                      ))}
+                      {canRemoveRows ? <col className="ph-line-colgroup-actions" /> : null}
+                    </colgroup>
                     <thead>
                       <tr>
-                        <th className="ph-line-sr">#</th>
-                        {(table.columns || []).map((col) => (
-                          <th key={col.key}>{col.label}</th>
+                        <th className="ph-line-sr" scope="col">#</th>
+                        {columns.map((col) => (
+                          <th key={col.key} className={lineColumnClass(col)} scope="col">
+                            {displayLineColumnLabel(col)}
+                          </th>
                         ))}
-                        <th className="ph-line-actions" aria-label="Actions" />
+                        {canRemoveRows ? (
+                          <th className="ph-line-actions" scope="col" aria-label="Actions" />
+                        ) : null}
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((row, rowIndex) => (
                         <tr key={`${table.id}-${rowIndex}`}>
                           <td className="ph-line-sr">{rowIndex + 1}</td>
-                          {(table.columns || []).map((col) => (
-                            <td key={col.key}>
+                          {columns.map((col) => (
+                            <td key={col.key} className={lineColumnClass(col)}>
                               <input
                                 required
                                 inputMode={col.type === 'number' ? 'decimal' : 'text'}
@@ -1161,21 +1250,22 @@ export default function AgreementCreatePage() {
                                 onChange={(e) =>
                                   updateLineCell(table.id, rowIndex, col.key, e.target.value)
                                 }
-                                aria-label={`Row ${rowIndex + 1} ${col.label}`}
+                                aria-label={`Row ${rowIndex + 1} ${displayLineColumnLabel(col)}`}
+                                placeholder={displayLineColumnLabel(col)}
                               />
                             </td>
                           ))}
-                          <td className="ph-line-actions">
-                            {rows.length > minRows ? (
+                          {canRemoveRows ? (
+                            <td className="ph-line-actions">
                               <button
                                 type="button"
-                                className="btn secondary btn-sm"
+                                className="ph-line-remove"
                                 onClick={() => removeLineRow(table, rowIndex)}
                               >
                                 Remove
                               </button>
-                            ) : null}
-                          </td>
+                            </td>
+                          ) : null}
                         </tr>
                       ))}
                     </tbody>
@@ -1211,29 +1301,31 @@ export default function AgreementCreatePage() {
                   {filledDocxBlob
                     ? 'Word layout matches your template. Switch to PDF to review the file used for signing (signature footer on every page).'
                     : 'Review the filled PDF. Sender (left) and Receiver (right) slots appear on every page.'}
-                  {pdfEngine === 'libreoffice'
+                  {pdfEngine === 'msword'
+                    ? ' PDF was created with Microsoft Word (same as Save as PDF).'
+                    : pdfEngine === 'libreoffice'
                     ? ' PDF was converted from Word for layout fidelity.'
                     : pdfEngine === 'pdfkit'
-                      ? ' PDF is a simplified rebuild — install LibreOffice on the API host for Word-faithful PDFs.'
+                      ? ' PDF is a fallback rebuild. Install Microsoft Word or LibreOffice on this computer for a matching layout.'
                       : ''}
                 </p>
               </div>
               <div className="row">
-                {filledDocxBlob ? (
+                {filledDocxBlob && pdfEngine === 'pdfkit' ? (
                   <div className="btn-group" role="group" aria-label="Preview mode">
                     <button
                       type="button"
                       className={`btn secondary btn-compact${previewMode === 'word' ? ' is-active' : ''}`}
                       onClick={() => setPreviewMode('word')}
                     >
-                      Word layout
+                      Approximate layout
                     </button>
                     <button
                       type="button"
                       className={`btn secondary btn-compact${previewMode === 'pdf' ? ' is-active' : ''}`}
                       onClick={() => setPreviewMode('pdf')}
                     >
-                      PDF
+                      PDF (rebuilt)
                     </button>
                   </div>
                 ) : null}
@@ -1245,7 +1337,7 @@ export default function AgreementCreatePage() {
                 </button>
               </div>
             </div>
-            {previewMode === 'word' && filledDocxBlob ? (
+            {previewMode === 'word' && filledDocxBlob && pdfEngine === 'pdfkit' ? (
               <div className="esign-docx-frame">
                 <DocxNativePreview file={filledDocxBlob} />
               </div>

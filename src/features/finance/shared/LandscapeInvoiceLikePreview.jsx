@@ -389,12 +389,12 @@ export default function LandscapeInvoiceLikePreview({
               <MetaCell label="PO / WO Date">
                 {editable ? (
                   <InlineField
+                    type="date"
                     value={invoice?.poDate || ''}
                     onChange={(v) => onUpdate?.('invoice.poDate', v)}
-                    placeholder="DD/MM/YYYY"
                   />
                 ) : (
-                  invoice?.poDate || 'DD/MM/YYYY'
+                  formatDisplayDate(invoice?.poDate) || 'DD/MM/YYYY'
                 )}
               </MetaCell>
               <MetaCell label={dueLabel} hint={editable ? '30 days from approval' : undefined}>
@@ -472,12 +472,12 @@ export default function LandscapeInvoiceLikePreview({
               <MetaCell label="PO / WO Date">
                 {editable ? (
                   <InlineField
+                    type="date"
                     value={invoice?.poDate || ''}
                     onChange={(v) => onUpdate?.('invoice.poDate', v)}
-                    placeholder="DD/MM/YYYY"
                   />
                 ) : (
-                  invoice?.poDate || 'DD/MM/YYYY'
+                  formatDisplayDate(invoice?.poDate) || 'DD/MM/YYYY'
                 )}
               </MetaCell>
               <MetaCell label="Project / Service Period">

@@ -492,8 +492,6 @@ function mergeInvoiceLike(base, doc) {
     receiptVoucherNo: doc.receiptVoucher || '',
     poReference: doc.reference || '',
     poDate: doc.referenceDate || '',
-    cnReference: doc.cnReference || '',
-    dnReference: doc.dnReference || '',
     originalInvoiceDate: doc.originalInvoiceDate || '',
     creditReason: doc.creditReason || '',
     debitReason: doc.debitReason || '',

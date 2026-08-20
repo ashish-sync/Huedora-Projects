@@ -91,7 +91,7 @@ export default function Layout({ children }) {
   const loadPreview = useCallback(async () => {
     if (!canSeeNotifications) return;
     try {
-      const res = await api('/notifications?unread=true');
+      const res = await api('/notifications?unread=true&limit=8&page=1');
       setPreviewRows((res.data || []).slice(0, 8));
     } catch {
       setPreviewRows([]);

@@ -41,3 +41,25 @@ export const ASSET_CUSTODY_OPTIONS = [
   'Individual',
   'Service Provider',
 ];
+
+export function custodyRequiresCustodianContact(custody) {
+  return custody === 'Individual' || custody === 'Service Provider';
+}
+
+/**
+ * Individual custody → Healthcare Worker / Individual.
+ * Service Provider custody → Healthcare Worker / Service Provider.
+ */
+export function contactMatchesCustody(contact, custody) {
+  if (!custodyRequiresCustodianContact(custody)) return true;
+  if (!contact) return false;
+  const category = String(contact.contactCategory || '').trim();
+  const resourceType = String(contact.resourceType || '').trim();
+  if (custody === 'Service Provider') {
+    return category === 'Healthcare Worker' && resourceType === 'Service Provider';
+  }
+  if (custody === 'Individual') {
+    return category === 'Healthcare Worker' && resourceType === 'Individual';
+  }
+  return true;
+}

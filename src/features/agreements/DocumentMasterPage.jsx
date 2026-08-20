@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { api } from '../../shared/api.js';
+import { api, apiFetch } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
@@ -23,6 +23,13 @@ const DOCUMENT_TYPES = [
 /** Soft A4 body capacity; leaves room for header and signature footer on every page. */
 const PAGE_MAX_LINES = 24;
 const PAGE_LINE_WIDTH = 72;
+
+/** Chrome/Edge embedded PDF viewer — fit page width inside the iframe. */
+function pdfIframeSrc(blobUrl) {
+  if (!blobUrl) return '';
+  if (blobUrl.includes('#')) return blobUrl;
+  return `${blobUrl}#view=FitH&navpanes=0`;
+}
 
 function typeLabel(t) {
   return DOCUMENT_TYPES.find((d) => d.value === t)?.label || t || '-';
@@ -132,6 +139,10 @@ function TemplatePreviewModal({ template, onClose }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [overview, setOverview] = useState(false);
+  const [printPdfUrl, setPrintPdfUrl] = useState('');
+  const [printPdfBusy, setPrintPdfBusy] = useState(false);
+  const [printPdfEngine, setPrintPdfEngine] = useState('');
+  const [printPdfError, setPrintPdfError] = useState('');
 
   const ZOOM_STEPS = [0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.3];
 
@@ -140,6 +151,48 @@ function TemplatePreviewModal({ template, onClose }) {
     setZoom(1);
     setOverview(false);
   }, [template?._id]);
+
+  useEffect(() => {
+    if (!useNativeDocx || !template?._id) {
+      setPrintPdfUrl('');
+      setPrintPdfEngine('');
+      setPrintPdfError('');
+      return undefined;
+    }
+    let cancelled = false;
+    let objectUrl = '';
+    setPrintPdfUrl('');
+    setPrintPdfEngine('');
+    setPrintPdfError('');
+    setPrintPdfBusy(true);
+    (async () => {
+      try {
+        const res = await apiFetch(`/templates/${template._id}/print-preview.pdf`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message || `PDF preview failed (${res.status})`);
+        }
+        const engine = res.headers.get('X-PDF-Engine') || '';
+        const blob = await res.blob();
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setPrintPdfEngine(engine);
+        setPrintPdfUrl(objectUrl);
+      } catch (err) {
+        if (!cancelled) setPrintPdfError(err.message || 'Could not create Word PDF preview');
+      } finally {
+        if (!cancelled) setPrintPdfBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [template?._id, useNativeDocx]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -238,7 +291,7 @@ function TemplatePreviewModal({ template, onClose }) {
   return createPortal(
     <div className="dm-modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="dm-modal"
+        className={`dm-modal${useNativeDocx && printPdfUrl ? ' dm-modal-pdf' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={`Preview ${template.name}`}
@@ -254,7 +307,17 @@ function TemplatePreviewModal({ template, onClose }) {
               {typeLabel(template.documentType || template.agreementType)} ·{' '}
               {signingLabel(template.signingType)}
               {useNativeDocx
-                ? ` · As in Word · ${zoomPct}%`
+                ? printPdfUrl
+                  ? printPdfEngine === 'msword' || printPdfEngine === 'cached'
+                    ? ' · Microsoft Word PDF (Save as PDF)'
+                    : printPdfEngine === 'libreoffice'
+                      ? ' · LibreOffice PDF'
+                      : ' · Word-faithful PDF'
+                  : printPdfBusy
+                    ? ' · Creating Word PDF…'
+                    : printPdfError
+                      ? ` · ${printPdfError}`
+                      : ` · Approximate HTML preview · ${zoomPct}%`
                 : !overview
                   ? ` · Page ${pageIndex + 1} of ${total} · ${zoomPct}%`
                   : ` · All ${total} page${total === 1 ? '' : 's'} · ${zoomPct}%`}
@@ -330,7 +393,7 @@ function TemplatePreviewModal({ template, onClose }) {
         </header>
 
         <div
-          className={`dm-modal-stage ${overview ? 'is-overview' : ''}`}
+          className={`dm-modal-stage${overview ? ' is-overview' : ''}${useNativeDocx && printPdfUrl ? ' dm-modal-stage-pdf' : ''}`}
           onWheel={(e) => {
             if (!e.ctrlKey && !e.metaKey) return;
             e.preventDefault();
@@ -339,12 +402,30 @@ function TemplatePreviewModal({ template, onClose }) {
           }}
         >
           {useNativeDocx ? (
-            <div
-              className="dm-zoom-canvas dm-native-zoom"
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
-            >
-              <DocxNativePreview templateId={template._id} />
-            </div>
+            printPdfUrl ? (
+              <iframe
+                title="Word PDF preview"
+                className="dm-pdf-preview-frame"
+                src={pdfIframeSrc(printPdfUrl)}
+              />
+            ) : printPdfBusy ? (
+              <div className="dm-preview-placeholder">
+                <p className="muted">Creating Word-faithful PDF preview (same as Save as PDF)…</p>
+              </div>
+            ) : (
+              <div className="dm-preview-fallback">
+                <p className="muted dm-preview-fallback-note">
+                  Microsoft Word / LibreOffice was not available, so this is a browser approximation.
+                  Install Word on this computer for a matching layout.
+                </p>
+                <div
+                  className="dm-zoom-canvas dm-native-zoom"
+                  style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+                >
+                  <DocxNativePreview templateId={template._id} />
+                </div>
+              </div>
+            )
           ) : (
             <div className="dm-zoom-canvas">
               {overview
@@ -429,6 +510,10 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
   const [uploadPreviewText, setUploadPreviewText] = useState('');
   const [uploadPlaceholders, setUploadPlaceholders] = useState([]);
   const [uploadRepeatableTables, setUploadRepeatableTables] = useState([]);
+  const [uploadPdfUrl, setUploadPdfUrl] = useState('');
+  const [uploadPdfBusy, setUploadPdfBusy] = useState(false);
+  const [uploadPdfEngine, setUploadPdfEngine] = useState('');
+  const [uploadPdfError, setUploadPdfError] = useState('');
 
   const load = () => {
     const params = new URLSearchParams({ limit: '100', all: 'true' });
@@ -467,6 +552,9 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
     setUploadPreviewText('');
     setUploadPlaceholders([]);
     setUploadRepeatableTables([]);
+    setUploadPdfUrl('');
+    setUploadPdfEngine('');
+    setUploadPdfError('');
   };
 
   const onPickFile = async (picked) => {
@@ -506,6 +594,50 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
       setAnalyzeBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!file) {
+      setUploadPdfUrl('');
+      setUploadPdfEngine('');
+      setUploadPdfError('');
+      return undefined;
+    }
+    let cancelled = false;
+    let objectUrl = '';
+    setUploadPdfUrl('');
+    setUploadPdfEngine('');
+    setUploadPdfError('');
+    setUploadPdfBusy(true);
+    (async () => {
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await apiFetch('/templates/render-pdf', { method: 'POST', body: fd });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.message || `PDF preview failed (${res.status})`);
+        }
+        const engine = res.headers.get('X-PDF-Engine') || '';
+        const blob = await res.blob();
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setUploadPdfEngine(engine);
+        setUploadPdfUrl(objectUrl);
+      } catch (err) {
+        if (!cancelled) setUploadPdfError(err.message || 'Could not render Word PDF preview');
+      } finally {
+        if (!cancelled) setUploadPdfBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
 
   const uploadWord = async (e) => {
     e.preventDefault();
@@ -847,12 +979,40 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
           </form>
 
           <aside className="card dm-upload-preview-card">
-            <h3 style={{ marginTop: 0 }}>Document preview</h3>
-            <p className="muted" style={{ marginTop: 0 }}>
-              Preview pages, formatting, tables, and images before you upload.
-            </p>
-            <div className="dm-upload-preview-scroll">
-              <DocxNativePreview file={file} />
+            <div className="dm-preview-head">
+              <h3>Document preview</h3>
+              <p className="muted">
+                {uploadPdfUrl
+                  ? uploadPdfEngine === 'msword'
+                    ? 'Microsoft Word PDF — same layout as Save as PDF in Word.'
+                    : uploadPdfEngine === 'libreoffice'
+                      ? 'LibreOffice PDF — converted directly from your Word file.'
+                      : 'PDF converted directly from your Word file.'
+                  : uploadPdfBusy
+                    ? 'Creating Word-faithful PDF preview…'
+                    : uploadPdfError || 'Choose a Word file to preview the PDF layout.'}
+              </p>
+            </div>
+            <div className="dm-preview-body">
+              {uploadPdfUrl ? (
+                <iframe
+                  title="Upload Word PDF preview"
+                  className="dm-pdf-preview-frame"
+                  src={pdfIframeSrc(uploadPdfUrl)}
+                />
+              ) : uploadPdfBusy ? (
+                <div className="dm-preview-placeholder">
+                  <p className="muted">Rendering PDF preview…</p>
+                </div>
+              ) : uploadPdfError ? (
+                <div className="dm-preview-fallback">
+                  <DocxNativePreview file={file} />
+                </div>
+              ) : (
+                <div className="dm-preview-placeholder">
+                  <p className="muted">Select a .docx file to preview.</p>
+                </div>
+              )}
             </div>
           </aside>
         </div>

@@ -12,7 +12,7 @@ import { formatDateDDMMYYYY } from './utils/dateFormat';
 import { downloadCampSampleFile } from './utils/campSampleDownload.js';
 import { getErrorMessage, validateImportFileClient } from '../../shared/importErrors.js';
 import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
-import { importInvalidRowView, importPreviewSummary } from './utils/campImportPreview.js';
+import { importDuplicateRowView, importInvalidRowView, importPreviewSummary } from './utils/campImportPreview.js';
 
 const STEPS_ADMIN = ['Upload', 'Map Headers', 'Preview', 'Import'];
 const STEPS_EMPLOYEE = ['Upload', 'Preview', 'Import'];
@@ -97,6 +97,7 @@ export default function ImportPage() {
       summary: importPreviewSummary(preview),
       invalidRows: Array.isArray(preview.invalidRows) ? preview.invalidRows : [],
       validRows: Array.isArray(preview.validRows) ? preview.validRows : [],
+      duplicateRows: Array.isArray(preview.duplicateRows) ? preview.duplicateRows : [],
     };
   }, [preview]);
 
@@ -459,10 +460,53 @@ export default function ImportPage() {
               <strong>{previewDisplay.summary.valid}</strong>
             </div>
             <div className="summary-card">
+              <span>Duplicates (skip)</span>
+              <strong>{previewDisplay.summary.duplicates}</strong>
+            </div>
+            <div className="summary-card">
               <span>Invalid rows</span>
               <strong>{previewDisplay.summary.invalid}</strong>
             </div>
           </div>
+
+          {previewDisplay.duplicateRows.length > 0 && (
+            <>
+              <h3>Duplicate rows (will not update existing camps)</h3>
+              <FeedbackBanner variant="info">
+                These rows match an existing camp (Client, Doctor, Division/Campaign Type, Camp Date, Start Time).
+                They will be skipped — existing records stay unchanged.
+              </FeedbackBanner>
+              <div className="table-card">
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Row</th>
+                        <th>Client</th>
+                        <th>Camp Date</th>
+                        <th>Existing camp</th>
+                        <th>Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewDisplay.duplicateRows.map((row, index) => {
+                        const view = importDuplicateRowView(row, index);
+                        return (
+                          <tr key={`dup-${view.rowNumber}-${index}`}>
+                            <td>{view.rowNumber}</td>
+                            <td>{view.clientName}</td>
+                            <td>{view.campDate || '—'}</td>
+                            <td className="mono-sm">{view.campId || '—'}</td>
+                            <td>{view.reason}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
 
           {previewDisplay.invalidRows.length > 0 && (
             <>
@@ -572,12 +616,45 @@ export default function ImportPage() {
           <div className="summary-grid">
             <div className="summary-card"><span>Created</span><strong>{result.summary.created}</strong></div>
             <div className="summary-card"><span>Skipped</span><strong>{result.summary.skipped}</strong></div>
+            <div className="summary-card">
+              <span>Duplicates skipped</span>
+              <strong>{result.summary.skippedDuplicates ?? result.skipped?.filter((s) => s.skipReason === 'duplicate').length ?? 0}</strong>
+            </div>
             <div className="summary-card"><span>Invalid</span><strong>{result.summary.invalid}</strong></div>
           </div>
           {result.skipped?.length > 0 && (
             <FeedbackBanner variant="info">
-              Some rows were skipped because the Client name did not match existing Clients.
+              Skipped rows were not written. Duplicates leave existing camps unchanged;
+              missing Client names are also skipped.
             </FeedbackBanner>
+          )}
+          {result.skipped?.some((s) => s.skipReason === 'duplicate') && (
+            <div className="table-card" style={{ marginTop: 12 }}>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Row</th>
+                      <th>Client</th>
+                      <th>Existing camp</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.skipped
+                      .filter((s) => s.skipReason === 'duplicate')
+                      .map((s, index) => (
+                        <tr key={`skip-dup-${s.rowNumber}-${index}`}>
+                          <td>{s.rowNumber}</td>
+                          <td>{s.clientName || '—'}</td>
+                          <td className="mono-sm">{s.campId || '—'}</td>
+                          <td>{s.reason || 'Duplicate'}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
           <div className="form-actions">
             <Link className="btn" to="/camp-one/manage">View Imported Camps</Link>

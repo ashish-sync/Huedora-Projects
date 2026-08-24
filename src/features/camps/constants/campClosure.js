@@ -167,12 +167,22 @@ export function isClosureDetailsReady(details = {}, camp = {}, stage = '') {
   return true;
 }
 
-export function buildClosurePayload(details = {}) {
+/**
+ * Build API payload from the already-validated modal form.
+ * Prefer the user-selected Reason when it exists in the taxonomy — do not re-gate
+ * through getAvailableClosureTypes without camp/stage (that defaults to request and
+ * incorrectly clears "Other" for Cancelled by Tylo → server "Select a reason").
+ */
+export function buildClosurePayload(details = {}, camp = {}, stage = '') {
   const closureType = normalizeClosureType(details.closureType);
-  const reasonCategory = resolveClosureReasonCategory(
-    closureType,
-    details.reasonCategory,
-  );
+  const selectedCategory = String(details.reasonCategory || '').trim();
+  const tree = CAMP_CLOSURE_TAXONOMY[closureType];
+  const taxonomyCategories = tree ? Object.keys(tree) : [];
+  const reasonCategory = (
+    selectedCategory && taxonomyCategories.includes(selectedCategory)
+  )
+    ? selectedCategory
+    : resolveClosureReasonCategory(closureType, details.reasonCategory, camp, stage);
   const subReasonMeta = findClosureSubReason(
     closureType,
     reasonCategory,

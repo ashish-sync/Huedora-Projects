@@ -701,7 +701,11 @@ export default function CampFormPage() {
     try {
       const { action } = confirmRequest;
       const payload = action === 'closeCamp'
-        ? buildClosurePayload(confirmClosureDetails)
+        ? buildClosurePayload(
+          confirmClosureDetails,
+          campMeta,
+          confirmRequest.stage || activeStage,
+        )
         : action === 'reject'
           ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
           : action === 'requestInformation'

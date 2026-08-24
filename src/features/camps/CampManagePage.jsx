@@ -264,7 +264,11 @@ export default function CampsPage() {
             remarks: confirmCancelDetails.remarks.trim(),
           }
           : action === 'closeCamp'
-            ? buildClosurePayload(confirmClosureDetails)
+            ? buildClosurePayload(
+              confirmClosureDetails,
+              camp,
+              confirmRequest.stage || workingStage,
+            )
             : action === 'reject'
             ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
             : action === 'requestInformation'

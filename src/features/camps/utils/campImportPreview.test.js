@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { importInvalidRowView, importPreviewSummary } from './campImportPreview';
+import {
+  importDuplicateRowView,
+  importInvalidRowView,
+  importPreviewSummary,
+} from './campImportPreview';
 
 describe('campImportPreview', () => {
   it('reads flat invalid rows from import preview API', () => {
@@ -29,11 +33,31 @@ describe('campImportPreview', () => {
   });
 
   it('summarizes preview counts safely', () => {
-    expect(importPreviewSummary(null)).toEqual({ total: 0, valid: 0, invalid: 0 });
-    expect(importPreviewSummary({ summary: { total: 10, valid: 7, invalid: 3 } })).toEqual({
+    expect(importPreviewSummary(null)).toEqual({
+      total: 0,
+      valid: 0,
+      invalid: 0,
+      duplicates: 0,
+    });
+    expect(importPreviewSummary({
+      summary: { total: 10, valid: 7, invalid: 2, duplicates: 1 },
+    })).toEqual({
       total: 10,
       valid: 7,
-      invalid: 3,
+      invalid: 2,
+      duplicates: 1,
     });
+  });
+
+  it('formats duplicate preview rows', () => {
+    const view = importDuplicateRowView({
+      rowNumber: 4,
+      clientName: 'Acme',
+      campDate: '2026-08-01',
+      duplicateOf: { campId: '26-08-0001' },
+      errors: ['Duplicate Entry — A camp already exists'],
+    });
+    expect(view.campId).toBe('26-08-0001');
+    expect(view.reason).toContain('Duplicate');
   });
 });

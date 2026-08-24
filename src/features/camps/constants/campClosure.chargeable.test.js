@@ -41,6 +41,35 @@ describe('execution cancel Chargeable Status', () => {
     expect(payload.chargeableStatus).toBe('Partial');
   });
 
+  it('keeps Cancelled by Tylo → Other reason when camp/stage are omitted', () => {
+    // Regression: payload builder used to default stage to request, wipe Other,
+    // and the API then returned "Select a reason".
+    const payload = buildClosurePayload({
+      closureType: 'Cancelled by Tylo',
+      reasonCategory: 'Other',
+      subReason: 'other_mandatory_remarks',
+      remarks: 'Duplicate Camp',
+      chargeableStatus: 'Non-Chargeable',
+    });
+    expect(payload.closureType).toBe('Cancelled by Tylo');
+    expect(payload.reasonCategory).toBe('Other');
+    expect(payload.subReason).toBe('other_mandatory_remarks');
+    expect(payload.closureRemarks).toBe('Duplicate Camp');
+    expect(payload.chargeableStatus).toBe('Non-Chargeable');
+  });
+
+  it('keeps Cancelled by Tylo → Other with execution camp context', () => {
+    const payload = buildClosurePayload({
+      closureType: 'Cancelled by Tylo',
+      reasonCategory: 'Other',
+      subReason: 'other_mandatory_remarks',
+      remarks: 'Duplicate Camp',
+      chargeableStatus: 'Non-Chargeable',
+    }, executionCamp, 'execution');
+    expect(payload.reasonCategory).toBe('Other');
+    expect(payload.subReason).toBe('other_mandatory_remarks');
+  });
+
   it('does not require Chargeable Status at assignment', () => {
     const details = {
       closureType: 'Refused',

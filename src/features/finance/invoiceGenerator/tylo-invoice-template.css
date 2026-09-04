@@ -372,6 +372,14 @@
   margin: 0 0 0.8mm;
   font-size: 11px;
   line-height: 1.3;
+  display: flex;
+  align-items: flex-start;
+  gap: 2mm;
+}
+
+.ti-terms-line .ei-inline {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ti-card--terms-sign {
@@ -1156,6 +1164,22 @@
 
 .ti-add-term {
   margin-top: 1mm;
+}
+
+.ti-remove-term {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--ti-danger, #b42318);
+  font-size: 2.4mm;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4mm 0;
+  line-height: 1.2;
+}
+
+.ti-remove-term:hover {
+  text-decoration: underline;
 }
 
 /* ─── Footer: signature only (totals sit under line table) ─── */

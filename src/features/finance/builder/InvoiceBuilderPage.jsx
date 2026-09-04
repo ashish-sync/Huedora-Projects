@@ -23,6 +23,7 @@ export default function InvoiceBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newInvoice,
@@ -87,6 +88,7 @@ export default function InvoiceBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           docId={docId}
@@ -119,6 +121,7 @@ export default function InvoiceBuilderPage() {
           onAddLine={addLine}
           onUpdateTerm={updateTerm}
           onAddTerm={addTerm}
+          onRemoveTerm={removeTerm}
         />
       )}
     </InvoiceBuilderShell>

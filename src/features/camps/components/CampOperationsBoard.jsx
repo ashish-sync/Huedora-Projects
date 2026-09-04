@@ -117,13 +117,8 @@ function OperationsPivotPanel({
   }, [selection, dateFrom, dateTo, appliedSearch]);
 
   useEffect(() => {
-    setSearch('');
-    setAppliedSearch('');
-  }, [selection?.stageId, selection?.statusValue]);
-
-  useEffect(() => {
     load(1, appliedSearch);
-  }, [load, appliedSearch]);
+  }, [load, appliedSearch, selection?.stageId, selection?.statusValue]);
 
   return (
     <aside className="ops-board-pivot" aria-label="Camp pivot list">

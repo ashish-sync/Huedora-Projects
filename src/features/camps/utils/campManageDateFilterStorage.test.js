@@ -3,6 +3,9 @@ import {
   readStoredManageDateFilter,
   writeStoredManageDateFilter,
   clearStoredManageDateFilter,
+  readStoredManageFilters,
+  writeStoredManageFilters,
+  clearStoredManageFilters,
 } from './campManageDateFilterStorage.js';
 
 describe('campManageDateFilterStorage', () => {
@@ -37,9 +40,37 @@ describe('campManageDateFilterStorage', () => {
     expect(readStoredManageDateFilter()).toEqual({ dateFrom: '', dateTo: '' });
   });
 
-  it('clearStoredManageDateFilter removes the key', () => {
-    writeStoredManageDateFilter({ dateFrom: '2026-08-01', dateTo: '' });
+  it('clearStoredManageDateFilter removes dates but keeps other filters', () => {
+    writeStoredManageFilters({
+      search: 'nutri',
+      dateFrom: '2026-08-01',
+      dateTo: '',
+      statusByStage: { request: 'review_pending' },
+    });
     clearStoredManageDateFilter();
     expect(readStoredManageDateFilter()).toEqual({ dateFrom: '', dateTo: '' });
+    expect(readStoredManageFilters().search).toBe('nutri');
+    expect(readStoredManageFilters().statusByStage.request).toBe('review_pending');
+  });
+
+  it('persists typed search and per-stage status until cleared', () => {
+    writeStoredManageFilters({
+      search: '1702',
+      statusByStage: { request: 'review_pending', assignment: 'Assigned' },
+      client: 'Acme',
+    });
+    expect(readStoredManageFilters()).toMatchObject({
+      search: '1702',
+      statusByStage: {
+        request: 'review_pending',
+        assignment: 'Assigned',
+        execution: '',
+        financial: '',
+      },
+      client: 'Acme',
+    });
+    clearStoredManageFilters();
+    expect(readStoredManageFilters().search).toBe('');
+    expect(readStoredManageFilters().statusByStage.request).toBe('');
   });
 });

@@ -53,9 +53,10 @@ import { useAutoDismiss } from './hooks/useAutoDismiss';
 
 import { formatDateDDMMYYYY, formatDateRangeLabel } from './utils/dateFormat';
 import {
-  clearStoredManageDateFilter,
+  clearStoredManageFilters,
   readStoredManageDateFilter,
-  writeStoredManageDateFilter,
+  readStoredManageFilters,
+  writeStoredManageFilters,
 } from './utils/campManageDateFilterStorage.js';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
@@ -86,13 +87,39 @@ export default function CampsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [camps, setCamps] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [status, setStatus] = useState(searchParams.get('status') || '');
-  const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') || '');
-  const [dateTo, setDateTo] = useState(searchParams.get('dateTo') || '');
-  const [clientFilter, setClientFilter] = useState(searchParams.get('client') || '');
-  const [campaignFilter, setCampaignFilter] = useState(searchParams.get('campaign') || '');
-  const [campTypeFilter, setCampTypeFilter] = useState(searchParams.get('campaignType') || '');
-  const [search, setSearch] = useState(searchParams.get('findCampId') || searchParams.get('q') || '');
+  const [statusByStage, setStatusByStage] = useState(() => {
+    const stored = readStoredManageFilters();
+    const stageHint = searchParams.get('stage') || searchParams.get('lifecycleStage') || 'request';
+    const rawStatus = searchParams.get('status') || '';
+    const next = { ...stored.statusByStage };
+    if (rawStatus) {
+      next[stageHint] =
+        stageHint === 'request' ? normalizeRequestStatusFilter(rawStatus) : rawStatus;
+    }
+    return next;
+  });
+  const status = statusByStage[workingStage] || '';
+  const [dateFrom, setDateFrom] = useState(() => (
+    searchParams.get('dateFrom') || readStoredManageFilters().dateFrom || ''
+  ));
+  const [dateTo, setDateTo] = useState(() => (
+    searchParams.get('dateTo') || readStoredManageFilters().dateTo || ''
+  ));
+  const [clientFilter, setClientFilter] = useState(() => (
+    searchParams.get('client') || readStoredManageFilters().client || ''
+  ));
+  const [campaignFilter, setCampaignFilter] = useState(() => (
+    searchParams.get('campaign') || readStoredManageFilters().campaign || ''
+  ));
+  const [campTypeFilter, setCampTypeFilter] = useState(() => (
+    searchParams.get('campaignType') || readStoredManageFilters().campaignType || ''
+  ));
+  const [search, setSearch] = useState(() => (
+    searchParams.get('findCampId')
+      || searchParams.get('q')
+      || readStoredManageFilters().search
+      || ''
+  ));
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [pagination, setPagination] = useState(null);
@@ -116,41 +143,79 @@ export default function CampsPage() {
   const dateFilterReadyRef = useRef(false);
 
   useEffect(() => {
-    const findCampId = searchParams.get('findCampId') || searchParams.get('q') || '';
+    // Deep-link from "camp created" / find-by-id only — never treat generic `q` search as this.
+    const findCampId = searchParams.get('findCampId') || '';
     if (!findCampId) return;
     findCampFromUrlRef.current = findCampId;
     setWorkingStage('request');
-    setStatus('');
+    setStatusByStage((prev) => ({ ...prev, request: '' }));
     setSearch(findCampId);
     setPage(1);
     loadCamps(1, pageSize, findCampId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Restore date filter from session when URL has none (e.g. return from Edit Camp).
-  // Once set, dates stay until the user clears them.
+  // Restore filters from session when URL omits them (e.g. return from Edit Camp).
+  // Once set, filters stay until the user clears them manually.
   useEffect(() => {
     if (dateFilterReadyRef.current) return;
     dateFilterReadyRef.current = true;
 
+    // Deep-link from camp-created banner owns this mount — do not resurrect
+    // stored filters over findCampId (would fight stage/search and double-fetch).
+    if (searchParams.get('findCampId')) return;
+
+    const stored = readStoredManageFilters();
     const urlFrom = searchParams.get('dateFrom') || '';
     const urlTo = searchParams.get('dateTo') || '';
-    if (urlFrom || urlTo) {
-      writeStoredManageDateFilter({ dateFrom: urlFrom, dateTo: urlTo });
-      return;
+    const urlQ = searchParams.get('q') || '';
+    const urlStatus = searchParams.get('status') || '';
+    const urlClient = searchParams.get('client') || '';
+    const urlCampaign = searchParams.get('campaign') || '';
+    const urlCampType = searchParams.get('campaignType') || '';
+
+    const nextDateFrom = urlFrom || stored.dateFrom;
+    const nextDateTo = urlTo || stored.dateTo;
+    const nextSearch = urlQ || stored.search;
+    const nextClient = urlClient || stored.client;
+    const nextCampaign = urlCampaign || stored.campaign;
+    const nextCampType = urlCampType || stored.campaignType;
+
+    if (!urlFrom && !urlTo && (stored.dateFrom || stored.dateTo)) {
+      setDateFrom(stored.dateFrom);
+      setDateTo(stored.dateTo);
+    }
+    if (!urlQ && stored.search) setSearch(stored.search);
+    if (!urlClient && stored.client) setClientFilter(stored.client);
+    if (!urlCampaign && stored.campaign) setCampaignFilter(stored.campaign);
+    if (!urlCampType && stored.campaignType) setCampTypeFilter(stored.campaignType);
+    if (!urlStatus) {
+      setStatusByStage((prev) => ({
+        ...stored.statusByStage,
+        ...prev,
+      }));
     }
 
-    const stored = readStoredManageDateFilter();
-    if (!stored.dateFrom && !stored.dateTo) return;
-
-    setDateFrom(stored.dateFrom);
-    setDateTo(stored.dateTo);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (stored.dateFrom) next.set('dateFrom', stored.dateFrom);
+      if (workingStage) next.set('stage', workingStage);
+      if (nextDateFrom) next.set('dateFrom', nextDateFrom);
       else next.delete('dateFrom');
-      if (stored.dateTo) next.set('dateTo', stored.dateTo);
+      if (nextDateTo) next.set('dateTo', nextDateTo);
       else next.delete('dateTo');
+      if (nextSearch) next.set('q', nextSearch);
+      else next.delete('q');
+      if (nextClient) next.set('client', nextClient);
+      else next.delete('client');
+      if (nextCampaign) next.set('campaign', nextCampaign);
+      else next.delete('campaign');
+      if (nextCampType) next.set('campaignType', nextCampType);
+      else next.delete('campaignType');
+      const stageStatus = urlStatus
+        || stored.statusByStage[workingStage]
+        || '';
+      if (stageStatus) next.set('status', stageStatus);
+      else next.delete('status');
       return next;
     }, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,12 +223,16 @@ export default function CampsPage() {
 
   useEffect(() => {
     if (!dateFilterReadyRef.current) return;
-    if (dateFrom || dateTo) {
-      writeStoredManageDateFilter({ dateFrom, dateTo });
-    } else {
-      clearStoredManageDateFilter();
-    }
-  }, [dateFrom, dateTo]);
+    writeStoredManageFilters({
+      search,
+      statusByStage,
+      dateFrom,
+      dateTo,
+      client: clientFilter,
+      campaign: campaignFilter,
+      campaignType: campTypeFilter,
+    });
+  }, [search, statusByStage, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter]);
 
   useEffect(() => {
     const refresh = () => {
@@ -384,12 +453,17 @@ export default function CampsPage() {
   useEffect(() => {
     const stageFromUrl = searchParams.get('stage') || searchParams.get('lifecycleStage') || '';
     if (stageFromUrl) setWorkingStage(stageFromUrl);
+    const resolvedStage = stageFromUrl || workingStage;
     const rawStatus = searchParams.get('status') || '';
-    setStatus(
-      (stageFromUrl || workingStage) === 'request'
-        ? normalizeRequestStatusFilter(rawStatus)
-        : rawStatus
-    );
+    if (rawStatus) {
+      const normalized =
+        resolvedStage === 'request' ? normalizeRequestStatusFilter(rawStatus) : rawStatus;
+      setStatusByStage((prev) => (
+        prev[resolvedStage] === normalized
+          ? prev
+          : { ...prev, [resolvedStage]: normalized }
+      ));
+    }
     const urlFrom = searchParams.get('dateFrom') || '';
     const urlTo = searchParams.get('dateTo') || '';
     if (urlFrom || urlTo) {
@@ -397,35 +471,42 @@ export default function CampsPage() {
       setDateTo(urlTo);
     } else {
       // Empty URL: clear only when session has no dates (user cleared, or never set).
-      // If session still has a range, keep local state until restore writes it back to the URL
-      // (e.g. returning from Edit Camp without query params).
       const stored = readStoredManageDateFilter();
       if (!stored.dateFrom && !stored.dateTo) {
         setDateFrom('');
         setDateTo('');
       }
     }
-    setClientFilter(searchParams.get('client') || '');
-    setCampaignFilter(searchParams.get('campaign') || '');
-    setCampTypeFilter(searchParams.get('campaignType') || '');
+    if (searchParams.has('client')) setClientFilter(searchParams.get('client') || '');
+    if (searchParams.has('campaign')) setCampaignFilter(searchParams.get('campaign') || '');
+    if (searchParams.has('campaignType')) setCampTypeFilter(searchParams.get('campaignType') || '');
+    if (searchParams.has('q') || searchParams.has('findCampId')) {
+      setSearch(searchParams.get('findCampId') || searchParams.get('q') || '');
+    }
   }, [searchParams, workingStage, setWorkingStage]);
 
   const previousWorkingStageRef = useRef(workingStage);
+  const statusByStageRef = useRef(statusByStage);
+  statusByStageRef.current = statusByStage;
   useEffect(() => {
     if (previousWorkingStageRef.current === workingStage) return;
     previousWorkingStageRef.current = workingStage;
-    setStatus('');
+    // Keep all filters (including typed search). Only swap the URL status to
+    // this stage's remembered value — never wipe filters on stage change.
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
+      next.set('stage', workingStage);
       next.delete('assignmentFilter');
       next.delete('requestReviewStatus');
       next.delete('executionFilter');
       next.delete('financialFilter');
-      next.delete('status');
       next.delete('overdue');
       next.delete('reactionRequired');
       next.delete('offHours');
       next.delete('weekendAttention');
+      const stageStatus = statusByStageRef.current[workingStage] || '';
+      if (stageStatus) next.set('status', stageStatus);
+      else next.delete('status');
       return next;
     });
   }, [workingStage, setSearchParams]);
@@ -438,11 +519,6 @@ export default function CampsPage() {
     setPage(1);
     loadCamps(1, pageSize);
   }, [status, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
-
-  function handleSearch() {
-    setPage(1);
-    loadCamps(1, pageSize);
-  }
 
   function handlePageChange(nextPage) {
     loadCamps(nextPage, pageSize);
@@ -461,13 +537,16 @@ export default function CampsPage() {
     const nextClient = overrides.client ?? clientFilter;
     const nextCampaign = overrides.campaign ?? campaignFilter;
     const nextCampType = overrides.campaignType ?? campTypeFilter;
+    const nextSearch = overrides.search ?? search;
 
+    if (workingStage) params.set('stage', workingStage);
     if (nextStatus) params.set('status', nextStatus);
     if (nextDateFrom) params.set('dateFrom', nextDateFrom);
     if (nextDateTo) params.set('dateTo', nextDateTo);
     if (nextClient) params.set('client', nextClient);
     if (nextCampaign) params.set('campaign', nextCampaign);
     if (nextCampType) params.set('campaignType', nextCampType);
+    if (nextSearch) params.set('q', nextSearch);
     return params;
   }
 
@@ -487,29 +566,51 @@ export default function CampsPage() {
   function handleStatusChange(value) {
     const nextStatus =
       workingStage === 'request' ? normalizeRequestStatusFilter(value) : value;
-    setStatus(nextStatus);
+    setStatusByStage((prev) => ({ ...prev, [workingStage]: nextStatus }));
     updateFilters({ status: nextStatus });
   }
 
   function clearFilters() {
-    setStatus('');
+    setStatusByStage({
+      request: '',
+      assignment: '',
+      execution: '',
+      financial: '',
+    });
     setDateFrom('');
     setDateTo('');
     setClientFilter('');
     setCampaignFilter('');
     setCampTypeFilter('');
     setSearch('');
-    clearStoredManageDateFilter();
-    setSearchParams({});
+    clearStoredManageFilters();
+    setSearchParams(workingStage ? { stage: workingStage } : {});
   }
 
   function handleFilterChange(value) {
     handleStatusChange(value);
   }
 
+  function handleSearch() {
+    setPage(1);
+    updateFilters({ search: trimString(search) });
+    loadCamps(1, pageSize);
+  }
+
   const filterValue = status;
 
   const activeChips = [];
+  if (search) {
+    activeChips.push({
+      key: 'search',
+      label: `Search: ${search}`,
+      onRemove: () => {
+        setSearch('');
+        updateFilters({ search: '' });
+        loadCamps(1, pageSize, '');
+      },
+    });
+  }
   if (status) {
     activeChips.push({
       key: 'status',

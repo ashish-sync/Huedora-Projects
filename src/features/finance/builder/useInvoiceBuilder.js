@@ -95,6 +95,17 @@ export function useInvoiceBuilder() {
     setForm((prev) => ({ ...prev, terms: [...prev.terms, ''] }));
   }, [readOnly, setForm]);
 
+  const removeTerm = useCallback(
+    (index) => {
+      if (readOnly) return;
+      setForm((prev) => ({
+        ...prev,
+        terms: (prev.terms || []).filter((_, i) => i !== index),
+      }));
+    },
+    [readOnly, setForm]
+  );
+
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
@@ -144,6 +155,7 @@ export function useInvoiceBuilder() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newInvoice: persistence.newDocument,

@@ -156,6 +156,17 @@ export function usePurchaseOrderBuilder() {
     setForm((prev) => ({ ...prev, terms: [...(prev.terms || []), ''] }));
   }, [readOnly, setForm]);
 
+  const removeTerm = useCallback(
+    (index) => {
+      if (readOnly) return;
+      setForm((prev) => ({
+        ...prev,
+        terms: (prev.terms || []).filter((_, i) => i !== index),
+      }));
+    },
+    [readOnly, setForm]
+  );
+
   const applyVendorContact = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
@@ -182,6 +193,7 @@ export function usePurchaseOrderBuilder() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyVendorContact,
     clearVendorContact,
     newPurchaseOrder: persistence.newDocument,

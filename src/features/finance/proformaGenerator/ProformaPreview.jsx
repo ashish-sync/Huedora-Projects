@@ -10,6 +10,9 @@ export default function ProformaPreview({
   onUpdate,
   onUpdateLine,
   onAddLine,
+  onUpdateTerm,
+  onAddTerm,
+  onRemoveTerm,
 }) {
   const view = useMemo(() => proformaToInvoiceView(form), [form]);
   const lineIds = useMemo(
@@ -40,6 +43,9 @@ export default function ProformaPreview({
       onUpdate={setPath}
       onUpdateLine={setLine}
       onAddLine={onAddLine}
+      onUpdateTerm={onUpdateTerm}
+      onAddTerm={onAddTerm}
+      onRemoveTerm={onRemoveTerm}
       config={LANDSCAPE_DOC_CONFIGS.proforma}
     />
   );

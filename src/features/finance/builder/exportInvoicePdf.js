@@ -190,16 +190,21 @@ async function waitForImages(root) {
   );
 }
 
-function pdfExportOptions(filename = 'document.pdf', orientation = 'landscape') {
+/**
+ * html2pdf options for Finance commercial downloads/prints.
+ * Prior settings (PNG + scale 4 + compress:false) embedded a raw ~4492×3176 RGB
+ * stream (~40+ MB). JPEG + Flate + ~288 DPI keeps text sharp while staying small.
+ */
+export function pdfExportOptions(filename = 'document.pdf', orientation = 'landscape') {
   const { mm, px } = pageSpec(orientation);
   const width = px.w;
   const height = px.h;
-  // ~300–400 DPI capture so print matches the on-screen preview layout.
-  const scale = 4;
+  // ~288 DPI (96 CSS × 3) — print-sharp for letter-size commercial docs.
+  const scale = 3;
   return {
     margin: 0,
     filename,
-    image: { type: 'png', quality: 1 },
+    image: { type: 'jpeg', quality: 0.92 },
     html2canvas: {
       scale,
       useCORS: true,
@@ -218,7 +223,7 @@ function pdfExportOptions(filename = 'document.pdf', orientation = 'landscape') 
       unit: 'mm',
       format: [mm.widthMm, mm.heightMm],
       orientation,
-      compress: false,
+      compress: true,
       precision: 16,
     },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
@@ -239,7 +244,9 @@ export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf
     await waitForLayout();
     const html2pdf = await loadHtml2Pdf();
     const blob = await html2pdf().set(pdfExportOptions(filename, orientation)).from(clone).outputPdf('blob');
-    if (!(blob instanceof Blob)) throw new Error('PDF render failed');
+    if (!(blob instanceof Blob) || blob.size < 500) {
+      throw new Error('PDF render failed — empty output');
+    }
     return blob;
   } finally {
     removeDocumentExportNode(host);

@@ -1025,6 +1025,11 @@
   align-items: center;
 }
 
+.ib-term-row .ib-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .ib-term-num {
   font-size: 11px;
   color: var(--ib-muted);

@@ -23,6 +23,7 @@ export default function CreditNoteBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newCreditNote,
@@ -87,6 +88,7 @@ export default function CreditNoteBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{

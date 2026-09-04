@@ -32,6 +32,8 @@ export function notificationEntityPath(n) {
       return `${MODULE_PATH.VERIFICATION_ONE}?recordId=${encodeURIComponent(id)}`;
     case 'FinanceCommercialDocument':
       return `${FINANCE_PATH.BILLING}?docId=${encodeURIComponent(id)}`;
+    case 'PicklistSuggestion':
+      return `${MODULE_PATH.MASTER_ONE}?scope=document&entity=picklist-approvals`;
     default:
       return null;
   }
@@ -49,8 +51,36 @@ export function priorityClass(priority) {
   return `nc-priority nc-priority--${p}`;
 }
 
+/** Types that always mean “action required from an approver”. */
+export const APPROVAL_REQUEST_TYPES = Object.freeze([
+  'CAMP_REVIEW',
+  'CAMP_REVIEW_OVERDUE',
+  'PICKLIST_SUGGESTION',
+]);
+
+/**
+ * True when the inbox item is an approval/review request (not a status update).
+ */
+export function isApprovalRequestNotification(n = {}) {
+  if (String(n?.meta?.kind || n?.kind || '').toLowerCase() === 'approval') return true;
+  if (String(n?.meta?.kind || n?.kind || '').toLowerCase() === 'update') return false;
+
+  const type = String(n?.type || '').trim().toUpperCase();
+  if (APPROVAL_REQUEST_TYPES.includes(type)) return true;
+
+  const title = String(n?.title || '').toLowerCase();
+  if (/needs (approval|review)/i.test(title)) return true;
+  if (/approval required|awaiting approval|pending approval/i.test(title)) return true;
+
+  if (type === 'ASSET_REQUEST_APPROVAL' || type === 'MOVEMENT_APPROVAL') {
+    return /needs approval/.test(title);
+  }
+  return false;
+}
+
 /** Human category for inbox grouping / chips. */
 export function categoryLabel(n) {
+  if (isApprovalRequestNotification(n)) return 'Approval';
   const type = String(n?.type || '');
   const module = String(n?.module || 'system').toLowerCase();
   if (/BULK/i.test(type)) return 'Bulk action';

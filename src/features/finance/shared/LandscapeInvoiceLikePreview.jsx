@@ -198,6 +198,7 @@ export default function LandscapeInvoiceLikePreview({
   onAddLine,
   onUpdateTerm,
   onAddTerm,
+  onRemoveTerm,
   config = {},
 }) {
   const cfg = {
@@ -301,6 +302,12 @@ export default function LandscapeInvoiceLikePreview({
   const handleUpdateTerm =
     onUpdateTerm || ((index, value) => onUpdate?.(`terms.${index}`, value));
   const handleAddTerm = onAddTerm || (() => onUpdate?.(`terms.${realTerms.length}`, ''));
+  const handleRemoveTerm =
+    onRemoveTerm ||
+    ((index) => {
+      const source = Array.isArray(form?.terms) && form.terms.length ? form.terms : realTerms;
+      onUpdate?.('terms', source.filter((_, i) => i !== index));
+    });
 
   const letterhead = formatCompanyLetterhead(company);
 
@@ -837,11 +844,21 @@ export default function LandscapeInvoiceLikePreview({
                 {realTerms.map((term, index) => (
                   <p key={index} className="ti-terms-line">
                     {editable && showTermsEditor ? (
-                      <InlineField
-                        value={term}
-                        onChange={(v) => handleUpdateTerm(index, v)}
-                        placeholder="Payment terms…"
-                      />
+                      <>
+                        <InlineField
+                          value={term}
+                          onChange={(v) => handleUpdateTerm(index, v)}
+                          placeholder="Payment terms…"
+                        />
+                        <button
+                          type="button"
+                          className="ti-remove-term"
+                          onClick={() => handleRemoveTerm(index)}
+                          aria-label={`Remove term ${index + 1}`}
+                        >
+                          Remove
+                        </button>
+                      </>
                     ) : (
                       term || defaultTermFallback
                     )}

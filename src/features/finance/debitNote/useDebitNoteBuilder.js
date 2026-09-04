@@ -122,6 +122,17 @@ export function useDebitNoteBuilder() {
     setForm((prev) => ({ ...prev, terms: [...prev.terms, ''] }));
   }, [readOnly, setForm]);
 
+  const removeTerm = useCallback(
+    (index) => {
+      if (readOnly) return;
+      setForm((prev) => ({
+        ...prev,
+        terms: (prev.terms || []).filter((_, i) => i !== index),
+      }));
+    },
+    [readOnly, setForm]
+  );
+
   const applyClientMasterRecipient = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
@@ -158,6 +169,7 @@ export function useDebitNoteBuilder() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newDebitNote: persistence.newDocument,

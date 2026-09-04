@@ -23,6 +23,7 @@ export default function DebitNoteBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newDebitNote,
@@ -87,6 +88,7 @@ export default function DebitNoteBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{

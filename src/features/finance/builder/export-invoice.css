@@ -402,7 +402,8 @@
 
 .tylo-invoice--export .ei-inline,
 .tylo-invoice--export .ti-add-line,
-.tylo-invoice--export .ti-add-term {
+.tylo-invoice--export .ti-add-term,
+.tylo-invoice--export .ti-remove-term {
   display: none !important;
 }
 
@@ -520,6 +521,7 @@
 
   .ti-add-line,
   .ti-add-term,
+  .ti-remove-term,
   .ei-add-line-row {
     display: none !important;
   }

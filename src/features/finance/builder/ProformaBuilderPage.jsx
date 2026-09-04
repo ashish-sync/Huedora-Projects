@@ -23,6 +23,7 @@ export default function ProformaBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newProforma,
@@ -87,6 +88,7 @@ export default function ProformaBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
         />
@@ -100,6 +102,9 @@ export default function ProformaBuilderPage() {
           onUpdate={update}
           onUpdateLine={updateLine}
           onAddLine={addLine}
+          onUpdateTerm={updateTerm}
+          onAddTerm={addTerm}
+          onRemoveTerm={removeTerm}
         />
       )}
     </InvoiceBuilderShell>

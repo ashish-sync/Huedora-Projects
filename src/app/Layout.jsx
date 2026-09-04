@@ -35,7 +35,7 @@ export default function Layout({ children }) {
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
-  const [previewRows, setPreviewRows] = useState([]);
+  const [previewRows, setPreviewRows] = useState({ approvals: [], updates: [] });
   const menuRef = useRef(null);
   const bellRef = useRef(null);
   const knownUnreadIdsRef = useRef(null);
@@ -91,10 +91,16 @@ export default function Layout({ children }) {
   const loadPreview = useCallback(async () => {
     if (!canSeeNotifications) return;
     try {
-      const res = await api('/notifications?unread=true&limit=8&page=1');
-      setPreviewRows((res.data || []).slice(0, 8));
+      const [approvalsRes, updatesRes] = await Promise.all([
+        api('/notifications?unread=true&category=approvals&limit=5&page=1'),
+        api('/notifications?unread=true&category=updates&limit=5&page=1'),
+      ]);
+      setPreviewRows({
+        approvals: (approvalsRes.data || []).slice(0, 5),
+        updates: (updatesRes.data || []).slice(0, 5),
+      });
     } catch {
-      setPreviewRows([]);
+      setPreviewRows({ approvals: [], updates: [] });
     }
   }, [canSeeNotifications]);
 
@@ -249,26 +255,54 @@ export default function Layout({ children }) {
                     <span>Notifications</span>
                     <span className="muted">{unreadCount} unread</span>
                   </div>
-                  {previewRows.length ? (
-                    previewRows.map((n) => (
-                      <Link
-                        key={n._id}
-                        to="/notifications"
-                        className={`header-notif-item${n.readAt ? '' : ' is-unread'}`}
-                        onClick={() => setBellOpen(false)}
-                      >
-                        <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
-                        <span className="header-notif-item-title">{n.title}</span>
-                        <div className="header-notif-item-meta">
-                          {formatDateTime(n.groupedAt || n.createdAt)}
+                  {previewRows.approvals?.length || previewRows.updates?.length ? (
+                    <>
+                      <div className="header-notif-section-label">Approval requests</div>
+                      {previewRows.approvals?.length ? (
+                        previewRows.approvals.map((n) => (
+                          <Link
+                            key={n._id}
+                            to="/notifications?tab=approvals"
+                            className={`header-notif-item${n.readAt ? '' : ' is-unread'}`}
+                            onClick={() => setBellOpen(false)}
+                          >
+                            <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
+                            <span className="header-notif-item-title">{n.title}</span>
+                            <div className="header-notif-item-meta">
+                              {formatDateTime(n.groupedAt || n.createdAt)}
+                            </div>
+                          </Link>
+                        ))
+                      ) : (
+                        <div className="header-notif-empty header-notif-empty--section">
+                          No pending approvals
                         </div>
-                      </Link>
-                    ))
+                      )}
+                      <div className="header-notif-section-label">Updates</div>
+                      {previewRows.updates?.length ? (
+                        previewRows.updates.map((n) => (
+                          <Link
+                            key={n._id}
+                            to="/notifications?tab=updates"
+                            className={`header-notif-item${n.readAt ? '' : ' is-unread'}`}
+                            onClick={() => setBellOpen(false)}
+                          >
+                            <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
+                            <span className="header-notif-item-title">{n.title}</span>
+                            <div className="header-notif-item-meta">
+                              {formatDateTime(n.groupedAt || n.createdAt)}
+                            </div>
+                          </Link>
+                        ))
+                      ) : (
+                        <div className="header-notif-empty header-notif-empty--section">No unread updates</div>
+                      )}
+                    </>
                   ) : (
                     <div className="header-notif-empty">No unread notifications</div>
                   )}
                   <Link
-                    to="/notifications"
+                    to="/notifications?tab=approvals"
                     className="header-notif-footer"
                     onClick={() => setBellOpen(false)}
                   >

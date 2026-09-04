@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE } from '../../shared/labels.js';
@@ -10,6 +10,7 @@ import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
 import {
   categoryLabel,
+  isApprovalRequestNotification,
   notificationEntityPath,
   priorityClass,
   priorityLabel,
@@ -18,18 +19,30 @@ import './notifications.css';
 
 const PAGE_SIZE = 25;
 
+const INBOX_TABS = [
+  { id: 'approvals', label: 'Approvals', category: 'approvals' },
+  { id: 'updates', label: 'Updates', category: 'updates' },
+  { id: 'all', label: 'All', category: '' },
+];
+
 export default function NotificationsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = String(searchParams.get('tab') || '').toLowerCase();
+  const initialTab = INBOX_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'approvals';
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: PAGE_SIZE, total: 0, pages: 0 });
   const [page, setPage] = useState(1);
   const [error, setError] = useState('');
   const [downloadingId, setDownloadingId] = useState('');
+  const [inboxTab, setInboxTab] = useState(initialTab);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [priority, setPriority] = useState('');
   const [module, setModule] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [q, setQ] = useState('');
   const [expandedId, setExpandedId] = useState('');
+
+  const activeTab = INBOX_TABS.find((t) => t.id === inboxTab) || INBOX_TABS[0];
 
   const load = useCallback(() => {
     const params = new URLSearchParams();
@@ -40,6 +53,7 @@ export default function NotificationsPage() {
     if (module) params.set('module', module);
     if (showArchived) params.set('archive', '1');
     if (q.trim()) params.set('q', q.trim());
+    if (activeTab.category) params.set('category', activeTab.category);
     return api(`/notifications?${params}`)
       .then((r) => {
         setRows(r.data || []);
@@ -47,11 +61,26 @@ export default function NotificationsPage() {
         emitNotificationsChanged();
       })
       .catch((e) => setError(e.message));
-  }, [unreadOnly, priority, module, showArchived, q, page]);
+  }, [unreadOnly, priority, module, showArchived, q, page, activeTab.category]);
+
+  useEffect(() => {
+    const next = String(searchParams.get('tab') || '').toLowerCase();
+    if (INBOX_TABS.some((t) => t.id === next) && next !== inboxTab) {
+      setInboxTab(next);
+    }
+  }, [searchParams, inboxTab]);
+
+  const selectInboxTab = (tabId) => {
+    setInboxTab(tabId);
+    const next = new URLSearchParams(searchParams);
+    if (tabId === 'approvals') next.delete('tab');
+    else next.set('tab', tabId);
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     setPage(1);
-  }, [unreadOnly, priority, module, showArchived, q]);
+  }, [unreadOnly, priority, module, showArchived, q, inboxTab]);
 
   useEffect(() => {
     load();
@@ -77,7 +106,8 @@ export default function NotificationsPage() {
   const markAllRead = async () => {
     setError('');
     try {
-      await api('/notifications/read-all', { method: 'POST', body: {} });
+      const body = activeTab.category ? { category: activeTab.category } : {};
+      await api('/notifications/read-all', { method: 'POST', body });
       load();
     } catch (e) {
       setError(e.message);
@@ -99,14 +129,34 @@ export default function NotificationsPage() {
     }
   };
 
+  const emptyCopy =
+    inboxTab === 'approvals'
+      ? {
+          title: 'No approval requests',
+          description: 'Items that need your approval or review will appear here.',
+        }
+      : inboxTab === 'updates'
+        ? {
+            title: 'No updates',
+            description: 'Status changes and informational alerts will appear here.',
+          }
+        : {
+            title: 'No notifications',
+            description: 'New alerts will appear here.',
+          };
+
   return (
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Notifications' }]}
       title="Notification Center"
-      description="Latest alerts first — by severity, module, and read state. Routine camp saves stay in Audit Trail."
+      description="Approval requests are listed separately from status updates. Routine camp saves stay in Audit Trail."
       actions={
         <button className="btn secondary" type="button" onClick={markAllRead} disabled={!unread}>
-          Mark all read
+          {inboxTab === 'approvals'
+            ? 'Mark approvals read'
+            : inboxTab === 'updates'
+              ? 'Mark updates read'
+              : 'Mark all read'}
         </button>
       }
       kpis={[
@@ -116,6 +166,21 @@ export default function NotificationsPage() {
       ]}
     >
       {error && <p className="error">{error}</p>}
+
+      <div className="nc-tabs" role="tablist" aria-label="Notification inbox">
+        {INBOX_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={inboxTab === tab.id}
+            className={`nc-tab${inboxTab === tab.id ? ' is-active' : ''}`}
+            onClick={() => selectInboxTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <MasterFilterShell>
         <MasterSearchField
@@ -170,10 +235,13 @@ export default function NotificationsPage() {
           const href = notificationEntityPath(n);
           const changes = Array.isArray(n.changes) ? n.changes : [];
           const open = expandedId === n._id;
+          const isApproval = isApprovalRequestNotification(n);
           return (
             <div
               key={n._id}
-              className={`nc-row notification-row${n.readAt ? '' : ' is-unread'}`}
+              className={`nc-row notification-row${n.readAt ? '' : ' is-unread'}${
+                isApproval ? ' nc-row--approval' : ''
+              }`}
             >
               <button
                 type="button"
@@ -188,7 +256,9 @@ export default function NotificationsPage() {
                     <span className="header-bell-badge notification-unread-dot" aria-hidden="true" />
                   ) : null}
                   <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
-                  <span className="nc-category">{categoryLabel(n)}</span>
+                  <span className={`nc-category${isApproval ? ' nc-category--approval' : ''}`}>
+                    {categoryLabel(n)}
+                  </span>
                   <strong className="nc-title">{n.title}</strong>
                   {n.groupCount > 1 ? (
                     <span className="nc-group-count">{n.groupCount} updates</span>
@@ -225,7 +295,7 @@ export default function NotificationsPage() {
                     className="btn secondary btn-compact"
                     onClick={() => markRead(n)}
                   >
-                    Open
+                    {isApproval ? 'Review' : 'Open'}
                   </Link>
                 ) : null}
                 {n.type === 'IMPORT_ERRORS' && (n.meta?.downloadPath || n._id) ? (
@@ -245,7 +315,7 @@ export default function NotificationsPage() {
           );
         })}
         {!rows.length && (
-          <EmptyState title="No notifications" description="New alerts will appear here." />
+          <EmptyState title={emptyCopy.title} description={emptyCopy.description} />
         )}
       </div>
 

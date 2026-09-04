@@ -23,6 +23,7 @@ export default function BillOfSupplyBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newBillOfSupply,
@@ -88,6 +89,7 @@ export default function BillOfSupplyBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           docId={docId}
@@ -123,6 +125,7 @@ export default function BillOfSupplyBuilderPage() {
           onAddLine={addLine}
           onUpdateTerm={updateTerm}
           onAddTerm={addTerm}
+          onRemoveTerm={removeTerm}
         />
       )}
     </InvoiceBuilderShell>

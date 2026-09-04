@@ -59,6 +59,11 @@ export default function InvoiceGeneratorForm({ form, setForm, totals }) {
   };
 
   const addTerm = () => setForm((prev) => ({ ...prev, terms: [...prev.terms, ''] }));
+  const removeTerm = (index) =>
+    setForm((prev) => ({
+      ...prev,
+      terms: (prev.terms || []).filter((_, i) => i !== index),
+    }));
 
   return (
     <>
@@ -184,6 +189,9 @@ export default function InvoiceGeneratorForm({ form, setForm, totals }) {
             <div key={index} className="doc-term-row">
               <span className="doc-term-num">{index + 1}.</span>
               <input className="doc-field-input" value={term} onChange={(e) => updateTerm(index, e.target.value)} />
+              <button type="button" className="doc-link-btn" onClick={() => removeTerm(index)}>
+                Remove
+              </button>
             </div>
           ))}
           <button type="button" className="doc-link-btn" onClick={addTerm}>

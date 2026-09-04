@@ -23,6 +23,7 @@ export default function QuotationBuilderPage() {
     removeLine,
     updateTerm,
     addTerm,
+    removeTerm,
     applyClientMasterRecipient,
     clearClientMasterRecipient,
     newQuotation,
@@ -87,6 +88,7 @@ export default function QuotationBuilderPage() {
           removeLine={removeLine}
           updateTerm={updateTerm}
           addTerm={addTerm}
+          removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
@@ -119,6 +121,7 @@ export default function QuotationBuilderPage() {
           onAddLine={addLine}
           onUpdateTerm={updateTerm}
           onAddTerm={addTerm}
+          onRemoveTerm={removeTerm}
         />
       )}
     </InvoiceBuilderShell>

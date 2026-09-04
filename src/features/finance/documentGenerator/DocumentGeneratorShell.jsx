@@ -77,9 +77,14 @@ export default function DocumentGeneratorShell({
         .set({
           margin: 0,
           filename: filename || 'document.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-          jsPDF: { unit: 'px', format: [1123, 794], orientation: 'landscape' },
+          image: { type: 'jpeg', quality: 0.92 },
+          html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+          jsPDF: {
+            unit: 'px',
+            format: [1123, 794],
+            orientation: 'landscape',
+            compress: true,
+          },
         })
         .from(clone)
         .save();

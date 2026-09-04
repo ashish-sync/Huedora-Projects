@@ -50,6 +50,7 @@ export default function InvoiceBuilderPanel({
   removeLine,
   updateTerm,
   addTerm,
+  removeTerm,
   applyClientMasterRecipient,
   clearClientMasterRecipient,
   docId = '',
@@ -523,6 +524,11 @@ export default function InvoiceBuilderPanel({
             <div key={index} className="ib-term-row">
               <span className="ib-term-num">{index + 1}.</span>
               <input className={inputCls} value={term} onChange={(e) => updateTerm(index, e.target.value)} />
+              {typeof removeTerm === 'function' ? (
+                <button type="button" className="ib-line-remove" onClick={() => removeTerm(index)} aria-label={`Remove term ${index + 1}`}>
+                  Remove
+                </button>
+              ) : null}
             </div>
           ))}
           <button type="button" className="ib-add-line" onClick={addTerm}>

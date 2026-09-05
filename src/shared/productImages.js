@@ -1,3 +1,4 @@
+import { api } from './api.js';
 import { apiUrl } from './config.js';
 import { isDirectUploadPath, resolveUploadViewUrl } from './uploadViewUrl.js';
 

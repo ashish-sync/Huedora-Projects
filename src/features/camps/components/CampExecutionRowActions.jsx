@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClipboardCopy, Check, Pencil, X } from 'lucide-react';
+import { ClipboardCopy, Check, Pencil, Play, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CampAdminDeleteButton } from './CampAdminDeleteButton';
 import { CampRowIconButton } from './CampRowIconButton';
@@ -10,6 +10,7 @@ import {
 } from '../utils/campCancelRefuse';
 import { isCampAssigned } from '../utils/campAssignmentActions';
 import { copyCampAssignmentDetailsFromRecord } from '../utils/campAssignmentCopy';
+import { canMarkCampExecuted, getExecutionBlockers } from '../utils/campExecutionActions';
 
 const STAGE = 'execution';
 
@@ -28,6 +29,10 @@ export function CampExecutionRowActions({
   const showCross = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps }, STAGE);
   const closeAction = resolveCancelOrRefuseAction(camp, STAGE);
   const closeLabel = cancelOrRefuseLabel(camp, STAGE);
+  const canExecute = hasPermission('camps:execute');
+  const showMarkExecuted = canExecute && camp.status === 'approved' && !isTerminal;
+  const markReady = canMarkCampExecuted(camp);
+  const markBlockers = getExecutionBlockers(camp);
 
   async function handleCopyDetails() {
     const didCopy = await copyCampAssignmentDetailsFromRecord(camp);
@@ -36,7 +41,7 @@ export function CampExecutionRowActions({
     window.setTimeout(() => setCopyState(''), 2000);
   }
 
-  if (!showCopy && !showCross && !canEdit && !canDelete) {
+  if (!showCopy && !showCross && !showMarkExecuted && !canEdit && !canDelete) {
     return <span className="camps-cell-empty">—</span>;
   }
 
@@ -48,6 +53,15 @@ export function CampExecutionRowActions({
           label={copyState === 'copied' ? 'Copied' : 'Copy details'}
           variant={copyState === 'copied' ? 'approve' : 'neutral'}
           onClick={handleCopyDetails}
+        />
+      )}
+      {showMarkExecuted && (
+        <CampRowIconButton
+          icon={Play}
+          label={markReady ? 'Mark executed' : (markBlockers[0] || 'Mark executed (not ready)')}
+          variant="approve"
+          disabled={!markReady}
+          onClick={() => onAction(camp._id, 'execute')}
         />
       )}
       {showCross && (

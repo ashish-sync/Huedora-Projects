@@ -288,6 +288,8 @@ export default function CampsPage() {
       ids: validation.ids,
     });
     setConfirmCancelDetails(null);
+    setConfirmClosureDetails(null);
+    setConfirmReasonDetails(action === 'reject' ? buildReasonDetails() : null);
     setError('');
   }
 
@@ -317,9 +319,20 @@ export default function CampsPage() {
           return;
         }
 
+        if (confirmRequest.action === 'reject') {
+          const rejectionReason = confirmReasonDetails?.reason?.trim() || '';
+          if (!rejectionReason) {
+            setError('Refusal reason is required');
+            return;
+          }
+        }
+
         const { data } = await campApi.bulkAction({
           ids: validation.ids,
           action: confirmRequest.action,
+          ...(confirmRequest.action === 'reject'
+            ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
+            : {}),
         });
         setBulkMessage(`${data.summary.success} succeeded, ${data.summary.failed} failed`);
         if (data.results.failed.length) {
@@ -450,10 +463,18 @@ export default function CampsPage() {
     openBulkActionConfirm(action);
   }
 
+  // Keep a live ref so URL→state sync can read the current stage without
+  // depending on `workingStage` (that dependency re-applied stale ?stage= and
+  // undid every Working view change after filter persistence always wrote stage).
+  const workingStageRef = useRef(workingStage);
+  workingStageRef.current = workingStage;
+
   useEffect(() => {
     const stageFromUrl = searchParams.get('stage') || searchParams.get('lifecycleStage') || '';
-    if (stageFromUrl) setWorkingStage(stageFromUrl);
-    const resolvedStage = stageFromUrl || workingStage;
+    if (stageFromUrl && stageFromUrl !== workingStageRef.current) {
+      setWorkingStage(stageFromUrl);
+    }
+    const resolvedStage = stageFromUrl || workingStageRef.current;
     const rawStatus = searchParams.get('status') || '';
     if (rawStatus) {
       const normalized =
@@ -483,7 +504,7 @@ export default function CampsPage() {
     if (searchParams.has('q') || searchParams.has('findCampId')) {
       setSearch(searchParams.get('findCampId') || searchParams.get('q') || '');
     }
-  }, [searchParams, workingStage, setWorkingStage]);
+  }, [searchParams, setWorkingStage]);
 
   const previousWorkingStageRef = useRef(workingStage);
   const statusByStageRef = useRef(statusByStage);
@@ -632,21 +653,30 @@ export default function CampsPage() {
     activeChips.push({
       key: 'client',
       label: 'Brand filter',
-      onRemove: () => updateFilters({ client: '' }),
+      onRemove: () => {
+        setClientFilter('');
+        updateFilters({ client: '' });
+      },
     });
   }
   if (campaignFilter) {
     activeChips.push({
       key: 'campaign',
       label: 'Campaign / division',
-      onRemove: () => updateFilters({ campaign: '' }),
+      onRemove: () => {
+        setCampaignFilter('');
+        updateFilters({ campaign: '' });
+      },
     });
   }
   if (campTypeFilter) {
     activeChips.push({
       key: 'campType',
       label: `Camp type: ${campTypeFilter}`,
-      onRemove: () => updateFilters({ campaignType: '' }),
+      onRemove: () => {
+        setCampTypeFilter('');
+        updateFilters({ campaignType: '' });
+      },
     });
   }
 
@@ -664,12 +694,6 @@ export default function CampsPage() {
     }
   }
 
-  const canBulkManage = canApproveCamps()
-    || canRejectCamps()
-    || hasPermission('camps:update')
-    || hasPermission('camps:execute')
-    || isSuperAdmin();
-
   const selectedCamps = camps.filter((camp) => selectedIds.includes(camp._id));
   const bulkAuth = getBulkAuth();
   const bulkApproveValidation = validateBulkCampAction('approve', selectedCamps, bulkAuth);
@@ -681,6 +705,13 @@ export default function CampsPage() {
   const isAssignmentStage = workingStage === 'assignment';
   const isExecutionStage = workingStage === 'execution';
   const isFinancialStage = workingStage === 'financial';
+
+  const showBulkApproveRefuse = isRequestStage;
+  const showBulkExecute = isExecutionStage;
+  const showRowSelection = canAdminDeleteCamps
+    || (showBulkApproveRefuse && (canApproveCamps() || canRejectCamps()))
+    || (showBulkExecute && hasPermission('camps:execute'));
+  const showBulkBar = selectedIds.length > 0 && showRowSelection;
 
   const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
 
@@ -835,10 +866,10 @@ export default function CampsPage() {
           onClearAll={clearFilters}
         />
 
-        {selectedIds.length > 0 && (canBulkManage || canAdminDeleteCamps) && (!isAssignmentStage || canAdminDeleteCamps) && (
+        {showBulkBar && (
           <div className="bulk-bar camps-manage-bulk-bar">
           <span>{selectedIds.length} selected</span>
-          {canApproveCamps() && !isAssignmentStage && (
+          {canApproveCamps() && showBulkApproveRefuse && (
             <button
               className="btn btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkApproveValidation.ok}
@@ -848,7 +879,7 @@ export default function CampsPage() {
               Approve Selected
             </button>
           )}
-          {canRejectCamps() && !isAssignmentStage && (
+          {canRejectCamps() && showBulkApproveRefuse && (
             <button
               className="btn danger btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkRejectValidation.ok}
@@ -858,7 +889,7 @@ export default function CampsPage() {
               Refuse Selected
             </button>
           )}
-          {hasPermission('camps:execute') && !isAssignmentStage && (
+          {hasPermission('camps:execute') && showBulkExecute && (
             <button
               className="btn btn-compact"
               disabled={bulkLoading || confirmLoading || !bulkExecuteValidation.ok}
@@ -878,8 +909,8 @@ export default function CampsPage() {
               Delete Selected
             </button>
           )}
-        </div>
-      )}
+          </div>
+        )}
 
         {!workingStage ? (
           <EmptyState
@@ -907,7 +938,7 @@ export default function CampsPage() {
             <table className={isRequestStage ? 'camps-table camps-table--request' : 'camps-table'}>
               <thead>
                 <tr>
-                  {canBulkManage && (
+                  {showRowSelection && (
                     <th className="checkbox-col">
                       <input
                         type="checkbox"
@@ -941,7 +972,7 @@ export default function CampsPage() {
               <tbody>
                 {camps.map((camp) => (
                   <tr key={camp._id} className={getCampRowClassName(camp)}>
-                    {canBulkManage && (
+                    {showRowSelection && (
                       <td className="checkbox-col">
                         <input
                           type="checkbox"
@@ -971,7 +1002,7 @@ export default function CampsPage() {
                         <td className="col-timeframe">
                           <CampTimeFrame camp={camp} compact />
                         </td>
-                        <td>{camp.doctorName}</td>
+                        <td>{cellText(camp.doctorName)}</td>
                         <td className="col-city">{cellText(camp.city)}</td>
                         <td className="col-date date-cell">{formatDateDDMMYYYY(camp.campDate) || '—'}</td>
                       </>

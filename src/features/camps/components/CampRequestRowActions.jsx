@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { CampAdminDeleteButton } from './CampAdminDeleteButton';
 import { CampRowIconButton } from './CampRowIconButton';
 import { CampIssuesModal } from './CampIssuesModal';
+import { CampRowInfoMenu } from './CampRowInfoMenu';
 import {
   canCancelOrRefuseCamp,
   cancelOrRefuseLabel,
@@ -31,8 +32,9 @@ export function CampRequestRowActions({
   const showCross = canCancelOrRefuseCamp(camp, { hasPermission, canRejectCamps }, STAGE);
   const closeAction = resolveCancelOrRefuseAction(camp, STAGE);
   const closeLabel = cancelOrRefuseLabel(camp, STAGE);
+  const showInfo = typeof hasPermission === 'function';
 
-  if (!showTick && !showCross && !canEdit && !canDelete) {
+  if (!showTick && !showCross && !canEdit && !canDelete && !showInfo) {
     return <span className="camps-cell-empty">—</span>;
   }
 
@@ -56,6 +58,13 @@ export function CampRequestRowActions({
             onClick={() => setIssuesOpen(true)}
           />
         )}
+        {showInfo ? (
+          <CampRowInfoMenu
+            camp={camp}
+            hasPermission={hasPermission}
+            onAction={onAction}
+          />
+        ) : null}
         {showCross && (
           <CampRowIconButton
             icon={X}

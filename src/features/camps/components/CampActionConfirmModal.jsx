@@ -78,9 +78,12 @@ const BULK_ACTION_COPY = {
   },
   reject: {
     title: 'Refuse selected camps',
-    message: (count) => `Refuse ${count} selected camp${count === 1 ? '' : 's'}?`,
+    message: (count) => `Provide a mandatory reason before refusing ${count} selected camp${count === 1 ? '' : 's'}.`,
     confirmLabel: 'Refuse selected',
     confirmClass: 'danger',
+    requiresReason: true,
+    reasonLabel: 'Refusal reason',
+    reasonPlaceholder: 'Enter why these requests are being refused',
   },
   delete: {
     title: 'Delete selected camps',
@@ -178,7 +181,7 @@ export function CampActionConfirmModal({
   const confirmLabel = loading ? 'Processing...' : (closeCopy?.confirmLabel || copy.confirmLabel);
   const showCancelForm = !isBulk && request.action === 'cancel' && cancelDetails;
   const showClosureForm = !isBulk && request.action === 'closeCamp' && closureDetails;
-  const showReasonForm = !isBulk && copy.requiresReason && reasonDetails;
+  const showReasonForm = Boolean(copy.requiresReason && reasonDetails);
   const availableClosureTypes = request.camp
     ? getAvailableClosureTypes(request.camp, closureStage)
     : [];

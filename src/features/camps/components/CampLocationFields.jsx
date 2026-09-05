@@ -3,6 +3,26 @@ import PinLocationLookup from '../../../components/ui/PinLocationLookup.jsx';
 import { api } from '../../../shared/api.js';
 
 /**
+ * True when PIN lookup / cascade moved to a different place and city should reset.
+ * Filling missing stateId/districtId for the same place must NOT clear city
+ * (stage remount + PIN re-lookup used to wipe city and fail "City is required").
+ */
+export function shouldClearCityOnLocationChange(prev = {}, next = {}) {
+  const prevStateId = String(prev.stateId || '').trim();
+  const prevDistrictId = String(prev.districtId || '').trim();
+  const nextStateId = String(next.stateId || '').trim();
+  const nextDistrictId = String(next.districtId || '').trim();
+
+  const stateSwitched = Boolean(prevStateId && nextStateId && prevStateId !== nextStateId);
+  const districtSwitched = Boolean(prevDistrictId && nextDistrictId && prevDistrictId !== nextDistrictId);
+  const locationCleared = !nextStateId && !nextDistrictId && Boolean(
+    prevStateId || prevDistrictId || String(prev.city || '').trim() || String(prev.cityId || '').trim(),
+  );
+
+  return stateSwitched || districtSwitched || locationCleared;
+}
+
+/**
  * Camp location: PIN master drives state / zone / district; city is chosen from the state-wise city master.
  */
 export default function CampLocationFields({
@@ -128,15 +148,18 @@ export default function CampLocationFields({
           districtId: v.districtId,
         }}
         onChange={(loc) => {
-          const locationChanged = loc.stateId !== v.stateId || loc.districtId !== v.districtId;
-          emit({
+          const nextLoc = {
             pincode: loc.pinCode,
             state: loc.state,
             zone: loc.zone,
             district: loc.district,
             stateId: loc.stateId,
             districtId: loc.districtId,
-            ...(locationChanged ? { city: '', cityId: '' } : {}),
+          };
+          const clearCity = shouldClearCityOnLocationChange(v, nextLoc);
+          emit({
+            ...nextLoc,
+            ...(clearCity ? { city: '', cityId: '' } : {}),
           });
         }}
         labels={{

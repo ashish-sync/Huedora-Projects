@@ -46,7 +46,13 @@ export default function PinLocationLookup({
       return undefined;
     }
 
+    // Already resolved for this PIN (e.g. remount after stage switch) — don't re-emit.
     if (lastLookupPin.current === pin && v.state && v.district) {
+      return undefined;
+    }
+    if (!lastLookupPin.current && v.state && v.district && (v.stateId || v.districtId)) {
+      lastLookupPin.current = pin;
+      setLookupState('found');
       return undefined;
     }
 
@@ -71,14 +77,26 @@ export default function PinLocationLookup({
             return;
           }
           setLookupState('found');
-          emit({
+          const next = {
             pinCode: pin,
             state: resolved.stateName || '',
             district: resolved.districtName || '',
             zone: resolved.zone || resolveZoneForState(resolved.stateName),
             stateId: resolved.stateId || '',
             districtId: resolved.districtId || '',
-          });
+          };
+          const samePlace = String(next.stateId || '') === String(v.stateId || '')
+            && String(next.districtId || '') === String(v.districtId || '')
+            && String(next.state || '').toLowerCase() === String(v.state || '').toLowerCase()
+            && String(next.district || '').toLowerCase() === String(v.district || '').toLowerCase();
+          if (samePlace && v.state && v.district) {
+            // IDs may still be missing on the parent — emit only when hydration helps.
+            if ((!v.stateId && next.stateId) || (!v.districtId && next.districtId)) {
+              emit(next);
+            }
+            return;
+          }
+          emit(next);
         })
         .catch((e) => {
           if (cancelled) return;

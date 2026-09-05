@@ -3,6 +3,7 @@ import {
   collectProductImages,
   productImageUrl,
   removeProductImage,
+  resolveProductImageFilename,
   uploadProductImages,
 } from '../../shared/productImages.js';
 import { isDirectUploadPath, resolveUploadViewUrl } from '../../shared/uploadViewUrl.js';
@@ -48,12 +49,14 @@ export default function ProductImagesPanel({
 }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [busyMode, setBusyMode] = useState('');
   const [error, setError] = useState('');
   const images = collectProductImages(product);
 
   async function handleUpload(fileList) {
     if (!productId || !canWrite || !fileList?.length) return;
     setBusy(true);
+    setBusyMode('upload');
     setError('');
     try {
       const updated = await uploadProductImages(productId, fileList);
@@ -62,14 +65,21 @@ export default function ProductImagesPanel({
       setError(err.message || 'Upload failed');
     } finally {
       setBusy(false);
+      setBusyMode('');
       if (inputRef.current) inputRef.current.value = '';
     }
   }
 
-  async function handleRemove(filename) {
-    if (!productId || !canWrite || !filename) return;
+  async function handleRemove(img) {
+    if (!productId || !canWrite) return;
+    const filename = resolveProductImageFilename(img);
+    if (!filename) {
+      setError('Image reference is missing — reload the product and try again');
+      return;
+    }
     if (!window.confirm('Remove this image from the product?')) return;
     setBusy(true);
+    setBusyMode('remove');
     setError('');
     try {
       const updated = await removeProductImage(productId, filename);
@@ -78,33 +88,43 @@ export default function ProductImagesPanel({
       setError(err.message || 'Remove failed');
     } finally {
       setBusy(false);
+      setBusyMode('');
     }
   }
+
+  const actionLabel = busyMode === 'remove'
+    ? 'Removing…'
+    : busyMode === 'upload'
+      ? 'Uploading…'
+      : '+ Add images';
 
   return (
     <div className={`product-images-panel${compact ? ' product-images-panel--compact' : ''} ${className}`.trim()}>
       {!compact && showTitle ? <h4 className="product-images-title">{title}</h4> : null}
       {hint ? <p className="product-images-hint muted">{hint}</p> : null}
-      {error ? <p className="product-images-error">{error}</p> : null}
+      {error ? <p className="product-images-error" role="alert">{error}</p> : null}
 
       {images.length > 0 ? (
         <ul className="product-images-grid" aria-label={title}>
-          {images.map((img) => (
-            <li key={img.filename || img.url} className="product-images-item">
-              <ProductThumb img={img} />
-              {canWrite ? (
-                <button
-                  type="button"
-                  className="product-images-remove inv-link"
-                  disabled={busy}
-                  onClick={() => handleRemove(img.filename)}
-                  aria-label={`Remove ${img.name || 'image'}`}
-                >
-                  Remove
-                </button>
-              ) : null}
-            </li>
-          ))}
+          {images.map((img) => {
+            const key = resolveProductImageFilename(img) || img.url;
+            return (
+              <li key={key} className="product-images-item">
+                <ProductThumb img={img} />
+                {canWrite ? (
+                  <button
+                    type="button"
+                    className="product-images-remove inv-link"
+                    disabled={busy}
+                    onClick={() => handleRemove(img)}
+                    aria-label={`Remove ${img.name || 'image'}`}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="muted product-images-empty">No images uploaded yet.</p>
@@ -127,7 +147,7 @@ export default function ProductImagesPanel({
             disabled={busy}
             onClick={() => inputRef.current?.click()}
           >
-            {busy ? 'Uploading…' : '+ Add images'}
+            {actionLabel}
           </button>
         </div>
       ) : null}

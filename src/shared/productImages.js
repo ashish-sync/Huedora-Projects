@@ -15,6 +15,26 @@ export async function productImageViewUrl(ref) {
   return apiUrl(ref.url);
 }
 
+/**
+ * Filename used by DELETE /logistics/products/:id/files.
+ * Prefer the stored filename; fall back to the last /uploads/... path segment.
+ */
+export function resolveProductImageFilename(ref) {
+  const direct = String(ref?.filename || '').trim();
+  if (direct) return direct;
+  const url = String(ref?.url || '').trim();
+  if (!url) return '';
+  const uploadsMatch = url.match(/\/uploads\/[^?#]*\/([^/?#]+)(?:[?#]|$)/i);
+  if (uploadsMatch?.[1]) {
+    try {
+      return decodeURIComponent(uploadsMatch[1]);
+    } catch {
+      return uploadsMatch[1];
+    }
+  }
+  return '';
+}
+
 /** Primary image + gallery images, de-duplicated by URL. */
 export function collectProductImages(product) {
   if (!product) return [];
@@ -37,6 +57,7 @@ export function isImageFile(file) {
 export async function uploadProductImages(productId, files) {
   const picked = [...files].filter(isImageFile);
   if (!picked.length) throw new Error('Select one or more image files');
+  if (!productId) throw new Error('Save the product first, then add images');
   const fd = new FormData();
   fd.append('slot', 'images');
   for (const file of picked) fd.append('images', file);
@@ -44,8 +65,12 @@ export async function uploadProductImages(productId, files) {
   return res.data;
 }
 
-export async function removeProductImage(productId, filename) {
-  if (!filename) throw new Error('Image reference is missing');
+export async function removeProductImage(productId, filenameOrRef) {
+  if (!productId) throw new Error('Save the product first, then manage images');
+  const filename = typeof filenameOrRef === 'string'
+    ? String(filenameOrRef || '').trim()
+    : resolveProductImageFilename(filenameOrRef);
+  if (!filename) throw new Error('Image reference is missing — reload the product and try again');
   const res = await api(`/logistics/products/${productId}/files`, {
     method: 'DELETE',
     body: { filename },

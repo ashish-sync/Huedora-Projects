@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, apiUrl } from '../../shared/api.js';
+import { openUploadView } from '../../shared/uploadViewUrl.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
@@ -763,7 +764,17 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                           <p className="cd-form-hint">
                             Uploaded
                             {' · '}
-                            <a href={apiUrl(form.passbookCopyUrl)} target="_blank" rel="noreferrer">View</a>
+                            <a
+                              href={apiUrl(form.passbookCopyUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openUploadView(form.passbookCopyUrl).catch((err) => setError(err.message));
+                              }}
+                            >
+                              View
+                            </a>
                           </p>
                         ) : (
                           <p className="cd-form-hint">{CONTACT_KYC_HINT}. Required for Finance payout.</p>
@@ -792,7 +803,17 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                           <p className="cd-form-hint">
                             Uploaded
                             {' · '}
-                            <a href={apiUrl(form.panCardCopyUrl)} target="_blank" rel="noreferrer">View</a>
+                            <a
+                              href={apiUrl(form.panCardCopyUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openUploadView(form.panCardCopyUrl).catch((err) => setError(err.message));
+                              }}
+                            >
+                              View
+                            </a>
                           </p>
                         ) : (
                           <p className="cd-form-hint">{CONTACT_KYC_HINT}. Required for Finance payout.</p>

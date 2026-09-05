@@ -1,9 +1,16 @@
-import { api } from './api.js';
 import { apiUrl } from './config.js';
+import { isDirectUploadPath, resolveUploadViewUrl } from './uploadViewUrl.js';
 
-/** Resolved URL for a stored product image reference. */
+/** Resolved URL for a stored product image reference (sync; expects signed URL from API). */
 export function productImageUrl(ref) {
   if (!ref?.url) return '';
+  return apiUrl(ref.url);
+}
+
+/** Prefer async resolve when a raw /uploads path might still be present. */
+export async function productImageViewUrl(ref) {
+  if (!ref?.url) return '';
+  if (isDirectUploadPath(ref.url)) return resolveUploadViewUrl(ref.url);
   return apiUrl(ref.url);
 }
 

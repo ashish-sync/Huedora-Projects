@@ -5,6 +5,7 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { api, apiUrl } from '../../shared/api.js';
+import { openUploadView } from '../../shared/uploadViewUrl.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -677,17 +678,42 @@ export default function LogisticsInwardPage() {
                 <td>{r.vendor || r.recipientName || r.employeeName || r.name || '-'}</td>
                 <td className="ilog-attach-cell">
                   {r.productPhoto?.url && (
-                    <a href={apiUrl(r.productPhoto.url)} target="_blank" rel="noreferrer">
+                    <a
+                      href={apiUrl(r.productPhoto.url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openUploadView(r.productPhoto.url);
+                      }}
+                    >
                       Photo
                     </a>
                   )}
                   {r.invoiceDoc?.url && (
-                    <a href={apiUrl(r.invoiceDoc.url)} target="_blank" rel="noreferrer">
+                    <a
+                      href={apiUrl(r.invoiceDoc.url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openUploadView(r.invoiceDoc.url);
+                      }}
+                    >
                       Invoice
                     </a>
                   )}
                   {(r.attachments || []).map((a, i) => (
-                    <a key={a.filename || i} href={apiUrl(a.url)} target="_blank" rel="noreferrer">
+                    <a
+                      key={a.filename || i}
+                      href={apiUrl(a.url)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openUploadView(a.url);
+                      }}
+                    >
                       Doc {i + 1}
                     </a>
                   ))}

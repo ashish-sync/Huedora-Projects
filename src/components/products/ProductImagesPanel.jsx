@@ -1,10 +1,39 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   collectProductImages,
   productImageUrl,
   removeProductImage,
   uploadProductImages,
 } from '../../shared/productImages.js';
+import { isDirectUploadPath, resolveUploadViewUrl } from '../../shared/uploadViewUrl.js';
+
+function ProductThumb({ img }) {
+  const [src, setSrc] = useState(() => productImageUrl(img));
+  useEffect(() => {
+    let cancelled = false;
+    const raw = img?.url || '';
+    if (!isDirectUploadPath(raw)) {
+      setSrc(productImageUrl(img));
+      return undefined;
+    }
+    resolveUploadViewUrl(raw)
+      .then((href) => {
+        if (!cancelled) setSrc(href);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(productImageUrl(img));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [img?.url]);
+
+  return (
+    <a href={src || '#'} target="_blank" rel="noreferrer" className="product-images-thumb-link">
+      <img src={src} alt={img.name || 'Product'} className="product-images-thumb" />
+    </a>
+  );
+}
 
 export default function ProductImagesPanel({
   productId,
@@ -62,15 +91,7 @@ export default function ProductImagesPanel({
         <ul className="product-images-grid" aria-label={title}>
           {images.map((img) => (
             <li key={img.filename || img.url} className="product-images-item">
-              <a
-                href={productImageUrl(img)}
-                target="_blank"
-                rel="noreferrer"
-                className="product-images-thumb-link"
-                title={img.name || 'View image'}
-              >
-                <img src={productImageUrl(img)} alt={img.name || 'Product'} className="product-images-thumb" />
-              </a>
+              <ProductThumb img={img} />
               {canWrite ? (
                 <button
                   type="button"

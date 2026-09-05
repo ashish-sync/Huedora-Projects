@@ -707,13 +707,9 @@ export default function CampsPage() {
   const isFinancialStage = workingStage === 'financial';
 
   const showBulkApproveRefuse = isRequestStage;
-  const showBulkExecute = isExecutionStage;
   const showRowSelection = canAdminDeleteCamps
-    || (showBulkApproveRefuse && (canApproveCamps() || canRejectCamps()))
-    || (showBulkExecute && hasPermission('camps:execute'));
+    || (showBulkApproveRefuse && (canApproveCamps() || canRejectCamps()));
   const showBulkBar = selectedIds.length > 0 && showRowSelection;
-
-  const bulkExecuteValidation = validateBulkCampAction('execute', selectedCamps, bulkAuth);
 
   function renderCampActions(camp) {
     const cancelRefuse = (
@@ -887,16 +883,6 @@ export default function CampsPage() {
               onClick={() => handleBulk('reject')}
             >
               Refuse Selected
-            </button>
-          )}
-          {hasPermission('camps:execute') && showBulkExecute && (
-            <button
-              className="btn btn-compact"
-              disabled={bulkLoading || confirmLoading || !bulkExecuteValidation.ok}
-              title={!bulkExecuteValidation.ok ? bulkExecuteValidation.message : undefined}
-              onClick={() => handleBulk('execute')}
-            >
-              Mark Executed
             </button>
           )}
           {canAdminDeleteCamps && (

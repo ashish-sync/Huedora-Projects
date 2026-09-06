@@ -95,14 +95,23 @@ async function parseJsonSafe(res) {
   }
 }
 
-function toApiError(json, status) {
-  const message =
-    json?.error?.message ||
-    (status === 413
-      ? 'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.'
-      : status === 429
+function toApiError(json, status, requestPath = '') {
+  const serverMessage = json?.error?.message;
+  const isImportPath = /\/import\b|\/imports\b|pin-codes\/import|excel/i.test(String(requestPath));
+  let message = serverMessage;
+  if (!message) {
+    if (status === 413) {
+      message = isImportPath
+        ? 'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.'
+        : 'This file is too large for this upload. Choose a smaller file and try again.';
+    } else if (status === 429) {
+      message = isImportPath
         ? 'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or Excel file.'
-        : `Request failed (${status})`);
+        : 'Too many requests. Wait a few minutes and try again.';
+    } else {
+      message = `Request failed (${status})`;
+    }
+  }
   const err = new Error(message);
   err.status = status;
   err.code = json?.error?.code;
@@ -146,7 +155,7 @@ export async function api(path, options = {}, retried = false) {
         /* fall through with original 401 */
       }
     }
-    throw toApiError(json, res.status);
+    throw toApiError(json, res.status, path);
   }
 
   return json;
@@ -178,11 +187,9 @@ export async function downloadExcel(path, filename, retried = false) {
       if (json?.error?.message) message = json.error.message;
     } catch {
       if (res.status === 413) {
-        message =
-          'This file is larger than 3 MB. Reduce the file (max 1,000 rows) and upload again.';
+        message = 'This file is too large. Choose a smaller file and try again.';
       } else if (res.status === 429) {
-        message =
-          'Too many imports were started in a short time. Wait a few minutes, then try again with a .csv or Excel file.';
+        message = 'Too many requests. Wait a few minutes and try again.';
       }
     }
     throw new Error(message);

@@ -53,7 +53,7 @@ export function formatRowImportError(e) {
  * Validate a non-spreadsheet upload (images, PDFs, DOCX) before FormData.append.
  * @returns {string|null} one-line error or null if OK
  */
-export function validateUploadFile(file, { maxBytes = 5 * 1024 * 1024, acceptExt = null, label = 'file' } = {}) {
+export function validateUploadFile(file, { maxBytes = 10 * 1024 * 1024, acceptExt = null, label = 'file' } = {}) {
   if (!file) return `Please choose a ${label} to upload.`;
   const size = Number(file.size) || 0;
   if (size <= 0) return `This ${label} is empty. Choose another file and try again.`;

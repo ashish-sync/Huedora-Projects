@@ -277,8 +277,8 @@ export default function FinanceVendorBillDetailPage() {
     if (!billFiles.length) return null;
     for (const file of billFiles) {
       const pre = validateUploadFile(file, {
-        maxBytes: 10 * 1024 * 1024,
-        acceptExt: ['.pdf', '.png', '.jpg', '.jpeg', '.webp'],
+        maxBytes: 12 * 1024 * 1024,
+        acceptExt: ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.doc', '.docx'],
         label: 'vendor bill',
       });
       if (pre) throw new Error(pre);

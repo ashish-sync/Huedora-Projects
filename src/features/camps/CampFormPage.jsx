@@ -5,6 +5,7 @@ import { useAuth } from './useCampOpsAuth.js';
 import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
 import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
 import { api } from '../../shared/api.js';
+import { validateUploadFile } from '../../shared/importErrors.js';
 import { trimFormStrings } from './utils/trimInput';
 import { toApiDateValue } from './utils/dateFormat';
 import { computeDurationHours } from './utils/campSchedule';
@@ -655,10 +656,25 @@ export default function CampFormPage() {
 
   async function handleUploadDocuments(fileList, docType, docNote = '') {
     if (!id || !fileList?.length) return;
+    const files = Array.from(fileList);
+    for (const file of files) {
+      const isGps = docType === 'gps_selfie';
+      const pre = validateUploadFile(file, {
+        maxBytes: 10 * 1024 * 1024,
+        acceptExt: isGps
+          ? ['.png', '.jpg', '.jpeg', '.webp', '.gif']
+          : ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.doc', '.docx', '.xlsx', '.xls', '.csv'],
+        label: isGps ? 'GPS selfie' : 'execution document',
+      });
+      if (pre) {
+        setError(pre);
+        return;
+      }
+    }
     setUploadBusy(true);
     setError('');
     try {
-      const { data } = await campApi.uploadExecutionDocuments(id, fileList, docType, docNote);
+      const { data } = await campApi.uploadExecutionDocuments(id, files, docType, docNote);
       const camp = data?.data?.data || data?.data || data;
       const fromServer = campToForm(camp);
       setForm((prev) => ({

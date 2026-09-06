@@ -663,7 +663,7 @@ export default function CampFormPage() {
         maxBytes: 10 * 1024 * 1024,
         acceptExt: isGps
           ? ['.png', '.jpg', '.jpeg', '.webp', '.gif']
-          : ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.doc', '.docx', '.xlsx', '.xls', '.csv'],
+          : ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif'],
         label: isGps ? 'GPS selfie' : 'execution document',
       });
       if (pre) {
@@ -685,6 +685,37 @@ export default function CampFormPage() {
       setCampMeta((prev) => (prev ? { ...prev, executionDocuments: fromServer.executionDocuments } : prev));
     } catch (err) {
       setError(err?.message || 'Failed to upload documents');
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
+  async function handleDeleteExecutionDocument(doc) {
+    if (!id || !doc) return;
+    const fileId = doc.id || doc.storedName || doc.fileName;
+    if (!fileId) return;
+    setUploadBusy(true);
+    setError('');
+    try {
+      const { data } = await campApi.deleteExecutionDocument(id, fileId);
+      const camp = data?.data?.data || data?.data || data;
+      const fromServer = campToForm(camp);
+      setForm((prev) => ({
+        ...prev,
+        executionDocuments: fromServer.executionDocuments,
+        inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+      }));
+      setCampMeta((prev) => (
+        prev
+          ? {
+            ...prev,
+            executionDocuments: fromServer.executionDocuments,
+            inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+          }
+          : prev
+      ));
+    } catch (err) {
+      setError(err?.message || 'Failed to remove document');
     } finally {
       setUploadBusy(false);
     }
@@ -1149,6 +1180,7 @@ export default function CampFormPage() {
         stageReadOnly={stageReadOnly}
         campId={isEdit ? id : null}
         onUploadDocuments={handleUploadDocuments}
+        onDeleteDocument={handleDeleteExecutionDocument}
         uploadBusy={uploadBusy}
         onDownloadFinanceExport={isEdit && form.submittedToFinanceAt ? handleDownloadFinanceExport : null}
         downloadFinanceBusy={downloadFinanceBusy}

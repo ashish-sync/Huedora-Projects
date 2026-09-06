@@ -7747,6 +7747,10 @@
 }
 
 .camp-ops-root .camp-execution-docs-panel h3 {
+  margin: 0 0 4px;
+}
+
+.camp-ops-root .camp-execution-doc-format-hint {
   margin: 0 0 12px;
 }
 
@@ -7758,11 +7762,21 @@
 .camp-ops-root .camp-execution-doc-row {
   display: grid;
   gap: 6px;
+  padding: 8px;
+  margin: -8px;
+  border-radius: var(--radius-md);
+  border: 1px dashed transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.camp-ops-root .camp-execution-doc-row.is-drag-over {
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--line));
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
 }
 
 .camp-ops-root .camp-execution-doc-row-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 10px;
   align-items: center;
 }
@@ -7814,6 +7828,28 @@
   opacity: 0.55;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.camp-ops-root .camp-execution-doc-remove-btn {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--danger, #c0392b) 45%, var(--line));
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--danger, #c0392b);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.camp-ops-root .camp-execution-doc-remove-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
+}
+
+.camp-ops-root .camp-execution-doc-remove-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .camp-ops-root .camp-execution-doc-upload-icon {

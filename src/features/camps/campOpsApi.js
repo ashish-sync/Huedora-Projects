@@ -101,6 +101,8 @@ export const campApi = {
     if (docNote) formData.append('docNote', docNote);
     return postForm(`${BASE}/camps/${id}/execution-documents`, formData);
   },
+  deleteExecutionDocument: (id, fileId) =>
+    del(`${BASE}/camps/${id}/execution-documents/${encodeURIComponent(fileId)}`),
   consumableOptions: () => get(`${BASE}/consumables/options`),
   consumablesForCamp: (clientId, params = {}) => get(`${BASE}/consumables/for-camp`, {
     ...(clientId ? { clientId } : {}),

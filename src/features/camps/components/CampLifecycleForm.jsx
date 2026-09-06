@@ -158,6 +158,7 @@ export function CampLifecycleForm({
   stageReadOnly = {},
   campId = null,
   onUploadDocuments,
+  onDeleteDocument,
   uploadBusy = false,
   onDownloadFinanceExport,
   downloadFinanceBusy = false,
@@ -689,6 +690,7 @@ export function CampLifecycleForm({
             docs={docs}
             campId={campId}
             onUploadDocuments={onUploadDocuments}
+            onDeleteDocument={onDeleteDocument}
             uploadBusy={uploadBusy}
             disabled={disabled}
           />

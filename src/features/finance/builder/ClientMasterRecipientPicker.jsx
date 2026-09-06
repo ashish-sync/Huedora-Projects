@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
+import { useEffect, useRef, useState } from 'react';
 import { parseEmailList } from '../../../shared/validation.js';
 import { clientMasterApi } from '../../camps/campOpsApi.js';
+import { useSearchDropdownKeyboard } from '../../camps/hooks/useSearchDropdownKeyboard';
 
 /**
  * Map a Client Master program (+ company billing) onto invoice bill-to / proforma recipient fields.
@@ -51,86 +51,141 @@ export function recipientPatchFromClientMaster(row) {
   };
 }
 
+function optionLabel(row) {
+  const code = String(row.clientCode || '').trim() || '—';
+  const division = String(row.programName || row.drugTherapyName || '').trim() || '—';
+  return `${code} · ${division}`;
+}
+
+/**
+ * Typeahead Client Master pick (replaces bulk limit:500 bootstrap).
+ */
 export default function ClientMasterRecipientPicker({
   value = '',
   onPick,
   onClear,
   disabled = false,
 }) {
+  const [query, setQuery] = useState('');
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [open, setOpen] = useState(false);
+  const [displayLabel, setDisplayLabel] = useState('');
+  const wrapRef = useRef(null);
+  const debounceRef = useRef(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  function runSearch(text) {
     setLoading(true);
+    const q = String(text || '').trim();
     clientMasterApi
-      .list({ limit: 500, page: 1 })
+      .list({ ...(q ? { q } : {}), limit: 40, page: 1 })
       .then(({ data }) => {
-        if (cancelled) return;
         const list = data?.data || data?.pagination?.data || [];
         setRows(Array.isArray(list) ? list.filter((r) => r.isActive !== false) : []);
         setError('');
       })
       .catch((err) => {
-        if (!cancelled) {
-          setRows([]);
-          setError(err?.message || 'Could not load Client Master');
-        }
+        setRows([]);
+        setError(err?.message || 'Could not load Client Master');
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    runSearch('');
   }, []);
 
-  const options = useMemo(
-    () =>
-      rows.map((row) => {
-        const code = String(row.clientCode || '').trim() || '—';
-        const division = String(row.programName || row.drugTherapyName || '').trim() || '—';
-        return {
-          id: String(row._id),
-          label: `${code} · ${division}`,
-          row,
-        };
-      }),
-    [rows]
-  );
+  useEffect(() => {
+    if (!value) {
+      setDisplayLabel('');
+      return;
+    }
+    const match = rows.find((r) => String(r._id) === String(value));
+    if (match) setDisplayLabel(optionLabel(match));
+  }, [value, rows]);
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  function onInput(e) {
+    const next = e.target.value;
+    setQuery(next);
+    setDisplayLabel(next);
+    setOpen(true);
+    if (value) onClear?.();
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => runSearch(next), 220);
+  }
+
+  function pick(row) {
+    setDisplayLabel(optionLabel(row));
+    setQuery('');
+    setOpen(false);
+    onPick?.(row, recipientPatchFromClientMaster(row));
+  }
+
+  const { activeIndex, setItemRef, getItemClassName, handleKeyDown } = useSearchDropdownKeyboard({
+    open,
+    itemCount: rows.length,
+    onSelectIndex: (idx) => {
+      const row = rows[idx];
+      if (row) pick(row);
+    },
+    onClose: () => setOpen(false),
+    onOpen: () => setOpen(true),
+  });
 
   return (
-    <div className="ib-client-master-pick">
-      <AdaptiveSelect
-        threshold={1}
-        value={value || ''}
-        disabled={disabled || loading}
-        aria-label="Pick recipient from Client Master"
-        placeholder={loading ? 'Loading Client Master…' : 'Search Client Master…'}
-        onChange={(e) => {
-          const id = e.target.value;
-          if (!id) {
-            onClear?.();
-            return;
-          }
-          const match = options.find((o) => o.id === id);
-          if (match) onPick?.(match.row, recipientPatchFromClientMaster(match.row));
-        }}
-      >
-        <option value="">
-          {loading
-            ? 'Loading Client Master…'
-            : options.length
-              ? 'Select from Client Master (or enter details below)'
-              : 'No Client Master records'}
-        </option>
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </AdaptiveSelect>
+    <div className="ib-client-master-pick camp-client-typeahead" ref={wrapRef}>
+      <label>
+        Client Master
+        <input
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-autocomplete="list"
+          aria-label="Pick recipient from Client Master"
+          disabled={disabled}
+          value={displayLabel}
+          placeholder={loading ? 'Loading…' : 'Search Client Master…'}
+          onChange={onInput}
+          onFocus={() => {
+            setOpen(true);
+            if (!rows.length) runSearch(query);
+          }}
+          onKeyDown={handleKeyDown}
+          autoComplete="off"
+        />
+      </label>
+      {open && (
+        <ul className="camp-client-typeahead-menu" role="listbox">
+          {loading && <li className="camp-client-typeahead-empty">Searching…</li>}
+          {!loading && !rows.length && (
+            <li className="camp-client-typeahead-empty">No Client Master records</li>
+          )}
+          {rows.map((row, idx) => (
+            <li
+              key={String(row._id)}
+              ref={setItemRef(idx)}
+              role="option"
+              aria-selected={String(row._id) === String(value)}
+              className={getItemClassName(idx)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                pick(row);
+              }}
+            >
+              {optionLabel(row)}
+            </li>
+          ))}
+        </ul>
+      )}
       {error ? <p className="ib-client-master-pick-error">{error}</p> : null}
     </div>
   );

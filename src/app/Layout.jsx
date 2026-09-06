@@ -23,7 +23,7 @@ function initials(name = '') {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-const POLL_MS = 30000;
+const POLL_MS = 90000;
 
 export default function Layout({ children }) {
   const { user, logout, can } = useAuth();

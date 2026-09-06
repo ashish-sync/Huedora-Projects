@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ImportInProgressGuard from '../../components/ui/ImportInProgressGuard.jsx';
-import { communicationsApi, clientApi, clientMasterApi } from './campOpsApi.js';
+import { communicationsApi, clientMasterApi } from './campOpsApi.js';
+import { searchClientsWithMasters } from './utils/searchClientsWithMasters.js';
 import { EmailPickBuffer } from './components/EmailPickBuffer';
 import { EmailExtractionPanel } from './components/EmailExtractionPanel';
 import { CampCreatedBanner, extractCreatedCamps } from './components/CampCreatedBanner';
@@ -261,27 +262,11 @@ export default function CommunicationsPastePage() {
   }, [pasteText]);
 
   useEffect(() => {
-    Promise.all([
-      clientApi.list({ limit: 500, page: 1 }),
-      clientMasterApi.list({ limit: 500, page: 1 }),
-    ])
-      .then(([clientRes, masterRes]) => {
-        const allClients = Array.isArray(clientRes.data?.data) ? clientRes.data.data : [];
-        const masters = Array.isArray(masterRes.data?.data) ? masterRes.data.data : [];
-        const configuredClientIds = new Set(
-          masters
-            .map((row) => row.client?._id || row.clientId || row.client)
-            .filter(Boolean)
-            .map(String),
-        );
-        setClients(
-          configuredClientIds.size
-            ? allClients.filter((client) => configuredClientIds.has(String(client._id)))
-            : allClients,
-        );
-      })
+    searchClientsWithMasters('', { limit: 40 })
+      .then((rows) => setClients(rows))
       .catch(() => setClients([]))
       .finally(() => setClientsLoading(false));
+  }, []);
   }, []);
 
   useEffect(() => {

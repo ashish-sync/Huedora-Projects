@@ -519,7 +519,7 @@ export default function ClientMasterFormPage() {
       const message = validateCampTermsFile(file);
       if (message) {
         setFieldErrors((prev) => ({ ...prev, [`purchaseOrders.${poId}.files`]: message }));
-        return;
+      return;
       }
     }
 
@@ -680,7 +680,7 @@ export default function ClientMasterFormPage() {
                 canCreateCompany={canCreateCompany}
                 onFieldChange={updateField}
                 onClientNameChange={updateClientName}
-                onSelectRecord={applySuggestion}
+            onSelectRecord={applySuggestion}
                 onAssignedUsersChange={updateAssignedUserEmails}
                 programScopeLabel={
                   form.clientName && form.programName && form.campName

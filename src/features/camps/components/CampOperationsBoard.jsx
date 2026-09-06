@@ -13,7 +13,6 @@ import {
 } from './DashboardWidgets.jsx';
 import '../campOps.css';
 import '../campOps.theme.css';
-import '../../../styles/components/search-field.css';
 
 const EMPTY_RANGE = { dateFrom: '', dateTo: '' };
 

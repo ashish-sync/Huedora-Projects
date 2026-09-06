@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { EXECUTION_DOC_TYPES, normalizeExecutionDocType } from '../constants/campLifecycle.js';
+import { executionDocumentDisplayName } from '../utils/executionDocumentName.js';
 
 const EXEC_DOC_ACCEPT =
   'application/pdf,image/jpeg,image/jpg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif';
@@ -62,7 +63,7 @@ export function CampExecutionDocuments({
 
   function handleRemove(docType, doc) {
     if (!canDelete || uploadBusy || !doc) return;
-    const label = doc.fileName || doc.originalFileName || 'this file';
+    const label = executionDocumentDisplayName(doc);
     if (!window.confirm(`Remove “${label}”? You can upload a replacement after.`)) return;
     setUploadHint('');
     onDeleteDocument(doc, docType);
@@ -112,7 +113,8 @@ export function CampExecutionDocuments({
     <section className="camp-lifecycle-docs camp-execution-docs-panel">
       <h3>Execution Documents</h3>
       <p className="meta-text camp-execution-doc-format-hint">
-        PDF or image · max 10 MB each · drag &amp; drop or browse
+        PDF or image · max 10 MB · named <strong>Doctor + DF/PF/GS/OT</strong>
+        {' '}(e.g. ADIPF.webp · stored 26-10-0001__ADIPF.webp)
       </p>
 
       <div className="camp-execution-doc-rows">
@@ -125,6 +127,7 @@ export function CampExecutionDocuments({
             || uploadBusy
             || (uploadsEnabled && isOther && !otherSpecify.trim());
           const latestDoc = typeDocs[typeDocs.length - 1];
+          const latestLabel = latestDoc ? executionDocumentDisplayName(latestDoc) : '';
           const isDragOver = dragOverType === type.value;
 
           return (
@@ -181,7 +184,7 @@ export function CampExecutionDocuments({
                     type="button"
                     className="camp-execution-doc-remove-btn"
                     disabled={uploadBusy}
-                    title={latestDoc?.fileName ? `Remove ${latestDoc.fileName}` : 'Remove uploaded file'}
+                    title={latestLabel ? `Remove ${latestLabel}` : 'Remove uploaded file'}
                     aria-label={`Remove ${type.label} upload`}
                     onClick={() => handleRemove(type.value, latestDoc)}
                   >
@@ -191,11 +194,16 @@ export function CampExecutionDocuments({
                 <span
                   className={`camp-execution-doc-tick ${isUploaded ? 'is-uploaded' : ''}`}
                   aria-label={isUploaded ? 'Uploaded' : 'Not uploaded'}
-                  title={isUploaded ? (latestDoc?.fileName || 'Uploaded') : 'Not uploaded'}
+                  title={isUploaded ? (latestLabel || 'Uploaded') : 'Not uploaded'}
                 >
                   ✓
                 </span>
               </div>
+              {isUploaded && latestLabel ? (
+                <p className="meta-text camp-execution-doc-stored-name" title={latestLabel}>
+                  {latestLabel}
+                </p>
+              ) : null}
             </div>
           );
         })}

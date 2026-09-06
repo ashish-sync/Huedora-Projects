@@ -7,6 +7,7 @@ import { DateInput } from './DateInput';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
 import { CampFormInput } from './CampFormInput.jsx';
+import { CampClientTypeahead } from './CampClientTypeahead.jsx';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import { CampLifecycleStepper } from './CampLifecycleStepper';
 import {
@@ -298,13 +299,18 @@ export function CampLifecycleForm({
               disabled={disabled}
               required
             />
-            <label>
-              Client Name
-              <select value={form.clientId} onChange={(e) => updateField('clientId', e.target.value)} disabled={disabled} required>
-                <option value="">Select Client</option>
-                {clients.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-              </select>
-            </label>
+            <CampClientTypeahead
+              value={form.clientId}
+              selectedLabel={form.clientName || clients.find((c) => String(c._id) === String(form.clientId))?.name || ''}
+              onChange={(clientId, client) => {
+                updateFields?.({
+                  clientId,
+                  clientName: client?.name || '',
+                });
+              }}
+              disabled={disabled}
+              required
+            />
           </div>
           <div className="camp-request-division-method-row full">
             <label>

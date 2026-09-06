@@ -1,4 +1,5 @@
 import { CampNameSelect } from './CampNameSelect';
+import { CampClientTypeahead } from './CampClientTypeahead.jsx';
 
 export function PasteContextFields({
   clients = [],
@@ -17,6 +18,7 @@ export function PasteContextFields({
 }) {
   const singleDivisionOption = divisionOptions.length === 1;
   const singleMethodOption = campNameOptions.length === 1;
+  const selectedLabel = clients.find((c) => String(c._id) === String(clientId))?.name || '';
 
   return (
     <div className="paste-context-fields" aria-label="Camp context before paste">
@@ -25,23 +27,16 @@ export function PasteContextFields({
         <span>Select Client, division, and method before pasting</span>
       </div>
       <div className="paste-context-fields-grid">
-        <label className="paste-context-field" htmlFor="paste-context-client">
-          <span className="paste-context-field-label">Client Name</span>
-          <select
-            id="paste-context-client"
+        <div className={`paste-context-field${errors.clientId ? ' has-error' : ''}`}>
+          <CampClientTypeahead
             value={clientId}
-            onChange={(e) => onClientChange(e.target.value)}
+            selectedLabel={selectedLabel}
+            onChange={(id) => onClientChange(id)}
             disabled={disabled || clientsLoading}
-            className={errors.clientId ? 'input-invalid' : ''}
             required
-          >
-            <option value="">{clientsLoading ? 'Loading Clients…' : 'Select Client'}</option>
-            {clients.map((client) => (
-              <option key={client._id} value={client._id}>{client.name}</option>
-            ))}
-          </select>
+          />
           {errors.clientId && <small className="field-error">{errors.clientId}</small>}
-        </label>
+        </div>
 
         <label className="paste-context-field" htmlFor="paste-context-division">
           <span className="paste-context-field-label">Division / Therapy</span>

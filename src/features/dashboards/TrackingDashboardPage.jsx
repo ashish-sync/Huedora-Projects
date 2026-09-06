@@ -7,10 +7,11 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateRangeLabel } from '../../shared/dateFormat.js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import LogisticsHubPage from '../logistics/LogisticsHubPage.jsx';
-import CampOperationsBoard from '../camps/components/CampOperationsBoard.jsx';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { getQuickDateRange } from '../camps/utils/dateRange.js';
+
+const LogisticsHubPage = lazy(() => import('../logistics/LogisticsHubPage.jsx'));
+const CampOperationsBoard = lazy(() => import('../camps/components/CampOperationsBoard.jsx'));
 
 function toYmd(d) {
   const y = d.getFullYear();
@@ -917,13 +918,17 @@ export default function TrackingDashboardPage() {
               Open Movement One
             </Link>
           </div>
-          <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
+          <Suspense fallback={<p className="muted">Loading Movement One…</p>}>
+            <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
+          </Suspense>
         </div>
       ) : null}
 
       {submitted && moduleId === 'camps' && canSeeCampOps ? (
         <div className="module-review-logistics module-review-camps">
-          <CampOperationsBoard embedded initialFrom={from} initialTo={to} />
+          <Suspense fallback={<p className="muted">Loading Camp One board…</p>}>
+            <CampOperationsBoard embedded initialFrom={from} initialTo={to} />
+          </Suspense>
         </div>
       ) : null}
 

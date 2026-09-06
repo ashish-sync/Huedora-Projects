@@ -3,7 +3,7 @@ import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
 import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
-import { campApi, clientApi, clientMasterApi } from './campOpsApi.js';
+import { campApi, clientMasterApi } from './campOpsApi.js';
 import { api } from '../../shared/api.js';
 import { validateUploadFile } from '../../shared/importErrors.js';
 import { trimFormStrings } from './utils/trimInput';
@@ -18,7 +18,8 @@ import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
-import { fetchAllHealthcareWorkerContacts } from './utils/fetchHcwContacts.js';
+import { fetchHealthcareWorkerContactsPage } from './utils/fetchHcwContacts.js';
+import { searchClientsWithMasters } from './utils/searchClientsWithMasters.js';
 import {
   parseClientMasterDivisions,
   applyClientMasterCascade,
@@ -201,7 +202,7 @@ export default function CampFormPage() {
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    fetchAllHealthcareWorkerContacts()
+    fetchHealthcareWorkerContactsPage({ limit: 100, maxPages: 3 })
       .then((contacts) => {
         if (!cancelled) {
           setHcwContacts(contacts);
@@ -296,22 +297,9 @@ export default function CampFormPage() {
   }, [isEdit, activeStage, assignedHcwContact, hcwContacts]);
 
   useEffect(() => {
-    Promise.all([
-      clientApi.list({ limit: 500, page: 1 }),
-      clientMasterApi.list({ limit: 500, page: 1 }),
-    ])
-      .then(([clientRes, masterRes]) => {
-        const allClients = Array.isArray(clientRes.data?.data) ? clientRes.data.data : [];
-        const masters = Array.isArray(masterRes.data?.data) ? masterRes.data.data : [];
-        const configuredClientIds = new Set(
-          masters.map((row) => row.client?._id || row.clientId || row.client).filter(Boolean).map(String),
-        );
-        setClients(
-          configuredClientIds.size
-            ? allClients.filter((client) => configuredClientIds.has(String(client._id)))
-            : allClients,
-        );
-      })
+    // Seed typeahead + ensure current client is present when editing.
+    searchClientsWithMasters('', { limit: 40 })
+      .then((rows) => setClients(rows))
       .catch(() => setClients([]));
   }, []);
 

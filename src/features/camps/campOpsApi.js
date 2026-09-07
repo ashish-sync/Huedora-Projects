@@ -52,6 +52,79 @@ async function postForm(path, formData) {
   return asAxios(await api(path, { method: 'POST', body: formData }));
 }
 
+/**
+ * Prefer browser → R2 direct PUT (presign + confirm). Falls back to multipart proxy
+ * when R2 is disabled or the browser cannot PUT to R2 (CORS / network).
+ */
+async function uploadExecutionDocumentsDirect(id, files, docType, docNote = '') {
+  const fileList = Array.from(files || []);
+  const presignBody = await api(`${BASE}/camps/${id}/execution-documents/presign`, {
+    method: 'POST',
+    body: {
+      docType,
+      files: fileList.map((file) => ({
+        name: file.name,
+        contentType: file.type || 'application/octet-stream',
+        size: file.size,
+      })),
+    },
+  });
+  const mode = presignBody?.data?.mode || presignBody?.mode;
+  const items = presignBody?.data?.items || presignBody?.items;
+  if (mode !== 'direct' || !Array.isArray(items) || !items.length) {
+    const err = new Error('Direct upload unavailable');
+    err.code = 'DIRECT_UPLOAD_UNAVAILABLE';
+    throw err;
+  }
+
+  const confirmed = [];
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i];
+    const file = fileList[i];
+    const putRes = await fetch(item.uploadUrl, {
+      method: 'PUT',
+      headers: {
+        ...(item.headers || {}),
+        'Content-Type': item.contentType || file.type || 'application/octet-stream',
+      },
+      body: file,
+    });
+    if (!putRes.ok) {
+      const err = new Error(
+        `Cloud upload failed for “${file.name}” (${putRes.status}). Falling back to server upload.`,
+      );
+      err.code = 'DIRECT_UPLOAD_PUT_FAILED';
+      err.status = putRes.status;
+      throw err;
+    }
+    confirmed.push({
+      objectKey: item.objectKey,
+      originalName: item.originalName || file.name,
+      contentType: item.contentType || file.type || 'application/octet-stream',
+      size: item.size || file.size,
+    });
+  }
+
+  return asAxios(
+    await api(`${BASE}/camps/${id}/execution-documents/confirm`, {
+      method: 'POST',
+      body: {
+        docType,
+        ...(docNote ? { docNote } : {}),
+        items: confirmed,
+      },
+    }),
+  );
+}
+
+async function uploadExecutionDocumentsMultipart(id, files, docType, docNote = '') {
+  const formData = new FormData();
+  for (const file of files) formData.append('documents', file);
+  formData.append('docType', docType);
+  if (docNote) formData.append('docNote', docNote);
+  return postForm(`${BASE}/camps/${id}/execution-documents`, formData);
+}
+
 async function getBlob(path) {
   const res = await apiFetch(path);
   if (!res.ok) {
@@ -94,12 +167,18 @@ export const campApi = {
   releaseHold: (id, payload = {}) => post(`${BASE}/camps/${id}/release-hold`, payload),
   delete: (id) => del(`${BASE}/camps/${id}`),
   bulkAction: (payload) => post(`${BASE}/camps/bulk-action`, payload),
-  uploadExecutionDocuments: (id, files, docType, docNote = '') => {
-    const formData = new FormData();
-    for (const file of files) formData.append('documents', file);
-    formData.append('docType', docType);
-    if (docNote) formData.append('docNote', docNote);
-    return postForm(`${BASE}/camps/${id}/execution-documents`, formData);
+  uploadExecutionDocuments: async (id, files, docType, docNote = '') => {
+    try {
+      return await uploadExecutionDocumentsDirect(id, files, docType, docNote);
+    } catch (err) {
+      const code = err?.code || '';
+      const fallback =
+        code === 'DIRECT_UPLOAD_UNAVAILABLE'
+        || code === 'DIRECT_UPLOAD_PUT_FAILED'
+        || /direct upload|cors|failed to fetch|network/i.test(String(err?.message || ''));
+      if (!fallback) throw err;
+      return uploadExecutionDocumentsMultipart(id, files, docType, docNote);
+    }
   },
   deleteExecutionDocument: (id, fileId) =>
     del(`${BASE}/camps/${id}/execution-documents/${encodeURIComponent(fileId)}`),

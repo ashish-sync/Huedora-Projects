@@ -141,6 +141,15 @@ export async function api(path, options = {}, retried = false) {
     });
   } catch (err) {
     if (err?.name === 'AbortError') throw err;
+    const msg = String(err?.message || '');
+    if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
+      const netErr = new Error(
+        'Could not reach the server (connection lost or timed out). Try again in a moment.',
+      );
+      netErr.code = 'NETWORK_UPLOAD_FAILED';
+      netErr.cause = err;
+      throw netErr;
+    }
     throw err;
   }
 

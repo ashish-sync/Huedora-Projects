@@ -267,8 +267,13 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       if (!isResource && !isHcw) body.resourceType = '';
       if (!isHcwStaff) body.serviceProviderContactId = '';
-      if (!isHcwProvider) body.providerEmployees = [];
-      else body.serviceProviderContactId = '';
+      if (isHcwProvider) {
+        body.serviceProviderContactId = '';
+        body.providerEmployees = Array.isArray(form.providerEmployees) ? form.providerEmployees : [];
+      } else {
+        // Omit roster field so PATCH cannot wipe persisted employees with [].
+        delete body.providerEmployees;
+      }
       if (!isClient) body.organization = '';
       if (!isVendor) body.supplyCategory = '';
 

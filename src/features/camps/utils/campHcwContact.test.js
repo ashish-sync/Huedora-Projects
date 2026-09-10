@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildHcwAssignCascade } from './campHcwContact.js';
+import {
+  buildHcwAssignCascade,
+  contactToHcwFields,
+  professionsMatch,
+} from './campHcwContact.js';
 
 const contacts = [
   {
@@ -153,5 +157,77 @@ describe('buildHcwAssignCascade', () => {
     });
 
     expect(cascade.people.map((person) => person.name).sort()).toEqual(['Neha Singh', 'Ravi Kumar']);
+  });
+
+  it('includes Service Provider employees with blank or Other profession', () => {
+    const withBlank = [
+      {
+        _id: 'sp1',
+        contactCategory: 'Healthcare Worker',
+        resourceType: 'Service Provider',
+        name: 'Acme Diagnostics',
+        state: 'Delhi',
+        city: 'New Delhi',
+        providerEmployees: [
+          { id: 'e1', name: 'Blank Role', mobile: '9000000001', profession: '' },
+          { id: 'e2', name: 'Other Role', mobile: '9000000002', profession: 'Other' },
+          { id: 'e3', name: 'Nurse Role', mobile: '9000000003', profession: 'Nurse' },
+        ],
+      },
+    ];
+
+    const cascade = buildHcwAssignCascade(withBlank, {
+      resourceType: 'Service Provider',
+      professions: ['Technician', 'Phlebotomist'],
+    });
+
+    expect(cascade.people.map((person) => person.name).sort()).toEqual([
+      'Blank Role',
+      'Other Role',
+    ]);
+    expect(cascade.filterGap).toBeNull();
+  });
+
+  it('soft-matches Lab Technician to Technician', () => {
+    expect(professionsMatch('Lab Technician', 'Technician')).toBe(true);
+
+    const withAlias = [
+      ...contacts,
+      {
+        _id: '7',
+        contactCategory: 'Healthcare Worker',
+        resourceType: 'Full-Time',
+        profession: 'Lab Technician',
+        state: 'Delhi',
+        city: 'New Delhi',
+        name: 'Alias Tech',
+      },
+    ];
+
+    const cascade = buildHcwAssignCascade(withAlias, {
+      resourceType: 'Full-Time',
+      professions: ['Technician'],
+    });
+
+    expect(cascade.people.map((person) => person.name)).toEqual(['Alias Tech']);
+  });
+
+  it('reports state filterGap when profession matches but state does not', () => {
+    const cascade = buildHcwAssignCascade(contacts, {
+      resourceType: 'Freelancer',
+      professions: ['Technician'],
+      state: 'Karnataka',
+    });
+
+    expect(cascade.people).toEqual([]);
+    expect(cascade.filterGap).toBe('state');
+  });
+
+  it('fills hcwCategory from Client Master when contact profession is blank', () => {
+    const fields = contactToHcwFields(
+      { _id: 'x', name: 'Blank', contact: '91', profession: '' },
+      { fallbackProfessions: ['Phlebotomist', 'Technician'] },
+    );
+    expect(fields.hcwCategory).toBe('Phlebotomist');
   });
 });

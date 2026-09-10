@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
+import { fetchPicklist } from './geoApi.js';
 
 /**
  * Load static + approved options for a picklist key.
  * Pass fallbackOptions as a stable module-level constant when possible.
+ * Results are cached across mounts (see geoApi / apiCache).
  */
 export function usePicklistOptions(picklistKey, fallbackOptions = []) {
   const [options, setOptions] = useState(() => fallbackOptions);
@@ -19,11 +21,11 @@ export function usePicklistOptions(picklistKey, fallbackOptions = []) {
     }
     setLoading(true);
     setError('');
-    return api(`/picklists/${encodeURIComponent(picklistKey)}`)
-      .then((r) => {
-        const opts = r.data?.options || fallbackOptions;
+    return fetchPicklist(picklistKey)
+      .then((data) => {
+        const opts = data.options?.length ? data.options : fallbackOptions;
         setOptions(opts);
-        setOtherLabel(r.data?.otherLabel || 'Other');
+        setOtherLabel(data.otherLabel || 'Other');
         return opts;
       })
       .catch((e) => {

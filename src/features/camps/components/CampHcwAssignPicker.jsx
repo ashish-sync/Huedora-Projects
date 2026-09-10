@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import { HCW_RESOURCE_TYPES, resourceTypesForCategory } from '../../agreements/contactPicklists.js';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import {
@@ -62,7 +63,6 @@ export function CampHcwAssignPicker({
     [hcwContacts, selectedContactId],
   );
 
-  // Predefined on Client Master (Healthcare Worker) — multi-select, not shown as a field.
   const professions = useMemo(
     () => normalizeHealthcareWorkers(
       clientMasterProfessions.length ? clientMasterProfessions : clientMasterProfession,
@@ -146,7 +146,7 @@ export function CampHcwAssignPicker({
   function handlePersonChange(contactId) {
     const contact = cascade.people.find((item) => String(item._id) === String(contactId))
       || findAssignableHealthcareWorker(hcwContacts, contactId);
-    onSelect?.(contactToHcwFields(contact));
+    onSelect?.(contactToHcwFields(contact, { fallbackProfessions: professions }));
   }
 
   const stateEmptyLabel = !resourceType
@@ -174,8 +174,9 @@ export function CampHcwAssignPicker({
   return (
     <div className="form-grid camp-hcw-assign-picker">
       <AssignField label="Resource Type">
-        <select
+        <AdaptiveSelect
           className="tylo-select"
+          threshold={8}
           value={resourceType}
           onChange={(event) => handleResourceTypeChange(event.target.value)}
           disabled={fieldsDisabled || masterRoleMissing}
@@ -191,12 +192,13 @@ export function CampHcwAssignPicker({
           {resourceTypeOptions.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
-        </select>
+        </AdaptiveSelect>
       </AssignField>
 
       <AssignField label="State">
-        <select
+        <AdaptiveSelect
           className="tylo-select"
+          threshold={8}
           value={state}
           onChange={(event) => handleStateChange(event.target.value)}
           disabled={fieldsDisabled || !canPickState}
@@ -206,12 +208,13 @@ export function CampHcwAssignPicker({
           {cascade.states.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
-        </select>
+        </AdaptiveSelect>
       </AssignField>
 
       <AssignField label="City">
-        <select
+        <AdaptiveSelect
           className="tylo-select"
+          threshold={8}
           value={city}
           onChange={(event) => handleCityChange(event.target.value)}
           disabled={fieldsDisabled || !canPickCity}
@@ -220,7 +223,7 @@ export function CampHcwAssignPicker({
           {cascade.cities.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
-        </select>
+        </AdaptiveSelect>
       </AssignField>
 
       <AssignField
@@ -229,12 +232,14 @@ export function CampHcwAssignPicker({
           ? 'Employees under Service Providers in Contact Directory (not the agency itself).'
           : undefined}
       >
-        <select
+        <AdaptiveSelect
           className="tylo-select"
+          threshold={6}
           value={selectedContactId || ''}
           onChange={(event) => handlePersonChange(event.target.value)}
           disabled={fieldsDisabled || !canPickPerson}
           required
+          placeholder={personEmptyLabel}
         >
           <option value="">{personEmptyLabel}</option>
           {cascade.people.map((contact) => (
@@ -242,7 +247,7 @@ export function CampHcwAssignPicker({
               {personOptionLabel(contact, { city, state })}
             </option>
           ))}
-        </select>
+        </AdaptiveSelect>
       </AssignField>
 
       {masterRoleMissing ? (
@@ -269,10 +274,31 @@ export function CampHcwAssignPicker({
         && canPickPerson
         && !cascade.people.length
         && !contactsLoading
-        && professions.length ? (
+        && cascade.filterGap === 'profession' ? (
         <p className="meta-text camp-hcw-assign-note full">
           Contacts exist for “{resourceType}”, but none have Profession / Role in
-          “{rolesLabel}”. Align Contact Directory with Client Master Healthcare Worker.
+          “{rolesLabel}”. Set Profession on linked staff or Service Provider employees
+          to match Client Master (blank is allowed and will use Client Master on select).
+        </p>
+      ) : null}
+
+      {cascade.assignable.length > 0
+        && canPickPerson
+        && !cascade.people.length
+        && !contactsLoading
+        && cascade.filterGap === 'state' ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          Matching contacts exist, but none are in state “{state}”. Clear or change State.
+        </p>
+      ) : null}
+
+      {cascade.assignable.length > 0
+        && canPickPerson
+        && !cascade.people.length
+        && !contactsLoading
+        && cascade.filterGap === 'city' ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          Matching contacts exist, but none are in city “{city}”. Clear or change City.
         </p>
       ) : null}
 

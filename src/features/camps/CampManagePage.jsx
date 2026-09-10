@@ -535,10 +535,15 @@ export default function CampsPage() {
   useEffect(() => {
     if (findCampFromUrlRef.current) {
       findCampFromUrlRef.current = '';
-      return;
+      return undefined;
     }
-    setPage(1);
-    loadCamps(1, pageSize);
+    // Coalesce filter restore + stage URL sync into one list fetch.
+    const timer = window.setTimeout(() => {
+      setPage(1);
+      loadCamps(1, pageSize);
+    }, 80);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
 
   function handlePageChange(nextPage) {

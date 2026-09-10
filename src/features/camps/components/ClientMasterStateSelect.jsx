@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../../shared/api.js';
 import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
+import { fetchGeoStates } from '../../../shared/geoApi.js';
 import { gstStateCodeForName } from '../utils/indiaGstStateCodes.js';
 
 export function ClientMasterStateSelect({
@@ -16,9 +16,9 @@ export function ClientMasterStateSelect({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api('/geo/states')
-      .then((res) => {
-        if (!cancelled) setStates(Array.isArray(res.data) ? res.data : []);
+    fetchGeoStates()
+      .then((rows) => {
+        if (!cancelled) setStates(Array.isArray(rows) ? rows : []);
       })
       .catch(() => {
         if (!cancelled) setStates([]);
@@ -40,6 +40,7 @@ export function ClientMasterStateSelect({
       <AdaptiveSelect
         value={selectedId}
         disabled={disabled || loading}
+        threshold={8}
         onChange={(e) => {
           const id = e.target.value;
           const row = states.find((item) => String(item._id) === String(id));

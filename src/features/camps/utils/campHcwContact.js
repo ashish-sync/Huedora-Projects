@@ -146,7 +146,7 @@ export function contactPhone(contact) {
   return String(contact?.contact || contact?.mobile || '').trim();
 }
 
-export function contactToHcwFields(contact) {
+export function contactToHcwFields(contact, { fallbackProfessions = [] } = {}) {
   if (!contact) {
     return {
       hcwContactId: '',
@@ -155,9 +155,16 @@ export function contactToHcwFields(contact) {
       hcwContact: '',
     };
   }
+  const fallbacks = normalizeHealthcareWorkers(fallbackProfessions);
+  let hcwCategory = mapProfessionToHcwCategory(contact.profession);
+  // Blank / Other roster rows inherit a Client Master role so assignment can proceed.
+  if (!hcwCategory || hcwCategory === 'Other') {
+    const matchedRole = fallbacks.find((role) => professionsMatch(contact.profession, role));
+    hcwCategory = mapProfessionToHcwCategory(matchedRole || fallbacks[0] || '') || hcwCategory;
+  }
   return {
     hcwContactId: contact._id || '',
-    hcwCategory: mapProfessionToHcwCategory(contact.profession),
+    hcwCategory,
     hcwName: String(contact.name || '').trim(),
     hcwContact: contactPhone(contact),
   };
@@ -187,7 +194,40 @@ export function normalizeHcwProfessionKey(value = '') {
 export function professionsMatch(a = '', b = '') {
   const left = normalizeHcwProfessionKey(a);
   const right = normalizeHcwProfessionKey(b);
-  return Boolean(left && right && left === right);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  // Soft alias: "Lab Technician" ↔ "Technician", "Phlebotomy" ↔ "Phlebotomist"
+  return left.includes(right) || right.includes(left);
+}
+
+/**
+ * Client Master roles gate assignment. Blank / Other profession is treated as compatible
+ * so Service Provider roster rows can still be selected; category is filled from Client Master on select.
+ */
+export function contactMatchesClientMasterProfessions(contact, professions = []) {
+  const roles = normalizeHealthcareWorkers(professions);
+  if (!roles.length) return true;
+  const profession = String(contact?.profession || '').trim();
+  if (!profession) return true;
+  if (normalizeHcwProfessionKey(profession) === 'other') return true;
+  return roles.some((role) => professionsMatch(profession, role));
+}
+
+function resolveHcwAssignFilterGap({
+  assignable,
+  byProfession,
+  byState,
+  people,
+  professions,
+  state,
+  city,
+}) {
+  if (!assignable.length) return 'assignable';
+  if (professions.length && !byProfession.length) return 'profession';
+  if (state && !byState.length) return 'state';
+  if (city && !people.length) return 'city';
+  if (!people.length) return 'profession';
+  return null;
 }
 
 export function buildHcwAssignCascade(contacts = [], filters = {}) {
@@ -206,9 +246,7 @@ export function buildHcwAssignCascade(contacts = [], filters = {}) {
     : staffAssignable;
 
   const byProfession = professions.length
-    ? byResourceType.filter((contact) => (
-      professions.some((role) => professionsMatch(contact.profession, role))
-    ))
+    ? byResourceType.filter((contact) => contactMatchesClientMasterProfessions(contact, professions))
     : byResourceType;
 
   const byState = state
@@ -234,6 +272,15 @@ export function buildHcwAssignCascade(contacts = [], filters = {}) {
     states: uniqueSorted(byProfession.map((contact) => contact.state)),
     cities: uniqueSorted(byState.map((contact) => contact.city)),
     people: [...people].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))),
+    filterGap: resolveHcwAssignFilterGap({
+      assignable: resourceType ? assignable : staffAssignable,
+      byProfession,
+      byState,
+      people,
+      professions,
+      state,
+      city,
+    }),
   };
 }
 

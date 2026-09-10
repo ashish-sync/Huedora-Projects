@@ -202,7 +202,7 @@ export default function CampFormPage() {
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    fetchHealthcareWorkerContactsPage({ limit: 100, maxPages: 3 })
+    fetchHealthcareWorkerContactsPage({ pageSize: 80, maxPages: 1 })
       .then((contacts) => {
         if (!cancelled) {
           setHcwContacts(contacts);
@@ -222,6 +222,27 @@ export default function CampFormPage() {
       cancelled = true;
     };
   }, [activeStage, workingStage]);
+
+  // Ensure already-assigned HCW is in the picker list even if outside the first page.
+  useEffect(() => {
+    const id = String(form.hcwContactId || '').trim();
+    if (!id || embeddedServiceProviderId(id)) return undefined;
+    if (findAssignableHealthcareWorker(hcwContacts, id)) return undefined;
+    let cancelled = false;
+    api(`/contacts/${id}`)
+      .then((res) => {
+        const row = res?.data;
+        if (cancelled || !row) return;
+        setHcwContacts((prev) => {
+          if (prev.some((c) => String(c._id) === String(row._id))) return prev;
+          return [row, ...prev];
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [form.hcwContactId, hcwContacts]);
 
   useEffect(() => {
     if (!isEdit || activeStage !== 'financial' || !form.hcwContactId) {
@@ -297,11 +318,34 @@ export default function CampFormPage() {
   }, [isEdit, activeStage, assignedHcwContact, hcwContacts]);
 
   useEffect(() => {
-    // Seed typeahead + ensure current client is present when editing.
-    searchClientsWithMasters('', { limit: 40 })
-      .then((rows) => setClients(rows))
-      .catch(() => setClients([]));
-  }, []);
+    // Only hydrate clients list for edit when a client is already selected.
+    // Empty search is owned by CampClientTypeahead (avoids duplicate /clients+/client-master).
+    if (!form.clientId) {
+      setClients([]);
+      return undefined;
+    }
+    let cancelled = false;
+    searchClientsWithMasters(form.clientName || '', { limit: 20 })
+      .then((rows) => {
+        if (cancelled) return;
+        const hasCurrent = rows.some((row) => String(row._id) === String(form.clientId));
+        if (hasCurrent) setClients(rows);
+        else {
+          setClients([
+            { _id: form.clientId, name: form.clientName || 'Selected client' },
+            ...rows,
+          ]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled && form.clientId) {
+          setClients([{ _id: form.clientId, name: form.clientName || 'Selected client' }]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.clientId, form.clientName]);
 
   useEffect(() => {
     if (!form.clientId) {

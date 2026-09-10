@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PinLocationLookup from '../../../components/ui/PinLocationLookup.jsx';
-import { api } from '../../../shared/api.js';
+import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
+import { fetchGeoStates, fetchGeoDistricts, fetchGeoCities } from '../../../shared/geoApi.js';
 
 /**
  * True when PIN lookup / cascade moved to a different place and city should reset.
@@ -52,10 +53,10 @@ export default function CampLocationFields({
     if (v.stateId || !v.state) return undefined;
 
     let cancelled = false;
-    api('/geo/states')
-      .then((r) => {
+    fetchGeoStates()
+      .then((states) => {
         if (cancelled) return;
-        const state = (r.data || []).find(
+        const state = (states || []).find(
           (item) => String(item.name).toLowerCase() === String(v.state).toLowerCase(),
         );
         if (state) emit({ stateId: state._id, state: state.name });
@@ -72,10 +73,10 @@ export default function CampLocationFields({
     if (v.districtId || !v.stateId || !v.district) return undefined;
 
     let cancelled = false;
-    api(`/geo/districts?stateId=${encodeURIComponent(v.stateId)}`)
-      .then((r) => {
+    fetchGeoDistricts(v.stateId)
+      .then((districts) => {
         if (cancelled) return;
-        const district = (r.data || []).find(
+        const district = (districts || []).find(
           (item) => String(item.name).toLowerCase() === String(v.district).toLowerCase(),
         );
         if (district) emit({ districtId: district._id, district: district.name });
@@ -96,12 +97,10 @@ export default function CampLocationFields({
     }
 
     let cancelled = false;
-    const params = new URLSearchParams({ stateId: v.stateId });
-
-    api(`/geo/cities?${params}`)
-      .then((r) => {
+    fetchGeoCities(v.stateId)
+      .then((rows) => {
         if (!cancelled) {
-          setCities(r.data || []);
+          setCities(rows || []);
           setCityError('');
         }
       })
@@ -171,12 +170,15 @@ export default function CampLocationFields({
       />
       <label className="field">
         City{required ? ' *' : ''}
-        <select
+        <AdaptiveSelect
+          className="tylo-select"
+          threshold={8}
           required={required}
           disabled={disabled || !v.stateId}
           value={v.cityId}
           onChange={(e) => onCity(e.target.value)}
           aria-label="City"
+          placeholder={v.stateId ? 'Select city' : 'Enter PIN first'}
         >
           <option value="">{v.stateId ? 'Select city' : 'Enter PIN first'}</option>
           {cities.map((city) => (
@@ -184,7 +186,7 @@ export default function CampLocationFields({
               {city.name}
             </option>
           ))}
-        </select>
+        </AdaptiveSelect>
         {cityError ? <p className="error-text">{cityError}</p> : null}
       </label>
     </div>

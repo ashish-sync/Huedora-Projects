@@ -100,14 +100,13 @@ export function CampHcwAssignPicker({
     [masterResourceTypes, otherLabel],
   );
 
-  const fieldsDisabled = disabled || contactsLoading;
-  const masterRoleMissing = !professions.length
-    && !clientMasterLoading
-    && !contactsLoading;
+  // Resource Type is a static picklist — never block it on the HCW contacts fetch.
+  const masterRoleMissing = !professions.length && !clientMasterLoading;
+  const resourceTypeDisabled = disabled || masterRoleMissing;
   const canUseFilters = Boolean(resourceType) && professions.length > 0;
-  const canPickState = canUseFilters;
+  const canPickState = canUseFilters && !contactsLoading;
   const canPickCity = Boolean(canPickState && state);
-  const canPickPerson = canUseFilters;
+  const canPickPerson = canUseFilters && !contactsLoading;
   const rolesLabel = formatHealthcareWorkers(professions);
 
   useEffect(() => {
@@ -153,23 +152,29 @@ export function CampHcwAssignPicker({
     ? 'Select resource type first'
     : masterRoleMissing
       ? 'Configure Healthcare Worker in Client Master'
-      : 'Select state';
+      : contactsLoading
+        ? 'Loading contacts…'
+        : 'Select state';
 
-  const cityEmptyLabel = !canPickState
-    ? 'Complete filters above first'
-    : !state
-      ? 'Select state first'
-      : 'All cities';
+  const cityEmptyLabel = contactsLoading
+    ? 'Loading contacts…'
+    : !canPickState
+      ? 'Complete filters above first'
+      : !state
+        ? 'Select state first'
+        : 'All cities';
 
-  const personEmptyLabel = !canPickPerson
-    ? (masterRoleMissing
-      ? 'Configure Healthcare Worker in Client Master first'
-      : 'Select resource type first')
-    : cascade.people.length
-      ? (serviceProviderSelected ? 'Select employee' : 'Select healthcare worker')
-      : (serviceProviderSelected
-        ? 'No matching employees under service providers'
-        : 'No matching contacts');
+  const personEmptyLabel = contactsLoading
+    ? 'Loading contacts…'
+    : !canPickPerson
+      ? (masterRoleMissing
+        ? 'Configure Healthcare Worker in Client Master first'
+        : 'Select resource type first')
+      : cascade.people.length
+        ? (serviceProviderSelected ? 'Select employee' : 'Select healthcare worker')
+        : (serviceProviderSelected
+          ? 'No matching employees under service providers'
+          : 'No matching contacts');
 
   return (
     <div className="form-grid camp-hcw-assign-picker">
@@ -179,12 +184,12 @@ export function CampHcwAssignPicker({
           threshold={8}
           value={resourceType}
           onChange={(event) => handleResourceTypeChange(event.target.value)}
-          disabled={fieldsDisabled || masterRoleMissing}
+          disabled={resourceTypeDisabled}
           required
         >
           <option value="">
-            {contactsLoading || clientMasterLoading
-              ? 'Loading…'
+            {clientMasterLoading && !professions.length
+              ? 'Loading Client Master…'
               : masterRoleMissing
                 ? 'Configure Client Master first'
                 : 'Select resource type'}
@@ -201,7 +206,7 @@ export function CampHcwAssignPicker({
           threshold={8}
           value={state}
           onChange={(event) => handleStateChange(event.target.value)}
-          disabled={fieldsDisabled || !canPickState}
+          disabled={disabled || !canPickState}
           required
         >
           <option value="">{stateEmptyLabel}</option>
@@ -217,7 +222,7 @@ export function CampHcwAssignPicker({
           threshold={8}
           value={city}
           onChange={(event) => handleCityChange(event.target.value)}
-          disabled={fieldsDisabled || !canPickCity}
+          disabled={disabled || !canPickCity}
         >
           <option value="">{cityEmptyLabel}</option>
           {cascade.cities.map((option) => (
@@ -237,7 +242,7 @@ export function CampHcwAssignPicker({
           threshold={6}
           value={selectedContactId || ''}
           onChange={(event) => handlePersonChange(event.target.value)}
-          disabled={fieldsDisabled || !canPickPerson}
+          disabled={disabled || !canPickPerson}
           required
           placeholder={personEmptyLabel}
         >

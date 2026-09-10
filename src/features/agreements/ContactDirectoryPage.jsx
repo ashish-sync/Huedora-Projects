@@ -277,7 +277,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       if (!isClient) body.organization = '';
       if (!isVendor) body.supplyCategory = '';
 
+      // PATCH: omit blank geo so empty cascade resets cannot wipe persisted location.
       if (editId) {
+        for (const key of ['city', 'state', 'district', 'pinCode', 'stateId', 'districtId', 'cityId']) {
+          if (body[key] == null || String(body[key]).trim() === '') delete body[key];
+        }
         await api(`/contacts/${editId}`, { method: 'PATCH', body });
       } else {
         await api('/contacts', { method: 'POST', body });
@@ -434,8 +438,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
-          placeholder="Search name, email, category, organization, city…"
-          aria-label="Search contacts"
+          placeholder="Search by name or number (contacts & provider employees)…"
+          aria-label="Search contacts by name or number"
         />
       </MasterFilterShell>
 
@@ -703,7 +707,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               <h4 className="cd-section-title">Location</h4>
               <LocationCascade
                 value={form}
-                onChange={(loc) => setForm({ ...form, ...loc })}
+                onChange={(loc) => setForm((f) => ({ ...f, ...loc }))}
                 showDistrict={false}
                 showPin={showBankAndAddress}
               />

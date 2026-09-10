@@ -65,11 +65,10 @@ export default function ServiceProviderProfile({
               value={form}
               onChange={(loc) => onChange(loc)}
               showDistrict={false}
-              showCity={false}
               showPin={false}
               disabled={disabled}
               required
-              labels={{ state: 'State' }}
+              labels={{ state: 'State', city: 'City' }}
             />
           </div>
         </div>

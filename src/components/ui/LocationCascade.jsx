@@ -138,26 +138,26 @@ export default function LocationCascade({
   const onState = (stateId) => {
     const st = states.find((s) => String(s._id) === String(stateId));
     const stateName = st?.name || '';
+    // When city UI is hidden (e.g. Service Provider), never clear persisted city —
+    // there is no control to restore it after a state touch.
+    const cityReset = showCity ? { cityId: '', city: '', pinCode: '' } : {};
     emit({
       stateId: stateId || '',
       state: stateName,
       districtId: '',
       district: '',
-      cityId: '',
-      city: '',
-      pinCode: '',
+      ...cityReset,
       zone: stateName ? resolveZoneForState(stateName) : '',
     });
   };
 
   const onDistrict = (districtId) => {
     const d = districts.find((x) => String(x._id) === String(districtId));
+    const cityReset = showCity ? { cityId: '', city: '', pinCode: '' } : {};
     emit({
       districtId: districtId || '',
       district: d?.name || '',
-      cityId: '',
-      city: '',
-      pinCode: '',
+      ...cityReset,
     });
   };
 

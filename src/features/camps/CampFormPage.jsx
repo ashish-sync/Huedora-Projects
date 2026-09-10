@@ -194,7 +194,9 @@ export default function CampFormPage() {
   }, [isEdit]);
 
   useEffect(() => {
-    const needsHcwContacts = activeStage === 'assignment'
+    // Prefetch as soon as Assignment/Financial is reachable — don't wait until the tab opens.
+    const needsHcwContacts = campStatus === 'approved'
+      || activeStage === 'assignment'
       || workingStage === 'assignment'
       || activeStage === 'financial'
       || workingStage === 'financial';
@@ -221,7 +223,7 @@ export default function CampFormPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeStage, workingStage]);
+  }, [activeStage, workingStage, campStatus]);
 
   // Ensure already-assigned HCW is in the picker list even if outside the first page.
   useEffect(() => {

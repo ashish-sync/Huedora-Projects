@@ -267,7 +267,6 @@ export default function CommunicationsPastePage() {
       .catch(() => setClients([]))
       .finally(() => setClientsLoading(false));
   }, []);
-  }, []);
 
   useEffect(() => {
     if (!clientId) {

@@ -95,4 +95,25 @@ describe('assignmentCopySourceFromCamp', () => {
     expect(form.fieldPersonName).toBe('Amit Sharma');
     expect(form.hcwName).toBe('Ravi Technician');
   });
+
+  it('falls back to hospitalName and contactPersons when list fields are sparse', () => {
+    const form = assignmentCopySourceFromCamp({
+      doctorName: 'Dr. Demo',
+      campDate: '2026-08-10',
+      hospitalName: 'City Clinic Virar',
+      expectedPatients: 35,
+      contactPersons: [{ name: 'vishal gupta', phone: '7559133770', level: 'Territory Manager' }],
+      hcwName: 'Mahesh',
+      hcwContact: '9999999999',
+    });
+    expect(form.campAddress).toBe('City Clinic Virar');
+    expect(form.fieldPersonName).toMatch(/Vishal/i);
+    expect(form.fieldPersonPhone).toBe('7559133770');
+    expect(form.expectedPatients).toBe(35);
+
+    const text = formatCampAssignmentDetails(form, { displayName: 'Viva BMD' });
+    expect(text).toContain('*Clinic Address:* City Clinic Virar');
+    expect(text).toContain('*Expected Patients:* 35');
+    expect(text).toContain('*Contact Person:* Vishal Gupta');
+  });
 });

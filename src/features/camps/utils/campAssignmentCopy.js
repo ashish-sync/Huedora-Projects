@@ -38,6 +38,10 @@ function formatExpectedPatients(value) {
   return n;
 }
 
+function resolveClinicAddress(form = {}) {
+  return String(form.campAddress || form.hospitalName || form.clinicName || '').trim();
+}
+
 function resolveDisplayName(form = {}, options = {}) {
   const direct = String(form.displayName || options.displayName || '').trim();
   if (direct) return direct;
@@ -55,7 +59,7 @@ export function formatCampAssignmentDetails(form = {}, options = {}) {
     detailLine('Doctor Name', formatDoctorName(form.doctorName)),
     detailLine('Clinic Date', formatDate(form.campDate) || form.campDate),
     detailLine('Clinic Timing', formatClinicTiming(form)),
-    detailLine('Clinic Address', formatAddress(form.campAddress)),
+    detailLine('Clinic Address', formatAddress(resolveClinicAddress(form))),
   ];
 
   const expectedPatients = formatExpectedPatients(form.expectedPatients);
@@ -74,7 +78,22 @@ export function formatCampAssignmentDetails(form = {}, options = {}) {
 }
 
 export function assignmentCopySourceFromCamp(camp = {}) {
-  return campToForm(camp);
+  const form = campToForm(camp);
+  // campToForm already syncs contactPersons → fieldPerson*; ensure address fallbacks.
+  if (!String(form.campAddress || '').trim()) {
+    form.campAddress = String(camp.campAddress || camp.hospitalName || camp.clinicName || '').trim();
+  }
+  if (!String(form.fieldPersonName || '').trim() && Array.isArray(camp.contactPersons)) {
+    const primary = camp.contactPersons[0];
+    if (primary) {
+      form.fieldPersonName = String(primary.name || primary.fieldPersonName || '').trim();
+      form.fieldPersonPhone = String(primary.phone || primary.fieldPersonPhone || '').trim();
+    }
+  }
+  if (form.expectedPatients == null || form.expectedPatients === '') {
+    form.expectedPatients = camp.expectedPatients ?? form.expectedPatients;
+  }
+  return form;
 }
 
 async function resolveCopyOptions(form = {}, options = {}) {

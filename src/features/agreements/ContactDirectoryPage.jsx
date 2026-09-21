@@ -80,6 +80,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [listLoading, setListLoading] = useState(false);
   const [serviceProviders, setServiceProviders] = useState([]);
   const [kycUploadBusy, setKycUploadBusy] = useState('');
+  /** True after the user edits the embedded SP employee roster in this form session. */
+  const [rosterTouched, setRosterTouched] = useState(false);
 
   const loadServiceProviders = () => {
     api('/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500')
@@ -269,7 +271,16 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       if (!isHcwStaff) body.serviceProviderContactId = '';
       if (isHcwProvider) {
         body.serviceProviderContactId = '';
-        body.providerEmployees = Array.isArray(form.providerEmployees) ? form.providerEmployees : [];
+        const employees = Array.isArray(form.providerEmployees) ? form.providerEmployees : [];
+        if (editId && employees.length === 0 && !rosterTouched) {
+          // Empty roster on edit without user edits → omit so PATCH cannot wipe persisted staff.
+          delete body.providerEmployees;
+        } else {
+          body.providerEmployees = employees;
+          if (editId && employees.length === 0 && rosterTouched) {
+            body.clearProviderEmployees = true;
+          }
+        }
       } else {
         // Omit roster field so PATCH cannot wipe persisted employees with [].
         delete body.providerEmployees;
@@ -288,6 +299,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       setForm(empty);
       setEditId(null);
+      setRosterTouched(false);
       load();
       loadServiceProviders();
     } catch (err) {
@@ -342,6 +354,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         ? c.resourceType || ''
         : '';
     setEditId(c._id);
+    setRosterTouched(false);
     setForm({
       name: c.name || '',
       email: c.email || '',
@@ -576,15 +589,16 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       value={form.resourceType}
                       onChange={(e) => {
                         const nextType = e.target.value;
-                        setForm({
-                          ...form,
+                        setForm((f) => ({
+                          ...f,
                           resourceType: nextType,
                           serviceProviderContactId: isHcwStaffResourceType(nextType)
-                            ? form.serviceProviderContactId
+                            ? f.serviceProviderContactId
                             : '',
                           providerEmployees:
-                            nextType === 'Service Provider' ? form.providerEmployees || [] : [],
-                        });
+                            nextType === 'Service Provider' ? f.providerEmployees || [] : [],
+                        }));
+                        if (nextType !== 'Service Provider') setRosterTouched(false);
                       }}
                     />
                   </div>
@@ -663,9 +677,10 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                 disabled={busy}
                 professionOptions={professionOptions}
                 onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-                onEmployeesChange={(providerEmployees) =>
-                  setForm((f) => ({ ...f, providerEmployees }))
-                }
+                onEmployeesChange={(providerEmployees) => {
+                  setRosterTouched(true);
+                  setForm((f) => ({ ...f, providerEmployees }));
+                }}
               />
             ) : null}
 
@@ -844,6 +859,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   onClick={() => {
                     setEditId(null);
                     setForm(empty);
+                    setRosterTouched(false);
                   }}
                 >
                   Cancel edit

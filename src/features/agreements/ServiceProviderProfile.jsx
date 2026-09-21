@@ -62,8 +62,26 @@ export default function ServiceProviderProfile({
           </div>
           <div className="cd-span-2 cd-provider-state">
             <LocationCascade
-              value={form}
-              onChange={(loc) => onChange(loc)}
+              value={{
+                stateId: form.stateId || '',
+                districtId: form.districtId || '',
+                cityId: form.cityId || '',
+                state: form.state || '',
+                district: form.district || '',
+                city: form.city || '',
+                pinCode: form.pinCode || '',
+              }}
+              onChange={(loc) =>
+                onChange({
+                  stateId: loc.stateId ?? '',
+                  districtId: loc.districtId ?? '',
+                  cityId: loc.cityId ?? '',
+                  state: loc.state ?? '',
+                  district: loc.district ?? '',
+                  city: loc.city ?? '',
+                  pinCode: loc.pinCode ?? '',
+                })
+              }
               showDistrict={false}
               showPin={false}
               disabled={disabled}

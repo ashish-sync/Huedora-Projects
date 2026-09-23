@@ -32,6 +32,7 @@ export function CampAssignmentStage({
   updateFields,
   hcwContacts = [],
   contactsLoading = false,
+  onHcwPersonSearch = null,
   clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
@@ -191,6 +192,7 @@ export function CampAssignmentStage({
       <CampHcwAssignPicker
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        onPersonSearch={onHcwPersonSearch}
         disabled={fieldsDisabled}
         selectedContactId={form.hcwContactId || ''}
         clientMasterProfessions={clientMasterProfessions}

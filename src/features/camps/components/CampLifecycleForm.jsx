@@ -168,6 +168,7 @@ export function CampLifecycleForm({
   hcwFinanceBlockers = [],
   hcwContacts = [],
   contactsLoading = false,
+  onHcwPersonSearch = null,
   clientMasterProfessions = [],
   clientMasterProfession = '',
   clientMasterLoading = false,
@@ -578,6 +579,7 @@ export function CampLifecycleForm({
         updateFields={updateFields}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        onHcwPersonSearch={onHcwPersonSearch}
         clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}

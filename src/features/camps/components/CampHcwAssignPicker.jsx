@@ -50,6 +50,7 @@ function personOptionLabel(contact, { city, state }) {
 export function CampHcwAssignPicker({
   hcwContacts = [],
   contactsLoading = false,
+  onPersonSearch = null,
   disabled = false,
   selectedContactId = '',
   clientMasterProfessions = [],
@@ -242,6 +243,10 @@ export function CampHcwAssignPicker({
           threshold={6}
           value={selectedContactId || ''}
           onChange={(event) => handlePersonChange(event.target.value)}
+          onInputChange={(inputValue, meta) => {
+            if (meta?.action === 'input-change') onPersonSearch?.(inputValue);
+            return inputValue;
+          }}
           disabled={disabled || !canPickPerson}
           required
           placeholder={personEmptyLabel}

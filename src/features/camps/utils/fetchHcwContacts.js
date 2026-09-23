@@ -2,13 +2,14 @@ import { api } from '../../../shared/api.js';
 import { cachedGet } from '../../../shared/apiCache.js';
 
 /**
- * Load Healthcare Worker contacts with a hard page cap (no 20×500 crawl).
- * Prefer this over full-directory hydrate for assignment pickers.
+ * Load Healthcare Worker contacts for Camp One Assignment.
+ * Default window matches the BE HCW maxLimit (2000) so the picker sees the
+ * full Contact Directory; pass `q` for server-side search when typing.
  * Results are cached briefly so opening Assignment does not wait on a cold refetch.
  */
 export async function fetchHealthcareWorkerContactsPage({
-  pageSize = 100,
-  maxPages = 3,
+  pageSize = 2000,
+  maxPages = 1,
   q = '',
   useCache = true,
 } = {}) {
@@ -42,7 +43,9 @@ export async function fetchHealthcareWorkerContactsPage({
 /** @deprecated Use fetchHealthcareWorkerContactsPage — kept for older callers. */
 export async function fetchAllHealthcareWorkerContacts(opts = {}) {
   return fetchHealthcareWorkerContactsPage({
-    pageSize: opts.pageSize || 100,
-    maxPages: opts.maxPages || 3,
+    pageSize: opts.pageSize || 2000,
+    maxPages: opts.maxPages || 1,
+    q: opts.q || '',
+    useCache: opts.useCache !== false,
   });
 }

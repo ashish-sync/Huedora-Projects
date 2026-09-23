@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useCampOpsAuth.js';
@@ -125,6 +125,7 @@ export default function CampFormPage() {
   const [clientMasterLoading, setClientMasterLoading] = useState(false);
   const [clientMasterLoadFailed, setClientMasterLoadFailed] = useState(false);
   const hcwContactsLoadedRef = useRef(false);
+  const hcwPersonSearchTimerRef = useRef(null);
 
   const campStatus = campMeta?.status || 'pending_review';
 
@@ -204,7 +205,8 @@ export default function CampFormPage() {
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    fetchHealthcareWorkerContactsPage({ pageSize: 80, maxPages: 1 })
+    // BE HCW maxLimit is 2000 — load the full assignable directory (was truncated to 80).
+    fetchHealthcareWorkerContactsPage({ pageSize: 2000, maxPages: 1 })
       .then((contacts) => {
         if (!cancelled) {
           setHcwContacts(contacts);
@@ -224,6 +226,34 @@ export default function CampFormPage() {
       cancelled = true;
     };
   }, [activeStage, workingStage, campStatus]);
+
+  // Server search when the person picker query is not in the preloaded page (directory > 2000).
+  const handleHcwPersonSearch = useCallback((rawQuery) => {
+    const q = String(rawQuery || '').trim();
+    if (q.length < 2) return;
+    if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
+    hcwPersonSearchTimerRef.current = setTimeout(() => {
+      fetchHealthcareWorkerContactsPage({
+        pageSize: 100,
+        maxPages: 1,
+        q,
+        useCache: false,
+      })
+        .then((rows) => {
+          if (!Array.isArray(rows) || !rows.length) return;
+          setHcwContacts((prev) => {
+            const byId = new Map(prev.map((c) => [String(c._id), c]));
+            for (const row of rows) byId.set(String(row._id), row);
+            return Array.from(byId.values());
+          });
+        })
+        .catch(() => {});
+    }, 300);
+  }, []);
+
+  useEffect(() => () => {
+    if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
+  }, []);
 
   // Ensure already-assigned HCW is in the picker list even if outside the first page.
   useEffect(() => {
@@ -1220,6 +1250,7 @@ export default function CampFormPage() {
         downloadFinanceBusy={downloadFinanceBusy}
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
+        onHcwPersonSearch={handleHcwPersonSearch}
         clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}

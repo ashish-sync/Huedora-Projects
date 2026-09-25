@@ -236,7 +236,9 @@ export default function CampFormPage() {
     });
   }, []);
 
-  // Server-side Assignment search: resourceType + state/city + Client Master profession.
+  // Server-side Assignment search — wait for state (required) so we never
+  // load a nationwide first page and then client-filter down to ~9 in-state rows.
+  const hcwAssignFetchSeqRef = useRef(0);
   const handleHcwFiltersChange = useCallback((filters = {}) => {
     const resourceType = String(filters.resourceType || '').trim();
     const state = String(filters.state || '').trim();
@@ -245,21 +247,31 @@ export default function CampFormPage() {
       ? filters.professions
       : [];
     hcwAssignFiltersRef.current = { resourceType, state, city, professions };
-    if (!resourceType) return;
+    if (!resourceType || !state) {
+      // Keep prior selection only; person list needs state before a meaningful fetch.
+      return;
+    }
     if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
+    const seq = ++hcwAssignFetchSeqRef.current;
     hcwFilterFetchTimerRef.current = setTimeout(() => {
       setContactsLoading(true);
       fetchAssignableContactsForResourceType(resourceType, {
         state,
         city,
         professions,
-        useCache: true,
+        useCache: false,
       })
         .then((rows) => {
+          if (seq !== hcwAssignFetchSeqRef.current) return;
           setHcwContacts(Array.isArray(rows) ? rows : []);
         })
-        .catch(() => {})
-        .finally(() => setContactsLoading(false));
+        .catch(() => {
+          if (seq !== hcwAssignFetchSeqRef.current) return;
+        })
+        .finally(() => {
+          if (seq !== hcwAssignFetchSeqRef.current) return;
+          setContactsLoading(false);
+        });
     }, 150);
   }, []);
 

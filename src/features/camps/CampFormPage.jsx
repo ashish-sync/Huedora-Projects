@@ -128,7 +128,7 @@ export default function CampFormPage() {
   const hcwContactsLoadedRef = useRef(false);
   const hcwPersonSearchTimerRef = useRef(null);
   const hcwFilterFetchTimerRef = useRef(null);
-  const hcwAssignFiltersRef = useRef({ resourceType: '', state: '', city: '' });
+  const hcwAssignFiltersRef = useRef({ resourceType: '', state: '', city: '', professions: [] });
 
   const campStatus = campMeta?.status || 'pending_review';
 
@@ -236,21 +236,23 @@ export default function CampFormPage() {
     });
   }, []);
 
-  // Server-side Assignment search: resourceType + state/city, capped at 100.
+  // Server-side Assignment search: resourceType + state/city + Client Master profession.
   const handleHcwFiltersChange = useCallback((filters = {}) => {
     const resourceType = String(filters.resourceType || '').trim();
     const state = String(filters.state || '').trim();
     const city = String(filters.city || '').trim();
-    hcwAssignFiltersRef.current = { resourceType, state, city };
+    const professions = Array.isArray(filters.professions)
+      ? filters.professions
+      : [];
+    hcwAssignFiltersRef.current = { resourceType, state, city, professions };
     if (!resourceType) return;
     if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
     hcwFilterFetchTimerRef.current = setTimeout(() => {
       setContactsLoading(true);
       fetchAssignableContactsForResourceType(resourceType, {
-        pageSize: 100,
-        maxPages: 1,
         state,
         city,
+        professions,
         useCache: true,
       })
         .then((rows) => {
@@ -268,23 +270,24 @@ export default function CampFormPage() {
     const resourceType = String(filters.resourceType || hcwAssignFiltersRef.current.resourceType || '').trim();
     const state = String(filters.state || hcwAssignFiltersRef.current.state || '').trim();
     const city = String(filters.city || hcwAssignFiltersRef.current.city || '').trim();
+    const professions = Array.isArray(filters.professions)
+      ? filters.professions
+      : (hcwAssignFiltersRef.current.professions || []);
     if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
     hcwPersonSearchTimerRef.current = setTimeout(() => {
       const loader = resourceType
         ? fetchAssignableContactsForResourceType(resourceType, {
-          pageSize: 100,
-          maxPages: 1,
           q,
           state,
           city,
+          professions,
           useCache: false,
         })
         : fetchHealthcareWorkerContactsPage({
-          pageSize: 100,
-          maxPages: 1,
           q,
           state,
           city,
+          professions,
           useCache: false,
         });
       loader

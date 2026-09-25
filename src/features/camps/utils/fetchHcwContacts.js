@@ -3,7 +3,8 @@ import { cachedGet } from '../../../shared/apiCache.js';
 
 /**
  * Load Healthcare Worker contacts for Camp One Assignment.
- * Default page is 100 with server-side filters (q, resourceType, state, city).
+ * Default page is 100. With state/profession/city/q filters, allow up to 500
+ * so role-filtered lists (e.g. West Bengal Dieticians) are not truncated.
  * Pass fullDirectory: true only for explicit admin/export-style dumps (max 2000).
  */
 export async function fetchHealthcareWorkerContactsPage({
@@ -13,6 +14,8 @@ export async function fetchHealthcareWorkerContactsPage({
   resourceType = '',
   state = '',
   city = '',
+  profession = '',
+  professions = [],
   hasServiceProvider = false,
   fullDirectory = false,
   useCache = true,
@@ -21,9 +24,20 @@ export async function fetchHealthcareWorkerContactsPage({
   const rt = String(resourceType || '').trim();
   const st = String(state || '').trim();
   const ct = String(city || '').trim();
+  const roleList = [
+    ...String(profession || '').split(','),
+    ...(Array.isArray(professions) ? professions : [professions]),
+  ]
+    .map((s) => String(s || '').trim())
+    .filter(Boolean);
+  const roleKey = [...new Set(roleList)].sort().join(',');
   const linked = hasServiceProvider ? '1' : '0';
-  const capped = fullDirectory ? Math.min(pageSize || 2000, 2000) : Math.min(pageSize || 100, 100);
-  const cacheKey = `hcw-contacts:ps=${capped}:mp=${maxPages}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
+  const filtered = Boolean(qTrim || st || ct || roleKey);
+  const capped = fullDirectory
+    ? Math.min(pageSize || 2000, 2000)
+    : Math.min(pageSize || (filtered ? 500 : 100), filtered ? 500 : 100);
+  const pageBudget = fullDirectory ? Math.max(1, maxPages || 1) : (filtered ? Math.max(1, maxPages || 5) : Math.max(1, maxPages || 1));
+  const cacheKey = `hcw-contacts:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
 
   const loader = async () => {
     const all = [];
@@ -39,6 +53,7 @@ export async function fetchHealthcareWorkerContactsPage({
     if (rt) params.set('resourceType', rt);
     if (st) params.set('state', st);
     if (ct) params.set('city', ct);
+    if (roleKey) params.set('profession', roleKey);
     if (hasServiceProvider) params.set('hasServiceProvider', '1');
 
     do {
@@ -49,7 +64,7 @@ export async function fetchHealthcareWorkerContactsPage({
       pages = Math.max(1, Number(res?.meta?.pages) || 1);
       if (!batch.length) break;
       page += 1;
-    } while (page <= pages && page <= maxPages);
+    } while (page <= pages && page <= pageBudget);
 
     return all;
   };
@@ -67,19 +82,29 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
   const rt = String(resourceType || '').trim();
   if (!rt) return [];
 
+  const filtered = Boolean(
+    String(opts.state || '').trim()
+    || String(opts.city || '').trim()
+    || String(opts.profession || '').trim()
+    || (Array.isArray(opts.professions) && opts.professions.length)
+    || String(opts.q || '').trim(),
+  );
+  const pageSize = opts.pageSize || (filtered ? 500 : 100);
+  const maxPages = opts.maxPages || (filtered ? 5 : 1);
+
   if (rt === 'Service Provider') {
     const [providers, linkedStaff] = await Promise.all([
       fetchHealthcareWorkerContactsPage({
         ...opts,
         resourceType: 'Service Provider',
-        pageSize: opts.pageSize || 100,
-        maxPages: opts.maxPages || 1,
+        pageSize,
+        maxPages,
       }),
       fetchHealthcareWorkerContactsPage({
         ...opts,
         hasServiceProvider: true,
-        pageSize: opts.pageSize || 100,
-        maxPages: opts.maxPages || 1,
+        pageSize,
+        maxPages,
       }),
     ]);
     const byId = new Map();
@@ -92,12 +117,12 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
   return fetchHealthcareWorkerContactsPage({
     ...opts,
     resourceType: rt,
-    pageSize: opts.pageSize || 100,
-    maxPages: opts.maxPages || 1,
+    pageSize,
+    maxPages,
   });
 }
 
-/** @deprecated Prefer filtered fetchHealthcareWorkerContactsPage (limit 100). */
+/** @deprecated Prefer filtered fetchHealthcareWorkerContactsPage. */
 export async function fetchAllHealthcareWorkerContacts(opts = {}) {
   return fetchHealthcareWorkerContactsPage({
     pageSize: opts.pageSize || 100,

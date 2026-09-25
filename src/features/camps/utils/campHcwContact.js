@@ -250,11 +250,17 @@ export function buildHcwAssignCascade(contacts = [], filters = {}) {
     : byResourceType;
 
   const byState = state
-    ? byProfession.filter((contact) => String(contact.state || '').trim() === state)
+    ? byProfession.filter((contact) => {
+      const contactState = String(contact.state || '').trim().toLowerCase();
+      return contactState === state.toLowerCase();
+    })
     : byProfession;
 
   const people = city
-    ? byState.filter((contact) => String(contact.city || '').trim() === city)
+    ? byState.filter((contact) => {
+      const contactCity = String(contact.city || '').trim().toLowerCase();
+      return contactCity === city.toLowerCase();
+    })
     : byState;
 
   return {

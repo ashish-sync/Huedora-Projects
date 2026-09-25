@@ -177,8 +177,8 @@ export function CampHcwAssignPicker({
   }, [state, geoStates]);
 
   useEffect(() => {
-    onFiltersChange?.({ resourceType, state, city });
-  }, [resourceType, state, city, onFiltersChange]);
+    onFiltersChange?.({ resourceType, state, city, professions });
+  }, [resourceType, state, city, professions, onFiltersChange]);
 
   useEffect(() => {
     if (!selectedContact) return;
@@ -315,7 +315,7 @@ export function CampHcwAssignPicker({
           onChange={(event) => handlePersonChange(event.target.value)}
           onInputChange={(inputValue, meta) => {
             if (meta?.action === 'input-change') {
-              onPersonSearch?.(inputValue, { resourceType, state, city });
+              onPersonSearch?.(inputValue, { resourceType, state, city, professions });
             }
             return inputValue;
           }}

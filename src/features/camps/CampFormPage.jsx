@@ -19,7 +19,7 @@ import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
-import { fetchHealthcareWorkerContactsPage, fetchAssignableContactsForResourceType } from './utils/fetchHcwContacts.js';
+import { fetchHealthcareWorkerContactsPage, fetchAssignableContactsForResourceType, ASSIGN_HCW_INITIAL_LIMIT, ASSIGN_HCW_SEARCH_LIMIT } from './utils/fetchHcwContacts.js';
 import { searchClientsWithMasters } from './utils/searchClientsWithMasters.js';
 import {
   parseClientMasterDivisions,
@@ -259,6 +259,8 @@ export default function CampFormPage() {
         state,
         city,
         professions,
+        pageSize: ASSIGN_HCW_INITIAL_LIMIT,
+        maxPages: 1,
         useCache: false,
       })
         .then((rows) => {
@@ -293,6 +295,8 @@ export default function CampFormPage() {
           state,
           city,
           professions,
+          pageSize: ASSIGN_HCW_SEARCH_LIMIT,
+          maxPages: 1,
           useCache: false,
         })
         : fetchHealthcareWorkerContactsPage({
@@ -300,6 +304,8 @@ export default function CampFormPage() {
           state,
           city,
           professions,
+          pageSize: ASSIGN_HCW_SEARCH_LIMIT,
+          maxPages: 1,
           useCache: false,
         });
       loader

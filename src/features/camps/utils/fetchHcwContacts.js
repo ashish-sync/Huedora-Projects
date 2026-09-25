@@ -1,13 +1,18 @@
 import { api } from '../../../shared/api.js';
 import { cachedGet, clearApiCache } from '../../../shared/apiCache.js';
 
+/** First page for state + profession (fast Assignment open). */
+export const ASSIGN_HCW_INITIAL_LIMIT = 75;
+/** Typeahead page size — merge results into the picker as the user types. */
+export const ASSIGN_HCW_SEARCH_LIMIT = 75;
+
 /**
  * Load Healthcare Worker contacts for Camp One Assignment.
- * Prefer state + profession filters so large cohorts (e.g. West Bengal Dieticians)
- * are returned from the server instead of a mixed first page.
+ * Initial: first 75 matching state + profession.
+ * Typeahead: pass q to pull the next matching page and merge.
  */
 export async function fetchHealthcareWorkerContactsPage({
-  pageSize = 100,
+  pageSize = ASSIGN_HCW_INITIAL_LIMIT,
   maxPages = 1,
   q = '',
   resourceType = '',
@@ -31,14 +36,10 @@ export async function fetchHealthcareWorkerContactsPage({
     .filter(Boolean);
   const roleKey = [...new Set(roleList)].sort().join(',');
   const linked = hasServiceProvider ? '1' : '0';
-  const filtered = Boolean(qTrim || st || ct || roleKey);
-  // State+profession (or any geo/role filter): allow up to 2000 matching rows.
-  const hardCap = fullDirectory || filtered ? 2000 : 100;
-  const capped = Math.min(Math.max(1, pageSize || (filtered ? 500 : 100)), hardCap);
-  const pageBudget = fullDirectory || filtered
-    ? Math.max(1, maxPages || Math.ceil(hardCap / capped))
-    : Math.max(1, maxPages || 1);
-  const cacheKey = `hcw-contacts:v2:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
+  const hardCap = fullDirectory ? 2000 : Math.min(200, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT);
+  const capped = Math.min(Math.max(1, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT), hardCap);
+  const pageBudget = fullDirectory ? Math.max(1, maxPages || 1) : 1;
+  const cacheKey = `hcw-contacts:v3:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
 
   const loader = async () => {
     const all = [];
@@ -83,15 +84,10 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
   const rt = String(resourceType || '').trim();
   if (!rt) return [];
 
-  const filtered = Boolean(
-    String(opts.state || '').trim()
-    || String(opts.city || '').trim()
-    || String(opts.profession || '').trim()
-    || (Array.isArray(opts.professions) && opts.professions.length)
-    || String(opts.q || '').trim(),
-  );
-  const pageSize = opts.pageSize || (filtered ? 500 : 100);
-  const maxPages = opts.maxPages || (filtered ? 4 : 1);
+  const isSearch = Boolean(String(opts.q || '').trim());
+  const pageSize = opts.pageSize
+    || (isSearch ? ASSIGN_HCW_SEARCH_LIMIT : ASSIGN_HCW_INITIAL_LIMIT);
+  const maxPages = opts.maxPages || 1;
 
   if (rt === 'Service Provider') {
     const [providers, linkedStaff] = await Promise.all([
@@ -104,7 +100,6 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
       fetchHealthcareWorkerContactsPage({
         ...opts,
         hasServiceProvider: true,
-        // Linked staff professions are on the staff contact — keep role filter.
         pageSize,
         maxPages,
       }),
@@ -132,7 +127,7 @@ export function clearHcwAssignContactCache() {
 /** @deprecated Prefer filtered fetchHealthcareWorkerContactsPage. */
 export async function fetchAllHealthcareWorkerContacts(opts = {}) {
   return fetchHealthcareWorkerContactsPage({
-    pageSize: opts.pageSize || 100,
+    pageSize: opts.pageSize || ASSIGN_HCW_INITIAL_LIMIT,
     maxPages: opts.maxPages || 1,
     q: opts.q || '',
     useCache: opts.useCache !== false,

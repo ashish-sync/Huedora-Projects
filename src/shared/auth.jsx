@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, loadStoredToken, setAccessToken } from './api.js';
+import { api, loadStoredToken, refreshAccessToken, setAccessToken } from './api.js';
 import { beginInsightSession, clearInsightSession } from './pickHealthcareInsight.js';
 import { exitAppFullscreen } from './fullscreen.js';
 import { isBootSequenceEnabled, loginExperience } from './loginExperienceConfig.js';
@@ -14,7 +14,17 @@ export function AuthProvider({ children }) {
   const refreshMe = useCallback(async () => {
     loadStoredToken();
     try {
-      // api() silently refreshes via httpOnly cookie on 401, then retries.
+      // No access token (e.g. after browser restart) — restore via httpOnly refresh cookie.
+      if (!loadStoredToken()) {
+        try {
+          await refreshAccessToken();
+        } catch {
+          setAccessToken(null);
+          setUser(null);
+          return;
+        }
+      }
+      // api() also refreshes via cookie on 401, then retries.
       const { data } = await api('/auth/me');
       setUser(data);
     } catch {

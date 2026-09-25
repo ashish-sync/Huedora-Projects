@@ -10,27 +10,52 @@ let refreshPromise = null;
 const ACCESS_KEY = 'tylo_one_access';
 const LEGACY_ACCESS_KEY = LEGACY_ACCESS_STORAGE_KEY;
 
-export function setAccessToken(token) {
-  accessToken = token;
-  if (token) {
-    sessionStorage.setItem(ACCESS_KEY, token);
-    sessionStorage.removeItem(LEGACY_ACCESS_KEY);
-  } else {
-    sessionStorage.removeItem(ACCESS_KEY);
-    sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+function writeAccessStorage(token) {
+  try {
+    if (token) {
+      // localStorage survives tab/browser close so one login lasts the JWT lifetime (24h).
+      localStorage.setItem(ACCESS_KEY, token);
+      sessionStorage.removeItem(ACCESS_KEY);
+      sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+      localStorage.removeItem(LEGACY_ACCESS_KEY);
+    } else {
+      localStorage.removeItem(ACCESS_KEY);
+      sessionStorage.removeItem(ACCESS_KEY);
+      localStorage.removeItem(LEGACY_ACCESS_KEY);
+      sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+    }
+  } catch {
+    /* private mode / quota — keep in-memory token only */
   }
 }
 
-export function loadStoredToken() {
-  accessToken = sessionStorage.getItem(ACCESS_KEY);
-  if (!accessToken) {
-    const legacy = sessionStorage.getItem(LEGACY_ACCESS_KEY);
-    if (legacy) {
-      sessionStorage.setItem(ACCESS_KEY, legacy);
-      sessionStorage.removeItem(LEGACY_ACCESS_KEY);
-      accessToken = legacy;
+function readAccessStorage() {
+  try {
+    let token = localStorage.getItem(ACCESS_KEY);
+    if (!token) {
+      token = sessionStorage.getItem(ACCESS_KEY)
+        || sessionStorage.getItem(LEGACY_ACCESS_KEY)
+        || localStorage.getItem(LEGACY_ACCESS_KEY);
+      if (token) {
+        localStorage.setItem(ACCESS_KEY, token);
+        sessionStorage.removeItem(ACCESS_KEY);
+        sessionStorage.removeItem(LEGACY_ACCESS_KEY);
+        localStorage.removeItem(LEGACY_ACCESS_KEY);
+      }
     }
+    return token;
+  } catch {
+    return null;
   }
+}
+
+export function setAccessToken(token) {
+  accessToken = token;
+  writeAccessStorage(token);
+}
+
+export function loadStoredToken() {
+  accessToken = readAccessStorage();
   return accessToken;
 }
 

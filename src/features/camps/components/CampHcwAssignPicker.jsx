@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import { HCW_RESOURCE_TYPES, resourceTypesForCategory } from '../../agreements/contactPicklists.js';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
+import { fetchGeoCities, fetchGeoStates } from '../../../shared/geoApi.js';
 import {
   assignmentResourceTypeForContact,
   buildHcwAssignCascade,
@@ -47,10 +48,17 @@ function personOptionLabel(contact, { city, state }) {
   return parts.filter(Boolean).join(' · ');
 }
 
+function uniqueSorted(values = []) {
+  return [...new Set(values.map((v) => String(v || '').trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
+
 export function CampHcwAssignPicker({
   hcwContacts = [],
   contactsLoading = false,
   onPersonSearch = null,
+  onFiltersChange = null,
   disabled = false,
   selectedContactId = '',
   clientMasterProfessions = [],
@@ -77,6 +85,8 @@ export function CampHcwAssignPicker({
   );
   const [state, setState] = useState(() => selectedContact?.state || '');
   const [city, setCity] = useState(() => selectedContact?.city || '');
+  const [geoStates, setGeoStates] = useState([]);
+  const [geoCities, setGeoCities] = useState([]);
   const prevProfessionKeyRef = useRef(professionKey);
 
   const { options: masterResourceTypes, otherLabel } = usePicklistOptions(
@@ -101,14 +111,74 @@ export function CampHcwAssignPicker({
     [masterResourceTypes, otherLabel],
   );
 
+  const stateOptions = useMemo(
+    () => uniqueSorted([
+      ...geoStates.map((row) => row?.name),
+      ...cascade.states,
+    ]),
+    [geoStates, cascade.states],
+  );
+
+  const cityOptions = useMemo(
+    () => uniqueSorted([
+      ...geoCities.map((row) => row?.name),
+      ...cascade.cities,
+    ]),
+    [geoCities, cascade.cities],
+  );
+
   // Resource Type is a static picklist — never block it on the HCW contacts fetch.
   const masterRoleMissing = !professions.length && !clientMasterLoading;
   const resourceTypeDisabled = disabled || masterRoleMissing;
   const canUseFilters = Boolean(resourceType) && professions.length > 0;
-  const canPickState = canUseFilters && !contactsLoading;
+  const canPickState = canUseFilters;
   const canPickCity = Boolean(canPickState && state);
-  const canPickPerson = canUseFilters && !contactsLoading;
+  const canPickPerson = canUseFilters;
   const rolesLabel = formatHealthcareWorkers(professions);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchGeoStates()
+      .then((rows) => {
+        if (!cancelled) setGeoStates(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setGeoStates([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const stateName = String(state || '').trim();
+    if (!stateName) {
+      setGeoCities([]);
+      return undefined;
+    }
+    const match = geoStates.find(
+      (row) => String(row?.name || '').trim().toLowerCase() === stateName.toLowerCase(),
+    );
+    if (!match?._id) {
+      setGeoCities([]);
+      return undefined;
+    }
+    let cancelled = false;
+    fetchGeoCities(match._id)
+      .then((rows) => {
+        if (!cancelled) setGeoCities(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setGeoCities([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state, geoStates]);
+
+  useEffect(() => {
+    onFiltersChange?.({ resourceType, state, city });
+  }, [resourceType, state, city, onFiltersChange]);
 
   useEffect(() => {
     if (!selectedContact) return;
@@ -211,7 +281,7 @@ export function CampHcwAssignPicker({
           required
         >
           <option value="">{stateEmptyLabel}</option>
-          {cascade.states.map((option) => (
+          {stateOptions.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </AdaptiveSelect>
@@ -226,7 +296,7 @@ export function CampHcwAssignPicker({
           disabled={disabled || !canPickCity}
         >
           <option value="">{cityEmptyLabel}</option>
-          {cascade.cities.map((option) => (
+          {cityOptions.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </AdaptiveSelect>
@@ -244,7 +314,9 @@ export function CampHcwAssignPicker({
           value={selectedContactId || ''}
           onChange={(event) => handlePersonChange(event.target.value)}
           onInputChange={(inputValue, meta) => {
-            if (meta?.action === 'input-change') onPersonSearch?.(inputValue);
+            if (meta?.action === 'input-change') {
+              onPersonSearch?.(inputValue, { resourceType, state, city });
+            }
             return inputValue;
           }}
           disabled={disabled || !canPickPerson}

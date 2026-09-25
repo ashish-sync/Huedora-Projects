@@ -19,7 +19,7 @@ import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import { buildClosureDetails, buildClosurePayload } from './constants/campClosure';
 import { buildSourcePreview } from './utils/formatSourceMessage';
-import { fetchHealthcareWorkerContactsPage } from './utils/fetchHcwContacts.js';
+import { fetchHealthcareWorkerContactsPage, fetchAssignableContactsForResourceType } from './utils/fetchHcwContacts.js';
 import { searchClientsWithMasters } from './utils/searchClientsWithMasters.js';
 import {
   parseClientMasterDivisions,
@@ -127,6 +127,8 @@ export default function CampFormPage() {
   const [clientMasterLoadFailed, setClientMasterLoadFailed] = useState(false);
   const hcwContactsLoadedRef = useRef(false);
   const hcwPersonSearchTimerRef = useRef(null);
+  const hcwFilterFetchTimerRef = useRef(null);
+  const hcwAssignFiltersRef = useRef({ resourceType: '', state: '', city: '' });
 
   const campStatus = campMeta?.status || 'pending_review';
 
@@ -196,15 +198,13 @@ export default function CampFormPage() {
   }, [isEdit]);
 
   useEffect(() => {
-    // Assignment loads contacts per resource type inside CampHcwAssignPicker.
-    // Only hydrate a small HCW page for Financial payee resolution.
+    // Lean HCW page for Financial payee resolution — Assignment loads via filter callbacks.
     const needsHcwContacts = activeStage === 'financial' || workingStage === 'financial';
     if (!needsHcwContacts) return undefined;
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
     setContactsLoading(true);
-    // BE HCW maxLimit is 2000 — load the full assignable directory (was truncated to 80).
-    fetchHealthcareWorkerContactsPage({ pageSize: 2000, maxPages: 1 })
+    fetchHealthcareWorkerContactsPage({ pageSize: 100, maxPages: 1 })
       .then((contacts) => {
         if (!cancelled) {
           setHcwContacts(contacts);
@@ -225,32 +225,77 @@ export default function CampFormPage() {
     };
   }, [activeStage, workingStage]);
 
-  // Server search when the person picker query is not in the preloaded page (directory > 2000).
-  const handleHcwPersonSearch = useCallback((rawQuery) => {
-    const q = String(rawQuery || '').trim();
-    if (q.length < 2) return;
-    if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
-    hcwPersonSearchTimerRef.current = setTimeout(() => {
-      fetchHealthcareWorkerContactsPage({
+  const mergeHcwContacts = useCallback((rows) => {
+    if (!Array.isArray(rows) || !rows.length) return;
+    setHcwContacts((prev) => {
+      const byId = new Map(prev.map((c) => [String(c._id), c]));
+      for (const row of rows) {
+        if (row?._id) byId.set(String(row._id), row);
+      }
+      return Array.from(byId.values());
+    });
+  }, []);
+
+  // Server-side Assignment search: resourceType + state/city, capped at 100.
+  const handleHcwFiltersChange = useCallback((filters = {}) => {
+    const resourceType = String(filters.resourceType || '').trim();
+    const state = String(filters.state || '').trim();
+    const city = String(filters.city || '').trim();
+    hcwAssignFiltersRef.current = { resourceType, state, city };
+    if (!resourceType) return;
+    if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
+    hcwFilterFetchTimerRef.current = setTimeout(() => {
+      setContactsLoading(true);
+      fetchAssignableContactsForResourceType(resourceType, {
         pageSize: 100,
         maxPages: 1,
-        q,
-        useCache: false,
+        state,
+        city,
+        useCache: true,
       })
         .then((rows) => {
-          if (!Array.isArray(rows) || !rows.length) return;
-          setHcwContacts((prev) => {
-            const byId = new Map(prev.map((c) => [String(c._id), c]));
-            for (const row of rows) byId.set(String(row._id), row);
-            return Array.from(byId.values());
-          });
+          setHcwContacts(Array.isArray(rows) ? rows : []);
         })
+        .catch(() => {})
+        .finally(() => setContactsLoading(false));
+    }, 150);
+  }, []);
+
+  // Server search when the person picker query is not in the preloaded page.
+  const handleHcwPersonSearch = useCallback((rawQuery, filters = {}) => {
+    const q = String(rawQuery || '').trim();
+    if (q.length < 2) return;
+    const resourceType = String(filters.resourceType || hcwAssignFiltersRef.current.resourceType || '').trim();
+    const state = String(filters.state || hcwAssignFiltersRef.current.state || '').trim();
+    const city = String(filters.city || hcwAssignFiltersRef.current.city || '').trim();
+    if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
+    hcwPersonSearchTimerRef.current = setTimeout(() => {
+      const loader = resourceType
+        ? fetchAssignableContactsForResourceType(resourceType, {
+          pageSize: 100,
+          maxPages: 1,
+          q,
+          state,
+          city,
+          useCache: false,
+        })
+        : fetchHealthcareWorkerContactsPage({
+          pageSize: 100,
+          maxPages: 1,
+          q,
+          state,
+          city,
+          useCache: false,
+        });
+      loader
+        .then((rows) => mergeHcwContacts(rows))
         .catch(() => {});
     }, 300);
-  }, []);
+  }, [mergeHcwContacts]);
 
   useEffect(() => () => {
     if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
+    if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
   }, []);
 
   // Ensure already-assigned HCW is in the picker list even if outside the first page.
@@ -1312,6 +1357,7 @@ export default function CampFormPage() {
         hcwContacts={hcwContacts}
         contactsLoading={contactsLoading}
         onHcwPersonSearch={handleHcwPersonSearch}
+        onHcwFiltersChange={handleHcwFiltersChange}
         clientMasterProfessions={clientMasterProfessions}
         clientMasterProfession={clientMasterProfession}
         clientMasterLoading={clientMasterLoading}

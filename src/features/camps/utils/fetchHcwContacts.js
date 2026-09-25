@@ -3,22 +3,27 @@ import { cachedGet } from '../../../shared/apiCache.js';
 
 /**
  * Load Healthcare Worker contacts for Camp One Assignment.
- * Default window matches the BE HCW maxLimit (2000) so the picker sees the
- * full Contact Directory; pass `q` for server-side search when typing.
- * Results are cached briefly so opening Assignment does not wait on a cold refetch.
+ * Default page is 100 with server-side filters (q, resourceType, state, city).
+ * Pass fullDirectory: true only for explicit admin/export-style dumps (max 2000).
  */
 export async function fetchHealthcareWorkerContactsPage({
-  pageSize = 2000,
+  pageSize = 100,
   maxPages = 1,
   q = '',
   resourceType = '',
+  state = '',
+  city = '',
   hasServiceProvider = false,
+  fullDirectory = false,
   useCache = true,
 } = {}) {
   const qTrim = String(q || '').trim();
   const rt = String(resourceType || '').trim();
+  const st = String(state || '').trim();
+  const ct = String(city || '').trim();
   const linked = hasServiceProvider ? '1' : '0';
-  const cacheKey = `hcw-contacts:ps=${pageSize}:mp=${maxPages}:q=${qTrim}:rt=${rt}:sp=${linked}:assign=1`;
+  const capped = fullDirectory ? Math.min(pageSize || 2000, 2000) : Math.min(pageSize || 100, 100);
+  const cacheKey = `hcw-contacts:ps=${capped}:mp=${maxPages}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
 
   const loader = async () => {
     const all = [];
@@ -26,11 +31,14 @@ export async function fetchHealthcareWorkerContactsPage({
     let pages = 1;
     const params = new URLSearchParams({
       contactCategory: 'Healthcare Worker',
-      limit: String(pageSize),
+      limit: String(capped),
       assign: '1',
     });
+    if (fullDirectory) params.set('fullDirectory', '1');
     if (qTrim) params.set('q', qTrim);
     if (rt) params.set('resourceType', rt);
+    if (st) params.set('state', st);
+    if (ct) params.set('city', ct);
     if (hasServiceProvider) params.set('hasServiceProvider', '1');
 
     do {
@@ -89,10 +97,10 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
   });
 }
 
-/** @deprecated Use fetchHealthcareWorkerContactsPage — kept for older callers. */
+/** @deprecated Prefer filtered fetchHealthcareWorkerContactsPage (limit 100). */
 export async function fetchAllHealthcareWorkerContacts(opts = {}) {
   return fetchHealthcareWorkerContactsPage({
-    pageSize: opts.pageSize || 2000,
+    pageSize: opts.pageSize || 100,
     maxPages: opts.maxPages || 1,
     q: opts.q || '',
     useCache: opts.useCache !== false,

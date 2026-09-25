@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import { HCW_RESOURCE_TYPES, resourceTypesForCategory } from '../../agreements/contactPicklists.js';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
-import { fetchGeoCities, fetchGeoStates } from '../../../shared/geoApi.js';
 import {
   assignmentResourceTypeForContact,
   buildHcwAssignCascade,
@@ -14,6 +13,7 @@ import {
   formatHealthcareWorkers,
   normalizeHealthcareWorkers,
 } from '../utils/healthcareWorkers.js';
+import { fetchAssignContactFacets } from '../utils/fetchHcwContacts.js';
 
 function AssignField({ label, hint, className = '', children }) {
   return (
@@ -85,8 +85,9 @@ export function CampHcwAssignPicker({
   );
   const [state, setState] = useState(() => selectedContact?.state || '');
   const [city, setCity] = useState(() => selectedContact?.city || '');
-  const [geoStates, setGeoStates] = useState([]);
-  const [geoCities, setGeoCities] = useState([]);
+  const [directoryStates, setDirectoryStates] = useState([]);
+  const [directoryCities, setDirectoryCities] = useState([]);
+  const [facetsLoading, setFacetsLoading] = useState(false);
   const prevProfessionKeyRef = useRef(professionKey);
 
   const { options: masterResourceTypes, otherLabel } = usePicklistOptions(
@@ -111,70 +112,95 @@ export function CampHcwAssignPicker({
     [masterResourceTypes, otherLabel],
   );
 
+  // States/cities only from Contact Directory for this resource type + Client Master role.
   const stateOptions = useMemo(
-    () => uniqueSorted([
-      ...geoStates.map((row) => row?.name),
-      ...cascade.states,
-    ]),
-    [geoStates, cascade.states],
+    () => uniqueSorted([...directoryStates, ...cascade.states]),
+    [directoryStates, cascade.states],
   );
 
   const cityOptions = useMemo(
-    () => uniqueSorted([
-      ...geoCities.map((row) => row?.name),
-      ...cascade.cities,
-    ]),
-    [geoCities, cascade.cities],
+    () => uniqueSorted([...directoryCities, ...cascade.cities]),
+    [directoryCities, cascade.cities],
   );
 
-  // Resource Type is a static picklist — never block it on the HCW contacts fetch.
   const masterRoleMissing = !professions.length && !clientMasterLoading;
   const resourceTypeDisabled = disabled || masterRoleMissing;
   const canUseFilters = Boolean(resourceType) && professions.length > 0;
-  const canPickState = canUseFilters;
-  const canPickCity = Boolean(canPickState && state);
+  const canPickState = canUseFilters && !facetsLoading;
+  const canPickCity = Boolean(canUseFilters && state);
   const canPickPerson = canUseFilters;
   const rolesLabel = formatHealthcareWorkers(professions);
 
   useEffect(() => {
+    if (!resourceType || !professions.length) {
+      setDirectoryStates([]);
+      setDirectoryCities([]);
+      return undefined;
+    }
     let cancelled = false;
-    fetchGeoStates()
-      .then((rows) => {
-        if (!cancelled) setGeoStates(Array.isArray(rows) ? rows : []);
+    setFacetsLoading(true);
+    fetchAssignContactFacets({
+      resourceType,
+      professions,
+      useCache: true,
+    })
+      .then((facets) => {
+        if (cancelled) return;
+        const nextStates = Array.isArray(facets?.states) ? facets.states : [];
+        setDirectoryStates(nextStates);
+        setState((prev) => {
+          const cur = String(prev || '').trim();
+          if (!cur) return prev;
+          const stillValid = nextStates.some(
+            (name) => String(name).trim().toLowerCase() === cur.toLowerCase(),
+          );
+          return stillValid ? prev : '';
+        });
       })
       .catch(() => {
-        if (!cancelled) setGeoStates([]);
+        if (!cancelled) setDirectoryStates([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFacetsLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [resourceType, professionKey]);
 
   useEffect(() => {
     const stateName = String(state || '').trim();
-    if (!stateName) {
-      setGeoCities([]);
-      return undefined;
-    }
-    const match = geoStates.find(
-      (row) => String(row?.name || '').trim().toLowerCase() === stateName.toLowerCase(),
-    );
-    if (!match?._id) {
-      setGeoCities([]);
+    if (!resourceType || !stateName || !professions.length) {
+      setDirectoryCities([]);
       return undefined;
     }
     let cancelled = false;
-    fetchGeoCities(match._id)
-      .then((rows) => {
-        if (!cancelled) setGeoCities(Array.isArray(rows) ? rows : []);
+    fetchAssignContactFacets({
+      resourceType,
+      professions,
+      state: stateName,
+      useCache: true,
+    })
+      .then((facets) => {
+        if (cancelled) return;
+        const nextCities = Array.isArray(facets?.cities) ? facets.cities : [];
+        setDirectoryCities(nextCities);
+        setCity((prev) => {
+          const cur = String(prev || '').trim();
+          if (!cur) return prev;
+          const stillValid = nextCities.some(
+            (name) => String(name).trim().toLowerCase() === cur.toLowerCase(),
+          );
+          return stillValid ? prev : '';
+        });
       })
       .catch(() => {
-        if (!cancelled) setGeoCities([]);
+        if (!cancelled) setDirectoryCities([]);
       });
     return () => {
       cancelled = true;
     };
-  }, [state, geoStates]);
+  }, [resourceType, professionKey, state]);
 
   useEffect(() => {
     onFiltersChange?.({ resourceType, state, city, professions });
@@ -223,17 +249,17 @@ export function CampHcwAssignPicker({
     ? 'Select resource type first'
     : masterRoleMissing
       ? 'Configure Healthcare Worker in Client Master'
-      : contactsLoading
-        ? 'Loading contacts…'
-        : 'Select state';
+      : facetsLoading
+        ? 'Loading states…'
+        : stateOptions.length
+          ? 'Select state'
+          : 'No states with matching contacts';
 
-  const cityEmptyLabel = contactsLoading
-    ? 'Loading contacts…'
-    : !canPickState
-      ? 'Complete filters above first'
-      : !state
-        ? 'Select state first'
-        : 'All cities';
+  const cityEmptyLabel = !canUseFilters
+    ? 'Complete filters above first'
+    : !state
+      ? 'Select state first'
+      : 'All cities';
 
   const personEmptyLabel = contactsLoading
     ? 'Loading contacts…'
@@ -344,7 +370,7 @@ export function CampHcwAssignPicker({
         </p>
       ) : null}
 
-      {!cascade.assignable.length && canUseFilters && !contactsLoading ? (
+      {!cascade.assignable.length && canUseFilters && !contactsLoading && state ? (
         <p className="meta-text camp-hcw-assign-note full">
           {serviceProviderSelected
             ? `No employees under Service Providers match Client Master role(s) “${rolesLabel}”. Link Full-Time / Individual workers to a provider, or add Employees on the Service Provider in Contact Directory.`
@@ -384,7 +410,7 @@ export function CampHcwAssignPicker({
         </p>
       ) : null}
 
-      {!hcwContacts.some(isHealthcareWorkerCategory) && !contactsLoading ? (
+      {!hcwContacts.some(isHealthcareWorkerCategory) && !contactsLoading && state ? (
         <p className="meta-text camp-hcw-assign-note full">
           No Healthcare Worker contacts found in Contact Directory. Add Healthcare Worker contacts there first.
         </p>

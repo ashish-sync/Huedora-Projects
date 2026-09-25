@@ -7,6 +7,45 @@ export const ASSIGN_HCW_INITIAL_LIMIT = 75;
 export const ASSIGN_HCW_SEARCH_LIMIT = 75;
 
 /**
+ * States / cities that exist in Contact Directory for Assignment filters.
+ * Used so empty geo states (e.g. Andaman with no HCWs) never appear.
+ */
+export async function fetchAssignContactFacets({
+  resourceType = '',
+  professions = [],
+  profession = '',
+  state = '',
+  useCache = true,
+} = {}) {
+  const rt = String(resourceType || '').trim();
+  if (!rt) return { states: [], cities: [] };
+
+  const roleList = [
+    ...String(profession || '').split(','),
+    ...(Array.isArray(professions) ? professions : [professions]),
+  ]
+    .map((s) => String(s || '').trim())
+    .filter(Boolean);
+  const roleKey = [...new Set(roleList)].sort().join(',');
+  const st = String(state || '').trim();
+  const cacheKey = `hcw-assign-facets:v1:rt=${rt}:pr=${roleKey}:st=${st}`;
+
+  const loader = async () => {
+    const params = new URLSearchParams({ resourceType: rt });
+    if (roleKey) params.set('profession', roleKey);
+    if (st) params.set('state', st);
+    const res = await api(`/contacts/assign-facets?${params}`);
+    return {
+      states: Array.isArray(res?.data?.states) ? res.data.states : [],
+      cities: Array.isArray(res?.data?.cities) ? res.data.cities : [],
+    };
+  };
+
+  if (!useCache) return loader();
+  return cachedGet(cacheKey, loader, { ttlMs: 2 * 60 * 1000 });
+}
+
+/**
  * Load Healthcare Worker contacts for Camp One Assignment.
  * Initial: first 75 matching state + profession.
  * Typeahead: pass q to pull the next matching page and merge.
@@ -122,6 +161,7 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
 /** Drop cached HCW assign pages (call after filter semantics change). */
 export function clearHcwAssignContactCache() {
   clearApiCache('hcw-contacts:');
+  clearApiCache('hcw-assign-facets:');
 }
 
 /** @deprecated Prefer filtered fetchHealthcareWorkerContactsPage. */

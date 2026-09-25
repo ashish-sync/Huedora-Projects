@@ -305,9 +305,12 @@ export function executionStatusLabel(status) {
 }
 
 export function syncExecutionStatusForSave(camp = {}, now = new Date()) {
+  void now;
   const normalized = normalizeExecutionStatus(camp.executionStatus);
   if (normalized === EXECUTION_STATUS.CAMP_COMPLETED) return EXECUTION_STATUS.CAMP_COMPLETED;
   if (isExecutionClosedOut(normalized)) return normalized;
+  if (normalized === EXECUTION_STATUS.MARKED_EXECUTED) return EXECUTION_STATUS.MARKED_EXECUTED;
+  if (normalized === EXECUTION_STATUS.CAMP_ONGOING) return EXECUTION_STATUS.CAMP_ONGOING;
   if (
     String(camp.chargeableStatus || '').trim()
     && String(camp.inTime || '').trim()

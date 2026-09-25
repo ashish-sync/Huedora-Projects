@@ -15,11 +15,16 @@ export default defineConfig(({ mode }) => {
       sourcemap: false,
       cssCodeSplit: true,
       chunkSizeWarningLimit: 600,
+      assetsInlineLimit: 4096,
       modulePreload: {
         polyfill: true,
       },
       rollupOptions: {
         output: {
+          // Hashed filenames enable long-lived immutable caching at the CDN/edge.
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
           manualChunks(id) {
             if (!id.includes('node_modules')) return undefined;
             if (id.includes('lucide-react')) return 'vendor-icons';

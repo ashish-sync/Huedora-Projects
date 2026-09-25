@@ -5,6 +5,7 @@ import { useAuth } from './useCampOpsAuth.js';
 import { useSuppressBrowserAutofill, AutofillDecoyFields } from '../../shared/suppressBrowserAutofill.js';
 import { campApi, clientMasterApi } from './campOpsApi.js';
 import { api } from '../../shared/api.js';
+import { cachedGet } from '../../shared/apiCache.js';
 import { validateUploadFile } from '../../shared/importErrors.js';
 import { trimFormStrings } from './utils/trimInput';
 import { toApiDateValue } from './utils/dateFormat';
@@ -195,12 +196,9 @@ export default function CampFormPage() {
   }, [isEdit]);
 
   useEffect(() => {
-    // Prefetch as soon as Assignment/Financial is reachable — don't wait until the tab opens.
-    const needsHcwContacts = campStatus === 'approved'
-      || activeStage === 'assignment'
-      || workingStage === 'assignment'
-      || activeStage === 'financial'
-      || workingStage === 'financial';
+    // Assignment loads contacts per resource type inside CampHcwAssignPicker.
+    // Only hydrate a small HCW page for Financial payee resolution.
+    const needsHcwContacts = activeStage === 'financial' || workingStage === 'financial';
     if (!needsHcwContacts) return undefined;
     if (hcwContactsLoadedRef.current) return undefined;
     let cancelled = false;
@@ -225,7 +223,7 @@ export default function CampFormPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeStage, workingStage, campStatus]);
+  }, [activeStage, workingStage]);
 
   // Server search when the person picker query is not in the preloaded page (directory > 2000).
   const handleHcwPersonSearch = useCallback((rawQuery) => {
@@ -439,6 +437,7 @@ export default function CampFormPage() {
     }
 
     let cancelled = false;
+    const clientKey = String(form.clientId || form.clientName || '');
     setClientMasterLoading(true);
     setClientMasterLoadFailed(false);
     campApi.consumablesForCamp(form.clientId, {
@@ -453,13 +452,17 @@ export default function CampFormPage() {
         if (!cancelled) setMappedConsumables([]);
       });
 
-    clientMasterApi.listByClient(
-      form.clientId || encodeURIComponent(form.clientName),
-      form.clientName ? { clientName: form.clientName } : undefined,
+    cachedGet(
+      `client-masters:by-client:${clientKey}`,
+      () => clientMasterApi.listByClient(
+        form.clientId || encodeURIComponent(form.clientName),
+        form.clientName ? { clientName: form.clientName } : undefined,
+      ).then((response) => parseClientMasterListResponse(response)),
+      { ttlMs: 5 * 60 * 1000 },
     )
-      .then((response) => {
+      .then((records) => {
         if (cancelled) return;
-        setClientMasterRecords(parseClientMasterListResponse(response));
+        setClientMasterRecords(Array.isArray(records) ? records : []);
         setClientMasterLoadFailed(false);
       })
       .catch((err) => {
@@ -745,8 +748,16 @@ export default function CampFormPage() {
         ...prev,
         executionDocuments: fromServer.executionDocuments,
         inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+        updatedAt: camp.updatedAt || prev.updatedAt,
       }));
-      setCampMeta((prev) => (prev ? { ...prev, executionDocuments: fromServer.executionDocuments } : prev));
+      setCampMeta((prev) => (prev
+        ? {
+          ...prev,
+          ...camp,
+          executionDocuments: fromServer.executionDocuments,
+          updatedAt: camp.updatedAt || prev.updatedAt,
+        }
+        : prev));
     } catch (err) {
       setError(err?.message || 'Failed to upload documents');
     } finally {
@@ -768,13 +779,16 @@ export default function CampFormPage() {
         ...prev,
         executionDocuments: fromServer.executionDocuments,
         inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+        updatedAt: camp.updatedAt || prev.updatedAt,
       }));
       setCampMeta((prev) => (
         prev
           ? {
             ...prev,
+            ...camp,
             executionDocuments: fromServer.executionDocuments,
             inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+            updatedAt: camp.updatedAt || prev.updatedAt,
           }
           : prev
       ));
@@ -972,23 +986,35 @@ export default function CampFormPage() {
 
     const trimmed = trimFormStrings(form, formStringFields);
     const contactFields = syncPrimaryContactFields(normalizeContactPersons(form));
-    const executionComplete = activeStage === 'execution' && (
-      isExecutionCancellationForFinance(form)
-      || isExecutionReadyForFinance(form, mappedConsumables)
-    );
+    const explicitMarkComplete = activeStage === 'execution' && form.markComplete === true;
     const executionStatus = activeStage === 'execution'
-      ? syncExecutionStatusForSave(form)
+      ? (explicitMarkComplete
+        ? EXECUTION_STATUS.CAMP_COMPLETED
+        : syncExecutionStatusForSave({
+          ...form,
+          // Ordinary Save must never send Camp Completed — Mark Complete button sets that.
+          executionStatus: normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
+            ? EXECUTION_STATUS.MARKED_EXECUTED
+            : form.executionStatus,
+        }))
       : form.executionStatus;
     const requiredProductIds = mappedConsumables.map((item) => item.productId);
     const consumablesUsed = activeStage === 'execution'
       ? normalizeConsumablesUsed(form.consumablesUsed, { requiredProductIds })
       : form.consumablesUsed;
+
+    const FINANCE_KEYS = [
+      'campRevenue', 'travelRevenue', 'overtimeRevenue', 'otherRevenue',
+      'campAmount', 'travelling', 'overtimeExpense', 'otherExpenses',
+      'paidAmount', 'totalRevenue', 'totalPayout', 'netContribution', 'balance',
+      'paymentRemark', 'paymentSubmitStatus', 'financePaymentStatus', 'transactionId',
+    ];
+
     const payload = {
       ...form,
       ...trimmed,
       ...contactFields,
       executionStatus,
-      consumablesUsed,
       ...(activeStage === 'assignment' && form.hcwContactId
         ? { assignmentDecision: 'assign', assignmentRefusalReason: '' }
         : {}),
@@ -1004,10 +1030,43 @@ export default function CampFormPage() {
         ? maxLifecycleStage(reachedLifecycleStage, activeStage)
         : 'request',
       lifecycleOnly: isEdit && activeStage !== 'request',
-      ...(executionComplete || form.markComplete ? { markComplete: true } : {}),
+      ...(explicitMarkComplete ? { markComplete: true } : {}),
+      ...(isEdit && (campMeta?.updatedAt || form.updatedAt)
+        ? { expectedUpdatedAt: campMeta?.updatedAt || form.updatedAt }
+        : {}),
     };
     delete payload.hqManuallyEdited;
     delete payload.addressPlacesAvailable;
+    delete payload.markComplete;
+    if (explicitMarkComplete) payload.markComplete = true;
+
+    // Documents are owned by upload/delete endpoints — never replace via full-form Save.
+    delete payload.executionDocuments;
+    if (form.clearExecutionDocuments === true) {
+      payload.executionDocuments = [];
+      payload.clearExecutionDocuments = true;
+    }
+
+    // Consumables: only send when execution stage and user touched them (or explicit clear).
+    const baselineConsumables = Array.isArray(campMeta?.consumablesUsed)
+      ? campMeta.consumablesUsed
+      : [];
+    const consumablesChanged = activeStage === 'execution'
+      && JSON.stringify(normalizeConsumablesUsed(baselineConsumables, { requiredProductIds }))
+        !== JSON.stringify(consumablesUsed);
+    if (form.clearConsumablesUsed === true) {
+      payload.consumablesUsed = [];
+      payload.clearConsumablesUsed = true;
+    } else if (consumablesChanged) {
+      payload.consumablesUsed = consumablesUsed;
+    } else {
+      delete payload.consumablesUsed;
+    }
+
+    // Untouched finance zeros from the form must not overwrite persisted amounts.
+    if (activeStage !== 'financial') {
+      FINANCE_KEYS.forEach((key) => { delete payload[key]; });
+    }
 
     setLoading(true);
     setError('');
@@ -1016,7 +1075,7 @@ export default function CampFormPage() {
       if (isEdit) {
         const res = await campApi.update(id, payload);
         savedCamp = res.data?.data || res.data;
-        if (executionComplete && savedCamp) {
+        if (explicitMarkComplete && savedCamp) {
           setForm(campToForm(savedCamp));
           setCampMeta((prev) => ({ ...prev, ...savedCamp }));
           setActiveStage('financial');
@@ -1043,7 +1102,9 @@ export default function CampFormPage() {
     } catch (err) {
       const code = err?.code || err?.error?.code || '';
       const message = err?.message || 'Failed to save camp';
-      if (code === 'HCW_ASSIGNMENT_GAP' || /schedule gap|HCW Schedule Conflict|HCW already has camp/i.test(message)) {
+      if (code === 'STALE_UPDATE' || err?.status === 409 && /changed elsewhere|Reload and try again/i.test(message)) {
+        setError(message || 'Camp was changed elsewhere. Reload and try again to avoid overwriting newer data.');
+      } else if (code === 'HCW_ASSIGNMENT_GAP' || /schedule gap|HCW Schedule Conflict|HCW already has camp/i.test(message)) {
         setHcwGapConflict({
           title: 'HCW Schedule Conflict',
           message,

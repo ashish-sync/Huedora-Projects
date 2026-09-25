@@ -83,7 +83,20 @@ describe('camp consumables', () => {
     ).toEqual(['Enter usage and wastage for Device Battery']);
   });
 
-  it('normalizes rows with product and quantity', () => {
+  it('keeps incomplete required rows instead of silently discarding', () => {
+    expect(
+      normalizeConsumablesUsed([
+        { productId: 'p1', itemName: 'Test Strip', quantityUsed: '20', wastage: '', unit: 'Strip' },
+        { productId: 'p2', itemName: 'Device Battery', quantityUsed: '', wastage: '1', unit: 'Watt' },
+        { productId: '', itemName: 'Ignored', quantityUsed: 1, wastage: 0, unit: 'Each' },
+      ], { requiredProductIds: ['p1', 'p2'] }),
+    ).toEqual([
+      { productId: 'p1', itemName: 'Test Strip', quantityUsed: 20, wastage: '', unit: 'Strip', uomId: '' },
+      { productId: 'p2', itemName: 'Device Battery', quantityUsed: '', wastage: 1, unit: 'Watt', uomId: '' },
+    ]);
+  });
+
+  it('normalizes rows with product and keeps zero-filled optional rows', () => {
     expect(
       normalizeConsumablesUsed([
         { productId: 'p1', itemName: 'Test Strip', quantityUsed: '20', wastage: '2', unit: 'Strip' },
@@ -93,6 +106,7 @@ describe('camp consumables', () => {
       ], { requiredProductIds: ['p1'] }),
     ).toEqual([
       { productId: 'p1', itemName: 'Test Strip', quantityUsed: 20, wastage: 2, unit: 'Strip', uomId: '' },
+      { productId: 'p2', itemName: 'Device Battery', quantityUsed: 0, wastage: 0, unit: 'Watt', uomId: '' },
     ]);
   });
 

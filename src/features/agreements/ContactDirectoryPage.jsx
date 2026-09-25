@@ -82,7 +82,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [kycUploadBusy, setKycUploadBusy] = useState('');
   /** True after the user edits the embedded SP employee roster in this form session. */
   const [rosterTouched, setRosterTouched] = useState(false);
-
+  const [editUpdatedAt, setEditUpdatedAt] = useState('');
+  const [rosterSnapshot, setRosterSnapshot] = useState([]);
+  const [pendingDestructiveLeave, setPendingDestructiveLeave] = useState(null);
   const loadServiceProviders = () => {
     api('/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500')
       .then((r) => setServiceProviders(r.data || []))
@@ -152,15 +154,18 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     loadServiceProviders();
   }, []);
 
-  const onCategoryChange = (contactCategory) => {
+  const applyCategoryChange = (contactCategory, { clearRoster = false, resourceTypeOverride } = {}) => {
     const nextProfessions = professionsForCategory(contactCategory);
     setForm((f) => {
-      const nextResourceType =
-        contactCategory === 'Resource' && RESOURCE_TYPES.includes(f.resourceType)
+      const nextResourceType = resourceTypeOverride !== undefined
+        ? resourceTypeOverride
+        : contactCategory === 'Resource' && RESOURCE_TYPES.includes(f.resourceType)
           ? f.resourceType
           : contactCategory === 'Healthcare Worker' && HCW_RESOURCE_TYPES.includes(f.resourceType)
             ? f.resourceType
             : '';
+      const nextIsProvider =
+        contactCategory === 'Healthcare Worker' && nextResourceType === 'Service Provider';
       return {
         ...f,
         contactCategory,
@@ -169,24 +174,51 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           contactCategory === 'Healthcare Worker' && isHcwStaffResourceType(nextResourceType)
             ? f.serviceProviderContactId
             : '',
-        providerEmployees:
-          contactCategory === 'Healthcare Worker' && nextResourceType === 'Service Provider'
-            ? f.providerEmployees || []
-            : [],
+        providerEmployees: nextIsProvider
+          ? (f.providerEmployees?.length ? f.providerEmployees : rosterSnapshot)
+          : (clearRoster ? [] : (f.providerEmployees || rosterSnapshot || [])),
         organization: contactCategory === 'Client' ? f.organization : '',
-      supplyCategory:
-        contactCategory === 'Vendor' && SUPPLY_CATEGORIES.includes(f.supplyCategory)
-          ? f.supplyCategory
-          : '',
-      profession: nextProfessions.includes(f.profession) ? f.profession : '',
-      address: contactCategory === 'Client' ? '' : f.address,
-      pinCode: contactCategory === 'Client' ? '' : f.pinCode,
-      panNumber: contactCategory === 'Client' ? '' : f.panNumber,
-      ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
-      bankName: contactCategory === 'Client' ? '' : f.bankName,
-      accountNumber: contactCategory === 'Client' ? '' : f.accountNumber,
+        supplyCategory:
+          contactCategory === 'Vendor' && SUPPLY_CATEGORIES.includes(f.supplyCategory)
+            ? f.supplyCategory
+            : '',
+        profession: nextProfessions.includes(f.profession) ? f.profession : '',
+        address: contactCategory === 'Client' ? '' : f.address,
+        pinCode: contactCategory === 'Client' ? '' : f.pinCode,
+        panNumber: contactCategory === 'Client' ? '' : f.panNumber,
+        ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
+        bankName: contactCategory === 'Client' ? '' : f.bankName,
+        accountNumber: contactCategory === 'Client' ? '' : f.accountNumber,
+        clearProviderEmployees: clearRoster ? true : undefined,
       };
     });
+    if (clearRoster) setRosterSnapshot([]);
+  };
+
+  const onCategoryChange = (contactCategory) => {
+    const leavingProvider =
+      isServiceProviderContact(form)
+      && !(contactCategory === 'Healthcare Worker' && form.resourceType === 'Service Provider');
+    const roster = form.providerEmployees?.length ? form.providerEmployees : rosterSnapshot;
+    if (leavingProvider && Array.isArray(roster) && roster.length > 0) {
+      setPendingDestructiveLeave({ kind: 'category', value: contactCategory });
+      return;
+    }
+    applyCategoryChange(contactCategory);
+  };
+
+  const confirmLeaveProvider = (clearRoster) => {
+    const pending = pendingDestructiveLeave;
+    setPendingDestructiveLeave(null);
+    if (!pending) return;
+    if (pending.kind === 'category') {
+      applyCategoryChange(pending.value, { clearRoster });
+    } else if (pending.kind === 'resourceType') {
+      applyCategoryChange(form.contactCategory, {
+        clearRoster,
+        resourceTypeOverride: pending.value,
+      });
+    }
   };
 
   const save = async (e) => {
@@ -280,10 +312,13 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           if (editId && employees.length === 0 && rosterTouched) {
             body.clearProviderEmployees = true;
           }
-        }
-      } else {
+        }      } else {
         // Omit roster field so PATCH cannot wipe persisted employees with [].
         delete body.providerEmployees;
+        if (form.clearProviderEmployees === true) {
+          body.clearProviderEmployees = true;
+          body.providerEmployees = [];
+        }
       }
       if (!isClient) body.organization = '';
       if (!isVendor) body.supplyCategory = '';
@@ -293,14 +328,18 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         for (const key of ['city', 'state', 'district', 'pinCode', 'stateId', 'districtId', 'cityId']) {
           if (body[key] == null || String(body[key]).trim() === '') delete body[key];
         }
-        await api(`/contacts/${editId}`, { method: 'PATCH', body });
+        if (editUpdatedAt) body.expectedUpdatedAt = editUpdatedAt;
+        const res = await api(`/contacts/${editId}`, { method: 'PATCH', body });
+        const saved = res?.data;
+        if (saved?.updatedAt) setEditUpdatedAt(saved.updatedAt);
       } else {
         await api('/contacts', { method: 'POST', body });
       }
       setForm(empty);
       setEditId(null);
       setRosterTouched(false);
-      load();
+      setEditUpdatedAt('');
+      setRosterSnapshot([]);      load();
       loadServiceProviders();
     } catch (err) {
       setError(err.message);
@@ -355,7 +394,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         : '';
     setEditId(c._id);
     setRosterTouched(false);
-    setForm({
+    setEditUpdatedAt(c.updatedAt || '');
+    const employees = Array.isArray(c.providerEmployees) ? c.providerEmployees : [];
+    setRosterSnapshot(employees);    setForm({
       name: c.name || '',
       email: c.email || '',
       contactCategory,
@@ -379,7 +420,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
-      providerEmployees: Array.isArray(c.providerEmployees) ? c.providerEmployees : [],
+      providerEmployees: employees,
     });
   };
 
@@ -415,6 +456,28 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       )}
       {importMsg && (
         <FeedbackBanner variant="info">{importMsg}</FeedbackBanner>
+      )}
+      {pendingDestructiveLeave && (
+        <FeedbackBanner variant="warning">
+          <div className="cd-roster-confirm">
+            <p>
+              This Service Provider has {rosterSnapshot.length || form.providerEmployees?.length || 0}{' '}
+              employee(s). Clear the roster before changing category/type, or cancel to keep them.
+            </p>
+            <div className="cd-roster-confirm-actions">
+              <button type="button" className="btn secondary btn-compact" onClick={() => confirmLeaveProvider(true)}>
+                Clear roster &amp; continue
+              </button>
+              <button
+                type="button"
+                className="btn ghost btn-compact"
+                onClick={() => setPendingDestructiveLeave(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </FeedbackBanner>
       )}
 
       <MasterFilterShell
@@ -589,6 +652,14 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       value={form.resourceType}
                       onChange={(e) => {
                         const nextType = e.target.value;
+                        const leavingProvider =
+                          form.resourceType === 'Service Provider'
+                          && nextType !== 'Service Provider'
+                          && (form.providerEmployees?.length || rosterSnapshot.length);
+                        if (leavingProvider) {
+                          setPendingDestructiveLeave({ kind: 'resourceType', value: nextType });
+                          return;
+                        }
                         setForm((f) => ({
                           ...f,
                           resourceType: nextType,
@@ -596,10 +667,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                             ? f.serviceProviderContactId
                             : '',
                           providerEmployees:
-                            nextType === 'Service Provider' ? f.providerEmployees || [] : [],
+                            nextType === 'Service Provider'
+                              ? (f.providerEmployees?.length ? f.providerEmployees : rosterSnapshot)
+                              : [],
                         }));
-                        if (nextType !== 'Service Provider') setRosterTouched(false);
-                      }}
+                        if (nextType !== 'Service Provider') setRosterTouched(false);                      }}
                     />
                   </div>
                 )}

@@ -1,0 +1,10 @@
+# Cloudflare Pages / static host cache hints for hashed Vite assets.
+# API responses are not served from here — only the SPA build.
+/*
+  X-Content-Type-Options: nosniff
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

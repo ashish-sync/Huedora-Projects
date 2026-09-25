@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ClipboardCopy } from 'lucide-react';
+import { Check, ClipboardCopy, Clock3, Info } from 'lucide-react';
 import { copyCampAssignmentDetails } from '../utils/campAssignmentCopy';
 import { isCampDateDueForExecution } from '../utils/campAssignmentActions.js';
 import { CampHcwAssignPicker } from './CampHcwAssignPicker';
@@ -56,6 +56,9 @@ export function CampAssignmentStage({
   const canCopyDetails = Boolean(form.hcwName || form.hcwContactId);
   const canRaiseHireRequest = !isTerminal;
   const canChangeHcw = isAssigned && !fieldsDisabled;
+  const hireProfessions = clientMasterProfessions.length
+    ? clientMasterProfessions
+    : clientMasterProfession;
 
   async function handleCopyDetails() {
     const didCopy = await copyCampAssignmentDetails(form, { clientMasterRecords });
@@ -66,9 +69,14 @@ export function CampAssignmentStage({
 
   if (campStatus !== 'approved' && !isTerminal) {
     return (
-      <p className="meta-text camp-assignment-intro">
-        This camp must be <strong>approved</strong> before a resource can be assigned.
-      </p>
+      <div className="camp-assignment-stage">
+        <div className="camp-assignment-callout camp-assignment-callout--wait" role="status">
+          <Info size={16} strokeWidth={2} aria-hidden="true" />
+          <p>
+            This camp must be <strong>approved</strong> before a resource can be assigned.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -96,9 +104,16 @@ export function CampAssignmentStage({
 
   if (isTerminal) {
     return (
-      <p className="meta-text camp-assignment-note">
-        Assignment closed: {form.assignmentRefusalReason || form.cancellationReason || campStatus}.
-      </p>
+      <div className="camp-assignment-stage">
+        <div className="camp-assignment-callout" role="status">
+          <Info size={16} strokeWidth={2} aria-hidden="true" />
+          <p>
+            Assignment closed:
+            {' '}
+            {form.assignmentRefusalReason || form.cancellationReason || campStatus}.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -107,15 +122,18 @@ export function CampAssignmentStage({
       || isCampDateDueForExecution(form);
     return (
       <div className="camp-assignment-stage">
-        <div className="camp-assignment-toolbar">
-          <p className="meta-text camp-assignment-note">
-            {financeLocked
-              ? 'HCW assigned. Resource cannot be changed after Finance submit.'
-              : inExecution
-                ? 'HCW assigned. You can change the healthcare worker if needed; this camp is in Execution.'
-                : 'HCW assigned. You can change the healthcare worker if needed. Assigned camps move to Execution immediately.'}
-          </p>
-          <div className="camp-assignment-toolbar-actions">
+        <header className="camp-assignment-header">
+          <div className="camp-assignment-header-copy">
+            <h3 className="camp-assignment-title">Resource assigned</h3>
+            <p className="camp-assignment-subtitle">
+              {financeLocked
+                ? 'Locked after Finance submit — the HCW cannot be changed.'
+                : inExecution
+                  ? 'This camp is in Execution. You can still change the healthcare worker if needed.'
+                  : 'Assigned camps move to Execution. Change the HCW below if needed.'}
+            </p>
+          </div>
+          <div className="camp-assignment-header-actions">
             {canChangeHcw ? (
               <button
                 type="button"
@@ -128,34 +146,35 @@ export function CampAssignmentStage({
             {canRaiseHireRequest ? (
               <CampHireRequestButton
                 form={form}
-                professions={clientMasterProfessions.length
-                  ? clientMasterProfessions
-                  : clientMasterProfession}
+                professions={hireProfessions}
                 label="Raise hiring request"
               />
             ) : null}
           </div>
-        </div>
-        <div className="form-grid camp-assignment-assign-panel">
-          <ReadOnlyField label="HCW Category" value={form.hcwCategory || '—'} />
-          <ReadOnlyField label="HCW Name" value={form.hcwName || '—'} />
-          <ReadOnlyField label="HCW Contact" value={form.hcwContact || '—'} />
-          {canCopyDetails ? (
-            <div className="camp-assignment-copy-wrap full">
-              <button
-                type="button"
-                className={`btn secondary btn-compact camp-assignment-copy-btn${copyState === 'copied' ? ' is-copied' : ''}`}
-                onClick={handleCopyDetails}
-              >
-                {copyState === 'copied' ? (
-                  <Check size={16} strokeWidth={2.25} aria-hidden="true" />
-                ) : (
-                  <ClipboardCopy size={16} strokeWidth={2} aria-hidden="true" />
-                )}
-                {copyState === 'copied' ? 'Copied' : 'Copy details'}
-              </button>
-            </div>
-          ) : null}
+        </header>
+
+        <div className="camp-assignment-panel">
+          <div className="form-grid camp-assignment-assign-panel">
+            <ReadOnlyField label="HCW Category" value={form.hcwCategory || '—'} />
+            <ReadOnlyField label="HCW Name" value={form.hcwName || '—'} />
+            <ReadOnlyField label="HCW Contact" value={form.hcwContact || '—'} />
+            {canCopyDetails ? (
+              <div className="camp-assignment-copy-wrap full">
+                <button
+                  type="button"
+                  className={`btn secondary btn-compact camp-assignment-copy-btn${copyState === 'copied' ? ' is-copied' : ''}`}
+                  onClick={handleCopyDetails}
+                >
+                  {copyState === 'copied' ? (
+                    <Check size={16} strokeWidth={2.25} aria-hidden="true" />
+                  ) : (
+                    <ClipboardCopy size={16} strokeWidth={2} aria-hidden="true" />
+                  )}
+                  {copyState === 'copied' ? 'Copied' : 'Copy details'}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     );
@@ -163,13 +182,18 @@ export function CampAssignmentStage({
 
   return (
     <div className="camp-assignment-stage">
-      <div className="camp-assignment-toolbar">
-        <p className="meta-text camp-assignment-intro">
-          {reassigning
-            ? 'Select a different healthcare worker, then save the camp to apply the change. Same-day assignments should keep a 30-minute gap.'
-            : 'Select resource type, state, and city to find Contact Directory healthcare workers that match this Client’s Healthcare Worker role in Client Master. Same HCW on the same date should keep at least 30 minutes between one camp’s end and the next start (e.g. 8:00–14:00 → next earliest 14:30). A shorter gap can proceed but needs Reporting Manager approval. Before assignment you can refuse the camp. After assignment, only cancel by Tylo or Client is allowed.'}
-        </p>
-        <div className="camp-assignment-toolbar-actions">
+      <header className="camp-assignment-header">
+        <div className="camp-assignment-header-copy">
+          <h3 className="camp-assignment-title">
+            {reassigning ? 'Change healthcare worker' : 'Assign healthcare worker'}
+          </h3>
+          <p className="camp-assignment-subtitle">
+            {reassigning
+              ? 'Pick a different Contact Directory match, then save the camp.'
+              : 'Filter by resource type, state, and city. Matches use this client’s Healthcare Worker role from Client Master.'}
+          </p>
+        </div>
+        <div className="camp-assignment-header-actions">
           {reassigning ? (
             <button
               type="button"
@@ -181,28 +205,54 @@ export function CampAssignmentStage({
           ) : null}
           <CampHireRequestButton
             form={form}
-            professions={clientMasterProfessions.length
-              ? clientMasterProfessions
-              : clientMasterProfession}
+            professions={hireProfessions}
             disabled={fieldsDisabled}
             variant="button"
             label="Raise hiring request"
           />
         </div>
+      </header>
+
+      <ul className="camp-assignment-tips" aria-label="Assignment guidelines">
+        <li>
+          <Clock3 size={14} strokeWidth={2} aria-hidden="true" />
+          <span>
+            Same HCW, same day: keep at least
+            {' '}
+            <strong>30 minutes</strong>
+            {' '}
+            between camps (e.g. 14:00 end → next from 14:30). Shorter gaps need Reporting Manager approval.
+          </span>
+        </li>
+        <li>
+          <Info size={14} strokeWidth={2} aria-hidden="true" />
+          <span>
+            Before assignment you can
+            {' '}
+            <strong>refuse</strong>
+            .
+            After assignment, only cancel by Tylo or Client.
+          </span>
+        </li>
+      </ul>
+
+      <div className="camp-assignment-panel">
+        <div className="camp-assignment-panel-label">Find contact</div>
+        <CampHcwAssignPicker
+          hcwContacts={hcwContacts}
+          contactsLoading={contactsLoading}
+          onPersonSearch={onHcwPersonSearch}
+          onFiltersChange={onHcwFiltersChange}
+          disabled={fieldsDisabled}
+          selectedContactId={form.hcwContactId || ''}
+          clientMasterProfessions={clientMasterProfessions}
+          clientMasterProfession={clientMasterProfession}
+          clientMasterLoading={clientMasterLoading}
+          clientMasterHcwGap={clientMasterHcwGap}
+          onSelect={handleSelect}
+        />
       </div>
-      <CampHcwAssignPicker
-        hcwContacts={hcwContacts}
-        contactsLoading={contactsLoading}
-        onPersonSearch={onHcwPersonSearch}
-        onFiltersChange={onHcwFiltersChange}
-        disabled={fieldsDisabled}
-        selectedContactId={form.hcwContactId || ''}
-        clientMasterProfessions={clientMasterProfessions}
-        clientMasterProfession={clientMasterProfession}
-        clientMasterLoading={clientMasterLoading}
-        clientMasterHcwGap={clientMasterHcwGap}
-        onSelect={handleSelect}
-      />
+
       {form.hcwContactId ? (
         <HcwSameDayCampsPanel
           hcwContactId={form.hcwContactId}

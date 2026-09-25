@@ -5310,14 +5310,14 @@
 }
 
 .camp-ops-root .camp-hcw-assign-picker {
-  gap: 12px 16px;
+  gap: 14px 18px;
   align-items: start;
 }
 
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
   margin: 0;
   font-size: 0.75rem;
@@ -5340,13 +5340,16 @@
 }
 
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-hint {
-  flex-shrink: 0;
+  flex-shrink: 1;
   margin: 0;
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--muted);
-  white-space: nowrap;
+  white-space: normal;
+  text-align: right;
+  max-width: 14rem;
+  line-height: 1.3;
 }
 
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > select,
@@ -9438,6 +9441,135 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.camp-ops-root .camp-assignment-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+}
+
+.camp-ops-root .camp-assignment-header-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.camp-ops-root .camp-assignment-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink, var(--text));
+  line-height: 1.3;
+}
+
+.camp-ops-root .camp-assignment-subtitle {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-muted, var(--muted));
+}
+
+.camp-ops-root .camp-assignment-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .camp-assignment-tips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.camp-ops-root .camp-assignment-tips li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border, var(--line));
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in srgb, var(--bg-elevated, #fff) 88%, var(--color-brand-primary, #0d9488) 6%);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink-soft, var(--text));
+}
+
+.camp-ops-root .camp-assignment-tips li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-brand-primary, #0d9488);
+}
+
+.camp-ops-root .camp-assignment-tips strong {
+  font-weight: 700;
+  color: var(--ink, var(--text));
+}
+
+.camp-ops-root .camp-assignment-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border, var(--line));
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-elevated, #fff);
+}
+
+.camp-ops-root .camp-assignment-panel-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, var(--muted));
+}
+
+.camp-ops-root .camp-assignment-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border, var(--line));
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elevated, #fff);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ink-soft, var(--text));
+}
+
+.camp-ops-root .camp-assignment-callout p {
+  margin: 0;
+}
+
+.camp-ops-root .camp-assignment-callout svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-brand-primary, #0d9488);
+}
+
+.camp-ops-root .camp-assignment-callout--wait {
+  background: color-mix(in srgb, var(--bg-elevated, #fff) 90%, #f59e0b 8%);
+  border-color: color-mix(in srgb, var(--border, #e5e7eb) 70%, #f59e0b 30%);
+}
+
+.camp-ops-root .camp-assignment-callout--wait svg {
+  color: #b45309;
 }
 
 .camp-ops-root .camp-assignment-toolbar {

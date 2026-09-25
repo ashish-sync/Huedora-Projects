@@ -330,9 +330,9 @@ export function CampHcwAssignPicker({
 
       <AssignField
         label={serviceProviderSelected ? 'Employee Name' : 'Healthcare Worker Name'}
-        hint={serviceProviderSelected
-          ? 'Employees under Service Providers in Contact Directory (not the agency itself).'
-          : undefined}
+          hint={serviceProviderSelected
+            ? 'Employees under Service Providers in Contact Directory (not the agency itself).'
+            : 'Type a name to search beyond the first matches.'}
       >
         <AdaptiveSelect
           className="tylo-select"

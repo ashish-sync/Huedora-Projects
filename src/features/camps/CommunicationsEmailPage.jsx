@@ -352,7 +352,12 @@ export default function CommunicationsEmailPage() {
       if (dateFrom) payload.dateFrom = dateFrom;
       if (dateTo) payload.dateTo = dateTo;
       const { data } = await communicationsApi.syncEmailMailbox(payload);
-      setSuccess(data.message || 'Mailbox synced');
+      const synced = data.data?.synced ?? data.synced;
+      setSuccess(
+        Number.isFinite(Number(synced))
+          ? `Mailbox synced (${Number(synced)} message${Number(synced) === 1 ? '' : 's'})`
+          : (data.message || 'Mailbox synced'),
+      );
       if (data.data?.failed > 0) {
         setError(`${data.data.failed} email(s) could not be stored. Check server logs for details.`);
       }

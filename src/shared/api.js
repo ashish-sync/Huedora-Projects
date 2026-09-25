@@ -144,7 +144,34 @@ function toApiError(json, status, requestPath = '') {
   return err;
 }
 
-export async function api(path, options = {}, retried = false) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientNetworkError(err) {
+  const msg = String(err?.message || '');
+  return /failed to fetch|networkerror|load failed|network request failed/i.test(msg);
+}
+
+function networkUnreachableError(cause) {
+  const netErr = new Error(
+    'Could not reach the server (connection lost or timed out). Try again in a moment.',
+  );
+  netErr.code = 'NETWORK_UPLOAD_FAILED';
+  netErr.cause = cause;
+  return netErr;
+}
+
+/**
+ * Retry briefly on connection drops (Render free cold-start / brief blips).
+ * Safe for GET; one retry for mutating methods when the request never got a response.
+ */
+function maxNetworkRetries(method = 'GET') {
+  const m = String(method || 'GET').toUpperCase();
+  return m === 'GET' || m === 'HEAD' ? 2 : 1;
+}
+
+export async function api(path, options = {}, retried = false, networkAttempt = 0) {
   if (accessToken == null) loadStoredToken();
 
   const headers = { ...(options.headers || {}) };
@@ -153,6 +180,7 @@ export async function api(path, options = {}, retried = false) {
   }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
+  const method = options.method || 'GET';
   let res;
   try {
     res = await fetch(apiUrl(path), {
@@ -166,15 +194,11 @@ export async function api(path, options = {}, retried = false) {
     });
   } catch (err) {
     if (err?.name === 'AbortError') throw err;
-    const msg = String(err?.message || '');
-    if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
-      const netErr = new Error(
-        'Could not reach the server (connection lost or timed out). Try again in a moment.',
-      );
-      netErr.code = 'NETWORK_UPLOAD_FAILED';
-      netErr.cause = err;
-      throw netErr;
+    if (isTransientNetworkError(err) && networkAttempt < maxNetworkRetries(method)) {
+      await sleep(400 * (networkAttempt + 1));
+      return api(path, options, retried, networkAttempt + 1);
     }
+    if (isTransientNetworkError(err)) throw networkUnreachableError(err);
     throw err;
   }
 
@@ -184,10 +208,19 @@ export async function api(path, options = {}, retried = false) {
     if (res.status === 401 && !retried && !isAuthRefreshExempt(path)) {
       try {
         await refreshAccessToken();
-        return api(path, options, true);
+        return api(path, options, true, networkAttempt);
       } catch {
         /* fall through with original 401 */
       }
+    }
+    // Brief 503 / gateway blips on free tier — retry GET once more.
+    if (
+      (res.status === 502 || res.status === 503 || res.status === 504)
+      && networkAttempt < maxNetworkRetries(method)
+      && String(method).toUpperCase() === 'GET'
+    ) {
+      await sleep(500 * (networkAttempt + 1));
+      return api(path, options, retried, networkAttempt + 1);
     }
     throw toApiError(json, res.status, path);
   }

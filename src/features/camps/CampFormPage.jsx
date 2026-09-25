@@ -239,6 +239,7 @@ export default function CampFormPage() {
   // Server-side Assignment search — wait for state (required) so we never
   // load a nationwide first page and then client-filter down to ~9 in-state rows.
   const hcwAssignFetchSeqRef = useRef(0);
+  const hcwAssignAbortRef = useRef(null);
   const handleHcwFiltersChange = useCallback((filters = {}) => {
     const resourceType = String(filters.resourceType || '').trim();
     const state = String(filters.state || '').trim();
@@ -254,6 +255,11 @@ export default function CampFormPage() {
     if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
     const seq = ++hcwAssignFetchSeqRef.current;
     hcwFilterFetchTimerRef.current = setTimeout(() => {
+      if (hcwAssignAbortRef.current) {
+        try { hcwAssignAbortRef.current.abort(); } catch { /* ignore */ }
+      }
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      hcwAssignAbortRef.current = controller;
       setContactsLoading(true);
       fetchAssignableContactsForResourceType(resourceType, {
         state,
@@ -261,20 +267,23 @@ export default function CampFormPage() {
         professions,
         pageSize: ASSIGN_HCW_INITIAL_LIMIT,
         maxPages: 1,
-        useCache: false,
+        useCache: true,
+        signal: controller?.signal,
       })
         .then((rows) => {
           if (seq !== hcwAssignFetchSeqRef.current) return;
           setHcwContacts(Array.isArray(rows) ? rows : []);
         })
-        .catch(() => {
+        .catch((err) => {
           if (seq !== hcwAssignFetchSeqRef.current) return;
+          if (err?.name === 'AbortError') return;
+          // Soft fail — keep prior list; do not flash a full-page network error on filter change.
         })
         .finally(() => {
           if (seq !== hcwAssignFetchSeqRef.current) return;
           setContactsLoading(false);
         });
-    }, 150);
+    }, 200);
   }, []);
 
   // Server search when the person picker query is not in the preloaded page.
@@ -317,6 +326,9 @@ export default function CampFormPage() {
   useEffect(() => () => {
     if (hcwPersonSearchTimerRef.current) clearTimeout(hcwPersonSearchTimerRef.current);
     if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
+    if (hcwAssignAbortRef.current) {
+      try { hcwAssignAbortRef.current.abort(); } catch { /* ignore */ }
+    }
   }, []);
 
   // Ensure already-assigned HCW is in the picker list even if outside the first page.

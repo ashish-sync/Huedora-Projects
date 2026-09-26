@@ -243,6 +243,7 @@ export function CampAssignmentStage({
           contactsLoading={contactsLoading}
           onPersonSearch={onHcwPersonSearch}
           onFiltersChange={onHcwFiltersChange}
+          campState={form.state || ''}
           disabled={fieldsDisabled}
           selectedContactId={form.hcwContactId || ''}
           clientMasterProfessions={clientMasterProfessions}

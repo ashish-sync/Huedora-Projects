@@ -248,8 +248,10 @@ export default function CampFormPage() {
       ? filters.professions
       : [];
     hcwAssignFiltersRef.current = { resourceType, state, city, professions };
-    if (!resourceType || !state) {
-      // Keep prior selection only; person list needs state before a meaningful fetch.
+    // Service Provider employees live on agency rows — load as soon as RT is chosen
+    // (state/city refine the list). Other types still require state to avoid a nationwide dump.
+    const isServiceProvider = resourceType === 'Service Provider';
+    if (!resourceType || (!state && !isServiceProvider)) {
       return;
     }
     if (hcwFilterFetchTimerRef.current) clearTimeout(hcwFilterFetchTimerRef.current);
@@ -265,8 +267,9 @@ export default function CampFormPage() {
         state,
         city,
         professions,
-        pageSize: ASSIGN_HCW_INITIAL_LIMIT,
-        maxPages: 1,
+        // Wider page for SP so embedded rosters are not truncated off the first page.
+        pageSize: isServiceProvider ? Math.max(ASSIGN_HCW_INITIAL_LIMIT, 100) : ASSIGN_HCW_INITIAL_LIMIT,
+        maxPages: isServiceProvider ? 3 : 1,
         useCache: true,
         signal: controller?.signal,
       })
@@ -277,7 +280,6 @@ export default function CampFormPage() {
         .catch((err) => {
           if (seq !== hcwAssignFetchSeqRef.current) return;
           if (err?.name === 'AbortError') return;
-          // Soft fail — keep prior list; do not flash a full-page network error on filter change.
         })
         .finally(() => {
           if (seq !== hcwAssignFetchSeqRef.current) return;
@@ -801,7 +803,7 @@ export default function CampFormPage() {
 
   async function handleUploadDocuments(fileList, docType, docNote = '') {
     if (!id || !fileList?.length) return;
-    const files = Array.from(fileList);
+    let files = Array.from(fileList);
     for (const file of files) {
       const isGps = docType === 'gps_selfie';
       const pre = validateUploadFile(file, {
@@ -814,6 +816,14 @@ export default function CampFormPage() {
       if (pre) {
         setError(pre);
         return;
+      }
+    }
+    if (docType === 'gps_selfie') {
+      try {
+        const { prepareGpsSelfieForUpload } = await import('./utils/prepareGpsSelfieForUpload.js');
+        files = await Promise.all(files.map((file) => prepareGpsSelfieForUpload(file)));
+      } catch {
+        /* keep originals */
       }
     }
     setUploadBusy(true);

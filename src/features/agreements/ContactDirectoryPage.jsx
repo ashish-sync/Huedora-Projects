@@ -84,6 +84,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [rosterTouched, setRosterTouched] = useState(false);
   const [editUpdatedAt, setEditUpdatedAt] = useState('');
   const [rosterSnapshot, setRosterSnapshot] = useState([]);
+  /** Provider link present when the edit form was opened (for intentional unlink). */
+  const [linkSnapshot, setLinkSnapshot] = useState('');
   const [pendingDestructiveLeave, setPendingDestructiveLeave] = useState(null);
   const loadServiceProviders = () => {
     api('/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500')
@@ -300,7 +302,6 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         body.accountNumber = '';
       }
       if (!isResource && !isHcw) body.resourceType = '';
-      if (!isHcwStaff) body.serviceProviderContactId = '';
       if (isHcwProvider) {
         body.serviceProviderContactId = '';
         const employees = Array.isArray(form.providerEmployees) ? form.providerEmployees : [];
@@ -312,7 +313,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           if (editId && employees.length === 0 && rosterTouched) {
             body.clearProviderEmployees = true;
           }
-        }      } else {
+        }
+      } else {
         // Omit roster field so PATCH cannot wipe persisted employees with [].
         delete body.providerEmployees;
         if (form.clearProviderEmployees === true) {
@@ -323,23 +325,43 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       if (!isClient) body.organization = '';
       if (!isVendor) body.supplyCategory = '';
 
-      // PATCH: omit blank geo so empty cascade resets cannot wipe persisted location.
+      // PATCH: omit blank geo / SP-link so empty cascade resets cannot wipe persisted values.
       if (editId) {
         for (const key of ['city', 'state', 'district', 'pinCode', 'stateId', 'districtId', 'cityId']) {
           if (body[key] == null || String(body[key]).trim() === '') delete body[key];
+        }
+        const nextLink = String(body.serviceProviderContactId || '').trim();
+        if (isHcwStaff) {
+          if (!nextLink) {
+            delete body.serviceProviderContactId;
+            if (linkSnapshot) {
+              body.clearServiceProviderContactId = true;
+              body.serviceProviderContactId = '';
+            }
+          }
+        } else {
+          // Leaving Individual/Full-Time: clear stale provider link only when one existed.
+          delete body.serviceProviderContactId;
+          if (linkSnapshot) {
+            body.clearServiceProviderContactId = true;
+            body.serviceProviderContactId = '';
+          }
         }
         if (editUpdatedAt) body.expectedUpdatedAt = editUpdatedAt;
         const res = await api(`/contacts/${editId}`, { method: 'PATCH', body });
         const saved = res?.data;
         if (saved?.updatedAt) setEditUpdatedAt(saved.updatedAt);
       } else {
+        if (!isHcwStaff) body.serviceProviderContactId = '';
         await api('/contacts', { method: 'POST', body });
       }
       setForm(empty);
       setEditId(null);
       setRosterTouched(false);
       setEditUpdatedAt('');
-      setRosterSnapshot([]);      load();
+      setRosterSnapshot([]);
+      setLinkSnapshot('');
+      load();
       loadServiceProviders();
     } catch (err) {
       setError(err.message);
@@ -396,7 +418,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     setRosterTouched(false);
     setEditUpdatedAt(c.updatedAt || '');
     const employees = Array.isArray(c.providerEmployees) ? c.providerEmployees : [];
-    setRosterSnapshot(employees);    setForm({
+    setRosterSnapshot(employees);
+    setLinkSnapshot(String(c.serviceProviderContactId || '').trim());
+    setForm({
       name: c.name || '',
       email: c.email || '',
       contactCategory,
@@ -932,6 +956,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     setEditId(null);
                     setForm(empty);
                     setRosterTouched(false);
+                    setEditUpdatedAt('');
+                    setRosterSnapshot([]);
+                    setLinkSnapshot('');
                   }}
                 >
                   Cancel edit

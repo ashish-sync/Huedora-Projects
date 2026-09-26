@@ -385,12 +385,39 @@ const DURATION_OPTIONS = [3, 4, 5, 6, 8];
 export { DURATION_OPTIONS };
 
 function parseTimeToMinutes(timeStr) {
-  if (!timeStr) return null;
-  const parts = String(timeStr).trim().split(':');
-  const hours = Number(parts[0]);
-  const minutes = Number(parts[1] || 0);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-  return hours * 60 + minutes;
+  if (timeStr == null || timeStr === '') return null;
+  const raw = String(timeStr).trim();
+  if (!raw) return null;
+
+  // "9:00 AM", "09.30 pm", "10:00am"
+  const ampm = raw.match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/i);
+  if (ampm) {
+    let hours = Number(ampm[1]);
+    const minutes = Number(ampm[2] || 0);
+    const period = ampm[3].toLowerCase();
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes > 59) return null;
+    if (period === 'pm' && hours < 12) hours += 12;
+    if (period === 'am' && hours === 12) hours = 0;
+    if (hours > 23) return null;
+    return hours * 60 + minutes;
+  }
+
+  // "10:00", "10:00:00", "10.30", tolerate trailing junk / ZWSP from imports
+  const hm = raw.match(/(\d{1,2})[:.](\d{2})/);
+  if (hm) {
+    const hours = Number(hm[1]);
+    const minutes = Number(hm[2]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || hours > 23 || minutes > 59) return null;
+    return hours * 60 + minutes;
+  }
+
+  const hourOnly = raw.match(/^(\d{1,2})\b/);
+  if (hourOnly) {
+    const hours = Number(hourOnly[1]);
+    if (Number.isNaN(hours) || hours > 23) return null;
+    return hours * 60;
+  }
+  return null;
 }
 
 /**

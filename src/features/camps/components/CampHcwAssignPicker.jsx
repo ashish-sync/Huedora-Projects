@@ -7,6 +7,7 @@ import {
   buildHcwAssignCascade,
   contactToHcwFields,
   findAssignableHealthcareWorker,
+  isAssignableHealthcareWorkerOrg,
   isHealthcareWorkerCategory,
 } from '../utils/campHcwContact';
 import {
@@ -18,11 +19,9 @@ import { fetchAssignContactFacets } from '../utils/fetchHcwContacts.js';
 function AssignField({ label, hint, className = '', children }) {
   return (
     <label className={`camp-hcw-assign-field ${className}`.trim()}>
-      <span className="camp-hcw-assign-field-label">
-        <span className="camp-hcw-assign-field-title">{label}</span>
-        {hint ? <span className="camp-hcw-assign-hint">{hint}</span> : null}
-      </span>
+      <span className="camp-hcw-assign-field-title">{label}</span>
       {children}
+      {hint ? <span className="camp-hcw-assign-hint">{hint}</span> : null}
     </label>
   );
 }
@@ -65,6 +64,8 @@ export function CampHcwAssignPicker({
   clientMasterProfession = '',
   clientMasterLoading = false,
   clientMasterHcwGap = '',
+  /** Prefill State from the camp request (helps SP employee load). */
+  campState = '',
   onSelect,
 }) {
   const selectedContact = useMemo(
@@ -83,8 +84,18 @@ export function CampHcwAssignPicker({
   const [resourceType, setResourceType] = useState(
     () => assignmentResourceTypeForContact(selectedContact),
   );
-  const [state, setState] = useState(() => selectedContact?.state || '');
+  // Service Provider: do NOT prefill camp state — agencies are often national /
+  // other-state; auto state was wiping the Employee Name list.
+  const [state, setState] = useState(() => {
+    if (selectedContact?.state) return selectedContact.state;
+    const initialRt = assignmentResourceTypeForContact(selectedContact);
+    if (isServiceProviderResourceType(initialRt)) return '';
+    return String(campState || '').trim() || '';
+  });
   const [city, setCity] = useState(() => selectedContact?.city || '');
+  const [providerId, setProviderId] = useState(() => (
+    String(selectedContact?.serviceProviderContactId || '').trim()
+  ));
   const [directoryStates, setDirectoryStates] = useState([]);
   const [directoryCities, setDirectoryCities] = useState([]);
   const [facetsLoading, setFacetsLoading] = useState(false);
@@ -107,12 +118,37 @@ export function CampHcwAssignPicker({
     [hcwContacts, resourceType, professions, state, city],
   );
 
+  const serviceProviderOptions = useMemo(() => {
+    if (!serviceProviderSelected) return [];
+    const fromOrgs = hcwContacts.filter(isAssignableHealthcareWorkerOrg);
+    const byId = new Map(fromOrgs.map((p) => [String(p._id), p]));
+    for (const person of cascade.people) {
+      const id = String(person.serviceProviderContactId || '').trim();
+      if (!id || byId.has(id)) continue;
+      byId.set(id, {
+        _id: id,
+        name: person.serviceProviderName || id,
+        contactCategory: 'Healthcare Worker',
+        resourceType: 'Service Provider',
+      });
+    }
+    return [...byId.values()].sort((a, b) =>
+      String(a.name || '').localeCompare(String(b.name || '')),
+    );
+  }, [serviceProviderSelected, hcwContacts, cascade.people]);
+
+  const peopleOptions = useMemo(() => {
+    if (!serviceProviderSelected || !providerId) return cascade.people;
+    return cascade.people.filter(
+      (person) => String(person.serviceProviderContactId || '') === String(providerId),
+    );
+  }, [cascade.people, serviceProviderSelected, providerId]);
+
   const resourceTypeOptions = useMemo(
     () => hcwResourceTypeChoices(masterResourceTypes, otherLabel),
     [masterResourceTypes, otherLabel],
   );
 
-  // States/cities only from Contact Directory for this resource type + Client Master role.
   const stateOptions = useMemo(
     () => uniqueSorted([...directoryStates, ...cascade.states]),
     [directoryStates, cascade.states],
@@ -150,8 +186,17 @@ export function CampHcwAssignPicker({
         setDirectoryStates(nextStates);
         setState((prev) => {
           const cur = String(prev || '').trim();
-          if (!cur) return prev;
-          const stillValid = nextStates.some(
+          if (!cur) {
+            // Never auto-apply camp state for Service Provider — keep nationwide list.
+            if (serviceProviderSelected) return prev;
+            const camp = String(campState || '').trim();
+            if (!camp) return prev;
+            const campOk = nextStates.some(
+              (name) => String(name).trim().toLowerCase() === camp.toLowerCase(),
+            );
+            return campOk ? camp : prev;
+          }
+          const stillValid = !nextStates.length || nextStates.some(
             (name) => String(name).trim().toLowerCase() === cur.toLowerCase(),
           );
           return stillValid ? prev : '';
@@ -166,7 +211,7 @@ export function CampHcwAssignPicker({
     return () => {
       cancelled = true;
     };
-  }, [resourceType, professionKey]);
+  }, [resourceType, professionKey, campState, serviceProviderSelected]);
 
   useEffect(() => {
     const stateName = String(state || '').trim();
@@ -206,41 +251,75 @@ export function CampHcwAssignPicker({
     onFiltersChange?.({ resourceType, state, city, professions });
   }, [resourceType, state, city, professions, onFiltersChange]);
 
+  // If Service Provider + a state filter yields zero employees but the nationwide
+  // roster has people, drop the state filter (camp auto-prefill used to cause this).
+  useEffect(() => {
+    if (!serviceProviderSelected) return;
+    const st = String(state || '').trim();
+    if (!st || contactsLoading) return;
+    if (!cascade.assignable.length) return;
+    if (cascade.people.length > 0) return;
+    if (cascade.filterGap !== 'state') return;
+    setState('');
+    setCity('');
+    setProviderId('');
+  }, [
+    serviceProviderSelected,
+    state,
+    contactsLoading,
+    cascade.assignable.length,
+    cascade.people.length,
+    cascade.filterGap,
+  ]);
+
   useEffect(() => {
     if (!selectedContact) return;
     setResourceType(assignmentResourceTypeForContact(selectedContact));
     setState(selectedContact.state || '');
     setCity(selectedContact.city || '');
+    setProviderId(String(selectedContact.serviceProviderContactId || '').trim());
   }, [selectedContact?._id]);
 
   useEffect(() => {
     if (prevProfessionKeyRef.current === professionKey) return;
     prevProfessionKeyRef.current = professionKey;
-    setState('');
+    // SP: keep state empty so agencies/employees load nationwide by default.
+    setState(serviceProviderSelected ? '' : String(campState || '').trim());
     setCity('');
+    setProviderId('');
     onSelect?.(contactToHcwFields(null));
-  }, [professionKey, onSelect]);
+  }, [professionKey, onSelect, campState, serviceProviderSelected]);
 
   function handleResourceTypeChange(nextResourceType) {
     setResourceType(nextResourceType);
-    setState('');
+    const nextIsSp = isServiceProviderResourceType(nextResourceType);
+    setState(nextIsSp ? '' : String(campState || '').trim());
     setCity('');
+    setProviderId('');
     onSelect?.(contactToHcwFields(null));
   }
 
   function handleStateChange(nextState) {
     setState(nextState);
     setCity('');
+    setProviderId('');
     onSelect?.(contactToHcwFields(null));
   }
 
   function handleCityChange(nextCity) {
     setCity(nextCity);
+    setProviderId('');
+    onSelect?.(contactToHcwFields(null));
+  }
+
+  function handleProviderChange(nextProviderId) {
+    setProviderId(nextProviderId);
     onSelect?.(contactToHcwFields(null));
   }
 
   function handlePersonChange(contactId) {
-    const contact = cascade.people.find((item) => String(item._id) === String(contactId))
+    const contact = peopleOptions.find((item) => String(item._id) === String(contactId))
+      || cascade.people.find((item) => String(item._id) === String(contactId))
       || findAssignableHealthcareWorker(hcwContacts, contactId);
     onSelect?.(contactToHcwFields(contact, { fallbackProfessions: professions }));
   }
@@ -253,7 +332,7 @@ export function CampHcwAssignPicker({
         ? 'Loading states…'
         : stateOptions.length
           ? 'Select state'
-          : 'No states with matching contacts';
+          : (serviceProviderSelected ? 'All states (optional)' : 'No states with matching contacts');
 
   const cityEmptyLabel = !canUseFilters
     ? 'Complete filters above first'
@@ -267,7 +346,7 @@ export function CampHcwAssignPicker({
       ? (masterRoleMissing
         ? 'Configure Healthcare Worker in Client Master first'
         : 'Select resource type first')
-      : cascade.people.length
+      : peopleOptions.length
         ? (serviceProviderSelected ? 'Select employee' : 'Select healthcare worker')
         : (serviceProviderSelected
           ? 'No matching employees under service providers'
@@ -304,7 +383,7 @@ export function CampHcwAssignPicker({
           value={state}
           onChange={(event) => handleStateChange(event.target.value)}
           disabled={disabled || !canPickState}
-          required
+          required={!serviceProviderSelected}
         >
           <option value="">{stateEmptyLabel}</option>
           {stateOptions.map((option) => (
@@ -328,11 +407,35 @@ export function CampHcwAssignPicker({
         </AdaptiveSelect>
       </AssignField>
 
+      {serviceProviderSelected ? (
+        <AssignField label="Service Provider">
+          <AdaptiveSelect
+            className="tylo-select"
+            threshold={6}
+            value={providerId}
+            onChange={(event) => handleProviderChange(event.target.value)}
+            disabled={disabled || !canPickPerson || contactsLoading}
+          >
+            <option value="">
+              {contactsLoading
+                ? 'Loading service providers…'
+                : serviceProviderOptions.length
+                  ? 'All service providers'
+                  : 'No service providers loaded'}
+            </option>
+            {serviceProviderOptions.map((provider) => (
+              <option key={provider._id} value={provider._id}>
+                {provider.name || provider._id}
+                {provider.city ? ` · ${provider.city}` : ''}
+              </option>
+            ))}
+          </AdaptiveSelect>
+        </AssignField>
+      ) : null}
+
       <AssignField
         label={serviceProviderSelected ? 'Employee Name' : 'Healthcare Worker Name'}
-          hint={serviceProviderSelected
-            ? 'Employees under Service Providers in Contact Directory (not the agency itself).'
-            : 'Type a name to search beyond the first matches.'}
+        className="full"
       >
         <AdaptiveSelect
           className="tylo-select"
@@ -350,7 +453,7 @@ export function CampHcwAssignPicker({
           placeholder={personEmptyLabel}
         >
           <option value="">{personEmptyLabel}</option>
-          {cascade.people.map((contact) => (
+          {peopleOptions.map((contact) => (
             <option key={contact._id} value={contact._id}>
               {personOptionLabel(contact, { city, state })}
             </option>
@@ -370,17 +473,30 @@ export function CampHcwAssignPicker({
         </p>
       ) : null}
 
-      {!cascade.assignable.length && canUseFilters && !contactsLoading && state ? (
+      {serviceProviderSelected
+        && canUseFilters
+        && !contactsLoading
+        && !cascade.assignable.length ? (
         <p className="meta-text camp-hcw-assign-note full">
-          {serviceProviderSelected
-            ? `No employees under Service Providers match Client Master role(s) “${rolesLabel}”. Link Full-Time / Individual workers to a provider, or add Employees on the Service Provider in Contact Directory.`
-            : `No Healthcare Worker contacts match resource type “${resourceType}”${rolesLabel ? ` and Client Master role(s) “${rolesLabel}”` : ''}. Add matching contacts in Contact Directory first.`}
+          No employees under Service Providers match Client Master role(s) “{rolesLabel}”.
+          Add Employees on the Service Provider in Contact Directory, or link Full-Time / Individual
+          workers to a provider.
+        </p>
+      ) : null}
+
+      {!serviceProviderSelected
+        && !cascade.assignable.length
+        && canUseFilters
+        && !contactsLoading
+        && state ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          {`No Healthcare Worker contacts match resource type “${resourceType}”${rolesLabel ? ` and Client Master role(s) “${rolesLabel}”` : ''}. Add matching contacts in Contact Directory first.`}
         </p>
       ) : null}
 
       {cascade.assignable.length > 0
         && canPickPerson
-        && !cascade.people.length
+        && !peopleOptions.length
         && !contactsLoading
         && cascade.filterGap === 'profession' ? (
         <p className="meta-text camp-hcw-assign-note full">
@@ -392,7 +508,7 @@ export function CampHcwAssignPicker({
 
       {cascade.assignable.length > 0
         && canPickPerson
-        && !cascade.people.length
+        && !peopleOptions.length
         && !contactsLoading
         && cascade.filterGap === 'state' ? (
         <p className="meta-text camp-hcw-assign-note full">
@@ -402,7 +518,7 @@ export function CampHcwAssignPicker({
 
       {cascade.assignable.length > 0
         && canPickPerson
-        && !cascade.people.length
+        && !peopleOptions.length
         && !contactsLoading
         && cascade.filterGap === 'city' ? (
         <p className="meta-text camp-hcw-assign-note full">
@@ -410,7 +526,18 @@ export function CampHcwAssignPicker({
         </p>
       ) : null}
 
-      {!hcwContacts.some(isHealthcareWorkerCategory) && !contactsLoading && state ? (
+      {serviceProviderSelected
+        && providerId
+        && cascade.assignable.length > 0
+        && !peopleOptions.length
+        && !contactsLoading ? (
+        <p className="meta-text camp-hcw-assign-note full">
+          This Service Provider has no employees matching the current filters. Clear State/City
+          or choose “All service providers”.
+        </p>
+      ) : null}
+
+      {!hcwContacts.some(isHealthcareWorkerCategory) && !contactsLoading && canUseFilters ? (
         <p className="meta-text camp-hcw-assign-note full">
           No Healthcare Worker contacts found in Contact Directory. Add Healthcare Worker contacts there first.
         </p>

@@ -5310,14 +5310,15 @@
 }
 
 .camp-ops-root .camp-hcw-assign-picker {
-  gap: 14px 18px;
+  gap: 12px 18px;
   align-items: start;
 }
 
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 4px;
   min-width: 0;
   margin: 0;
   font-size: 0.75rem;
@@ -5326,37 +5327,37 @@
   color: var(--text-muted);
 }
 
-.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field-label {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field-title {
+  display: block;
   min-height: 1.25rem;
   line-height: 1.25;
-}
-
-.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field-title {
   color: var(--text-muted);
 }
 
+/* Hints sit under the control so adjacent row selects stay level. */
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-hint {
-  flex-shrink: 1;
+  display: block;
   margin: 0;
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--muted);
   white-space: normal;
-  text-align: right;
-  max-width: 14rem;
-  line-height: 1.3;
+  text-align: left;
+  line-height: 1.35;
+}
+
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > select,
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > input,
+.camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > .adaptive-select-host {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > select,
 .camp-ops-root .camp-hcw-assign-picker .camp-hcw-assign-field > input {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
   height: var(--control-h-sm);
   min-height: var(--control-h-sm);
   max-height: var(--control-h-sm);

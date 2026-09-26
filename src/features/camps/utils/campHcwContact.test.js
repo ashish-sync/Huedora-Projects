@@ -159,6 +159,49 @@ describe('buildHcwAssignCascade', () => {
     expect(cascade.people.map((person) => person.name).sort()).toEqual(['Neha Singh', 'Ravi Kumar']);
   });
 
+  it('lists Service Provider employees nationwide when state is empty', () => {
+    const rows = [
+      {
+        _id: 'sp-mh',
+        contactCategory: 'Healthcare Worker',
+        resourceType: 'Service Provider',
+        name: 'MH Agency',
+        state: 'Maharashtra',
+        city: 'Pune',
+        providerEmployees: [
+          { id: 'e1', name: 'Pune Staff', mobile: '9000000011', profession: 'Technician' },
+        ],
+      },
+      {
+        _id: 'sp-dl',
+        contactCategory: 'Healthcare Worker',
+        resourceType: 'Service Provider',
+        name: 'DL Agency',
+        state: 'Delhi',
+        city: 'New Delhi',
+        providerEmployees: [
+          { id: 'e2', name: 'Delhi Staff', mobile: '9000000012', profession: 'Technician' },
+        ],
+      },
+    ];
+
+    const nationwide = buildHcwAssignCascade(rows, {
+      resourceType: 'Service Provider',
+      professions: ['Technician'],
+      state: '',
+    });
+    expect(nationwide.people.map((p) => p.name).sort()).toEqual(['Delhi Staff', 'Pune Staff']);
+
+    const campStateMismatch = buildHcwAssignCascade(rows, {
+      resourceType: 'Service Provider',
+      professions: ['Technician'],
+      state: 'Karnataka',
+    });
+    expect(campStateMismatch.people).toEqual([]);
+    expect(campStateMismatch.filterGap).toBe('state');
+    expect(campStateMismatch.assignable.length).toBe(2);
+  });
+
   it('includes Service Provider employees with blank or Other profession', () => {
     const withBlank = [
       {

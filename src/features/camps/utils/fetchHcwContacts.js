@@ -29,7 +29,7 @@ export async function fetchAssignContactFacets({
     .filter(Boolean);
   const roleKey = [...new Set(roleList)].sort().join(',');
   const st = String(state || '').trim();
-  const cacheKey = `hcw-assign-facets:v2:rt=${rt}:pr=${roleKey}:st=${st}`;
+  const cacheKey = `hcw-assign-facets:v3:rt=${rt}:pr=${roleKey}:st=${st}`;
 
   const loader = async () => {
     const params = new URLSearchParams({ resourceType: rt });
@@ -80,7 +80,7 @@ export async function fetchHealthcareWorkerContactsPage({
   const hardCap = fullDirectory ? 2000 : Math.min(200, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT);
   const capped = Math.min(Math.max(1, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT), hardCap);
   const pageBudget = fullDirectory ? Math.max(1, maxPages || 1) : 1;
-  const cacheKey = `hcw-contacts:v3:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
+  const cacheKey = `hcw-contacts:v5:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
 
   const loader = async () => {
     const all = [];
@@ -120,7 +120,9 @@ export async function fetchHealthcareWorkerContactsPage({
 /**
  * Contacts needed for one Assignment resource-type choice.
  * Full-Time / Individual → that type only.
- * Service Provider → agencies (+ embedded employees) and linked staff.
+ * Service Provider → agencies (with embedded employees) + linked Full-Time/Individual staff.
+ * Profession is NOT applied to agency rows (orgs rarely store profession); employees are
+ * filtered client-side after expanding providerEmployees.
  */
 export async function fetchAssignableContactsForResourceType(resourceType, opts = {}) {
   const rt = String(resourceType || '').trim();
@@ -132,16 +134,29 @@ export async function fetchAssignableContactsForResourceType(resourceType, opts 
   const maxPages = opts.maxPages || 1;
 
   if (rt === 'Service Provider') {
+    const {
+      profession: _ignoredProfession,
+      professions: _ignoredProfessions,
+      resourceType: _ignoredRt,
+      hasServiceProvider: _ignoredSp,
+      ...rest
+    } = opts;
     const [providers, linkedStaff] = await Promise.all([
+      // Agencies only — omit profession so blank-profession SP orgs (and their rosters) load.
       fetchHealthcareWorkerContactsPage({
-        ...opts,
+        ...rest,
         resourceType: 'Service Provider',
+        profession: '',
+        professions: [],
         pageSize,
         maxPages,
       }),
+      // Linked staff (Full-Time / Individual with serviceProviderContactId), role-filtered.
       fetchHealthcareWorkerContactsPage({
-        ...opts,
+        ...rest,
         hasServiceProvider: true,
+        profession: opts.profession,
+        professions: opts.professions,
         pageSize,
         maxPages,
       }),

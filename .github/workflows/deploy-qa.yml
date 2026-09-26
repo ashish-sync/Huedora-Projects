@@ -1,0 +1,134 @@
+# QA frontend deploy for Tylo One.
+# Push to the qa branch only. Production is a separate future workflow.
+#
+# Official actions: checkout + setup-node (v5 = Node 24 runtime).
+# Deploy itself is ssh/rsync so the VPS does not need GitHub credentials.
+#
+# Vite bakes VITE_* into the static build. There is no server-side .env on
+# /var/www/tylo-one/qa/frontend/. Set optional build-time values as GitHub
+# Environment variables/secrets on the qa environment:
+#   VITE_BACKEND_URL          (optional; empty = same-origin /api/v1)
+#   VITE_GOOGLE_MAPS_API_KEY  (optional)
+#
+# Existing qa environment SSH secrets on this repo:
+#   QA_SSH_HOST
+#   QA_SERVER_USER
+#   QA_SERVER_SSH_KEY
+
+name: Deploy QA Frontend
+
+on:
+  push:
+    branches:
+      - qa
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tylo-one-qa-frontend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Test, build, and deploy QA frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: qa
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        # Vite/Tailwind live in devDependencies — do not omit them.
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build production bundle
+        env:
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          npm run build
+          test -f dist/index.html
+          echo "Built with VITE_BACKEND_URL=${VITE_BACKEND_URL:-<empty/same-origin>}"
+
+      - name: Configure SSH
+        env:
+          QA_SSH_HOST: ${{ secrets.QA_SSH_HOST }}
+          QA_SERVER_USER: ${{ secrets.QA_SERVER_USER }}
+          QA_SERVER_SSH_KEY: ${{ secrets.QA_SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "${QA_SSH_HOST}" ]] || missing+=("QA_SSH_HOST")
+          [[ -n "${QA_SERVER_USER}" ]] || missing+=("QA_SERVER_USER")
+          [[ -n "${QA_SERVER_SSH_KEY}" ]] || missing+=("QA_SERVER_SSH_KEY")
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "Missing GitHub secret(s): ${missing[*]}"
+            echo "Add them to the qa environment on ashish-sync/Huedora-Projects."
+            exit 1
+          fi
+          install -m 700 -d "${HOME}/.ssh"
+          printf '%s\n' "${QA_SERVER_SSH_KEY}" | tr -d '\r' > "${HOME}/.ssh/qa_deploy_key"
+          chmod 600 "${HOME}/.ssh/qa_deploy_key"
+          ssh-keyscan -H "${QA_SSH_HOST}" >> "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
+      - name: Ensure frontend directory on VPS
+        env:
+          QA_SSH_HOST: ${{ secrets.QA_SSH_HOST }}
+          QA_SERVER_USER: ${{ secrets.QA_SERVER_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "${HOME}/.ssh/qa_deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            "${QA_SERVER_USER}@${QA_SSH_HOST}" \
+            'mkdir -p /var/www/tylo-one/qa/frontend'
+
+      - name: Rsync dist to VPS
+        env:
+          QA_SSH_HOST: ${{ secrets.QA_SSH_HOST }}
+          QA_SERVER_USER: ${{ secrets.QA_SERVER_USER }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete --stats \
+            -e "ssh -i ${HOME}/.ssh/qa_deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes" \
+            ./dist/ "${QA_SERVER_USER}@${QA_SSH_HOST}:/var/www/tylo-one/qa/frontend/"
+
+      - name: Verify deployed files
+        env:
+          QA_SSH_HOST: ${{ secrets.QA_SSH_HOST }}
+          QA_SERVER_USER: ${{ secrets.QA_SERVER_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "${HOME}/.ssh/qa_deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            "${QA_SERVER_USER}@${QA_SSH_HOST}" 'bash -s' << 'REMOTE'
+          set -eo pipefail
+          DEST=/var/www/tylo-one/qa/frontend
+          if [[ ! -f "${DEST}/index.html" ]]; then
+            echo "Deploy verification failed: ${DEST}/index.html is missing."
+            exit 1
+          fi
+          if [[ ! -d "${DEST}/assets" ]]; then
+            echo "Deploy verification failed: ${DEST}/assets is missing."
+            exit 1
+          fi
+          echo "QA frontend deploy OK:"
+          ls -la "${DEST}" | head -20
+          REMOTE

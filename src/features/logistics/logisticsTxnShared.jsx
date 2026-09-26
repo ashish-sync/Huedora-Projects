@@ -5,23 +5,33 @@ import { PRODUCT_TYPES, resolveProductType } from '../../shared/productTypes.js'
 export const FALLBACK_PRODUCT = [...PRODUCT_TYPES];
 
 export const FALLBACK_DELIVERY = [
-  'Hand Delivery',
-  'Regular Courier',
-  'Apex',
+  'Courier',
   'Porter',
-  'Other',
-  'Blue Dart',
-  'DTDC',
-  'Other Courier',
+  'Hand Delivery',
 ];
-export const FALLBACK_COURIER = [
-  'Regular Courier',
-  'Apex',
-  'Other',
-  'Blue Dart',
-  'DTDC',
-  'Other Courier',
-];
+export const FALLBACK_COURIER = ['Courier'];
+
+export const ISSUE_PRIORITIES = ['High', 'Medium', 'Low'];
+
+export const DELIVERY_MODE_ALIASES = {
+  'Regular Courier': 'Courier',
+  Apex: 'Courier',
+  Other: 'Courier',
+  'Blue Dart': 'Courier',
+  DTDC: 'Courier',
+  'Other Courier': 'Courier',
+  Fragile: 'Courier',
+  'Air Delivery': 'Courier',
+  'Hand-carry': 'Hand Delivery',
+  Road: 'Courier',
+};
+
+export function mapDeliveryMode(mode) {
+  const raw = String(mode || '').trim();
+  if (!raw) return 'Hand Delivery';
+  if (FALLBACK_DELIVERY.includes(raw)) return raw;
+  return DELIVERY_MODE_ALIASES[raw] || raw;
+}
 
 /** Same issue kinds as Request One → Goods Issue */
 export const GOODS_ISSUE_KINDS = ['Fresh Dispatch', 'Inter Transfer', 'Recall / Pickup'];
@@ -85,7 +95,6 @@ export function emptyTxnForm(user, { entryType = 'Inward', warehouseId = '' } = 
     remark: '',
     logisticsKind: 'Fresh Dispatch',
     priority: 'Medium',
-    preferredDate: '',
     logisticsProducts: [{ productType: '', productId: '', productName: '', qty: '1' }],
     logisticsProductsConfirmed: false,
     fromContactId: '',

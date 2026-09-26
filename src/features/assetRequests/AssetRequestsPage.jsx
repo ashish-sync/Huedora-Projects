@@ -49,14 +49,8 @@ const REQUEST_TYPES = [
 
 const SERVICE_TYPES = ['Hardware', 'Software', 'Calibration', 'Power', 'Cosmetic', 'Maintenance'];
 const LOGISTICS_KINDS = ['Fresh Dispatch', 'Inter Transfer', 'Recall / Pickup'];
-const TRANSPORT_MODES = [
-  'Fragile',
-  'Air Delivery',
-  'Porter',
-  'Hand Delivery',
-  'Blue Dart',
-  'DTDC',
-];
+const TRANSPORT_MODES = ['Courier', 'Porter', 'Hand Delivery'];
+const LOGISTICS_PRIORITIES = ['High', 'Medium', 'Low'];
 const TRAINING_TYPES = [
   'Fresh Training',
   'Refresher Device',
@@ -115,12 +109,6 @@ const OTHER_REQUEST_OPTIONS = {
 };
 const ASSET_PRODUCT_TYPES = new Set(['Medical Device', 'Non-Medical Device']);
 
-function todayLocal() {
-  const date = new Date();
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 function emptyLogisticsProduct() {
   return { productType: '', productId: '', productName: '', qty: '' };
 }
@@ -158,7 +146,7 @@ const EMPTY_FORM = {
   expectedDate: '',
   scheduledDate: '',
   preferredDate: '',
-  logisticsPreferredDate: todayLocal(),
+  logisticsPriority: 'Medium',
   fromContactId: '',
   fromState: '',
   fromCity: '',
@@ -398,6 +386,8 @@ function detailSummary(r) {
         ? [r.expenseCategory, r.expenseSubCategory].filter(Boolean).join(' · ')
         : r.expenseCategory) ||
       r.otherCategory,
+    r.transportMode,
+    r.priority,
     r.otherSubcategory,
     r.requestType === 'REIMBURSEMENT'
       ? r.raisedFor === 'OTHER' || (r.payeeName && r.payeeName !== 'Self')
@@ -1110,6 +1100,17 @@ export default function AssetRequestsPage() {
       setError('Confirm the selected products before choosing contacts and submitting.');
       return;
     }
+    if (form.requestType === 'LOGISTICS' && !form.transportMode) {
+      setError('Select a delivery mode.');
+      return;
+    }
+    if (
+      form.requestType === 'LOGISTICS' &&
+      !LOGISTICS_PRIORITIES.includes(String(form.logisticsPriority || '').trim())
+    ) {
+      setError('Select priority (High, Medium, or Low).');
+      return;
+    }
     if (form.requestType === 'REIMBURSEMENT' && !reimbursementBill) {
       setError('Upload the expense bill before submitting the Finance One Request.');
       return;
@@ -1214,7 +1215,7 @@ export default function AssetRequestsPage() {
         body.toPinCode = form.toPinCode;
         body.toAddress = form.toAddress;
         body.transportMode = form.transportMode || undefined;
-        body.preferredDate = form.logisticsPreferredDate || undefined;
+        body.priority = form.logisticsPriority || undefined;
         body.logisticsProducts = form.logisticsProducts.map((item) => ({
           productType: item.productType,
           productId: item.productId,
@@ -1329,7 +1330,7 @@ export default function AssetRequestsPage() {
         requestType: form.requestType,
         serviceType: form.serviceType,
         preferredDate: '',
-        logisticsPreferredDate: todayLocal(),
+        logisticsPriority: 'Medium',
         logisticsProducts: [emptyLogisticsProduct()],
         logisticsProductsConfirmed: false,
       });
@@ -1813,13 +1814,21 @@ export default function AssetRequestsPage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
-                <DateInput
-                  label="Preferred date"
-                  value={form.logisticsPreferredDate}
-                  onChange={(value) =>
-                    setForm({ ...form, logisticsPreferredDate: value })
-                  }
-                />
+                <div className="field">
+                  <label>Priority *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.logisticsPriority}
+                    onChange={(e) => setForm({ ...form, logisticsPriority: e.target.value })}
+                  >
+                    <option value="">Select priority</option>
+                    {LOGISTICS_PRIORITIES.map((priority) => (
+                      <option key={priority} value={priority}>
+                        {priority}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
               </div>
             ) : form.requestType === 'HIRING' ? (
               <div className="arq-service-top-row arq-span">

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { api } from '../../shared/api.js';
@@ -12,7 +11,6 @@ import { useAuth } from '../../shared/auth.jsx';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
-import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
   FALLBACK_CAT_DEFAULTS,
   FALLBACK_COURIER,
@@ -20,26 +18,12 @@ import {
   FALLBACK_PRODUCT,
   Field,
   GOODS_ISSUE_KINDS,
+  ISSUE_PRIORITIES,
   emptyTxnForm,
+  mapDeliveryMode,
   nowLocal,
   resolveProductType,
 } from './logisticsTxnShared.jsx';
-
-const REQUEST_DELIVERY_MODES = [
-  'Hand Delivery',
-  'Regular Courier',
-  'Apex',
-  'Porter',
-  'Other',
-  'Blue Dart',
-  'DTDC',
-  'Other Courier',
-];
-const DELIVERY_MODE_ALIASES = {
-  'Hand-carry': 'Hand Delivery',
-  Courier: 'Regular Courier',
-  Road: 'Regular Courier',
-};
 
 function normalizeIssueKind(raw) {
   const v = String(raw || '').trim();
@@ -112,8 +96,6 @@ function todayLocalDate() {
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-
-const ISSUE_PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
 
 function contactNumber(contact) {
   return contact?.contact || contact?.mobile || '';
@@ -316,8 +298,12 @@ function fulfillmentProgress(request) {
   return { lines, fulfilled, total: lines.length, allFulfilled: lines.length > 0 && fulfilled === lines.length };
 }
 
-function mapDeliveryMode(mode) {
-  return DELIVERY_MODE_ALIASES[mode] || mode || 'Hand Delivery';
+function mapRequestPriority(priority) {
+  const raw = String(priority || '').trim();
+  if (ISSUE_PRIORITIES.includes(raw)) return raw;
+  if (/^urgent$/i.test(raw)) return 'High';
+  if (/^not urgent$/i.test(raw)) return 'Medium';
+  return 'Medium';
 }
 
 function resolveDispatchStatus(row) {
@@ -362,28 +348,7 @@ export default function LogisticsOutwardPage() {
 
   const cfg = meta?.inOut || {};
   const productTypes = cfg.productTypes || FALLBACK_PRODUCT;
-  const { options: picklistDeliveryModes } = usePicklistOptions(
-    'logistics.deliveryMode',
-    REQUEST_DELIVERY_MODES
-  );
-  const deliveryModes = [
-    ...new Set([
-      ...(cfg.deliveryModes || FALLBACK_DELIVERY),
-      ...REQUEST_DELIVERY_MODES,
-      ...picklistDeliveryModes,
-    ]),
-  ];
-  const courierModes = [
-    ...new Set([
-      ...(cfg.courierModes || FALLBACK_COURIER),
-      'Regular Courier',
-      'Apex',
-      'Other',
-      'Blue Dart',
-      'DTDC',
-      'Other Courier',
-    ]),
-  ];
+  const courierModes = FALLBACK_COURIER;
   const issueKinds = cfg.goodsIssueKinds || GOODS_ISSUE_KINDS;
   const showFrom = needsFromContact(form.logisticsKind);
   const showTo = needsToContact(form.logisticsKind);
@@ -409,7 +374,7 @@ export default function LogisticsOutwardPage() {
     [products, form.productType]
   );
 
-  const needsAwb = courierModes.includes(form.deliveryMode);
+  const needsAwb = courierModes.includes(mapDeliveryMode(form.deliveryMode));
 
   const loadRows = useCallback(async () => {
     setListLoading(true);
@@ -495,7 +460,6 @@ export default function LogisticsOutwardPage() {
     });
     base.logisticsKind = 'Fresh Dispatch';
     base.priority = 'Medium';
-    base.preferredDate = todayLocalDate();
     base.deliveryMode = 'Hand Delivery';
     base.logisticsProducts = [emptyIssueProduct()];
     base.logisticsProductsConfirmed = false;
@@ -545,6 +509,7 @@ export default function LogisticsOutwardPage() {
     base.productName = line?.productName || line?.productId?.name || '';
     base.qty = String(line?.qty || 1);
     base.deliveryMode = mapDeliveryMode(req.transportMode);
+    base.priority = mapRequestPriority(req.priority);
     base.remark = `Fulfill ${req.requestNumber || req._id} line ${lineIndex + 1}${
       kind ? ` · ${kind}` : ''
     }`;
@@ -773,8 +738,12 @@ export default function LogisticsOutwardPage() {
       setError('Select Delivery mode.');
       return;
     }
+    if (!ISSUE_PRIORITIES.includes(String(form.priority || '').trim())) {
+      setError('Select priority (High, Medium, or Low).');
+      return;
+    }
     if (needsAwb && !String(form.awbNumber || '').trim()) {
-      setError('AWB number is required for courier delivery modes.');
+      setError('AWB number is required for Courier.');
       return;
     }
     if (needsFromContact(kind) && !form.fromContactId) {
@@ -830,8 +799,8 @@ export default function LogisticsOutwardPage() {
     }
     try {
       const entryType = entryTypeForKind(kind);
-      const preferredDate = form.preferredDate || todayLocalDate();
-      const txnAt = `${preferredDate}T${String(nowLocal()).slice(11, 16)}`;
+      const txnDate = todayLocalDate();
+      const txnAt = `${txnDate}T${String(nowLocal()).slice(11, 16)}`;
       let lastResult = null;
 
       for (const line of lines) {
@@ -895,8 +864,7 @@ export default function LogisticsOutwardPage() {
             entryType,
             logisticsKind: kind,
             priority: form.priority || 'Medium',
-            preferredDate,
-            deliveryMode: form.deliveryMode,
+            deliveryMode: mapDeliveryMode(form.deliveryMode),
             warehouseId: form.warehouseId || defaultWarehouseId || null,
             sourceWarehouseId: form.warehouseId || defaultWarehouseId || null,
             contactId: form.toContactId || form.contactId || null,
@@ -932,7 +900,7 @@ export default function LogisticsOutwardPage() {
             expiryApplicable,
             expiryDate: expiryApplicable ? expiryDate : '',
             transactionDateTime: txnAt,
-            transactionDate: preferredDate,
+            transactionDate: txnDate,
             awbNumber: needsAwb ? form.awbNumber : '',
             remark: form.remark || kind,
           },
@@ -1124,23 +1092,19 @@ export default function LogisticsOutwardPage() {
                         ))}
                       </AdaptiveSelect>
                     </Field>
-                    <Field label="Preferred date">
-                      <DateInput
-                        hideLabel
-                        aria-label="Preferred date"
-                        value={form.preferredDate || ''}
-                        onChange={(value) => setField('preferredDate', value)}
-                      />
-                    </Field>
                     <Field label="Delivery mode" required>
-                      <OtherAwareSelect
+                      <AdaptiveSelect
                         required
-                        picklistKey="logistics.deliveryMode"
-                        source="logistics-outward"
-                        options={deliveryModes}
-                        value={form.deliveryMode}
+                        value={mapDeliveryMode(form.deliveryMode) || ''}
                         onChange={(e) => setField('deliveryMode', e.target.value)}
-                      />
+                      >
+                        <option value="">Select delivery mode</option>
+                        {FALLBACK_DELIVERY.map((mode) => (
+                          <option key={mode} value={mode}>
+                            {mode}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
                     </Field>
                     {needsAwb && (
                       <Field label="AWB number" required>
@@ -1454,14 +1418,18 @@ export default function LogisticsOutwardPage() {
                   )}
                   <div className="logistics-form-grid logistics-form-grid--inout">
                     <Field label="Delivery mode" required>
-                      <OtherAwareSelect
+                      <AdaptiveSelect
                         required
-                        picklistKey="logistics.deliveryMode"
-                        source="logistics-outward"
-                        options={deliveryModes}
-                        value={form.deliveryMode}
+                        value={mapDeliveryMode(form.deliveryMode) || ''}
                         onChange={(e) => setField('deliveryMode', e.target.value)}
-                      />
+                      >
+                        <option value="">Select delivery mode</option>
+                        {FALLBACK_DELIVERY.map((mode) => (
+                          <option key={mode} value={mode}>
+                            {mode}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
                     </Field>
                     {needsAwb && (
                       <Field label="AWB number" required>
@@ -1537,7 +1505,7 @@ export default function LogisticsOutwardPage() {
                           '-'}
                       </td>
                       <td>{r.city || '-'}</td>
-                      <td>{r.deliveryMode || r.mode || '-'}</td>
+                      <td>{mapDeliveryMode(r.deliveryMode || r.mode) || '-'}</td>
                       <td className="mono-sm">{r.awbNumber || '-'}</td>
                       <td>
                         <span

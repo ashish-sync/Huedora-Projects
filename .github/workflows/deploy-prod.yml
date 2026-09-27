@@ -82,7 +82,25 @@ jobs:
           install -m 700 -d "${HOME}/.ssh"
           printf '%s\n' "${PROD_SERVER_SSH_KEY}" | tr -d '\r' > "${HOME}/.ssh/prod_deploy_key"
           chmod 600 "${HOME}/.ssh/prod_deploy_key"
-          ssh-keyscan -H "${PROD_SSH_HOST}" >> "${HOME}/.ssh/known_hosts"
+          # Validate key shape without printing the key material.
+          if ! ssh-keygen -y -f "${HOME}/.ssh/prod_deploy_key" >/dev/null 2>&1; then
+            echo "PROD_SERVER_SSH_KEY is not a valid private key (paste the full OpenSSH private key)."
+            exit 1
+          fi
+          scanned=0
+          for _ in 1 2 3 4 5; do
+            if ssh-keyscan -T 10 -H "${PROD_SSH_HOST}" >> "${HOME}/.ssh/known_hosts" 2>/tmp/ssh-keyscan.err; then
+              scanned=1
+              break
+            fi
+            sleep 3
+          done
+          if [[ "${scanned}" != "1" ]]; then
+            echo "ssh-keyscan failed for PROD_SSH_HOST (check the host/IP and that port 22 is reachable)."
+            # Do not print the host value (it is a secret). Show only scanner stderr class.
+            sed -E 's/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/<host>/g; s/[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<host>/g' /tmp/ssh-keyscan.err || true
+            exit 1
+          fi
           chmod 600 "${HOME}/.ssh/known_hosts"
 
       - name: Ensure frontend directory on VPS

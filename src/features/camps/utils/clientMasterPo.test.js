@@ -25,6 +25,40 @@ describe('clientMasterPo', () => {
     expect(Object.prototype.hasOwnProperty.call(payload, 'purchaseOrders')).toBe(false);
   });
 
+  it('PO Based save after removing all POs sends empty list with replace flag', () => {
+    const payload = buildCampTermsPayload({
+      campTerms: CAMP_TERMS.PO_BASED,
+      purchaseOrders: [createEmptyPurchaseOrder()],
+      campTermsFiles: [],
+      agreementStartDate: '',
+      agreementEffectiveDate: '',
+      agreementEndDate: '',
+    });
+
+    expect(payload.replacePurchaseOrders).toBe(true);
+    expect(payload.purchaseOrders).toEqual([]);
+    expect(payload.poNumber).toBe('');
+  });
+
+  it('PO Based save with one of two POs removed sends remaining only', () => {
+    const payload = buildCampTermsPayload({
+      campTerms: CAMP_TERMS.PO_BASED,
+      purchaseOrders: [
+        {
+          ...createEmptyPurchaseOrder({ id: 'po-keep' }),
+          poNumber: 'PO-KEEP',
+          poNetValue: 1000,
+        },
+        createEmptyPurchaseOrder({ id: 'po-empty' }),
+      ],
+      campTermsFiles: [],
+    });
+
+    expect(payload.replacePurchaseOrders).toBe(true);
+    expect(payload.purchaseOrders).toHaveLength(1);
+    expect(payload.purchaseOrders[0].poNumber).toBe('PO-KEEP');
+  });
+
   it('PO save includes meaningful purchase orders and agreement dates', () => {
     const payload = buildCampTermsPayload({
       campTerms: CAMP_TERMS.PO_BASED,
@@ -48,6 +82,7 @@ describe('clientMasterPo', () => {
 
     expect(payload.purchaseOrders).toHaveLength(1);
     expect(payload.purchaseOrders[0].poNumber).toBe('PO-99');
+    expect(payload.replacePurchaseOrders).toBe(true);
     expect(payload.agreementStartDate).toBe('2024-01-01');
     expect(payload.agreementEndDate).toBe('2024-12-31');
   });

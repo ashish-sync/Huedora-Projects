@@ -398,8 +398,10 @@ function serializePoForApi(row) {
 /**
  * Build API payload for Camp Terms.
  * Always includes Agreement dates from the form so switching the active terms
- * type never wipes them. Meaningful PO rows are included when present; empty
- * placeholder rows are omitted so the server can preserve existing POs.
+ * type never wipes them.
+ * PO Based saves send an authoritative purchaseOrders list (may be empty after Remove)
+ * with replacePurchaseOrders so the server does not restore deleted rows.
+ * Agreement/Approval saves omit empty PO placeholders so stored POs stay intact.
  */
 export function buildCampTermsPayload(form) {
   const campTerms = normalizeCampTerms(form.campTerms);
@@ -428,6 +430,25 @@ export function buildCampTermsPayload(form) {
     agreementEndDate,
   };
 
+  if (campTerms === CAMP_TERMS.PO_BASED) {
+    const combined = combinePurchaseOrders(purchaseOrders);
+    const primary = purchaseOrders[0];
+    Object.assign(payload, {
+      replacePurchaseOrders: true,
+      purchaseOrders,
+      poNumber: primary?.poNumber || '',
+      poNetValue: primary?.poNetValue ?? 0,
+      poApplyGst18: primary ? primary.poApplyGst18 !== false : false,
+      poGstAmount: primary?.poGstAmount ?? 0,
+      poGrossValue: primary?.poGrossValue ?? 0,
+      poIssueDate: primary?.poIssueDate || '',
+      poExpiryDate: primary?.poExpiryDate || '',
+      poFile: primary?.poFile || null,
+      ...combined,
+    });
+    return payload;
+  }
+
   if (purchaseOrders.length) {
     const combined = combinePurchaseOrders(purchaseOrders);
     const primary = purchaseOrders[0];
@@ -444,7 +465,7 @@ export function buildCampTermsPayload(form) {
       ...combined,
     });
   }
-  // Omit empty purchaseOrders so agreement-only saves never wipe stored POs.
+  // Omit empty purchaseOrders on Agreement/Approval/None so stored POs survive.
 
   return payload;
 }

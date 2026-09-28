@@ -50,7 +50,9 @@ export default function AssetRegistrySearchInput({
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const { data } = await api(`/assets?q=${encodeURIComponent(query)}&limit=15`);
+        const { data } = await api(
+          `/assets?q=${encodeURIComponent(query)}&limit=15&availableForAgreement=1`
+        );
         setResults(Array.isArray(data) ? data : []);
       } catch {
         setResults([]);

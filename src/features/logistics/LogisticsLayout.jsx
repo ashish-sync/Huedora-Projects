@@ -29,18 +29,16 @@ export default function LogisticsLayout() {
   }
 
   return (
-    <div className="logistics-shell">
-      <PageShell
-        breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.LOGISTICS }]}
-        title={MODULE.LOGISTICS}
-        description="Goods receipt for all product types, plus goods issue, consumption, and production output. Agreements and custody for Medical / Non-Medical Devices are in Asset One."
-      >
-        <ModuleSubNav
-          ariaLabel={`${MODULE.LOGISTICS} sections`}
-          items={NAV_ITEMS}
-        />
-        <Outlet />
-      </PageShell>
-    </div>
+    <PageShell
+      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.LOGISTICS }]}
+      title={MODULE.LOGISTICS}
+      description="Stock execution: goods receipt, goods issue, consumption, and production output. Raise and approve Goods Issuance in Request One; fulfill pack / POD / delivery here."
+    >
+      <ModuleSubNav
+        ariaLabel={`${MODULE.LOGISTICS} sections`}
+        items={NAV_ITEMS}
+      />
+      <Outlet />
+    </PageShell>
   );
 }

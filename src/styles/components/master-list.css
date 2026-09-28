@@ -56,11 +56,13 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--filter-toolbar-gap, 0.625rem);
-  margin-bottom: var(--space-3);
+  margin: 0;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--bg-elevated);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .master-filter-main,

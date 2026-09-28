@@ -53,6 +53,7 @@ export default function MasterDataPage() {
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.MASTER_DATA }]}
       title={MODULE.MASTER_DATA}
       description={description}
+      className="master-one-page"
     >
       <LogisticsMasterPage
         scope={scope}

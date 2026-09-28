@@ -29,43 +29,64 @@ select.tylo-select,
 select:not([multiple]):not([size]) {
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
+  display: block;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   height: var(--control-h);
   min-height: var(--control-h);
+  max-height: var(--control-h);
   background-color: var(--color-bg-elevated);
   background-image: var(--tylo-select-chevron);
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 10px 6px;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  padding-left: var(--control-pad-inline-start) !important;
-  padding-right: 36px !important;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: var(--control-pad-inline-start);
+  padding-right: 36px;
   font-size: var(--text-body-sm-size, 0.8125rem);
-  font-weight: 600;
-  line-height: 1.35;
+  font-weight: var(--text-body-sm-weight, 400);
+  line-height: calc(var(--control-h) - 2px);
+  text-indent: 0;
   cursor: pointer;
-  border-width: 1px !important;
-  border-style: solid !important;
-  border-color: var(--color-border-default) !important;
-  border-radius: var(--dropdown-radius) !important;
-  color: var(--ink);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--control-radius);
+  color: var(--color-text-primary);
   transition: var(--dropdown-transition);
 }
 
 select.tylo-select:hover,
 select:not([multiple]):not([size]):hover {
-  border-color: var(--line-strong) !important;
-  background-color: var(--surface);
+  border-color: var(--color-border-strong);
+  background-color: var(--color-bg-hover);
 }
 
 select.tylo-select:focus,
 select:not([multiple]):not([size]):focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default)) !important;
-  box-shadow: var(--dropdown-focus-ring) !important;
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
+  box-shadow: var(--dropdown-focus-ring);
   background-color: var(--color-bg-elevated);
   background-image: var(--tylo-select-chevron);
+}
+
+select.tylo-select:disabled,
+select:not([multiple]):not([size]):disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  background-color: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-default);
+}
+
+/* Empty native select — read as placeholder, not a selected value */
+select.tylo-select:has(> option[value='']:checked),
+select:not([multiple]):not([size]):has(> option[value='']:checked),
+.field select:has(> option[value='']:checked) {
+  color: var(--color-text-tertiary, var(--muted));
+  font-weight: 400;
 }
 
 select.tylo-select option,
@@ -95,19 +116,23 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select__control {
+  display: flex !important;
+  align-items: center !important;
   min-height: var(--control-h) !important;
   height: var(--control-h) !important;
+  max-height: var(--control-h) !important;
+  overflow: hidden !important;
   border: 1px solid var(--color-border-default) !important;
-  border-radius: var(--dropdown-radius) !important;
+  border-radius: var(--control-radius) !important;
   background: var(--color-bg-elevated) !important;
-  color: var(--ink) !important;
+  color: var(--color-text-primary) !important;
   box-shadow: none !important;
   transition: var(--dropdown-transition) !important;
 }
 
 .adaptive-select__control:hover {
-  border-color: var(--line-strong) !important;
-  background: var(--surface) !important;
+  border-color: var(--color-border-strong) !important;
+  background: var(--color-bg-hover) !important;
 }
 
 .adaptive-select__control--is-focused {
@@ -117,48 +142,106 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select__control--is-disabled {
-  cursor: not-allowed;
-  opacity: 0.68;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
   background: var(--color-bg-sunken) !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-border-default) !important;
+  box-shadow: none !important;
+}
+
+.adaptive-select__control--is-disabled .adaptive-select__single-value,
+.adaptive-select__control--is-disabled .adaptive-select__placeholder,
+.adaptive-select__control--is-disabled .adaptive-select__input-container,
+.adaptive-select__control--is-disabled .adaptive-select__input {
+  color: var(--color-text-secondary) !important;
+}
+
+.adaptive-select__control--is-disabled .adaptive-select__dropdown-indicator {
+  opacity: 0.55;
 }
 
 .adaptive-select--multi .adaptive-select__control {
   height: auto !important;
   min-height: var(--control-h) !important;
   max-height: none !important;
+  overflow: visible !important;
   align-items: center;
 }
 
 .adaptive-select--multi .adaptive-select__value-container {
+  display: flex !important;
   flex-wrap: wrap;
   gap: 4px;
   padding-top: 6px !important;
   padding-bottom: 6px !important;
+  grid-template-columns: none;
+}
+
+.adaptive-select--multi .adaptive-select__input-container {
+  grid-area: auto !important;
+  display: inline-flex !important;
 }
 
 .adaptive-select__value-container {
+  display: grid !important;
+  align-items: center !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
   padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start) !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  grid-auto-flow: column;
+  grid-template-columns: minmax(0, 1fr);
 }
 
+.adaptive-select__indicators {
+  display: flex !important;
+  align-items: center !important;
+  align-self: stretch !important;
+  height: 100% !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+
+/* Overlay placeholder / value / search input in one cell (react-select default).
+   `grid-area: auto` + static position stacks them into a tall broken control. */
 .adaptive-select__single-value,
-.adaptive-select__placeholder {
-  font-weight: 600 !important;
-  line-height: 1.35 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+.adaptive-select__placeholder,
+.adaptive-select__input-container {
+  grid-area: 1 / 1 / 2 / 2 !important;
+  margin: 0 !important;
   max-width: 100% !important;
 }
 
-.adaptive-select__placeholder {
-  color: var(--muted) !important;
-}
-
-.adaptive-select__input-container,
 .adaptive-select__single-value,
 .adaptive-select__placeholder {
-  margin: 0 !important;
-  color: var(--ink) !important;
+  font-size: var(--text-body-sm-size, 0.8125rem) !important;
+  font-weight: var(--text-body-sm-weight, 400) !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  position: relative !important;
+  transform: none !important;
+  top: auto !important;
+}
+
+.adaptive-select__single-value {
+  color: var(--color-text-primary) !important;
+}
+
+.adaptive-select__placeholder {
+  color: var(--color-text-tertiary, var(--muted)) !important;
+  font-weight: 400 !important;
+}
+
+.adaptive-select__input-container {
+  display: inline-grid !important;
+  align-items: center !important;
+  color: var(--color-text-primary) !important;
+  padding: 0 !important;
 }
 
 .adaptive-select__input-container,
@@ -213,11 +296,15 @@ select:not([multiple]):not([size]) option {
 }
 
 /* react-select RequiredInput / dummy fields — never show as form chrome */
+.field .adaptive-select input[aria-hidden='true'],
+.field .adaptive-select-host > input[aria-hidden='true'],
 .adaptive-select input[aria-hidden='true'],
 .adaptive-select-host > input[aria-hidden='true'] {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
+  min-height: 0 !important;
+  max-height: 1px !important;
   margin: -1px !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -237,13 +324,28 @@ select:not([multiple]):not([size]) option {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: transparent !important;
+  width: 2rem !important;
+  min-width: 2rem !important;
+  height: 100% !important;
   padding: 0 10px 0 4px !important;
+  color: var(--color-text-secondary) !important;
   transition: opacity 140ms ease;
 }
 
 .adaptive-select__dropdown-indicator svg {
   display: none !important;
+}
+
+.adaptive-select__dropdown-indicator .tylo-dropdown-chevron {
+  display: inline-block !important;
+  width: 10px !important;
+  height: 6px !important;
+  flex-shrink: 0 !important;
+  opacity: 1 !important;
+  background-image: var(--tylo-select-chevron) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
 }
 
 .adaptive-select__control--menu-is-open .adaptive-select__dropdown-indicator {
@@ -347,7 +449,7 @@ select:not([multiple]):not([size]) option {
 .custom-select-trigger:hover,
 .custom-select.is-open .custom-select-trigger {
   border-color: var(--line-strong);
-  background: var(--surface);
+  background: var(--color-bg-hover);
 }
 
 .custom-select-trigger:focus,
@@ -501,7 +603,7 @@ html[data-theme='dark'] .custom-select-menu,
 html[data-theme='dark'] .client-search-dropdown {
   background: var(--color-bg-elevated);
   border-color: var(--color-border-default);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 html[data-theme='dark'] .adaptive-select__option--is-focused,
@@ -535,9 +637,9 @@ select:not([multiple]):not([size]),
   -webkit-appearance: none !important;
   background-image: var(--tylo-select-chevron) !important;
   background-repeat: no-repeat !important;
-  background-position: right 10px center !important;
+  background-position: right 12px center !important;
   background-size: 10px 6px !important;
-  padding-right: 1.75rem !important;
+  padding-right: 36px !important;
 }
 
 select:not([multiple]):not([size]):focus,

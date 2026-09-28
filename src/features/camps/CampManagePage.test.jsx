@@ -121,4 +121,26 @@ describe('CampManagePage', () => {
       expect(view.getByTestId('location-search').textContent).toContain('stage=financial');
     });
   });
+
+  it('keeps date filters after campOps:refreshList focus reload', async () => {
+    renderPage('/camp-one/manage?dateFrom=2026-09-01&dateTo=2026-09-28');
+    expect(await screen.findByText('Demo')).toBeTruthy();
+
+    await waitFor(() => {
+      const calls = campApi.list.mock.calls;
+      const withDates = calls.find((c) => c[0]?.dateFrom === '2026-09-01' && c[0]?.dateTo === '2026-09-28');
+      expect(withDates).toBeTruthy();
+    });
+
+    const before = campApi.list.mock.calls.length;
+    sessionStorage.setItem('campOps:refreshList', '1');
+    window.dispatchEvent(new Event('focus'));
+
+    await waitFor(() => {
+      expect(campApi.list.mock.calls.length).toBeGreaterThan(before);
+      const lastParams = campApi.list.mock.calls[campApi.list.mock.calls.length - 1]?.[0] || {};
+      expect(lastParams.dateFrom).toBe('2026-09-01');
+      expect(lastParams.dateTo).toBe('2026-09-28');
+    });
+  });
 });

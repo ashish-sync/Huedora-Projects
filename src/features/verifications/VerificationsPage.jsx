@@ -885,92 +885,90 @@ export default function VerificationsPage() {
         </ModalShell>
       )}
 
-      <section className="vf-board card card--flush">
-        <div className="vf-board-chrome">
-          <div
-            className="vf-summary"
-            role="group"
-            aria-label="Verification summary"
-            data-count={summaryItems.length}
-          >
-            {summaryItems.map((item) => {
-              const Comp = item.onClick ? 'button' : 'div';
-              return (
-                <Comp
-                  key={item.key}
-                  type={item.onClick ? 'button' : undefined}
-                  className={`vf-summary-card tone-${item.tone}${item.active ? ' is-active' : ''}${
-                    item.onClick ? ' is-clickable' : ''
-                  }`}
-                  onClick={item.onClick}
-                >
-                  <strong>{item.value}</strong>
-                  <span>{item.label}</span>
-                </Comp>
-              );
-            })}
-          </div>
+      <div
+        className="vf-summary"
+        role="group"
+        aria-label="Verification summary"
+        data-count={summaryItems.length}
+      >
+        {summaryItems.map((item) => {
+          const Comp = item.onClick ? 'button' : 'div';
+          return (
+            <Comp
+              key={item.key}
+              type={item.onClick ? 'button' : undefined}
+              className={`vf-summary-card tone-${item.tone}${item.active ? ' is-active' : ''}${
+                item.onClick ? ' is-clickable' : ''
+              }`}
+              onClick={item.onClick}
+            >
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </Comp>
+          );
+        })}
+      </div>
 
-          <form
-            className="vf-board-toolbar"
-            aria-label="Verification board filters"
-            onSubmit={submitDates}
-          >
-            <div className="vf-board-search">
-              <MasterSearchField
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search asset, serial, custodian, city…"
-                aria-label="Search verification board"
-              />
-              {filter ? (
-                <button type="button" className="filter-chip" onClick={() => setFilter('')}>
-                  {labelFor(filter)}
-                  <span aria-hidden="true">×</span>
-                </button>
-              ) : null}
-            </div>
-
-            <label className="vf-toolbar-field">
-              <span>From</span>
-              <DateInput
-                hideLabel
-                aria-label="From date"
-                value={fromDate}
-                max={toDate || undefined}
-                disabled={loading}
-                onChange={setFromDate}
-              />
-            </label>
-
-            <label className="vf-toolbar-field">
-              <span>To</span>
-              <DateInput
-                hideLabel
-                aria-label="To date"
-                value={toDate}
-                min={fromDate || undefined}
-                disabled={loading}
-                onChange={setToDate}
-              />
-            </label>
-
-            <div className="vf-toolbar-actions">
-              <button className="btn" type="submit" disabled={loading}>
-                {loading ? 'Loading…' : 'Submit'}
-              </button>
-              <button
-                className="btn secondary"
-                type="button"
-                disabled={loading}
-                onClick={clearBoard}
-              >
-                Clear
-              </button>
-            </div>
-          </form>
+      <form
+        className="vf-board-toolbar master-filter-shell"
+        aria-label="Verification board filters"
+        onSubmit={submitDates}
+      >
+        <div className="vf-board-search master-filter-main">
+          <MasterSearchField
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search asset, serial, custodian, city…"
+            aria-label="Search verification board"
+          />
+          {filter ? (
+            <button type="button" className="filter-chip" onClick={() => setFilter('')}>
+              {labelFor(filter)}
+              <span aria-hidden="true">×</span>
+            </button>
+          ) : null}
         </div>
 
+        <label className="vf-toolbar-field">
+          <span>From</span>
+          <DateInput
+            hideLabel
+            aria-label="From date"
+            value={fromDate}
+            max={toDate || undefined}
+            disabled={loading}
+            onChange={setFromDate}
+          />
+        </label>
+
+        <label className="vf-toolbar-field">
+          <span>To</span>
+          <DateInput
+            hideLabel
+            aria-label="To date"
+            value={toDate}
+            min={fromDate || undefined}
+            disabled={loading}
+            onChange={setToDate}
+          />
+        </label>
+
+        <div className="vf-toolbar-actions master-filter-actions">
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? 'Loading…' : 'Submit'}
+          </button>
+          <button
+            className="btn secondary"
+            type="button"
+            disabled={loading}
+            onClick={clearBoard}
+          >
+            Clear
+          </button>
+        </div>
+      </form>
+
+      <section className="vf-board card card--flush">
         <div className="vf-table-wrap">
           <table className="vf-table">
             <thead>

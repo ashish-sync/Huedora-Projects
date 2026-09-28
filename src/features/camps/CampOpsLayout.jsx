@@ -54,8 +54,12 @@ function CampOpsLayoutBody({
   const showRequestToolbar = showCampToolbar && isRequestStage;
 
   return (
-    <div ref={campRootRef} className="camp-ops-root logistics-shell" data-suppress-autofill="true">
-      <PageShell hideChrome className="camp-ops-page-shell">
+    <div ref={campRootRef} className="camp-ops-root module-shell logistics-shell" data-suppress-autofill="true">
+      <PageShell
+        hideChrome
+        bare
+        className="camp-ops-page-shell"
+      >
         <header className="camp-ops-strip">
           <div className="camp-ops-strip__main">
             <Breadcrumbs items={breadcrumbs} />
@@ -138,8 +142,9 @@ export default function CampOpsLayout() {
 
   if (!allowed) {
     return (
-      <div className="camp-ops-root">
+      <div className="camp-ops-root module-shell logistics-shell">
         <PageShell
+          bare
           breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.CAMP_MANAGEMENT }]}
           title={MODULE.CAMP_MANAGEMENT}
         >

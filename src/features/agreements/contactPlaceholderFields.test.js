@@ -47,4 +47,19 @@ describe('applyContactSnapshotToPlaceholders', () => {
     expect(next.State).toBe('Maharashtra');
     expect(next['Asset Name']).toBeUndefined();
   });
+
+  it('does not overwrite fields the user already edited', () => {
+    const placeholders = [
+      { key: 'Name', label: 'Name' },
+      { key: 'Address', label: 'Address' },
+    ];
+    const next = applyContactSnapshotToPlaceholders(
+      placeholders,
+      { name: 'Directory Name', address: 'Directory Address' },
+      { Name: 'Typed Name', Address: '' },
+      { skipKeys: new Set(['Name']) }
+    );
+    expect(next.Name).toBe('Typed Name');
+    expect(next.Address).toBe('Directory Address');
+  });
 });

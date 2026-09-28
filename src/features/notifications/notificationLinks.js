@@ -25,7 +25,8 @@ export function notificationEntityPath(n) {
     case 'AssetRequest':
       return `${MODULE_PATH.REQUEST_ONE}?requestId=${encodeURIComponent(id)}`;
     case 'Movement':
-      return `${MODULE_PATH.REQUEST_ONE}?movementId=${encodeURIComponent(id)}`;
+      // Legacy Movement notifications → Request One Goods Issuance (same id space after cutover)
+      return `${MODULE_PATH.REQUEST_ONE}?requestId=${encodeURIComponent(id)}`;
     case 'Agreement':
       return documentOneDetailPath(id);
     case 'VerificationRecord':

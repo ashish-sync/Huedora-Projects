@@ -491,6 +491,7 @@ function TemplatePreviewModal({ template, onClose }) {
 
 export default function DocumentMasterPage({ embedded = false } = {}) {
   const { can } = useAuth();
+  const canDelete = can('agreements:write') || can('*');
   const [view, setView] = useState('templates');
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');
@@ -537,6 +538,24 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
   }, []);
 
   const selected = rows.find((t) => t._id === selectedId) || null;
+
+  const deleteTemplate = async (id, templateName) => {
+    if (!canDelete) return;
+    const label = templateName || 'this template';
+    if (!window.confirm(`Delete “${label}”? It will be removed from Document Templates.`)) return;
+    setError('');
+    try {
+      // POST /delete — DELETE is blocked or missing on some deployed hosts.
+      await api(`/templates/${id}/delete`, { method: 'POST', body: {} });
+      if (selectedId === id) {
+        setSelectedId(null);
+        setPreviewOpen(false);
+      }
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const openPreview = (id) => {
     setSelectedId(id);
@@ -676,7 +695,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
   };
 
   return (
-    <div className={embedded ? 'esign-shell esign-shell--embedded' : 'esign-shell'}>
+    <div className={embedded ? 'page-shell esign-shell esign-shell--embedded' : 'page-shell esign-shell'}>
       {!embedded ? (
       <div className="esign-top">
         <div>
@@ -784,6 +803,7 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                     <th>Document type</th>
                     <th>Signing</th>
                     <th>Fields</th>
+                    {canDelete ? <th className="inv-col-actions">Actions</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -814,6 +834,17 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                           <span className="muted">-</span>
                         )}
                       </td>
+                      {canDelete ? (
+                        <td className="inv-col-actions" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="btn danger btn-compact"
+                            onClick={() => deleteTemplate(t._id, t.name)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>

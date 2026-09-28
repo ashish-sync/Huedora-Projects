@@ -141,6 +141,32 @@ export default function CampsPage() {
 
   const findCampFromUrlRef = useRef('');
   const dateFilterReadyRef = useRef(false);
+  /** Always-current list query — focus/refresh must not use a stale mount closure. */
+  const listQueryRef = useRef({
+    search: '',
+    dateFrom: '',
+    dateTo: '',
+    clientFilter: '',
+    campaignFilter: '',
+    campTypeFilter: '',
+    workingStage: 'request',
+    status: '',
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+  listQueryRef.current = {
+    search,
+    dateFrom,
+    dateTo,
+    clientFilter,
+    campaignFilter,
+    campTypeFilter,
+    workingStage,
+    status,
+    page,
+    pageSize,
+  };
+  const loadCampsRef = useRef(null);
 
   useEffect(() => {
     // Deep-link from "camp created" / find-by-id only — never treat generic `q` search as this.
@@ -239,12 +265,12 @@ export default function CampsPage() {
       if (typeof window === 'undefined') return;
       if (!window.sessionStorage.getItem('campOps:refreshList')) return;
       window.sessionStorage.removeItem('campOps:refreshList');
-      loadCamps(page, pageSize);
+      const q = listQueryRef.current;
+      loadCampsRef.current?.(q.page, q.pageSize);
     };
     refresh();
     window.addEventListener('focus', refresh);
     return () => window.removeEventListener('focus', refresh);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function openCampActionConfirm(action, camp) {
@@ -411,45 +437,48 @@ export default function CampsPage() {
     await handler(camp._id, payload);
   }
 
-  async function loadCamps(nextPage = page, nextLimit = pageSize, searchOverride) {
+  async function loadCamps(nextPage, nextLimit, searchOverride) {
+    const q = listQueryRef.current;
+    const pageToLoad = nextPage == null ? q.page : nextPage;
+    const limitToLoad = nextLimit == null ? q.pageSize : nextLimit;
     setLoading(true);
-    const trimmedSearch = trimString(searchOverride ?? search);
+    const trimmedSearch = trimString(searchOverride ?? q.search);
     setSearch(trimmedSearch);
     try {
-      const params = { search: trimmedSearch, page: nextPage, limit: nextLimit };
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo) params.dateTo = dateTo;
-      if (clientFilter) params.client = clientFilter;
-      if (campaignFilter) params.campaign = campaignFilter;
-      if (campTypeFilter) params.campaignType = campTypeFilter;
+      const params = { search: trimmedSearch, page: pageToLoad, limit: limitToLoad };
+      if (q.dateFrom) params.dateFrom = q.dateFrom;
+      if (q.dateTo) params.dateTo = q.dateTo;
+      if (q.clientFilter) params.client = q.clientFilter;
+      if (q.campaignFilter) params.campaign = q.campaignFilter;
+      if (q.campTypeFilter) params.campaignType = q.campTypeFilter;
       if (
-        workingStage === 'request' ||
-        workingStage === 'assignment' ||
-        workingStage === 'execution' ||
-        workingStage === 'financial'
+        q.workingStage === 'request' ||
+        q.workingStage === 'assignment' ||
+        q.workingStage === 'execution' ||
+        q.workingStage === 'financial'
       ) {
-        params.lifecycleStage = workingStage;
-      } else if (workingStage) {
-        params.lifecycleStage = workingStage;
+        params.lifecycleStage = q.workingStage;
+      } else if (q.workingStage) {
+        params.lifecycleStage = q.workingStage;
       }
-      if (status) {
-        if (workingStage === 'assignment') {
-          params.assignmentFilter = status;
-        } else if (workingStage === 'execution') {
-          params.executionFilter = status;
-        } else if (workingStage === 'financial') {
-          params.financialFilter = status;
-        } else if (workingStage === 'request') {
-          params.requestReviewStatus = status;
+      if (q.status) {
+        if (q.workingStage === 'assignment') {
+          params.assignmentFilter = q.status;
+        } else if (q.workingStage === 'execution') {
+          params.executionFilter = q.status;
+        } else if (q.workingStage === 'financial') {
+          params.financialFilter = q.status;
+        } else if (q.workingStage === 'request') {
+          params.requestReviewStatus = q.status;
         } else {
-          params.status = status;
+          params.status = q.status;
         }
       }
       const { data } = await campApi.list(params);
       setCamps(Array.isArray(data?.data) ? data.data : []);
       setPagination(data?.pagination || null);
-      setPage(nextPage);
-      setPageSize(nextLimit);
+      setPage(pageToLoad);
+      setPageSize(limitToLoad);
       setSelectedIds([]);
       setError('');
     } catch (err) {
@@ -458,6 +487,7 @@ export default function CampsPage() {
       setLoading(false);
     }
   }
+  loadCampsRef.current = loadCamps;
 
   async function handleBulk(action) {
     openBulkActionConfirm(action);

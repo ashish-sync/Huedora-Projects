@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plane, Truck } from 'lucide-react';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
-import DateInput from '../../components/ui/DateInput.jsx';
-import { api } from '../../shared/api.js';
+import { api, downloadExcel } from '../../shared/api.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -13,17 +13,28 @@ import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import {
   FALLBACK_CAT_DEFAULTS,
-  FALLBACK_COURIER,
   FALLBACK_DELIVERY,
   FALLBACK_PRODUCT,
   Field,
+  FIXED_POD_ORIGIN,
+  applyFixedPodOrigin,
+  fixedPodPartyFields,
+  buildPodContentType,
+  mapPodCourierType,
+  mapPodServiceType,
   GOODS_ISSUE_KINDS,
   ISSUE_PRIORITIES,
+  PACKAGE_STATUSES,
+  GOODS_ISSUE_STATUS_FILTERS,
+  applicableWeightKg,
   emptyTxnForm,
+  formatWeightKg,
   mapDeliveryMode,
   nowLocal,
   resolveProductType,
+  volumetricWeightKg,
 } from './logisticsTxnShared.jsx';
+import { quoteCourierRateCard } from './courierRateCard.js';
 
 function normalizeIssueKind(raw) {
   const v = String(raw || '').trim();
@@ -91,6 +102,85 @@ function lineBatchOrSerial(line) {
   return serial || batch;
 }
 
+/** Aggregate Available inward stock rows into batch/expiry lots (FEFO order). */
+function normalizeStockLots(rows = []) {
+  const byKey = new Map();
+  for (const row of rows) {
+    const qty = Number(row.quantity ?? row.qty) || 0;
+    if (qty <= 0) continue;
+    const batchNumber = String(row.batchNumber || '').trim();
+    const expiryDate = String(row.expiryDate || '').slice(0, 10);
+    const serialNumber = String(row.serialNumber || '').trim();
+    const key = `${batchNumber}|${expiryDate}|${serialNumber}`;
+    const prev = byKey.get(key);
+    if (prev) {
+      prev.qty += qty;
+    } else {
+      byKey.set(key, { batchNumber, expiryDate, serialNumber, qty });
+    }
+  }
+  return [...byKey.values()].sort((a, b) => {
+    if (a.expiryDate && b.expiryDate) return a.expiryDate.localeCompare(b.expiryDate);
+    if (a.expiryDate) return -1;
+    if (b.expiryDate) return 1;
+    return String(a.batchNumber).localeCompare(String(b.batchNumber));
+  });
+}
+
+function batchOptionsFromLots(lots, expiryFilter = '') {
+  const seen = new Set();
+  const out = [];
+  for (const lot of lots) {
+    if (!lot.batchNumber) continue;
+    if (expiryFilter && lot.expiryDate && lot.expiryDate !== expiryFilter) continue;
+    if (seen.has(lot.batchNumber)) continue;
+    seen.add(lot.batchNumber);
+    const qty = lots
+      .filter(
+        (l) =>
+          l.batchNumber === lot.batchNumber &&
+          (!expiryFilter || !l.expiryDate || l.expiryDate === expiryFilter)
+      )
+      .reduce((sum, l) => sum + (Number(l.qty) || 0), 0);
+    out.push({ value: lot.batchNumber, qty });
+  }
+  return out;
+}
+
+function expiryOptionsFromLots(lots, batchFilter = '') {
+  const seen = new Set();
+  const out = [];
+  for (const lot of lots) {
+    if (!lot.expiryDate) continue;
+    if (batchFilter && lot.batchNumber && lot.batchNumber !== batchFilter) continue;
+    if (seen.has(lot.expiryDate)) continue;
+    seen.add(lot.expiryDate);
+    const qty = lots
+      .filter(
+        (l) =>
+          l.expiryDate === lot.expiryDate &&
+          (!batchFilter || !l.batchNumber || l.batchNumber === batchFilter)
+      )
+      .reduce((sum, l) => sum + (Number(l.qty) || 0), 0);
+    out.push({ value: lot.expiryDate, qty });
+  }
+  return out;
+}
+
+function serialOptionsFromLots(lots, batchFilter = '', expiryFilter = '') {
+  const seen = new Set();
+  const out = [];
+  for (const lot of lots) {
+    if (!lot.serialNumber) continue;
+    if (batchFilter && lot.batchNumber && lot.batchNumber !== batchFilter) continue;
+    if (expiryFilter && lot.expiryDate && lot.expiryDate !== expiryFilter) continue;
+    if (seen.has(lot.serialNumber)) continue;
+    seen.add(lot.serialNumber);
+    out.push(lot.serialNumber);
+  }
+  return out;
+}
+
 function todayLocalDate() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
@@ -131,14 +221,48 @@ function emptyContactPrefix(prefix) {
   };
 }
 
+function partyFromRequest(req, prefix) {
+  const contact = req?.[`${prefix}ContactId`];
+  const contactObj = contact && typeof contact === 'object' ? contact : null;
+  return {
+    [`${prefix}ContactId`]: refId(req?.[`${prefix}ContactId`]),
+    [`${prefix}Name`]:
+      req?.[`${prefix}Name`] || contactObj?.name || '',
+    [`${prefix}Number`]:
+      req?.[`${prefix}Number`] ||
+      contactObj?.contact ||
+      contactObj?.mobile ||
+      '',
+    [`${prefix}Address`]:
+      req?.[`${prefix}Address`] || contactObj?.address || '',
+    [`${prefix}PinCode`]:
+      req?.[`${prefix}PinCode`] || contactObj?.pinCode || '',
+    [`${prefix}City`]:
+      req?.[`${prefix}City`] || contactObj?.city || '',
+    [`${prefix}State`]:
+      req?.[`${prefix}State`] || contactObj?.state || '',
+  };
+}
+
+function syncRecipientAliases(fields) {
+  return {
+    ...fields,
+    contactId: fields.toContactId || '',
+    recipientName: fields.toName || '',
+    number: fields.toNumber || '',
+    city: fields.toCity || '',
+    state: fields.toState || '',
+  };
+}
+
 /** Contact Directory picker with name, number, address, pin, city, state */
 function DirectoryPartyFields({ label, prefix, contacts, form, setForm }) {
   const idKey = `${prefix}ContactId`;
   const fields = [
     { suffix: 'Name', label: 'Name', value: (c) => c.name || '' },
     { suffix: 'Number', label: 'Number', value: contactNumber },
-    { suffix: 'Address', label: 'Address', value: (c) => c.address || '' },
     { suffix: 'PinCode', label: 'Pin code', value: (c) => c.pinCode || '' },
+    { suffix: 'Address', label: 'Address Line 1', value: (c) => c.address || '' },
     { suffix: 'City', label: 'City', value: (c) => c.city || '' },
     { suffix: 'State', label: 'State', value: (c) => c.state || '' },
   ];
@@ -220,7 +344,10 @@ function DirectoryPartyFields({ label, prefix, contacts, form, setForm }) {
         {fields.map((field, fieldIndex) => {
           const options = uniqueSorted(matchingBefore(fieldIndex).map(field.value));
           return (
-            <div className="field" key={field.suffix}>
+            <div
+              className={`field arq-contact-field arq-contact-field--${String(field.suffix).toLowerCase()}`}
+              key={field.suffix}
+            >
               <label>{field.label}</label>
               <AdaptiveSelect
                 value={form[`${prefix}${field.suffix}`] || ''}
@@ -267,11 +394,26 @@ function lineId(line) {
 
 function lineIsFulfilled(line) {
   const status = String(line?.fulfillmentStatus || line?.status || '').toUpperCase();
+  const packageStatus = String(line?.packageStatus || '').trim();
   return (
     status === 'FULFILLED' ||
     status === 'DISPATCHED' ||
-    Boolean(line?.fulfilledAt || line?.outwardTransactionId || line?.dispatchId)
+    Boolean(line?.fulfilledAt || line?.outwardTransactionId || line?.dispatchId) ||
+    PACKAGE_STATUSES.includes(packageStatus)
   );
+}
+
+function linePackageStatus(request, line, index) {
+  if (String(line?.packageStatus || '').trim()) return String(line.packageStatus).trim();
+  if (requestLineIsFulfilled(request, line, index)) return 'Package ready';
+  return '';
+}
+
+function packageActionLabel(request, line, index) {
+  const status = linePackageStatus(request, line, index);
+  if (!status) return 'Prepare package';
+  if (status === 'No stock') return 'No stock';
+  return 'Prepared';
 }
 
 function fulfilledLineIds(request) {
@@ -314,17 +456,25 @@ function resolveDispatchStatus(row) {
   return '';
 }
 
-function isDispatchOpen(row) {
-  return resolveDispatchStatus(row) === 'Open';
+function isDispatchTerminal(status) {
+  return ['Delivered', 'RTO', 'Closed'].includes(String(status || '').trim());
 }
 
+function isDispatchOpen(row) {
+  return !isDispatchTerminal(resolveDispatchStatus(row));
+}
+
+const POD_TRACK_URL = 'https://www.dtdc.com/trackshipment';
+
 export default function LogisticsOutwardPage() {
-  const { can, user } = useAuth();
+  const { can, user, isAdmin } = useAuth();
   const canWrite = can('logistics:write') || can('*');
+  const adminUser = isAdmin();
   const canCompleteRequest =
     can('asset-requests:approve') || can('movements:approve') || can('*');
-  const [mode, setMode] = useState('manual'); // manual | requests
+  const [mode, setMode] = useState('manual'); // manual | requests | pods
   const [rows, setRows] = useState([]);
+  const [podRows, setPodRows] = useState([]);
   const [requests, setRequests] = useState([]);
   const [meta, setMeta] = useState(null);
   const [contacts, setContacts] = useState([]);
@@ -345,17 +495,48 @@ export default function LogisticsOutwardPage() {
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
+  const [podDateFrom, setPodDateFrom] = useState(() => todayLocalDate());
+  const [podDateTo, setPodDateTo] = useState(() => todayLocalDate());
+  const [podPage, setPodPage] = useState(1);
+  const [podLimit, setPodLimit] = useState(25);
+  const [podListMeta, setPodListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [podLoading, setPodLoading] = useState(false);
+  const [podExportBusy, setPodExportBusy] = useState(false);
+  /** Selected POD row ids for bulk Delivered / Delete / Excel */
+  const [podSelectedIds, setPodSelectedIds] = useState(() => new Set());
+  const [podBulkBusy, setPodBulkBusy] = useState(false);
+  /** Available inward lots keyed by productId → [{ batchNumber, expiryDate, serialNumber, qty }] */
+  const [stockLotsByProductId, setStockLotsByProductId] = useState({});
 
   const cfg = meta?.inOut || {};
   const productTypes = cfg.productTypes || FALLBACK_PRODUCT;
-  const courierModes = FALLBACK_COURIER;
   const issueKinds = cfg.goodsIssueKinds || GOODS_ISSUE_KINDS;
   const showFrom = needsFromContact(form.logisticsKind);
   const showTo = needsToContact(form.logisticsKind);
+  const issueKind = normalizeIssueKind(form.logisticsKind);
+  const prepareFixedOrigin = issueKind === 'Fresh Dispatch';
+  const prepareFixedDestination = issueKind === 'Recall / Pickup';
+  const prepareShowSender =
+    issueKind === 'Inter Transfer' || issueKind === 'Recall / Pickup';
+  const prepareShowRecipient =
+    issueKind === 'Fresh Dispatch' ||
+    issueKind === 'Inter Transfer' ||
+    prepareFixedDestination;
   const categoryDefaults = cfg.categoryDefaults || FALLBACK_CAT_DEFAULTS;
   const warehouses = meta?.warehouses || [];
   const products = meta?.products || [];
+  const uoms = meta?.uoms || [];
   const defaultWarehouseName = cfg.defaultWarehouseName || 'Mumbai';
+
+  const uomLabel = useCallback(
+    (uomId) => {
+      if (!uomId) return '';
+      const u = uoms.find((x) => String(x._id) === String(uomId));
+      if (!u) return '';
+      return u.code ? `${u.name} (${u.code})` : u.name || '';
+    },
+    [uoms]
+  );
 
   const defaultWarehouseId = useMemo(() => {
     const hit =
@@ -374,7 +555,72 @@ export default function LogisticsOutwardPage() {
     [products, form.productType]
   );
 
-  const needsAwb = courierModes.includes(mapDeliveryMode(form.deliveryMode));
+  const packageVolumetricKg = useMemo(
+    () => volumetricWeightKg(form.packageLength, form.packageHeight, form.packageWidth),
+    [form.packageLength, form.packageHeight, form.packageWidth],
+  );
+  const packageApplicableKg = useMemo(
+    () => applicableWeightKg(
+      form.packageWeight,
+      form.packageLength,
+      form.packageHeight,
+      form.packageWidth,
+    ),
+    [form.packageWeight, form.packageLength, form.packageHeight, form.packageWidth],
+  );
+
+  const prepareIsCourier =
+    mapDeliveryMode(form.deliveryMode) === 'Courier' && form.packageStatus !== 'No stock';
+
+  const preparePodDest = useMemo(
+    () => ({
+      city: form.toCity || form.city || '',
+      state: form.toState || form.state || '',
+    }),
+    [form.toCity, form.city, form.toState, form.state]
+  );
+
+  const prepareBillableKg = useMemo(() => {
+    if (packageApplicableKg != null && packageApplicableKg > 0) return packageApplicableKg;
+    const w = Number(form.packageWeight);
+    return Number.isFinite(w) && w > 0 ? w : null;
+  }, [packageApplicableKg, form.packageWeight]);
+
+  const courierQuoteOptions = useMemo(() => {
+    if (!formOpen || !prepareIsCourier || prepareBillableKg == null) return [];
+    return quoteCourierRateCard(prepareBillableKg, preparePodDest);
+  }, [formOpen, prepareIsCourier, prepareBillableKg, preparePodDest]);
+
+  useEffect(() => {
+    if (!prepareIsCourier || !courierQuoteOptions.length) return;
+    const cheapest = courierQuoteOptions.find((o) => o.isCheapest);
+    const stillValid = courierQuoteOptions.some((o) => o.id === String(form.podCourierId || ''));
+    if (!stillValid && cheapest) {
+      setForm((prev) => ({ ...prev, podCourierId: cheapest.id }));
+    }
+  }, [prepareIsCourier, courierQuoteOptions, form.podCourierId]);
+
+  const fulfillLots = useMemo(
+    () => stockLotsByProductId[String(form.productId || '')] || [],
+    [stockLotsByProductId, form.productId]
+  );
+  const fulfillBatchOpts = useMemo(
+    () => batchOptionsFromLots(fulfillLots, form.expiryDate || ''),
+    [fulfillLots, form.expiryDate]
+  );
+  const fulfillExpiryOpts = useMemo(
+    () => expiryOptionsFromLots(fulfillLots, form.batchNumber || ''),
+    [fulfillLots, form.batchNumber]
+  );
+  const fulfillSerialOpts = useMemo(
+    () =>
+      serialOptionsFromLots(
+        fulfillLots,
+        form.batchNumber || '',
+        form.expiryDate || ''
+      ),
+    [fulfillLots, form.batchNumber, form.expiryDate]
+  );
 
   const loadRows = useCallback(async () => {
     setListLoading(true);
@@ -383,6 +629,7 @@ export default function LogisticsOutwardPage() {
         page: String(page),
         limit: String(limit),
         entryTypes: 'Outward,Return',
+        excludePodBooked: '1',
       });
       if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
       if (statusFilter && statusFilter !== 'All') params.set('dispatchStatus', statusFilter);
@@ -399,10 +646,215 @@ export default function LogisticsOutwardPage() {
     }
   }, [debouncedQ, statusFilter, page, limit]);
 
+  const loadPods = useCallback(async () => {
+    setPodLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(podPage),
+        limit: String(podLimit),
+        dateFrom: podDateFrom || '',
+        dateTo: podDateTo || '',
+      });
+      if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
+      const res = await api(`/logistics/in-out/pods?${params}`);
+      setPodRows(res.data || []);
+      setPodListMeta(res.meta || { page: podPage, limit: podLimit, total: 0, pages: 0 });
+      setPodSelectedIds(new Set());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPodLoading(false);
+    }
+  }, [debouncedQ, podDateFrom, podDateTo, podPage, podLimit]);
+
+  const podOpenSelected = useMemo(
+    () => podRows.filter((r) => podSelectedIds.has(String(r._id)) && isDispatchOpen(r)),
+    [podRows, podSelectedIds]
+  );
+
+  const podAllSelected =
+    podRows.length > 0 && podRows.every((r) => podSelectedIds.has(String(r._id)));
+
+  const togglePodSelect = (id) => {
+    const key = String(id);
+    setPodSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const togglePodSelectAll = () => {
+    if (podAllSelected) {
+      setPodSelectedIds(new Set());
+      return;
+    }
+    setPodSelectedIds(new Set(podRows.map((r) => String(r._id))));
+  };
+
+  const clearPodSelection = () => setPodSelectedIds(new Set());
+
+  const downloadPodsExcel = async () => {
+    setPodExportBusy(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      const selectedIds = [...podSelectedIds]
+        .map((id) => String(id || '').trim())
+        .filter((id) => id && id !== 'undefined' && id !== 'null');
+      const selectedRows = podRows.filter((row) =>
+        selectedIds.some((id) => String(row._id) === id)
+      );
+      if (selectedIds.length) {
+        // Selected TXNs only — send both Mongo/file ids and TXN numbers.
+        params.set('ids', selectedIds.join(','));
+        const keys = selectedRows
+          .map((row) => String(row.uniqueKey || '').trim())
+          .filter(Boolean);
+        if (keys.length) params.set('uniqueKeys', keys.join(','));
+      } else {
+        params.set('dateFrom', podDateFrom || '');
+        params.set('dateTo', podDateTo || '');
+        if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
+      }
+      const label = selectedIds.length
+        ? `selected_${selectedIds.length}`
+        : podDateFrom && podDateTo && podDateFrom === podDateTo
+          ? podDateFrom
+          : `${podDateFrom || 'start'}_to_${podDateTo || 'end'}`;
+      await downloadExcel(`/logistics/in-out/pods/export?${params.toString()}`, `PODs_${label}.xlsx`);
+      setMsg(
+        selectedIds.length
+          ? `POD Excel downloaded (${selectedIds.length} selected).`
+          : 'POD Excel downloaded.'
+      );
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPodExportBusy(false);
+    }
+  };
+
+  const markPodsBulk = async (outcome) => {
+    if (!canWrite || !podOpenSelected.length) return;
+    const label = outcome === 'RTO' ? 'RTO' : 'Delivered';
+    if (
+      !window.confirm(
+        `Mark ${podOpenSelected.length} selected POD${podOpenSelected.length === 1 ? '' : 's'} as ${label}? They will close automatically.`
+      )
+    ) {
+      return;
+    }
+    setPodBulkBusy(true);
+    setError('');
+    setMsg('');
+    let ok = 0;
+    let fail = 0;
+    try {
+      for (const row of podOpenSelected) {
+        try {
+          await api(`/logistics/in-out/${row._id}/delivery`, {
+            method: 'PATCH',
+            body: { outcome },
+          });
+          ok += 1;
+        } catch {
+          fail += 1;
+        }
+      }
+      setMsg(
+        fail
+          ? `${ok} marked ${label}; ${fail} failed.`
+          : `${ok} POD${ok === 1 ? '' : 's'} marked ${label} and closed.`
+      );
+      clearPodSelection();
+      await loadPods();
+      await loadRows();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPodBulkBusy(false);
+    }
+  };
+
+  const deletePodsBulk = async () => {
+    if (!adminUser || !podSelectedIds.size) return;
+    const selected = podRows.filter((r) => podSelectedIds.has(String(r._id)));
+    if (!selected.length) return;
+    if (
+      !window.confirm(
+        `Permanently delete ${selected.length} selected POD${selected.length === 1 ? '' : 's'}? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setPodBulkBusy(true);
+    setError('');
+    setMsg('');
+    let ok = 0;
+    let fail = 0;
+    try {
+      for (const row of selected) {
+        try {
+          await api(`/logistics/in-out/${row._id}`, { method: 'DELETE' });
+          ok += 1;
+        } catch {
+          fail += 1;
+        }
+      }
+      setMsg(
+        fail
+          ? `${ok} deleted; ${fail} failed.`
+          : `${ok} POD${ok === 1 ? '' : 's'} deleted.`
+      );
+      clearPodSelection();
+      await loadPods();
+      await loadRows();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPodBulkBusy(false);
+    }
+  };
+
+  const bookPodForEntry = async (entryId, { weightKg, courierId, awbNumber, note, serviceType, productType }) => {
+    const selected = courierQuoteOptions.find((o) => o.id === String(courierId))
+      || quoteCourierRateCard(weightKg, preparePodDest).find((o) => o.id === String(courierId));
+    const resolvedService = mapPodServiceType(serviceType || selected?.name || '');
+    const resolvedCourierType = mapPodCourierType(productType);
+    await api(`/logistics/in-out/${entryId}/delivery`, {
+      method: 'PATCH',
+      body: {
+        outcome: 'POD Booked',
+        awbNumber: String(awbNumber || '').trim(),
+        transporterId: String(courierId || '').startsWith('ratecard-') ? null : courierId || null,
+        applicableWeight: formatWeightKg(weightKg),
+        packageWeight: formatWeightKg(weightKg),
+        serviceType: resolvedService,
+        courierType: resolvedCourierType,
+        remark: selected
+          ? `${selected.name} · ${selected.categoryLabel || selected.zoneLabel || ''} · est. ₹${selected.estimate ?? '—'}${note ? ` · ${note}` : ''}`
+          : note || '',
+      },
+    });
+    return selected;
+  };
+
   const markDelivery = async (row, outcome) => {
     if (!canWrite || !row?._id) return;
-    const label = outcome === 'RTO' ? 'RTO' : outcome === 'Closed' ? 'Closed' : 'Delivered';
-    if (!window.confirm(`Mark this goods issue as ${label}? It will leave Open status.`)) return;
+    if (outcome === 'Closed') return;
+    const label = outcome === 'RTO' ? 'RTO' : outcome === 'POD Booked' ? 'POD Booked' : 'Delivered';
+    const leavesOpen = outcome === 'POD Booked';
+    if (
+      !window.confirm(
+        leavesOpen
+          ? `Mark this goods issue as ${label}?`
+          : `Mark this goods issue as ${label}? It will close automatically.`
+      )
+    ) {
+      return;
+    }
     setDeliveryBusyId(row._id);
     setError('');
     setMsg('');
@@ -411,8 +863,13 @@ export default function LogisticsOutwardPage() {
         method: 'PATCH',
         body: { outcome },
       });
-      setMsg(`Goods issue marked ${label}.`);
+      setMsg(
+        leavesOpen
+          ? `Goods issue marked ${label}.`
+          : `Goods issue marked ${label} and closed.`
+      );
       await loadRows();
+      if (mode === 'pods') await loadPods();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -429,6 +886,35 @@ export default function LogisticsOutwardPage() {
       setRequests([]);
     }
   }, []);
+
+  const filteredRequests = useMemo(() => {
+    const term = debouncedQ.trim().toLowerCase();
+    if (!term) return requests;
+    return requests.filter((r) => {
+      const progress = fulfillmentProgress(r);
+      const hay = [
+        r.requestNumber,
+        r.status,
+        r.logisticsKind,
+        r.assetName,
+        r.toCity,
+        r.toName,
+        r.toContactId?.city,
+        r.toContactId?.name,
+        r.requestorId?.fullName,
+        r.requestorId?.email,
+        r.transportMode,
+        ...(progress.lines || []).flatMap((line) => [
+          line.productName,
+          line.productType,
+          line.qty,
+        ]),
+      ]
+        .map((v) => String(v || '').toLowerCase())
+        .join(' ');
+      return hay.includes(term);
+    });
+  }, [requests, debouncedQ]);
 
   useEffect(() => {
     api('/logistics/meta')
@@ -447,7 +933,106 @@ export default function LogisticsOutwardPage() {
     if (mode === 'requests') loadRequests();
   }, [mode, loadRequests]);
 
+  useEffect(() => {
+    if (mode === 'pods') loadPods();
+  }, [mode, loadPods]);
+
+  const stockProductIdsKey = useMemo(() => {
+    const ids = new Set();
+    if (form.productId) ids.add(String(form.productId));
+    for (const row of form.logisticsProducts || []) {
+      if (row.productId) ids.add(String(row.productId));
+    }
+    return [...ids].sort().join(',');
+  }, [form.productId, form.logisticsProducts]);
+
+  const stockProductNameById = useMemo(() => {
+    const map = {};
+    if (form.productId) {
+      map[String(form.productId)] = form.productName || '';
+    }
+    for (const row of form.logisticsProducts || []) {
+      if (row.productId) {
+        map[String(row.productId)] = row.productName || map[String(row.productId)] || '';
+      }
+    }
+    return map;
+  }, [form.productId, form.productName, form.logisticsProducts]);
+
+  useEffect(() => {
+    if (!formOpen || !stockProductIdsKey) {
+      setStockLotsByProductId({});
+      return undefined;
+    }
+    let cancelled = false;
+    const ids = stockProductIdsKey.split(',').filter(Boolean);
+    const warehouseId = form.warehouseId || defaultWarehouseId || '';
+    (async () => {
+      const next = {};
+      await Promise.all(
+        ids.map(async (productId) => {
+          const params = new URLSearchParams({ productId });
+          const productName = stockProductNameById[productId] || '';
+          if (productName) params.set('productName', productName);
+          if (warehouseId) params.set('warehouseId', warehouseId);
+          try {
+            const res = await api(`/logistics/inventory/lots?${params}`);
+            next[productId] = normalizeStockLots(res.data || []);
+          } catch {
+            // Fallback to raw inventory rows if lots endpoint is unavailable
+            try {
+              const fallback = new URLSearchParams({
+                productId,
+                status: 'Available',
+                limit: '500',
+              });
+              if (warehouseId) fallback.set('warehouseId', warehouseId);
+              const res = await api(`/logistics/inventory?${fallback}`);
+              next[productId] = normalizeStockLots(res.data || []);
+            } catch {
+              next[productId] = [];
+            }
+          }
+        })
+      );
+      if (!cancelled) setStockLotsByProductId(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    formOpen,
+    stockProductIdsKey,
+    stockProductNameById,
+    form.warehouseId,
+    defaultWarehouseId,
+  ]);
+
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+
+  const pickBatchFromLots = (lots, batchNumber, currentExpiry = '') => {
+    const batch = String(batchNumber || '').trim();
+    const expiries = expiryOptionsFromLots(lots, batch).map((o) => o.value);
+    let expiryDate = String(currentExpiry || '').slice(0, 10);
+    if (batch && expiries.length === 1) {
+      expiryDate = expiries[0];
+    } else if (expiryDate && expiries.length && !expiries.includes(expiryDate)) {
+      expiryDate = '';
+    }
+    return { batchNumber: batch, expiryDate };
+  };
+
+  const pickExpiryFromLots = (lots, expiryDate, currentBatch = '') => {
+    const expiry = String(expiryDate || '').slice(0, 10);
+    const batches = batchOptionsFromLots(lots, expiry).map((o) => o.value);
+    let batchNumber = String(currentBatch || '').trim();
+    if (expiry && batches.length === 1) {
+      batchNumber = batches[0];
+    } else if (batchNumber && batches.length && !batches.includes(batchNumber)) {
+      batchNumber = '';
+    }
+    return { batchNumber, expiryDate: expiry };
+  };
 
   const productLabel = productOptionLabel;
 
@@ -485,34 +1070,45 @@ export default function LogisticsOutwardPage() {
     base.trackingKind = defaults?.trackingKind || 'Batch';
     base.batchOrSerial = base.trackingKind === 'None' ? 'N/A' : '';
     base.logisticsKind = kind;
-    base.fromContactId = refId(req.fromContactId);
-    base.fromName = req.fromName || req.fromContactId?.name || '';
-    base.fromCity = req.fromCity || req.fromContactId?.city || '';
-    base.fromState = req.fromState || req.fromContactId?.state || '';
-    base.fromNumber = req.fromNumber || req.fromContactId?.contact || req.fromContactId?.mobile || '';
-    base.fromAddress = req.fromAddress || req.fromContactId?.address || '';
-    base.fromPinCode = req.fromPinCode || req.fromContactId?.pinCode || '';
-    base.toContactId = refId(req.toContactId);
-    base.toName = req.toName || req.toContactId?.name || '';
-    base.toCity = req.toCity || req.toContactId?.city || '';
-    base.toState = req.toState || req.toContactId?.state || '';
-    base.toNumber = req.toNumber || req.toContactId?.contact || req.toContactId?.mobile || '';
-    base.toAddress = req.toAddress || req.toContactId?.address || '';
-    base.toPinCode = req.toPinCode || req.toContactId?.pinCode || '';
-    base.contactId = base.toContactId;
-    base.recipientName = base.toName;
-    base.city = base.toCity;
-    base.state = base.toState;
-    base.number = base.toNumber;
+    if (kind === 'Fresh Dispatch') {
+      Object.assign(base, fixedPodPartyFields('from'));
+      Object.assign(base, syncRecipientAliases(partyFromRequest(req, 'to')));
+    } else if (kind === 'Recall / Pickup') {
+      Object.assign(base, partyFromRequest(req, 'from'));
+      Object.assign(base, syncRecipientAliases(fixedPodPartyFields('to')));
+    } else {
+      // Inter Transfer — both ends from Request One
+      Object.assign(base, partyFromRequest(req, 'from'));
+      Object.assign(base, syncRecipientAliases(partyFromRequest(req, 'to')));
+    }
     base.productType = requestedType;
     base.productId = refId(line?.productId);
     base.productName = line?.productName || line?.productId?.name || '';
     base.qty = String(line?.qty || 1);
+    base.uomId = refId(line?.uomId) || '';
     base.deliveryMode = mapDeliveryMode(req.transportMode);
     base.priority = mapRequestPriority(req.priority);
-    base.remark = `Fulfill ${req.requestNumber || req._id} line ${lineIndex + 1}${
-      kind ? ` · ${kind}` : ''
-    }`;
+    base.packageStatus = '';
+    base.packageNote = '';
+    base.packageWeight = '';
+    base.packageLength = '';
+    base.packageHeight = '';
+    base.packageWidth = '';
+    base.declaredPrice = '';
+    base.numberOfPieces = '1';
+    base.toAddressLine2 = '';
+    base.riskSurcharge = 'NO';
+    base.awbNumber = '';
+    base.podCourierId = '';
+    base.requestRemarks = (() => {
+      const clientBits = [req.clientName || req.clientCode, req.divisionTherapy, req.hiringMethod]
+        .map((v) => String(v || '').trim())
+        .filter(Boolean);
+      const reason = String(req.reason || '').trim();
+      const clientLabel = clientBits.length ? `Client: ${clientBits.join(' · ')}` : '';
+      return [clientLabel, reason].filter(Boolean).join(' — ');
+    })();
+    base.remark = String(req.reason || '').trim();
     base.assetRequestId = req._id;
     base.assetRequestLineId = lineId(line);
     base.assetRequestLineIndex = lineIndex;
@@ -527,6 +1123,7 @@ export default function LogisticsOutwardPage() {
       base.productId = match._id;
       base.productName = productDisplayName(match) || match.name;
       base.productType = match.productType || base.productType;
+      if (!base.uomId && match.uomId) base.uomId = String(match.uomId);
       const meta = lineTrackingMeta(base.productType, match, categoryDefaults);
       base.trackingKind = meta.trackingKind;
       base.expiryApplicable = meta.expiryApplicable;
@@ -541,6 +1138,7 @@ export default function LogisticsOutwardPage() {
       base.batchNumber = '';
       base.expiryDate = '';
     }
+    base.contentType = buildPodContentType(base.productType, base.productName);
     setFulfillingId(req._id);
     setFulfillingLineId(lineId(line));
     setFulfillingLineIndex(lineIndex);
@@ -552,17 +1150,24 @@ export default function LogisticsOutwardPage() {
   };
 
   const onIssueKindChange = (next) => {
+    const kind = normalizeIssueKind(next);
     setForm((f) => ({
       ...f,
-      logisticsKind: next,
-      ...emptyContactPrefix('from'),
-      ...emptyContactPrefix('to'),
-      contactId: '',
-      recipientName: '',
-      empId: '',
-      number: '',
-      city: '',
-      state: '',
+      logisticsKind: kind,
+      ...(kind === 'Fresh Dispatch'
+        ? fixedPodPartyFields('from')
+        : emptyContactPrefix('from')),
+      ...(kind === 'Recall / Pickup'
+        ? syncRecipientAliases(fixedPodPartyFields('to'))
+        : {
+            ...emptyContactPrefix('to'),
+            contactId: '',
+            recipientName: '',
+            empId: '',
+            number: '',
+            city: '',
+            state: '',
+          }),
       logisticsProductsConfirmed: false,
     }));
   };
@@ -600,15 +1205,9 @@ export default function LogisticsOutwardPage() {
       productType: type,
       trackingKind: meta.trackingKind,
       expiryApplicable: meta.expiryApplicable,
-      serialNumber: lineNeedsSerial(meta.trackingKind)
-        ? form.logisticsProducts[index]?.serialNumber || ''
-        : '',
-      batchNumber: lineNeedsBatch(meta.trackingKind)
-        ? form.logisticsProducts[index]?.batchNumber || ''
-        : '',
-      expiryDate: meta.expiryApplicable
-        ? form.logisticsProducts[index]?.expiryDate || ''
-        : '',
+      serialNumber: '',
+      batchNumber: '',
+      expiryDate: '',
     });
   };
 
@@ -734,25 +1333,80 @@ export default function LogisticsOutwardPage() {
       setError('Select an Issue kind.');
       return;
     }
-    if (!form.deliveryMode) {
+    const isNoStock = fulfillingId && form.packageStatus === 'No stock';
+    if (!isNoStock && !form.deliveryMode) {
       setError('Select Delivery mode.');
       return;
+    }
+    if (fulfillingId) {
+      if (!PACKAGE_STATUSES.includes(String(form.packageStatus || '').trim())) {
+        setError('Confirm package status: Package ready, Partially ready, or No stock.');
+        return;
+      }
+      if (
+        form.packageStatus === 'Partially ready'
+        && (!(Number(form.qty) > 0))
+      ) {
+        setError('Enter the packed quantity for Partially ready.');
+        return;
+      }
     }
     if (!ISSUE_PRIORITIES.includes(String(form.priority || '').trim())) {
       setError('Select priority (High, Medium, or Low).');
       return;
     }
-    if (needsAwb && !String(form.awbNumber || '').trim()) {
-      setError('AWB number is required for Courier.');
-      return;
+    const wantsPod =
+      Boolean(fulfillingId) &&
+      !isNoStock &&
+      mapDeliveryMode(form.deliveryMode) === 'Courier';
+    if (wantsPod) {
+      if (!(prepareBillableKg > 0)) {
+        setError('Enter package weight (and dimensions if needed) so billable weight can be calculated.');
+        return;
+      }
+      if (!(Number(form.packageLength) > 0) || !(Number(form.packageWidth) > 0) || !(Number(form.packageHeight) > 0)) {
+        setError('Enter Length, Width and Height (cm) for the courier booking.');
+        return;
+      }
+      if (!String(form.declaredPrice || '').trim()) {
+        setError('Enter Declared Price for the shipment.');
+        return;
+      }
+      if (!String(form.fromPinCode || '').trim() || !String(form.fromName || '').trim() || !String(form.fromNumber || '').trim() || !String(form.fromAddress || '').trim()) {
+        setError('Complete Origin name, phone, address and pincode.');
+        return;
+      }
+      if (!String(form.toPinCode || '').trim() || !String(form.toName || '').trim() || !String(form.toNumber || '').trim() || !String(form.toAddress || '').trim()) {
+        setError('Complete Destination name, phone, address line 1 and pincode.');
+        return;
+      }
+      if (!String(form.podCourierId || '').trim()) {
+        setError('Select a courier (plane / truck icon).');
+        return;
+      }
+      if (!String(form.awbNumber || '').trim()) {
+        setError('Enter the AWB number to book POD with this package.');
+        return;
+      }
     }
-    if (needsFromContact(kind) && !form.fromContactId) {
-      setError('Select Sender from Contact Directory.');
-      return;
+    if (!isNoStock && needsFromContact(kind) && !form.fromContactId) {
+      // Recall / Inter Transfer: sender must come from Contact Directory (Request One)
+      if (!(String(form.fromName || '').trim() && String(form.fromAddress || '').trim())) {
+        setError('Select Sender / Pickup from Contact Directory.');
+        return;
+      }
     }
-    if (needsToContact(kind) && !(form.toContactId || form.contactId)) {
-      setError('Select Send to / Recipient from Contact Directory.');
-      return;
+    if (!isNoStock && needsToContact(kind) && !(form.toContactId || form.contactId)) {
+      // Fresh Dispatch / Inter Transfer need a recipient contact; Recall uses fixed HQ destination.
+      if (kind === 'Recall / Pickup') {
+        if (!(String(form.toName || '').trim() && String(form.toAddress || '').trim())) {
+          setError('Complete the fixed Destination (Tylo Care HQ).');
+          return;
+        }
+      } else if (!(String(form.toName || '').trim() && String(form.toAddress || '').trim())) {
+        setError('Select Send to / Recipient from Contact Directory.');
+        return;
+      }
     }
 
     const isManualMulti = !fulfillingId;
@@ -776,6 +1430,7 @@ export default function LogisticsOutwardPage() {
           productId: form.productId,
           productName: form.productName,
           qty: form.qty,
+          uomId: form.uomId || '',
           trackingKind: form.trackingKind,
           expiryApplicable: form.expiryApplicable,
           serialNumber: form.serialNumber || '',
@@ -794,7 +1449,7 @@ export default function LogisticsOutwardPage() {
         : '';
     if (dispatchKey && dispatchedLines.has(dispatchKey)) {
       setBusy(false);
-      setError('This request product line was already issued. Refresh the request list.');
+      setError('This request product line was already prepared. Refresh the request list.');
       return;
     }
     try {
@@ -803,7 +1458,35 @@ export default function LogisticsOutwardPage() {
       const txnAt = `${txnDate}T${String(nowLocal()).slice(11, 16)}`;
       let lastResult = null;
 
-      for (const line of lines) {
+      if (isNoStock) {
+        lastResult = await api('/logistics/in-out', {
+          method: 'POST',
+          body: {
+            uniqueKey:
+              (typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID())
+              || `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+            entryType: 'Outward',
+            logisticsKind: kind,
+            priority: form.priority || 'Medium',
+            packageStatus: 'No stock',
+            packageNote: form.packageNote || '',
+            packageWeight: form.packageWeight || '',
+            packageLength: form.packageLength || '',
+            packageHeight: form.packageHeight || '',
+            packageWidth: form.packageWidth || '',
+            volumetricWeight: formatWeightKg(packageVolumetricKg),
+            applicableWeight: formatWeightKg(packageApplicableKg),
+            assetRequestId: fulfillingId,
+            assetRequestLineId: fulfillingLineId || null,
+            assetRequestLineIndex: fulfillingLineIndex,
+            productId: form.productId || null,
+            productName: form.productName || '',
+            productType: form.productType || '',
+            qty: Number(form.qty) || 0,
+            remark: form.remark || 'No stock',
+          },
+        });
+      } else for (const line of lines) {
         const product = products.find((p) => String(p._id) === String(line.productId));
         const meta = lineTrackingMeta(
           line.productType || product?.productType,
@@ -844,6 +1527,7 @@ export default function LogisticsOutwardPage() {
         }
         if (serialNumber) availParams.set('serialNumber', serialNumber);
         if (batchNumber) availParams.set('batchNumber', batchNumber);
+        if (expiryDate) availParams.set('expiryDate', expiryDate);
         if (line.productName || product?.name) {
           availParams.set('productName', line.productName || productDisplayName(product) || '');
         }
@@ -864,17 +1548,40 @@ export default function LogisticsOutwardPage() {
             entryType,
             logisticsKind: kind,
             priority: form.priority || 'Medium',
+            packageStatus: fulfillingId ? form.packageStatus || '' : '',
+            packageNote: fulfillingId ? form.packageNote || '' : '',
+            packageWeight: fulfillingId ? form.packageWeight || '' : '',
+            packageLength: fulfillingId ? form.packageLength || '' : '',
+            packageHeight: fulfillingId ? form.packageHeight || '' : '',
+            packageWidth: fulfillingId ? form.packageWidth || '' : '',
+            volumetricWeight: fulfillingId ? formatWeightKg(packageVolumetricKg) : '',
+            applicableWeight: fulfillingId ? formatWeightKg(packageApplicableKg) : '',
+            declaredPrice: fulfillingId ? form.declaredPrice || '' : '',
+            numberOfPieces: fulfillingId ? '1' : '',
+            toAddressLine2: fulfillingId ? form.toAddressLine2 || '' : '',
+            riskSurcharge: 'NO',
+            contentType: fulfillingId
+              ? form.contentType || buildPodContentType(form.productType, form.productName)
+              : '',
+            serviceType: wantsPod
+              ? mapPodServiceType(
+                  courierQuoteOptions.find((o) => o.id === String(form.podCourierId))?.name || ''
+                )
+              : '',
+            courierType: wantsPod
+              ? mapPodCourierType(line.productType || product?.productType || form.productType)
+              : '',
             deliveryMode: mapDeliveryMode(form.deliveryMode),
             warehouseId: form.warehouseId || defaultWarehouseId || null,
             sourceWarehouseId: form.warehouseId || defaultWarehouseId || null,
             contactId: form.toContactId || form.contactId || null,
             fromContactId: form.fromContactId || null,
-            fromName: form.fromName || '',
-            fromNumber: form.fromNumber || '',
-            fromAddress: form.fromAddress || '',
-            fromPinCode: form.fromPinCode || '',
-            fromCity: form.fromCity || '',
-            fromState: form.fromState || '',
+            fromName: form.fromName || FIXED_POD_ORIGIN.fromName,
+            fromNumber: form.fromNumber || FIXED_POD_ORIGIN.fromNumber,
+            fromAddress: form.fromAddress || FIXED_POD_ORIGIN.fromAddress,
+            fromPinCode: form.fromPinCode || FIXED_POD_ORIGIN.fromPinCode,
+            fromCity: form.fromCity || 'Mumbai',
+            fromState: form.fromState || 'Maharashtra',
             productId: line.productId || null,
             productType: line.productType || product?.productType || '',
             productName: line.productName || productDisplayName(product) || '',
@@ -892,6 +1599,7 @@ export default function LogisticsOutwardPage() {
             pinCode: form.toPinCode || '',
             toPinCode: form.toPinCode || '',
             qty: Number(line.qty) || 0,
+            uomId: line.uomId || form.uomId || product?.uomId || null,
             perUnitCost: Number(product?.defaultPerUnitCost || form.perUnitCost) || 0,
             trackingKind,
             batchOrSerial,
@@ -901,10 +1609,22 @@ export default function LogisticsOutwardPage() {
             expiryDate: expiryApplicable ? expiryDate : '',
             transactionDateTime: txnAt,
             transactionDate: txnDate,
-            awbNumber: needsAwb ? form.awbNumber : '',
+            awbNumber: wantsPod ? String(form.awbNumber || '').trim() : '',
             remark: form.remark || kind,
           },
         });
+        const createdId = lastResult?.data?._id;
+        if (wantsPod && createdId) {
+          const selected = courierQuoteOptions.find((o) => o.id === String(form.podCourierId));
+          await bookPodForEntry(createdId, {
+            weightKg: prepareBillableKg,
+            courierId: form.podCourierId,
+            awbNumber: form.awbNumber,
+            note: form.packageNote || '',
+            serviceType: selected?.name || '',
+            productType: line.productType || product?.productType || form.productType,
+          });
+        }
       }
 
       const dispatchResult = lastResult;
@@ -935,36 +1655,59 @@ export default function LogisticsOutwardPage() {
         if (progress?.allFulfilled && canCompleteRequest) {
           try {
             await api(`/asset-requests/${fulfillingId}/complete`, { method: 'POST', body: {} });
-            setMsg('Final product line issued and linked Goods Issuance Request completed.');
+            setMsg(
+              wantsPod
+                ? 'Final package prepared and POD booked. Linked Goods Issuance Request completed.'
+                : 'Final package prepared. Linked Goods Issuance Request completed.'
+            );
           } catch (reqErr) {
             setError(
-              `All product lines were issued, but request completion failed: ${reqErr.message}`
+              `All packages were prepared, but request completion failed: ${reqErr.message}`
             );
           }
         } else if (progress?.allFulfilled) {
           setMsg(
-            'All product lines are issued. An authorized approver must complete the request.'
+            wantsPod
+              ? 'All packages prepared and POD booked. An authorized approver must complete the request.'
+              : 'All packages are prepared. An authorized approver must complete the request.'
           );
         } else if (progress) {
+          const confirmed = form.packageStatus === 'No stock'
+            ? 'No stock'
+            : wantsPod
+              ? 'POD booked'
+              : 'Package ready';
           setMsg(
-            `Product line issued. ${progress.fulfilled} of ${progress.total} lines fulfilled.`
+            `Package confirmed (${form.packageStatus || 'prepared'}). ${confirmed}. ${progress.fulfilled} of ${progress.total} packages done.`
           );
         }
       } else {
         setMsg(
-          lines.length > 1
-            ? `Goods issue saved (${lines.length} products). Kept Open until delivery / RTO is marked.`
-            : 'Goods issue saved and kept Open until delivery / RTO is marked.'
+          wantsPod
+            ? lines.length > 1
+              ? `Goods issue saved (${lines.length} products) and POD booked.`
+              : 'Goods issue saved and POD booked.'
+            : lines.length > 1
+              ? `Goods issue saved (${lines.length} products). Kept Open until delivery / RTO is marked.`
+              : 'Goods issue saved and kept Open until delivery / RTO is marked.'
         );
       }
 
       setFormOpen(false);
-      if (fulfillingId) setMode('requests');
+      if (wantsPod) {
+        setMode('pods');
+        setPodDateFrom(todayLocalDate());
+        setPodDateTo(todayLocalDate());
+        setPodPage(1);
+      } else if (fulfillingId) {
+        setMode('requests');
+      }
       setFulfillingId('');
       setFulfillingLineId('');
       setFulfillingLineIndex(null);
       loadRows();
       loadRequests();
+      if (wantsPod) loadPods();
       return;
     } catch (err) {
       setError(err.message);
@@ -976,8 +1719,8 @@ export default function LogisticsOutwardPage() {
   return (
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
-        Outward goods issue stays Open after save until AWB delivery is marked Delivered, RTO, or
-        Closed.
+        Prepare package (Courier: pick courier + AWB in the same step). Mark Delivered or
+        RTO when the shipment completes — it closes automatically. Use Track for AWB status.
       </p>
 
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
@@ -1003,6 +1746,18 @@ export default function LogisticsOutwardPage() {
           }}
         >
           From Request One
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'pods'}
+          className={`ilog-source-tab${mode === 'pods' ? ' is-active' : ''}`}
+          onClick={() => {
+            setMode('pods');
+            setFormOpen(false);
+          }}
+        >
+          PODs
         </button>
       </div>
 
@@ -1050,17 +1805,17 @@ export default function LogisticsOutwardPage() {
               }}
               aria-label="Goods issue status filter"
             >
-              <option value="Open">Open</option>
-              <option value="Delivered">Delivered</option>
-              <option value="RTO">RTO</option>
-              <option value="Closed">Closed</option>
-              <option value="All">All</option>
+              {GOODS_ISSUE_STATUS_FILTERS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </AdaptiveSelect>
           </MasterFilterShell>
 
           {canWrite && formOpen && (
             <form className="card logistics-form logistics-txn-form" onSubmit={save}>
-              <h3>{fulfillingId ? 'Goods issue from request' : 'Manual goods issue'}</h3>
+              <h3>{fulfillingId ? 'Prepare package' : 'Manual goods issue'}</h3>
 
               {!fulfillingId ? (
                 <>
@@ -1106,15 +1861,6 @@ export default function LogisticsOutwardPage() {
                         ))}
                       </AdaptiveSelect>
                     </Field>
-                    {needsAwb && (
-                      <Field label="AWB number" required>
-                        <input
-                          required
-                          value={form.awbNumber}
-                          onChange={(e) => setField('awbNumber', e.target.value)}
-                        />
-                      </Field>
-                    )}
                   </div>
 
                   <h4 className="logistics-form-section">Section 2 · Products</h4>
@@ -1149,6 +1895,21 @@ export default function LogisticsOutwardPage() {
                             : meta.expiryApplicable;
                         const showSerial = lineNeedsSerial(trackingKind);
                         const showBatch = lineNeedsBatch(trackingKind);
+                        const lineLots =
+                          stockLotsByProductId[String(item.productId || '')] || [];
+                        const lineBatchOpts = batchOptionsFromLots(
+                          lineLots,
+                          item.expiryDate || ''
+                        );
+                        const lineExpiryOpts = expiryOptionsFromLots(
+                          lineLots,
+                          item.batchNumber || ''
+                        );
+                        const lineSerialOpts = serialOptionsFromLots(
+                          lineLots,
+                          item.batchNumber || '',
+                          item.expiryDate || ''
+                        );
                         return (
                           <div className="arq-product-row" key={`issue-product-${index}`}>
                             <div className="field">
@@ -1224,50 +1985,124 @@ export default function LogisticsOutwardPage() {
                             {showSerial && (
                               <div className="field">
                                 <label>Serial number *</label>
-                                <input
-                                  required
-                                  disabled={form.logisticsProductsConfirmed}
-                                  value={item.serialNumber || ''}
-                                  onChange={(event) =>
-                                    updateIssueProduct(index, {
-                                      serialNumber: event.target.value,
-                                    })
-                                  }
-                                  placeholder="Device serial"
-                                />
+                                {lineSerialOpts.length ? (
+                                  <AdaptiveSelect
+                                    required
+                                    disabled={
+                                      !item.productId || form.logisticsProductsConfirmed
+                                    }
+                                    value={item.serialNumber || ''}
+                                    onChange={(event) =>
+                                      updateIssueProduct(index, {
+                                        serialNumber: event.target.value,
+                                      })
+                                    }
+                                  >
+                                    <option value="">Select serial</option>
+                                    {lineSerialOpts.map((serial) => (
+                                      <option key={serial} value={serial}>
+                                        {serial}
+                                      </option>
+                                    ))}
+                                  </AdaptiveSelect>
+                                ) : (
+                                  <input
+                                    required
+                                    disabled={form.logisticsProductsConfirmed}
+                                    value={item.serialNumber || ''}
+                                    onChange={(event) =>
+                                      updateIssueProduct(index, {
+                                        serialNumber: event.target.value,
+                                      })
+                                    }
+                                    placeholder={
+                                      item.productId
+                                        ? 'No serial in stock'
+                                        : 'Select product first'
+                                    }
+                                  />
+                                )}
                               </div>
                             )}
                             {showBatch && (
                               <div className="field">
                                 <label>Batch number *</label>
-                                <input
+                                <AdaptiveSelect
                                   required
-                                  disabled={form.logisticsProductsConfirmed}
-                                  value={item.batchNumber || ''}
-                                  onChange={(event) =>
-                                    updateIssueProduct(index, {
-                                      batchNumber: event.target.value,
-                                    })
+                                  disabled={
+                                    !item.productId || form.logisticsProductsConfirmed
                                   }
-                                  placeholder="Batch"
-                                />
+                                  value={item.batchNumber || ''}
+                                  onChange={(event) => {
+                                    const picked = pickBatchFromLots(
+                                      lineLots,
+                                      event.target.value,
+                                      item.expiryDate || ''
+                                    );
+                                    updateIssueProduct(index, {
+                                      batchNumber: picked.batchNumber,
+                                      expiryDate: expiryApplicable
+                                        ? picked.expiryDate
+                                        : '',
+                                      serialNumber: showSerial ? '' : item.serialNumber || '',
+                                    });
+                                  }}
+                                >
+                                  <option value="">
+                                    {item.productId
+                                      ? lineBatchOpts.length
+                                        ? 'Select batch'
+                                        : 'No batch in stock'
+                                      : 'Select product first'}
+                                  </option>
+                                  {lineBatchOpts.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.value}
+                                      {opt.qty ? ` (qty ${opt.qty})` : ''}
+                                    </option>
+                                  ))}
+                                </AdaptiveSelect>
                               </div>
                             )}
                             {expiryApplicable && (
                               <div className="field">
                                 <label>Expiry date *</label>
-                                <DateInput
-                                  hideLabel
-                                  aria-label="Expiry date"
+                                <AdaptiveSelect
                                   required
-                                  disabled={form.logisticsProductsConfirmed}
-                                  value={item.expiryDate || ''}
-                                  onChange={(value) =>
-                                    updateIssueProduct(index, {
-                                      expiryDate: value,
-                                    })
+                                  aria-label="Expiry date"
+                                  disabled={
+                                    !item.productId || form.logisticsProductsConfirmed
                                   }
-                                />
+                                  value={item.expiryDate || ''}
+                                  onChange={(event) => {
+                                    const picked = pickExpiryFromLots(
+                                      lineLots,
+                                      event.target.value,
+                                      item.batchNumber || ''
+                                    );
+                                    updateIssueProduct(index, {
+                                      batchNumber: showBatch
+                                        ? picked.batchNumber
+                                        : item.batchNumber || '',
+                                      expiryDate: picked.expiryDate,
+                                      serialNumber: showSerial ? '' : item.serialNumber || '',
+                                    });
+                                  }}
+                                >
+                                  <option value="">
+                                    {item.productId
+                                      ? lineExpiryOpts.length
+                                        ? 'Select expiry'
+                                        : 'No expiry in stock'
+                                      : 'Select product first'}
+                                  </option>
+                                  {lineExpiryOpts.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {formatDate(opt.value) || opt.value}
+                                      {opt.qty ? ` (qty ${opt.qty})` : ''}
+                                    </option>
+                                  ))}
+                                </AdaptiveSelect>
                               </div>
                             )}
                             <button
@@ -1306,7 +2141,7 @@ export default function LogisticsOutwardPage() {
                   {form.logisticsProductsConfirmed && (
                     <>
                       <h4 className="logistics-form-section">Section 3 · Parties</h4>
-                      {showFrom && (
+                      {showFrom ? (
                         <DirectoryPartyFields
                           label="Sender"
                           prefix="from"
@@ -1314,8 +2149,8 @@ export default function LogisticsOutwardPage() {
                           form={form}
                           setForm={setForm}
                         />
-                      )}
-                      {showTo && (
+                      ) : null}
+                      {showTo ? (
                         <DirectoryPartyFields
                           label="Send to / Recipient"
                           prefix="to"
@@ -1323,130 +2158,585 @@ export default function LogisticsOutwardPage() {
                           form={form}
                           setForm={setForm}
                         />
-                      )}
+                      ) : null}
                     </>
                   )}
                 </>
               ) : (
-                <>
-                  <div className="logistics-form-grid logistics-form-grid--inout">
-                    <Field label="Issue kind">
-                      <input readOnly value={normalizeIssueKind(form.logisticsKind)} />
-                    </Field>
-                    <Field label="Product category" required>
-                      <AdaptiveSelect
-                        required
-                        disabled
-                        value={form.productType}
-                        onChange={(e) => onProductCategoryChange(e.target.value)}
-                      >
-                        {productTypes.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </AdaptiveSelect>
-                    </Field>
-                    <Field label="Model/Variant/Name" required>
-                      <AdaptiveSelect
-                        required
-                        disabled
-                        value={form.productId}
-                        onChange={(e) => pickProduct(e.target.value)}
-                      >
-                        <option value="">Select…</option>
-                        {productsForType.map((p) => (
-                          <option key={p._id} value={p._id}>
-                            {productLabel(p)}
-                            {p.code ? ` (${p.code})` : ''}
-                          </option>
-                        ))}
-                      </AdaptiveSelect>
-                    </Field>
-                    <Field label="Qty" required>
-                      <input type="number" required disabled value={form.qty} readOnly />
-                    </Field>
-                    {lineNeedsSerial(form.trackingKind) && (
-                      <Field label="Serial number" required>
+                <div className="logistics-prepare-package">
+                  <section className="logistics-prepare-section" aria-labelledby="prep-goods">
+                    <h4 id="prep-goods" className="logistics-form-section">
+                      Goods Info
+                    </h4>
+                    <div className="logistics-prepare-grid logistics-prepare-grid--goods">
+                      <Field label="Issue kind">
                         <input
-                          required
-                          value={form.serialNumber || ''}
-                          onChange={(e) => setField('serialNumber', e.target.value)}
-                          placeholder="Device serial"
+                          readOnly
+                          className="is-readonly"
+                          value={normalizeIssueKind(form.logisticsKind)}
                         />
                       </Field>
-                    )}
-                    {lineNeedsBatch(form.trackingKind) && (
-                      <Field label="Batch number" required>
+                      <Field label="Product category">
                         <input
-                          required
-                          value={form.batchNumber || ''}
-                          onChange={(e) => setField('batchNumber', e.target.value)}
-                          placeholder="Batch"
+                          readOnly
+                          className="is-readonly"
+                          value={form.productType || ''}
                         />
                       </Field>
-                    )}
-                    {form.expiryApplicable && (
-                      <Field label="Expiry date" required>
-                        <DateInput
-                          hideLabel
-                          aria-label="Expiry date"
-                          required
-                          value={form.expiryDate || ''}
-                          onChange={(value) => setField('expiryDate', value)}
+                      <Field label="Model / Variant / Name">
+                        <input
+                          readOnly
+                          className="is-readonly"
+                          value={form.productName || ''}
                         />
                       </Field>
-                    )}
-                  </div>
-                  {showFrom && (
-                    <DirectoryPartyFields
-                      label="Sender"
-                      prefix="from"
-                      contacts={contacts}
-                      form={form}
-                      setForm={setForm}
-                    />
-                  )}
-                  {showTo && (
-                    <DirectoryPartyFields
-                      label="Send to / Recipient"
-                      prefix="to"
-                      contacts={contacts}
-                      form={form}
-                      setForm={setForm}
-                    />
-                  )}
-                  <div className="logistics-form-grid logistics-form-grid--inout">
-                    <Field label="Delivery mode" required>
-                      <AdaptiveSelect
-                        required
-                        value={mapDeliveryMode(form.deliveryMode) || ''}
-                        onChange={(e) => setField('deliveryMode', e.target.value)}
+                      <Field
+                        label="Qty"
+                        required={form.packageStatus === 'Partially ready'}
                       >
-                        <option value="">Select delivery mode</option>
-                        {FALLBACK_DELIVERY.map((mode) => (
-                          <option key={mode} value={mode}>
-                            {mode}
-                          </option>
-                        ))}
-                      </AdaptiveSelect>
-                    </Field>
-                    {needsAwb && (
-                      <Field label="AWB number" required>
                         <input
-                          required
-                          value={form.awbNumber}
-                          onChange={(e) => setField('awbNumber', e.target.value)}
+                          type="number"
+                          min="0.01"
+                          step="any"
+                          required={form.packageStatus !== 'No stock'}
+                          readOnly={form.packageStatus !== 'Partially ready'}
+                          className={
+                            form.packageStatus !== 'Partially ready' ? 'is-readonly' : undefined
+                          }
+                          value={form.qty || ''}
+                          onChange={(e) => setField('qty', e.target.value)}
                         />
                       </Field>
-                    )}
-                  </div>
-                </>
+                      <Field label="UOM">
+                        <input
+                          readOnly
+                          className="is-readonly"
+                          value={uomLabel(form.uomId) || '—'}
+                        />
+                      </Field>
+                      <Field
+                        label="Delivery mode"
+                        required={form.packageStatus !== 'No stock'}
+                      >
+                        <AdaptiveSelect
+                          required={form.packageStatus !== 'No stock'}
+                          value={mapDeliveryMode(form.deliveryMode) || ''}
+                          onChange={(e) => {
+                            const deliveryMode = e.target.value;
+                            setForm((prev) => ({
+                              ...prev,
+                              deliveryMode,
+                              ...(mapDeliveryMode(deliveryMode) === 'Courier'
+                                ? applyFixedPodOrigin({
+                                    fromCity: 'Mumbai',
+                                    fromState: 'Maharashtra',
+                                  })
+                                : { awbNumber: '', podCourierId: '' }),
+                            }));
+                          }}
+                        >
+                          <option value="">Select delivery mode</option>
+                          {FALLBACK_DELIVERY.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {mode}
+                            </option>
+                          ))}
+                        </AdaptiveSelect>
+                      </Field>
+                      {form.packageStatus !== 'No stock' && lineNeedsBatch(form.trackingKind) ? (
+                        <Field label="Batch number" required>
+                          <AdaptiveSelect
+                            required
+                            disabled={!form.productId}
+                            value={form.batchNumber || ''}
+                            onChange={(e) => {
+                              const picked = pickBatchFromLots(
+                                fulfillLots,
+                                e.target.value,
+                                form.expiryDate || ''
+                              );
+                              setForm((f) => ({
+                                ...f,
+                                batchNumber: picked.batchNumber,
+                                expiryDate: f.expiryApplicable ? picked.expiryDate : '',
+                                serialNumber: lineNeedsSerial(f.trackingKind)
+                                  ? ''
+                                  : f.serialNumber || '',
+                              }));
+                            }}
+                          >
+                            <option value="">
+                              {form.productId
+                                ? fulfillBatchOpts.length
+                                  ? 'Select batch'
+                                  : 'No batch in stock'
+                                : 'Select product first'}
+                            </option>
+                            {fulfillBatchOpts.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.value}
+                                {opt.qty ? ` (qty ${opt.qty})` : ''}
+                              </option>
+                            ))}
+                          </AdaptiveSelect>
+                        </Field>
+                      ) : (
+                        <Field label="Batch number">
+                          <input readOnly className="is-readonly" value="N/A" />
+                        </Field>
+                      )}
+                      {form.packageStatus !== 'No stock' && form.expiryApplicable ? (
+                        <Field label="Expiry date" required>
+                          <AdaptiveSelect
+                            required
+                            aria-label="Expiry date"
+                            disabled={!form.productId}
+                            value={form.expiryDate || ''}
+                            onChange={(e) => {
+                              const picked = pickExpiryFromLots(
+                                fulfillLots,
+                                e.target.value,
+                                form.batchNumber || ''
+                              );
+                              setForm((f) => ({
+                                ...f,
+                                batchNumber: lineNeedsBatch(f.trackingKind)
+                                  ? picked.batchNumber
+                                  : f.batchNumber || '',
+                                expiryDate: picked.expiryDate,
+                                serialNumber: lineNeedsSerial(f.trackingKind)
+                                  ? ''
+                                  : f.serialNumber || '',
+                              }));
+                            }}
+                          >
+                            <option value="">
+                              {form.productId
+                                ? fulfillExpiryOpts.length
+                                  ? 'Select expiry'
+                                  : 'No expiry in stock'
+                                : 'Select product first'}
+                            </option>
+                            {fulfillExpiryOpts.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {formatDate(opt.value) || opt.value}
+                                {opt.qty ? ` (qty ${opt.qty})` : ''}
+                              </option>
+                            ))}
+                          </AdaptiveSelect>
+                        </Field>
+                      ) : form.packageStatus !== 'No stock' &&
+                        lineNeedsSerial(form.trackingKind) &&
+                        !form.expiryApplicable ? (
+                        <Field label="Serial number" required>
+                          {fulfillSerialOpts.length ? (
+                            <AdaptiveSelect
+                              required
+                              value={form.serialNumber || ''}
+                              onChange={(e) => setField('serialNumber', e.target.value)}
+                            >
+                              <option value="">Select serial</option>
+                              {fulfillSerialOpts.map((serial) => (
+                                <option key={serial} value={serial}>
+                                  {serial}
+                                </option>
+                              ))}
+                            </AdaptiveSelect>
+                          ) : (
+                            <input
+                              required
+                              value={form.serialNumber || ''}
+                              onChange={(e) => setField('serialNumber', e.target.value)}
+                              placeholder="No serial in stock"
+                            />
+                          )}
+                        </Field>
+                      ) : (
+                        <Field label="Expiry date">
+                          <input readOnly className="is-readonly" value="N/A" />
+                        </Field>
+                      )}
+                      {form.packageStatus !== 'No stock' &&
+                      lineNeedsSerial(form.trackingKind) &&
+                      form.expiryApplicable ? (
+                        <Field label="Serial number" required>
+                          {fulfillSerialOpts.length ? (
+                            <AdaptiveSelect
+                              required
+                              value={form.serialNumber || ''}
+                              onChange={(e) => setField('serialNumber', e.target.value)}
+                            >
+                              <option value="">Select serial</option>
+                              {fulfillSerialOpts.map((serial) => (
+                                <option key={serial} value={serial}>
+                                  {serial}
+                                </option>
+                              ))}
+                            </AdaptiveSelect>
+                          ) : (
+                            <input
+                              required
+                              value={form.serialNumber || ''}
+                              onChange={(e) => setField('serialNumber', e.target.value)}
+                              placeholder="No serial in stock"
+                            />
+                          )}
+                        </Field>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  {(() => {
+                    const noStock = form.packageStatus === 'No stock';
+                    const deliverySection = (
+                      <section
+                        key="prep-delivery"
+                        className="logistics-prepare-section"
+                        aria-labelledby="prep-delivery"
+                      >
+                        <h4 id="prep-delivery" className="logistics-form-section">
+                          {prepareFixedDestination
+                            ? 'Destination Details'
+                            : prepareShowSender && prepareShowRecipient
+                              ? 'Recipient Details'
+                              : 'Delivery Details'}
+                        </h4>
+                        {noStock ? (
+                          <p className="muted logistics-prepare-lede">
+                            Addresses are not required when package status is No stock.
+                          </p>
+                        ) : prepareFixedDestination ? (
+                          <>
+                            <p className="muted logistics-prepare-lede">
+                              Destination is fixed at Tylo Care HQ for Recall / Pickup.
+                            </p>
+                            <div className="logistics-prepare-grid logistics-prepare-grid--origin">
+                              <Field label="Name" required>
+                                <input
+                                  required
+                                  value={form.toName || ''}
+                                  onChange={(e) => setField('toName', e.target.value)}
+                                />
+                              </Field>
+                              <Field label="Phone" required>
+                                <input
+                                  required
+                                  value={form.toNumber || ''}
+                                  onChange={(e) => setField('toNumber', e.target.value)}
+                                />
+                              </Field>
+                              <Field label="Pin code" required>
+                                <input
+                                  required
+                                  value={form.toPinCode || ''}
+                                  onChange={(e) => setField('toPinCode', e.target.value)}
+                                />
+                              </Field>
+                              <Field label="Address" required>
+                                <input
+                                  required
+                                  value={form.toAddress || ''}
+                                  onChange={(e) => setField('toAddress', e.target.value)}
+                                />
+                              </Field>
+                            </div>
+                          </>
+                        ) : prepareShowRecipient ? (
+                          <DirectoryPartyFields
+                            label="Recipient"
+                            prefix="to"
+                            contacts={contacts}
+                            form={form}
+                            setForm={setForm}
+                          />
+                        ) : null}
+                      </section>
+                    );
+
+                    const originSection =
+                      !noStock && (prepareFixedOrigin || prepareShowSender) ? (
+                        <section
+                          key="prep-origin"
+                          className="logistics-prepare-section"
+                          aria-labelledby="prep-origin"
+                        >
+                          <h4 id="prep-origin" className="logistics-form-section">
+                            {prepareFixedOrigin
+                              ? 'Origin Details'
+                              : issueKind === 'Recall / Pickup'
+                                ? 'Pickup / Origin Details'
+                                : 'Sender Details'}
+                          </h4>
+                          {prepareFixedOrigin ? (
+                            <>
+                              <p className="muted logistics-prepare-lede">
+                                Origin is fixed at Tylo Care HQ for Fresh Dispatch.
+                              </p>
+                              <div className="logistics-prepare-grid logistics-prepare-grid--origin">
+                                <Field label="Name" required>
+                                  <input
+                                    required
+                                    value={form.fromName || ''}
+                                    onChange={(e) => setField('fromName', e.target.value)}
+                                  />
+                                </Field>
+                                <Field label="Phone" required>
+                                  <input
+                                    required
+                                    value={form.fromNumber || ''}
+                                    onChange={(e) => setField('fromNumber', e.target.value)}
+                                  />
+                                </Field>
+                                <Field label="Pin code" required>
+                                  <input
+                                    required
+                                    value={form.fromPinCode || ''}
+                                    onChange={(e) => setField('fromPinCode', e.target.value)}
+                                  />
+                                </Field>
+                                <Field label="Address" required>
+                                  <input
+                                    required
+                                    value={form.fromAddress || ''}
+                                    onChange={(e) => setField('fromAddress', e.target.value)}
+                                  />
+                                </Field>
+                              </div>
+                            </>
+                          ) : (
+                            <DirectoryPartyFields
+                              label={
+                                issueKind === 'Recall / Pickup' ? 'Pickup from' : 'Sender'
+                              }
+                              prefix="from"
+                              contacts={contacts}
+                              form={form}
+                              setForm={setForm}
+                            />
+                          )}
+                        </section>
+                      ) : null;
+
+                    // Inter Transfer: Sender then Recipient (both from Request One)
+                    if (issueKind === 'Inter Transfer') {
+                      return (
+                        <>
+                          {originSection}
+                          {deliverySection}
+                        </>
+                      );
+                    }
+                    // Fresh Dispatch: Delivery then fixed Origin
+                    // Recall / Pickup: fixed Destination then Pickup origin
+                    return (
+                      <>
+                        {deliverySection}
+                        {originSection}
+                      </>
+                    );
+                  })()}
+
+                  <section
+                    className="logistics-prepare-section"
+                    aria-labelledby="prep-shipment"
+                  >
+                    <h4 id="prep-shipment" className="logistics-form-section">
+                      Shipment Overview
+                    </h4>
+                    <div className="logistics-prepare-grid logistics-prepare-grid--shipment">
+                      <Field label="Package status" required>
+                        <AdaptiveSelect
+                          required
+                          value={form.packageStatus || ''}
+                          onChange={(e) => setField('packageStatus', e.target.value)}
+                        >
+                          <option value="">Select status</option>
+                          {PACKAGE_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </AdaptiveSelect>
+                      </Field>
+                      {prepareIsCourier && form.packageStatus !== 'No stock' ? (
+                        <>
+                          <Field label="Length (cm)" required>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              aria-label="Length cm"
+                              placeholder="L"
+                              value={form.packageLength || ''}
+                              onChange={(e) => setField('packageLength', e.target.value)}
+                            />
+                          </Field>
+                          <Field label="Width (cm)" required>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              aria-label="Width cm"
+                              placeholder="W"
+                              value={form.packageWidth || ''}
+                              onChange={(e) => setField('packageWidth', e.target.value)}
+                            />
+                          </Field>
+                          <Field label="Height (cm)" required>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              aria-label="Height cm"
+                              placeholder="H"
+                              value={form.packageHeight || ''}
+                              onChange={(e) => setField('packageHeight', e.target.value)}
+                            />
+                          </Field>
+                          <Field label="Weight (kg)" required>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              value={form.packageWeight || ''}
+                              onChange={(e) => setField('packageWeight', e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </Field>
+                          <Field
+                            label="Applicable weight"
+                            hint={
+                              packageVolumetricKg != null
+                                ? `Volumetric ${formatWeightKg(packageVolumetricKg)} kg`
+                                : 'Max of weight & L×W×H÷5000'
+                            }
+                          >
+                            <input
+                              readOnly
+                              className="is-readonly"
+                              value={
+                                packageApplicableKg == null
+                                  ? ''
+                                  : `${formatWeightKg(packageApplicableKg)} kg`
+                              }
+                              placeholder="Auto"
+                            />
+                          </Field>
+                          <Field label="Declared price (₹)" required>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              value={form.declaredPrice || ''}
+                              onChange={(e) => setField('declaredPrice', e.target.value)}
+                              placeholder="0"
+                            />
+                          </Field>
+                          <Field label="AWB number" required>
+                            <input
+                              required
+                              value={form.awbNumber || ''}
+                              onChange={(e) => setField('awbNumber', e.target.value)}
+                              placeholder="Enter AWB after booking"
+                            />
+                          </Field>
+                        </>
+                      ) : null}
+                    </div>
+                  </section>
+
+                  {prepareIsCourier && form.packageStatus !== 'No stock' ? (
+                    <section className="logistics-prepare-section" aria-labelledby="prep-pod">
+                      <h4 id="prep-pod" className="logistics-form-section">
+                        Book POD
+                      </h4>
+                      <div className="logistics-prepare-courier-table table-wrap">
+                        <table className="inv-table">
+                          <thead>
+                            <tr>
+                              <th>Mode</th>
+                              <th>Courier</th>
+                              <th>Service Type</th>
+                              <th>Category</th>
+                              <th className="num">Est. ₹</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {courierQuoteOptions.map((opt) => {
+                              const selected = String(form.podCourierId) === opt.id;
+                              const isSurface =
+                                String(opt.mode || '').toLowerCase() === 'surface';
+                              const ModeIcon = isSurface ? Truck : Plane;
+                              const modeLabel = isSurface ? 'Surface' : 'Air';
+                              return (
+                                <tr
+                                  key={opt.id}
+                                  className={
+                                    selected
+                                      ? 'pod-courier-row is-selected'
+                                      : 'pod-courier-row'
+                                  }
+                                >
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className={`pod-mode-icon-btn${
+                                        selected ? ' is-selected' : ''
+                                      }${isSurface ? ' is-surface' : ' is-air'}`}
+                                      aria-pressed={selected}
+                                      aria-label={`Select ${opt.name} (${modeLabel})`}
+                                      title={modeLabel}
+                                      onClick={() => setField('podCourierId', opt.id)}
+                                    >
+                                      <ModeIcon size={18} strokeWidth={2} aria-hidden />
+                                      <span className="pod-mode-label">{modeLabel}</span>
+                                    </button>
+                                  </td>
+                                  <td>
+                                    <strong>{opt.courier || opt.name}</strong>
+                                    {opt.isCheapest ? (
+                                      <span className="badge tone-ok pod-cheapest-badge">
+                                        Cheapest
+                                      </span>
+                                    ) : null}
+                                  </td>
+                                  <td>{opt.serviceType || '—'}</td>
+                                  <td>{opt.categoryLabel || opt.zoneLabel || '—'}</td>
+                                  <td className="num">
+                                    {opt.estimate != null ? opt.estimate.toFixed(2) : '—'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {!courierQuoteOptions.length && (
+                              <tr>
+                                <td colSpan={5} className="muted">
+                                  Enter weight and dimensions above to compare couriers.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  ) : null}
+                </div>
               )}
 
               <div className="logistics-form-actions">
                 <button className="btn" type="submit" disabled={busy}>
-                  {busy ? 'Saving…' : 'Save goods issue'}
+                  {busy
+                    ? 'Saving…'
+                    : fulfillingId
+                      ? prepareIsCourier
+                        ? 'Confirm package & book POD'
+                        : 'Confirm package'
+                      : 'Save goods issue'}
                 </button>
                 <button
                   className="btn secondary"
@@ -1520,39 +2810,59 @@ export default function LogisticsOutwardPage() {
                           {ds}
                         </span>
                       </td>
-                      <td>
+                      <td className="ilog-actions-cell">
                         {canWrite && open ? (
-                          <div className="ilog-attach-cell">
+                          <div className="ilog-row-actions">
                             <button
                               type="button"
-                              className="btn secondary"
+                              className="btn secondary btn-compact"
                               disabled={deliveryBusyId === r._id}
                               onClick={() => markDelivery(r, 'Delivered')}
                             >
-                              {deliveryBusyId === r._id ? '…' : 'Mark Delivered'}
+                              {deliveryBusyId === r._id ? '…' : 'Delivered'}
                             </button>
                             <button
                               type="button"
-                              className="btn secondary"
+                              className="btn secondary btn-compact"
                               disabled={deliveryBusyId === r._id}
                               onClick={() => markDelivery(r, 'RTO')}
                             >
-                              Mark RTO
+                              RTO
                             </button>
-                            <button
-                              type="button"
-                              className="btn secondary"
-                              disabled={deliveryBusyId === r._id}
-                              onClick={() => markDelivery(r, 'Closed')}
+                            <a
+                              className="btn secondary btn-compact"
+                              href={POD_TRACK_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={
+                                r.awbNumber
+                                  ? `Track AWB ${r.awbNumber} on DTDC`
+                                  : 'Track shipment on DTDC'
+                              }
                             >
-                              Close
-                            </button>
+                              Track
+                            </a>
                           </div>
                         ) : (
-                          <span className="muted">
-                            {r.deliveryOutcome || ds}
-                            {r.closedAt ? ` · ${formatDateTime(r.closedAt)}` : ''}
-                          </span>
+                          <div className="ilog-row-actions">
+                            <a
+                              className="btn secondary btn-compact"
+                              href={POD_TRACK_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={
+                                r.awbNumber
+                                  ? `Track AWB ${r.awbNumber} on DTDC`
+                                  : 'Track shipment on DTDC'
+                              }
+                            >
+                              Track
+                            </a>
+                            <span className="muted">
+                              {r.deliveryOutcome || ds}
+                              {r.closedAt ? ` · ${formatDateTime(r.closedAt)}` : ''}
+                            </span>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -1583,6 +2893,275 @@ export default function LogisticsOutwardPage() {
         </>
       )}
 
+      {mode === 'pods' && (
+        <>
+          <MasterFilterShell
+            actions={
+              <>
+                <button
+                  className="btn secondary btn-compact"
+                  type="button"
+                  onClick={() => {
+                    const today = todayLocalDate();
+                    setPodDateFrom(today);
+                    setPodDateTo(today);
+                    setPodPage(1);
+                  }}
+                >
+                  Today
+                </button>
+                <button className="btn secondary btn-compact" type="button" onClick={loadPods}>
+                  Refresh
+                </button>
+                {podSelectedIds.size > 0 ? (
+                  <>
+                    <span className="muted mono-sm">{podSelectedIds.size} selected</span>
+                    <button
+                      className="btn secondary btn-compact"
+                      type="button"
+                      onClick={clearPodSelection}
+                    >
+                      Clear select
+                    </button>
+                    {canWrite ? (
+                      <button
+                        className="btn btn-compact"
+                        type="button"
+                        disabled={podBulkBusy || !podOpenSelected.length}
+                        title={
+                          podOpenSelected.length
+                            ? `Mark ${podOpenSelected.length} open POD(s) Delivered`
+                            : 'No open PODs in selection'
+                        }
+                        onClick={() => markPodsBulk('Delivered')}
+                      >
+                        {podBulkBusy ? '…' : 'Mark Delivered'}
+                      </button>
+                    ) : null}
+                    {adminUser ? (
+                      <button
+                        className="btn danger btn-compact"
+                        type="button"
+                        disabled={podBulkBusy || !podSelectedIds.size}
+                        title="Delete selected PODs (Admin only)"
+                        onClick={deletePodsBulk}
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+                <button
+                  className="btn btn-compact"
+                  type="button"
+                  disabled={podExportBusy || podLoading}
+                  onClick={downloadPodsExcel}
+                  title={
+                    podSelectedIds.size
+                      ? `Download Excel for ${podSelectedIds.size} selected`
+                      : 'Download Excel for current date range'
+                  }
+                >
+                  {podExportBusy
+                    ? 'Downloading…'
+                    : podSelectedIds.size
+                      ? `Download Excel (${podSelectedIds.size})`
+                      : 'Download Excel'}
+                </button>
+              </>
+            }
+          >
+            <MasterSearchField
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && loadPods()}
+              placeholder="Search TXN, AWB, product, recipient…"
+              aria-label="Search PODs"
+            />
+            <input
+              type="date"
+              className="master-filter-date"
+              value={podDateFrom}
+              onChange={(e) => {
+                setPodDateFrom(e.target.value);
+                setPodPage(1);
+              }}
+              aria-label="POD booked from"
+              title="From"
+            />
+            <span className="master-filter-date-sep" aria-hidden="true">
+              –
+            </span>
+            <input
+              type="date"
+              className="master-filter-date"
+              value={podDateTo}
+              onChange={(e) => {
+                setPodDateTo(e.target.value);
+                setPodPage(1);
+              }}
+              aria-label="POD booked to"
+              title="To"
+            />
+          </MasterFilterShell>
+
+          <div className="card card--flush table-wrap">
+            <table className="inv-table">
+              <thead>
+                <tr>
+                  <th className="checkbox-col">
+                    <input
+                      type="checkbox"
+                      checked={podAllSelected}
+                      disabled={!podRows.length}
+                      onChange={togglePodSelectAll}
+                      aria-label="Select all PODs on this page"
+                    />
+                  </th>
+                  <th>TXN</th>
+                  <th>POD booked</th>
+                  <th>Product</th>
+                  <th className="num">Qty</th>
+                  <th>Recipient</th>
+                  <th>City</th>
+                  <th>AWB</th>
+                  <th>Weight</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {podRows.map((r) => {
+                  const ds = resolveDispatchStatus(r);
+                  const open = isDispatchOpen(r);
+                  const selected = podSelectedIds.has(String(r._id));
+                  return (
+                    <tr key={r._id} className={selected ? 'is-selected' : undefined}>
+                      <td className="checkbox-col">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => togglePodSelect(r._id)}
+                          aria-label={`Select ${r.uniqueKey || r._id}`}
+                        />
+                      </td>
+                      <td className="mono-sm">{r.uniqueKey || '-'}</td>
+                      <td className="mono-sm">
+                        {formatDateTime(r.podBookedAt) ||
+                          formatDate(r.podBookedAt) ||
+                          formatDate(r.transactionDate) ||
+                          '-'}
+                      </td>
+                      <td>
+                        <strong>{r.productName || r.itemName || '-'}</strong>
+                      </td>
+                      <td className="num">{r.qty}</td>
+                      <td>{r.recipientName || r.employeeName || r.name || '-'}</td>
+                      <td>{r.city || r.toCity || '-'}</td>
+                      <td className="mono-sm">{r.awbNumber || '-'}</td>
+                      <td className="mono-sm">
+                        {r.applicableWeight || r.packageWeight
+                          ? `${r.applicableWeight || r.packageWeight} kg`
+                          : '—'}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            open
+                              ? 'tone-warn'
+                              : ds === 'RTO'
+                                ? 'tone-danger'
+                                : 'tone-ok'
+                          }`}
+                        >
+                          {ds}
+                        </span>
+                      </td>
+                      <td className="ilog-actions-cell">
+                        {canWrite && open ? (
+                          <div className="ilog-row-actions">
+                            <button
+                              type="button"
+                              className="btn secondary btn-compact"
+                              disabled={deliveryBusyId === r._id || podBulkBusy}
+                              onClick={() => markDelivery(r, 'Delivered')}
+                            >
+                              {deliveryBusyId === r._id ? '…' : 'Delivered'}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn secondary btn-compact"
+                              disabled={deliveryBusyId === r._id || podBulkBusy}
+                              onClick={() => markDelivery(r, 'RTO')}
+                            >
+                              RTO
+                            </button>
+                            <a
+                              className="btn secondary btn-compact"
+                              href={POD_TRACK_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={
+                                r.awbNumber
+                                  ? `Track AWB ${r.awbNumber} on DTDC`
+                                  : 'Track shipment on DTDC'
+                              }
+                            >
+                              Track
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="ilog-row-actions">
+                            <a
+                              className="btn secondary btn-compact"
+                              href={POD_TRACK_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={
+                                r.awbNumber
+                                  ? `Track AWB ${r.awbNumber} on DTDC`
+                                  : 'Track shipment on DTDC'
+                              }
+                            >
+                              Track
+                            </a>
+                            <span className="muted">
+                              {r.deliveryOutcome || ds}
+                              {r.closedAt ? ` · ${formatDateTime(r.closedAt)}` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!podRows.length && (
+                  <tr>
+                    <td colSpan={11} className="muted">
+                      {podLoading
+                        ? 'Loading PODs…'
+                        : 'No PODs booked in this date range.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar
+            page={podListMeta.page || podPage}
+            limit={podLimit}
+            total={podListMeta.total || 0}
+            pages={podListMeta.pages || 0}
+            loading={podLoading}
+            onPageChange={setPodPage}
+            onLimitChange={(n) => {
+              setPodLimit(n);
+              setPodPage(1);
+            }}
+          />
+        </>
+      )}
+
       {mode === 'requests' && (
         <>
           <MasterFilterShell
@@ -1596,7 +3175,14 @@ export default function LogisticsOutwardPage() {
                 </Link>
               </>
             }
-          />
+          >
+            <MasterSearchField
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search number, product, destination, requestor…"
+              aria-label="Search Goods Issuance Requests"
+            />
+          </MasterFilterShell>
           <div className="card card--flush table-wrap">
             <table className="inv-table">
               <thead>
@@ -1611,7 +3197,7 @@ export default function LogisticsOutwardPage() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((r) => {
+                {filteredRequests.map((r) => {
                   const progress = fulfillmentProgress(r);
                   const kind =
                     r.logisticsKind || '-';
@@ -1628,11 +3214,14 @@ export default function LogisticsOutwardPage() {
                           <strong>{line.productName || r.assetName || '-'}</strong>
                           <span className="muted mono-sm">
                             {line.productType || 'Product'} · Qty {line.qty || 0}
+                            {line.uomId && uomLabel(line.uomId)
+                              ? ` ${uomLabel(line.uomId)}`
+                              : ''}
                           </span>
                         </div>
                       ))}
                       <div className="muted mono-sm">
-                        {progress.fulfilled}/{progress.total} lines issued
+                        {progress.fulfilled}/{progress.total} packages prepared
                       </div>
                     </td>
                     <td>
@@ -1656,7 +3245,7 @@ export default function LogisticsOutwardPage() {
                               disabled={busy || fulfilled}
                               onClick={() => openFromRequest(r, line, index)}
                             >
-                              {fulfilled ? `Line ${index + 1} issued` : `Issue line ${index + 1}`}
+                              {packageActionLabel(r, line, index)}
                             </button>
                           );
                         })}
@@ -1664,10 +3253,12 @@ export default function LogisticsOutwardPage() {
                   </tr>
                   );
                 })}
-                {!requests.length && (
+                {!filteredRequests.length && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No open Goods Issuance Requests. Create one in Request One.
+                      {requests.length
+                        ? 'No requests match your search.'
+                        : 'No open Goods Issuance Requests. Create one in Request One.'}
                     </td>
                   </tr>
                 )}

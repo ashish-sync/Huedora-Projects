@@ -72,13 +72,18 @@ function contactValue(contact, field) {
 /**
  * Apply Contact Directory values into placeholder form state.
  * Contact is applied before asset snapshots so asset fields still win on overlap.
+ * Pass skipKeys for fields the user already edited; onlyIfEmpty skips non-blank values.
  */
-export function applyContactSnapshotToPlaceholders(placeholders, contact, prev = {}) {
+export function applyContactSnapshotToPlaceholders(placeholders, contact, prev = {}, options = {}) {
   if (!contact) return prev;
+  const skipKeys = options.skipKeys instanceof Set ? options.skipKeys : new Set(options.skipKeys || []);
+  const onlyIfEmpty = Boolean(options.onlyIfEmpty);
   const next = { ...prev };
   for (const p of placeholders || []) {
     const field = placeholderContactField(p);
     if (!field) continue;
+    if (skipKeys.has(p.key)) continue;
+    if (onlyIfEmpty && String(next[p.key] || '').trim()) continue;
     const value = contactValue(contact, field);
     if (value) next[p.key] = value;
   }

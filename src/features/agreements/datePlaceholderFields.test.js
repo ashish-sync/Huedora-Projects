@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isDatePlaceholder, isTodayDatePlaceholder } from './datePlaceholderFields.js';
+import {
+  defaultsToTodayPlaceholder,
+  isDatePlaceholder,
+  isTodayDatePlaceholder,
+} from './datePlaceholderFields.js';
 
 describe('datePlaceholderFields', () => {
   it('detects Todays Date and Effective Date labels', () => {
@@ -17,5 +21,8 @@ describe('datePlaceholderFields', () => {
   it('identifies today date fields for defaulting', () => {
     expect(isTodayDatePlaceholder({ label: 'Todays Date' })).toBe(true);
     expect(isTodayDatePlaceholder({ label: 'Effective Date' })).toBe(false);
+    expect(defaultsToTodayPlaceholder({ label: 'Todays Date' })).toBe(true);
+    expect(defaultsToTodayPlaceholder({ label: 'Effective Date' })).toBe(true);
+    expect(defaultsToTodayPlaceholder({ label: 'End Date' })).toBe(false);
   });
 });

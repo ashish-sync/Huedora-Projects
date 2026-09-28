@@ -20,9 +20,16 @@ describe('requestApproval (client)', () => {
     expect(canApproveRequestType({ designation: 'Manager' }, can, 'REPAIR')).toBe(true);
   });
 
+  it('lets Admin approve every request type', () => {
+    expect(canApproveRequestType({ roles: [{ name: 'Admin' }] }, canNone, 'TRAINING')).toBe(true);
+    expect(canApproveRequestType({ designation: 'Administrator' }, canNone, 'LOGISTICS')).toBe(true);
+    expect(canApproveRequestType({ designation: 'Manager' }, can, 'HIRING')).toBe(true);
+  });
+
   it('maps types to rules', () => {
     expect(requiredApproverKeysForType('LOGISTICS')).toEqual(['operations leader']);
     expect(requiredApproverKeysForType('TRAINING')).toEqual(['training manager']);
     expect(approvalRuleLabel('HIRING')).toMatch(/Operations Leader/);
+    expect(approvalRuleLabel('HIRING')).toMatch(/Admin/);
   });
 });

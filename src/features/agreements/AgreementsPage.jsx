@@ -110,6 +110,7 @@ export default function AgreementsPage() {
 
   return (
     <PageShell
+      className="document-one-page"
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DOCUMENT_HUB }]}
       title={MODULE.DOCUMENT_HUB}
       actions={

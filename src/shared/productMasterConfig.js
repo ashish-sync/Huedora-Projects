@@ -1,6 +1,25 @@
-import { PRODUCT_TYPES, resolveProductType } from './productTypes.js';
+import {
+  PRODUCT_TYPES,
+  PRODUCT_CLASSIFICATIONS,
+  PRODUCT_CATEGORY_KINDS,
+  resolveProductType,
+  resolveProductClassification,
+  resolveProductCategoryKind,
+  composeProductType,
+  decomposeProductType,
+} from './productTypes.js';
 
-export { PRODUCT_TYPES, resolveProductType };
+export {
+  PRODUCT_TYPES,
+  PRODUCT_CLASSIFICATIONS,
+  PRODUCT_CATEGORY_KINDS,
+  resolveProductType,
+  resolveProductClassification,
+  resolveProductCategoryKind,
+  composeProductType,
+  decomposeProductType,
+};
+
 
 /** Auto-generated product code prefixes by type. */
 export const PRODUCT_TYPE_CODE_PREFIX = {
@@ -9,6 +28,7 @@ export const PRODUCT_TYPE_CODE_PREFIX = {
   Peripheral: 'PER',
   Consumable: 'CON',
   'Spare Part': 'SP',
+  Document: 'DOC',
   Other: 'OTH',
 };
 
@@ -63,6 +83,7 @@ export const TRACKING_DEFAULTS_BY_TYPE = {
   Peripheral: 'Serial',
   Consumable: 'Batch',
   'Spare Part': 'Batch',
+  Document: 'None',
   Other: 'None',
 };
 
@@ -134,6 +155,15 @@ export const PRODUCT_CATEGORIES_BY_TYPE = {
     'Consumable Kit',
     'Other',
   ],
+  Document: [
+    'Agreement',
+    'Invoice',
+    'Warranty',
+    'Manual',
+    'Certificate',
+    'Form / Template',
+    'Other',
+  ],
   Other: ['General', 'Packaging', 'Marketing', 'Other'],
 };
 
@@ -169,6 +199,12 @@ export const PRODUCT_TYPE_DEFAULTS = {
     expiryApplicable: false,
     warrantyMonths: '3',
   },
+  Document: {
+    productCategory: 'Form / Template',
+    inventoryType: 'Inventory',
+    expiryApplicable: false,
+    warrantyMonths: '',
+  },
   Other: {
     productCategory: 'General',
     inventoryType: 'Inventory',
@@ -184,6 +220,7 @@ export const INVENTORY_TYPES_BY_PRODUCT_TYPE = {
   Peripheral: ['Inventory'],
   Consumable: ['Inventory'],
   'Spare Part': ['Inventory'],
+  Document: ['Inventory'],
   Other: ['Inventory'],
 };
 
@@ -209,6 +246,10 @@ export function applyProductTypeRules(productType, current = {}) {
   const inventoryType = resolveInventoryTypeForProduct(type, current.inventoryType);
   const consumable = isConsumableType(type);
   const device = isDeviceType(type);
+  const { classification, categoryKind } = decomposeProductType(
+    type,
+    current.productClassification
+  );
 
   let expiryApplicable = current.expiryApplicable;
   if (consumable) expiryApplicable = true;
@@ -216,10 +257,15 @@ export function applyProductTypeRules(productType, current = {}) {
   else if (expiryApplicable == null) expiryApplicable = defaults.expiryApplicable;
 
   return {
-    productCategory: resolveProductCategory(
-      type,
-      current.productCategory || defaults.productCategory
-    ),
+    productClassification: classification,
+    productCategoryKind: categoryKind,
+    productType: type,
+    productCategory: (() => {
+      const allowed = categoriesForType(type);
+      const currentCat = String(current.productCategory || '').trim();
+      if (currentCat && allowed.includes(currentCat)) return currentCat;
+      return resolveProductCategory(type, defaults.productCategory);
+    })(),
     inventoryType,
     expiryApplicable: !!expiryApplicable,
     trackingKind: TRACKING_DEFAULTS_BY_TYPE[type] || 'None',
@@ -229,6 +275,16 @@ export function applyProductTypeRules(productType, current = {}) {
     associatedProductIds:
       device ? current.associatedProductIds || [] : [],
   };
+}
+
+/** Cascade change: Classification and/or Product Category → productType + defaults. */
+export function applyClassificationCategoryChange(classification, categoryKind, current = {}) {
+  const nextType = composeProductType(classification, categoryKind);
+  return applyProductTypeRules(nextType, {
+    ...current,
+    productClassification: resolveProductClassification(classification) || 'Medical',
+    productCategoryKind: resolveProductCategoryKind(categoryKind) || 'Other',
+  });
 }
 
 export function isExpiryLocked(productType) {
@@ -284,7 +340,7 @@ export function showReorderLevelField(productType) {
 export function associatedProductTypesFor(productType) {
   const t = resolveProductType(productType);
   if (t === 'Medical Device' || t === 'Non-Medical Device') {
-    return ['Peripheral', 'Consumable', 'Spare Part', 'Other'];
+    return ['Peripheral', 'Consumable', 'Spare Part', 'Document', 'Other'];
   }
   return [];
 }
@@ -297,34 +353,49 @@ export function suggestProductName(brand, model) {
 }
 
 export function validateProductForm(form) {
-  if (!String(form.productType || '').trim()) return 'Product Category is required';
+  if (!String(form.productClassification || '').trim()) {
+    return 'Product Classification is required';
+  }
+  if (!PRODUCT_CLASSIFICATIONS.includes(resolveProductClassification(form.productClassification))) {
+    return `Product Classification must be one of: ${PRODUCT_CLASSIFICATIONS.join(', ')}`;
+  }
+  if (!String(form.productCategoryKind || '').trim()) {
+    return 'Product Category is required';
+  }
+  if (!PRODUCT_CATEGORY_KINDS.includes(resolveProductCategoryKind(form.productCategoryKind))) {
+    return `Product Category must be one of: ${PRODUCT_CATEGORY_KINDS.join(', ')}`;
+  }
+  const productType =
+    resolveProductType(form.productType) ||
+    composeProductType(form.productClassification, form.productCategoryKind);
+  if (!productType) return 'Product Classification and Category are required';
   if (!String(form.brand || '').trim()) return 'Brand - Manufacturer is required';
   if (!String(form.model || '').trim()) return 'Model - Variant is required';
   if (!String(form.name || '').trim()) return 'Display Name is required';
   if (!String(form.productCategory || '').trim()) return 'Method is required';
-  const allowedCategories = categoriesForType(form.productType);
+  const allowedCategories = categoriesForType(productType);
   if (!allowedCategories.includes(form.productCategory)) {
     return `Method must be one of: ${allowedCategories.join(', ')}`;
   }
   if (!String(form.inventoryType || '').trim()) return 'Inventory Type is required';
-  const allowedInventory = inventoryTypesForProduct(form.productType);
+  const allowedInventory = inventoryTypesForProduct(productType);
   if (!allowedInventory.includes(form.inventoryType)) {
-    return `${resolveProductType(form.productType)} must use Inventory Type: ${allowedInventory.join(', ')}`;
+    return `${productType} must use Inventory Type: ${allowedInventory.join(', ')}`;
   }
-  if (isDeviceType(form.productType) && form.inventoryType === 'Inventory') {
+  if (isDeviceType(productType) && form.inventoryType === 'Inventory') {
     return 'Medical Device and Non-Medical Device must be Inventory Type: Asset';
   }
-  if (isConsumableType(form.productType) && !form.expiryApplicable) {
+  if (isConsumableType(productType) && !form.expiryApplicable) {
     return 'Consumables must have Expiry Applicable set to Yes';
   }
-  if (isDeviceType(form.productType) && form.expiryApplicable) {
+  if (isDeviceType(productType) && form.expiryApplicable) {
     return 'Medical Device and Non-Medical Device cannot have expiry tracking';
   }
   const tracking = resolveInventoryTracking(form.trackingKind);
   if (!['None', 'Batch', 'Serial'].includes(tracking)) {
     return 'Track Inventory By must be Quantity, Batch, or Serial Number';
   }
-  if (isConsumableType(form.productType)) {
+  if (isConsumableType(productType)) {
     const upp = Number(form.unitsPerPack);
     if (!Number.isFinite(upp) || upp < 1) return 'Units per Pack must be at least 1 for consumables';
   }
@@ -336,9 +407,14 @@ export function validateProductForm(form) {
 }
 
 export function emptyProductForm() {
-  const defaults = PRODUCT_TYPE_DEFAULTS['Medical Device'];
+  const classification = 'Medical';
+  const categoryKind = 'Device';
+  const productType = composeProductType(classification, categoryKind);
+  const defaults = PRODUCT_TYPE_DEFAULTS[productType];
   return {
-    productType: 'Medical Device',
+    productClassification: classification,
+    productCategoryKind: categoryKind,
+    productType,
     productCategory: defaults.productCategory,
     brand: '',
     model: '',
@@ -350,7 +426,7 @@ export function emptyProductForm() {
     gstRate: '18',
     gstCustom: false,
     inventoryType: defaults.inventoryType,
-    trackingKind: TRACKING_DEFAULTS_BY_TYPE['Medical Device'],
+    trackingKind: TRACKING_DEFAULTS_BY_TYPE[productType],
     expiryApplicable: defaults.expiryApplicable,
     warrantyMonths: defaults.warrantyMonths,
     reorderLevel: '',
@@ -364,8 +440,14 @@ export function rowToForm(row) {
   const gst = Number(row.gstRate ?? 0);
   const gstCustom = !GST_RATE_PRESETS.includes(gst);
   const productType = resolveProductType(row.productType) || 'Other';
+  const { classification, categoryKind } = decomposeProductType(
+    productType,
+    row.productClassification
+  );
   const defaults = PRODUCT_TYPE_DEFAULTS[productType] || PRODUCT_TYPE_DEFAULTS.Other;
   return {
+    productClassification: classification,
+    productCategoryKind: categoryKind,
     productType,
     productCategory: resolveProductCategory(productType, row.productCategory || defaults.productCategory),
     brand: row.brand || row.manufacturer || '',
@@ -402,7 +484,14 @@ export function rowToForm(row) {
 }
 
 export function formToPayload(form) {
-  const productType = resolveProductType(form.productType) || 'Other';
+  const productClassification =
+    resolveProductClassification(form.productClassification) || 'Medical';
+  const productCategoryKind =
+    resolveProductCategoryKind(form.productCategoryKind) || 'Other';
+  const productType =
+    composeProductType(productClassification, productCategoryKind) ||
+    resolveProductType(form.productType) ||
+    'Other';
   const model = String(form.model || '').trim();
   const brand = String(form.brand || '').trim();
   const name = String(form.name || '').trim() || suggestProductName(brand, model);
@@ -411,6 +500,8 @@ export function formToPayload(form) {
     TRACKING_DEFAULTS_BY_TYPE[productType] || 'None'
   );
   return {
+    productClassification,
+    productCategoryKind,
     productType,
     productCategory: String(form.productCategory || '').trim(),
     brand,

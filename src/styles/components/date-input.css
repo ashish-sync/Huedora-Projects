@@ -14,14 +14,16 @@
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
+  height: var(--control-h);
   min-height: var(--control-h);
+  max-height: var(--control-h);
   padding: 0 42px 0 var(--control-pad-inline-start);
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-button);
+  border-radius: var(--control-radius);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
   font-size: var(--text-body-sm-size);
-  line-height: var(--text-body-sm-leading);
+  line-height: calc(var(--control-h) - 2px);
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
@@ -33,13 +35,14 @@
 
 .date-input-display:focus {
   outline: none;
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
+  box-shadow: var(--dropdown-focus-ring);
 }
 
 .date-input-display:disabled {
+  opacity: 1;
   background: var(--color-bg-sunken);
-  color: var(--color-text-disabled);
+  color: var(--color-text-secondary);
   cursor: not-allowed;
 }
 

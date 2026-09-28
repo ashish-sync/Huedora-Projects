@@ -1,70 +1,181 @@
 /**
- * Forms — standardized inputs using design tokens
+ * Forms — single source of truth for .field controls.
+ * Loaded after design-system + select so these rules win without !important.
+ *
+ * Contract:
+ *   height  --control-h (44)
+ *   radius  --control-radius (= --radius-button)
+ *   pad-x   --control-pad-inline-start/end
+ *   type    --text-label-* / --text-body-sm-*
  */
 
 .field {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  margin-bottom: var(--space-3);
   min-width: 0;
+}
+
+.field:last-child {
+  margin-bottom: 0;
 }
 
 .field label {
   font-size: var(--text-label-size);
   font-weight: var(--text-label-weight);
   line-height: var(--text-label-leading);
+  letter-spacing: var(--text-label-tracking);
   color: var(--color-text-secondary);
 }
 
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
+/* Shared control chrome — inputs & selects share height/radius/border */
+.field input:not([type='file']):not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
 .field select,
 .field textarea {
+  box-sizing: border-box;
   width: 100%;
-  min-height: var(--control-h);
-  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-button);
+  border-radius: var(--control-radius);
   background: var(--color-bg-elevated);
   color: var(--color-text-primary);
   font-size: var(--text-body-sm-size);
-  line-height: var(--text-body-sm-leading);
+  font-weight: 400;
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard),
     background-color var(--duration-fast) var(--ease-standard);
 }
 
+.field input:not([type='file']):not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
+.field select {
+  height: var(--control-h);
+  min-height: var(--control-h);
+  max-height: var(--control-h);
+  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
+  line-height: calc(var(--control-h) - 2px);
+}
+
+/* month/date natives — keep text vertically centered with other controls */
+.field input[type='month'],
+.field input[type='date'],
+.field input[type='datetime-local'],
+.field input[type='time'] {
+  display: flex;
+  align-items: center;
+  color-scheme: light dark;
+}
+
+.field select {
+  padding-right: 36px;
+  font-weight: var(--text-body-sm-weight, 400);
+  cursor: pointer;
+}
+
 .field textarea {
+  height: auto;
   min-height: 96px;
-  padding: var(--control-pad-inline-start);
+  max-height: none;
+  padding: var(--space-3);
+  line-height: var(--text-body-leading);
   resize: vertical;
 }
 
-.field input:hover:not(:disabled),
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--color-text-tertiary, var(--muted));
+  font-weight: 400;
+  opacity: 1;
+}
+
+.field input:hover:not(:disabled):not(:read-only),
 .field select:hover:not(:disabled),
-.field textarea:hover:not(:disabled) {
+.field textarea:hover:not(:disabled):not(:read-only) {
   border-color: var(--color-border-strong);
+  background: var(--color-bg-elevated);
 }
 
 .field input:focus,
 .field select:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
   outline: none;
   border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
   box-shadow: var(--dropdown-focus-ring);
+  background: var(--color-bg-elevated);
 }
 
-.field input:disabled,
+/* Disabled + readonly — same sunken surface (specificity must match base :not() chain) */
+.field input:not([type='file']):not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input):is(:disabled, :read-only, .is-readonly),
 .field select:disabled,
-.field textarea:disabled {
-  opacity: 0.65;
+.field textarea:disabled,
+.field textarea:read-only {
+  opacity: 1;
   cursor: not-allowed;
   background: var(--color-bg-sunken);
-  color: var(--color-text-disabled);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-default);
+  box-shadow: none;
+}
+
+.field input:not([type='file']):not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input):is(:read-only, .is-readonly):not(:disabled) {
+  cursor: default;
 }
 
 .field.required-field label::after,
 label.required-field::after {
   content: ' *';
   color: var(--color-danger);
+}
+
+/* AdaptiveSelect host inside .field — height/chrome from select.css */
+.field > .adaptive-select-host,
+.field > .adaptive-select,
+.field > .other-aware-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.field > .adaptive-select-host .adaptive-select__control,
+.field > .adaptive-select .adaptive-select__control,
+.field > .other-aware-select .adaptive-select__control {
+  height: var(--control-h) !important;
+  min-height: var(--control-h) !important;
+  max-height: var(--control-h) !important;
+  border-radius: var(--control-radius) !important;
+}
+
+.field > .date-input,
+.field > .date-input-control {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Form grids — consistent gap on 8px scale (columns stay page-defined) */
+.form-grid,
+.logistics-form-grid,
+.am-form-section-grid,
+.vf-form-grid,
+.asset-form-row,
+.arq-grid,
+.arq-service-top-row,
+.arq-asset-reason-row {
+  gap: var(--space-3) var(--space-4);
+  align-items: start;
+}
+
+.form-grid .field,
+.logistics-form-grid .field,
+.am-form-section-grid .field,
+.vf-form-grid .field,
+.logistics-prepare-grid .field,
+.asset-form-row .field,
+.arq-grid .field,
+.arq-service-top-row .field,
+.arq-asset-reason-row .field {
+  margin-bottom: 0;
 }

@@ -43,7 +43,8 @@
 .logistics-filter-bar,
 .finance-docs-filters,
 .camp-ops-root .communications-filter-panel {
-  margin-bottom: var(--space-3) !important;
+  /* Section spacing comes from page-shell / content gap — not local margins. */
+  margin-bottom: 0 !important;
   padding: var(--space-2) var(--space-3) !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-sm) !important;
@@ -58,7 +59,7 @@
   align-items: stretch !important;
   gap: 0 !important;
   box-sizing: border-box !important;
-  margin-bottom: var(--space-3, 0.75rem) !important;
+  margin-bottom: 0 !important;
   padding: 0 !important;
   border: 1px solid var(--line) !important;
   border-radius: var(--radius-sm) !important;
@@ -354,6 +355,38 @@
   align-items: center !important;
 }
 
+/* Flat date inputs in MasterFilterShell (single baseline with search/actions) */
+.master-filter-main > input[type='date'],
+.master-filter-main > .master-filter-date {
+  flex: 0 0 9.75rem !important;
+  width: 9.75rem !important;
+  min-width: 9.75rem !important;
+  max-width: 9.75rem !important;
+  height: var(--filter-control-h) !important;
+  min-height: var(--filter-control-h) !important;
+  max-height: var(--filter-control-h) !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 0.5rem !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--dropdown-radius, var(--radius-sm)) !important;
+  background: var(--bg-elevated) !important;
+  font-size: 0.8125rem !important;
+  color: var(--ink) !important;
+  line-height: 1 !important;
+}
+
+.master-filter-main > .master-filter-date-sep {
+  flex: 0 0 auto !important;
+  height: var(--filter-control-h) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  color: var(--muted) !important;
+  font-size: 0.8125rem !important;
+  line-height: 1 !important;
+  user-select: none !important;
+}
+
 .camp-ops-root .camps-filter-toolbar .date-input-control,
 .camp-ops-root .camps-filter-toolbar .date-input-display {
   height: var(--filter-control-h) !important;
@@ -382,6 +415,7 @@
   .master-filter-main,
   .pm-filter-main {
     flex-wrap: wrap !important;
+    row-gap: var(--space-2) !important;
   }
 
   .master-filter-main > .master-search-field,
@@ -390,9 +424,43 @@
   .esign-toolbar > .esign-search,
   .finance-docs-filters > .master-search-field,
   .finance-docs-filters > .finance-docs-search,
-  .camp-ops-root .camps-filter-search {
+  /* Camp search shares a row with Search — never force 100% min-width */
+  .inv-toolbar > input[type='search'],
+  .inv-toolbar > .inv-search,
+  .inv-toolbar > .esign-search,
+  .inv-toolbar > .master-search-field,
+  .logistics-filter-bar > input[type='search'],
+  .logistics-filter-bar > .inv-search,
+  .logistics-filter-bar > .esign-search,
+  .pm-filter-bar > input[type='search'],
+  .pm-filter-bar > .inv-search,
+  .pm-filter-bar > .esign-search {
     flex: 1 1 100% !important;
     min-width: 100% !important;
     max-width: none !important;
+  }
+
+  .camp-ops-root .camps-filter-group--search {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .camp-ops-root .camps-filter-group--search > .camps-filter-search.master-search-field,
+  .camp-ops-root .camps-filter-group--search > .camps-filter-search {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  .inv-toolbar > .btn,
+  .inv-toolbar > a.btn,
+  .logistics-filter-bar > .btn,
+  .logistics-filter-bar > a.btn,
+  .pm-filter-bar > .btn,
+  .pm-filter-bar > a.btn {
+    flex: 0 0 auto !important;
   }
 }

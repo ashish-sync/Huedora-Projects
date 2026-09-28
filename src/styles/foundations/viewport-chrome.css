@@ -31,9 +31,14 @@ body {
 }
 
 .main {
-  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .main {
+    scrollbar-gutter: stable;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

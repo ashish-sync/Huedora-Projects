@@ -13,57 +13,29 @@
 
 .topbar-desc,
 .camp-ops-strip__desc {
-  margin-top: var(--space-1) !important;
-  font-size: var(--text-body-sm-size) !important;
+  margin-top: var(--space-1);
+  font-size: var(--text-body-sm-size);
   line-height: var(--text-body-sm-leading);
   color: var(--muted);
 }
 
 .topbar .eyebrow {
-  margin: 0 0 var(--space-1) !important;
+  margin: 0 0 var(--space-1);
   font-size: var(--text-caption-size);
   font-weight: var(--text-caption-weight);
   letter-spacing: var(--text-label-tracking);
 }
 
-/* ── Forms (design-system overrides off-grid literals) ─────── */
-
-.page-shell .field,
-.logistics-form .field,
-.arq-form .field,
-.card .field {
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.page-shell .field:last-child,
-.logistics-form .field:last-child,
-.arq-form .field:last-child {
-  margin-bottom: 0;
-}
-
-.page-shell .field label,
-.logistics-form .field label,
-.arq-form .field label {
-  font-size: var(--text-label-size);
-  font-weight: var(--text-label-weight);
-  color: var(--ink-soft);
-}
-
-.page-shell .field textarea,
-.logistics-form .field textarea,
-.arq-form .field textarea {
-  min-height: 96px !important;
-  padding: var(--space-3) !important;
-  line-height: var(--text-body-leading) !important;
-}
+/* ── Forms — canonical rules in components/forms.css ───────── */
 
 .logistics-form .logistics-form-field--covers textarea {
-  min-height: var(--control-h) !important;
-  height: var(--control-h) !important;
-  padding-top: var(--space-2) !important;
-  padding-bottom: var(--space-2) !important;
-  line-height: 1.3 !important;
+  min-height: var(--control-h);
+  height: var(--control-h);
+  max-height: var(--control-h);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+  line-height: 1.3;
+  resize: vertical;
 }
 
 /* ── KPI tiles ─────────────────────────────────────────────── */
@@ -194,7 +166,7 @@ html[data-theme='dark'] button.page-tab.is-active {
 }
 
 html[data-theme='dark'] table th {
-  background: var(--surface);
+  background: var(--color-bg-sunken);
   color: var(--muted);
 }
 

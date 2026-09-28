@@ -87,9 +87,11 @@ export default function PageShell({
   children,
   className = '',
   hideChrome = false,
+  /** When true, skip the outer module-shell (parent layout already provides it). */
+  bare = false,
 }) {
   const showTopbar = !hideChrome && (title || breadcrumbs.length > 0 || description || actions);
-  return (
+  const body = (
     <div className={`page-shell${className ? ` ${className}` : ''}`}>
       {showTopbar ? (
         <div className="topbar">
@@ -114,4 +116,8 @@ export default function PageShell({
       {children}
     </div>
   );
+
+  if (bare) return body;
+
+  return <div className="module-shell logistics-shell">{body}</div>;
 }

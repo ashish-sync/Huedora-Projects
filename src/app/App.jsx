@@ -178,6 +178,7 @@ export default function App() {
                   </RequirePermission>
                 }>
                   <Route index element={<AssetOverviewPage />} />
+                  <Route path="assets/:id" element={<AssetDetailPage />} />
                   <Route path="types/:typeSlug" element={<Navigate to={MODULE_PATH.ASSET_ONE} replace />} />
                   <Route path="balance" element={<Navigate to={MODULE_PATH.ASSET_ONE} replace />} />
                   <Route
@@ -185,7 +186,6 @@ export default function App() {
                     element={<Navigate to={`${MODULE_PATH.MASTER_ONE}?scope=inventory`} replace />}
                   />
                 </Route>
-                <Route path={`${MODULE_PATH.ASSET_ONE}/assets/:id`} element={<AssetDetailPage />} />
 
                 {/* Document One */}
                 <Route path={MODULE_PATH.DOCUMENT_ONE} element={

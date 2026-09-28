@@ -3,190 +3,204 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
-import { useAuth } from '../../shared/auth.jsx';
-import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+
+function assetStatusTone(status) {
+  const s = String(status || '');
+  if (s === 'Agreement Signed' || s === 'Active') return 'ok';
+  if (['Tylo Office', 'Under Repairs'].includes(s)) return 'info';
+  if (['Lost/Stolen', 'Untraceable', 'End of Life'].includes(s)) return 'danger';
+  if (s === 'Not Initiated') return 'neutral';
+  return 'warn';
+}
+
+const EVENT_LABELS = {
+  ASSET_CREATED: 'Created',
+  FIELD_UPDATE: 'Edited',
+  STATUS_TRANSITION: 'Status change',
+  CUSTODY_CHANGE: 'Custody / transfer',
+  AGREEMENT_LINK: 'Agreement linked',
+  AGREEMENT_UPLOADED: 'Agreement uploaded',
+  AGREEMENT_ACTIVATED: 'Agreement activated',
+  REPAIR: 'Repair',
+  MAINTENANCE: 'Maintenance',
+  MOVEMENT: 'Movement',
+};
+
+function isCreateEvent(ev) {
+  const type = String(ev.eventType || ev.type || '');
+  const reason = String(ev.reason || ev.message || '').toLowerCase();
+  return (
+    type === 'ASSET_CREATED' ||
+    reason.includes('asset created') ||
+    reason.includes('asset registered')
+  );
+}
+
+function eventLabel(ev) {
+  if (isCreateEvent(ev)) return 'Created';
+  const raw = String(ev.eventType || ev.type || '').trim();
+  if (!raw) return 'Activity';
+  return (
+    EVENT_LABELS[raw] ||
+    raw
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/^\w/, (c) => c.toUpperCase())
+  );
+}
+
+function eventWhen(ev) {
+  return ev.at || ev.createdAt || '';
+}
+
+function eventChange(ev) {
+  if (isCreateEvent(ev)) return '—';
+  const kind = String(ev.eventType || ev.type || '');
+  if (kind === 'CUSTODY_CHANGE' && (ev.fromCustody || ev.toCustody)) {
+    return `${ev.fromCustody || '—'} → ${ev.toCustody || '—'}`;
+  }
+  const from = ev.fromStatus || '';
+  const to = ev.toStatus || '';
+  if (from || to) return `${from || '—'} → ${to || '—'}`;
+  if (ev.message && ev.message !== ev.reason) return ev.message;
+  return '—';
+}
+
+function eventDetail(ev) {
+  if (isCreateEvent(ev)) return 'Asset registered';
+  return ev.reason || ev.message || '—';
+}
+
+function personName(person) {
+  if (!person) return '';
+  if (typeof person === 'string') return person;
+  return person.fullName || person.name || person.email || '';
+}
+
+function eventActor(ev, asset) {
+  const direct =
+    ev.actorName ||
+    personName(ev.actorId) ||
+    ev.actorEmail ||
+    '';
+  if (direct) return direct;
+  if (isCreateEvent(ev)) {
+    return personName(asset?.createdBy) || personName(asset?.updatedBy) || '—';
+  }
+  return '—';
+}
+
+function locationLabel(asset) {
+  return (
+    [asset.location?.city, asset.location?.zone, asset.location?.currentLocation]
+      .filter(Boolean)
+      .join(' · ') || '—'
+  );
+}
 
 export default function AssetDetailPage() {
   const { id } = useParams();
-  const { can } = useAuth();
   const [asset, setAsset] = useState(null);
   const [timeline, setTimeline] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [toStatus, setToStatus] = useState('');
-  const [contactId, setContactId] = useState('');
-  const [reason, setReason] = useState('');
   const [error, setError] = useState('');
 
-  const load = async () => {
-    const [a, t] = await Promise.all([api(`/assets/${id}`), api(`/assets/${id}/timeline`)]);
-    setAsset(a.data);
-    setTimeline(t.data);
-    setContactId(a.data?.contactId?._id || a.data?.contactId || '');
-  };
-
   useEffect(() => {
-    load().catch((e) => setError(e.message));
-    api('/contacts?limit=200')
-      .then((r) => setContacts(r.data || []))
-      .catch(() => {});
+    Promise.all([api(`/assets/${id}`), api(`/assets/${id}/timeline`)])
+      .then(([a, t]) => {
+        setAsset(a.data);
+        setTimeline(t.data || []);
+      })
+      .catch((e) => setError(e.message));
   }, [id]);
-
-  const transition = async (e) => {
-    e.preventDefault();
-    try {
-      await api(`/assets/${id}/transitions`, {
-        method: 'POST',
-        body: { toStatus, reason, contactId: contactId || undefined },
-      });
-      await load();
-      setReason('');
-    } catch (err) {
-      setError(err.message);
-    }
-  };
 
   if (!asset) return <p className="muted">{error || 'Loading…'}</p>;
 
-  const custodian = asset.contactId?.name || '-';
+  const custodian = asset.contactId?.name || asset.custodianName || '—';
+  const displayStatus = asset.agreementStatus || 'Not Initiated';
+  const rows = [
+    { label: 'QR', value: asset.qrCode || '—', mono: Boolean(asset.qrCode) },
+    { label: 'Serial', value: asset.serialNumber || '—' },
+    { label: FIELD.ASSET_CUSTODY, value: asset.custody || '—' },
+    { label: FIELD.CUSTODIAN, value: custodian },
+    { label: 'Location', value: locationLabel(asset) },
+    { label: 'Added', value: asset.addedMonth || '—' },
+  ];
+  if (asset.remarks) rows.push({ label: 'Remarks', value: asset.remarks });
 
   return (
-    <div>
-      <div className="topbar">
-        <div>
-          <p className="muted" style={{ margin: 0 }}>
-            <Link to="/asset-one">{MODULE.ASSET_INVENTORY}</Link> / {asset.assetTag}
+    <div className="asset-detail-page">
+      <div className="asset-detail-topbar">
+        <div className="asset-detail-heading">
+          <p className="muted asset-detail-crumb">
+            <Link to="/asset-one">{MODULE.ASSET_INVENTORY}</Link>
+            <span aria-hidden="true"> / </span>
+            {asset.assetTag}
           </p>
-          <h2 style={{ margin: '0.25rem 0 0' }}>{asset.deviceNameSnapshot}</h2>
+          <div className="asset-detail-title-row">
+            <h2 className="asset-detail-title">{asset.deviceNameSnapshot}</h2>
+            <span className={`badge tone-${assetStatusTone(displayStatus)}`}>{displayStatus}</span>
+          </div>
         </div>
-        <span className="badge">{asset.status}</span>
+        <Link className="btn secondary btn-compact" to="/asset-one">
+          Back to register
+        </Link>
       </div>
 
       {error && <p className="error">{error}</p>}
 
-      <div className="grid" style={{ gridTemplateColumns: '1.2fr 1fr', gap: '1rem' }}>
-        <div className="card">
-          <h3 style={{ marginTop: 0 }}>Details</h3>
-          <table>
-            <tbody>
-              <tr>
-                <td>QR</td>
-                <td>
-                  <code>{asset.qrCode}</code>
-                </td>
-              </tr>
-              <tr>
-                <td>Serial</td>
-                <td>{asset.serialNumber || '-'}</td>
-              </tr>
-              <tr>
-                <td>Qty</td>
-                <td>{asset.quantity}</td>
-              </tr>
-              <tr>
-                <td>{FIELD.CUSTODIAN}</td>
-                <td>{custodian}</td>
-              </tr>
-              <tr>
-                <td>Location</td>
-                <td>
-                  {[asset.location?.city, asset.location?.zone, asset.location?.currentLocation]
-                    .filter(Boolean)
-                    .join(' / ') || '-'}
-                </td>
-              </tr>
-              <tr>
-                <td>Agreement status</td>
-                <td>{asset.agreementStatus || '-'}</td>
-              </tr>
-              <tr>
-                <td>Custody</td>
-                <td>{asset.custody || '-'}</td>
-              </tr>
-              <tr>
-                <td>Added month</td>
-                <td>{asset.addedMonth || '-'}</td>
-              </tr>
-              <tr>
-                <td>Remarks</td>
-                <td>{asset.remarks || '-'}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div className="card">
-          {can('assets:transition') && (
-            <form onSubmit={transition}>
-              <h3 style={{ marginTop: 0 }}>Lifecycle transition</h3>
-              <div className="field">
-                <label>To status</label>
-                <AdaptiveSelect required value={toStatus} onChange={(e) => setToStatus(e.target.value)}>
-                  <option value="">Select</option>
-                  {[
-                    'Received',
-                    'Warehouse',
-                    'Available',
-                    'Assigned',
-                    'Verified',
-                    'Maintenance',
-                    'Repair',
-                    'Retired',
-                    'Disposed',
-                  ].map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </AdaptiveSelect>
+      <div className="asset-detail-grid">
+        <section className="card asset-detail-card">
+          <h3 className="asset-detail-card-title">Details</h3>
+          <div className="asset-detail-facts" role="list">
+            {rows.map((row) => (
+              <div key={row.label} className="asset-detail-fact" role="listitem">
+                <span className="asset-detail-fact-label">{row.label}</span>
+                <span className="asset-detail-fact-value">
+                  {row.mono ? <code>{row.value}</code> : row.value}
+                </span>
               </div>
-              <div className="field">
-                <label>{FIELD.CUSTODIAN} (for Assigned/Verified)</label>
-                <AdaptiveSelect value={contactId} onChange={(e) => setContactId(e.target.value)}>
-                  <option value="">-</option>
-                  {contacts.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                      {c.city ? `: ${c.city}` : ''}
-                    </option>
-                  ))}
-                </AdaptiveSelect>
-              </div>
-              <div className="field">
-                <label>Reason</label>
-                <input value={reason} onChange={(e) => setReason(e.target.value)} />
-              </div>
-              <button className="btn" type="submit">
-                Apply
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: '1rem' }}>
-        <h3 style={{ marginTop: 0 }}>Timeline</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Event</th>
-              <th>From → To</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {timeline.map((ev) => (
-              <tr key={ev._id}>
-                <td>{ev.createdAt ? formatDateTime(ev.createdAt) : '-'}</td>
-                <td>{ev.eventType}</td>
-                <td>
-                  {ev.fromStatus || '-'} → {ev.toStatus || '-'}
-                </td>
-                <td>{ev.reason || '-'}</td>
-              </tr>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </section>
+
+        <section className="card asset-detail-card asset-detail-audit">
+          <h3 className="asset-detail-card-title">Audit trail</h3>
+          <p className="muted asset-detail-hint">
+            Who changed this asset — edits, custody, agreements, repairs, and transfers.
+          </p>
+          <div className="asset-detail-audit-wrap">
+            <table className="asset-detail-audit-table">
+              <thead>
+                <tr>
+                  <th scope="col">When</th>
+                  <th scope="col">By</th>
+                  <th scope="col">What</th>
+                  <th scope="col">Change</th>
+                  <th scope="col">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {timeline.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      No activity recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  timeline.map((ev) => (
+                    <tr key={ev._id}>
+                      <td>{eventWhen(ev) ? formatDateTime(eventWhen(ev)) : '—'}</td>
+                      <td>{eventActor(ev, asset)}</td>
+                      <td>{eventLabel(ev)}</td>
+                      <td>{eventChange(ev)}</td>
+                      <td>{eventDetail(ev)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -6,7 +6,9 @@ import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import { decomposeProductType } from '../../shared/productTypes.js';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
+import { agreementTitleToFileBase, downloadBlobWithName } from './documentFileName.js';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -320,16 +322,12 @@ export default function AgreementDetailPage() {
       const res = await apiFetch(`/agreements/${id}/pdf?download=1`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
       const signed =
         ['COMPLETED', 'ACTIVE'].includes(doc.status) ||
         (sender?.status === 'SIGNED' &&
           (receiver?.status === 'SIGNED' || receiver?.status === 'ACKNOWLEDGED'));
-      a.download = `${doc.title || doc.agreementNumber || 'agreement'}${signed ? '-signed' : ''}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const base = agreementTitleToFileBase(doc.title || doc.agreementNumber || 'agreement');
+      downloadBlobWithName(blob, `${base}${signed ? '-signed' : ''}.pdf`, 'application/pdf');
     } catch (e) {
       setError(e.message || 'Download failed');
     }
@@ -343,7 +341,7 @@ export default function AgreementDetailPage() {
         (receiver?.status === 'SIGNED' || receiver?.status === 'ACKNOWLEDGED'));
 
   return (
-    <div className="esign-shell">
+    <div className="page-shell esign-shell">
       <div className="esign-top">
         <div>
           <p className="eyebrow">
@@ -684,7 +682,14 @@ export default function AgreementDetailPage() {
                   <tr key={l._id}>
                     <td>{live.assetTag || snap.assetTag || '-'}</td>
                     <td>{snap.assetName || live.deviceNameSnapshot || '-'}</td>
-                    <td>{snap.productType || live.productType || '-'}</td>
+                    <td>
+                      {snap.productType || live.productType
+                        ? decomposeProductType(snap.productType || live.productType)
+                            .classification ||
+                          snap.productType ||
+                          live.productType
+                        : '-'}
+                    </td>
                     <td>{snap.ownershipType || live.assetType || '-'}</td>
                     <td>{snap.serialNumber || live.serialNumber || '-'}</td>
                     <td>{live.status || '-'}</td>

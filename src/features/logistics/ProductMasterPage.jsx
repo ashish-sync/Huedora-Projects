@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx';
+import { uploadProductImages } from '../../shared/productImages.js';
 import { api } from '../../shared/api.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -13,8 +14,9 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
   INVENTORY_TRACKING_OPTIONS,
-  PRODUCT_TYPE_CODE_HINTS,
-  applyProductTypeRules,
+  PRODUCT_CLASSIFICATIONS,
+  PRODUCT_CATEGORY_KINDS,
+  applyClassificationCategoryChange,
   associatedProductTypesFor,
   categoriesForType,
   emptyProductForm,
@@ -25,6 +27,7 @@ import {
   showReorderLevelField,
   suggestProductName,
   validateProductForm,
+  decomposeProductType,
 } from '../../shared/productMasterConfig.js';
 import { PRODUCT_TYPES, resolveProductType } from '../../shared/productTypes.js';
 
@@ -84,10 +87,11 @@ export default function ProductMasterPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState(emptyProductForm);
+  const [form, setForm] = useState(() => emptyProductForm());
   const [editingId, setEditingId] = useState('');
   const [editingCode, setEditingCode] = useState('');
   const [productRecord, setProductRecord] = useState(null);
+  const [pendingImages, setPendingImages] = useState([]);
   const [assocQuery, setAssocQuery] = useState('');
 
   const categoryOptions = useMemo(
@@ -100,8 +104,6 @@ export default function ProductMasterPage() {
     const map = Object.fromEntries(uoms.map((u) => [u._id, `${u.name} (${u.code})`]));
     return (id) => map[id] || '—';
   }, [uoms]);
-
-  const codeHint = PRODUCT_TYPE_CODE_HINTS[resolveProductType(form.productType)] || 'AUTO';
 
   const assocCandidates = useMemo(() => {
     const allowed = new Set(associatedProductTypesFor(form.productType));
@@ -175,11 +177,17 @@ export default function ProductMasterPage() {
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
-  const onProductTypeChange = (next) => {
+  const onClassificationChange = (next) => {
     setForm((f) => ({
       ...f,
-      productType: next,
-      ...applyProductTypeRules(next, f),
+      ...applyClassificationCategoryChange(next, f.productCategoryKind || 'Device', f),
+    }));
+  };
+
+  const onCategoryKindChange = (next) => {
+    setForm((f) => ({
+      ...f,
+      ...applyClassificationCategoryChange(f.productClassification || 'Medical', next, f),
     }));
   };
 
@@ -211,6 +219,7 @@ export default function ProductMasterPage() {
     setEditingId('');
     setEditingCode('');
     setProductRecord(null);
+    setPendingImages([]);
     setForm(emptyProductForm());
     setAssocQuery('');
     setMsg('');
@@ -222,6 +231,7 @@ export default function ProductMasterPage() {
     setEditingId(row._id);
     setEditingCode(row.code || '');
     setProductRecord(row);
+    setPendingImages([]);
     setForm(rowToForm(row));
     setAssocQuery('');
     setMsg('');
@@ -238,6 +248,7 @@ export default function ProductMasterPage() {
   const backToList = () => {
     setMode('list');
     setEditingId('');
+    setPendingImages([]);
     setMsg('');
     setError('');
     loadLookups();
@@ -263,11 +274,35 @@ export default function ProductMasterPage() {
         setMsg('Product updated.');
       } else {
         const res = await api('/logistics/products', { method: 'POST', body });
-        setEditingId(res.data?._id || '');
-        setEditingCode(res.data?.code || '');
-        setProductRecord(res.data || null);
+        const createdId = res.data?._id || '';
+        const hadPending = pendingImages.length > 0;
+        let saved = res.data || null;
+        if (createdId && hadPending) {
+          try {
+            saved = await uploadProductImages(createdId, pendingImages);
+            setPendingImages([]);
+          } catch (uploadErr) {
+            setEditingId(createdId);
+            setEditingCode(res.data?.code || '');
+            setProductRecord(res.data || null);
+            setMode('edit');
+            setError(
+              `Product created as ${res.data?.code || 'saved'}, but image upload failed: ${uploadErr.message}`
+            );
+            loadLookups();
+            return;
+          }
+        }
+        setEditingId(saved?._id || createdId);
+        setEditingCode(saved?.code || res.data?.code || '');
+        setProductRecord(saved);
+        setPendingImages([]);
         setMode('edit');
-        setMsg(`Product created as ${res.data?.code || 'saved'}.`);
+        setMsg(
+          hadPending
+            ? `Product created as ${saved?.code || res.data?.code || 'saved'} with images.`
+            : `Product created as ${saved?.code || res.data?.code || 'saved'}.`
+        );
       }
       loadLookups();
     } catch (err) {
@@ -362,9 +397,9 @@ export default function ProductMasterPage() {
                 setTypeFilter(e.target.value);
                 setCategoryFilter('');
               }}
-              aria-label="Filter by product category"
+              aria-label="Filter by product type"
             >
-              <option value="">All categories</option>
+              <option value="">All types</option>
               {PRODUCT_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -424,6 +459,7 @@ export default function ProductMasterPage() {
                     />
                   </th>
                 )}
+                <th>Classification</th>
                 <th>Category</th>
                 <th>Method</th>
                 <th>Code</th>
@@ -448,7 +484,18 @@ export default function ProductMasterPage() {
                       />
                     </td>
                   )}
-                  <td>{resolveProductType(row.productType)}</td>
+                  <td>
+                    {
+                      decomposeProductType(row.productType, row.productClassification)
+                        .classification
+                    }
+                  </td>
+                  <td>
+                    {
+                      decomposeProductType(row.productType, row.productClassification)
+                        .categoryKind
+                    }
+                  </td>
                   <td>{row.productCategory || '—'}</td>
                   <td className="mono-sm">{row.code || '—'}</td>
                   <td>
@@ -516,23 +563,35 @@ export default function ProductMasterPage() {
             <h3 className="product-master-title">
               {mode === 'edit' ? 'Edit product' : 'New product'}
             </h3>
-            <span className="pm-code-badge mono-sm" title="Product code is assigned automatically on create">
-              {editingCode || `${codeHint} · auto`}
-            </span>
           </header>
 
           <Section title="Product">
-            <Field id="pm-type" label="Product Category" required>
+            <Field id="pm-classification" label="Product Classification" required>
               <AdaptiveSelect
-                id="pm-type"
+                id="pm-classification"
                 required
                 disabled={!canWrite}
-                value={form.productType}
-                onChange={(e) => onProductTypeChange(e.target.value)}
+                value={form.productClassification || 'Medical'}
+                onChange={(e) => onClassificationChange(e.target.value)}
               >
-                {PRODUCT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+                {PRODUCT_CLASSIFICATIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </Field>
+            <Field id="pm-category-kind" label="Product Category" required>
+              <AdaptiveSelect
+                id="pm-category-kind"
+                required
+                disabled={!canWrite}
+                value={form.productCategoryKind || 'Device'}
+                onChange={(e) => onCategoryKindChange(e.target.value)}
+              >
+                {PRODUCT_CATEGORY_KINDS.map((c) => (
+                  <option key={c} value={c}>
+                    {c === 'Consumable' ? 'Consumables' : c}
                   </option>
                 ))}
               </AdaptiveSelect>
@@ -551,18 +610,6 @@ export default function ProductMasterPage() {
                   </option>
                 ))}
               </AdaptiveSelect>
-            </Field>
-            <Field id="pm-code" label="Product Code">
-              <input
-                id="pm-code"
-                readOnly
-                value={editingCode || 'Auto generated on save'}
-                className="pm-code-readonly"
-                aria-describedby="pm-code-hint"
-              />
-              <p id="pm-code-hint" className="pm-field-hint">
-                Assigned automatically (e.g. {codeHint}).
-              </p>
             </Field>
             <Field id="pm-brand" label="Brand - Manufacturer" required>
               <input
@@ -583,15 +630,16 @@ export default function ProductMasterPage() {
                 placeholder="Model or variant"
               />
             </Field>
-            <Field id="pm-name" label="Display Name" required>
-              <input
-                id="pm-name"
-                required
-                readOnly={!canWrite}
-                value={form.name}
-                onChange={(e) => setField('name', e.target.value)}
-                placeholder="Brand — Model"
-              />
+            <Field id="pm-status" label="Status">
+              <AdaptiveSelect
+                id="pm-status"
+                disabled={!canWrite}
+                value={form.isActive !== false ? 'Active' : 'Inactive'}
+                onChange={(e) => setField('isActive', e.target.value === 'Active')}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </AdaptiveSelect>
             </Field>
             <Field id="pm-uom" label="UOM">
               <AdaptiveSelect
@@ -622,9 +670,6 @@ export default function ProductMasterPage() {
                   </option>
                 ))}
               </AdaptiveSelect>
-              <p className="pm-field-hint">
-                Applies to procurement, inventory, stock movements, and reporting for this product.
-              </p>
             </Field>
             <Field id="pm-expiry" label="Expiry Applicable">
               <BoolSelect
@@ -633,9 +678,6 @@ export default function ProductMasterPage() {
                 value={form.expiryApplicable}
                 onChange={(v) => setField('expiryApplicable', v)}
               />
-              {expiryLocked && (
-                <p className="pm-field-hint">Set automatically for this product category.</p>
-              )}
             </Field>
             {showReorderLevelField(form.productType) ? (
               <Field id="pm-reorder" label="Reorder Level">
@@ -650,98 +692,113 @@ export default function ProductMasterPage() {
                 />
               </Field>
             ) : null}
-            <Field id="pm-status" label="Status">
-              <AdaptiveSelect
-                id="pm-status"
-                disabled={!canWrite}
-                value={form.isActive !== false ? 'Active' : 'Inactive'}
-                onChange={(e) => setField('isActive', e.target.value === 'Active')}
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </AdaptiveSelect>
-            </Field>
           </Section>
 
-          {mode === 'edit' ? (
-            <Section title="Product images" className="pm-section--images">
-              <div className="pm-images-wrap">
-                <ProductImagesPanel
-                  productId={editingId}
-                  product={productRecord}
-                  canWrite={canWrite}
-                  showTitle={false}
-                  onUpdated={onProductMediaUpdated}
-                  hint="Upload one or more photos for visual identification during asset registration."
-                />
-              </div>
-            </Section>
-          ) : null}
-
-          {showAssoc ? (
-            <Section title="Associated products" className="pm-section--last pm-section--assoc">
-              <div className="pm-assoc-panel pm-span-2">
-                <div className="pm-assoc-head">
-                  <p className="pm-assoc-desc">
-                    Link compatible{' '}
-                    {associatedProductTypesFor(form.productType)
-                      .map((t) => t.toLowerCase())
-                      .join(', ')}
-                  </p>
-                  {assocSelected > 0 ? (
-                    <span className="pm-assoc-count">{assocSelected} selected</span>
-                  ) : null}
+          <section className="pm-section pm-section--last pm-section--split-row">
+            <div className="pm-split-row">
+              <div className="pm-split-col pm-split-col--name">
+                <h3 className="pm-section-title">Display Name</h3>
+                <div className="pm-split-col__body">
+                  <div className="field pm-field">
+                    <input
+                      id="pm-name"
+                      required
+                      readOnly={!canWrite}
+                      value={form.name}
+                      onChange={(e) => setField('name', e.target.value)}
+                      placeholder="Brand — Model"
+                      aria-label="Display Name"
+                    />
+                  </div>
                 </div>
-                <input
-                  id="pm-assoc-search"
-                  className="pm-assoc-search"
-                  type="search"
-                  disabled={!canWrite}
-                  value={assocQuery}
-                  onChange={(e) => setAssocQuery(e.target.value)}
-                  placeholder="Search product catalog…"
-                  aria-label="Search compatible products"
-                />
-                <ul className="pm-assoc-list" role="group" aria-label="Compatible products">
-                  {assocCandidates.map((p) => {
-                    const checked = (form.associatedProductIds || []).includes(p._id);
-                    const name = p.name || suggestProductName(p.brand, p.model);
-                    const typeLabel = resolveProductType(p.productType);
-                    return (
-                      <li key={p._id} className={`pm-assoc-row ${checked ? 'is-checked' : ''}`}>
-                        <label className="pm-assoc-item">
-                          <input
-                            className="pm-assoc-check"
-                            type="checkbox"
-                            disabled={!canWrite}
-                            checked={checked}
-                            onChange={() => toggleAssoc(p._id)}
-                          />
-                          <span className="pm-assoc-body">
-                            <span className="pm-assoc-primary">
-                              {p.code ? (
-                                <span className="pm-assoc-code mono-sm">{p.code}</span>
-                              ) : null}
-                              <span className="pm-assoc-name">{name || '—'}</span>
-                            </span>
-                            <span className="pm-assoc-meta">
-                              {typeLabel}
-                              {p.productCategory ? ` · ${p.productCategory}` : ''}
-                            </span>
-                          </span>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {!assocCandidates.length && (
-                  <p className="muted pm-assoc-empty">No matching products in the catalog.</p>
-                )}
               </div>
-            </Section>
-          ) : (
-            <div className="pm-section-divider" aria-hidden="true" />
-          )}
+
+              <div className="pm-split-col pm-split-col--images">
+                <h3 className="pm-section-title">Product images</h3>
+                <div className="pm-split-col__body">
+                  <ProductImagesPanel
+                    productId={mode === 'edit' ? editingId : ''}
+                    product={productRecord}
+                    canWrite={canWrite}
+                    showTitle={false}
+                    compact
+                    onUpdated={onProductMediaUpdated}
+                    pendingFiles={pendingImages}
+                    onPendingChange={setPendingImages}
+                    hint={
+                      mode === 'edit'
+                        ? 'Upload photos for asset identification.'
+                        : 'Optional — selected images upload when you create the product.'
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="pm-split-col pm-split-col--assoc">
+                <h3 className="pm-section-title">Associated products</h3>
+                <div className="pm-split-col__body">
+                  {showAssoc ? (
+                    <div className="pm-assoc-panel">
+                      {assocSelected > 0 ? (
+                        <div className="pm-assoc-head">
+                          <span className="pm-assoc-count">{assocSelected} selected</span>
+                        </div>
+                      ) : null}
+                      <input
+                        id="pm-assoc-search"
+                        className="pm-assoc-search"
+                        type="search"
+                        disabled={!canWrite}
+                        value={assocQuery}
+                        onChange={(e) => setAssocQuery(e.target.value)}
+                        placeholder="Search product catalog…"
+                        aria-label="Search compatible products"
+                      />
+                      <ul className="pm-assoc-list" role="group" aria-label="Compatible products">
+                        {assocCandidates.map((p) => {
+                          const checked = (form.associatedProductIds || []).includes(p._id);
+                          const name = p.name || suggestProductName(p.brand, p.model);
+                          const typeLabel = resolveProductType(p.productType);
+                          return (
+                            <li key={p._id} className={`pm-assoc-row ${checked ? 'is-checked' : ''}`}>
+                              <label className="pm-assoc-item">
+                                <input
+                                  className="pm-assoc-check"
+                                  type="checkbox"
+                                  disabled={!canWrite}
+                                  checked={checked}
+                                  onChange={() => toggleAssoc(p._id)}
+                                />
+                                <span className="pm-assoc-body">
+                                  <span className="pm-assoc-primary">
+                                    {p.code ? (
+                                      <span className="pm-assoc-code mono-sm">{p.code}</span>
+                                    ) : null}
+                                    <span className="pm-assoc-name">{name || '—'}</span>
+                                  </span>
+                                  <span className="pm-assoc-meta">
+                                    {typeLabel}
+                                    {p.productCategory ? ` · ${p.productCategory}` : ''}
+                                  </span>
+                                </span>
+                              </label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {!assocCandidates.length && (
+                        <p className="muted pm-assoc-empty">No matching products in the catalog.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="muted pm-split-placeholder">
+                      Available for Device products.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
 
           {canWrite && (
             <div className="pm-form-actions">

@@ -4638,7 +4638,7 @@
   display: contents;
 }
 
-/* Unified control sizing Ã¢ÂÂ text, date, time, select (not react-select / search wrappers) */
+/* Unified control sizing — match global --control-h / --control-radius */
 .camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
 .camp-ops-root .camp-request-grid select,
 .camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input):not(.master-search-input),
@@ -4647,37 +4647,43 @@
 .camp-ops-root .camp-request-grid .camp-address-autocomplete-host input {
   width: 100%;
   box-sizing: border-box;
-  height: var(--control-h-sm) !important;
-  min-height: var(--control-h-sm) !important;
-  max-height: var(--control-h-sm) !important;
+  height: var(--control-h);
+  min-height: var(--control-h);
+  max-height: var(--control-h);
   padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm) !important;
-  background: var(--bg-elevated);
-  font-size: 0.8125rem !important;
-  line-height: 1.2 !important;
+  border: 1px solid var(--color-border-default, var(--border));
+  border-radius: var(--control-radius);
+  background: var(--color-bg-elevated, var(--bg-elevated));
+  color: var(--color-text-primary, var(--ink));
+  font-size: var(--text-body-sm-size);
+  line-height: calc(var(--control-h) - 2px);
+}
+
+.camp-ops-root .camp-request-grid select {
+  padding-right: 36px;
+  font-weight: 600;
 }
 
 .camp-ops-root .camp-request-grid textarea {
   width: 100%;
   box-sizing: border-box;
-  min-height: 52px;
+  min-height: 96px;
   max-height: none;
   height: auto;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
-  font-size: 0.8125rem;
-  line-height: 1.35;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default, var(--border));
+  border-radius: var(--control-radius);
+  background: var(--color-bg-elevated, var(--bg-elevated));
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-leading);
   resize: vertical;
 }
 
 .camp-ops-root .camp-request-grid .date-input-field,
 .camp-ops-root .camp-request-grid .date-input-control {
   width: 100%;
-  min-height: var(--control-h-sm);
-  height: var(--control-h-sm);
+  min-height: var(--control-h);
+  height: var(--control-h);
 }
 
 .camp-ops-root .camp-request-grid .date-input-display {
@@ -4685,9 +4691,9 @@
 }
 
 .camp-ops-root .camp-request-grid .date-input-picker-btn {
-  width: 26px;
-  height: 26px;
-  right: 4px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  right: var(--space-1);
 }
 
 .camp-ops-root .camp-request-grid .adaptive-select {
@@ -4695,10 +4701,11 @@
 }
 
 .camp-ops-root .camp-request-grid .adaptive-select .adaptive-select__control {
-  min-height: var(--control-h-sm) !important;
-  height: var(--control-h-sm) !important;
-  max-height: var(--control-h-sm) !important;
-  font-size: 0.8125rem !important;
+  min-height: var(--control-h) !important;
+  height: var(--control-h) !important;
+  max-height: var(--control-h) !important;
+  border-radius: var(--control-radius) !important;
+  font-size: var(--text-body-sm-size) !important;
 }
 
 .camp-ops-root .camp-request-grid .adaptive-select .adaptive-select__value-container {
@@ -8138,7 +8145,7 @@
   max-height: var(--control-h-sm);
   padding: 0 1.85rem 0 0.6rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-button, 8px);
+  border-radius: var(--control-radius);
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.2;
@@ -8825,7 +8832,7 @@
   max-height: var(--camps-filter-h);
   box-sizing: border-box;
   border: 1px solid var(--line);
-  border-radius: var(--radius-button, 8px);
+  border-radius: var(--control-radius);
   background: var(--bg-elevated);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -8836,7 +8843,7 @@
 .camp-ops-root .camps-filter-search.master-search-field {
   flex: 1 1 auto;
   min-width: 0;
-  width: 100%;
+  width: auto;
   display: flex;
   align-items: center;
   gap: 0;
@@ -8846,7 +8853,7 @@
   min-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
   max-height: var(--camps-filter-h, var(--filter-control-h, var(--control-h)));
   border: 1px solid var(--line);
-  border-radius: var(--radius-button, 8px);
+  border-radius: var(--control-radius);
   background: var(--bg-elevated);
   box-sizing: border-box;
 }
@@ -8909,7 +8916,7 @@
   padding: 0 0.75rem !important;
   font-size: 0.8125rem !important;
   line-height: 1 !important;
-  border-radius: var(--radius-button, 8px) !important;
+  border-radius: var(--control-radius) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -8982,7 +8989,7 @@
   max-height: var(--camps-filter-h);
   padding: 0 1.85rem 0 var(--control-pad-inline-start);
   border: 1px solid var(--line);
-  border-radius: var(--radius-button, 8px);
+  border-radius: var(--control-radius);
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.2;
@@ -9060,7 +9067,14 @@
 }
 
 .camp-ops-root .camps-manage-card .empty-state {
-  padding: 1rem 0.75rem;
+  padding: var(--space-8) var(--space-5);
+  min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  text-align: center;
 }
 
 @media (min-width: 1280px) {
@@ -9789,7 +9803,7 @@
 .camp-ops-root .ops-board-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: var(--space-3);
 }
 
 .camp-ops-root .ops-board-card {
@@ -9804,7 +9818,7 @@
 
 .camp-ops-root .ops-board-card__header {
   flex-shrink: 0;
-  min-height: 3.15rem;
+  min-height: 3rem;
   background: color-mix(in srgb, var(--brand) 4%, var(--bg-elevated, #fff));
   color: var(--ink, var(--text, #0f172a));
   border-bottom: 1px solid var(--line);
@@ -9822,9 +9836,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 3.15rem;
-  padding: 0 0.95rem;
+  gap: var(--space-3);
+  min-height: 3rem;
+  padding: 0 var(--space-4);
   border: 0;
   background: transparent;
   color: inherit;
@@ -9856,10 +9870,10 @@
 
 .camp-ops-root .ops-board-card__statuses {
   --ops-board-row-h: 2.75rem;
-  --ops-board-row-gap: 0.25rem;
+  --ops-board-row-gap: var(--space-1);
   list-style: none;
   margin: 0;
-  padding: 0.5rem;
+  padding: var(--space-2);
   display: flex;
   flex-direction: column;
   gap: var(--ops-board-row-gap);

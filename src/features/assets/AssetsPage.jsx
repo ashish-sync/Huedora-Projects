@@ -4,7 +4,7 @@ import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 
 import { MODULE, FIELD, NAV, ACTION } from '../../shared/labels.js';
-import { formatTextValue, normalizeSerialNumber } from '../../shared/textFormat.js';
+import { normalizeSerialNumber } from '../../shared/textFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -24,6 +24,12 @@ import { PAGE_SIZES } from '../../shared/validation.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { collectProductImages } from '../../shared/productImages.js';
 import {
+  PRODUCT_CLASSIFICATIONS,
+  PRODUCT_CATEGORY_KINDS,
+  composeProductType,
+  decomposeProductType,
+} from '../../shared/productTypes.js';
+import {
   pickSignedAgreementRecord,
 } from './assetAgreementDocs.js';
 
@@ -32,14 +38,31 @@ const emptyForm = {
   name: '',
   assetType: '',
   productType: 'Medical Device',
+  productCategoryKind: 'Device',
   serialNumber: '',
   purchaseMonth: '',
   cost: '',
   agreementStatus: 'Not Initiated',
   custody: '',
   contactId: '',
-  peripheralRemarks: '',
 };
+
+function assetClassificationLabel(productType) {
+  return decomposeProductType(productType || 'Medical Device').classification || 'Medical';
+}
+
+function assetCategoryKind(productType, productCategoryKind) {
+  if (productCategoryKind) return productCategoryKind;
+  return decomposeProductType(productType || 'Medical Device').categoryKind || 'Device';
+}
+
+function productTypeFromCascade(classification, categoryKind) {
+  return composeProductType(classification || 'Medical', categoryKind || 'Device');
+}
+
+function categoryOptionLabel(kind) {
+  return kind === 'Consumable' ? 'Consumables' : kind;
+}
 
 function assetStatusTone(status) {
   const s = String(status || '');
@@ -154,12 +177,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setError('');
     try {
       const res = await apiFetch('/devices/import-template');
-      if (!res.ok) throw new Error('Could not download sample CSV');
+      if (!res.ok) throw new Error('Could not download sample format');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Asset_Inventory_Sample.csv';
+      a.download = 'Asset_Inventory_Sample.xlsx';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -249,11 +272,13 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       return;
     }
     const productCost = p.standardCost ?? p.defaultPerUnitCost ?? p.purchaseCost;
+    const decomposed = decomposeProductType(p.productType, p.productClassification);
     setForm((f) => ({
       ...f,
       productId: p._id,
       name: productAssetName(p) || p.name || '',
       productType: p.productType || f.productType,
+      productCategoryKind: decomposed.categoryKind || f.productCategoryKind || 'Device',
       cost:
         productCost === '' || productCost == null
           ? f.cost
@@ -267,10 +292,13 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   };
 
   const openCreate = () => {
+    const baseType = scopedType || 'Medical Device';
+    const { categoryKind } = decomposeProductType(baseType);
     setEditingId('');
     setForm({
       ...emptyForm,
-      productType: scopedType || 'Medical Device',
+      productType: baseType,
+      productCategoryKind: categoryKind || 'Device',
     });
     setFormOpen(true);
     setError('');
@@ -280,12 +308,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
 
   const openEdit = (row) => {
     const master = row.deviceMasterId && typeof row.deviceMasterId === 'object' ? row.deviceMasterId : null;
+    const productType = row.productType || scopedType || 'Medical Device';
+    const { categoryKind } = decomposeProductType(productType);
     setEditingId(row._id);
     setForm({
       productId: master?.productId || '',
       name: row.deviceNameSnapshot || master?.name || '',
       assetType: row.assetType || master?.assetType || '',
-      productType: row.productType || scopedType || 'Medical Device',
+      productType,
+      productCategoryKind: categoryKind || 'Device',
       serialNumber: row.serialNumber || '',
       purchaseMonth: purchaseToMonthInput(row.addedMonth || master?.purchaseMonth),
       cost:
@@ -297,7 +328,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       agreementStatus: row.agreementStatus || 'Not Initiated',
       custody: row.custody || '',
       contactId: row.contactId?._id || row.contactId || '',
-      peripheralRemarks: row.remarks || master?.description || '',
     });
     setFormOpen(true);
     setError('');
@@ -352,13 +382,19 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         ...(form.productId ? { productId: form.productId } : {}),
         name: form.name.trim(),
         assetType: form.assetType,
-        productType: scopedType || form.productType || 'Medical Device',
+        productType:
+          scopedType ||
+          form.productType ||
+          productTypeFromCascade(
+            assetClassificationLabel(form.productType),
+            form.productCategoryKind
+          ) ||
+          'Medical Device',
         serialNumber: normalizeSerialNumber(form.serialNumber),
         purchaseMonth: form.purchaseMonth,
         cost: Number(form.cost),
         agreementStatus: form.agreementStatus,
         custody: form.custody,
-        description: formatTextValue(form.peripheralRemarks, 'peripheralRemarks'),
         ...(custodyRequiresCustodianContact(form.custody) || form.contactId
           ? { contactId: form.contactId || null }
           : {}),
@@ -590,20 +626,58 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   <AdaptiveSelect
                     id="asset-product-type"
                     required
-                    value={form.productType || scopedType || 'Medical Device'}
-                    onChange={(e) =>
+                    value={assetClassificationLabel(form.productType || scopedType || 'Medical Device')}
+                    onChange={(e) => {
+                      const classification = e.target.value;
+                      const categoryKind = assetCategoryKind(
+                        form.productType,
+                        form.productCategoryKind
+                      );
                       setForm({
                         ...form,
-                        productType: e.target.value,
+                        productType: productTypeFromCascade(classification, categoryKind),
+                        productCategoryKind: categoryKind,
                         productId: '',
                         name: '',
                         cost: '',
-                      })
-                    }
+                      });
+                    }}
                     disabled={Boolean(scopedType)}
                   >
-                    <option value="Medical Device">Medical Device</option>
-                    <option value="Non-Medical Device">Non-Medical Device</option>
+                    {PRODUCT_CLASSIFICATIONS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label htmlFor="asset-product-category">Product Category *</label>
+                  <AdaptiveSelect
+                    id="asset-product-category"
+                    required
+                    value={assetCategoryKind(form.productType, form.productCategoryKind)}
+                    onChange={(e) => {
+                      const categoryKind = e.target.value;
+                      const classification = assetClassificationLabel(
+                        form.productType || scopedType || 'Medical Device'
+                      );
+                      setForm({
+                        ...form,
+                        productType: productTypeFromCascade(classification, categoryKind),
+                        productCategoryKind: categoryKind,
+                        productId: '',
+                        name: '',
+                        cost: '',
+                      });
+                    }}
+                    disabled={Boolean(scopedType)}
+                  >
+                    {PRODUCT_CATEGORY_KINDS.map((c) => (
+                      <option key={c} value={c}>
+                        {categoryOptionLabel(c)}
+                      </option>
+                    ))}
                   </AdaptiveSelect>
                 </div>
                 <div className="field">
@@ -621,16 +695,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       </option>
                     ))}
                   </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-serial">Serial Number *</label>
-                  <input
-                    id="asset-serial"
-                    required
-                    value={form.serialNumber}
-                    onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                    placeholder="SN-1001"
-                  />
                 </div>
               </div>
               <div className="asset-form-row asset-form-row-3">
@@ -740,21 +804,16 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                         </option>
                       ))}
                     </AdaptiveSelect>
-                    <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
-                      {form.custody === 'Service Provider'
-                        ? 'Only Healthcare Worker contacts with Type “Service Provider” are listed.'
-                        : 'Only Healthcare Worker contacts with Type “Individual” are listed.'}
-                    </span>
                   </div>
                 ) : (
                   <div className="field">
-                    <label htmlFor="asset-peripheral-remarks">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
+                    <label htmlFor="asset-serial">Serial Number *</label>
                     <input
-                      id="asset-peripheral-remarks"
-                      type="text"
-                      value={form.peripheralRemarks}
-                      onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
-                      placeholder="Optional remarks about asset or peripherals"
+                      id="asset-serial"
+                      required
+                      value={form.serialNumber}
+                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+                      placeholder="SN-1001"
                     />
                   </div>
                 )}
@@ -762,13 +821,13 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
               {custodyRequiresCustodianContact(form.custody) ? (
                 <div className="asset-form-row asset-form-row-1">
                   <div className="field">
-                    <label htmlFor="asset-peripheral-remarks">{FIELD.ASSET_PERIPHERAL_DETAILS}</label>
+                    <label htmlFor="asset-serial">Serial Number *</label>
                     <input
-                      id="asset-peripheral-remarks"
-                      type="text"
-                      value={form.peripheralRemarks}
-                      onChange={(e) => setForm({ ...form, peripheralRemarks: e.target.value })}
-                      placeholder="Optional remarks about asset or peripherals"
+                      id="asset-serial"
+                      required
+                      value={form.serialNumber}
+                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+                      placeholder="SN-1001"
                     />
                   </div>
                 </div>
@@ -867,7 +926,9 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
             <tbody>
               {rows.map((a) => (
                 <tr key={a._id}>
-                  <td className="inv-muted-cell">{a.productType || 'Medical Device'}</td>
+                  <td className="inv-muted-cell">
+                    {assetClassificationLabel(a.productType || 'Medical Device')}
+                  </td>
                   <td>
                     <strong className="inv-device">{a.deviceNameSnapshot || '-'}</strong>
                   </td>

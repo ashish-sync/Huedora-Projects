@@ -37,3 +37,21 @@ export function isTodayDatePlaceholder(placeholder = {}) {
     .replace(/['’]/g, '');
   return /\btodays?\s*date\b/.test(hay);
 }
+
+export function isEffectiveDatePlaceholder(placeholder = {}) {
+  const hay = [
+    placeholder?.key,
+    placeholder?.label,
+    placeholder?.inner,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .replace(/['’]/g, '');
+  return /\beffective\s*date\b/.test(hay);
+}
+
+/** Todays Date / Effective Date — default to today unless the user edits. */
+export function defaultsToTodayPlaceholder(placeholder = {}) {
+  return isTodayDatePlaceholder(placeholder) || isEffectiveDatePlaceholder(placeholder);
+}

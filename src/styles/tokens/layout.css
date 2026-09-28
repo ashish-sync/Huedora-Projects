@@ -22,6 +22,9 @@
   --content-max-width: 1320px;
   --content-max: var(--content-max-width);
 
+  /* Shared horizontal inset for header + main (Asset/Camp/Movement/Finance rhythm). */
+  --page-gutter-inline: clamp(1.25rem, 3vw, 2rem);
+
   /* 8-point spacing scale */
   --space-0: 0;
   --space-1: 4px;
@@ -48,6 +51,10 @@
   --control-h-sm: var(--control-height-sm);
   --touch-target-min: 44px;
 
+  /* One radius for inputs, selects, and buttons */
+  --control-radius: var(--radius-button);
+  --dropdown-radius: var(--control-radius);
+
   --control-w: 11.25rem;
   --control-w-min: 180px;
   --control-w-date: 9.5rem;
@@ -58,8 +65,13 @@
   --control-pad-inline-start: var(--space-3);
   --control-pad-inline-end: var(--space-3);
 
+  /* Icons — align Lucide / inline SVG with text controls */
+  --icon-size-sm: 14px;
+  --icon-size: 16px;
+  --icon-size-md: 18px;
+  --icon-size-lg: 20px;
+
   /* Dropdown menus (panels + options) */
-  --dropdown-radius: var(--radius-sm);
   --dropdown-menu-shadow: var(--shadow-lg);
   --dropdown-menu-pad: var(--space-1);
   --dropdown-option-pad-y: 10px;

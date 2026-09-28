@@ -182,8 +182,6 @@ export default function DashboardPage() {
 
   return (
     <div className="tylo-home">
-      <div className="tylo-home-atmosphere" aria-hidden="true" />
-
       <header className="tylo-home-hero">
         <div className="tylo-home-hero-copy">
           <h1 className="tylo-home-prompt">{MESSAGES.welcome(firstName)}</h1>

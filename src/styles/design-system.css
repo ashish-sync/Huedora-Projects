@@ -4,48 +4,85 @@
  * Search inputs may grow; all other controls stay fixed size.
  */
 
-/* ── Page rhythm ───────────────────────────────────────────── */
+/* ── Page rhythm (match Camp One strip / Asset list density) ─
+ * Camp reference (campOps.css):
+ *   shell gap: 0.5rem · strip padding-bottom: 0.65rem · crumb→title: 0.3rem
+ * Do not stack a large topbar padding on top of a large shell gap.
+ */
 
 .page-shell {
   display: flex;
   flex-direction: column;
-  gap: var(--stack) !important;
+  gap: 0.5rem;
   min-width: 0;
+  width: 100%;
+  /* Parent (.main > * / .module-shell) owns max-width — do not force full bleed. */
+  max-width: none;
+}
+
+/*
+ * Shared module content column (Asset / Camp / Movement / Finance rhythm).
+ * PageShell wraps every module in .module-shell.logistics-shell so Document /
+ * Verification / Request / Master get the same left inset as the reference tabs.
+ */
+.main > .logistics-shell,
+.main > .module-shell,
+.main > .asset-inventory-shell,
+.main > .finance-shell,
+.main > .camp-ops-root,
+.main > .page-shell {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-left: auto;
+  margin-right: auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.module-shell,
+.logistics-shell {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .topbar {
-  display: flex !important;
+  display: flex;
   justify-content: space-between;
-  align-items: center !important;
-  gap: var(--stack);
-  margin: 0 !important;
-  padding: 0 0 var(--stack) !important;
+  align-items: flex-start;
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+  padding: 0 0 0.65rem;
   border-bottom: 1px solid var(--line);
 }
 
 .topbar-copy {
   min-width: 0;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .topbar .eyebrow {
-  margin: 0 0 2px !important;
+  margin: 0 !important;
 }
 
 .topbar-title {
-  margin: 0 !important;
+  margin: 0;
   font-family: var(--font-display);
-  font-size: var(--text-h2-size) !important;
-  font-weight: var(--text-h2-weight) !important;
-  line-height: var(--text-h2-leading) !important;
+  font-size: var(--text-h2-size);
+  font-weight: var(--text-h2-weight);
+  line-height: 1.2;
   letter-spacing: var(--text-h2-tracking);
   color: var(--color-text-primary);
 }
 
 .topbar-desc {
-  margin: var(--space-1) 0 0 !important;
-  font-size: var(--text-body-sm-size) !important;
+  margin: 0;
+  font-size: var(--text-body-sm-size);
   line-height: var(--text-body-sm-leading);
+  color: var(--muted);
 }
 
 .page-actions {
@@ -53,13 +90,62 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--stack-sm);
-  padding-top: 0 !important;
+  padding-top: 0;
   flex-shrink: 0;
 }
 
+/* Direct section children share page-shell gap — kill local section margins. */
 .page-shell > .page-metrics,
-.page-shell > .toolbar--page {
-  margin-bottom: 0 !important;
+.page-shell > .toolbar--page,
+.page-shell > .master-filter-shell,
+.page-shell > .pm-filter-shell,
+.page-shell > .vf-summary,
+.page-shell > .vf-board-toolbar,
+.page-shell > .card,
+.page-shell > .card--flush,
+.page-shell > .inv-catalog,
+.page-shell > .am-catalog,
+.page-shell > .vf-board,
+.page-shell > .vf-catalog,
+.page-shell > .arq-board,
+.page-shell > .arq-form,
+.page-shell > .arq-type-tabs,
+.page-shell > .arq-jd-prompt,
+.page-shell > .logistics-master,
+.page-shell > .table-wrap,
+.page-shell > .error,
+.page-shell > .feedback-banner,
+.page-shell > .esign-sign-modes,
+.page-shell > .esign-table,
+.page-shell > form {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Module list pages share the compact Camp / Asset section rhythm. */
+.page-shell.document-one-page,
+.page-shell.vf-page,
+.page-shell.esign-shell,
+.page-shell.arq-page,
+.page-shell.master-one-page,
+.page-shell.inv-page {
+  gap: 0.5rem;
+}
+
+.page-shell > .topbar {
+  margin-bottom: 0;
+  padding-bottom: 0.65rem;
+}
+
+.page-shell .logistics-master-content > .master-filter-shell,
+.page-shell .logistics-master-content > .pm-filter-shell,
+.page-shell .logistics-master-content > .card,
+.page-shell .logistics-master-content > .table-wrap,
+.page-shell .logistics-master-content > form,
+.page-shell .logistics-master-content > .feedback-banner,
+.page-shell .logistics-master-content > .error {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* ── Surfaces ──────────────────────────────────────────────── */
@@ -109,7 +195,7 @@
   gap: var(--stack);
 }
 
-/* ── Control lock (same height everywhere) ─────────────────── */
+/* ── Control lock (toolbar / buttons — fields live in forms.css) ─ */
 
 .btn,
 .btn.secondary,
@@ -140,46 +226,43 @@ select.filter-select,
 .esign-toolbar select,
 .logistics-toolbar select,
 .date-range-filter-field .date-input-display,
-.date-range-filter-field select,
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
-.field select,
-.adaptive-select__control {
-  height: var(--control-h) !important;
-  min-height: var(--control-h) !important;
-  max-height: var(--control-h) !important;
-  box-sizing: border-box !important;
-  border-radius: var(--dropdown-radius) !important;
-  font-size: var(--text-body-sm-size) !important;
-  line-height: 1.2 !important;
+.date-range-filter-field select {
+  height: var(--control-h);
+  min-height: var(--control-h);
+  max-height: var(--control-h);
+  box-sizing: border-box;
+  border-radius: var(--control-radius);
+  font-size: var(--text-body-sm-size);
 }
 
 .adaptive-select--multi .adaptive-select__control {
-  height: auto !important;
-  min-height: var(--control-h) !important;
-  max-height: none !important;
+  height: auto;
+  min-height: var(--control-h);
+  max-height: none;
 }
 
 .btn,
 .btn.secondary,
 .btn.danger {
-  padding: 0 var(--space-4) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: none !important;
-  transform: none !important;
+  padding: 0 var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn.btn-compact {
-  height: var(--control-h-sm) !important;
-  min-height: var(--control-h-sm) !important;
-  max-height: var(--control-h-sm) !important;
-  padding: 0 var(--space-3) !important;
-  font-size: var(--text-label-size) !important;
+  height: var(--control-h-sm);
+  min-height: var(--control-h-sm);
+  max-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-label-size);
+  border-radius: var(--radius-button);
 }
 
 .btn.secondary {
-  border-width: 1px !important;
+  border-width: 1px;
 }
 
 .esign-search,
@@ -189,18 +272,20 @@ input.esign-search,
 select.filter-select,
 .toolbar select,
 .agreements-filters select,
-.date-range-filter-field .date-input-display,
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input),
-.field select {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  padding-left: var(--control-pad-inline-start) !important;
-  padding-right: var(--control-pad-inline-end) !important;
-  border-width: 1px !important;
-  border-style: solid !important;
-  border-color: var(--line) !important;
-  background-color: var(--bg-elevated) !important;
-  color: var(--ink) !important;
+.date-range-filter-field .date-input-display {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: var(--control-pad-inline-start);
+  padding-right: var(--control-pad-inline-end);
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+select.filter-select,
+.toolbar select,
+.agreements-filters select {
+  padding-right: 36px;
 }
 
 /* ── KPIs ──────────────────────────────────────────────────── */
@@ -212,14 +297,18 @@ select.filter-select,
   gap: var(--stack-sm);
   margin: 0;
   align-items: stretch;
+  justify-content: stretch;
+  width: 100%;
+  max-width: 100%;
 }
 
-.module-dash-kpis[data-count='2'] { grid-template-columns: repeat(2, 8rem); }
-.module-dash-kpis[data-count='3'] { grid-template-columns: repeat(3, 8rem); }
-.module-dash-kpis[data-count='4'] { grid-template-columns: repeat(4, 8rem); }
-.module-dash-kpis[data-count='5'] { grid-template-columns: repeat(5, 7.25rem); }
-.module-dash-kpis[data-count='6'] { grid-template-columns: repeat(6, 6.75rem); }
-.module-dash-kpis[data-count='7'] { grid-template-columns: repeat(7, 6.25rem); }
+/* Full-width equal columns (Asset / Camp reference). */
+.module-dash-kpis[data-count='2'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.module-dash-kpis[data-count='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.module-dash-kpis[data-count='4'] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.module-dash-kpis[data-count='5'] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.module-dash-kpis[data-count='6'] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.module-dash-kpis[data-count='7'] { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 
 .module-kpi,
 .logistics-kpi {
@@ -297,6 +386,7 @@ button.module-kpi.is-clickable:hover {
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   align-items: flex-end !important;
+  justify-content: flex-start !important;
   gap: var(--stack) !important;
   margin: 0 !important;
   width: 100%;
@@ -312,10 +402,29 @@ button.module-kpi.is-clickable:hover {
 
 .page-metrics .module-dash-kpis,
 .page-metrics .logistics-kpis {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   margin: 0 !important;
-  width: auto !important;
+  width: 100% !important;
   max-width: none !important;
+  min-width: 0;
+}
+
+/* When KPIs share a row with filters, keep KPIs compact on the left. */
+.page-metrics--split .module-dash-kpis,
+.page-metrics--split .logistics-kpis {
+  flex: 0 1 auto;
+  width: auto !important;
+  max-width: min(48%, 28rem);
+}
+
+.page-metrics--split .module-dash-kpis[data-count='2'] {
+  grid-template-columns: repeat(2, minmax(6.5rem, 8rem));
+}
+.page-metrics--split .module-dash-kpis[data-count='3'] {
+  grid-template-columns: repeat(3, minmax(6rem, 7.5rem));
+}
+.page-metrics--split .module-dash-kpis[data-count='4'] {
+  grid-template-columns: repeat(4, minmax(5.5rem, 7rem));
 }
 
 .page-metrics-toolbar {
@@ -534,27 +643,7 @@ select.filter-select,
 }
 
 /* ── Forms ─────────────────────────────────────────────────── */
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.field label {
-  font-size: var(--text-label-size);
-  font-weight: var(--text-label-weight);
-  color: var(--ink-soft);
-}
-
-.field textarea {
-  height: auto !important;
-  min-height: 96px !important;
-  max-height: none !important;
-  padding: var(--space-3) !important;
-  line-height: var(--text-body-leading) !important;
-}
+/* Canonical rules in components/forms.css */
 
 /* ── Tables ────────────────────────────────────────────────── */
 
@@ -596,9 +685,11 @@ tbody tr:hover {
 
 /* ── Badges ────────────────────────────────────────────────── */
 
-.badge {
+.badge,
+.status-pill {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-xs);
   font-size: var(--text-caption-size);
@@ -631,7 +722,7 @@ tbody tr:hover {
 .ilog-flow {
   display: flex;
   flex-direction: column;
-  gap: var(--stack);
+  gap: 0.5rem;
   min-width: 0;
 }
 

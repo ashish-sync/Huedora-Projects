@@ -247,7 +247,7 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
   };
 
   return (
-    <div className={embedded ? 'esign-shell esign-shell--embedded' : 'esign-shell'}>
+    <div className={embedded ? 'page-shell esign-shell esign-shell--embedded' : 'page-shell esign-shell'}>
       {!embedded ? (
       <div className="esign-top">
         <div>

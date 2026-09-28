@@ -29,16 +29,20 @@ export default function NotificationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = String(searchParams.get('tab') || '').toLowerCase();
   const initialTab = INBOX_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'approvals';
+  const fyiFromUrl = searchParams.get('fyi') === '1' || searchParams.get('informational') === '1';
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: PAGE_SIZE, total: 0, pages: 0 });
   const [page, setPage] = useState(1);
   const [error, setError] = useState('');
   const [downloadingId, setDownloadingId] = useState('');
   const [inboxTab, setInboxTab] = useState(initialTab);
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(true);
   const [priority, setPriority] = useState('');
   const [module, setModule] = useState('');
   const [showArchived, setShowArchived] = useState(false);
+  const [showInformational, setShowInformational] = useState(
+    initialTab === 'updates' && fyiFromUrl
+  );
   const [q, setQ] = useState('');
   const [expandedId, setExpandedId] = useState('');
 
@@ -54,6 +58,10 @@ export default function NotificationsPage() {
     if (showArchived) params.set('archive', '1');
     if (q.trim()) params.set('q', q.trim());
     if (activeTab.category) params.set('category', activeTab.category);
+    // Updates hide low-signal FYI (informational) unless opted in.
+    if (activeTab.category === 'updates' && showInformational) {
+      params.set('informational', '1');
+    }
     return api(`/notifications?${params}`)
       .then((r) => {
         setRows(r.data || []);
@@ -61,26 +69,39 @@ export default function NotificationsPage() {
         emitNotificationsChanged();
       })
       .catch((e) => setError(e.message));
-  }, [unreadOnly, priority, module, showArchived, q, page, activeTab.category]);
+  }, [unreadOnly, priority, module, showArchived, showInformational, q, page, activeTab.category]);
 
   useEffect(() => {
     const next = String(searchParams.get('tab') || '').toLowerCase();
     if (INBOX_TABS.some((t) => t.id === next) && next !== inboxTab) {
       setInboxTab(next);
     }
+    const wantFyi = searchParams.get('fyi') === '1' || searchParams.get('informational') === '1';
+    if (next === 'updates' || inboxTab === 'updates') {
+      setShowInformational(wantFyi);
+    }
   }, [searchParams, inboxTab]);
 
   const selectInboxTab = (tabId) => {
     setInboxTab(tabId);
     const next = new URLSearchParams(searchParams);
-    if (tabId === 'approvals') next.delete('tab');
-    else next.set('tab', tabId);
+    if (tabId === 'approvals') {
+      next.delete('tab');
+      next.delete('fyi');
+      next.delete('informational');
+    } else {
+      next.set('tab', tabId);
+      if (tabId !== 'updates') {
+        next.delete('fyi');
+        next.delete('informational');
+      }
+    }
     setSearchParams(next, { replace: true });
   };
 
   useEffect(() => {
     setPage(1);
-  }, [unreadOnly, priority, module, showArchived, q, inboxTab]);
+  }, [unreadOnly, priority, module, showArchived, showInformational, q, inboxTab]);
 
   useEffect(() => {
     load();
@@ -137,8 +158,10 @@ export default function NotificationsPage() {
         }
       : inboxTab === 'updates'
         ? {
-            title: 'No updates',
-            description: 'Status changes and informational alerts will appear here.',
+            title: showInformational ? 'No updates' : 'No important updates',
+            description: showInformational
+              ? 'Status changes and informational alerts will appear here.'
+              : 'Important and critical updates only. Choose “Include FYI” to see informational notices.',
           }
         : {
             title: 'No notifications',
@@ -149,9 +172,14 @@ export default function NotificationsPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Notifications' }]}
       title="Notification Center"
-      description="Approval requests are listed separately from status updates. Routine camp saves stay in Audit Trail."
+      description="Approvals need action. Updates stay quieter — FYI/informational notices are hidden by default."
       actions={
-        <button className="btn secondary" type="button" onClick={markAllRead} disabled={!unread}>
+        <button
+          className="btn secondary"
+          type="button"
+          onClick={markAllRead}
+          disabled={(meta.total || 0) === 0 && rows.length === 0}
+        >
           {inboxTab === 'approvals'
             ? 'Mark approvals read'
             : inboxTab === 'updates'
@@ -194,8 +222,8 @@ export default function NotificationsPage() {
           onChange={(e) => setUnreadOnly(e.target.value === 'unread')}
           aria-label="Filter by read state"
         >
-          <option value="all">All</option>
           <option value="unread">Unread only</option>
+          <option value="all">All</option>
         </AdaptiveSelect>
         <AdaptiveSelect
           value={priority}
@@ -228,6 +256,27 @@ export default function NotificationsPage() {
           <option value="active">Active</option>
           <option value="archived">Archived (7+ days)</option>
         </AdaptiveSelect>
+        {inboxTab === 'updates' ? (
+          <AdaptiveSelect
+            value={showInformational ? 'fyi' : 'important'}
+            onChange={(e) => {
+              const includeFyi = e.target.value === 'fyi';
+              setShowInformational(includeFyi);
+              const next = new URLSearchParams(searchParams);
+              next.set('tab', 'updates');
+              if (includeFyi) next.set('fyi', '1');
+              else {
+                next.delete('fyi');
+                next.delete('informational');
+              }
+              setSearchParams(next, { replace: true });
+            }}
+            aria-label="Include FYI informational updates"
+          >
+            <option value="important">Important + critical</option>
+            <option value="fyi">Include FYI</option>
+          </AdaptiveSelect>
+        ) : null}
       </MasterFilterShell>
 
       <div className="card nc-list">

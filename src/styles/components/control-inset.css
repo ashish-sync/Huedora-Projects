@@ -1,6 +1,6 @@
 /**
- * Uniform left inset for inputs, selects, search fields, and filters.
- * Loaded last — keeps placeholder and value text off the left border.
+ * Uniform left inset for toolbar/search controls outside .field.
+ * Field controls are owned by forms.css (loaded after this file).
  */
 
 select.tylo-select,
@@ -25,8 +25,6 @@ select.filter-select,
 .toolbar select.filter-select,
 .date-range-filter-field .date-input-display,
 .date-range-filter-field select,
-.field input:not([type='file']):not(.file-picker__input):not(.adaptive-select__input):not(.master-search-input):not(.pm-search-input):not(.communications-search-input):not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']),
-.field select,
 .camps-filter-control,
 input.camps-filter-search,
 .camp-working-stage-select,
@@ -39,21 +37,15 @@ input.camps-filter-search,
 .other-aware-select__input,
 .communications-filter-search,
 .date-input-display {
-  padding-left: var(--control-pad-inline-start) !important;
-}
-
-.field textarea {
-  padding-left: var(--control-pad-inline-start) !important;
+  padding-left: var(--control-pad-inline-start);
 }
 
 .adaptive-select__value-container {
-  padding-left: var(--control-pad-inline-start) !important;
+  padding-left: var(--control-pad-inline-start);
 }
 
 .camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
 .camp-ops-root .camp-request-grid select,
-.camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input):not(.master-search-input),
-.camp-ops-root .camp-request-grid .field select,
 .camp-ops-root .camp-request-grid .date-input-display,
 .camp-ops-root .camp-request-grid .camp-address-autocomplete-host input,
 .camp-ops-root .camps-filter-control,
@@ -61,5 +53,5 @@ input.camps-filter-search,
 .camp-ops-root .camp-working-stage-select,
 .camp-ops-root .camps-filter-toolbar .date-input-display,
 .camp-ops-root .camp-request-grid .adaptive-select .adaptive-select__value-container {
-  padding-left: var(--control-pad-inline-start) !important;
+  padding-left: var(--control-pad-inline-start);
 }

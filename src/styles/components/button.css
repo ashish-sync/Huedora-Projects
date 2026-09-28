@@ -6,7 +6,7 @@
   min-height: var(--control-h);
   padding: 0 var(--space-4);
   border: 0;
-  border-radius: var(--radius-button);
+  border-radius: var(--control-radius, var(--radius-button));
   background: var(--color-brand-primary);
   color: var(--color-brand-on-primary);
   font-size: var(--text-body-sm-size);

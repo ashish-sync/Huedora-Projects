@@ -29,13 +29,13 @@
 }
 
 .camp-ops-root .page-shell {
-  gap: var(--stack) !important;
+  gap: 0.5rem !important;
 }
 
 .camp-ops-root .camp-ops-page-content {
   display: flex;
   flex-direction: column;
-  gap: var(--stack);
+  gap: 0.5rem;
   min-width: 0;
 }
 

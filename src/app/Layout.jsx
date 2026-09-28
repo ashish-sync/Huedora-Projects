@@ -12,8 +12,6 @@ import {
 } from '../shared/notificationSound.js';
 import AppErrorBoundary from '../components/AppErrorBoundary.jsx';
 import ModalShell from '../components/ui/ModalShell.jsx';
-import { formatDateTime } from '../shared/dateFormat.js';
-import { priorityClass, priorityLabel } from '../features/notifications/notificationLinks.js';
 import '../features/notifications/notifications.css';
 
 function initials(name = '') {
@@ -34,8 +32,8 @@ export default function Layout({ children }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [fyiCount, setFyiCount] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
-  const [previewRows, setPreviewRows] = useState({ approvals: [], updates: [] });
   const menuRef = useRef(null);
   const bellRef = useRef(null);
   const knownUnreadIdsRef = useRef(null);
@@ -46,6 +44,7 @@ export default function Layout({ children }) {
   const refreshUnread = useCallback(async ({ force = false } = {}) => {
     if (!canSeeNotifications) {
       setUnreadCount(0);
+      setFyiCount(0);
       return;
     }
     if (typeof document !== 'undefined' && document.hidden && !force) return;
@@ -61,7 +60,9 @@ export default function Layout({ children }) {
       const res = await api('/notifications/unread-count', {
         ...(controller ? { signal: controller.signal } : {}),
       });
-      const count = Number(res.data?.count) || 0;
+      // Badge = Approvals only so FYI does not inflate the red number.
+      const approvals = Number(res.data?.approvals ?? res.data?.count) || 0;
+      const fyi = Number(res.data?.fyi ?? res.data?.updates) || 0;
       const ids = new Set((res.data?.sampleIds || []).map(String));
       const prev = knownUnreadIdsRef.current;
       if (prev && ids.size) {
@@ -75,7 +76,8 @@ export default function Layout({ children }) {
         if (hasNew) playNotificationSound();
       }
       knownUnreadIdsRef.current = ids.size ? ids : knownUnreadIdsRef.current;
-      setUnreadCount((prevCount) => (prevCount === count ? prevCount : count));
+      setUnreadCount((prevCount) => (prevCount === approvals ? prevCount : approvals));
+      setFyiCount((prevCount) => (prevCount === fyi ? prevCount : fyi));
     } catch (err) {
       if (err?.name === 'AbortError') return;
       // Keep last known count on transient errors
@@ -88,25 +90,8 @@ export default function Layout({ children }) {
     setConfirmLogout(false);
   }, [pathname]);
 
-  const loadPreview = useCallback(async () => {
-    if (!canSeeNotifications) return;
-    try {
-      const [approvalsRes, updatesRes] = await Promise.all([
-        api('/notifications?unread=true&category=approvals&limit=5&page=1'),
-        api('/notifications?unread=true&category=updates&limit=5&page=1'),
-      ]);
-      setPreviewRows({
-        approvals: (approvalsRes.data || []).slice(0, 5),
-        updates: (updatesRes.data || []).slice(0, 5),
-      });
-    } catch {
-      setPreviewRows({ approvals: [], updates: [] });
-    }
-  }, [canSeeNotifications]);
-
   useEffect(() => {
     if (!bellOpen) return undefined;
-    loadPreview();
     const onDoc = (e) => {
       if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
     };
@@ -119,7 +104,7 @@ export default function Layout({ children }) {
       document.removeEventListener('mousedown', onDoc);
       window.removeEventListener('keydown', onKey);
     };
-  }, [bellOpen, loadPreview]);
+  }, [bellOpen]);
 
   useEffect(() => {
     if (!canSeeNotifications) return undefined;
@@ -225,12 +210,12 @@ export default function Layout({ children }) {
                 }`}
                 aria-label={
                   unreadCount
-                    ? `Notifications, ${unreadCount} unread`
+                    ? `Notifications, ${unreadCount} pending approval${unreadCount === 1 ? '' : 's'}`
                     : 'Notifications'
                 }
                 aria-expanded={bellOpen}
                 aria-haspopup="dialog"
-                title={unreadCount ? `${unreadCount} unread` : 'Notifications'}
+                title={unreadCount ? `${unreadCount} pending approval${unreadCount === 1 ? '' : 's'}` : 'Notifications'}
                 onClick={() => {
                   setBellOpen((v) => !v);
                   emitNotificationsChanged();
@@ -250,63 +235,37 @@ export default function Layout({ children }) {
                 ) : null}
               </button>
               {bellOpen ? (
-                <div className="header-notif-panel" role="dialog" aria-label="Recent notifications">
+                <div className="header-notif-panel" role="menu" aria-label="Notification options">
                   <div className="header-notif-panel-head">
                     <span>Notifications</span>
-                    <span className="muted">{unreadCount} unread</span>
                   </div>
-                  {previewRows.approvals?.length || previewRows.updates?.length ? (
-                    <>
-                      <div className="header-notif-section-label">Approval requests</div>
-                      {previewRows.approvals?.length ? (
-                        previewRows.approvals.map((n) => (
-                          <Link
-                            key={n._id}
-                            to="/notifications?tab=approvals"
-                            className={`header-notif-item${n.readAt ? '' : ' is-unread'}`}
-                            onClick={() => setBellOpen(false)}
-                          >
-                            <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
-                            <span className="header-notif-item-title">{n.title}</span>
-                            <div className="header-notif-item-meta">
-                              {formatDateTime(n.groupedAt || n.createdAt)}
-                            </div>
-                          </Link>
-                        ))
-                      ) : (
-                        <div className="header-notif-empty header-notif-empty--section">
-                          No pending approvals
-                        </div>
-                      )}
-                      <div className="header-notif-section-label">Updates</div>
-                      {previewRows.updates?.length ? (
-                        previewRows.updates.map((n) => (
-                          <Link
-                            key={n._id}
-                            to="/notifications?tab=updates"
-                            className={`header-notif-item${n.readAt ? '' : ' is-unread'}`}
-                            onClick={() => setBellOpen(false)}
-                          >
-                            <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
-                            <span className="header-notif-item-title">{n.title}</span>
-                            <div className="header-notif-item-meta">
-                              {formatDateTime(n.groupedAt || n.createdAt)}
-                            </div>
-                          </Link>
-                        ))
-                      ) : (
-                        <div className="header-notif-empty header-notif-empty--section">No unread updates</div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="header-notif-empty">No unread notifications</div>
-                  )}
                   <Link
                     to="/notifications?tab=approvals"
-                    className="header-notif-footer"
+                    role="menuitem"
+                    className={`header-notif-choice${unreadCount ? ' has-count' : ''}`}
                     onClick={() => setBellOpen(false)}
                   >
-                    View all
+                    <span className="header-notif-choice-copy">
+                      <strong>Pending approvals</strong>
+                      <span className="muted">Items that need your action</span>
+                    </span>
+                    <span className={`header-notif-choice-count${unreadCount ? ' is-active' : ''}`}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  </Link>
+                  <Link
+                    to="/notifications?tab=updates&fyi=1"
+                    role="menuitem"
+                    className={`header-notif-choice${fyiCount ? ' has-count' : ''}`}
+                    onClick={() => setBellOpen(false)}
+                  >
+                    <span className="header-notif-choice-copy">
+                      <strong>FYI / Notifications</strong>
+                      <span className="muted">Status updates and informational alerts</span>
+                    </span>
+                    <span className={`header-notif-choice-count${fyiCount ? ' is-active' : ''}`}>
+                      {fyiCount > 99 ? '99+' : fyiCount}
+                    </span>
                   </Link>
                 </div>
               ) : null}

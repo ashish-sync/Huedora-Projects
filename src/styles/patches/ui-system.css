@@ -1,0 +1,262 @@
+/**
+ * UI system polish — loaded last.
+ * Cross-cutting states, icons, empty/disabled affordances.
+ * Prefer tokens; avoid page-specific one-offs.
+ */
+
+/* ── Icon alignment in buttons & nav ───────────────────────── */
+
+.btn svg,
+.btn .lucide,
+.module-sub-nav__link svg,
+.page-tab svg,
+.logistics-nav-link svg,
+.pod-mode-icon-btn svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex-shrink: 0;
+}
+
+.btn.btn-compact svg,
+.btn.btn-compact .lucide {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.pod-mode-icon-btn svg {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+}
+
+/* ── Disabled / readonly controls ──────────────────────────── */
+/* Field disabled/readonly owned by forms.css; keep cross-cutting hosts here */
+
+.tylo-select:disabled,
+.adaptive-select__control--is-disabled,
+input.is-readonly:not(.field input),
+.is-readonly:not(.field *) {
+  opacity: 1;
+  cursor: not-allowed;
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-default);
+}
+
+.logistics-txn-form input.is-readonly,
+.logistics-txn-form .is-readonly,
+.logistics-prepare-grid .is-readonly {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+}
+
+/* ── Empty states ──────────────────────────────────────────── */
+
+.empty-state,
+.esign-empty,
+.am-empty,
+.inv-empty,
+.vf-empty,
+.table-empty,
+td.muted:only-child {
+  color: var(--color-text-tertiary);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-leading);
+}
+
+/* Empty table: keep message centered in the visible area */
+tbody tr:only-child td[colspan] {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-body-sm-size);
+  background: transparent;
+}
+
+/* ── Focus ring consistency (keyboard) ─────────────────────── */
+
+.btn:focus-visible,
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible,
+.tylo-select:focus-visible,
+.adaptive-select__control--is-focused {
+  outline: none;
+}
+
+.btn:focus-visible {
+  box-shadow: var(--dropdown-focus-ring);
+}
+
+/* ── Card interactive hover (subtle, not decorative) ───────── */
+
+.card.interactive {
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.card.interactive:hover {
+  border-color: var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-bg-hover) 65%, var(--color-bg-elevated));
+}
+
+/* ── Table numeric cells ───────────────────────────────────── */
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Page helper / lede under module nav ───────────────────── */
+
+.page-shell > .muted:not(.topbar-desc),
+.logistics-inout > .muted,
+.logistics-inventory > .muted {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-leading);
+  max-width: 72ch;
+}
+
+/* ── Segmented page tabs — match module-sub-nav active ─────── */
+
+.page-tabs .page-tab.is-active,
+button.page-tab.is-active {
+  color: var(--color-brand-primary);
+  border-color: color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border-default));
+  background: var(--color-bg-elevated);
+}
+
+/* ── Modal / drawer surface hierarchy ──────────────────────── */
+
+.confirm-dialog,
+.modal-panel,
+.drawer-panel {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Dark: nested prepare surfaces ─────────────────────────── */
+
+html[data-theme='dark'] .logistics-prepare-section {
+  background: var(--color-bg-sunken);
+  border-color: var(--color-border-default);
+}
+
+html[data-theme='dark'] .logistics-prepare-package .arq-contact-group {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+}
+
+/* ── Light: sunken sections stay readable ──────────────────── */
+
+html[data-theme='light'] .logistics-prepare-section {
+  background: var(--color-bg-sunken);
+}
+
+/* ── App shell overflow guard ──────────────────────────────── */
+
+.app-shell,
+.main {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Nested page-shell fills its module shell; the shell owns the content-max column. */
+.page-shell {
+  min-width: 0;
+  max-width: none;
+}
+
+.main {
+  overflow-x: clip;
+}
+
+/* Re-assert content column after other patches (Document / VF / Request / Master). */
+.main > .logistics-shell,
+.main > .module-shell,
+.main > .asset-inventory-shell,
+.main > .finance-shell,
+.main > .camp-ops-root,
+.main > .page-shell {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-left: auto;
+  margin-right: auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Sticky header actions — equal icon hit targets */
+.header-actions .header-theme-toggle,
+.header-actions .header-bell,
+.header-actions .header-avatar {
+  flex-shrink: 0;
+}
+
+/* ── Horizontal overflow safety for data tables ────────────── */
+
+.table-wrap,
+.logistics-prepare-courier-table,
+.card .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Responsive page shell ─────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .page-shell {
+    gap: 0.5rem;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .page-actions {
+    width: 100%;
+  }
+
+  .main {
+    padding: var(--space-2) var(--space-3) var(--space-5);
+  }
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .card.logistics-form,
+  .card.logistics-txn-form {
+    padding: var(--space-3);
+  }
+}
+
+@media (max-width: 1024px) {
+  .camp-ops-root .ops-board-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .camp-ops-root .ops-board-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -35,8 +35,9 @@ export default function AssetInventoryLayout() {
   }
 
   return (
-    <div className="asset-inventory-shell logistics-shell">
+    <div className="asset-inventory-shell module-shell logistics-shell">
       <PageShell
+        bare
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_INVENTORY }]}
         title={MODULE.ASSET_INVENTORY}
         description={MODULE_BLURB.ASSET_INVENTORY}

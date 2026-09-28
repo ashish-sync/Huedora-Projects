@@ -83,7 +83,7 @@ export const MODULE_BLURB = {
 };
 
 export const FIELD = {
-  ASSET_TYPE: 'Asset Type (Product Type)',
+  ASSET_TYPE: 'Product Classification',
   ASSET_NAME: 'Asset Name',
   ASSET_PERIPHERAL_DETAILS: 'Asset & Peripheral Remarks',
   OWNERSHIP_TYPE: 'Ownership Type',

@@ -55,8 +55,9 @@ export default function FinanceLayout() {
   }
 
   return (
-    <div className="finance-shell logistics-shell">
+    <div className="finance-shell module-shell logistics-shell">
       <PageShell
+        bare
         breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.FINANCE }]}
         title={MODULE.FINANCE}
         description={MODULE_BLURB.FINANCE}

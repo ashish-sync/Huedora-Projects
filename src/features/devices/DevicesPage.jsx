@@ -230,12 +230,12 @@ export default function DevicesPage() {
     setError('');
     try {
       const res = await apiFetch('/devices/import-template');
-      if (!res.ok) throw new Error('Could not download sample CSV');
+      if (!res.ok) throw new Error('Could not download sample format');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Asset_Master_Sample.csv';
+      a.download = 'Asset_Inventory_Sample.xlsx';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

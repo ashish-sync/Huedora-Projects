@@ -1,27 +1,61 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { api, apiFetch } from '../../shared/api.js';
+import { api, apiFetch, apiUrl } from '../../shared/api.js';
 import { CONTACT_CATEGORIES, HCW_RESOURCE_TYPES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey, resourceTypesForCategory, isHcwStaffResourceType } from './contactPicklists.js';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { MODULE } from '../../shared/labels.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
-import { isDatePlaceholder, isTodayDatePlaceholder } from './datePlaceholderFields.js';
 import DocxNativePreview from '../../components/DocxNativePreview.jsx';
-import AssetRegistrySearchInput, {
-  AssetRegistryPickerSummary,
-} from './AssetRegistrySearchInput.jsx';
+import AssetRegistrySearchInput from './AssetRegistrySearchInput.jsx';
 import {
   applyAssetSnapshotToLineRows,
   applyAssetSnapshotToPlaceholders,
   isAssetRegistryPlaceholder,
+  isDisplayNamePlaceholder,
   placeholderAssetField,
 } from './assetPlaceholderFields.js';
+import { isDatePlaceholder, defaultsToTodayPlaceholder, isTodayDatePlaceholder } from './datePlaceholderFields.js';
 import { applyContactSnapshotToPlaceholders } from './contactPlaceholderFields.js';
-import { displayLineColumnLabel, lineColumnClass } from './serviceAgreementLineColumns.js';
+import {
+  collectLineSerialValues,
+  collectUsedLineSerials,
+  displayLineColumnLabel,
+  findDuplicateLineSerial,
+  isDeviceNameLineColumn,
+  isHiddenLineValuePlaceholder,
+  isSerialNumberLineColumn,
+  lineColumnClass,
+  mergeLineValuesIntoPlaceholders,
+} from './serviceAgreementLineColumns.js';
+import { LineDeviceNameCombobox, LineSerialCombobox } from './LineAssetCombobox.jsx';
+import { agreementTitleToFileBase, buildAgreementDocumentTitle, downloadBlobWithName } from './documentFileName.js';
+
+function isHiddenPlaceholderField(placeholder) {
+  return (
+    isTodayDatePlaceholder(placeholder) ||
+    isDisplayNamePlaceholder(placeholder) ||
+    isHiddenLineValuePlaceholder(placeholder)
+  );
+}
+
+function namedFileFromBlob(blob, fileName, mimeType) {
+  const type = mimeType || blob?.type || 'application/octet-stream';
+  return new File([blob], fileName, { type });
+}
+
+async function fetchDocxFile(previewPath, fileName = 'document.docx') {
+  const res = await apiFetch(previewPath);
+  if (!res.ok) throw new Error('Could not load Word preview');
+  const blob = await res.blob();
+  return namedFileFromBlob(
+    blob,
+    fileName,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  );
+}
 
 const emptyContact = {
   name: '',
@@ -47,19 +81,6 @@ function todayISODate() {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-}
-
-async function fetchPdfBlobUrl(previewPath) {
-  const res = await apiFetch(previewPath);
-  if (!res.ok) throw new Error('Could not load PDF preview');
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
-}
-
-async function fetchDocxBlob(previewPath) {
-  const res = await apiFetch(previewPath);
-  if (!res.ok) throw new Error('Could not load Word preview');
-  return res.blob();
 }
 
 function typeLabelBadge(t) {
@@ -114,9 +135,7 @@ export default function AgreementCreatePage() {
   );
 
   const [templates, setTemplates] = useState([]);
-  const [docMode, setDocMode] = useState('template');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
-  const [uploadFile, setUploadFile] = useState(null);
   const [title, setTitle] = useState('');
   const [type, setType] = useState('LEASE');
   const [startDate, setStartDate] = useState(() => todayISODate());
@@ -124,10 +143,10 @@ export default function AgreementCreatePage() {
   const [endDate, setEndDate] = useState('');
 
   const [placeholderValues, setPlaceholderValues] = useState({});
+  const [placeholderTouched, setPlaceholderTouched] = useState({});
   const [lineRowsByTable, setLineRowsByTable] = useState({});
   const [selectedLinkAssetId, setSelectedLinkAssetId] = useState('');
   const [selectedAssetSnapshot, setSelectedAssetSnapshot] = useState(null);
-  const [assetPickerQuery, setAssetPickerQuery] = useState('');
   const [previewToken, setPreviewToken] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
   const [filledDocxBlob, setFilledDocxBlob] = useState(null);
@@ -185,13 +204,16 @@ export default function AgreementCreatePage() {
   );
 
   const placeholders = selectedTemplate?.placeholders || [];
+  const visiblePlaceholders = useMemo(
+    () => placeholders.filter((p) => !isHiddenPlaceholderField(p)),
+    [placeholders]
+  );
   const repeatableTables = selectedTemplate?.repeatableTables || [];
-  const hasLineTables = docMode === 'template' && repeatableTables.length > 0;
-  const hasPlaceholders =
-    docMode === 'template' && (placeholders.length > 0 || repeatableTables.length > 0);
+  const hasLineTables = repeatableTables.length > 0;
+  const hasPlaceholders = visiblePlaceholders.length > 0 || repeatableTables.length > 0;
 
   useEffect(() => {
-    if (!selectedTemplate || docMode !== 'template') return;
+    if (!selectedTemplate) return;
     const templateId = selectedTemplate._id;
     const switched = lastPlaceholderTemplateId.current !== templateId;
     lastPlaceholderTemplateId.current = templateId;
@@ -201,9 +223,10 @@ export default function AgreementCreatePage() {
       setType(selectedTemplate.agreementType || 'LEASE');
       const next = {};
       (selectedTemplate.placeholders || []).forEach((p) => {
-        next[p.key] = isTodayDatePlaceholder(p) ? todayISODate() : '';
+        next[p.key] = defaultsToTodayPlaceholder(p) ? todayISODate() : '';
       });
       setPlaceholderValues(next);
+      setPlaceholderTouched({});
       const nextLines = {};
       (selectedTemplate.repeatableTables || []).forEach((table) => {
         const empty = {};
@@ -224,7 +247,9 @@ export default function AgreementCreatePage() {
     setPlaceholderValues((prev) => {
       const next = { ...prev };
       (selectedTemplate.placeholders || []).forEach((p) => {
-        if (next[p.key] == null) next[p.key] = '';
+        if (next[p.key] == null) {
+          next[p.key] = defaultsToTodayPlaceholder(p) ? todayISODate() : '';
+        }
       });
       return next;
     });
@@ -240,7 +265,7 @@ export default function AgreementCreatePage() {
       });
       return next;
     });
-  }, [selectedTemplate, docMode]);
+  }, [selectedTemplate]);
 
   const recipientPerson = useMemo(() => {
     if (recipientMode === 'directory') return selectedContact;
@@ -260,16 +285,21 @@ export default function AgreementCreatePage() {
     return true;
   };
 
-  const documentReady = () => {
-    if (docMode === 'template') return Boolean(selectedTemplateId && title);
-    return Boolean(uploadFile && title);
-  };
+  const documentReady = () => Boolean(selectedTemplateId && title);
 
   const datesReady = () => {
     if (!startDate) return false;
     if (hasExpiry && !endDate) return false;
     if (hasExpiry && endDate && startDate && endDate < startDate) return false;
     return true;
+  };
+
+  const touchedPlaceholderKeys = () =>
+    new Set(Object.keys(placeholderTouched).filter((key) => placeholderTouched[key]));
+
+  const updatePlaceholderValue = (key, value) => {
+    setPlaceholderTouched((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+    setPlaceholderValues((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleAssetSelected = (snapshot) => {
@@ -287,12 +317,46 @@ export default function AgreementCreatePage() {
     const serial = serialPh ? String(placeholderValues[serialPh.key] || '').trim() : '';
     if (!serial) return '';
     try {
-      const { data } = await api(`/assets?q=${encodeURIComponent(serial)}&limit=10`);
+      const { data } = await api(
+        `/assets?q=${encodeURIComponent(serial)}&limit=10&availableForAgreement=1`
+      );
       const exact = (data || []).find((a) => String(a.serialNumber || '').trim() === serial);
       return exact?._id || '';
     } catch {
       return '';
     }
+  };
+
+  const resolveLineAssetIds = async () => {
+    const serials = collectLineSerialValues(lineRowsByTable, repeatableTables);
+    const ids = [];
+    const seen = new Set();
+    for (const serial of serials) {
+      try {
+        const { data } = await api(
+          `/assets?q=${encodeURIComponent(serial)}&limit=10&availableForAgreement=1`
+        );
+        const exact = (data || []).find(
+          (a) => String(a.serialNumber || '').trim().toLowerCase() === serial.toLowerCase()
+        );
+        if (exact?._id && !seen.has(String(exact._id))) {
+          seen.add(String(exact._id));
+          ids.push(exact._id);
+        }
+      } catch {
+        /* skip unresolved serial */
+      }
+    }
+    return ids;
+  };
+
+  const assertUniqueLineSerials = () => {
+    const dup = findDuplicateLineSerial(lineRowsByTable, repeatableTables);
+    if (!dup) return true;
+    setError(
+      `Serial number “${dup.serial}” is already used on another line in this agreement. Each serial can only appear once.`
+    );
+    return false;
   };
 
   const appendRecipientFields = (fd) => {
@@ -339,7 +403,7 @@ export default function AgreementCreatePage() {
     }
     if (step === 2) {
       if (!documentReady()) {
-        setError('Choose a template or upload a file, and provide a title.');
+        setError('Choose a template and provide a title.');
         return;
       }
       if (!datesReady()) {
@@ -350,7 +414,7 @@ export default function AgreementCreatePage() {
         );
         return;
       }
-      if (docMode === 'template' && selectedTemplateId) {
+      if (selectedTemplateId) {
         setBusy(true);
         try {
           let person = recipientPerson;
@@ -388,16 +452,21 @@ export default function AgreementCreatePage() {
 
           const docFields = tpl?.placeholders || [];
           const tables = tpl?.repeatableTables || [];
-          if (!docFields.length && !tables.length) {
+          const visibleDocFields = docFields.filter((p) => !isHiddenPlaceholderField(p));
+          if (!visibleDocFields.length && !tables.length) {
             await submit();
             return;
           }
 
           let nextValues = { ...placeholderValues };
           docFields.forEach((p) => {
-            if (nextValues[p.key] == null) nextValues[p.key] = '';
+            if (nextValues[p.key] == null || nextValues[p.key] === '') {
+              nextValues[p.key] = defaultsToTodayPlaceholder(p) ? todayISODate() : '';
+            }
           });
-          nextValues = applyContactSnapshotToPlaceholders(docFields, person, nextValues);
+          nextValues = applyContactSnapshotToPlaceholders(docFields, person, nextValues, {
+            skipKeys: touchedPlaceholderKeys(),
+          });
 
           let nextLineRows = lineRowsByTable;
           const assetId = selectedLinkAssetId || linkAssetId;
@@ -454,7 +523,7 @@ export default function AgreementCreatePage() {
   const generatePreview = async () => {
     setError('');
     if (!selectedTemplateId) return;
-    const missing = placeholders.filter((p) => !String(placeholderValues[p.key] || '').trim());
+    const missing = visiblePlaceholders.filter((p) => !String(placeholderValues[p.key] || '').trim());
     if (missing.length) {
       setError(`Fill all fields: ${missing.map((m) => m.label).join(', ')}`);
       return;
@@ -475,20 +544,43 @@ export default function AgreementCreatePage() {
         }
       }
     }
+    if (!assertUniqueLineSerials()) return;
+    const partyName =
+      recipientMode === 'directory'
+        ? selectedContact?.name
+        : newContact.name;
+    const documentDetails = selectedTemplate?.name || title;
+    const builtTitle = buildAgreementDocumentTitle({
+      partyName,
+      documentDetails,
+      dateValue: startDate || todayISODate(),
+    });
+    setTitle(builtTitle);
     setBusy(true);
     try {
+      const mergedValues = mergeLineValuesIntoPlaceholders(
+        placeholderValues,
+        placeholders,
+        repeatableTables,
+        lineRowsByTable
+      );
+      setPlaceholderValues(mergedValues);
+      const fileBase = agreementTitleToFileBase(builtTitle);
       const { data } = await api(`/templates/${selectedTemplateId}/fill-preview`, {
         method: 'POST',
-        body: { values: placeholderValues, lineRows: lineRowsByTable, title },
+        body: { values: mergedValues, lineRows: lineRowsByTable, title: builtTitle },
       });
       setPreviewToken(data.previewToken);
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-      const url = await fetchPdfBlobUrl(data.previewUrl);
-      setPdfUrl(url);
+      // Use the real preview URL (not a blob:) so Save/Download keeps the nomenclature name.
+      if (pdfUrl && String(pdfUrl).startsWith('blob:')) URL.revokeObjectURL(pdfUrl);
+      const namedPdfPath =
+        data.previewUrl ||
+        `/api/v1/templates/preview/${data.previewToken}/${encodeURIComponent(fileBase)}.pdf`;
+      setPdfUrl(apiUrl(namedPdfPath));
       setPdfEngine(data.pdfEngine || '');
       if (data.filledDocxUrl) {
-        const docxBlob = await fetchDocxBlob(data.filledDocxUrl);
-        setFilledDocxBlob(docxBlob);
+        const docxFile = await fetchDocxFile(data.filledDocxUrl, `${fileBase}.docx`);
+        setFilledDocxBlob(docxFile);
         setPreviewMode(data.pdfEngine === 'pdfkit' ? 'word' : 'pdf');
       } else {
         setFilledDocxBlob(null);
@@ -506,6 +598,14 @@ export default function AgreementCreatePage() {
     setLineRowsByTable((prev) => {
       const rows = [...(prev[tableId] || [])];
       rows[rowIndex] = { ...rows[rowIndex], [key]: value };
+      return { ...prev, [tableId]: rows };
+    });
+  };
+
+  const patchLineRow = (tableId, rowIndex, patch) => {
+    setLineRowsByTable((prev) => {
+      const rows = [...(prev[tableId] || [])];
+      rows[rowIndex] = { ...rows[rowIndex], ...patch };
       return { ...prev, [tableId]: rows };
     });
   };
@@ -536,7 +636,7 @@ export default function AgreementCreatePage() {
   const submit = async () => {
     setError('');
     if (!documentReady()) {
-      setError('Choose a template or upload a PDF/Word file, and provide a title.');
+      setError('Choose a template and provide a title.');
       return;
     }
     if (!datesReady()) {
@@ -551,30 +651,31 @@ export default function AgreementCreatePage() {
       setError('Fill placeholders and preview the PDF before creating.');
       return;
     }
+    if (!assertUniqueLineSerials()) return;
     setBusy(true);
     try {
       const fd = new FormData();
       appendRecipientFields(fd);
-      fd.append('documentSource', docMode === 'template' ? 'TEMPLATE' : 'UPLOAD');
-
-      if (docMode === 'template') {
-        fd.append('templateId', selectedTemplateId);
-        if (previewToken) {
-          fd.append('previewToken', previewToken);
-        } else if (selectedTemplate?.bodyHtml) {
-          fd.append('bodyHtml', selectedTemplate.bodyHtml);
-        }
-      } else if (uploadFile) {
-        fd.append('file', uploadFile);
+      fd.append('documentSource', 'TEMPLATE');
+      fd.append('templateId', selectedTemplateId);
+      if (previewToken) {
+        fd.append('previewToken', previewToken);
+      } else if (selectedTemplate?.bodyHtml) {
+        fd.append('bodyHtml', selectedTemplate.bodyHtml);
       }
 
       const { data } = await api('/agreements', { method: 'POST', body: fd });
-      const assetToLink = (await resolveLinkAssetId()) || linkAssetId || selectedLinkAssetId;
-      if (assetToLink) {
+      const assetIds = new Set();
+      const primary = (await resolveLinkAssetId()) || linkAssetId || selectedLinkAssetId;
+      if (primary) assetIds.add(String(primary));
+      for (const id of await resolveLineAssetIds()) {
+        assetIds.add(String(id));
+      }
+      if (assetIds.size) {
         try {
           await api(`/agreements/${data._id}/assets`, {
             method: 'POST',
-            body: { assetIds: [assetToLink] },
+            body: { assetIds: [...assetIds] },
           });
         } catch {
           /* agreement created; asset link can be added from envelope detail */
@@ -588,8 +689,54 @@ export default function AgreementCreatePage() {
     }
   };
 
+  const downloadPreviewFile = async (kind) => {
+    const fileBase = agreementTitleToFileBase(title) || 'document';
+    try {
+      if (kind === 'pdf') {
+        if (!previewToken && !pdfUrl) return;
+        const path = previewToken
+          ? `/templates/preview/${previewToken}/${encodeURIComponent(fileBase)}.pdf?download=1`
+          : null;
+        if (path) {
+          const res = await apiFetch(path);
+          if (!res.ok) throw new Error('Download failed');
+          const blob = await res.blob();
+          downloadBlobWithName(blob, `${fileBase}.pdf`, 'application/pdf');
+          return;
+        }
+        // Fallback: open named public URL
+        window.open(`${pdfUrl}${pdfUrl.includes('?') ? '&' : '?'}download=1`, '_blank', 'noopener');
+        return;
+      }
+      if (kind === 'docx') {
+        if (previewToken) {
+          const res = await apiFetch(
+            `/templates/preview/${previewToken}/${encodeURIComponent(fileBase)}.docx?download=1`
+          );
+          if (!res.ok) throw new Error('Download failed');
+          const blob = await res.blob();
+          downloadBlobWithName(
+            blob,
+            `${fileBase}.docx`,
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          );
+          return;
+        }
+        if (filledDocxBlob) {
+          downloadBlobWithName(
+            filledDocxBlob,
+            filledDocxBlob.name || `${fileBase}.docx`,
+            filledDocxBlob.type
+          );
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Download failed');
+    }
+  };
+
   return (
-    <div className="esign-shell">
+    <div className="page-shell esign-shell">
       <div className="esign-top">
         <div>
           <p className="eyebrow">
@@ -607,7 +754,7 @@ export default function AgreementCreatePage() {
             </p>
           ) : (
             <p className="muted esign-sub">
-              Select the recipient, then choose a template or document from {MODULE.DOCUMENT_MASTER}.{' '}
+              Select the recipient, then choose a template from {MODULE.DOCUMENT_MASTER}.{' '}
               <Link to="/master-one?scope=document&entity=contacts">{MODULE.CONTACT_DIRECTORY}</Link>
               {' · '}
               <Link to="/master-one?scope=document&entity=templates">{MODULE.DOCUMENT_MASTER}</Link>
@@ -629,7 +776,7 @@ export default function AgreementCreatePage() {
           <span className="wizard-num">2</span>
           <div>
             <strong>Document</strong>
-            <small>Upload or template library</small>
+            <small>Template library</small>
           </div>
         </div>
         {(hasPlaceholders || step >= 3) && (
@@ -912,68 +1059,43 @@ export default function AgreementCreatePage() {
       {step === 2 && (
         <div className="wizard-grid">
           <section className="card">
-            <div className="esign-sign-modes" style={{ marginBottom: '1rem' }}>
-              <button
-                type="button"
-                className={`btn secondary ${docMode === 'template' ? 'is-selected' : ''}`}
-                onClick={() => setDocMode('template')}
-              >
-                Template library
-              </button>
-              <button
-                type="button"
-                className={`btn secondary ${docMode === 'upload' ? 'is-selected' : ''}`}
-                onClick={() => setDocMode('upload')}
-              >
-                Upload document
-              </button>
+            <h3 style={{ marginTop: 0 }}>Template library</h3>
+            <div className="template-list">
+              {templates.map((t) => (
+                <button
+                  key={t._id}
+                  type="button"
+                  className={`template-item ${selectedTemplateId === t._id ? 'is-selected' : ''}`}
+                  onClick={() => setSelectedTemplateId(t._id)}
+                >
+                  <strong>{t.name}</strong>
+                  <span className="muted">{t.description}</span>
+                  <span className="badge">{typeLabelBadge(t)}</span>
+                  <span className="badge">{t.signingType === 'NON_SIGNING' ? 'Non-signing' : 'Signing'}</span>
+                  {(t.placeholders || []).length > 0 && (
+                    <span className="badge tone-ok">{(t.placeholders || []).length} fields</span>
+                  )}
+                  {(t.repeatableTables || []).length > 0 && (
+                    <span className="badge tone-ok">
+                      {(t.repeatableTables || []).reduce(
+                        (n, tbl) => n + (tbl.columns?.length || 0),
+                        0
+                      )}{' '}
+                      line cols
+                    </span>
+                  )}
+                </button>
+              ))}
+              {!templates.length && (
+                <p className="muted">
+                  No templates available. Upload templates in{' '}
+                  <Link to="/master-one?scope=document&entity=templates">{MODULE.DOCUMENT_MASTER}</Link>.
+                </p>
+              )}
+              {selectedTemplate && (
+                <pre className="template-preview">{(selectedTemplate.bodyHtml || '').slice(0, 900)}{(selectedTemplate.bodyHtml || '').length > 900 ? '…' : ''}</pre>
+              )}
             </div>
-
-            {docMode === 'template' ? (
-              <div className="template-list">
-                {templates.map((t) => (
-                  <button
-                    key={t._id}
-                    type="button"
-                    className={`template-item ${selectedTemplateId === t._id ? 'is-selected' : ''}`}
-                    onClick={() => setSelectedTemplateId(t._id)}
-                  >
-                    <strong>{t.name}</strong>
-                    <span className="muted">{t.description}</span>
-                    <span className="badge">{typeLabelBadge(t)}</span>
-                    <span className="badge">{t.signingType === 'NON_SIGNING' ? 'Non-signing' : 'Signing'}</span>
-                    {(t.placeholders || []).length > 0 && (
-                      <span className="badge tone-ok">{(t.placeholders || []).length} fields</span>
-                    )}
-                    {(t.repeatableTables || []).length > 0 && (
-                      <span className="badge tone-ok">
-                        {(t.repeatableTables || []).reduce(
-                          (n, tbl) => n + (tbl.columns?.length || 0),
-                          0
-                        )}{' '}
-                        line cols
-                      </span>
-                    )}
-                  </button>
-                ))}
-                {!templates.length && <p className="muted">No templates available.</p>}
-                {selectedTemplate && (
-                  <pre className="template-preview">{(selectedTemplate.bodyHtml || '').slice(0, 900)}{(selectedTemplate.bodyHtml || '').length > 900 ? '…' : ''}</pre>
-                )}
-              </div>
-            ) : (
-              <div>
-                <p className="muted">Upload an existing PDF or Word document (no merge fields).</p>
-                <FilePicker
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    setUploadFile(f);
-                    if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, ''));
-                  }}
-                />
-              </div>
-            )}
           </section>
 
           <aside className="card">
@@ -981,6 +1103,10 @@ export default function AgreementCreatePage() {
             <div className="field">
               <label>Title *</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
+                On Continue, the file is named as Recipient–Document–Date (e.g. Ashish-Service
+                Agreement-27/09/2026).
+              </span>
             </div>
             <div className="field">
               <label>Agreement type</label>
@@ -1002,9 +1128,10 @@ export default function AgreementCreatePage() {
             </div>
 
             <div className="field">
-              <label>Should this document expire?</label>
-              <div className="esign-sign-modes" style={{ marginTop: 'var(--space-2)' }}>
+              <label htmlFor="agr-expiry-no">Document expiry</label>
+              <div className="esign-sign-modes" style={{ marginTop: 'var(--space-2)' }} role="group" aria-label="Document expiry">
                 <button
+                  id="agr-expiry-no"
                   type="button"
                   className={`btn secondary ${!hasExpiry ? 'is-selected' : ''}`}
                   onClick={() => {
@@ -1034,31 +1161,6 @@ export default function AgreementCreatePage() {
                 onChange={setEndDate}
               />
             )}
-
-            <div className="field">
-              <label htmlFor="agr-asset-picker">Linked Asset One record</label>
-              <AssetRegistrySearchInput
-                id="agr-asset-picker"
-                value={assetPickerQuery}
-                onChange={setAssetPickerQuery}
-                onSelectAsset={(snapshot) => {
-                  handleAssetSelected(snapshot);
-                  setAssetPickerQuery(snapshot.assetName || snapshot.serialNumber || '');
-                }}
-                placeholder="Search by asset name or serial number…"
-              />
-              <AssetRegistryPickerSummary
-                snapshot={selectedAssetSnapshot}
-                onClear={() => {
-                  setSelectedAssetSnapshot(null);
-                  setSelectedLinkAssetId(linkAssetId || '');
-                  setAssetPickerQuery('');
-                }}
-              />
-              <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
-                Selecting an asset fills Asset Type/Product Type, Asset Name, Ownership Type, and Serial Number.
-              </span>
-            </div>
 
             <div className="recipient-summary">
               <h4>Receives &amp; signs</h4>
@@ -1100,47 +1202,10 @@ export default function AgreementCreatePage() {
         <div className={`card ph-step-card${hasLineTables ? ' ph-step-card--wide' : ''}`}>
           <div className="ph-step-head">
             <h3 style={{ margin: 0 }}>Fill placeholders</h3>
-            {hasPlaceholders && (
-              <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
-                Linking a Contact Directory record fills Name, Address, City, State, and related
-                fields. Linking an Asset One record fills Asset Type/Product Type, Asset Name,
-                Ownership Type, and Serial Number. You do not need to re-type them.
-              </p>
-            )}
-            {hasLineTables ? (
-              <p className="muted" style={{ margin: 'var(--space-2) 0 0' }}>
-                Line items are Display Name, Serial No., Per Camp (INR), Kms Covered, and Additional
-                Remarks. Add rows as needed; each is included in the PDF.
-              </p>
-            ) : null}
           </div>
 
-          {hasPlaceholders && (
-            <div className="field ph-field ph-asset-picker">
-              <label htmlFor="ph-asset-picker">Link from Asset One</label>
-              <AssetRegistrySearchInput
-                id="ph-asset-picker"
-                value={assetPickerQuery}
-                onChange={setAssetPickerQuery}
-                onSelectAsset={(snapshot) => {
-                  handleAssetSelected(snapshot);
-                  setAssetPickerQuery(snapshot.assetName || snapshot.serialNumber || '');
-                }}
-                placeholder="Search by asset name, model, or serial number…"
-              />
-              <AssetRegistryPickerSummary
-                snapshot={selectedAssetSnapshot}
-                onClear={() => {
-                  setSelectedAssetSnapshot(null);
-                  setSelectedLinkAssetId(linkAssetId || '');
-                  setAssetPickerQuery('');
-                }}
-              />
-            </div>
-          )}
-
           <div className="ph-step-fields">
-            {placeholders.map((p) => (
+            {visiblePlaceholders.map((p) => (
               <div className="field ph-field" key={`${p.key}-${p.occurrence || 0}`}>
                 <label htmlFor={`ph-${p.key}`}>{p.label}</label>
                 {isAssetRegistryPlaceholder(p) ? (
@@ -1148,9 +1213,7 @@ export default function AgreementCreatePage() {
                     id={`ph-${p.key}`}
                     required
                     value={placeholderValues[p.key] || ''}
-                    onChange={(v) =>
-                      setPlaceholderValues({ ...placeholderValues, [p.key]: v })
-                    }
+                    onChange={(v) => updatePlaceholderValue(p.key, v)}
                     onSelectAsset={handleAssetSelected}
                     placeholder={`Search ${p.label} in Asset Registry…`}
                   />
@@ -1161,9 +1224,7 @@ export default function AgreementCreatePage() {
                     required
                     aria-label={p.label}
                     value={placeholderValues[p.key] || ''}
-                    onChange={(v) =>
-                      setPlaceholderValues({ ...placeholderValues, [p.key]: v })
-                    }
+                    onChange={(v) => updatePlaceholderValue(p.key, v)}
                   />
                 ) : (
                   <input
@@ -1189,14 +1250,12 @@ export default function AgreementCreatePage() {
                             : undefined
                     }
                     value={placeholderValues[p.key] || ''}
-                    onChange={(e) =>
-                      setPlaceholderValues({ ...placeholderValues, [p.key]: e.target.value })
-                    }
+                    onChange={(e) => updatePlaceholderValue(p.key, e.target.value)}
                   />
                 )}
               </div>
             ))}
-            {!placeholders.length && !hasLineTables && (
+            {!visiblePlaceholders.length && !hasLineTables && (
               <p className="muted">No placeholders on this template.</p>
             )}
           </div>
@@ -1207,11 +1266,13 @@ export default function AgreementCreatePage() {
             const minRows = Number(table.minRows) > 0 ? Number(table.minRows) : 1;
             const canRemoveRows = rows.length > minRows;
             const columns = table.columns || [];
+            const deviceNameCol = columns.find((col) => isDeviceNameLineColumn(col));
+            const serialCol = columns.find((col) => isSerialNumberLineColumn(col));
             return (
               <div className="ph-line-table" key={table.id}>
                 <div className="ph-line-table-head">
                   <h4>Line items</h4>
-                  <span className="muted">
+                  <span className="ph-line-row-count">
                     {rows.length} / {maxRows} rows
                   </span>
                 </div>
@@ -1241,20 +1302,90 @@ export default function AgreementCreatePage() {
                       {rows.map((row, rowIndex) => (
                         <tr key={`${table.id}-${rowIndex}`}>
                           <td className="ph-line-sr">{rowIndex + 1}</td>
-                          {columns.map((col) => (
-                            <td key={col.key} className={lineColumnClass(col)}>
-                              <input
-                                required
-                                inputMode={col.type === 'number' ? 'decimal' : 'text'}
-                                value={row[col.key] || ''}
-                                onChange={(e) =>
-                                  updateLineCell(table.id, rowIndex, col.key, e.target.value)
-                                }
-                                aria-label={`Row ${rowIndex + 1} ${displayLineColumnLabel(col)}`}
-                                placeholder={displayLineColumnLabel(col)}
-                              />
-                            </td>
-                          ))}
+                          {columns.map((col) => {
+                            const label = displayLineColumnLabel(col);
+                            const cellId = `line-${table.id}-${rowIndex}-${col.key}`;
+                            if (isDeviceNameLineColumn(col)) {
+                              return (
+                                <td key={col.key} className={lineColumnClass(col)}>
+                                  <LineDeviceNameCombobox
+                                    id={cellId}
+                                    required
+                                    value={row[col.key] || ''}
+                                    aria-label={`Row ${rowIndex + 1} ${label}`}
+                                    onChange={(nextName) => {
+                                      const patch = { [col.key]: nextName };
+                                      if (
+                                        serialCol &&
+                                        String(row[serialCol.key] || '').trim() &&
+                                        String(nextName || '').trim().toLowerCase() !==
+                                          String(row[col.key] || '').trim().toLowerCase()
+                                      ) {
+                                        patch[serialCol.key] = '';
+                                      }
+                                      patchLineRow(table.id, rowIndex, patch);
+                                    }}
+                                    onSelectName={(name) => {
+                                      const patch = { [col.key]: name };
+                                      if (serialCol) patch[serialCol.key] = '';
+                                      patchLineRow(table.id, rowIndex, patch);
+                                    }}
+                                  />
+                                </td>
+                              );
+                            }
+                            if (isSerialNumberLineColumn(col)) {
+                              const deviceName = deviceNameCol
+                                ? row[deviceNameCol.key] || ''
+                                : '';
+                              const usedElsewhere = [
+                                ...collectUsedLineSerials(lineRowsByTable, repeatableTables, {
+                                  excludeTableId: table.id,
+                                  excludeRowIndex: rowIndex,
+                                }),
+                              ];
+                              return (
+                                <td key={col.key} className={lineColumnClass(col)}>
+                                  <LineSerialCombobox
+                                    id={cellId}
+                                    required
+                                    value={row[col.key] || ''}
+                                    deviceName={deviceName}
+                                    excludeSerials={usedElsewhere}
+                                    aria-label={`Row ${rowIndex + 1} ${label}`}
+                                    onChange={(serial) => {
+                                      const next = String(serial || '').trim();
+                                      if (
+                                        next &&
+                                        usedElsewhere.includes(next.toLowerCase())
+                                      ) {
+                                        setError(
+                                          `Serial “${next}” is already used on another line in this agreement.`
+                                        );
+                                        return;
+                                      }
+                                      setError('');
+                                      updateLineCell(table.id, rowIndex, col.key, serial);
+                                    }}
+                                  />
+                                </td>
+                              );
+                            }
+                            return (
+                              <td key={col.key} className={lineColumnClass(col)}>
+                                <input
+                                  required
+                                  inputMode={col.type === 'number' ? 'decimal' : 'text'}
+                                  value={row[col.key] || ''}
+                                  onChange={(e) =>
+                                    updateLineCell(table.id, rowIndex, col.key, e.target.value)
+                                  }
+                                  aria-label={`Row ${rowIndex + 1} ${label}`}
+                                  placeholder={label}
+                                />
+                              </td>
+                            );
+                          })}
                           {canRemoveRows ? (
                             <td className="ph-line-actions">
                               <button
@@ -1296,7 +1427,7 @@ export default function AgreementCreatePage() {
           <section className="card esign-pdf-panel">
             <div className="esign-pdf-toolbar">
               <div>
-                <strong>Document preview</strong>
+                <strong>{title || 'Document preview'}</strong>
                 <p className="muted" style={{ margin: '2px 0 0' }}>
                   {filledDocxBlob
                     ? 'Word layout matches your template. Switch to PDF to review the file used for signing (signature footer on every page).'
@@ -1332,6 +1463,24 @@ export default function AgreementCreatePage() {
                 <button className="btn secondary" type="button" onClick={() => setStep(3)}>
                   ← Edit fields
                 </button>
+                {pdfUrl ? (
+                  <button
+                    className="btn secondary"
+                    type="button"
+                    onClick={() => downloadPreviewFile('pdf')}
+                  >
+                    Download PDF
+                  </button>
+                ) : null}
+                {filledDocxBlob ? (
+                  <button
+                    className="btn secondary"
+                    type="button"
+                    onClick={() => downloadPreviewFile('docx')}
+                  >
+                    Download Word
+                  </button>
+                ) : null}
                 <button className="btn" type="button" disabled={busy || !previewToken} onClick={submit}>
                   {busy ? 'Creating…' : 'Create draft'}
                 </button>
@@ -1342,7 +1491,11 @@ export default function AgreementCreatePage() {
                 <DocxNativePreview file={filledDocxBlob} />
               </div>
             ) : pdfUrl ? (
-              <iframe title="PDF preview" className="pdf-preview-frame esign-pdf-frame" src={pdfUrl} />
+              <iframe
+                title={title || 'PDF preview'}
+                className="pdf-preview-frame esign-pdf-frame"
+                src={pdfUrl}
+              />
             ) : (
               <p className="muted">Preview not loaded.</p>
             )}

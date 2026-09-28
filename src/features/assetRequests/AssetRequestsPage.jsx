@@ -14,10 +14,12 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
+import { resolveProductType } from '../../shared/productTypes.js';
+import { categoriesForType } from '../../shared/productMasterConfig.js';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import '../notifications/notifications.css';
-import { canApproveRequestType, approvalRuleLabel } from './requestApproval.js';
+import { canApproveRequestType, approvalRuleLabel, isAdminApprover } from './requestApproval.js';
 import {
   MASTER_MODULES,
   entitiesForModule,
@@ -33,6 +35,10 @@ import {
 import {
   parseClientMasterListResponse,
   resolveClientMasterHealthcareWorkers,
+  parseClientMasterDivisions,
+  resolveCampNameOptions,
+  applyClientMasterCascade,
+  pickSingleOption,
 } from '../camps/utils/clientMasterCascade.js';
 import { normalizeHealthcareWorkers } from '../camps/utils/healthcareWorkers.js';
 import { isVendorContact } from '../agreements/contactPicklists.js';
@@ -108,16 +114,24 @@ const OTHER_REQUEST_OPTIONS = {
   ],
 };
 const ASSET_PRODUCT_TYPES = new Set(['Medical Device', 'Non-Medical Device']);
+const DOCUMENT_MODEL_OPTIONS = categoriesForType('Document');
+
+function isDocumentProductType(productType) {
+  return resolveProductType(productType) === 'Document';
+}
 
 function emptyLogisticsProduct() {
-  return { productType: '', productId: '', productName: '', qty: '' };
+  return { productType: '', productId: '', productName: '', qty: '', uomId: '' };
 }
 
 function isLogisticsProductRowComplete(item) {
+  const hasModel = isDocumentProductType(item?.productType)
+    ? Boolean(item?.productName)
+    : Boolean(item?.productId && item?.productName);
   return Boolean(
     item?.productType &&
-      item?.productId &&
-      item?.productName &&
+      hasModel &&
+      item?.uomId &&
       Number.isFinite(Number(item.qty)) &&
       Number(item.qty) > 0
   );
@@ -252,8 +266,8 @@ function DirectionContactFields({ label, prefix, contacts, form, setForm }) {
   const fields = [
     { suffix: 'Name', label: 'Name', value: (c) => c.name || '' },
     { suffix: 'Number', label: 'Number', value: contactNumber },
-    { suffix: 'Address', label: 'Address', value: (c) => c.address || '' },
     { suffix: 'PinCode', label: 'Pin code', value: (c) => c.pinCode || '' },
+    { suffix: 'Address', label: 'Address', value: (c) => c.address || '' },
     { suffix: 'City', label: 'City', value: (c) => c.city || '' },
     { suffix: 'State', label: 'State', value: (c) => c.state || '' },
   ];
@@ -319,7 +333,10 @@ function DirectionContactFields({ label, prefix, contacts, form, setForm }) {
         {fields.map((field, fieldIndex) => {
           const options = uniqueSorted(matchingBefore(fieldIndex).map(field.value));
           return (
-            <div className="field" key={field.suffix}>
+            <div
+              className={`field arq-contact-field arq-contact-field--${String(field.suffix).toLowerCase()}`}
+              key={field.suffix}
+            >
               <label>{field.label}</label>
               <AdaptiveSelect
                 value={form[`${prefix}${field.suffix}`]}
@@ -397,13 +414,18 @@ function detailSummary(r) {
     r.requestType === 'REIMBURSEMENT' && r.associateWithClient
       ? `Client: ${[r.clientCode, r.divisionTherapy || r.clientName].filter(Boolean).join(' · ') || '—'}`
       : '',
+    r.requestType === 'LOGISTICS' && (r.clientName || r.clientCode || r.divisionTherapy || r.hiringMethod)
+      ? `Client: ${[r.clientName || r.clientCode, r.divisionTherapy, r.hiringMethod]
+          .filter(Boolean)
+          .join(' · ')}`
+      : '',
     r.trainingTopic,
     r.trainingName || r.assetName,
     r.traineeName,
     r.hiringType,
     r.hcwType,
     r.campType,
-    r.hiringMethod,
+    r.requestType === 'HIRING' ? r.hiringMethod : '',
     r.hireeName
       ? `Hiree: ${r.hireeName}${r.hireeContact ? ` · ${r.hireeContact}` : ''}${
           r.payableAmount != null && r.payableAmount !== '' ? ` · ₹${r.payableAmount}` : ''
@@ -431,8 +453,9 @@ export default function AssetRequestsPage() {
     can('maintenance:write') ||
     can('*');
   const canApprove =
-    can('asset-requests:approve') || can('movements:approve') || can('*');
+    can('asset-requests:approve') || can('movements:approve') || isAdminApprover(user, can);
   const userCanApproveType = (requestType) => canApproveRequestType(user, can, requestType);
+  const adminCanOverrideOwn = isAdminApprover(user, can);
 
   const [rows, setRows] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -442,6 +465,9 @@ export default function AssetRequestsPage() {
   const [expenseMaster, setExpenseMaster] = useState({ expenseCategories: [], expenseSubCategories: [] });
   const [clients, setClients] = useState([]);
   const [clientMasters, setClientMasters] = useState([]);
+  const [logisticsDivisionPrograms, setLogisticsDivisionPrograms] = useState([]);
+  const [logisticsDivisionOptions, setLogisticsDivisionOptions] = useState([]);
+  const [logisticsProgramsLoading, setLogisticsProgramsLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -489,6 +515,15 @@ export default function AssetRequestsPage() {
       loadExpenseMaster();
       loadClientMasterOptions();
     }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const focusId = String(
+      searchParams.get('requestId') || searchParams.get('movementId') || ''
+    ).trim();
+    if (!focusId) return;
+    setMsg(`Opened from notification — request ${focusId}`);
+    setTypeFilter('LOGISTICS');
   }, [searchParams]);
 
   useEffect(() => {
@@ -584,9 +619,10 @@ export default function AssetRequestsPage() {
     for (const c of vendorContacts) map.set(String(c._id), c);
     return map;
   }, [contacts, vendorContacts]);
-  const logisticsConfig = logisticsMeta?.inOut || {};
-  const logisticsProductTypes = logisticsConfig.productTypes || FALLBACK_PRODUCT;
+  // Prefer client SSOT so new categories (e.g. Document) show even if /logistics/meta is stale
+  const logisticsProductTypes = FALLBACK_PRODUCT;
   const logisticsProducts = logisticsMeta?.products || [];
+  const logisticsUoms = logisticsMeta?.uoms || [];
   const trainingDeviceProducts = useMemo(
     () =>
       logisticsProducts.filter(
@@ -741,6 +777,94 @@ export default function AssetRequestsPage() {
       clientName: row?.clientName || '',
       clientCode: row?.clientCode || '',
       divisionTherapy: row?.divisionTherapy || '',
+    }));
+  };
+
+  const logisticsMethodOptions = useMemo(
+    () =>
+      resolveCampNameOptions(
+        logisticsDivisionPrograms,
+        form.divisionTherapy,
+        form.hiringMethod
+      ),
+    [logisticsDivisionPrograms, form.divisionTherapy, form.hiringMethod]
+  );
+
+  useEffect(() => {
+    if (form.requestType !== 'LOGISTICS' || !form.clientId) {
+      setLogisticsDivisionPrograms([]);
+      setLogisticsDivisionOptions([]);
+      setLogisticsProgramsLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLogisticsProgramsLoading(true);
+    clientMasterApi
+      .listDivisionsByClient(
+        form.clientId,
+        form.clientName ? { clientName: form.clientName } : undefined
+      )
+      .then(({ data }) => {
+        if (cancelled) return;
+        const { programs, divisions } = parseClientMasterDivisions(data);
+        setLogisticsDivisionPrograms(programs);
+        setLogisticsDivisionOptions(divisions);
+        setForm((prev) => {
+          if (prev.requestType !== 'LOGISTICS') return prev;
+          const cascaded = applyClientMasterCascade({
+            programs,
+            currentDivision: prev.divisionTherapy,
+            currentMethod: prev.hiringMethod,
+          });
+          if (
+            cascaded.campaignType === prev.divisionTherapy &&
+            cascaded.campaignName === prev.hiringMethod
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            divisionTherapy: cascaded.campaignType,
+            hiringMethod: cascaded.campaignName,
+          };
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLogisticsDivisionPrograms([]);
+          setLogisticsDivisionOptions([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLogisticsProgramsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.requestType, form.clientId, form.clientName]);
+
+  const pickLogisticsClient = (clientId) => {
+    const client = clientsById.get(String(clientId));
+    setForm((prev) => ({
+      ...prev,
+      clientId,
+      clientName: client?.name || '',
+      clientCode: client?.code || '',
+      clientMasterId: '',
+      divisionTherapy: '',
+      hiringMethod: '',
+    }));
+  };
+
+  const pickLogisticsDivision = (divisionTherapy) => {
+    const methods = resolveCampNameOptions(logisticsDivisionPrograms, divisionTherapy);
+    setForm((prev) => ({
+      ...prev,
+      divisionTherapy,
+      hiringMethod: pickSingleOption(methods),
+      clientMasterId: '',
     }));
   };
 
@@ -967,6 +1091,17 @@ export default function AssetRequestsPage() {
             divisionTherapy: '',
           }
         : {}),
+      ...(requestType === 'LOGISTICS'
+        ? {
+            clientMasterId: '',
+            clientId: '',
+            clientName: '',
+            clientCode: '',
+            divisionTherapy: '',
+            hiringMethod: '',
+            reason: '',
+          }
+        : {}),
       ...(['TRAINING', 'HIRING', 'MASTER_ADD'].includes(requestType) ? { reason: '' } : {}),
       ...(requestType === 'MASTER_ADD'
         ? {
@@ -1008,15 +1143,36 @@ export default function AssetRequestsPage() {
             productId: String(product._id),
             productName: productAssetName(product) || product.name || product.productName || '',
             productType: product.productType || form.logisticsProducts[index].productType,
+            uomId: product.uomId ? String(product.uomId) : '',
           }
-        : { productId: '', productName: '' }
+        : { productId: '', productName: '', uomId: '' }
     );
+  };
+
+  const selectDocumentModel = (index, productName) => {
+    const name = String(productName || '').trim();
+    const duplicate = form.logisticsProducts.some(
+      (item, itemIndex) =>
+        itemIndex !== index &&
+        isDocumentProductType(item.productType) &&
+        String(item.productName || '').trim() === name
+    );
+    if (name && duplicate) {
+      setError('The same document type cannot be added more than once.');
+      return;
+    }
+    setError('');
+    updateLogisticsProduct(index, {
+      productId: '',
+      productName: name,
+      uomId: form.logisticsProducts[index]?.uomId || '',
+    });
   };
 
   const addLogisticsProduct = () => {
     const incomplete = form.logisticsProducts.some((item) => !isLogisticsProductRowComplete(item));
     if (incomplete) {
-      setError('Fill Product category, Model/Variant/Name, and Qty before adding another product.');
+      setError('Fill Product category, Model/Variant/Name, Qty, and UOM before adding another product.');
       return;
     }
     setError('');
@@ -1048,12 +1204,21 @@ export default function AssetRequestsPage() {
     }
     const invalid = form.logisticsProducts.some((item) => !isLogisticsProductRowComplete(item));
     if (invalid) {
-      setError('Complete every goods issue product row and enter a positive quantity.');
+      setError('Complete every goods issue product row with quantity and UOM.');
       return;
     }
-    const productIds = form.logisticsProducts.map((item) => String(item.productId));
+    const productIds = form.logisticsProducts
+      .filter((item) => !isDocumentProductType(item.productType))
+      .map((item) => String(item.productId));
     if (new Set(productIds).size !== productIds.length) {
       setError('The same product cannot be added more than once.');
+      return;
+    }
+    const documentNames = form.logisticsProducts
+      .filter((item) => isDocumentProductType(item.productType))
+      .map((item) => String(item.productName || '').trim().toLowerCase());
+    if (new Set(documentNames).size !== documentNames.length) {
+      setError('The same document type cannot be added more than once.');
       return;
     }
     setError('');
@@ -1093,7 +1258,7 @@ export default function AssetRequestsPage() {
       form.requestType === 'LOGISTICS' &&
       form.logisticsProducts.some((item) => !isLogisticsProductRowComplete(item))
     ) {
-      setError('Complete every goods issue product row and enter a positive quantity.');
+      setError('Complete every goods issue product row with quantity and UOM.');
       return;
     }
     if (form.requestType === 'LOGISTICS' && !form.logisticsProductsConfirmed) {
@@ -1109,6 +1274,18 @@ export default function AssetRequestsPage() {
       !LOGISTICS_PRIORITIES.includes(String(form.logisticsPriority || '').trim())
     ) {
       setError('Select priority (High, Medium, or Low).');
+      return;
+    }
+    if (form.requestType === 'LOGISTICS' && !form.clientId) {
+      setError('Select a client name for this Goods Issuance Request.');
+      return;
+    }
+    if (form.requestType === 'LOGISTICS' && !String(form.divisionTherapy || '').trim()) {
+      setError('Select Division / Therapy for this Goods Issuance Request.');
+      return;
+    }
+    if (form.requestType === 'LOGISTICS' && !String(form.hiringMethod || '').trim()) {
+      setError('Select Method for this Goods Issuance Request.');
       return;
     }
     if (form.requestType === 'REIMBURSEMENT' && !reimbursementBill) {
@@ -1216,11 +1393,20 @@ export default function AssetRequestsPage() {
         body.toAddress = form.toAddress;
         body.transportMode = form.transportMode || undefined;
         body.priority = form.logisticsPriority || undefined;
+        body.clientId = form.clientId || undefined;
+        body.clientName = form.clientName || undefined;
+        body.clientCode = form.clientCode || undefined;
+        body.clientMasterId = form.clientMasterId || undefined;
+        body.divisionTherapy = form.divisionTherapy || undefined;
+        body.hiringMethod = form.hiringMethod || undefined;
         body.logisticsProducts = form.logisticsProducts.map((item) => ({
           productType: item.productType,
-          productId: item.productId,
+          productId: isDocumentProductType(item.productType)
+            ? undefined
+            : item.productId || undefined,
           productName: item.productName,
           qty: Number(item.qty),
+          uomId: item.uomId || undefined,
         }));
       }
       if (form.requestType === 'TRAINING') {
@@ -1551,6 +1737,7 @@ export default function AssetRequestsPage() {
 
   return (
     <PageShell
+      className="arq-page"
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_REQUESTS }]}
       title={MODULE.ASSET_REQUESTS}
       description="Submit Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests."
@@ -1952,6 +2139,7 @@ export default function AssetRequestsPage() {
                   ) : null}
                   <div className="arq-product-list">
                     {form.logisticsProducts.map((item, index) => {
+                      const isDocument = isDocumentProductType(item.productType);
                       const selectedElsewhere = new Set(
                         form.logisticsProducts
                           .filter((_, itemIndex) => itemIndex !== index)
@@ -1960,8 +2148,19 @@ export default function AssetRequestsPage() {
                       );
                       const matchingProducts = logisticsProducts.filter(
                         (product) =>
-                          (!item.productType || product.productType === item.productType) &&
+                          (!item.productType ||
+                            resolveProductType(product.productType) ===
+                              resolveProductType(item.productType)) &&
                           !selectedElsewhere.has(String(product._id))
+                      );
+                      const selectedDocumentNames = new Set(
+                        form.logisticsProducts
+                          .filter(
+                            (row, itemIndex) =>
+                              itemIndex !== index && isDocumentProductType(row.productType)
+                          )
+                          .map((row) => String(row.productName || '').trim())
+                          .filter(Boolean)
                       );
                       const productsLocked =
                         !logisticsContextReady || form.logisticsProductsConfirmed;
@@ -1978,6 +2177,7 @@ export default function AssetRequestsPage() {
                                   productType: event.target.value,
                                   productId: '',
                                   productName: '',
+                                  uomId: '',
                                 })
                               }
                             >
@@ -1991,25 +2191,50 @@ export default function AssetRequestsPage() {
                           </div>
                           <div className="arq-product-cell">
                             <label>Model/Variant/Name *</label>
-                            <AdaptiveSelect
-                              required={logisticsContextReady}
-                              value={item.productId}
-                              disabled={!item.productType || productsLocked}
-                              onChange={(event) =>
-                                selectLogisticsProduct(index, event.target.value)
-                              }
-                            >
-                              <option value="">
-                                {item.productType
-                                  ? 'Select model / variant / name'
-                                  : 'Select category first'}
-                              </option>
-                              {matchingProducts.map((product) => (
-                                <option key={product._id} value={product._id}>
-                                  {productOptionLabelLocal(product)}
+                            {isDocument ? (
+                              <AdaptiveSelect
+                                required={logisticsContextReady}
+                                value={item.productName || ''}
+                                disabled={!item.productType || productsLocked}
+                                onChange={(event) =>
+                                  selectDocumentModel(index, event.target.value)
+                                }
+                              >
+                                <option value="">Select document type</option>
+                                {DOCUMENT_MODEL_OPTIONS.map((name) => (
+                                  <option
+                                    key={name}
+                                    value={name}
+                                    disabled={
+                                      selectedDocumentNames.has(name) &&
+                                      item.productName !== name
+                                    }
+                                  >
+                                    {name}
+                                  </option>
+                                ))}
+                              </AdaptiveSelect>
+                            ) : (
+                              <AdaptiveSelect
+                                required={logisticsContextReady}
+                                value={item.productId}
+                                disabled={!item.productType || productsLocked}
+                                onChange={(event) =>
+                                  selectLogisticsProduct(index, event.target.value)
+                                }
+                              >
+                                <option value="">
+                                  {item.productType
+                                    ? 'Select model / variant / name'
+                                    : 'Select category first'}
                                 </option>
-                              ))}
-                            </AdaptiveSelect>
+                                {matchingProducts.map((product) => (
+                                  <option key={product._id} value={product._id}>
+                                    {productOptionLabelLocal(product)}
+                                  </option>
+                                ))}
+                              </AdaptiveSelect>
+                            )}
                           </div>
                           <div className="arq-product-cell">
                             <label htmlFor={`arq-product-qty-${index}`}>Qty *</label>
@@ -2027,6 +2252,37 @@ export default function AssetRequestsPage() {
                                 updateLogisticsProduct(index, { qty: event.target.value })
                               }
                             />
+                          </div>
+                          <div className="arq-product-cell arq-product-uom-cell">
+                            <label htmlFor={`arq-product-uom-${index}`}>UOM *</label>
+                            <AdaptiveSelect
+                              id={`arq-product-uom-${index}`}
+                              required={logisticsContextReady}
+                              value={item.uomId || ''}
+                              disabled={
+                                productsLocked ||
+                                (isDocument ? !item.productName : !item.productId)
+                              }
+                              onChange={(event) =>
+                                updateLogisticsProduct(index, { uomId: event.target.value })
+                              }
+                            >
+                              <option value="">
+                                {isDocument
+                                  ? item.productName
+                                    ? 'Select UOM'
+                                    : 'Select document first'
+                                  : item.productId
+                                    ? 'Select UOM'
+                                    : 'Select product first'}
+                              </option>
+                              {logisticsUoms.map((uom) => (
+                                <option key={uom._id} value={uom._id}>
+                                  {uom.name}
+                                  {uom.code ? ` (${uom.code})` : ''}
+                                </option>
+                              ))}
+                            </AdaptiveSelect>
                           </div>
                           <div className="arq-product-cell arq-product-remove-cell">
                             <button
@@ -2051,7 +2307,7 @@ export default function AssetRequestsPage() {
                         ? 'Select Issue kind and Delivery mode first'
                         : canAddLogisticsProduct
                           ? 'Add another product'
-                          : 'Complete category, model/variant/name, and qty first'
+                          : 'Complete category, model/variant/name, qty, and UOM first'
                     }
                     onClick={addLogisticsProduct}
                   >
@@ -2093,6 +2349,100 @@ export default function AssetRequestsPage() {
                     setForm={setForm}
                   />
                 )}
+                {form.logisticsProductsConfirmed ? (
+                  <div className="arq-asset-reason-row arq-span arq-logistics-client-row">
+                    <div className="field">
+                      <label htmlFor="logistics-client-name">Client name *</label>
+                      <AdaptiveSelect
+                        id="logistics-client-name"
+                        required
+                        threshold={1}
+                        placeholder="Search client…"
+                        value={form.clientId}
+                        onChange={(e) => pickLogisticsClient(e.target.value)}
+                      >
+                        <option value="">
+                          {clients.length ? 'Select client' : 'No clients in Client Master'}
+                        </option>
+                        {clients.map((client) => (
+                          <option key={client._id} value={client._id}>
+                            {[client.name, client.code].filter(Boolean).join(' · ') ||
+                              String(client._id)}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="logistics-division">Division / Therapy *</label>
+                      <AdaptiveSelect
+                        id="logistics-division"
+                        required
+                        value={form.divisionTherapy}
+                        disabled={!form.clientId || logisticsProgramsLoading}
+                        onChange={(e) => pickLogisticsDivision(e.target.value)}
+                      >
+                        <option value="">
+                          {!form.clientId
+                            ? 'Select client first'
+                            : logisticsProgramsLoading
+                              ? 'Loading…'
+                              : logisticsDivisionOptions.length
+                                ? 'Select division / therapy'
+                                : 'No divisions for this client'}
+                        </option>
+                        {logisticsDivisionOptions.map((division) => (
+                          <option key={division} value={division}>
+                            {division}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="logistics-method">Method *</label>
+                      <AdaptiveSelect
+                        id="logistics-method"
+                        required
+                        value={form.hiringMethod}
+                        disabled={
+                          !form.clientId ||
+                          !form.divisionTherapy ||
+                          logisticsProgramsLoading ||
+                          !logisticsMethodOptions.length
+                        }
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, hiringMethod: e.target.value }))
+                        }
+                      >
+                        <option value="">
+                          {!form.clientId
+                            ? 'Select client first'
+                            : !form.divisionTherapy
+                              ? 'Select division first'
+                              : logisticsProgramsLoading
+                                ? 'Loading…'
+                                : logisticsMethodOptions.length
+                                  ? 'Select method'
+                                  : 'No methods for this division'}
+                        </option>
+                        {logisticsMethodOptions.map((method) => (
+                          <option key={method} value={method}>
+                            {method}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="logistics-remarks">Remarks</label>
+                      <input
+                        id="logistics-remarks"
+                        type="text"
+                        value={form.reason}
+                        onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                        placeholder="Add a short note"
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </>
             )}
 
@@ -2874,7 +3224,9 @@ export default function AssetRequestsPage() {
                     ))}
                   </AdaptiveSelect>
                 </div>
-                {!['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) ? (
+                {!['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD', 'LOGISTICS'].includes(
+                  form.requestType
+                ) ? (
                   <div className="field arq-reason-field">
                     <label>Remarks</label>
                     <input
@@ -2886,7 +3238,9 @@ export default function AssetRequestsPage() {
                   </div>
                 ) : null}
               </div>
-            ) : !['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD'].includes(form.requestType) ? (
+            ) : !['TRAINING', 'REIMBURSEMENT', 'HIRING', 'MASTER_ADD', 'LOGISTICS'].includes(
+                form.requestType
+              ) ? (
               <div className="field arq-reason-field">
                 <label>Remarks</label>
                 <input
@@ -3010,7 +3364,7 @@ export default function AssetRequestsPage() {
                           {canApprove &&
                             userCanApproveType(r.requestType) &&
                             ['REQUESTED', 'APPROVED'].includes(r.status) &&
-                            !isMine && (
+                            (!isMine || adminCanOverrideOwn) && (
                               <>
                                 <button
                                   type="button"
@@ -3030,14 +3384,14 @@ export default function AssetRequestsPage() {
                                 )}
                               </>
                             )}
-                          {r.status === 'REQUESTED' && isMine && (
+                          {r.status === 'REQUESTED' && isMine && !adminCanOverrideOwn && (
                             <span className="muted mono-sm">Awaiting fulfillment</span>
                           )}
                           {r.status === 'REQUESTED' &&
                             !isMine &&
                             canApprove &&
                             !userCanApproveType(r.requestType) && (
-                            <span className="muted mono-sm">Awaiting Operations Leader</span>
+                            <span className="muted mono-sm">Awaiting Operations Leader or Admin</span>
                           )}
                           {isActive && (canApprove || (canRequest && isMine)) && (
                             <button
@@ -3082,7 +3436,7 @@ export default function AssetRequestsPage() {
                       {canApprove &&
                         userCanApproveType(r.requestType) &&
                         r.status === 'REQUESTED' &&
-                        !isMine && (
+                        (!isMine || adminCanOverrideOwn) && (
                         <>
                           <button type="button" className="btn btn-compact" onClick={() => act(r._id, 'approve')}>
                             Approve
@@ -3109,7 +3463,7 @@ export default function AssetRequestsPage() {
                           Complete
                         </button>
                       )}
-                      {r.status === 'REQUESTED' && isMine && (
+                      {r.status === 'REQUESTED' && isMine && !adminCanOverrideOwn && (
                         <span className="muted mono-sm">Awaiting approval</span>
                       )}
                       {isActive && (canApprove || (canRequest && isMine)) && (

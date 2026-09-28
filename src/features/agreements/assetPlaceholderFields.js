@@ -53,6 +53,15 @@ export function isAssetRegistryPlaceholder(placeholder) {
   return Boolean(placeholderAssetField(placeholder));
 }
 
+/** Display Name is filled from Asset One — hide from the Placeholders form. */
+export function isDisplayNamePlaceholder(placeholder = {}) {
+  const hay = `${placeholder?.key || ''} ${placeholder?.label || ''} ${placeholder?.inner || ''}`
+    .toLowerCase()
+    .replace(/[\s_-]+/g, ' ')
+    .trim();
+  return /\bdisplay\s*name\b/.test(hay);
+}
+
 /**
  * Apply Asset Registry snapshot values into placeholder form state.
  * @param {Array} placeholders

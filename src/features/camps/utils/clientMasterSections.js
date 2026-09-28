@@ -342,6 +342,17 @@ export function sectionFieldKeys(sectionId) {
   return sectionById(sectionId)?.fields || [];
 }
 
+/**
+ * File upload/delete mutates the server row and bumps updatedAt.
+ * Keep the form concurrency token in sync so the next section save is not
+ * falsely rejected as STALE_UPDATE.
+ */
+export function applyClientMasterServerTouch(form, record) {
+  if (!form || !record?.updatedAt) return form;
+  if (String(form.updatedAt || '') === String(record.updatedAt)) return form;
+  return { ...form, updatedAt: record.updatedAt };
+}
+
 export function restoreSectionFromSnapshot(form, snapshot, sectionId) {
   const keys = sectionFieldKeys(sectionId);
   const next = { ...form };

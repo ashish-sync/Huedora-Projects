@@ -26,6 +26,7 @@ import {
   CLIENT_MASTER_SECTIONS,
   buildSectionPayload,
   buildSectionSummary,
+  applyClientMasterServerTouch,
   restoreSectionFromSnapshot,
   validateClientMasterSection,
   validateSectionsForCreate,
@@ -391,9 +392,8 @@ export default function ClientMasterFormPage() {
 
     setSectionSaving(true);
     setError('');
+    let savedId = recordId;
     try {
-      let savedId = recordId;
-
       if (!isPersisted && sectionId === 'program') {
         const payload = buildSectionPayload('program', form, { forCreate: true });
         const { data } = await clientMasterApi.create(payload);
@@ -433,7 +433,24 @@ export default function ClientMasterFormPage() {
         }
       }
     } catch (err) {
-      setError(err?.message || 'Failed to save section');
+      const message = err?.message || 'Failed to save section';
+      const isStale =
+        err?.code === 'STALE_UPDATE'
+        || err?.status === 409
+        || /changed elsewhere|Reload and try again/i.test(message);
+      if (isStale && savedId) {
+        try {
+          const { data: refreshed } = await clientMasterApi.get(savedId);
+          setForm(recordToForm(refreshed.data));
+          setError(`${message} The form was reloaded with the latest data — review and save again.`);
+          setActiveSection(null);
+          setEditSnapshot(null);
+          return;
+        } catch {
+          /* fall through to raw error */
+        }
+      }
+      setError(message);
     } finally {
       setSectionSaving(false);
     }
@@ -461,10 +478,10 @@ export default function ClientMasterFormPage() {
       setCampTermsFileBusy(true);
       try {
         const { data } = await clientMasterApi.uploadCampTermsFiles(recordId, files);
-        setForm((prev) => ({
+        setForm((prev) => applyClientMasterServerTouch({
           ...prev,
           campTermsFiles: campTermsFilesFromRecord(data.data),
-        }));
+        }, data.data));
         setPendingCampTermsFiles([]);
       } catch (err) {
         setFieldErrors((prev) => ({
@@ -500,10 +517,10 @@ export default function ClientMasterFormPage() {
     try {
       const fileId = file.id || file.storedName;
       const { data } = await clientMasterApi.deleteCampTermsFile(recordId, fileId);
-      setForm((prev) => ({
+      setForm((prev) => applyClientMasterServerTouch({
         ...prev,
         campTermsFiles: campTermsFilesFromRecord(data.data),
-      }));
+      }, data.data));
     } catch (err) {
       setError(err?.message || 'Failed to remove file');
     } finally {
@@ -529,11 +546,11 @@ export default function ClientMasterFormPage() {
         const { data } = await clientMasterApi.uploadPoFiles(recordId, files, poId);
         setForm((prev) => {
           const orders = mergePoFilesFromServerRecord(prev.purchaseOrders, poId, data.data);
-          return {
+          return applyClientMasterServerTouch({
             ...prev,
             purchaseOrders: orders,
             ...combinePurchaseOrders(orders),
-          };
+          }, data.data);
         });
         setPendingPoFiles((prev) => {
           if (!prev[poId]) return prev;
@@ -584,11 +601,11 @@ export default function ClientMasterFormPage() {
       const { data } = await clientMasterApi.deletePoFileById(recordId, poId, fileId);
       setForm((prev) => {
         const orders = mergePoFilesFromServerRecord(prev.purchaseOrders, poId, data.data);
-        return {
+        return applyClientMasterServerTouch({
           ...prev,
           purchaseOrders: orders,
           ...combinePurchaseOrders(orders),
-        };
+        }, data.data);
       });
     } catch (err) {
       setError(err?.message || 'Failed to remove PO file');

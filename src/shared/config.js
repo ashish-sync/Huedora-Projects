@@ -1,12 +1,19 @@
 /**
  * Backend base URL (no trailing slash).
  * Set via VITE_BACKEND_URL, e.g. http://localhost:5000 or https://api.example.com.
- * Local Vite uses its `/api` proxy. The Render fallback keeps the public frontend
- * connected if its build-time environment variable is accidentally omitted.
+ * Local Vite uses its `/api` proxy. Host fallbacks keep public frontends connected
+ * when build-time env is empty or accidentally set to the static site origin.
+ *
+ * Production note: tylo.systems nginx currently serves only the SPA — /api is not
+ * reverse-proxied there. API lives at api.tylo.systems (CORS allows tylo.systems).
+ * QA (qa.tylo.systems) proxies /api same-origin, so no fallback is needed.
  */
-function resolveRenderBackendFallback() {
+function resolveHostBackendFallback() {
   if (typeof window === 'undefined') return '';
   const host = String(window.location.hostname || '').toLowerCase();
+  if (host === 'tylo.systems' || host === 'www.tylo.systems') {
+    return 'https://api.tylo.systems';
+  }
   if (host === 'huedora-projects.onrender.com' || host.endsWith('.onrender.com')) {
     return 'https://huedora-projects-server.onrender.com';
   }
@@ -15,14 +22,14 @@ function resolveRenderBackendFallback() {
 
 function resolveBackendUrl() {
   const fromEnv = String(import.meta.env.VITE_BACKEND_URL || '').trim().replace(/\/$/, '');
-  const fallback = resolveRenderBackendFallback();
+  const fallback = resolveHostBackendFallback();
 
   if (typeof window !== 'undefined' && fromEnv) {
     try {
       const pageHost = window.location.hostname.toLowerCase();
       const envHost = new URL(fromEnv).hostname.toLowerCase();
-      // Render sometimes sets VITE_BACKEND_URL to the static site URL — ignore that.
-      if (envHost === pageHost) return fallback || fromEnv;
+      // Never treat the static site itself as the API host.
+      if (envHost === pageHost) return fallback || '';
     } catch {
       /* ignore malformed env URL */
     }

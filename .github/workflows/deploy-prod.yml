@@ -7,7 +7,8 @@
 # Vite bakes VITE_* into the static build. There is no server-side .env on
 # /var/www/tylo-one/prod/frontend/. Set optional build-time values as GitHub
 # Environment variables/secrets on the prod environment:
-#   VITE_BACKEND_URL          (optional; empty = same-origin /api/v1)
+#   VITE_BACKEND_URL          (prod defaults to https://api.tylo.systems —
+#                             tylo.systems nginx does not proxy /api yet)
 #   VITE_GOOGLE_MAPS_API_KEY  (optional)
 #
 # Required prod environment SSH secrets (mirror of QA names on this repo):
@@ -55,19 +56,24 @@ jobs:
 
       - name: Build production bundle
         env:
-          # Production frontend is reverse-proxied to the VPS API at /api — never bake a
-          # cross-origin Render URL here (it breaks cookie logout / session restore).
-          VITE_BACKEND_URL: ''
+          # Prod SPA is on tylo.systems; API is on api.tylo.systems (CORS + credentials).
+          # Do not use same-origin /api until nginx proxies /api on tylo.systems.
+          # Never bake the Render URL — that breaks refresh cookies / logout.
+          VITE_BACKEND_URL: https://api.tylo.systems
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: |
           set -euo pipefail
           npm run build
           test -f dist/index.html
-          if grep -R -n -E 'VITE_BACKEND_URL["'"'"']?\s*[:=]\s*["'"'"']https?://' dist/ >/dev/null 2>&1; then
-            echo "Prod build unexpectedly baked a non-empty VITE_BACKEND_URL."
+          if grep -R -n -E 'huedora-projects-server\.onrender\.com' dist/ >/dev/null 2>&1; then
+            echo "Prod build unexpectedly baked the Render API URL."
             exit 1
           fi
-          echo "Built with VITE_BACKEND_URL=<empty/same-origin>"
+          if ! grep -R -n -F 'api.tylo.systems' dist/ >/dev/null 2>&1; then
+            echo "Prod build missing api.tylo.systems backend URL."
+            exit 1
+          fi
+          echo "Built with VITE_BACKEND_URL=https://api.tylo.systems"
 
       - name: Configure SSH
         env:

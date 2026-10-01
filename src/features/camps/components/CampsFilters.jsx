@@ -79,7 +79,7 @@ export function CampsFilters({
           <MasterSearchField
             id="camps-search"
             className="camps-filter-search"
-            placeholder="Search client, division, doctor, state, city, camp ID…"
+            placeholder="Search client, division, doctor…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}

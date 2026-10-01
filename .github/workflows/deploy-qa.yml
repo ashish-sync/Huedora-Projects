@@ -63,8 +63,10 @@ jobs:
           set -euo pipefail
           npm run build
           test -f dist/index.html
-          if grep -R -n "onrender.com" dist/assets/*.js >/dev/null 2>&1; then
-            echo "QA build must not embed an onrender.com backend URL."
+          # Vite replaces import.meta.env.VITE_BACKEND_URL with the build-time value.
+          # Fail if the QA bundle still has a non-empty backend URL literal assigned.
+          if grep -R -n -E 'VITE_BACKEND_URL["'"'"']?\s*[:=]\s*["'"'"']https?://' dist/ >/dev/null 2>&1; then
+            echo "QA build unexpectedly baked a non-empty VITE_BACKEND_URL."
             exit 1
           fi
           echo "Built with VITE_BACKEND_URL=<empty/same-origin>"

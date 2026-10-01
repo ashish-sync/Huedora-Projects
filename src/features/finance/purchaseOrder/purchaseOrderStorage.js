@@ -123,9 +123,11 @@ export function defaultPurchaseOrderForm() {
     notes: '',
     roundOff: '',
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
+      signedAt: '',
     },
     taxColumnLabels: {
       rateLabel: 'GST Rate %',

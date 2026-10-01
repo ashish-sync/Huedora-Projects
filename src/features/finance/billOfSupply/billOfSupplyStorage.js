@@ -115,9 +115,11 @@ export function defaultBillOfSupplyForm() {
       amountLabel: 'GST',
     },
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
+      signedAt: '',
     },
     taxMode: 'igst',
   };

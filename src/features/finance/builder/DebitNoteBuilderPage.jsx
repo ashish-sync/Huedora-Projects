@@ -35,6 +35,7 @@ export default function DebitNoteBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useDebitNoteBuilder();
 
@@ -71,6 +72,7 @@ export default function DebitNoteBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newDebitNote}
       shortcutsOpen={shortcutsOpen}

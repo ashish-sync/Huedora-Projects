@@ -35,6 +35,7 @@ export default function CreditNoteBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useCreditNoteBuilder();
 
@@ -71,6 +72,7 @@ export default function CreditNoteBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newCreditNote}
       shortcutsOpen={shortcutsOpen}

@@ -116,9 +116,11 @@ export function defaultProformaForm() {
       amountLabel: 'GST',
     },
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: 'Authorised Signatory',
       companyLabel: '',
+      signedAt: '',
     },
   };
 }

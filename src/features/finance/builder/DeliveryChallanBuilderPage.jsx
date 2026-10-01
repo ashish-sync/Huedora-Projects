@@ -30,6 +30,7 @@ export default function DeliveryChallanBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useDeliveryChallanBuilder();
 
@@ -66,6 +67,7 @@ export default function DeliveryChallanBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newDeliveryChallan}
       shortcutsOpen={shortcutsOpen}

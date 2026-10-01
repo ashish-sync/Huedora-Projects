@@ -49,7 +49,7 @@ function PasswordField({ id, label, value, onChange, autoComplete, show, onToggl
 }
 
 /**
- * Frosted-glass auth panel — styles are CSS-scoped under .lamp-login.
+ * Sign-in / reset card — styles scoped under .lamp-login.
  */
 export default function LoginGlassCard({
   mode,
@@ -93,7 +93,7 @@ export default function LoginGlassCard({
 
         <div className="ll-fields">
           <div className="ll-field">
-            <label htmlFor="reset-email">Username</label>
+            <label htmlFor="reset-email">Email</label>
             <div className="ll-input-wrap">
               <input
                 id="reset-email"
@@ -162,12 +162,12 @@ export default function LoginGlassCard({
       autoComplete="on"
       aria-labelledby="login-heading"
     >
-      <h2 id="login-heading">Welcome Back</h2>
-      <p className="ll-card-lead">Sign in to continue to your workspace.</p>
+      <h2 id="login-heading">Welcome back</h2>
+      <p className="ll-card-lead">Sign in to continue to TYLO One.</p>
 
       <div className="ll-fields">
         <div className="ll-field">
-          <label htmlFor="login-email">Username</label>
+          <label htmlFor="login-email">Email</label>
           <div className="ll-input-wrap">
             <input
               id="login-email"
@@ -217,7 +217,16 @@ export default function LoginGlassCard({
       ) : null}
 
       <button className="ll-submit" type="submit" disabled={busy}>
-        {busy ? 'Signing in…' : 'Login'}
+        {busy ? (
+          'Signing in…'
+        ) : (
+          <>
+            Sign In
+            <span className="ll-submit-arrow" aria-hidden="true">
+              →
+            </span>
+          </>
+        )}
       </button>
     </form>
   );

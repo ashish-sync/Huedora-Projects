@@ -6,11 +6,14 @@ import { canApproveCommercialDocument } from './commercialApproval.js';
 import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import ModalShell from '../../../components/ui/ModalShell.jsx';
 import WatchFollowButton from '../../notifications/WatchFollowButton.jsx';
+import { displayCommercialStage, isDraftingStage, isIssuedStage, normalizeCommercialStage } from '../commercialPaymentStatus.js';
 import './export-invoice.css';
 import './builder.css';
 import '../../notifications/notifications.css';
 
 function SaveIndicator({ state, savedAt, status, docId }) {
+  // Stage is shown once via the status pill — never duplicate it here.
+  if (!isDraftingStage(status)) return null;
   if (state === 'saving') {
     return <span className="ib-save ib-save--saving">Saving…</span>;
   }
@@ -21,9 +24,6 @@ function SaveIndicator({ state, savedAt, status, docId }) {
       </span>
     );
   }
-  if (status && status !== 'Draft') {
-    return <span className="ib-save ib-save--idle">{status}</span>;
-  }
   if (!docId) {
     return (
       <span className="ib-save ib-save--idle" title="Draft is created after at least 2 fields are filled">
@@ -31,7 +31,7 @@ function SaveIndicator({ state, savedAt, status, docId }) {
       </span>
     );
   }
-  return <span className="ib-save ib-save--idle">Server autosave</span>;
+  return <span className="ib-save ib-save--idle">Autosaving</span>;
 }
 
 function ShortcutsModal({ open, onClose, newDocLabel = 'New document' }) {
@@ -94,6 +94,7 @@ export default function InvoiceBuilderShell({
   onApprove,
   onReject,
   onIssue,
+  onCancel,
   onNewInvoice,
   shortcutsOpen,
   onShortcutsClose,
@@ -116,8 +117,10 @@ export default function InvoiceBuilderShell({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const canApprove = canApproveCommercialDocument(user);
-  const isDraftLike = status === 'Draft' || status === 'Uploaded' || !status;
+  const isDraftLike = isDraftingStage(status);
   const isSubmitted = status === 'Submitted';
+  const isIssued = isIssuedStage(status);
+  const isCancelled = normalizeCommercialStage(status) === 'Cancelled';
   const wantsPrint = searchParams.get('print') === '1';
 
   useEffect(() => {
@@ -203,10 +206,11 @@ export default function InvoiceBuilderShell({
 
   const shellClass = `ib-shell${panelOpen ? ' ib-shell--panel-open' : ''}${readOnly ? ' ib-shell--readonly' : ''}`;
   const busy = Boolean(busyAction) || exporting || printing || loadingDoc;
-  const resolvedStatus = String(status || 'Draft');
+  const resolvedStatus = displayCommercialStage(status || 'Draft');
+  const stageSlug = normalizeCommercialStage(status || 'Draft').toLowerCase();
   const hasDocNumber = Boolean(String(docNumber || '').trim());
   const toolbarDocLabel = hasDocNumber ? docNumber : 'Untitled';
-  const showStatusPill = hasDocNumber || resolvedStatus !== 'Draft';
+  const showStatusPill = !isDraftingStage(status);
 
   return (
     <div className={shellClass}>
@@ -217,16 +221,19 @@ export default function InvoiceBuilderShell({
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Link>
-          <div className="ib-toolbar-title">
+          <div className="ib-toolbar-title ib-toolbar-title--inline">
             <span className="ib-toolbar-label">{docTypeLabel}</span>
-            <span className="ib-toolbar-meta">
-              <span className="ib-toolbar-doc">{toolbarDocLabel}</span>
-              {showStatusPill ? (
-                <span className={`ib-status-pill ib-status-pill--${resolvedStatus.toLowerCase()}`}>
-                  {resolvedStatus}
-                </span>
-              ) : null}
+            <span className="ib-toolbar-sep" aria-hidden="true">
+              ·
             </span>
+            <span className="ib-toolbar-doc" title={toolbarDocLabel}>
+              {toolbarDocLabel}
+            </span>
+            {showStatusPill ? (
+              <span className={`ib-status-pill ib-status-pill--${stageSlug}`}>
+                {resolvedStatus}
+              </span>
+            ) : null}
           </div>
           <SaveIndicator state={saveState} savedAt={savedAt} status={status} docId={docId} />
         </div>
@@ -255,14 +262,31 @@ export default function InvoiceBuilderShell({
 
         <div className="ib-toolbar-right">
           {docId ? <WatchFollowButton entityType="FinanceCommercialDocument" entityId={docId} /> : null}
-          {!isDraftLike ? (
+
+          {/* Issued / Cancelled: New · Download · Print · Cancel */}
+          {isIssued || isCancelled ? (
             <button type="button" className="ib-text-btn" onClick={onNewInvoice} title={newDocLabel} disabled={busy}>
               {newDocLabel}
             </button>
           ) : null}
-          <button type="button" className="ib-text-btn" onClick={handlePrint} title="Print (⌘P)" disabled={busy}>
-            {printing ? 'Preparing…' : 'Print'}
-          </button>
+          {isIssued || isCancelled ? (
+            <button
+              type="button"
+              className="ib-text-btn"
+              disabled={busy}
+              onClick={handleSaveAndExport}
+              title="Download PDF (⌘S)"
+            >
+              {exporting ? 'Preparing…' : 'Download'}
+            </button>
+          ) : null}
+          {isIssued || isCancelled ? (
+            <button type="button" className="ib-text-btn" onClick={handlePrint} title="Print (⌘P)" disabled={busy}>
+              {printing ? 'Preparing…' : 'Print'}
+            </button>
+          ) : null}
+
+          {/* Drafting: Request Approval */}
           {isDraftLike && onSubmit ? (
             <button
               type="button"
@@ -271,9 +295,11 @@ export default function InvoiceBuilderShell({
               onClick={() => onSubmit?.()}
               title="Send to Operations Head or Senior Manager for approval"
             >
-              {busyAction === 'submit' ? 'Sending…' : 'Send for approval'}
+              {busyAction === 'submit' ? 'Sending…' : 'Request Approval'}
             </button>
           ) : null}
+
+          {/* Submitted: approver actions */}
           {isSubmitted && canApprove && onApprove ? (
             <button
               type="button"
@@ -301,17 +327,20 @@ export default function InvoiceBuilderShell({
               Awaiting approval
             </span>
           ) : null}
-          {!isDraftLike ? (
+
+          {/* Cancel — Drafting, Submitted, or Issued (not already Cancelled) */}
+          {!isCancelled && onCancel ? (
             <button
               type="button"
-              className="ib-text-btn"
+              className="ib-text-btn ib-text-btn--danger"
               disabled={busy}
-              onClick={handleSaveAndExport}
-              title="Download PDF (⌘S)"
+              onClick={() => onCancel?.()}
+              title="Cancel document"
             >
-              {exporting ? 'Preparing PDF…' : 'Download PDF'}
+              {busyAction === 'cancel' ? 'Cancelling…' : 'Cancel'}
             </button>
           ) : null}
+
           <button
             type="button"
             className={`ib-icon-btn ib-panel-btn${panelOpen ? ' is-active' : ''}`}

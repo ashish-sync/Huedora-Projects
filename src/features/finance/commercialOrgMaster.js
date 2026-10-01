@@ -181,6 +181,17 @@ function bankFromOrg(master, formBank = {}, branchKey = 'branchName') {
 }
 
 function signatureFromOrg(master, formSignature = {}, legalName = '') {
+  // Preserve per-document Click-to-Sign timestamp; keep stamped name unless blank.
+  if (formSignature?.mode === 'click_to_sign' && formSignature?.signedAt) {
+    return {
+      ...formSignature,
+      imageDataUrl: '',
+      signatoryName:
+        formSignature.signatoryName
+        || orgVal(master, 'signatoryName', ''),
+      companyLabel: legalName || formSignature?.companyLabel || '',
+    };
+  }
   return {
     ...formSignature,
     imageDataUrl: orgVal(master, 'signatureDataUrl', formSignature?.imageDataUrl),

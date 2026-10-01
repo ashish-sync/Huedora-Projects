@@ -32,6 +32,7 @@ export default function PurchaseOrderBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = usePurchaseOrderBuilder();
 
@@ -69,6 +70,7 @@ export default function PurchaseOrderBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newPurchaseOrder}
       shortcutsOpen={shortcutsOpen}

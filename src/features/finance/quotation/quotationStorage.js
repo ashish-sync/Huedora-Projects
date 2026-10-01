@@ -118,9 +118,11 @@ export function defaultQuotationForm() {
       amountLabel: 'GST',
     },
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
+      signedAt: '',
     },
     taxMode: 'igst',
   };

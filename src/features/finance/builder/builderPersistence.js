@@ -809,9 +809,48 @@ export async function recordCommercialPayment(id, amount) {
   return res.data;
 }
 
+/** Manual Status update for non-auto document types (does not change Stage). */
+export async function updateCommercialLifecycleStatus(id, status) {
+  const res = await api(`/finance/commercial-documents/${id}/lifecycle-status`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  });
+  return res.data;
+}
+
 export async function deleteCommercialDocument(id) {
   const res = await api(`/finance/commercial-documents/${id}`, { method: 'DELETE' });
   return res.data;
+}
+
+/**
+ * Clone an existing commercial document as a new Draft.
+ * Clears official number, workflow status fields (via POST create), and any signature stamp.
+ */
+export async function duplicateCommercialDocument(id) {
+  const doc = await loadCommercialDocument(id);
+  const documentType = doc.documentType;
+  const form = apiDocToForm(documentType, doc);
+
+  if (form.invoice && typeof form.invoice === 'object') {
+    form.invoice = { ...form.invoice, documentNumber: '' };
+  }
+  if (form.document && typeof form.document === 'object') {
+    form.document = { ...form.document, documentNumber: '' };
+  }
+  if (form.po && typeof form.po === 'object') {
+    form.po = { ...form.po, documentNumber: '' };
+  }
+  if (form.signature && typeof form.signature === 'object') {
+    form.signature = {
+      ...form.signature,
+      mode: '',
+      signedAt: '',
+      imageDataUrl: '',
+    };
+  }
+
+  return saveCommercialDocument(documentType, form, null);
 }
 
 /** Fetch the sharp PDFKit-rendered PDF as a Blob (vector text — not html2canvas). */

@@ -110,9 +110,11 @@ export function defaultDebitNoteForm() {
       amountLabel: 'GST',
     },
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
+      signedAt: '',
     },
     taxMode: 'igst',
   };

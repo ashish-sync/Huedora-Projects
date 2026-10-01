@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/auth.jsx';
-import { isBootSequenceEnabled } from '../shared/loginExperienceConfig.js';
 import Layout from './Layout.jsx';
 import RequirePermission from './RequirePermission.jsx';
 import { CLIENT_MASTER_ENTITY, CLIENT_MASTER_SCOPE } from '../features/camps/clientMasterPaths.js';
@@ -14,7 +13,6 @@ import {
 } from '../shared/moduleRoutes.js';
 
 const LoginPage = lazy(() => import('../features/auth/LoginPage.jsx'));
-const TyloBootSequence = lazy(() => import('../features/auth/TyloBootSequence.jsx'));
 
 const ModulesHomePage = lazy(() => import('../features/dashboards/DashboardPage.jsx'));
 const TrackingDashboardPage = lazy(() => import('../features/dashboards/TrackingDashboardPage.jsx'));
@@ -77,16 +75,9 @@ function PageLoader() {
 }
 
 function PrivateRoute({ children }) {
-  const { user, loading, bootSessionActive, completeLoginBoot } = useAuth();
+  const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
-  if (bootSessionActive && isBootSequenceEnabled()) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <TyloBootSequence user={user} onComplete={completeLoginBoot} />
-      </Suspense>
-    );
-  }
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 

@@ -36,6 +36,7 @@ export default function InvoiceBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useInvoiceBuilder();
 
@@ -71,6 +72,7 @@ export default function InvoiceBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newInvoice}
       shortcutsOpen={shortcutsOpen}

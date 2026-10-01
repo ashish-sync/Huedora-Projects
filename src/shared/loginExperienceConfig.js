@@ -26,14 +26,14 @@ const cinematicMaster = envTruthy('VITE_LOGIN_CINEMATIC') ?? true;
 export const loginExperience = Object.freeze({
   /** Master switch — false disables all cinematic login features. */
   cinematic: cinematicMaster,
-  /** Full-screen terminal boot after successful sign-in. */
-  bootSequence: flag('VITE_LOGIN_BOOT_SEQUENCE', cinematicMaster),
+  /** Full-screen terminal / matrix boot after sign-in — off by default. */
+  bootSequence: flag('VITE_LOGIN_BOOT_SEQUENCE', false),
   /** Browser fullscreen on Sign in click — disabled (no F11-style takeover). */
   fullscreenOnSignIn: false,
   /** Indian healthcare fact cards on login + home. */
   healthcareInsights: flag('VITE_LOGIN_HEALTH_INSIGHTS', cinematicMaster),
-  /** Switch to dark theme when boot completes. */
-  darkModeAfterBoot: flag('VITE_LOGIN_DARK_AFTER_BOOT', cinematicMaster),
+  /** Switch to dark theme when boot completes — off; app defaults to light. */
+  darkModeAfterBoot: flag('VITE_LOGIN_DARK_AFTER_BOOT', false),
 });
 
 export function isBootSequenceEnabled() {

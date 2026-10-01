@@ -84,13 +84,29 @@
   line-height: 1.15;
 }
 
+.ib-toolbar-title--inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ib-toolbar-sep {
+  color: var(--ib-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .ib-toolbar-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--ib-muted);
   line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ib-toolbar-doc {
@@ -100,8 +116,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  max-width: min(280px, 36vw);
   line-height: 1.25;
+  color: var(--ib-text);
 }
 
 .ib-toolbar-meta {
@@ -115,11 +132,12 @@
 .ib-status-pill {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   padding: 2px 8px;
   border-radius: var(--radius-full);
   font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand);
@@ -660,6 +678,15 @@
   color: var(--ib-text);
 }
 
+.ib-text-btn--danger {
+  color: var(--color-danger, #b91c1c);
+}
+
+.ib-text-btn--danger:hover {
+  background: var(--color-danger-subtle, #fee2e2);
+  color: var(--color-danger, #b91c1c);
+}
+
 .ib-primary-btn {
   display: inline-flex;
   align-items: center;
@@ -1137,8 +1164,12 @@
     gap: 2px;
   }
 
+  .ib-toolbar-title--inline {
+    gap: 6px;
+  }
+
   .ib-toolbar-label {
-    display: block;
+    display: inline;
   }
 
   .ib-toolbar-meta {
@@ -1146,7 +1177,7 @@
   }
 
   .ib-toolbar-doc {
-    max-width: 140px;
+    max-width: min(160px, 42vw);
   }
 
   .ib-save {

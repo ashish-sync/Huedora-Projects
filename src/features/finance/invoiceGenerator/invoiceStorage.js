@@ -150,9 +150,11 @@ export function defaultInvoiceForm() {
       amountLabel: 'GST',
     },
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
+      signedAt: '',
     },
     taxMode: 'igst',
   };

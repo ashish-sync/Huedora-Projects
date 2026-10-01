@@ -23,12 +23,6 @@
               var meta = document.querySelector('meta[name="theme-color"]');
               if (meta) meta.setAttribute('content', t === 'dark' ? '#111827' : '#0A5AC2');
             } catch (e) {}
-          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            root.setAttribute('data-theme', 'dark');
-            try {
-              var m = document.querySelector('meta[name="theme-color"]');
-              if (m) m.setAttribute('content', '#111827');
-            } catch (e2) {}
           } else {
             root.setAttribute('data-theme', 'light');
           }
@@ -42,23 +36,23 @@
     <link
       rel="preload"
       as="style"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
         rel="stylesheet"
       />
     </noscript>
-    <!-- Signature font: loaded only when needed via CSS @import on agreement surfaces -->
+    <!-- Signature fonts -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lato:wght@300&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"

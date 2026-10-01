@@ -15,6 +15,13 @@ import '../invoiceGenerator/tylo-invoice-template.css';
 import { LANDSCAPE_DOC_CONFIGS } from './landscapeDocConfigs.js';
 import { formatCompanyLetterhead } from './companyLetterhead.js';
 import { formatStateLine, parseStateLine } from '../builder/stateLine.js';
+import {
+  applyClickToSign,
+  clearClickToSign,
+  isClickToSignSignature,
+  resolveClickToSignName,
+} from './clickToSign.js';
+import ClickToSignStamp from './ClickToSignStamp.jsx';
 
 const CREDIT_REASONS = [
   'Rate Revision / Cancellation / Service Adjustment',
@@ -823,15 +830,84 @@ export default function LandscapeInvoiceLikePreview({
               <div className="ti-bank-sign__sig">
                 <p className="ti-card-title">Digital Signature</p>
                 <div className="ti-card-body ti-card-body--bank-sig">
-                  <div className="ti-signature ti-signature--in-card">
-                    {signature?.imageDataUrl ? (
-                      <img src={signature.imageDataUrl} alt="Digital signature" className="ti-signature-img" />
-                    ) : null}
-                    {signature?.signatoryName ? (
-                      <span className="ti-signature-name">{signature.signatoryName}</span>
-                    ) : null}
-                    <span className="ti-signature-label">Authorised Signatory</span>
-                  </div>
+                  {(() => {
+                    const clickSigned = isClickToSignSignature(signature);
+                    const orgSignatoryName = resolveClickToSignName({ signature });
+                    const handleClickToSign = () => {
+                      if (!editable || !onUpdate || !orgSignatoryName) return;
+                      onUpdate(
+                        'signature',
+                        applyClickToSign(signature || {}, {
+                          fullName: orgSignatoryName,
+                          signedAt: new Date().toISOString(),
+                        })
+                      );
+                    };
+                    const handleClearSign = () => {
+                      if (!editable || !onUpdate) return;
+                      onUpdate('signature', clearClickToSign(signature || {}));
+                    };
+                    return (
+                      <div
+                        className={`ti-signature ti-signature--in-card${
+                          clickSigned ? ' ti-signature--click-to-sign' : ''
+                        }`}
+                      >
+                        {clickSigned ? (
+                          <ClickToSignStamp
+                            signatoryName={signature.signatoryName}
+                            signedAt={signature.signedAt}
+                          />
+                        ) : (
+                          <>
+                            {signature?.imageDataUrl ? (
+                              <img
+                                src={signature.imageDataUrl}
+                                alt="Digital signature"
+                                className="ti-signature-img"
+                              />
+                            ) : null}
+                            {signature?.signatoryName ? (
+                              <span className="ti-signature-name">{signature.signatoryName}</span>
+                            ) : null}
+                            <span className="ti-signature-label">Authorised Signatory</span>
+                          </>
+                        )}
+                        {editable ? (
+                          clickSigned ? (
+                            <button
+                              type="button"
+                              className="ti-click-sign__action"
+                              onClick={handleClearSign}
+                            >
+                              Clear signature
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="ti-click-sign__cta"
+                                onClick={handleClickToSign}
+                                disabled={!orgSignatoryName}
+                                title={
+                                  orgSignatoryName
+                                    ? 'Sign with Organisation Master signatory name'
+                                    : 'Set Signatory Name in Organisation Master first'
+                                }
+                              >
+                                Click to Sign
+                              </button>
+                              {!orgSignatoryName ? (
+                                <span className="ti-click-sign__hint">
+                                  Set Signatory Name in Organisation Master
+                                </span>
+                              ) : null}
+                            </>
+                          )
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

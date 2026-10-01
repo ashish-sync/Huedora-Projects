@@ -1,20 +1,20 @@
-import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import BrandLogo from '../../../components/BrandLogo.jsx';
+import { useEffect, useState } from 'react';
 import { api } from '../../../shared/api.js';
 import { useAuth } from '../../../shared/auth.jsx';
-import Flashlight from './Flashlight.jsx';
 import LoginGlassCard from './LoginGlassCard.jsx';
+import TyloLoginLogo from './TyloLoginLogo.jsx';
+import HealthcareNetworkArt from './HealthcareNetworkArt.jsx';
 import './lamp-login.css';
 
 const REMEMBER_KEY = 'tylo-lamp-login-email';
 
 /**
- * Dark-room login: flashlight beam reveals the frosted glass sign-in card.
+ * TYLO One login — light enterprise split layout.
+ * Left brand panel · right sign-in card. Auth logic unchanged.
  */
 export default function LampLoginPage() {
   const { user, login } = useAuth();
-  const [torchOn, setTorchOn] = useState(false);
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -101,42 +101,23 @@ export default function LampLoginPage() {
 
   return (
     <div className="login-page lamp-login">
-      <div className={`ll-veil ${torchOn ? 'is-on' : ''}`} aria-hidden="true" />
-      <div className={`ll-wash ${torchOn ? 'is-on' : ''}`} aria-hidden="true" />
-      <div className="ll-noise" aria-hidden="true" />
-
       <div className="ll-stage">
         <section className="ll-brand-col" aria-label="TYLO One">
-          <div className="ll-brand-lockup">
-            <BrandLogo className="ll-brand-logo" size={48} />
-            <div className="ll-brand-lockup-text">
-              <strong className="brand-wordmark brand-wordmark--ll-hero">
-                TYLO <span>One</span>
-              </strong>
-              <p className="ll-kicker">Mission Control</p>
+          <div className="ll-brand-inner">
+            <TyloLoginLogo />
+            <div className="ll-brand-copy">
+              <h1 className="ll-headline">Unified Healthcare Operations</h1>
+              <p className="ll-sub">
+                One secure workspace for camps, finance, logistics, documents, and field teams —
+                built for healthcare at scale.
+              </p>
             </div>
+            <HealthcareNetworkArt />
           </div>
-
-          <div className="ll-brand-copy">
-            <h1 className="ll-headline">
-              <span className="ll-headline-line">Powering End-to-End</span>
-              <span className="ll-headline-line">Healthcare Activation</span>
-            </h1>
-            <p className="ll-sub">
-              Manage assets, documents, camps, requests, logistics, and more.
-            </p>
-          </div>
-
-          <Flashlight on={torchOn} onToggle={() => setTorchOn((v) => !v)} />
-
-          <p className="ll-signature">TYLO One · Healthcare Operations Platform.</p>
         </section>
 
-        <div
-          className={`ll-card-shell ${torchOn ? 'is-on' : 'is-off'}`}
-          aria-hidden={!torchOn}
-        >
-          <div {...(!torchOn ? { inert: true } : {})}>
+        <section className="ll-auth-col" aria-label="Sign in">
+          <div className="ll-card-shell">
             <LoginGlassCard
               mode={mode}
               onModeChange={switchMode}
@@ -159,8 +140,20 @@ export default function LampLoginPage() {
               onReset={onReset}
             />
           </div>
-        </div>
+        </section>
       </div>
+
+      <footer className="ll-legal">
+        <span>© 2026 Tylo Care Pvt. Ltd.</span>
+        <span className="ll-legal-sep" aria-hidden="true">
+          |
+        </span>
+        <a href="#privacy">Privacy</a>
+        <span className="ll-legal-sep" aria-hidden="true">
+          |
+        </span>
+        <a href="#support">Support</a>
+      </footer>
     </div>
   );
 }

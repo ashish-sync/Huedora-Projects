@@ -35,6 +35,7 @@ export default function QuotationBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useQuotationBuilder();
 
@@ -71,6 +72,7 @@ export default function QuotationBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newQuotation}
       shortcutsOpen={shortcutsOpen}

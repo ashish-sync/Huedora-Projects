@@ -35,6 +35,7 @@ export default function ProformaBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useProformaBuilder();
 
@@ -71,6 +72,7 @@ export default function ProformaBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newProforma}
       shortcutsOpen={shortcutsOpen}

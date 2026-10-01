@@ -11,6 +11,7 @@ import {
   submitCommercialDocument,
   approveCommercialDocument,
   rejectCommercialDocument,
+  cancelCommercialDocument,
 } from './builderPersistence.js';
 import {
   hasEnoughCommercialDraftContent,
@@ -252,6 +253,28 @@ export function usePersistedCommercialBuilder({
     [documentType, admin]
   );
 
+  const cancelDocument = useCallback(async () => {
+    const id = docIdRef.current;
+    if (!id) {
+      navigate('/finance-one/billing');
+      return;
+    }
+    if (!window.confirm('Cancel this document? This cannot be undone from here.')) {
+      return;
+    }
+    setBusyAction('cancel');
+    setError('');
+    try {
+      await cancelCommercialDocument(id);
+      navigate('/finance-one/billing');
+    } catch (err) {
+      setError(err.message || 'Cancel failed');
+      throw err;
+    } finally {
+      setBusyAction('');
+    }
+  }, [navigate]);
+
   const resolveServerPdf = useCallback(async () => {
     let row = null;
     if (isEditableStatus(statusRef.current, { isAdmin: admin })) {
@@ -311,6 +334,7 @@ export function usePersistedCommercialBuilder({
     approveDocument: () => runLifecycle('approve'),
     rejectDocument: () => runLifecycle('reject'),
     issueDocument: () => runLifecycle('issue'),
+    cancelDocument,
     resolveServerPdf,
     exportServerPdf,
   };

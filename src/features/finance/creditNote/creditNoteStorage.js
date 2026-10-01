@@ -111,9 +111,11 @@ export function defaultCreditNoteForm() {
       amountLabel: 'GST',
     },
     signature: {
+      mode: '',
       imageDataUrl: '',
       signatoryName: '',
       companyLabel: '',
+      signedAt: '',
     },
     taxMode: 'igst',
   };

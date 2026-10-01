@@ -1160,13 +1160,13 @@ export default function LogisticsOutwardPage() {
       ...(kind === 'Recall / Pickup'
         ? syncRecipientAliases(fixedPodPartyFields('to'))
         : {
-            ...emptyContactPrefix('to'),
-            contactId: '',
-            recipientName: '',
-            empId: '',
-            number: '',
-            city: '',
-            state: '',
+      ...emptyContactPrefix('to'),
+      contactId: '',
+      recipientName: '',
+      empId: '',
+      number: '',
+      city: '',
+      state: '',
           }),
       logisticsProductsConfirmed: false,
     }));
@@ -1341,15 +1341,15 @@ export default function LogisticsOutwardPage() {
     if (fulfillingId) {
       if (!PACKAGE_STATUSES.includes(String(form.packageStatus || '').trim())) {
         setError('Confirm package status: Package ready, Partially ready, or No stock.');
-        return;
-      }
+      return;
+    }
       if (
         form.packageStatus === 'Partially ready'
         && (!(Number(form.qty) > 0))
       ) {
         setError('Enter the packed quantity for Partially ready.');
-        return;
-      }
+      return;
+    }
     }
     if (!ISSUE_PRIORITIES.includes(String(form.priority || '').trim())) {
       setError('Select priority (High, Medium, or Low).');
@@ -1404,8 +1404,8 @@ export default function LogisticsOutwardPage() {
           return;
         }
       } else if (!(String(form.toName || '').trim() && String(form.toAddress || '').trim())) {
-        setError('Select Send to / Recipient from Contact Directory.');
-        return;
+      setError('Select Send to / Recipient from Contact Directory.');
+      return;
       }
     }
 
@@ -1688,8 +1688,8 @@ export default function LogisticsOutwardPage() {
               ? `Goods issue saved (${lines.length} products) and POD booked.`
               : 'Goods issue saved and POD booked.'
             : lines.length > 1
-              ? `Goods issue saved (${lines.length} products). Kept Open until delivery / RTO is marked.`
-              : 'Goods issue saved and kept Open until delivery / RTO is marked.'
+            ? `Goods issue saved (${lines.length} products). Kept Open until delivery / RTO is marked.`
+            : 'Goods issue saved and kept Open until delivery / RTO is marked.'
         );
       }
 
@@ -2006,15 +2006,15 @@ export default function LogisticsOutwardPage() {
                                     ))}
                                   </AdaptiveSelect>
                                 ) : (
-                                  <input
-                                    required
-                                    disabled={form.logisticsProductsConfirmed}
-                                    value={item.serialNumber || ''}
-                                    onChange={(event) =>
-                                      updateIssueProduct(index, {
-                                        serialNumber: event.target.value,
-                                      })
-                                    }
+                                <input
+                                  required
+                                  disabled={form.logisticsProductsConfirmed}
+                                  value={item.serialNumber || ''}
+                                  onChange={(event) =>
+                                    updateIssueProduct(index, {
+                                      serialNumber: event.target.value,
+                                    })
+                                  }
                                     placeholder={
                                       item.productId
                                         ? 'No serial in stock'
@@ -2169,13 +2169,13 @@ export default function LogisticsOutwardPage() {
                       Goods Info
                     </h4>
                     <div className="logistics-prepare-grid logistics-prepare-grid--goods">
-                      <Field label="Issue kind">
+                    <Field label="Issue kind">
                         <input
                           readOnly
                           className="is-readonly"
                           value={normalizeIssueKind(form.logisticsKind)}
                         />
-                      </Field>
+                    </Field>
                       <Field label="Product category">
                         <input
                           readOnly
@@ -2218,7 +2218,7 @@ export default function LogisticsOutwardPage() {
                         label="Delivery mode"
                         required={form.packageStatus !== 'No stock'}
                       >
-                        <AdaptiveSelect
+                      <AdaptiveSelect
                           required={form.packageStatus !== 'No stock'}
                           value={mapDeliveryMode(form.deliveryMode) || ''}
                           onChange={(e) => {
@@ -2239,14 +2239,14 @@ export default function LogisticsOutwardPage() {
                           {FALLBACK_DELIVERY.map((mode) => (
                             <option key={mode} value={mode}>
                               {mode}
-                            </option>
-                          ))}
-                        </AdaptiveSelect>
-                      </Field>
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </Field>
                       {form.packageStatus !== 'No stock' && lineNeedsBatch(form.trackingKind) ? (
                         <Field label="Batch number" required>
-                          <AdaptiveSelect
-                            required
+                      <AdaptiveSelect
+                        required
                             disabled={!form.productId}
                             value={form.batchNumber || ''}
                             onChange={(e) => {
@@ -2276,14 +2276,14 @@ export default function LogisticsOutwardPage() {
                               <option key={opt.value} value={opt.value}>
                                 {opt.value}
                                 {opt.qty ? ` (qty ${opt.qty})` : ''}
-                              </option>
-                            ))}
-                          </AdaptiveSelect>
-                        </Field>
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </Field>
                       ) : (
                         <Field label="Batch number">
                           <input readOnly className="is-readonly" value="N/A" />
-                        </Field>
+                    </Field>
                       )}
                       {form.packageStatus !== 'No stock' && form.expiryApplicable ? (
                         <Field label="Expiry date" required>
@@ -2328,7 +2328,7 @@ export default function LogisticsOutwardPage() {
                       ) : form.packageStatus !== 'No stock' &&
                         lineNeedsSerial(form.trackingKind) &&
                         !form.expiryApplicable ? (
-                        <Field label="Serial number" required>
+                      <Field label="Serial number" required>
                           {fulfillSerialOpts.length ? (
                             <AdaptiveSelect
                               required
@@ -2343,19 +2343,19 @@ export default function LogisticsOutwardPage() {
                               ))}
                             </AdaptiveSelect>
                           ) : (
-                            <input
-                              required
-                              value={form.serialNumber || ''}
-                              onChange={(e) => setField('serialNumber', e.target.value)}
+                        <input
+                          required
+                          value={form.serialNumber || ''}
+                          onChange={(e) => setField('serialNumber', e.target.value)}
                               placeholder="No serial in stock"
-                            />
+                        />
                           )}
                         </Field>
                       ) : (
                         <Field label="Expiry date">
                           <input readOnly className="is-readonly" value="N/A" />
-                        </Field>
-                      )}
+                      </Field>
+                    )}
                       {form.packageStatus !== 'No stock' &&
                       lineNeedsSerial(form.trackingKind) &&
                       form.expiryApplicable ? (
@@ -2374,8 +2374,8 @@ export default function LogisticsOutwardPage() {
                               ))}
                             </AdaptiveSelect>
                           ) : (
-                            <input
-                              required
+                        <input
+                          required
                               value={form.serialNumber || ''}
                               onChange={(e) => setField('serialNumber', e.target.value)}
                               placeholder="No serial in stock"
@@ -2413,11 +2413,11 @@ export default function LogisticsOutwardPage() {
                             <div className="logistics-prepare-grid logistics-prepare-grid--origin">
                               <Field label="Name" required>
                                 <input
-                                  required
+                          required
                                   value={form.toName || ''}
                                   onChange={(e) => setField('toName', e.target.value)}
-                                />
-                              </Field>
+                        />
+                      </Field>
                               <Field label="Phone" required>
                                 <input
                                   required
@@ -2439,16 +2439,16 @@ export default function LogisticsOutwardPage() {
                                   onChange={(e) => setField('toAddress', e.target.value)}
                                 />
                               </Field>
-                            </div>
+                  </div>
                           </>
                         ) : prepareShowRecipient ? (
-                          <DirectoryPartyFields
+                    <DirectoryPartyFields
                             label="Recipient"
                             prefix="to"
-                            contacts={contacts}
-                            form={form}
-                            setForm={setForm}
-                          />
+                      contacts={contacts}
+                      form={form}
+                      setForm={setForm}
+                    />
                         ) : null}
                       </section>
                     );
@@ -2504,16 +2504,16 @@ export default function LogisticsOutwardPage() {
                               </div>
                             </>
                           ) : (
-                            <DirectoryPartyFields
+                    <DirectoryPartyFields
                               label={
                                 issueKind === 'Recall / Pickup' ? 'Pickup from' : 'Sender'
                               }
                               prefix="from"
-                              contacts={contacts}
-                              form={form}
-                              setForm={setForm}
-                            />
-                          )}
+                      contacts={contacts}
+                      form={form}
+                      setForm={setForm}
+                    />
+                  )}
                         </section>
                       ) : null;
 
@@ -2546,7 +2546,7 @@ export default function LogisticsOutwardPage() {
                     <div className="logistics-prepare-grid logistics-prepare-grid--shipment">
                       <Field label="Package status" required>
                         <AdaptiveSelect
-                          required
+                        required
                           value={form.packageStatus || ''}
                           onChange={(e) => setField('packageStatus', e.target.value)}
                         >
@@ -2570,8 +2570,8 @@ export default function LogisticsOutwardPage() {
                               placeholder="L"
                               value={form.packageLength || ''}
                               onChange={(e) => setField('packageLength', e.target.value)}
-                            />
-                          </Field>
+                      />
+                    </Field>
                           <Field label="Width (cm)" required>
                             <input
                               type="number"
@@ -2637,14 +2637,14 @@ export default function LogisticsOutwardPage() {
                               placeholder="0"
                             />
                           </Field>
-                          <Field label="AWB number" required>
-                            <input
-                              required
+                      <Field label="AWB number" required>
+                        <input
+                          required
                               value={form.awbNumber || ''}
-                              onChange={(e) => setField('awbNumber', e.target.value)}
+                          onChange={(e) => setField('awbNumber', e.target.value)}
                               placeholder="Enter AWB after booking"
-                            />
-                          </Field>
+                        />
+                      </Field>
                         </>
                       ) : null}
                     </div>
@@ -2722,7 +2722,7 @@ export default function LogisticsOutwardPage() {
                             )}
                           </tbody>
                         </table>
-                      </div>
+                  </div>
                     </section>
                   ) : null}
                 </div>
@@ -2858,10 +2858,10 @@ export default function LogisticsOutwardPage() {
                             >
                               Track
                             </a>
-                            <span className="muted">
-                              {r.deliveryOutcome || ds}
-                              {r.closedAt ? ` · ${formatDateTime(r.closedAt)}` : ''}
-                            </span>
+                          <span className="muted">
+                            {r.deliveryOutcome || ds}
+                            {r.closedAt ? ` · ${formatDateTime(r.closedAt)}` : ''}
+                          </span>
                           </div>
                         )}
                       </td>

@@ -36,6 +36,7 @@ export default function BillOfSupplyBuilderPage() {
     submitDocument,
     approveDocument,
     rejectDocument,
+    cancelDocument,
     issueDocument,
   } = useBillOfSupplyBuilder();
 
@@ -72,6 +73,7 @@ export default function BillOfSupplyBuilderPage() {
       onSubmit={submitDocument}
       onApprove={approveDocument}
       onReject={rejectDocument}
+      onCancel={cancelDocument}
       onIssue={issueDocument}
       onNewInvoice={newBillOfSupply}
       shortcutsOpen={shortcutsOpen}

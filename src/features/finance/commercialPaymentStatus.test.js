@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   daysSinceDocumentApproved,
+  displayCommercialStage,
   netReceivableFromPreGst,
+  normalizeCommercialStage,
   paymentStatusFromAgeingDays,
   paymentStatusPillClass,
-  resolveCommercialPaymentDisplayStatus,
+  resolveCommercialDisplayStatus,
 } from './commercialPaymentStatus.js';
 
 describe('commercialPaymentStatus', () => {
@@ -13,55 +15,87 @@ describe('commercialPaymentStatus', () => {
     expect(netReceivableFromPreGst(0)).toBeNull();
   });
 
-  it('maps ageing buckets to Status labels', () => {
-    expect(paymentStatusFromAgeingDays(0)).toBe('Invoice Sent');
-    expect(paymentStatusFromAgeingDays(10)).toBe('Invoice Sent');
-    expect(paymentStatusFromAgeingDays(11)).toBe('Invoice Due');
-    expect(paymentStatusFromAgeingDays(30)).toBe('Invoice Due');
-    expect(paymentStatusFromAgeingDays(31)).toBe('Invoice Overdue');
-    expect(paymentStatusFromAgeingDays(45)).toBe('Invoice Overdue');
-    expect(paymentStatusFromAgeingDays(46)).toBe('MSME Breach');
+  it('maps Stage display labels with legacy aliases', () => {
+    expect(displayCommercialStage('Draft')).toBe('Drafting');
+    expect(displayCommercialStage('Uploaded')).toBe('Drafting');
+    expect(displayCommercialStage('Approved')).toBe('Issued');
+    expect(displayCommercialStage('Issued')).toBe('Issued');
+    expect(normalizeCommercialStage('Uploaded')).toBe('Draft');
+    expect(normalizeCommercialStage('Approved')).toBe('Issued');
   });
 
-  it('resolves Status from payment or approval ageing', () => {
+  it('maps ageing buckets to Unpaid under/over 30D', () => {
+    expect(paymentStatusFromAgeingDays(0)).toBe('Unpaid under 30D');
+    expect(paymentStatusFromAgeingDays(30)).toBe('Unpaid under 30D');
+    expect(paymentStatusFromAgeingDays(31)).toBe('Unpaid over 30D');
+  });
+
+  it('resolves Tax Invoice Status from payment or 30D ageing', () => {
     const row = {
+      documentType: 'client_invoice',
       status: 'Issued',
       approvedAt: '2026-07-01T10:00:00.000Z',
       paymentStatus: 'Unpaid',
     };
-    expect(resolveCommercialPaymentDisplayStatus(row, new Date('2026-07-05T00:00:00.000Z'))).toBe(
-      'Invoice Sent'
+    expect(resolveCommercialDisplayStatus(row, new Date('2026-07-15T00:00:00.000Z'))).toBe(
+      'Unpaid under 30D'
     );
-    expect(resolveCommercialPaymentDisplayStatus(row, new Date('2026-07-20T00:00:00.000Z'))).toBe(
-      'Invoice Due'
-    );
-    expect(resolveCommercialPaymentDisplayStatus(row, new Date('2026-08-05T00:00:00.000Z'))).toBe(
-      'Invoice Overdue'
-    );
-    expect(resolveCommercialPaymentDisplayStatus(row, new Date('2026-08-20T00:00:00.000Z'))).toBe(
-      'MSME Breach'
+    expect(resolveCommercialDisplayStatus(row, new Date('2026-08-05T00:00:00.000Z'))).toBe(
+      'Unpaid over 30D'
     );
     expect(
-      resolveCommercialPaymentDisplayStatus(
+      resolveCommercialDisplayStatus(
         { ...row, paymentStatus: 'Paid' },
         new Date('2026-08-20T00:00:00.000Z')
       )
     ).toBe('Paid');
     expect(
-      resolveCommercialPaymentDisplayStatus(
+      resolveCommercialDisplayStatus(
         { ...row, paymentStatus: 'Partially Paid' },
         new Date('2026-08-20T00:00:00.000Z')
       )
     ).toBe('Partially Paid');
   });
 
+  it('resolves Debit Note unpaid as Pending Collection', () => {
+    expect(
+      resolveCommercialDisplayStatus({
+        documentType: 'debit_note',
+        status: 'Issued',
+        paymentStatus: 'Unpaid',
+      })
+    ).toBe('Pending Collection');
+  });
+
+  it('resolves manual Status with defaults for Issued docs', () => {
+    expect(
+      resolveCommercialDisplayStatus({
+        documentType: 'quotation',
+        status: 'Issued',
+        paymentStatus: 'Unpaid',
+      })
+    ).toBe('Sent');
+    expect(
+      resolveCommercialDisplayStatus({
+        documentType: 'purchase_order',
+        status: 'Issued',
+        paymentStatus: 'Open',
+      })
+    ).toBe('Open');
+    expect(
+      resolveCommercialDisplayStatus({
+        documentType: 'credit_note',
+        status: 'Draft',
+        paymentStatus: 'Pending Adjustment',
+      })
+    ).toBe('');
+  });
+
   it('maps pill classes for Status colours', () => {
-    expect(paymentStatusPillClass('Invoice Sent')).toContain('invoice-sent');
-    expect(paymentStatusPillClass('Invoice Due')).toContain('invoice-due');
-    expect(paymentStatusPillClass('Invoice Overdue')).toContain('invoice-overdue');
-    expect(paymentStatusPillClass('MSME Breach')).toContain('msme-breach');
+    expect(paymentStatusPillClass('Unpaid under 30D')).toContain('unpaid-under-30d');
+    expect(paymentStatusPillClass('Unpaid over 30D')).toContain('unpaid-over-30d');
     expect(paymentStatusPillClass('Paid')).toContain('paid');
-    expect(paymentStatusPillClass('Partially Paid')).toContain('partially-paid');
+    expect(paymentStatusPillClass('Pending Collection')).toContain('pending-collection');
   });
 
   it('uses issuedAt when approvedAt is missing', () => {

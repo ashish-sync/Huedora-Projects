@@ -3480,7 +3480,8 @@ body:has(.login-page),
   height: 100%;
   min-height: 100%;
   margin: 0;
-  background: #050505;
+  background: #eef5fc;
+  color-scheme: light;
 }
 
 .login-page:not(.lamp-login) {

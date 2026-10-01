@@ -1,4 +1,5 @@
 /* A4 landscape commercial docs — fill the builder stage; content uses flex to consume the page */
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap');
 
 .tylo-invoice {
   --ti-page-w: 100%;
@@ -407,7 +408,7 @@
 
 .ti-bank-sign {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: stretch;
   width: 100%;
   min-height: 100%;
@@ -433,7 +434,9 @@
   align-items: center;
   flex: 1 1 auto;
   min-height: 28mm;
-  padding: 1mm 2mm 1.2mm;
+  padding: 1.5mm 2mm 2mm;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .ti-signature.ti-signature--in-card {
@@ -493,6 +496,119 @@
   color: var(--ti-header-ink);
   text-align: center;
   width: 100%;
+}
+
+/* Click-to-Sign stamp — scale-to-fit inside Digital Signature box */
+
+.ti-signature--click-to-sign {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 1mm 1mm 0.75mm;
+  box-sizing: border-box;
+}
+
+.ti-click-sign-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ti-click-sign {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: max-content;
+  max-width: none;
+  margin: 0 auto;
+  line-height: 1.15;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.ti-click-sign__name,
+.signature-name {
+  font-family: Arial, Helvetica, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #111111;
+  white-space: nowrap;
+  line-height: 1.2;
+  display: inline-block;
+  transform: scaleX(1.12);
+  transform-origin: center center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ti-click-sign__meta,
+.signature-date {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #111111;
+  white-space: nowrap;
+  line-height: 1.2;
+  display: inline-block;
+  transform: scaleX(1.08);
+  transform-origin: center center;
+}
+
+.ti-click-sign__cta,
+.ti-click-sign__action {
+  margin-top: 2mm;
+  appearance: none;
+  border: 1px solid var(--ti-line, #c5ccd4);
+  background: #fff;
+  color: var(--ti-ink, #1a2330);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0.35em 0.75em;
+  border-radius: 3px;
+  cursor: pointer;
+  align-self: center;
+}
+
+.ti-click-sign__cta:hover,
+.ti-click-sign__action:hover {
+  border-color: var(--ti-ink, #1a2330);
+}
+
+.ti-click-sign__cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ti-click-sign__hint {
+  margin-top: 1mm;
+  font-size: 9px;
+  color: var(--ti-muted, #5c6570);
+  text-align: center;
+  width: 100%;
+}
+
+.ti-signature--click-to-sign .ti-click-sign__action {
+  align-self: center;
+}
+
+@media print {
+  .ti-click-sign__cta,
+  .ti-click-sign__action {
+    display: none !important;
+  }
 }
 
 .ti-amount-words-bar {

@@ -59,9 +59,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear the local session first so the UI exits immediately.
-    // Waiting on /auth/logout (or a refresh retry) made logout feel broken.
-    setAccessToken(null);
+    // Exit the UI immediately, but keep the access token until logout finishes so a
+    // Bearer header can still be sent. Server logout also works from the refresh cookie alone.
     setUser(null);
     setBootSessionActive(false);
     clearInsightSession();
@@ -78,9 +77,10 @@ export function AuthProvider({ children }) {
         ...(controller ? { signal: controller.signal } : {}),
       });
     } catch {
-      /* ignore network / abort — local session is already cleared */
+      /* ignore network / abort — local session is cleared below */
     } finally {
       if (timeout) window.clearTimeout(timeout);
+      setAccessToken(null);
     }
   }, []);
 

@@ -178,7 +178,11 @@ export async function api(path, options = {}, retried = false, networkAttempt = 
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
   }
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  // Do not clobber an explicit Authorization (e.g. logout with a snapshot bearer
+  // after local storage was already cleared).
+  if (accessToken && !headers.Authorization) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
 
   const method = options.method || 'GET';
   let res;

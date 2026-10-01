@@ -59,8 +59,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Exit the UI immediately, but keep the access token until logout finishes so a
-    // Bearer header can still be sent. Server logout also works from the refresh cookie alone.
+    // Clear local session first so a refresh cannot revive the access JWT from localStorage
+    // while /auth/logout is still in flight (especially with a cross-origin API).
+    const tokenSnapshot = loadStoredToken();
+    setAccessToken(null);
     setUser(null);
     setBootSessionActive(false);
     clearInsightSession();
@@ -71,13 +73,15 @@ export function AuthProvider({ children }) {
       ? window.setTimeout(() => controller.abort(), 4000)
       : null;
     try {
+      // Prefer api() when a bearer token still existed; otherwise cookie-only logout.
       await api('/auth/logout', {
         method: 'POST',
         body: {},
+        headers: tokenSnapshot ? { Authorization: `Bearer ${tokenSnapshot}` } : undefined,
         ...(controller ? { signal: controller.signal } : {}),
       });
     } catch {
-      /* ignore network / abort — local session is cleared below */
+      /* ignore network / abort — local session is already cleared */
     } finally {
       if (timeout) window.clearTimeout(timeout);
       setAccessToken(null);

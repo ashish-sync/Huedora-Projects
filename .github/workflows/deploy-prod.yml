@@ -55,13 +55,19 @@ jobs:
 
       - name: Build production bundle
         env:
-          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          # Production frontend is reverse-proxied to the VPS API at /api — never bake a
+          # cross-origin Render URL here (it breaks cookie logout / session restore).
+          VITE_BACKEND_URL: ''
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: |
           set -euo pipefail
           npm run build
           test -f dist/index.html
-          echo "Built with VITE_BACKEND_URL=${VITE_BACKEND_URL:-<empty/same-origin>}"
+          if grep -R -n -E 'VITE_BACKEND_URL["'"'"']?\s*[:=]\s*["'"'"']https?://' dist/ >/dev/null 2>&1; then
+            echo "Prod build unexpectedly baked a non-empty VITE_BACKEND_URL."
+            exit 1
+          fi
+          echo "Built with VITE_BACKEND_URL=<empty/same-origin>"
 
       - name: Configure SSH
         env:

@@ -3930,16 +3930,21 @@
 }
 
 .camp-ops-root .camp-consumables-qty-input {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  min-height: 30px !important;
-  height: 30px;
+  min-height: 32px !important;
+  height: 32px !important;
   padding: 0 6px !important;
+  margin: 0;
   text-align: center;
   font-size: 0.8125rem;
+  border-radius: 999px !important;
 }
 
 .camp-ops-root .camp-consumables-grid {
+  --camp-consumables-qty-w: 4.75rem;
+  --camp-consumables-actions-w: 2rem;
   display: grid;
   gap: 4px;
 }
@@ -3947,9 +3952,16 @@
 .camp-ops-root .camp-consumables-grid-head,
 .camp-ops-root .camp-consumables-grid-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 4.75rem 4.75rem 32px;
-  gap: 8px;
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--camp-consumables-qty-w)
+    var(--camp-consumables-qty-w)
+    var(--camp-consumables-actions-w);
+  column-gap: 8px;
   align-items: center;
+  min-height: 36px;
+  padding: 4px 6px;
+  box-sizing: border-box;
 }
 
 .camp-ops-root .camp-consumables-grid-head {
@@ -3958,39 +3970,60 @@
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 0 2px 2px;
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 2px;
 }
 
-.camp-ops-root .camp-consumables-grid-head span:not(.camp-consumables-grid-actions-head) {
-  text-align: center;
-}
-
-.camp-ops-root .camp-consumables-grid-head span:first-child {
+.camp-ops-root .camp-consumables-col-item {
+  min-width: 0;
   text-align: left;
 }
 
+.camp-ops-root .camp-consumables-col-qty {
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+  justify-self: stretch;
+}
+
+.camp-ops-root .camp-consumables-col-actions {
+  width: var(--camp-consumables-actions-w);
+  justify-self: center;
+  text-align: center;
+}
+
 .camp-ops-root .camp-consumables-grid-item select {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  min-height: 30px !important;
-  height: 30px;
-  padding-top: 0;
-  padding-bottom: 0;
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 1.75rem 0 0.75rem !important;
+  margin: 0;
   font-size: 0.8125rem;
+  border-radius: 999px !important;
+  line-height: 1.2;
 }
 
 .camp-ops-root .camp-consumables-grid-qty {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .camp-ops-root .camp-consumables-grid-actions {
   display: flex;
+  align-items: center;
   justify-content: center;
+  width: var(--camp-consumables-actions-w);
+  height: 32px;
 }
 
 .camp-ops-root .camp-consumables-grid-row.is-incomplete {
   background: color-mix(in srgb, var(--warn) 8%, transparent);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
 }
 
 .camp-ops-root .camp-consumables-item-label {
@@ -3998,7 +4031,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--ink-soft);
-  line-height: 1.3;
+  line-height: 32px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4164,33 +4197,33 @@
   border: none;
   background: transparent;
   box-shadow: none;
-  min-width: 1.25rem;
-  width: auto;
-  height: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   padding: 0;
   margin: 0;
   line-height: 1;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--danger, #dc2626);
   cursor: pointer;
+  border-radius: 6px;
 }
 
 .camp-ops-root .camp-consumables-used-remove-btn:hover,
 .camp-ops-root .camp-consumables-used-remove-btn:focus-visible {
   color: color-mix(in srgb, var(--danger, #dc2626) 82%, #000);
-  background: transparent;
+  background: color-mix(in srgb, var(--danger, #dc2626) 10%, transparent);
   outline: none;
 }
 
 @media (max-width: 720px) {
-  .camp-ops-root .camp-consumables-grid-head {
-    display: none;
-  }
-
-  .camp-ops-root .camp-consumables-grid-row {
-    grid-template-columns: minmax(0, 1fr) 4.25rem 4.25rem 28px;
-    gap: 6px;
+  .camp-ops-root .camp-consumables-grid {
+    --camp-consumables-qty-w: 4.25rem;
+    --camp-consumables-actions-w: 1.75rem;
   }
 
   .camp-ops-root .camp-consumables-table th.camp-consumables-table-qty,
@@ -7728,16 +7761,9 @@
   height: 100%;
 }
 
-.camp-ops-root .camp-execution-tracking-row .camp-execution-doc-upload-btn {
-  min-width: 72px;
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-.camp-ops-root .camp-execution-tracking-row .camp-consumables-grid-head,
-.camp-ops-root .camp-execution-tracking-row .camp-consumables-grid-row {
-  grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem 28px;
-  gap: 6px;
+.camp-ops-root .camp-execution-tracking-row .camp-consumables-grid {
+  --camp-consumables-qty-w: 4.5rem;
+  --camp-consumables-actions-w: 1.75rem;
 }
 
 .camp-ops-root .camp-execution-tracking-row .camp-consumables-table th.camp-consumables-table-qty {
@@ -7751,14 +7777,26 @@
 }
 
 .camp-ops-root .camp-execution-docs-panel {
-  padding: 16px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
 }
 
+.camp-ops-root .camp-execution-docs-header {
+  margin-bottom: 8px;
+}
+
 .camp-ops-root .camp-execution-docs-panel h3 {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+}
+
+.camp-ops-root .camp-execution-doc-format-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .camp-ops-root .camp-client-typeahead {
@@ -7803,17 +7841,25 @@
 
 .camp-ops-root .camp-execution-doc-rows {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .camp-ops-root .camp-execution-doc-row {
-  display: grid;
-  gap: 6px;
-  padding: 8px;
-  margin: -8px;
-  border-radius: var(--radius-md);
-  border: 1px dashed transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.camp-ops-root .camp-execution-doc-row.is-uploaded {
+  border-color: color-mix(in srgb, var(--ok, #15803d) 22%, var(--line));
+  background: color-mix(in srgb, var(--ok, #15803d) 4%, transparent);
 }
 
 .camp-ops-root .camp-execution-doc-row.is-drag-over {
@@ -7821,116 +7867,169 @@
   background: color-mix(in srgb, var(--brand) 8%, transparent);
 }
 
-.camp-ops-root .camp-execution-doc-row-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  gap: 10px;
+.camp-ops-root .camp-execution-doc-identity {
+  display: flex;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .camp-ops-root .camp-execution-doc-row-label {
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.camp-ops-root .camp-execution-doc-status {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted, #6b7280) 12%, transparent);
+  color: var(--muted, #6b7280);
+}
+
+.camp-ops-root .camp-execution-doc-status.is-uploaded {
+  background: color-mix(in srgb, var(--ok, #15803d) 14%, transparent);
+  color: var(--ok, #15803d);
+}
+
+.camp-ops-root .camp-execution-doc-status.is-required {
+  background: color-mix(in srgb, var(--warn, #b45309) 12%, transparent);
+  color: var(--warn, #b45309);
+}
+
+.camp-ops-root .camp-execution-doc-status.is-optional {
+  background: color-mix(in srgb, var(--muted, #6b7280) 12%, transparent);
+  color: var(--muted, #6b7280);
 }
 
 .camp-ops-root .camp-execution-doc-other-input {
-  width: 100%;
+  width: min(100%, 12rem);
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+  background: var(--bg, #fff);
 }
 
 .camp-ops-root .camp-execution-doc-upload-input {
   display: none;
 }
 
+.camp-ops-root .camp-execution-doc-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .camp-ops-root .camp-execution-doc-upload-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 96px;
-  min-height: 34px;
-  padding: 0 14px;
+  gap: 4px;
+  min-width: 78px;
+  min-height: 28px;
+  padding: 0 10px;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: 6px;
   background: var(--brand);
-  color: var(--color-text-on-primary);
-  font-size: 0.8rem;
-  font-weight: 600;
+  color: var(--color-text-on-primary, #fff);
+  font-size: 0.75rem;
+  font-weight: 650;
   line-height: 1;
-  box-shadow: 0 4px 10px color-mix(in srgb, var(--brand) 28%, transparent);
   cursor: pointer;
-  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .camp-ops-root .camp-execution-doc-upload-btn:hover:not(:disabled) {
-  background: var(--brand-hover);
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--brand) 34%, transparent);
-}
-
-.camp-ops-root .camp-execution-doc-upload-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  background: var(--brand-hover, var(--brand));
 }
 
 .camp-ops-root .camp-execution-doc-upload-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-.camp-ops-root .camp-execution-doc-remove-btn {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid color-mix(in srgb, var(--danger, #c0392b) 45%, var(--line));
-  border-radius: var(--radius-full);
+.camp-ops-root .camp-execution-doc-upload-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.camp-ops-root .camp-execution-doc-action-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
   background: transparent;
-  color: var(--danger, #c0392b);
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 650;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.camp-ops-root .camp-execution-doc-remove-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
+.camp-ops-root .camp-execution-doc-action-btn.is-primary {
+  color: var(--brand);
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
 }
 
-.camp-ops-root .camp-execution-doc-remove-btn:disabled {
+.camp-ops-root .camp-execution-doc-action-btn.is-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+
+.camp-ops-root .camp-execution-doc-action-btn.is-secondary {
+  color: var(--ink-soft, var(--ink));
+}
+
+.camp-ops-root .camp-execution-doc-action-btn.is-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
+}
+
+.camp-ops-root .camp-execution-doc-action-btn.is-danger {
+  color: var(--danger, #c0392b);
+  border-color: color-mix(in srgb, var(--danger, #c0392b) 40%, var(--line));
+}
+
+.camp-ops-root .camp-execution-doc-action-btn.is-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
+}
+
+.camp-ops-root .camp-execution-doc-action-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
-.camp-ops-root .camp-execution-doc-upload-icon {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-}
-
-.camp-ops-root .camp-execution-doc-tick {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-full);
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: transparent;
-  background: var(--line);
-  flex-shrink: 0;
-}
-
-.camp-ops-root .camp-execution-doc-tick.is-uploaded {
-  color: var(--color-text-on-primary);
-  background: var(--ok);
-}
-
 .camp-ops-root .camp-execution-doc-save-hint {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
+  font-size: 0.75rem;
 }
 
 .camp-ops-root .camp-execution-doc-hint-warn {
   color: var(--warn);
   font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .camp-ops-root .camp-execution-doc-row {
+    flex-wrap: wrap;
+  }
+
+  .camp-ops-root .camp-execution-doc-identity {
+    flex: 1 1 100%;
+  }
+
+  .camp-ops-root .camp-execution-doc-actions {
+    margin-left: auto;
+  }
 }
 
 .camp-ops-root .camp-in-time-field {

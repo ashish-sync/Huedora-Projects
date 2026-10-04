@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { apiUrl } from '../../../shared/config.js';
 import { EXECUTION_DOC_TYPES, normalizeExecutionDocType } from '../constants/campLifecycle.js';
 import { executionDocumentDisplayName } from '../utils/executionDocumentName.js';
 
@@ -8,6 +9,14 @@ const GPS_SELFIE_ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/gif,.
 
 function docsForType(docs, docType) {
   return docs.filter((doc) => normalizeExecutionDocType(doc.docType) === docType);
+}
+
+function resolveDocViewUrl(doc) {
+  const raw = String(doc?.url || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw) || raw.startsWith('blob:')) return raw;
+  if (raw.startsWith('/api/') || raw.startsWith('/uploads')) return apiUrl(raw);
+  return apiUrl(raw.startsWith('/') ? raw : `/${raw}`);
 }
 
 function UploadIcon() {
@@ -22,6 +31,13 @@ function UploadIcon() {
       />
     </svg>
   );
+}
+
+function openDocument(doc) {
+  const url = resolveDocViewUrl(doc);
+  if (!url) return false;
+  window.open(url, '_blank', 'noopener,noreferrer');
+  return true;
 }
 
 export function CampExecutionDocuments({
@@ -63,10 +79,20 @@ export function CampExecutionDocuments({
 
   function handleRemove(docType, doc) {
     if (!canDelete || uploadBusy || !doc) return;
-    const label = executionDocumentDisplayName(doc);
-    if (!window.confirm(`Remove “${label}”? You can upload a replacement after.`)) return;
+    const label = executionDocumentDisplayName(doc) || typeLabel(docType);
+    if (!window.confirm(`Remove ${label}? You can upload a replacement after.`)) return;
     setUploadHint('');
     onDeleteDocument(doc, docType);
+  }
+
+  function typeLabel(docType) {
+    return EXECUTION_DOC_TYPES.find((t) => t.value === docType)?.label || 'document';
+  }
+
+  function handleView(doc, docType) {
+    if (!openDocument(doc)) {
+      setUploadHint(`Could not open ${typeLabel(docType)}. Try Replace or refresh the camp.`);
+    }
   }
 
   function canDrop(docType) {
@@ -111,11 +137,12 @@ export function CampExecutionDocuments({
 
   return (
     <section className="camp-lifecycle-docs camp-execution-docs-panel">
-      <h3>Execution Documents</h3>
-      <p className="meta-text camp-execution-doc-format-hint">
-        PDF or image · max 10 MB · named <strong>Doctor + DF/PF/GS/OT</strong>
-        {' '}(e.g. ADIPF.webp · stored 26-10-0001__ADIPF.webp)
-      </p>
+      <div className="camp-execution-docs-header">
+        <h3>Execution Documents</h3>
+        <p className="meta-text camp-execution-doc-format-hint">
+          PDF or image, max 10 MB
+        </p>
+      </div>
 
       <div className="camp-execution-doc-rows">
         {EXECUTION_DOC_TYPES.map((type) => {
@@ -126,20 +153,20 @@ export function CampExecutionDocuments({
           const rowUploadLocked = disabled
             || uploadBusy
             || (uploadsEnabled && isOther && !otherSpecify.trim());
-          const latestDoc = typeDocs[typeDocs.length - 1];
-          const latestLabel = latestDoc ? executionDocumentDisplayName(latestDoc) : '';
           const isDragOver = dragOverType === type.value;
+          const latestDoc = typeDocs[typeDocs.length - 1] || null;
+          const viewUrl = latestDoc ? resolveDocViewUrl(latestDoc) : '';
 
           return (
             <div
               key={type.value}
-              className={`camp-execution-doc-row${isDragOver ? ' is-drag-over' : ''}`}
+              className={`camp-execution-doc-row${isDragOver ? ' is-drag-over' : ''}${isUploaded ? ' is-uploaded' : ''}`}
               onDragEnter={(e) => onDragEnter(e, type.value)}
               onDragOver={(e) => onDragOver(e, type.value)}
               onDragLeave={(e) => onDragLeave(e, type.value)}
               onDrop={(e) => onDrop(e, type.value)}
             >
-              <div className="camp-execution-doc-row-main">
+              <div className="camp-execution-doc-identity">
                 {isOther ? (
                   <input
                     type="text"
@@ -150,60 +177,80 @@ export function CampExecutionDocuments({
                       if (uploadHint) setUploadHint('');
                     }}
                     disabled={disabled || uploadBusy}
-                    placeholder="Specify document type/name"
+                    placeholder="Other document type"
+                    aria-label="Other document type"
                   />
                 ) : (
                   <span className="camp-execution-doc-row-label">{type.label}</span>
                 )}
-                <input
-                  ref={(node) => {
-                    inputRefs.current[type.value] = node;
-                  }}
-                  type="file"
-                  className="camp-execution-doc-upload-input"
-                  multiple={!isGpsSelfie}
-                  accept={isGpsSelfie ? GPS_SELFIE_ACCEPT : EXEC_DOC_ACCEPT}
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files?.length) handleUpload(type.value, files);
-                    e.target.value = '';
-                  }}
-                />
-                <button
-                  type="button"
-                  className="camp-execution-doc-upload-btn"
-                  disabled={rowUploadLocked}
-                  title={!campId ? 'Save the camp first to upload' : undefined}
-                  onClick={() => openPicker(type.value)}
-                >
-                  <UploadIcon />
-                  <span>{uploadBusy ? 'Uploading…' : 'Upload'}</span>
-                </button>
-                {isUploaded && canDelete ? (
-                  <button
-                    type="button"
-                    className="camp-execution-doc-remove-btn"
-                    disabled={uploadBusy}
-                    title={latestLabel ? `Remove ${latestLabel}` : 'Remove uploaded file'}
-                    aria-label={`Remove ${type.label} upload`}
-                    onClick={() => handleRemove(type.value, latestDoc)}
-                  >
-                    Remove
-                  </button>
-                ) : null}
                 <span
-                  className={`camp-execution-doc-tick ${isUploaded ? 'is-uploaded' : ''}`}
-                  aria-label={isUploaded ? 'Uploaded' : 'Not uploaded'}
-                  title={isUploaded ? (latestLabel || 'Uploaded') : 'Not uploaded'}
+                  className={`camp-execution-doc-status ${isUploaded ? 'is-uploaded' : (isOther ? 'is-optional' : 'is-required')}`}
                 >
-                  ✓
+                  {isUploaded ? 'Uploaded' : (isOther ? 'Optional' : 'Required')}
                 </span>
               </div>
-              {isUploaded && latestLabel ? (
-                <p className="meta-text camp-execution-doc-stored-name" title={latestLabel}>
-                  {latestLabel}
-                </p>
-              ) : null}
+
+              <input
+                ref={(node) => {
+                  inputRefs.current[type.value] = node;
+                }}
+                type="file"
+                className="camp-execution-doc-upload-input"
+                multiple={!isGpsSelfie}
+                accept={isGpsSelfie ? GPS_SELFIE_ACCEPT : EXEC_DOC_ACCEPT}
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (files?.length) handleUpload(type.value, files);
+                  e.target.value = '';
+                }}
+              />
+
+              <div className="camp-execution-doc-actions">
+                {isUploaded ? (
+                  <>
+                    <button
+                      type="button"
+                      className="camp-execution-doc-action-btn is-primary"
+                      disabled={!viewUrl}
+                      title={viewUrl ? `View ${type.label}` : 'File unavailable'}
+                      onClick={() => handleView(latestDoc, type.value)}
+                    >
+                      View
+                    </button>
+                    {uploadsEnabled ? (
+                      <button
+                        type="button"
+                        className="camp-execution-doc-action-btn is-secondary"
+                        disabled={rowUploadLocked}
+                        onClick={() => openPicker(type.value)}
+                      >
+                        Replace
+                      </button>
+                    ) : null}
+                    {canDelete ? (
+                      <button
+                        type="button"
+                        className="camp-execution-doc-action-btn is-danger"
+                        disabled={uploadBusy}
+                        onClick={() => handleRemove(type.value, latestDoc)}
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="camp-execution-doc-upload-btn"
+                    disabled={rowUploadLocked}
+                    title={!campId ? 'Save the camp first to upload' : undefined}
+                    onClick={() => openPicker(type.value)}
+                  >
+                    <UploadIcon />
+                    <span>{uploadBusy ? 'Uploading…' : 'Upload'}</span>
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}

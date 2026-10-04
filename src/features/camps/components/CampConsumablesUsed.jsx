@@ -39,12 +39,14 @@ function ConsumablesGrid({
   return (
     <div className="camp-consumables-grid" role="table" aria-label="Consumables tracking">
       <div className="camp-consumables-grid-head" role="row">
-        <span role="columnheader">Item</span>
-        <span role="columnheader">Usage</span>
-        <span role="columnheader">Wastage</span>
+        <span className="camp-consumables-col-item" role="columnheader">Item</span>
+        <span className="camp-consumables-col-qty" role="columnheader">Usage</span>
+        <span className="camp-consumables-col-qty" role="columnheader">Wastage</span>
         {!disabled ? (
-          <span className="camp-consumables-grid-actions-head" role="columnheader" aria-label="Actions" />
-        ) : null}
+          <span className="camp-consumables-col-actions" role="columnheader" aria-label="Actions" />
+        ) : (
+          <span className="camp-consumables-col-actions" aria-hidden="true" />
+        )}
       </div>
 
       {visible.map(({ row, index }) => {
@@ -56,7 +58,7 @@ function ConsumablesGrid({
             className={`camp-consumables-grid-row ${!rowComplete ? 'is-incomplete' : ''}`}
             role="row"
           >
-            <div className="camp-consumables-grid-item" role="cell">
+            <div className="camp-consumables-col-item camp-consumables-grid-item" role="cell">
               {mappedMode ? (
                 <span className="camp-consumables-item-label" title={itemLabel}>
                   {itemLabel}
@@ -74,7 +76,7 @@ function ConsumablesGrid({
                 />
               )}
             </div>
-            <div className="camp-consumables-grid-qty" role="cell">
+            <div className="camp-consumables-col-qty camp-consumables-grid-qty" role="cell">
               <ConsumableQtyInput
                 ariaLabel={`Usage for ${itemLabel}`}
                 value={row.quantityUsed}
@@ -85,7 +87,7 @@ function ConsumablesGrid({
                 disabled={disabled}
               />
             </div>
-            <div className="camp-consumables-grid-qty" role="cell">
+            <div className="camp-consumables-col-qty camp-consumables-grid-qty" role="cell">
               <ConsumableQtyInput
                 ariaLabel={`Wastage for ${itemLabel}`}
                 value={row.wastage ?? '0'}
@@ -93,8 +95,8 @@ function ConsumablesGrid({
                 disabled={disabled}
               />
             </div>
-            {!disabled ? (
-              <div className="camp-consumables-grid-actions" role="cell">
+            <div className="camp-consumables-col-actions camp-consumables-grid-actions" role="cell">
+              {!disabled ? (
                 <button
                   type="button"
                   className="camp-consumables-used-remove-btn"
@@ -107,8 +109,8 @@ function ConsumablesGrid({
                 >
                   ×
                 </button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         );
       })}

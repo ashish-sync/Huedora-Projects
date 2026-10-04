@@ -6,11 +6,33 @@ import {
   toProperTitleCase,
 } from '../../../shared/textFormat.js';
 import { campToForm } from '../constants/campLifecycle.js';
-import { clientMasterApi } from '../campOpsApi.js';
+import { campApi, clientMasterApi } from '../campOpsApi.js';
 import {
   parseClientMasterListResponse,
   resolveClientMasterDisplayName,
 } from './clientMasterCascade.js';
+
+/** Normalize executor URLs to the short /e/:token form used in share copy. */
+export function toShortActivityFormUrl(url = '') {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const base = typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'https://placeholder.local';
+    const parsed = new URL(raw, base);
+    const match = parsed.pathname.match(/\/(?:camp-execute|e)\/([^/?#]+)\/?$/i);
+    if (!match) {
+      // Relative /e/token without needing URL parse edge-cases
+      const rel = raw.match(/^\/(?:camp-execute|e)\/([^/?#]+)\/?$/i);
+      if (rel) return `${base.replace(/\/$/, '')}/e/${rel[1]}`;
+      return raw.startsWith('http') ? raw : '';
+    }
+    return `${parsed.origin}/e/${match[1]}`;
+  } catch {
+    return raw.startsWith('http') || raw.startsWith('/') ? raw : '';
+  }
+}
 
 function detailLine(label, value) {
   const text = String(value ?? '').trim() || '—';
@@ -51,6 +73,18 @@ function resolveDisplayName(form = {}, options = {}) {
   });
 }
 
+function resolveCampRecordId(campOrForm = {}, options = {}) {
+  const raw = options.campId
+    ?? campOrForm._id
+    ?? campOrForm.id
+    ?? campOrForm.campRefId
+    ?? '';
+  if (raw && typeof raw === 'object') {
+    return String(raw.$oid || raw.toString?.() || '').trim();
+  }
+  return String(raw || '').trim();
+}
+
 /** Plain-text block for WhatsApp / email when sharing an assigned camp. */
 export function formatCampAssignmentDetails(form = {}, options = {}) {
   const displayName = String(resolveDisplayName(form, options) || '').trim() || '—';
@@ -74,6 +108,11 @@ export function formatCampAssignmentDetails(form = {}, options = {}) {
     detailLine('HCW Number', formatPhone(form.hcwContact)),
   );
 
+  const activityFormUrl = toShortActivityFormUrl(options.activityFormUrl || '');
+  if (activityFormUrl) {
+    lines.push(detailLine('Activity Form', activityFormUrl));
+  }
+
   return `${lines.join('\n')}\n`;
 }
 
@@ -93,6 +132,8 @@ export function assignmentCopySourceFromCamp(camp = {}) {
   if (form.expectedPatients == null || form.expectedPatients === '') {
     form.expectedPatients = camp.expectedPatients ?? form.expectedPatients;
   }
+  // Preserve mongo id for Activity Form mint when list/edit payloads differ.
+  if (!form._id) form._id = camp._id || camp.id || '';
   return form;
 }
 
@@ -137,11 +178,70 @@ export async function copyTextToClipboard(value) {
   }
 }
 
-export async function copyCampAssignmentDetails(form, options = {}) {
-  const resolvedOptions = await resolveCopyOptions(form, options);
-  return copyTextToClipboard(formatCampAssignmentDetails(form, resolvedOptions));
+export function activityFormUrlFromMintResponse(res) {
+  const data = res?.data?.data || res?.data || res || {};
+  const direct = toShortActivityFormUrl(data.url || data.path || '');
+  if (direct) return direct;
+  const token = String(data.token || '').trim();
+  if (!token) return '';
+  const origin = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : '';
+  return origin ? `${origin}/e/${token}` : `/e/${token}`;
 }
 
+/**
+ * @returns {Promise<{ url: string, error: string }>}
+ */
+export async function resolveActivityFormUrl(form = {}, options = {}) {
+  const provided = toShortActivityFormUrl(options.activityFormUrl || '');
+  if (provided) return { url: provided, error: '' };
+
+  const campId = resolveCampRecordId(form, options);
+  if (!campId) {
+    return { url: '', error: 'Save the camp before copying an Activity Form link' };
+  }
+
+  try {
+    const res = await campApi.mintExecutionLink(campId);
+    const url = activityFormUrlFromMintResponse(res);
+    if (!url) {
+      return { url: '', error: 'Activity Form mint returned no link' };
+    }
+    return { url, error: '' };
+  } catch (err) {
+    const message = String(err?.message || err || '').trim()
+      || 'Activity Form link unavailable';
+    console.warn('[camp-assignment-copy] Activity Form link unavailable:', message);
+    return { url: '', error: message };
+  }
+}
+
+/**
+ * @returns {Promise<{ copied: boolean, activityFormUrl: string, activityFormError: string, text: string }>}
+ */
+export async function copyCampAssignmentDetails(form, options = {}) {
+  const campId = resolveCampRecordId(form, options);
+  const resolvedOptions = await resolveCopyOptions(form, { ...options, campId });
+  const { url: activityFormUrl, error: activityFormError } = await resolveActivityFormUrl(form, {
+    ...options,
+    campId,
+  });
+  const text = formatCampAssignmentDetails(form, {
+    ...resolvedOptions,
+    activityFormUrl,
+  });
+  const copied = await copyTextToClipboard(text);
+  return { copied, activityFormUrl, activityFormError, text };
+}
+
+/**
+ * @returns {Promise<{ copied: boolean, activityFormUrl: string, activityFormError: string, text: string }>}
+ */
 export async function copyCampAssignmentDetailsFromRecord(camp, options = {}) {
-  return copyCampAssignmentDetails(assignmentCopySourceFromCamp(camp), options);
+  const campId = resolveCampRecordId(camp, options);
+  return copyCampAssignmentDetails(assignmentCopySourceFromCamp(camp), {
+    ...options,
+    campId,
+  });
 }

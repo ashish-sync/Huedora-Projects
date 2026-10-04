@@ -43,7 +43,6 @@ import { computeDurationHours } from '../utils/campSchedule';
 import { CampAssignmentStage } from './CampAssignmentStage';
 import CampConsumablesUsed from './CampConsumablesUsed.jsx';
 import { CampExecutionDocuments } from './CampExecutionDocuments.jsx';
-import { campApi } from '../campOpsApi.js';
 import {
   DEFAULT_CONTACT_PERSON_LEVEL,
   emptyContactPerson,
@@ -199,9 +198,6 @@ export function CampLifecycleForm({
   );
   const revenueAutoSyncRef = useRef(true);
   const revenueSyncCampKeyRef = useRef('');
-  const [executorLinkBusy, setExecutorLinkBusy] = useState(false);
-  const [executorLinkUrl, setExecutorLinkUrl] = useState('');
-  const [executorLinkNote, setExecutorLinkNote] = useState('');
 
   useEffect(() => {
     const campKey = String(campId || form._id || form.campId || '');
@@ -209,8 +205,6 @@ export function CampLifecycleForm({
       revenueSyncCampKeyRef.current = campKey;
       revenueAutoSyncRef.current = true;
     }
-    setExecutorLinkUrl('');
-    setExecutorLinkNote('');
   }, [campId, form._id, form.campId]);
 
   useEffect(() => {
@@ -626,68 +620,8 @@ export function CampLifecycleForm({
       });
     }
 
-    async function handleMintExecutorLink() {
-      const id = campId || form._id;
-      if (!id) {
-        onValidationError?.('Save the camp before creating an executor link');
-        return;
-      }
-      setExecutorLinkBusy(true);
-      setExecutorLinkNote('');
-      try {
-        const res = await campApi.mintExecutionLink(id);
-        const url = res?.data?.data?.url || res?.data?.url || res?.url || '';
-        setExecutorLinkUrl(url);
-        if (url && navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(url);
-          setExecutorLinkNote('Secure executor link copied to clipboard');
-        } else {
-          setExecutorLinkNote('Secure executor link ready — copy from the field below');
-        }
-      } catch (err) {
-        onValidationError?.(err?.message || 'Could not create executor link');
-      } finally {
-        setExecutorLinkBusy(false);
-      }
-    }
-
-    const executorSubmitted = String(form.executorFormStatus || '') === 'submitted';
-
     return (
       <>
-        <div className="form-grid camp-executor-link-panel full">
-          <div className="full">
-            <strong>Mobile executor link</strong>
-            <p className="meta-text">
-              Field staff open this secure link to submit In/Out time, documents, and consumables.
-              Submit locks the form for review — it does not Mark Complete.
-            </p>
-            {executorSubmitted ? (
-              <p className="meta-text">
-                Executor form submitted
-                {form.executorSubmittedAt ? ` on ${new Date(form.executorSubmittedAt).toLocaleString()}` : ''}.
-                Review below, then Mark Complete when ready.
-              </p>
-            ) : (
-              <button
-                type="button"
-                className="btn secondary btn-sm"
-                disabled={disabled || executorLinkBusy || !campId}
-                onClick={handleMintExecutorLink}
-              >
-                {executorLinkBusy ? 'Creating…' : 'Copy secure executor link'}
-              </button>
-            )}
-            {executorLinkUrl ? (
-              <label className="full" style={{ marginTop: '0.5rem' }}>
-                Link
-                <CampFormInput value={executorLinkUrl} readOnly onFocus={(e) => e.target.select()} />
-              </label>
-            ) : null}
-            {executorLinkNote ? <p className="meta-text">{executorLinkNote}</p> : null}
-          </div>
-        </div>
-
         <div className="form-grid camp-execution-status-row">
           <SelectField
             label="Chargeable Status"

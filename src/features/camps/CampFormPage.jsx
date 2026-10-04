@@ -10,7 +10,7 @@ import { validateUploadFile } from '../../shared/importErrors.js';
 import { trimFormStrings } from './utils/trimInput';
 import { toApiDateValue } from './utils/dateFormat';
 import { computeDurationHours } from './utils/campSchedule';
-import { X } from 'lucide-react';
+import { Check, Smartphone, X } from 'lucide-react';
 import { FormPageHeader } from './components/FormPageHeader';
 import { CampLifecycleForm } from './components/CampLifecycleForm';
 import { CampRowInfoMenu } from './components/CampRowInfoMenu';
@@ -101,6 +101,9 @@ export default function CampFormPage() {
   const [campMeta, setCampMeta] = useState(null);
   const [readOnly, setReadOnly] = useState(false);
   const [error, setError] = useState('');
+  const [executorLinkBusy, setExecutorLinkBusy] = useState(false);
+  const [executorLinkCopied, setExecutorLinkCopied] = useState(false);
+  const executorLinkCopiedTimerRef = useRef(null);
   const [hcwGapConflict, setHcwGapConflict] = useState(null);
   const [hcwGapApprovalNotice, setHcwGapApprovalNotice] = useState('');
   const [loading, setLoading] = useState(false);
@@ -570,6 +573,12 @@ export default function CampFormPage() {
     return undefined;
   }, [mappedConsumables]);
 
+  useEffect(() => () => {
+    if (executorLinkCopiedTimerRef.current) {
+      window.clearTimeout(executorLinkCopiedTimerRef.current);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isEdit || !id) return undefined;
 
@@ -798,6 +807,43 @@ export default function CampFormPage() {
       setError(err?.message || 'Failed to download finance Excel');
     } finally {
       setDownloadFinanceBusy(false);
+    }
+  }
+
+  async function handleMintExecutorLink() {
+    if (!id) {
+      setError('Save the camp before creating an executor link');
+      return;
+    }
+    setExecutorLinkBusy(true);
+    setError('');
+    try {
+      const res = await campApi.mintExecutionLink(id);
+      const data = res?.data?.data || res?.data || {};
+      const url = data.url
+        || (data.path ? `${window.location.origin}${data.path}` : '')
+        || (data.token ? `${window.location.origin}/e/${data.token}` : '');
+      if (!url) {
+        setError('Could not create executor link');
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        window.prompt('Copy secure executor link', url);
+      }
+      setExecutorLinkCopied(true);
+      if (executorLinkCopiedTimerRef.current) {
+        window.clearTimeout(executorLinkCopiedTimerRef.current);
+      }
+      executorLinkCopiedTimerRef.current = window.setTimeout(() => {
+        setExecutorLinkCopied(false);
+        executorLinkCopiedTimerRef.current = null;
+      }, 2000);
+    } catch (err) {
+      setError(err?.message || 'Could not create executor link');
+    } finally {
+      setExecutorLinkBusy(false);
     }
   }
 
@@ -1305,6 +1351,23 @@ export default function CampFormPage() {
         {isEdit && campMeta && (
           <div className="camp-form-header-actions">
             <WatchFollowButton entityType="camp_ops_camp" entityId={campMeta._id || id} />
+            {activeStage === 'execution' ? (
+              <CampRowIconButton
+                icon={executorLinkCopied || String(form.executorFormStatus || '') === 'submitted' ? Check : Smartphone}
+                label={
+                  executorLinkBusy
+                    ? 'Creating link…'
+                    : executorLinkCopied
+                      ? 'Secure link copied'
+                      : String(form.executorFormStatus || '') === 'submitted'
+                        ? 'Executor submitted — copy secure link'
+                        : 'Copy field executor link'
+                }
+                variant={executorLinkCopied || String(form.executorFormStatus || '') === 'submitted' ? 'approve' : 'neutral'}
+                disabled={executorLinkBusy}
+                onClick={handleMintExecutorLink}
+              />
+            ) : null}
             <CampRowIconButton
               icon={X}
               label="Close"

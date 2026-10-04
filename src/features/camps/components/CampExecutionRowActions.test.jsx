@@ -4,7 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { CampExecutionRowActions } from './CampExecutionRowActions.jsx';
 
 vi.mock('../utils/campAssignmentCopy', () => ({
-  copyCampAssignmentDetailsFromRecord: vi.fn().mockResolvedValue(true),
+  copyCampAssignmentDetailsFromRecord: vi.fn().mockResolvedValue({
+    copied: true,
+    activityFormUrl: 'http://localhost/e/testtoken1',
+    text: '*Activity Form:* http://localhost/e/testtoken1\n',
+  }),
 }));
 
 const baseCamp = {

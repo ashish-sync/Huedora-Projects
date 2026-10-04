@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { campExecuteApi } from './campExecuteApi.js';
 import { prepareGpsSelfieForUpload } from '../utils/prepareGpsSelfieForUpload.js';
+import { GpsSelfieCapture } from './GpsSelfieCapture.jsx';
 import './campExecute.css';
 
 const TYLO_LOGO_SRC = '/brand/tylo-logo.jpg';
@@ -90,6 +91,7 @@ export default function CampExecutePage() {
   const [patients, setPatients] = useState('');
   const [productCount, setProductCount] = useState('');
   const [consumables, setConsumables] = useState([]);
+  const [gpsCaptureOpen, setGpsCaptureOpen] = useState(false);
   const fileRefs = useRef({});
 
   const locked = Boolean(context?.invite?.locked);
@@ -178,7 +180,15 @@ export default function CampExecutePage() {
       let gps = null;
       if (docType === 'gps_selfie') {
         gps = await readGeolocation();
-        uploadFile = await prepareGpsSelfieForUpload(file);
+        const capturedAt = new Date();
+        uploadFile = await prepareGpsSelfieForUpload(file, {
+          watermark: {
+            campId: camp?.campId || '',
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+            capturedAt,
+          },
+        });
       }
       const data = await campExecuteApi.uploadDocument(token, {
         file: uploadFile,
@@ -188,7 +198,9 @@ export default function CampExecutePage() {
       applyContext(data, {
         setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables,
       });
-      setNotice(`${DOC_LABELS[docType]} uploaded`);
+      setNotice(docType === 'gps_selfie'
+        ? `${DOC_LABELS[docType]} captured`
+        : `${DOC_LABELS[docType]} uploaded`);
     } catch (err) {
       setError(err.message || 'Upload failed');
     } finally {
@@ -214,7 +226,7 @@ export default function CampExecutePage() {
 
   async function onSubmit() {
     if (!docsReady) {
-      setError('Upload Doctor Form, Patient Form, and GPS Selfie before submitting');
+      setError('Upload Doctor Form and Patient Form, and capture GPS Selfie before submitting');
       return;
     }
     setBusy(true);
@@ -406,6 +418,7 @@ export default function CampExecutePage() {
             {['doctor_form', 'patient_form', 'gps_selfie'].map((type) => {
               const uploaded = docForType(context.documents, type);
               const status = context.documentStatus?.[type] === 'uploaded' ? 'uploaded' : 'required';
+              const isGps = type === 'gps_selfie';
               return (
                 <div key={type} className="camp-execute__doc">
                   <div className="camp-execute__doc-head">
@@ -415,19 +428,19 @@ export default function CampExecutePage() {
                       <span className="req">*</span>
                     </strong>
                     <span className={`camp-execute__status ${status === 'uploaded' ? 'is-ok' : 'is-req'}`}>
-                      {status === 'uploaded' ? 'Uploaded' : 'Required'}
+                      {status === 'uploaded' ? (isGps ? 'Captured' : 'Uploaded') : 'Required'}
                     </span>
                   </div>
                   {uploaded ? (
                     <div className="camp-execute__file">
-                      {type === 'gps_selfie' && uploaded.url ? (
+                      {isGps && uploaded.url ? (
                         <img src={uploaded.url} alt="GPS selfie" />
                       ) : (
                         <FileText size={22} aria-hidden="true" color="var(--ce-brand)" />
                       )}
                       <div className="camp-execute__file-meta">
                         <strong>{uploaded.fileName}</strong>
-                        <span>{type === 'gps_selfie' ? 'Image' : 'Document'}</span>
+                        <span>{isGps ? 'Live capture' : 'Document'}</span>
                       </div>
                       {!locked ? (
                         <button
@@ -441,13 +454,37 @@ export default function CampExecutePage() {
                         </button>
                       ) : null}
                     </div>
+                  ) : isGps ? (
+                    gpsCaptureOpen ? (
+                      <GpsSelfieCapture
+                        open
+                        busy={busy}
+                        onCancel={() => setGpsCaptureOpen(false)}
+                        onCapture={async (file) => {
+                          setGpsCaptureOpen(false);
+                          await onUpload('gps_selfie', file);
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="camp-execute__upload-btn"
+                        disabled={busy || locked}
+                        onClick={() => {
+                          setError('');
+                          setNotice('');
+                          setGpsCaptureOpen(true);
+                        }}
+                      >
+                        Capture GPS Selfie
+                      </button>
+                    )
                   ) : (
                     <>
                       <input
                         ref={(el) => { fileRefs.current[type] = el; }}
                         type="file"
-                        accept={type === 'gps_selfie' ? 'image/*' : 'application/pdf,image/*'}
-                        capture={type === 'gps_selfie' ? 'environment' : undefined}
+                        accept="application/pdf,image/*"
                         hidden
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -461,11 +498,11 @@ export default function CampExecutePage() {
                         disabled={busy || locked}
                         onClick={() => fileRefs.current[type]?.click()}
                       >
-                        {type === 'gps_selfie' ? 'Capture / Upload GPS Selfie' : 'Upload file'}
+                        Upload file
                       </button>
                     </>
                   )}
-                  {type === 'gps_selfie' && gps?.latitude != null ? (
+                  {isGps && gps?.latitude != null ? (
                     <div className="camp-execute__gps">
                       <span>
                         Location captured:

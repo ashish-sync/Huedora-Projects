@@ -44,6 +44,7 @@ export function CampAssignmentStage({
   excludeCampId = '',
 }) {
   const [copyState, setCopyState] = useState('');
+  const [copyHint, setCopyHint] = useState('');
   const [reassigning, setReassigning] = useState(false);
   const [assignedSnapshot, setAssignedSnapshot] = useState(null);
   const isTerminal = ['cancelled', 'rejected'].includes(campStatus);
@@ -61,10 +62,19 @@ export function CampAssignmentStage({
     : clientMasterProfession;
 
   async function handleCopyDetails() {
-    const didCopy = await copyCampAssignmentDetails(form, { clientMasterRecords });
-    if (!didCopy) return;
-    setCopyState('copied');
-    window.setTimeout(() => setCopyState(''), 2000);
+    const result = await copyCampAssignmentDetails(form, {
+      clientMasterRecords,
+      campId: excludeCampId || form._id || form.id || '',
+    });
+    if (!result?.copied) return;
+    setCopyState(result.activityFormUrl ? 'copied' : 'partial');
+    setCopyHint(result.activityFormUrl
+      ? 'Copied with Activity Form'
+      : (result.activityFormError || 'Copied — Activity Form unavailable'));
+    window.setTimeout(() => {
+      setCopyState('');
+      setCopyHint('');
+    }, 3500);
   }
 
   if (campStatus !== 'approved' && !isTerminal) {
@@ -162,15 +172,20 @@ export function CampAssignmentStage({
               <div className="camp-assignment-copy-wrap full">
                 <button
                   type="button"
-                  className={`btn secondary btn-compact camp-assignment-copy-btn${copyState === 'copied' ? ' is-copied' : ''}`}
+                  className={`btn secondary btn-compact camp-assignment-copy-btn${copyState === 'copied' || copyState === 'partial' ? ' is-copied' : ''}`}
                   onClick={handleCopyDetails}
                 >
-                  {copyState === 'copied' ? (
+                  {copyState === 'copied' || copyState === 'partial' ? (
                     <Check size={16} strokeWidth={2.25} aria-hidden="true" />
                   ) : (
                     <ClipboardCopy size={16} strokeWidth={2} aria-hidden="true" />
                   )}
-                  {copyState === 'copied' ? 'Copied' : 'Copy details'}
+                  {copyHint
+                    || (copyState === 'copied'
+                      ? 'Copied with Activity Form'
+                      : copyState === 'partial'
+                        ? 'Copied — Activity Form unavailable'
+                        : 'Copy details')}
                 </button>
               </div>
             ) : null}

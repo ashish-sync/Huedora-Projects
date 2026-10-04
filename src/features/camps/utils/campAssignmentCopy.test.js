@@ -1,8 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   assignmentCopySourceFromCamp,
+  copyCampAssignmentDetailsFromRecord,
   formatCampAssignmentDetails,
+  toShortActivityFormUrl,
 } from './campAssignmentCopy.js';
+import { campApi } from '../campOpsApi.js';
+
+vi.mock('../campOpsApi.js', () => ({
+  campApi: {
+    mintExecutionLink: vi.fn(),
+  },
+  clientMasterApi: {
+    listByClient: vi.fn(),
+  },
+}));
 
 describe('formatCampAssignmentDetails', () => {
   it('formats assigned camp details with display name first and expected patients before contact person', () => {
@@ -79,6 +91,95 @@ describe('formatCampAssignmentDetails', () => {
 
     expect(text.startsWith('*Ortho BMD Label*\n')).toBe(true);
     expect(text).not.toContain('Display Name');
+  });
+
+  it('appends short Activity Form link at the end when provided', () => {
+    const text = formatCampAssignmentDetails({
+      displayName: 'Viva BMD Program',
+      doctorName: 'Dr. Demo',
+      campDate: '2026-08-10',
+      startTime: '09:00',
+      endTime: '12:00',
+      fieldPersonName: 'Amit Sharma',
+      fieldPersonPhone: '7559133770',
+      hcwName: 'Ravi',
+      hcwContact: '9999999999',
+    }, {
+      activityFormUrl: 'https://app.example.com/camp-execute/tok_abc123',
+    });
+
+    expect(text.trimEnd().endsWith('*Activity Form:* https://app.example.com/e/tok_abc123')).toBe(true);
+  });
+});
+
+describe('toShortActivityFormUrl', () => {
+  it('rewrites camp-execute paths to /e/:token', () => {
+    expect(toShortActivityFormUrl('https://qa.example.com/camp-execute/abc.def')).toBe(
+      'https://qa.example.com/e/abc.def',
+    );
+    expect(toShortActivityFormUrl('https://qa.example.com/e/abc.def')).toBe(
+      'https://qa.example.com/e/abc.def',
+    );
+  });
+});
+
+describe('copyCampAssignmentDetailsFromRecord', () => {
+  beforeEach(() => {
+    vi.mocked(campApi.mintExecutionLink).mockReset();
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+  });
+
+  it('mints and appends Activity Form for assigned list rows', async () => {
+    vi.mocked(campApi.mintExecutionLink).mockResolvedValue({
+      data: { data: { url: 'http://localhost:5173/e/AbCdEfGh12', token: 'AbCdEfGh12' } },
+    });
+
+    const result = await copyCampAssignmentDetailsFromRecord({
+      _id: 'camp-mongo-id-1',
+      displayName: 'Viva BMD',
+      doctorName: 'Dr. Demo',
+      campDate: '2026-10-22',
+      startTime: '09:00',
+      endTime: '12:00',
+      campAddress: '12 MG Road',
+      expectedPatients: 50,
+      fieldPersonName: 'Amit Sharma',
+      fieldPersonPhone: '9876543210',
+      hcwName: 'Ravi Technician',
+      hcwContact: '9123456780',
+      assignmentStatus: 'Assigned',
+    });
+
+    expect(campApi.mintExecutionLink).toHaveBeenCalledWith('camp-mongo-id-1');
+    expect(result.copied).toBe(true);
+    expect(result.activityFormUrl).toContain('/e/AbCdEfGh12');
+    expect(result.activityFormError).toBe('');
+    expect(result.text).toContain('*Activity Form:* http://localhost:5173/e/AbCdEfGh12');
+  });
+
+  it('returns server expiry reason when Activity Form mint is blocked', async () => {
+    vi.mocked(campApi.mintExecutionLink).mockRejectedValue(
+      new Error('Activity Form link is disabled — more than 72 hours after camp start'),
+    );
+
+    const result = await copyCampAssignmentDetailsFromRecord({
+      _id: 'camp-mongo-id-2',
+      campId: '26-09-0003',
+      doctorName: 'Dr. Demo',
+      campDate: '2026-09-03',
+      startTime: '09:00',
+      hcwName: 'Ravi',
+      assignmentStatus: 'Assigned',
+    });
+
+    expect(result.copied).toBe(true);
+    expect(result.activityFormUrl).toBe('');
+    expect(result.activityFormError).toMatch(/72 hours after camp start/i);
+    expect(result.text).not.toContain('*Activity Form:*');
   });
 });
 

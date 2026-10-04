@@ -22,6 +22,7 @@ export function CampExecutionRowActions({
   onAction,
 }) {
   const [copyState, setCopyState] = useState('');
+  const [copyHint, setCopyHint] = useState('');
   const assigned = isCampAssigned(camp);
   const isTerminal = ['cancelled', 'rejected'].includes(camp.status);
   const showCopy = assigned && !isTerminal;
@@ -30,10 +31,16 @@ export function CampExecutionRowActions({
   const closeLabel = cancelOrRefuseLabel(camp, STAGE);
 
   async function handleCopyDetails() {
-    const didCopy = await copyCampAssignmentDetailsFromRecord(camp);
-    if (!didCopy) return;
-    setCopyState('copied');
-    window.setTimeout(() => setCopyState(''), 2000);
+    const result = await copyCampAssignmentDetailsFromRecord(camp);
+    if (!result?.copied) return;
+    setCopyState(result.activityFormUrl ? 'copied' : 'partial');
+    setCopyHint(result.activityFormUrl
+      ? 'Copied with Activity Form'
+      : (result.activityFormError || 'Copied — Activity Form unavailable'));
+    window.setTimeout(() => {
+      setCopyState('');
+      setCopyHint('');
+    }, 3500);
   }
 
   if (!showCopy && !showCross && !canEdit && !canDelete) {
@@ -44,9 +51,13 @@ export function CampExecutionRowActions({
     <div className="actions camp-row-actions camp-row-icon-actions">
       {showCopy && (
         <CampRowIconButton
-          icon={copyState === 'copied' ? Check : ClipboardCopy}
-          label={copyState === 'copied' ? 'Copied' : 'Copy details'}
-          variant={copyState === 'copied' ? 'approve' : 'neutral'}
+          icon={copyState === 'copied' || copyState === 'partial' ? Check : ClipboardCopy}
+          label={copyHint || (copyState === 'copied'
+            ? 'Copied with Activity Form'
+            : copyState === 'partial'
+              ? 'Copied — Activity Form unavailable'
+              : 'Copy details')}
+          variant={copyState === 'copied' ? 'approve' : copyState === 'partial' ? 'issues' : 'neutral'}
           onClick={handleCopyDetails}
         />
       )}

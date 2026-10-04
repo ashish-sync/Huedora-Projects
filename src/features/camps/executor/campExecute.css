@@ -544,6 +544,80 @@
   color: var(--ce-brand);
   font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.camp-execute__camera {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ce-line);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.camp-execute__camera-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.camp-execute__camera-head strong {
+  font-size: 0.95rem;
+}
+
+.camp-execute__camera-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ce-muted);
+}
+
+.camp-execute__camera-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0f172a;
+  aspect-ratio: 3 / 4;
+  max-height: min(58dvh, 420px);
+}
+
+.camp-execute__camera-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.camp-execute__camera-error,
+.camp-execute__camera-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.camp-execute__camera-error {
+  background: #7f1d1d;
+}
+
+.camp-execute__camera-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .camp-execute__add-btn {

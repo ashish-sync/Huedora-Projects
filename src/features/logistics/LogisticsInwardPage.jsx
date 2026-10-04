@@ -5,6 +5,7 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { api, apiUrl } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { openUploadView } from '../../shared/uploadViewUrl.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate } from '../../shared/dateFormat.js';
@@ -145,8 +146,8 @@ export default function LogisticsInwardPage() {
     api('/logistics/meta')
       .then((r) => setMeta(r.data))
       .catch(() => {});
-    api('/contacts?limit=200')
-      .then((r) => setContacts(r.data || []))
+    fetchContactsList({ limit: 200 })
+      .then((rows) => setContacts(rows))
       .catch(() => setContacts([]));
   }, []);
 

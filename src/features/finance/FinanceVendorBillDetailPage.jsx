@@ -4,6 +4,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { DateInput } from '../../components/ui/DateInput.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { api, apiUrl } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { NAV } from '../../shared/labels.js';
@@ -179,8 +180,8 @@ export default function FinanceVendorBillDetailPage() {
   }, [loadBill]);
 
   useEffect(() => {
-    api('/contacts?limit=500&contactCategory=Vendor')
-      .then((r) => setVendorContacts((r.data || []).filter((c) => isVendorContact(c))))
+    fetchContactsList({ limit: 500, contactCategory: 'Vendor' })
+      .then((rows) => setVendorContacts(rows.filter((c) => isVendorContact(c))))
       .catch(() => setVendorContacts([]));
     api('/logistics/expense-master')
       .then((r) =>

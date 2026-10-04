@@ -4,6 +4,7 @@ import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
@@ -306,8 +307,8 @@ export default function LogisticsMasterPage({
 
   useEffect(() => {
     if (!entity?.fromContacts) return;
-    api('/contacts?limit=200')
-      .then((res) => setContacts(res.data || []))
+    fetchContactsList({ limit: 200 })
+      .then((rows) => setContacts(rows))
       .catch(() => setContacts([]));
   }, [entity?.fromContacts, entityId]);
 

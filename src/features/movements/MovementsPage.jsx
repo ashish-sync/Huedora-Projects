@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { FIELD, ACTION, MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -34,7 +35,7 @@ export default function MovementsPage() {
   useEffect(() => {
     load();
     api('/assets?limit=200').then((r) => setAssets(r.data)).catch(() => {});
-    api('/contacts?limit=200').then((r) => setContacts(r.data || [])).catch(() => {});
+    fetchContactsList({ limit: 200 }).then((rows) => setContacts(rows)).catch(() => {});
   }, []);
 
   const act = async (id, action) => {

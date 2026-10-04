@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
-import { api } from '../../../shared/api.js';
+import { fetchContactsList } from '../../../shared/contactsApi.js';
 import { isVendorContact } from '../../agreements/contactPicklists.js';
 
 /**
@@ -45,10 +45,9 @@ export default function VendorContactPicker({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api('/contacts?limit=500&contactCategory=Vendor')
-      .then((r) => {
+    fetchContactsList({ limit: 500, contactCategory: 'Vendor' })
+      .then((list) => {
         if (cancelled) return;
-        const list = Array.isArray(r?.data) ? r.data : [];
         setRows(list.filter((c) => isVendorContact(c) && c.isActive !== false && !c.isDeleted));
         setError('');
       })

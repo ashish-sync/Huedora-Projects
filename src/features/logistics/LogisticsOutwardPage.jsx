@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -920,8 +921,8 @@ export default function LogisticsOutwardPage() {
     api('/logistics/meta')
       .then((r) => setMeta(r.data))
       .catch(() => {});
-    api('/contacts?limit=200')
-      .then((r) => setContacts(r.data || []))
+    fetchContactsList({ limit: 200 })
+      .then((rows) => setContacts(rows))
       .catch(() => setContacts([]));
   }, []);
 

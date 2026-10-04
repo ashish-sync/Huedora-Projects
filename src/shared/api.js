@@ -6,9 +6,13 @@ export { BACKEND_URL, API_BASE, apiUrl } from './config.js';
 let accessToken = null;
 /** In-flight refresh so concurrent 401s share one cookie refresh. */
 let refreshPromise = null;
+/** Bumped on logout so late refresh responses cannot restore a cleared session. */
+let authGeneration = 0;
 
 const ACCESS_KEY = 'tylo_one_access';
 const LEGACY_ACCESS_KEY = LEGACY_ACCESS_STORAGE_KEY;
+/** Tab-scoped latch: after logout, block cookie refresh until the next login. */
+const LOGOUT_LATCH_KEY = 'tylo_one_logged_out';
 
 function writeAccessStorage(token) {
   try {
@@ -49,12 +53,53 @@ function readAccessStorage() {
   }
 }
 
+function setLogoutLatch(active) {
+  try {
+    if (active) sessionStorage.setItem(LOGOUT_LATCH_KEY, '1');
+    else sessionStorage.removeItem(LOGOUT_LATCH_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function hasLogoutLatch() {
+  try {
+    return sessionStorage.getItem(LOGOUT_LATCH_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function setAccessToken(token) {
-  accessToken = token;
-  writeAccessStorage(token);
+  if (token) {
+    setLogoutLatch(false);
+    accessToken = token;
+    writeAccessStorage(token);
+    return;
+  }
+  accessToken = null;
+  writeAccessStorage(null);
+}
+
+/**
+ * Clear local auth and invalidate in-flight cookie refresh so a late /auth/refresh
+ * response cannot rewrite localStorage after logout.
+ */
+export function clearLocalAuthSession() {
+  authGeneration += 1;
+  setLogoutLatch(true);
+  accessToken = null;
+  writeAccessStorage(null);
+  refreshPromise = null;
+  return authGeneration;
 }
 
 export function loadStoredToken() {
+  if (hasLogoutLatch()) {
+    accessToken = null;
+    writeAccessStorage(null);
+    return null;
+  }
   accessToken = readAccessStorage();
   return accessToken;
 }
@@ -72,9 +117,20 @@ function isAuthRefreshExempt(path) {
 /**
  * Exchange httpOnly refresh cookie for a new access token.
  * Safe to call concurrently — only one network refresh runs at a time.
+ * Discarded if logout cleared the session while the request was in flight.
  */
 export async function refreshAccessToken() {
+  if (hasLogoutLatch()) {
+    accessToken = null;
+    writeAccessStorage(null);
+    const err = new Error('Session expired');
+    err.status = 401;
+    err.code = 'LOGGED_OUT';
+    throw err;
+  }
+
   if (!refreshPromise) {
+    const generationAtStart = authGeneration;
     refreshPromise = (async () => {
       const res = await fetch(apiUrl('/auth/refresh'), {
         method: 'POST',
@@ -89,6 +145,16 @@ export async function refreshAccessToken() {
       } catch {
         json = null;
       }
+
+      if (generationAtStart !== authGeneration || hasLogoutLatch()) {
+        accessToken = null;
+        writeAccessStorage(null);
+        const err = new Error('Session expired');
+        err.status = 401;
+        err.code = 'LOGGED_OUT';
+        throw err;
+      }
+
       if (!res.ok) {
         setAccessToken(null);
         const err = new Error(json?.error?.message || 'Session expired');
@@ -101,6 +167,16 @@ export async function refreshAccessToken() {
         setAccessToken(null);
         throw new Error('Session expired');
       }
+
+      if (generationAtStart !== authGeneration || hasLogoutLatch()) {
+        accessToken = null;
+        writeAccessStorage(null);
+        const err = new Error('Session expired');
+        err.status = 401;
+        err.code = 'LOGGED_OUT';
+        throw err;
+      }
+
       setAccessToken(next);
       return json.data;
     })().finally(() => {

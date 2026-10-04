@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { api, apiUrl } from '../../shared/api.js';
+import { invalidateContactsCaches } from '../../shared/contactsApi.js';
 import { openUploadView } from '../../shared/uploadViewUrl.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -355,6 +356,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         if (!isHcwStaff) body.serviceProviderContactId = '';
         await api('/contacts', { method: 'POST', body });
       }
+      invalidateContactsCaches();
       setForm(empty);
       setEditId(null);
       setRosterTouched(false);
@@ -394,6 +396,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         passbookCopyUrl: contact.passbookCopyUrl || '',
         panCardCopyUrl: contact.panCardCopyUrl || '',
       }));
+      invalidateContactsCaches();
       load();
     } catch (err) {
       setError(err.message || 'Failed to upload document');
@@ -515,6 +518,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   setImportMsg(
                     `Imported: ${data.created} created · ${data.updated} updated · ${data.errorRows} errors`
                   );
+                  invalidateContactsCaches();
                   load();
                 }}
                 onError={(message) => setError(message)}

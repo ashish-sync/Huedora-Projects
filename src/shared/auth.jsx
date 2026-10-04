@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, loadStoredToken, refreshAccessToken, setAccessToken } from './api.js';
+import { api, clearLocalAuthSession, loadStoredToken, refreshAccessToken, setAccessToken } from './api.js';
 import { beginInsightSession, clearInsightSession } from './pickHealthcareInsight.js';
 import { exitAppFullscreen } from './fullscreen.js';
 import { isBootSequenceEnabled, loginExperience } from './loginExperienceConfig.js';
@@ -59,10 +59,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear local session first so a refresh cannot revive the access JWT from localStorage
-    // while /auth/logout is still in flight (especially with a cross-origin API).
+    // Snapshot bearer before local clear so the server can revoke even when the
+    // httpOnly refresh cookie is missing from the request (cross-site / path drift).
     const tokenSnapshot = loadStoredToken();
-    setAccessToken(null);
+    // Invalidate in-flight /auth/refresh and latch this tab so a reload cannot
+    // silently restore the session from a lingering refresh cookie.
+    clearLocalAuthSession();
     setUser(null);
     setBootSessionActive(false);
     clearInsightSession();
@@ -70,21 +72,21 @@ export function AuthProvider({ children }) {
 
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timeout = controller
-      ? window.setTimeout(() => controller.abort(), 4000)
+      ? window.setTimeout(() => controller.abort(), 8000)
       : null;
     try {
-      // Prefer api() when a bearer token still existed; otherwise cookie-only logout.
       await api('/auth/logout', {
         method: 'POST',
         body: {},
         headers: tokenSnapshot ? { Authorization: `Bearer ${tokenSnapshot}` } : undefined,
+        keepalive: true,
         ...(controller ? { signal: controller.signal } : {}),
       });
     } catch {
-      /* ignore network / abort — local session is already cleared */
+      /* ignore network / abort — local session is already cleared + latched */
     } finally {
       if (timeout) window.clearTimeout(timeout);
-      setAccessToken(null);
+      clearLocalAuthSession();
     }
   }, []);
 

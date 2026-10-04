@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 
 import { MODULE, FIELD, NAV, ACTION } from '../../shared/labels.js';
@@ -247,8 +248,8 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     api('/logistics/products?limit=500&isActive=true')
       .then((r) => setProducts(r.data || []))
       .catch(() => {});
-    api('/contacts?limit=500')
-      .then((r) => setContacts(r.data || []))
+    fetchContactsList({ limit: 500 })
+      .then((rows) => setContacts(rows))
       .catch(() => {});
   }, []);
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
+import { fetchContactsList } from '../../shared/contactsApi.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { FIELD, MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -975,16 +976,16 @@ export default function AssetRequestsPage() {
         .catch(() => {});
     }
     if (needsContacts) {
-      api('/contacts?limit=100')
-        .then((r) => {
-          if (!cancelled) setContacts(r.data || []);
+      fetchContactsList({ limit: 100 })
+        .then((rows) => {
+          if (!cancelled) setContacts(rows);
         })
         .catch(() => {});
     }
     if (needsVendors) {
-      api('/contacts?limit=100&contactCategory=Vendor')
-        .then((r) => {
-          if (!cancelled) setVendorContacts((r.data || []).filter((c) => isVendorContact(c)));
+      fetchContactsList({ limit: 100, contactCategory: 'Vendor' })
+        .then((rows) => {
+          if (!cancelled) setVendorContacts(rows.filter((c) => isVendorContact(c)));
         })
         .catch(() => {
           if (!cancelled) setVendorContacts([]);

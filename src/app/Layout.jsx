@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BrandLogo from '../components/BrandLogo.jsx';
 import { Link, useLocation } from 'react-router-dom';
-import { api } from '../shared/api.js';
+import { apiFetch } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
 import { useTheme } from '../shared/theme.jsx';
 import { MODULE } from '../shared/labels.js';
+import {
+  NOTIFICATION_POLL_MS,
+  shouldSkipNotificationPoll,
+} from '../shared/notificationPoll.js';
 import {
   emitNotificationsChanged,
   NOTIFICATIONS_CHANGED_EVENT,
@@ -20,8 +24,6 @@ function initials(name = '') {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
-
-const POLL_MS = 90000;
 
 export default function Layout({ children }) {
   const { user, logout, can } = useAuth();
@@ -39,6 +41,7 @@ export default function Layout({ children }) {
   const knownUnreadIdsRef = useRef(null);
   const lastUnreadPollRef = useRef(0);
   const unreadAbortRef = useRef(null);
+  const unreadEtagRef = useRef('');
   const canSeeNotifications = can('notifications:read') || can('dashboards:read') || can('*');
 
   const refreshUnread = useCallback(async ({ force = false } = {}) => {
@@ -47,9 +50,17 @@ export default function Layout({ children }) {
       setFyiCount(0);
       return;
     }
-    if (typeof document !== 'undefined' && document.hidden && !force) return;
     const now = Date.now();
-    if (!force && now - lastUnreadPollRef.current < 5000) return;
+    if (
+      shouldSkipNotificationPoll({
+        now,
+        lastPollAt: lastUnreadPollRef.current,
+        force,
+        documentHidden: typeof document !== 'undefined' ? document.hidden : false,
+      })
+    ) {
+      return;
+    }
     lastUnreadPollRef.current = now;
 
     unreadAbortRef.current?.abort();
@@ -57,13 +68,22 @@ export default function Layout({ children }) {
     unreadAbortRef.current = controller;
 
     try {
-      const res = await api('/notifications/unread-count', {
+      const headers = {};
+      if (unreadEtagRef.current) headers['If-None-Match'] = unreadEtagRef.current;
+      const res = await apiFetch('/notifications/unread-count', {
+        headers,
         ...(controller ? { signal: controller.signal } : {}),
       });
+      const nextEtag = res.headers.get('ETag') || '';
+      if (nextEtag) unreadEtagRef.current = nextEtag;
+      if (res.status === 304) return;
+      if (!res.ok) return;
+      const json = await res.json().catch(() => null);
+      const data = json?.data || {};
       // Badge = Approvals only so FYI does not inflate the red number.
-      const approvals = Number(res.data?.approvals ?? res.data?.count) || 0;
-      const fyi = Number(res.data?.fyi ?? res.data?.updates) || 0;
-      const ids = new Set((res.data?.sampleIds || []).map(String));
+      const approvals = Number(data.approvals ?? data.count) || 0;
+      const fyi = Number(data.fyi ?? data.updates) || 0;
+      const ids = new Set((data.sampleIds || []).map(String));
       const prev = knownUnreadIdsRef.current;
       if (prev && ids.size) {
         let hasNew = false;
@@ -108,16 +128,22 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (!canSeeNotifications) return undefined;
+    // First paint: bypass min-gap once.
+    lastUnreadPollRef.current = 0;
     refreshUnread({ force: true });
     const timer = window.setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
-      refreshUnread({ force: true });
-    }, POLL_MS);
+      refreshUnread({ force: false });
+    }, NOTIFICATION_POLL_MS);
     const onFocus = () => refreshUnread({ force: false });
     const onVisibility = () => {
       if (typeof document !== 'undefined' && !document.hidden) refreshUnread({ force: true });
     };
-    const onChanged = () => refreshUnread({ force: true });
+    const onChanged = () => {
+      unreadEtagRef.current = '';
+      lastUnreadPollRef.current = 0;
+      refreshUnread({ force: true });
+    };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);

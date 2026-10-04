@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Calendar, ChevronLeft, ChevronRight, Info, MapPin, Trash2, User, FileText, Send,
+  Calendar, Check, ChevronLeft, ChevronRight, Info, MapPin, Save, Trash2, User, FileText, Send,
 } from 'lucide-react';
 import { campExecuteApi } from './campExecuteApi.js';
 import { prepareGpsSelfieForUpload } from '../utils/prepareGpsSelfieForUpload.js';
@@ -272,7 +272,7 @@ export default function CampExecutePage() {
   const gps = context.form?.executorGps;
 
   return (
-    <div className="camp-execute">
+    <div className={`camp-execute${step === 0 ? ' camp-execute--fit' : ''}`}>
       <header className="camp-execute__header">
         <button
           type="button"
@@ -296,11 +296,13 @@ export default function CampExecutePage() {
         </div>
         <button
           type="button"
-          className="camp-execute__text-btn"
+          className="camp-execute__icon-btn camp-execute__icon-btn--accent"
           disabled={busy || locked}
           onClick={() => saveDraft()}
+          aria-label={locked ? 'Submitted' : 'Save draft'}
+          title={locked ? 'Submitted' : 'Save draft'}
         >
-          {locked ? 'Submitted' : 'Save Draft'}
+          {locked ? <Check size={22} strokeWidth={2.25} /> : <Save size={22} strokeWidth={2.25} />}
         </button>
       </header>
 
@@ -340,21 +342,21 @@ export default function CampExecutePage() {
                   <Calendar size={18} aria-hidden="true" color="var(--ce-brand)" />
                   <div>
                     <small>Date</small>
-                    <div>{camp.campDateLabel || camp.campDate}</div>
+                    <p className="camp-execute__meta-value">{camp.campDateLabel || camp.campDate}</p>
                   </div>
                 </div>
                 <div className="camp-execute__meta-row">
                   <User size={18} aria-hidden="true" color="var(--ce-brand)" />
                   <div>
                     <small>Doctor</small>
-                    <div>{camp.doctorName || '—'}</div>
+                    <p className="camp-execute__meta-value">{camp.doctorName || '—'}</p>
                   </div>
                 </div>
                 <div className="camp-execute__meta-row">
                   <MapPin size={18} aria-hidden="true" color="var(--ce-brand)" />
                   <div>
                     <small>Clinic</small>
-                    <div>{camp.clinicLabel || camp.clinicAddress || '—'}</div>
+                    <p className="camp-execute__meta-value">{camp.clinicLabel || camp.clinicAddress || '—'}</p>
                   </div>
                 </div>
               </div>
@@ -537,7 +539,7 @@ export default function CampExecutePage() {
             <h2 className="camp-execute__section-title">Consumables Used</h2>
             <div className="camp-execute__info">
               <Info size={18} aria-hidden="true" />
-              <span>Enter only items used during the camp.</span>
+              <span>Optional — enter only items used during the camp.</span>
             </div>
             <div className="camp-execute__cons-list">
               {consumables.map((row, index) => {
@@ -612,8 +614,6 @@ export default function CampExecutePage() {
                         <span>
                           Used
                           {unitLabel ? ` (${unitLabel})` : ''}
-                          {' '}
-                          <span className="req">*</span>
                         </span>
                         <input
                           type="number"
@@ -673,16 +673,6 @@ export default function CampExecutePage() {
       </main>
 
       <footer className="camp-execute__footer">
-        {step > 0 ? (
-          <button
-            type="button"
-            className="camp-execute__btn secondary"
-            disabled={busy}
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
-          >
-            <ChevronLeft size={18} /> Back
-          </button>
-        ) : null}
         {step < STEPS.length - 1 ? (
           <button
             type="button"
@@ -690,16 +680,18 @@ export default function CampExecutePage() {
             disabled={busy || locked}
             onClick={goNext}
           >
-            Next <ChevronRight size={18} />
+            Next
+            <ChevronRight size={20} strokeWidth={2.5} />
           </button>
         ) : (
           <button
             type="button"
-            className="camp-execute__btn primary"
+            className="camp-execute__btn primary camp-execute__btn--submit"
             disabled={busy || locked || !docsReady || !detailsReady}
             onClick={onSubmit}
           >
-            <Send size={18} /> Submit Execution
+            <Send size={18} strokeWidth={2.25} />
+            {locked ? 'Submitted' : 'Submit'}
           </button>
         )}
       </footer>

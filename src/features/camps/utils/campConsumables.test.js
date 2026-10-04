@@ -65,22 +65,20 @@ describe('camp consumables', () => {
     ]);
   });
 
-  it('flags incomplete mapped consumables but skips excluded rows', () => {
+  it('does not require consumables for completion (optional section)', () => {
     expect(
       getConsumablesCompletionBlockers(mapped, [
         { productId: 'p1', quantityUsed: '20', wastage: '2' },
         { productId: 'p2', quantityUsed: '', wastage: '', excluded: true },
       ]),
     ).toEqual([]);
-  });
-
-  it('still flags incomplete active mapped consumables', () => {
     expect(
       getConsumablesCompletionBlockers(mapped, [
         { productId: 'p1', quantityUsed: '20', wastage: '2' },
         { productId: 'p2', quantityUsed: '', wastage: '' },
       ]),
-    ).toEqual(['Enter usage and wastage for Device Battery']);
+    ).toEqual([]);
+    expect(getConsumablesCompletionBlockers(mapped, [])).toEqual([]);
   });
 
   it('keeps incomplete required rows instead of silently discarding', () => {

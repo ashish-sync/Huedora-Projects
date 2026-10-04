@@ -27,7 +27,7 @@ describe('notificationLinks', () => {
 
   it('labels categories and severity', () => {
     expect(categoryLabel({ type: 'CAMP_BULK_PARTIAL', module: 'camp' })).toBe('Bulk action');
-    expect(categoryLabel({ type: 'CAMP_REVIEW_OVERDUE', module: 'camp' })).toBe('Approval');
+    expect(categoryLabel({ type: 'CAMP_REVIEW_OVERDUE', module: 'camp' })).toBe('Alert');
     expect(categoryLabel({ type: 'CAMP_APPROVED', module: 'camp' })).toBe('Camp');
     expect(priorityLabel('critical')).toBe('Critical');
   });
@@ -45,13 +45,26 @@ describe('notificationLinks', () => {
     expect(
       isApprovalRequestNotification({
         type: 'CAMP_REVIEW',
-        title: 'Camp 1702 needs review',
+        title: 'Camp 26-08-0012 needs approval',
       }),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      isApprovalRequestNotification({
+        type: 'CAMP_REVIEW',
+        title: 'Camp 1702 needs review',
+        meta: { kind: 'approval' },
+      }),
+    ).toBe(false);
     expect(
       isApprovalRequestNotification({
         type: 'ASSET_REQUEST_APPROVAL',
         title: 'Hiring request HR-1 needs approval',
+      }),
+    ).toBe(true);
+    expect(
+      isApprovalRequestNotification({
+        type: 'CAMP_HCW_GAP_APPROVAL',
+        title: 'Camp 26-08-0012 needs approval — HCW gap under 30 minutes',
       }),
     ).toBe(true);
     expect(

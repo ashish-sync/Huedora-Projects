@@ -854,10 +854,13 @@ export default function LandscapeInvoiceLikePreview({
                         }`}
                       >
                         {clickSigned ? (
-                          <ClickToSignStamp
-                            signatoryName={signature.signatoryName}
-                            signedAt={signature.signedAt}
-                          />
+                          <>
+                            <ClickToSignStamp
+                              signatoryName={signature.signatoryName}
+                              signedAt={signature.signedAt}
+                            />
+                            <span className="ti-signature-label">AUTHORISED SIGNATORY</span>
+                          </>
                         ) : (
                           <>
                             {signature?.imageDataUrl ? (
@@ -870,7 +873,7 @@ export default function LandscapeInvoiceLikePreview({
                             {signature?.signatoryName ? (
                               <span className="ti-signature-name">{signature.signatoryName}</span>
                             ) : null}
-                            <span className="ti-signature-label">Authorised Signatory</span>
+                            <span className="ti-signature-label">AUTHORISED SIGNATORY</span>
                           </>
                         )}
                         {editable ? (

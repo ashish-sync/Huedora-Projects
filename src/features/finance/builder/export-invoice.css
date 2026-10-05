@@ -383,9 +383,9 @@
 }
 
 .tylo-invoice--export .ti-card-body--bank-sig {
-  justify-content: center !important;
-  align-items: center !important;
-  padding: 2.5mm 2.5mm 3mm !important;
+  justify-content: stretch !important;
+  align-items: stretch !important;
+  padding: 1.5mm 2.5mm 2.5mm !important;
   overflow: hidden !important;
   min-height: 26mm !important;
   box-sizing: border-box !important;
@@ -395,10 +395,13 @@
   border-left: none !important;
   justify-content: center !important;
   align-items: center !important;
+  align-self: stretch !important;
   margin-top: 0 !important;
   padding: 1.5mm !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-height: 0 !important;
+  flex: 1 1 auto !important;
   box-sizing: border-box !important;
 }
 
@@ -419,15 +422,33 @@
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   text-align: center !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  min-height: 0 !important;
   flex: 1 1 auto !important;
+  height: 100% !important;
   overflow: visible !important;
-  padding: 2mm 2.5mm !important;
+  padding: 1mm 2mm 1.5mm !important;
   box-sizing: border-box !important;
+  gap: 0 !important;
+}
+
+.tylo-invoice--export .ti-signature--click-to-sign .ti-signature-label {
+  display: block !important;
+  flex: 0 0 auto !important;
+  margin-top: 2mm !important;
+  margin-bottom: 0.5mm !important;
+  color: #1e3a5f !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  width: 100% !important;
+  line-height: 1.3 !important;
 }
 
 .tylo-invoice--export .ti-click-sign-shell {
@@ -440,7 +461,7 @@
   flex: 1 1 auto !important;
   min-height: 12mm !important;
   overflow: visible !important;
-  padding: 1.5mm 0 !important;
+  padding: 1mm 0 !important;
   box-sizing: border-box !important;
 }
 
@@ -449,40 +470,41 @@
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 3px !important;
+  gap: 2px !important;
   width: max-content !important;
   max-width: none !important;
   margin: 0 auto !important;
   transform-origin: center center !important;
-  line-height: 1.3 !important;
+  line-height: 1.25 !important;
 }
 
 .tylo-invoice--export .ti-click-sign__name,
 .tylo-invoice--export .signature-name {
   font-family: Arial, Helvetica, "Helvetica Neue", sans-serif !important;
-  font-size: 10.5px !important;
+  font-size: 11px !important;
   font-weight: 400 !important;
-  letter-spacing: 0.03em !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
   color: #111111 !important;
   white-space: nowrap !important;
   display: block !important;
   transform: none !important;
-  line-height: 1.4 !important;
-  padding: 0.2em 0.4em !important;
+  line-height: 1.35 !important;
+  padding: 0.1em 0.4em !important;
 }
 
 .tylo-invoice--export .ti-click-sign__meta,
 .tylo-invoice--export .signature-date {
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: 8px !important;
+  font-size: 8.5px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.015em !important;
+  letter-spacing: 0.02em !important;
   color: #111111 !important;
   white-space: nowrap !important;
   display: block !important;
   transform: none !important;
-  line-height: 1.45 !important;
-  padding: 0.25em 0.4em 0.45em !important;
+  line-height: 1.4 !important;
+  padding: 0.15em 0.4em 0.25em !important;
 }
 
 .tylo-invoice--export .ei-inline,

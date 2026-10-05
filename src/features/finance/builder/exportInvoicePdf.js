@@ -1,5 +1,6 @@
 import { pageSpec } from '../shared/a4Landscape.js';
 import { formatDisplayDate } from '../invoiceGenerator/invoiceCalculations.js';
+import { fitClickToSignStamps } from '../shared/fitClickToSign.js';
 
 async function loadHtml2Pdf() {
   const mod = await import('html2pdf.js');
@@ -76,6 +77,9 @@ export function buildDocumentExportNode(sourceRoot, { orientation = 'landscape' 
   host.setAttribute('aria-hidden', 'true');
   host.appendChild(clone);
   document.body.appendChild(host);
+
+  // Clone keeps the on-screen scale; re-fit after export CSS + fixed A4 width apply.
+  fitClickToSignStamps(clone);
 
   return { host, clone };
 }
@@ -241,6 +245,9 @@ export async function renderDocumentPdfBlob(sourceRoot, filename = 'document.pdf
   const { host, clone } = built;
   try {
     await waitForImages(clone);
+    await waitForLayout();
+    // Second pass after fonts/images settle — export column width is final here.
+    fitClickToSignStamps(clone);
     await waitForLayout();
     const html2pdf = await loadHtml2Pdf();
     const blob = await html2pdf().set(pdfExportOptions(filename, orientation)).from(clone).outputPdf('blob');

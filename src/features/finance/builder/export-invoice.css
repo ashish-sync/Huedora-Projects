@@ -374,7 +374,7 @@
 
 .tylo-invoice--export .ti-bank-sign {
   display: grid !important;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
 }
 
 .tylo-invoice--export .ti-bank-sign__sig {
@@ -402,52 +402,62 @@
 
 .tylo-invoice--export .ti-signature--click-to-sign {
   align-items: center !important;
+  justify-content: center !important;
   text-align: center !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   overflow: hidden !important;
-  padding: 1mm 1mm 0.75mm !important;
+  padding: 1.2mm 1.5mm !important;
+  box-sizing: border-box !important;
 }
 
 .tylo-invoice--export .ti-click-sign-shell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   overflow: hidden !important;
 }
 
 .tylo-invoice--export .ti-click-sign {
   display: inline-flex !important;
+  flex-direction: column !important;
   align-items: center !important;
-  gap: 3px !important;
+  justify-content: center !important;
+  gap: 2px !important;
   width: max-content !important;
   max-width: none !important;
+  margin: 0 auto !important;
   transform-origin: center center !important;
 }
 
 .tylo-invoice--export .ti-click-sign__name,
 .tylo-invoice--export .signature-name {
   font-family: Arial, Helvetica, "Helvetica Neue", sans-serif !important;
-  font-size: 14px !important;
+  font-size: 11px !important;
   font-weight: 400 !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.04em !important;
   color: #111111 !important;
   white-space: nowrap !important;
   display: inline-block !important;
-  transform: scaleX(1.12) !important;
-  transform-origin: center center !important;
+  transform: none !important;
+  line-height: 1.2 !important;
 }
 
 .tylo-invoice--export .ti-click-sign__meta,
 .tylo-invoice--export .signature-date {
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: 10px !important;
+  font-size: 8.5px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.04em !important;
+  letter-spacing: 0.02em !important;
   color: #111111 !important;
   white-space: nowrap !important;
   display: inline-block !important;
-  transform: scaleX(1.08) !important;
-  transform-origin: center center !important;
+  transform: none !important;
+  line-height: 1.2 !important;
 }
 
 .tylo-invoice--export .ei-inline,

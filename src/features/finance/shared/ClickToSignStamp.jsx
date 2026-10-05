@@ -1,9 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { formatDigitallySignedOn, normalizeSignatoryDisplayName } from './clickToSign.js';
-
-/** Leave a thin inset so the stamp sits just inside the box borders. */
-const FIT_INSET = 0.96;
-const MAX_SCALE = 1.85;
+import { fitClickToSignStamps } from './fitClickToSign.js';
 
 /**
  * Click-to-Sign stamp that scales to fill parent width
@@ -11,27 +8,16 @@ const MAX_SCALE = 1.85;
  */
 export default function ClickToSignStamp({ signatoryName, signedAt, className = '' }) {
   const shellRef = useRef(null);
-  const stampRef = useRef(null);
-  const [scale, setScale] = useState(1);
 
   const name = normalizeSignatoryDisplayName(signatoryName);
   const meta = formatDigitallySignedOn(signedAt);
 
   useLayoutEffect(() => {
     const shell = shellRef.current;
-    const stamp = stampRef.current;
-    if (!shell || !stamp) return undefined;
+    if (!shell) return undefined;
 
     function fit() {
-      stamp.style.transform = 'scale(1)';
-      const available = shell.clientWidth;
-      const needed = Math.max(stamp.scrollWidth, stamp.offsetWidth);
-      if (!available || !needed) {
-        setScale(1);
-        return;
-      }
-      const next = Math.min(MAX_SCALE, (available * FIT_INSET) / needed);
-      setScale(Number.isFinite(next) && next > 0 ? next : 1);
+      fitClickToSignStamps(shell);
     }
 
     fit();
@@ -46,12 +32,7 @@ export default function ClickToSignStamp({ signatoryName, signedAt, className = 
 
   return (
     <div ref={shellRef} className={`ti-click-sign-shell ${className}`.trim()}>
-      <div
-        ref={stampRef}
-        className="ti-click-sign"
-        aria-label="Digital signature"
-        style={{ transform: `scale(${scale})` }}
-      >
+      <div className="ti-click-sign" aria-label="Digital signature">
         <div className="ti-click-sign__name signature-name">{name}</div>
         <div className="ti-click-sign__meta signature-date">{meta}</div>
       </div>

@@ -539,16 +539,16 @@
 .ti-click-sign__name,
 .signature-name {
   font-family: Arial, Helvetica, "Helvetica Neue", sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #111111;
   white-space: nowrap;
   line-height: 1.2;
   display: inline-block;
-  transform: scaleX(1.12);
-  transform-origin: center center;
+  /* No scaleX — it overflows the layout box and clips in PDF/print. */
+  transform: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -556,15 +556,14 @@
 .ti-click-sign__meta,
 .signature-date {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: #111111;
   white-space: nowrap;
   line-height: 1.2;
   display: inline-block;
-  transform: scaleX(1.08);
-  transform-origin: center center;
+  transform: none;
 }
 
 .ti-click-sign__cta,

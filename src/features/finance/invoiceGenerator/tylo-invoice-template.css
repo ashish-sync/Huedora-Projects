@@ -430,27 +430,29 @@
 .ti-card-body--bank-sig {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   flex: 1 1 auto;
   min-height: 28mm;
-  padding: 1.5mm 2mm 2mm;
+  padding: 2.5mm 2.5mm 3mm;
   overflow: hidden;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .ti-signature.ti-signature--in-card {
   align-self: center;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   text-align: center;
-  margin-top: auto;
-  padding: 1mm 1mm 0.5mm;
+  margin-top: 0;
+  padding: 1.5mm 1.5mm 1mm;
   border-left: none;
   max-width: none;
   width: 100%;
   min-width: 0;
   gap: 1mm;
+  box-sizing: border-box;
 }
 
 .ti-signature--in-card .ti-signature-company {
@@ -501,14 +503,17 @@
 /* Click-to-Sign stamp — scale-to-fit inside Digital Signature box */
 
 .ti-signature--click-to-sign {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  text-align: center;
   justify-content: center;
+  text-align: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow: hidden;
-  padding: 1mm 1mm 0.75mm;
+  flex: 1 1 auto;
+  overflow: visible;
+  padding: 1.5mm 2mm;
   box-sizing: border-box;
 }
 
@@ -519,7 +524,11 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 14mm;
+  overflow: visible;
+  padding: 1mm 0;
+  box-sizing: border-box;
 }
 
 .ti-click-sign {
@@ -527,26 +536,26 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   width: max-content;
   max-width: none;
   margin: 0 auto;
-  line-height: 1.15;
+  line-height: 1.25;
   transform-origin: center center;
-  will-change: transform;
 }
 
 .ti-click-sign__name,
 .signature-name {
   font-family: Arial, Helvetica, "Helvetica Neue", sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #111111;
   white-space: nowrap;
-  line-height: 1.2;
-  display: inline-block;
+  line-height: 1.35;
+  display: block;
+  padding: 0.15em 0.35em;
   /* No scaleX — it overflows the layout box and clips in PDF/print. */
   transform: none;
   -webkit-font-smoothing: antialiased;
@@ -556,13 +565,14 @@
 .ti-click-sign__meta,
 .signature-date {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: #111111;
   white-space: nowrap;
-  line-height: 1.2;
-  display: inline-block;
+  line-height: 1.45;
+  display: block;
+  padding: 0.2em 0.35em 0.4em;
   transform: none;
 }
 

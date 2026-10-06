@@ -436,17 +436,34 @@
   gap: 0 !important;
 }
 
-.tylo-invoice--export .ti-hsn-sac-select {
+.tylo-invoice--export .ti-click-sign__cta,
+.tylo-invoice--export .ti-click-sign__action,
+.tylo-invoice--export .ti-click-sign__hint {
+  display: none !important;
+}
+
+.tylo-invoice--export .ti-signature--blank {
+  min-height: 12mm !important;
+}
+
+.tylo-invoice--export .ti-hsn-sac-toggle,
+.tylo-invoice--export .ti-th-sac .ti-export-text {
   appearance: none !important;
   border: none !important;
   background: transparent !important;
+  box-shadow: none !important;
   color: inherit !important;
   font: inherit !important;
   font-weight: inherit !important;
+  letter-spacing: inherit !important;
   text-align: center !important;
   padding: 0 !important;
   width: 100% !important;
-  pointer-events: none !important;
+  display: inline-block !important;
+}
+
+.tylo-invoice--export .ti-hsn-sac-toggle::after {
+  display: none !important;
 }
 
 .tylo-invoice--export .ti-signature--click-to-sign .ti-signature-label {

@@ -715,16 +715,20 @@ export default function LandscapeInvoiceLikePreview({
                 <th className="ti-th-desc">Description of Services</th>
                 <th className="ti-th-sac">
                   {editable ? (
-                    <select
-                      className="ti-hsn-sac-select"
-                      value={hsnSacLabel}
-                      onChange={(e) => onUpdate?.('taxColumnLabels.hsnSacLabel', e.target.value)}
-                      aria-label="SAC or HSN column"
-                      title="Choose SAC or HSN"
+                    <button
+                      type="button"
+                      className="ti-hsn-sac-toggle"
+                      onClick={() =>
+                        onUpdate?.(
+                          'taxColumnLabels.hsnSacLabel',
+                          hsnSacLabel === 'HSN' ? 'SAC' : 'HSN'
+                        )
+                      }
+                      aria-label={`Column code type ${hsnSacLabel}. Click to switch SAC or HSN.`}
+                      title="Click to switch SAC / HSN"
                     >
-                      <option value="SAC">SAC</option>
-                      <option value="HSN">HSN</option>
-                    </select>
+                      {hsnSacLabel}
+                    </button>
                   ) : (
                     hsnSacLabel
                   )}

@@ -14,6 +14,19 @@ function waitForLayout() {
 }
 
 function replaceInputsWithText(root) {
+  // Keep SAC/HSN header label as plain text (toggle is a button in edit mode).
+  root.querySelectorAll('.ti-hsn-sac-toggle').forEach((el) => {
+    const span = document.createElement('span');
+    span.className = 'ti-export-text';
+    span.textContent = String(el.textContent || '').trim() || 'SAC';
+    el.replaceWith(span);
+  });
+
+  // Unsigned Digital Signature chrome must not appear on download/print.
+  root
+    .querySelectorAll('.ti-click-sign__cta, .ti-click-sign__action, .ti-click-sign__hint')
+    .forEach((el) => el.remove());
+
   root.querySelectorAll('input, textarea, select').forEach((el) => {
     const span = document.createElement('span');
     span.className = 'ti-export-text';
@@ -29,7 +42,7 @@ function replaceInputsWithText(root) {
     if (el.classList.contains('ei-inline--right') || el.closest('.ti-r')) {
       span.style.textAlign = 'right';
     }
-    if (el.classList.contains('ei-inline--center') || el.closest('.ti-c')) {
+    if (el.classList.contains('ei-inline--center') || el.closest('.ti-c') || el.closest('.ti-th-sac')) {
       span.style.textAlign = 'center';
     }
     if (el.tagName === 'TEXTAREA') {

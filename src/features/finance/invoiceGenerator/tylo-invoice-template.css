@@ -648,13 +648,15 @@
   min-height: 12mm;
 }
 
-.ti-hsn-sac-select {
+/* SAC/HSN header — looks like other column titles; click cycles SAC ↔ HSN */
+.ti-hsn-sac-toggle {
   appearance: none;
   -webkit-appearance: none;
   margin: 0;
-  padding: 0 0.15em;
-  border: none;
+  padding: 0;
+  border: 0;
   background: transparent;
+  box-shadow: none;
   color: inherit;
   font: inherit;
   font-weight: inherit;
@@ -662,26 +664,47 @@
   text-transform: uppercase;
   text-align: center;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28em;
   width: 100%;
   max-width: 100%;
+  line-height: inherit;
+  border-radius: 0;
 }
 
-.ti-hsn-sac-select:hover,
-.ti-hsn-sac-select:focus {
+.ti-hsn-sac-toggle::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 0.28em solid transparent;
+  border-right: 0.28em solid transparent;
+  border-top: 0.34em solid currentColor;
+  opacity: 0.4;
+  flex: 0 0 auto;
+}
+
+.ti-hsn-sac-toggle:hover,
+.ti-hsn-sac-toggle:focus-visible {
   outline: none;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  color: var(--ti-header-ink);
+}
+
+.ti-hsn-sac-toggle:hover::after,
+.ti-hsn-sac-toggle:focus-visible::after {
+  opacity: 0.75;
 }
 
 @media print {
   .ti-click-sign__cta,
-  .ti-click-sign__action {
+  .ti-click-sign__action,
+  .ti-click-sign__hint {
     display: none !important;
   }
 
-  .ti-hsn-sac-select {
-    appearance: none;
-    pointer-events: none;
+  .ti-hsn-sac-toggle::after {
+    display: none !important;
   }
 }
 

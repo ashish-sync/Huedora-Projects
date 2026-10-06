@@ -71,12 +71,16 @@ export function applyClickToSign(existing = {}, { fullName, signedAt } = {}) {
   };
 }
 
-/** Clear click-to-sign fields while preserving company label / org image if provided. */
-export function clearClickToSign(existing = {}, { restoreImageDataUrl = '' } = {}) {
+/**
+ * Clear click-to-sign stamp and signature image so the Digital Signature box
+ * can render blank (header only). Keeps signatoryName for re-sign from Org Master.
+ * Pass restoreImageDataUrl to put an image back after clear.
+ */
+export function clearClickToSign(existing = {}, { restoreImageDataUrl } = {}) {
   return {
     ...existing,
     mode: '',
     signedAt: '',
-    imageDataUrl: restoreImageDataUrl || existing.imageDataUrl || '',
+    imageDataUrl: restoreImageDataUrl !== undefined ? restoreImageDataUrl : '',
   };
 }

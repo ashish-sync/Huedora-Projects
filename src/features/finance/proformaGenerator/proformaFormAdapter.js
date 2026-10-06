@@ -42,7 +42,11 @@ export function proformaToInvoiceView(proforma) {
     },
     payment: payment || {},
     signature: signature || {},
-    taxColumnLabels: taxColumnLabels || { rateLabel: 'GST Rate %', amountLabel: 'GST' },
+    taxColumnLabels: taxColumnLabels || {
+      rateLabel: 'GST Rate %',
+      amountLabel: 'GST',
+      hsnSacLabel: 'SAC',
+    },
     billTo: {
       name: recipient?.name || '',
       address: recipient?.placeOfSupply || '',
@@ -103,6 +107,7 @@ const PATH_MAP = {
   'invoice.poDate': 'document.referenceDate',
   'taxColumnLabels.rateLabel': 'taxColumnLabels.rateLabel',
   'taxColumnLabels.amountLabel': 'taxColumnLabels.amountLabel',
+  'taxColumnLabels.hsnSacLabel': 'taxColumnLabels.hsnSacLabel',
 };
 
 export function invoicePathToProforma(path) {

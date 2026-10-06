@@ -9,6 +9,7 @@ import { clampTextLines } from '../documentGenerator/inlineEdit.jsx';
 import {
   getLineGstRateDisplay,
   patchLineGstRate,
+  resolveTaxColumnLabels,
   resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_PROFORMA_LINE_ITEMS } from './proformaStorage.js';
@@ -54,6 +55,7 @@ export default function ProformaBuilderPanel({
 }) {
   const lineRows = (form.rows || []).filter((r) => r.type === 'line');
   const taxMode = resolveTaxMode(form.recipient?.stateCode, form.company?.stateCode);
+  const taxLabels = resolveTaxColumnLabels(form);
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);
 
@@ -259,7 +261,7 @@ export default function ProformaBuilderPanel({
                     placeholder="Shift+Enter for a second line"
                   />
                 </Field>
-                <Field label="SAC">
+                <Field label={taxLabels.hsnSacLabel}>
                   <input className={inputCls} value={line.hsnSac} onChange={(e) => updateLine(line.id, { hsnSac: e.target.value })} />
                 </Field>
                 <Field label="Qty">

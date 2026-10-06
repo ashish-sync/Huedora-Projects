@@ -643,10 +643,45 @@
   align-self: center;
 }
 
+/* Cleared / unsigned — empty body under DIGITAL SIGNATURE header */
+.ti-signature--blank {
+  min-height: 12mm;
+}
+
+.ti-hsn-sac-select {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  padding: 0 0.15em;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  max-width: 100%;
+}
+
+.ti-hsn-sac-select:hover,
+.ti-hsn-sac-select:focus {
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 @media print {
   .ti-click-sign__cta,
   .ti-click-sign__action {
     display: none !important;
+  }
+
+  .ti-hsn-sac-select {
+    appearance: none;
+    pointer-events: none;
   }
 }
 

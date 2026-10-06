@@ -6,6 +6,7 @@ import {
   getLineGstRateDisplay,
   patchLineGstRate,
   resolveLineGstRates,
+  resolveTaxColumnLabels,
   resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { InlineField, InlineTableInput, InlineTextarea } from '../documentGenerator/inlineEdit.jsx';
@@ -252,6 +253,8 @@ export default function LandscapeInvoiceLikePreview({
   const REASONS = isCreditDoc ? CREDIT_REASONS : DEBIT_REASONS;
 
   const { company, bank, billTo, shipTo, invoice, signature } = form || {};
+  const taxColumnLabels = resolveTaxColumnLabels(form);
+  const hsnSacLabel = taxColumnLabels.hsnSacLabel;
   // Seller (company) vs customer billing (billTo) state → IGST or CGST+SGST
   const taxMode = resolveTaxMode(billTo?.stateCode, company?.stateCode);
 
@@ -710,7 +713,22 @@ export default function LandscapeInvoiceLikePreview({
               <tr>
                 <th className="ti-th-num">Sr.</th>
                 <th className="ti-th-desc">Description of Services</th>
-                <th className="ti-th-sac">SAC</th>
+                <th className="ti-th-sac">
+                  {editable ? (
+                    <select
+                      className="ti-hsn-sac-select"
+                      value={hsnSacLabel}
+                      onChange={(e) => onUpdate?.('taxColumnLabels.hsnSacLabel', e.target.value)}
+                      aria-label="SAC or HSN column"
+                      title="Choose SAC or HSN"
+                    >
+                      <option value="SAC">SAC</option>
+                      <option value="HSN">HSN</option>
+                    </select>
+                  ) : (
+                    hsnSacLabel
+                  )}
+                </th>
                 <th className="ti-th-qty">Qty</th>
                 <th className="ti-th-r">Rate (₹)</th>
                 <th className="ti-th-r">Taxable Value (₹)</th>
@@ -832,6 +850,7 @@ export default function LandscapeInvoiceLikePreview({
                 <div className="ti-card-body ti-card-body--bank-sig">
                   {(() => {
                     const clickSigned = isClickToSignSignature(signature);
+                    const hasImage = Boolean(String(signature?.imageDataUrl || '').trim());
                     const orgSignatoryName = resolveClickToSignName({ signature });
                     const handleClickToSign = () => {
                       if (!editable || !onUpdate || !orgSignatoryName) return;
@@ -845,12 +864,15 @@ export default function LandscapeInvoiceLikePreview({
                     };
                     const handleClearSign = () => {
                       if (!editable || !onUpdate) return;
+                      // Blank Digital Signature box (header only); keep name for re-sign.
                       onUpdate('signature', clearClickToSign(signature || {}));
                     };
                     return (
                       <div
                         className={`ti-signature ti-signature--in-card${
                           clickSigned ? ' ti-signature--click-to-sign' : ''
+                        }${
+                          !clickSigned && !hasImage ? ' ti-signature--blank' : ''
                         }`}
                       >
                         {clickSigned ? (
@@ -861,23 +883,15 @@ export default function LandscapeInvoiceLikePreview({
                             />
                             <span className="ti-signature-label">AUTHORISED SIGNATORY</span>
                           </>
-                        ) : (
-                          <>
-                            {signature?.imageDataUrl ? (
-                              <img
-                                src={signature.imageDataUrl}
-                                alt="Digital signature"
-                                className="ti-signature-img"
-                              />
-                            ) : null}
-                            {signature?.signatoryName ? (
-                              <span className="ti-signature-name">{signature.signatoryName}</span>
-                            ) : null}
-                            <span className="ti-signature-label">AUTHORISED SIGNATORY</span>
-                          </>
-                        )}
+                        ) : hasImage ? (
+                          <img
+                            src={signature.imageDataUrl}
+                            alt="Digital signature"
+                            className="ti-signature-img"
+                          />
+                        ) : null}
                         {editable ? (
-                          clickSigned ? (
+                          clickSigned || hasImage ? (
                             <button
                               type="button"
                               className="ti-click-sign__action"

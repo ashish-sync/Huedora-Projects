@@ -436,6 +436,19 @@
   gap: 0 !important;
 }
 
+.tylo-invoice--export .ti-hsn-sac-select {
+  appearance: none !important;
+  border: none !important;
+  background: transparent !important;
+  color: inherit !important;
+  font: inherit !important;
+  font-weight: inherit !important;
+  text-align: center !important;
+  padding: 0 !important;
+  width: 100% !important;
+  pointer-events: none !important;
+}
+
 .tylo-invoice--export .ti-signature--click-to-sign .ti-signature-label {
   display: block !important;
   flex: 0 0 auto !important;

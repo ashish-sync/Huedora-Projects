@@ -148,6 +148,7 @@ export function defaultInvoiceForm() {
     taxColumnLabels: {
       rateLabel: 'GST Rate %',
       amountLabel: 'GST',
+      hsnSacLabel: 'SAC',
     },
     signature: {
       mode: '',

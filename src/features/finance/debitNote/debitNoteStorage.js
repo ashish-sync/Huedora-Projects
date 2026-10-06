@@ -108,6 +108,7 @@ export function defaultDebitNoteForm() {
     taxColumnLabels: {
       rateLabel: 'GST Rate %',
       amountLabel: 'GST',
+      hsnSacLabel: 'SAC',
     },
     signature: {
       mode: '',

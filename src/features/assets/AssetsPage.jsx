@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { fetchContactsList } from '../../shared/contactsApi.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
@@ -88,33 +89,115 @@ function custodianName(row) {
   return row.custodianName || row.contactId?.name || '-';
 }
 
-function IconEdit() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-      <path d="M12 20h9" strokeLinecap="round" />
-      <path
-        d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const ASSET_MENU_WIDTH = 168;
+const ASSET_MENU_GAP = 6;
 
-function IconView() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
+function AssetRowActionsMenu({ canWrite, onEdit, onView, auditTo }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+  const panelRef = useRef(null);
 
-function IconAudit() {
+  const placeMenu = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const panelHeight = panelRef.current?.offsetHeight || 140;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < panelHeight + ASSET_MENU_GAP && rect.top > spaceBelow;
+    const top = openUp
+      ? Math.max(8, rect.top - panelHeight - ASSET_MENU_GAP)
+      : Math.min(window.innerHeight - panelHeight - 8, rect.bottom + ASSET_MENU_GAP);
+    const left = Math.min(
+      window.innerWidth - ASSET_MENU_WIDTH - 8,
+      Math.max(8, rect.right - ASSET_MENU_WIDTH),
+    );
+    setCoords({ top, left });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    placeMenu();
+    const raf = window.requestAnimationFrame(() => placeMenu());
+    const onReposition = () => placeMenu();
+    window.addEventListener('resize', onReposition);
+    window.addEventListener('scroll', onReposition, true);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', onReposition);
+      window.removeEventListener('scroll', onReposition, true);
+    };
+  }, [open, placeMenu, canWrite]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function onPointerDown(event) {
+      const t = event.target;
+      if (triggerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
+    }
+    function onKeyDown(event) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  function run(action) {
+    setOpen(false);
+    action?.();
+  }
+
+  const menu = open
+    ? createPortal(
+        <div
+          ref={panelRef}
+          className="inv-actions-panel inv-actions-panel--portal"
+          role="menu"
+          aria-label="Asset actions"
+          style={{ top: coords.top, left: coords.left, width: ASSET_MENU_WIDTH }}
+        >
+          {canWrite ? (
+            <button type="button" role="menuitem" onClick={() => run(onEdit)}>
+              Edit
+            </button>
+          ) : null}
+          <button type="button" role="menuitem" onClick={() => run(onView)}>
+            Agreement
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => run(() => navigate(auditTo))}
+          >
+            Audit Trail
+          </button>
+        </div>,
+        document.body,
+      )
+    : null;
+
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5.5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div className="inv-actions-menu">
+      <button
+        ref={triggerRef}
+        type="button"
+        className="inv-actions-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Asset actions"
+        title="More actions"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⋯
+      </button>
+      {menu}
+    </div>
   );
 }
 
@@ -946,36 +1029,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   <td>{custodianName(a)}</td>
                   <td>{custodianCity(a)}</td>
                   <td className="inv-col-actions">
-                    <div className="inv-row-actions">
-                      {canWrite && (
-                        <button
-                          className="inv-icon-btn"
-                          type="button"
-                          title="Edit"
-                          aria-label="Edit"
-                          onClick={() => openEdit(a)}
-                        >
-                          <IconEdit />
-                        </button>
-                      )}
-                      <button
-                        className="inv-icon-btn"
-                        type="button"
-                        title="Agreement (Document One)"
-                        aria-label="View agreement"
-                        onClick={() => openView(a)}
-                      >
-                        <IconView />
-                      </button>
-                      <Link
-                        className="inv-icon-btn"
-                        to={`/asset-one/assets/${a._id}`}
-                        title="Audit Trail"
-                        aria-label="Audit Trail"
-                      >
-                        <IconAudit />
-                      </Link>
-                    </div>
+                    <AssetRowActionsMenu
+                      canWrite={canWrite}
+                      onEdit={() => openEdit(a)}
+                      onView={() => openView(a)}
+                      auditTo={`/asset-one/assets/${a._id}`}
+                    />
                   </td>
                 </tr>
               ))}

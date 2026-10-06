@@ -648,62 +648,10 @@
   min-height: 12mm;
 }
 
-/* SAC/HSN header — looks like other column titles; click cycles SAC ↔ HSN */
-.ti-hsn-sac-toggle {
-  appearance: none;
-  -webkit-appearance: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  color: inherit;
-  font: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  text-transform: uppercase;
-  text-align: center;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.28em;
-  width: 100%;
-  max-width: 100%;
-  line-height: inherit;
-  border-radius: 0;
-}
-
-.ti-hsn-sac-toggle::after {
-  content: '';
-  width: 0;
-  height: 0;
-  border-left: 0.28em solid transparent;
-  border-right: 0.28em solid transparent;
-  border-top: 0.34em solid currentColor;
-  opacity: 0.4;
-  flex: 0 0 auto;
-}
-
-.ti-hsn-sac-toggle:hover,
-.ti-hsn-sac-toggle:focus-visible {
-  outline: none;
-  color: var(--ti-header-ink);
-}
-
-.ti-hsn-sac-toggle:hover::after,
-.ti-hsn-sac-toggle:focus-visible::after {
-  opacity: 0.75;
-}
-
 @media print {
   .ti-click-sign__cta,
   .ti-click-sign__action,
   .ti-click-sign__hint {
-    display: none !important;
-  }
-
-  .ti-hsn-sac-toggle::after {
     display: none !important;
   }
 }
@@ -719,8 +667,8 @@
 }
 
 .ti-lines--letterhead .ti-col-num { width: 5%; }
-.ti-lines--letterhead .ti-col-desc { width: 35%; }
-.ti-lines--letterhead .ti-col-sac { width: 11%; }
+.ti-lines--letterhead .ti-col-desc { width: 33%; }
+.ti-lines--letterhead .ti-col-sac { width: 13%; }
 .ti-lines--letterhead .ti-col-qty { width: 7%; }
 .ti-lines--letterhead .ti-col-rate { width: 14%; }
 .ti-lines--letterhead .ti-col-taxable { width: 18%; }
@@ -1212,6 +1160,11 @@
   text-align: center;
   padding-left: 1.2mm;
   padding-right: 1.2mm;
+}
+
+.ti-lines .ti-th-sac {
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .ti-lines .ti-th-desc {

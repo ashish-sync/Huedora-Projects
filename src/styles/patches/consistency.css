@@ -6,16 +6,25 @@
 
 /* ── Page chrome typography ─────────────────────────────────── */
 
-.topbar-title {
-  font-family: var(--font-display);
+.topbar-title,
+.page-header h1,
+.esign-top h1 {
+  font-family: var(--font-family-display, var(--font-display));
+  font-size: var(--text-page-title-size) !important;
+  font-weight: var(--text-page-title-weight) !important;
+  line-height: var(--text-page-title-leading) !important;
+  letter-spacing: var(--text-page-title-tracking) !important;
   color: var(--color-text-primary);
 }
 
 .topbar-desc,
+.page-desc,
+.esign-sub,
 .camp-ops-strip__desc {
   margin-top: var(--space-1);
-  font-size: var(--text-body-sm-size);
-  line-height: var(--text-body-sm-leading);
+  font-size: var(--text-subtitle-size) !important;
+  font-weight: var(--text-subtitle-weight) !important;
+  line-height: var(--text-subtitle-leading) !important;
   color: var(--muted);
 }
 
@@ -24,6 +33,45 @@
   font-size: var(--text-caption-size);
   font-weight: var(--text-caption-weight);
   letter-spacing: var(--text-label-tracking);
+}
+
+/* Section titles — Products, Client Master, Expense Master, etc. */
+.master-list-title,
+.product-master-title,
+.pm-form-head .product-master-title {
+  font-family: var(--font-family-display, var(--font-display)) !important;
+  font-size: var(--text-section-title-size) !important;
+  font-weight: var(--text-section-title-weight) !important;
+  line-height: var(--text-section-title-leading) !important;
+  letter-spacing: var(--text-section-title-tracking) !important;
+}
+
+.master-list-subtitle,
+.pm-subtitle {
+  font-size: var(--text-subtitle-size) !important;
+  font-weight: var(--text-subtitle-weight) !important;
+  line-height: var(--text-subtitle-leading) !important;
+}
+
+/* Reference Data sidebar */
+.logistics-master-tree-title {
+  font-size: var(--text-nav-section-size) !important;
+  font-weight: var(--text-nav-section-weight) !important;
+  letter-spacing: var(--text-nav-section-tracking) !important;
+}
+
+.logistics-master-group-label {
+  font-size: var(--text-nav-group-size) !important;
+  font-weight: var(--text-nav-group-weight) !important;
+}
+
+.logistics-master-item {
+  font-size: var(--text-nav-item-size) !important;
+  font-weight: var(--text-nav-item-weight) !important;
+}
+
+.logistics-master-crumb {
+  font-size: var(--text-crumb-size) !important;
 }
 
 /* ── Forms — canonical rules in components/forms.css ───────── */
@@ -124,8 +172,14 @@
 .am-table,
 .inv-table,
 .vf-table,
-.data-table {
-  font-size: var(--text-body-sm-size);
+.data-table,
+.pm-table,
+.camps-table,
+.track-table,
+.logistics-inout-table,
+.camp-ops-root table {
+  font-size: var(--text-table-cell-size) !important;
+  font-weight: var(--text-table-cell-weight);
 }
 
 /* Uppercase column headers — all modules */
@@ -134,16 +188,39 @@ table th,
 .inv-table th,
 .vf-table th,
 .data-table th,
+.pm-table th,
 .track-table th,
 .logistics-inout-table th,
-.camps-table th {
-  font-size: var(--text-caption-size, 0.72rem);
-  font-weight: 700;
-  letter-spacing: 0.05em;
+.camps-table th,
+.camp-ops-root table th {
+  font-size: var(--text-table-header-size) !important;
+  font-weight: var(--text-table-header-weight) !important;
+  letter-spacing: var(--text-table-header-tracking) !important;
   text-transform: uppercase;
   color: var(--ink-soft, var(--muted));
   background: var(--bg-sunken, color-mix(in srgb, var(--surface) 82%, var(--bg-elevated)));
   white-space: nowrap;
+}
+
+table td,
+.am-table td,
+.inv-table td,
+.vf-table td,
+.data-table td,
+.pm-table td,
+.camp-ops-root table td {
+  font-size: var(--text-table-cell-size);
+  line-height: var(--text-body-sm-leading);
+}
+
+/* Controls / tabs / compact actions */
+.page-tab,
+button.page-tab,
+.module-sub-nav--segmented .module-sub-nav__link,
+.btn,
+.btn.btn-compact {
+  font-size: var(--text-control-size) !important;
+  font-weight: var(--text-control-weight);
 }
 
 /* ── Compact buttons ───────────────────────────────────────── */

@@ -352,7 +352,31 @@
 
 .camp-ops-root .page-tab {
   padding: 0 var(--space-3) !important;
-  font-size: var(--text-body-sm-size) !important;
+  font-size: var(--text-control-size) !important;
+  font-weight: var(--text-control-weight) !important;
+}
+
+.camp-ops-root .master-list-title {
+  font-size: var(--text-section-title-size) !important;
+  font-weight: var(--text-section-title-weight) !important;
+}
+
+.camp-ops-root .master-list-subtitle {
+  font-size: var(--text-subtitle-size) !important;
+}
+
+.camp-ops-root .data-table,
+.camp-ops-root .camps-table,
+.camp-ops-root table {
+  font-size: var(--text-table-cell-size) !important;
+}
+
+.camp-ops-root .data-table th,
+.camp-ops-root .camps-table th,
+.camp-ops-root table th {
+  font-size: var(--text-table-header-size) !important;
+  font-weight: var(--text-table-header-weight) !important;
+  letter-spacing: var(--text-table-header-tracking) !important;
 }
 
 /* ── Toolbars (match Finance / Logistics inv-toolbar) ── */

@@ -446,26 +446,6 @@
   min-height: 12mm !important;
 }
 
-.tylo-invoice--export .ti-hsn-sac-toggle,
-.tylo-invoice--export .ti-th-sac .ti-export-text {
-  appearance: none !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: inherit !important;
-  font: inherit !important;
-  font-weight: inherit !important;
-  letter-spacing: inherit !important;
-  text-align: center !important;
-  padding: 0 !important;
-  width: 100% !important;
-  display: inline-block !important;
-}
-
-.tylo-invoice--export .ti-hsn-sac-toggle::after {
-  display: none !important;
-}
-
 .tylo-invoice--export .ti-signature--click-to-sign .ti-signature-label {
   display: block !important;
   flex: 0 0 auto !important;

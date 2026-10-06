@@ -11,6 +11,7 @@ import { EmptyState } from '../../components/ui/PageShell.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { MESSAGES, formatApiError } from '../../shared/messages.js';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
+import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import {
   clientMasterEditPath,
@@ -138,6 +139,10 @@ export default function ClientMastersPage({ embedded = false } = {}) {
 
   return (
     <div className="client-masters-page">
+      <MasterListHeader
+        title="Client Master"
+        subtitle="Program configuration and client records for Camp One."
+      />
       <div className="page-tabs" role="tablist" aria-label="Client Master views">
         <button
           type="button"

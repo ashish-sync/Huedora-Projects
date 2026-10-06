@@ -426,16 +426,6 @@ export default function InvoiceBuilderPanel({
       <Section id="lines" title="Line items" badge={form.lineItems.length} defaultOpen={isPartiesLayout}>
         {!hideTaxColumnTitles ? (
           <div className="ib-grid ib-grid--compact" style={{ marginBottom: 12 }}>
-            <Field label="SAC / HSN column">
-              <select
-                className={inputCls}
-                value={taxLabels.hsnSacLabel}
-                onChange={(e) => update('taxColumnLabels.hsnSacLabel', e.target.value)}
-              >
-                <option value="SAC">SAC</option>
-                <option value="HSN">HSN</option>
-              </select>
-            </Field>
             <Field label="Rate column title">
               <input
                 className={inputCls}

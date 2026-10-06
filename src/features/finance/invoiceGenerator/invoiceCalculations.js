@@ -214,15 +214,11 @@ export function resolveLineGstRates(line = {}, taxMode = 'igst') {
 export const DEFAULT_TAX_COLUMN_LABELS = {
   rateLabel: 'GST Rate %',
   amountLabel: 'GST',
-  hsnSacLabel: 'SAC',
+  hsnSacLabel: 'SAC / HSN',
 };
 
-/** Normalize line-code column header to SAC or HSN. */
-export function normalizeHsnSacLabel(value) {
-  const raw = String(value ?? '').trim().toUpperCase();
-  if (raw === 'HSN') return 'HSN';
-  if (raw === 'SAC') return 'SAC';
-  if (raw.includes('HSN') && !raw.includes('SAC')) return 'HSN';
+/** Line-code column header — always SAC / HSN (covers goods and services). */
+export function normalizeHsnSacLabel(_value) {
   return DEFAULT_TAX_COLUMN_LABELS.hsnSacLabel;
 }
 

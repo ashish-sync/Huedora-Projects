@@ -113,7 +113,7 @@ export function defaultBillOfSupplyForm() {
     taxColumnLabels: {
       rateLabel: 'GST Rate %',
       amountLabel: 'GST',
-      hsnSacLabel: 'SAC',
+      hsnSacLabel: 'SAC / HSN',
     },
     signature: {
       mode: '',

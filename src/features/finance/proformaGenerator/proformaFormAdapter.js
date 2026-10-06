@@ -45,7 +45,7 @@ export function proformaToInvoiceView(proforma) {
     taxColumnLabels: taxColumnLabels || {
       rateLabel: 'GST Rate %',
       amountLabel: 'GST',
-      hsnSacLabel: 'SAC',
+      hsnSacLabel: 'SAC / HSN',
     },
     billTo: {
       name: recipient?.name || '',

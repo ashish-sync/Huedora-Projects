@@ -612,22 +612,23 @@ textarea {
 .topbar h2,
 .topbar-title {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.35rem, 2vw, 1.65rem);
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-family: var(--font-family-display, var(--font-display));
+  font-size: var(--text-page-title-size);
+  font-weight: var(--text-page-title-weight);
+  letter-spacing: var(--text-page-title-tracking);
   color: var(--ink);
-  line-height: 1.2;
+  line-height: var(--text-page-title-leading);
 }
 
 .page-desc,
 .esign-sub,
 .dashboard-lede {
   margin: 6px 0 0;
-  font-size: 0.88rem;
+  font-size: var(--text-subtitle-size);
+  font-weight: var(--text-subtitle-weight);
   color: var(--muted);
   max-width: 56ch;
-  line-height: 1.45;
+  line-height: var(--text-subtitle-leading);
 }
 
 .page-actions {
@@ -2730,7 +2731,9 @@ button.module-kpi.is-clickable:hover {
 .topbar-desc {
   margin: 0.25rem 0 0;
   max-width: 56ch;
-  font-size: 0.84rem;
+  font-size: var(--text-subtitle-size);
+  font-weight: var(--text-subtitle-weight);
+  line-height: var(--text-subtitle-leading);
 }
 
 .card {
@@ -6615,7 +6618,9 @@ body:has(.login-page),
 }
 
 .inv-page .topbar-title {
-  font-size: clamp(1.45rem, 2.2vw, 1.75rem);
+  font-size: var(--text-page-title-size);
+  font-weight: var(--text-page-title-weight);
+  letter-spacing: var(--text-page-title-tracking);
 }
 
 .inv-count {
@@ -6738,6 +6743,12 @@ body:has(.login-page),
 .inv-device {
   font-weight: 650;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
 }
 
 .inv-muted-cell {
@@ -6757,10 +6768,81 @@ body:has(.login-page),
 }
 
 .inv-col-actions {
-  width: 1%;
+  width: 2.75rem;
+  min-width: 2.75rem;
   white-space: nowrap;
   text-align: right;
-  padding-right: 14px;
+  padding-right: 10px;
+}
+
+.inv-actions-menu {
+  position: relative;
+  display: inline-flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.inv-actions-trigger {
+  appearance: none;
+  margin: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.inv-actions-trigger:hover,
+.inv-actions-trigger[aria-expanded='true'] {
+  background: var(--bg-sunken);
+  border-color: color-mix(in srgb, var(--brand, #1e3a5f) 35%, var(--line));
+  color: var(--brand, #1e3a5f);
+}
+
+.inv-actions-panel {
+  min-width: 10.5rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.inv-actions-panel--portal {
+  position: fixed;
+  z-index: 1200;
+}
+
+.inv-actions-panel button {
+  appearance: none;
+  margin: 0;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inv-actions-panel button:hover,
+.inv-actions-panel button:focus-visible {
+  background: var(--bg-sunken);
+  outline: none;
 }
 
 .inv-empty {
@@ -10561,9 +10643,9 @@ button.vf-summary-card.is-clickable:hover,
 }
 
 .logistics-master-tree-title {
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
+  font-size: var(--text-nav-section-size);
+  font-weight: var(--text-nav-section-weight);
+  letter-spacing: var(--text-nav-section-tracking);
   text-transform: uppercase;
   color: var(--muted);
   padding: 0 8px 10px;
@@ -10576,8 +10658,9 @@ button.vf-summary-card.is-clickable:hover,
 }
 
 .logistics-master-group-label {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--text-nav-group-size);
+  font-weight: var(--text-nav-group-weight);
+  line-height: var(--text-label-leading);
   color: var(--ink);
   padding: 4px 8px 6px;
 }
@@ -10598,8 +10681,9 @@ button.vf-summary-card.is-clickable:hover,
   background: transparent;
   border-radius: var(--radius-sm);
   padding: 7px 10px 7px 16px;
-  font-size: 0.84rem;
-  font-weight: 550;
+  font-size: var(--text-nav-item-size);
+  font-weight: var(--text-nav-item-weight);
+  line-height: var(--text-body-sm-leading);
   color: var(--muted);
   cursor: pointer;
 }
@@ -10617,7 +10701,10 @@ button.vf-summary-card.is-clickable:hover,
 
 .logistics-master-crumb {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-crumb-size);
+  font-weight: var(--text-crumb-weight);
+  line-height: var(--text-body-sm-leading);
+  color: var(--muted);
 }
 
 .logistics-master-crumb-current {
@@ -10906,16 +10993,19 @@ button.vf-summary-card.is-clickable:hover,
 }
 
 .pm-cell-sub {
-  font-size: 0.78rem;
+  font-size: var(--text-caption-size);
+  font-weight: var(--text-caption-weight);
+  line-height: var(--text-caption-leading);
   margin-top: 2px;
+  color: var(--muted);
 }
 
 .pm-status {
   display: inline-block;
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: var(--text-caption-size);
+  font-weight: var(--text-caption-weight);
 }
 
 .pm-status.is-active {
@@ -10956,9 +11046,9 @@ button.vf-summary-card.is-clickable:hover,
 
 .pm-form-head .product-master-title {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-family: var(--font-family-display, var(--font-display));
+  font-size: var(--text-section-title-size);
+  font-weight: var(--text-section-title-weight);
 }
 
 .pm-code-badge {

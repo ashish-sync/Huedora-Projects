@@ -65,7 +65,7 @@ describe('camp consumables', () => {
     ]);
   });
 
-  it('does not require consumables for completion (optional section)', () => {
+  it('requires Usage and Wastage for mapped consumables (0 allowed)', () => {
     expect(
       getConsumablesCompletionBlockers(mapped, [
         { productId: 'p1', quantityUsed: '20', wastage: '2' },
@@ -75,10 +75,19 @@ describe('camp consumables', () => {
     expect(
       getConsumablesCompletionBlockers(mapped, [
         { productId: 'p1', quantityUsed: '20', wastage: '2' },
-        { productId: 'p2', quantityUsed: '', wastage: '' },
+        { productId: 'p2', quantityUsed: '0', wastage: '0' },
       ]),
     ).toEqual([]);
-    expect(getConsumablesCompletionBlockers(mapped, [])).toEqual([]);
+    expect(
+      getConsumablesCompletionBlockers(mapped, [
+        { productId: 'p1', quantityUsed: '20', wastage: '2' },
+        { productId: 'p2', quantityUsed: '', wastage: '' },
+      ]),
+    ).toEqual(['Enter Usage and Wastage for Device Battery (use 0 if none)']);
+    expect(getConsumablesCompletionBlockers(mapped, [])).toEqual([
+      'Enter Usage and Wastage for Test Strip (use 0 if none)',
+      'Enter Usage and Wastage for Device Battery (use 0 if none)',
+    ]);
   });
 
   it('keeps incomplete required rows instead of silently discarding', () => {

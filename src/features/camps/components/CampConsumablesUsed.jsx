@@ -171,8 +171,8 @@ export default function CampConsumablesUsed({
           <h3>Consumables Tracking</h3>
           <p className="meta-text">
             {isMappedMode
-              ? 'Usage defaults to Patients Screened. Add wastage and remove unused items.'
-              : 'Select items from Consumables Master.'}
+              ? 'Usage and Wastage are required (enter 0 if none). Usage defaults to Patients Screened; remove unused items.'
+              : 'Select items from Consumables Master. Enter Usage and Wastage (use 0 if none).'}
           </p>
         </div>
         {!disabled && !isMappedMode ? (

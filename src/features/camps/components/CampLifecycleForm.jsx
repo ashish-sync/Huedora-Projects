@@ -29,8 +29,6 @@ import {
   normalizeExecutionStatus,
   resolveEffectiveExecutionStatus,
   executionStatusLabel,
-  getExecutionConsumablesBlockers,
-  getExecutionFinanceBlockers,
   computePunctualityLateness,
   formatLatenessHhMm,
 } from '../constants/campLifecycle';
@@ -601,24 +599,13 @@ export function CampLifecycleForm({
     const effectiveStatus = cancelledClosure
       ? (resolveCancelledClosureExecutionStatus({ status: campStatus, ...form }) || resolveEffectiveExecutionStatus(form))
       : resolveEffectiveExecutionStatus(form);
-    const canMarkCompleted = !cancelledClosure && effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED;
     const docs = Array.isArray(form.executionDocuments) ? form.executionDocuments : [];
     const doctorForms = docs.filter((d) => normalizeExecutionDocType(d.docType) === 'doctor_form').length;
     const patientForms = docs.filter((d) => normalizeExecutionDocType(d.docType) === 'patient_form').length;
-
-    function handleMarkCompleted() {
-      const blockers = getExecutionFinanceBlockers(form, mappedConsumables);
-      if (blockers.length) {
-        onValidationError?.(blockers[0]);
-        return;
-      }
-      updateFields?.({
-        executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
-        markComplete: true,
-        inTime: form.inTime || form.startTime || '',
-        outTime: form.outTime || form.endTime || '',
-      });
-    }
+    const readyForFinance = !cancelledClosure && isExecutionReadyForFinance(form, mappedConsumables);
+    const needsExecutionDetails = !cancelledClosure
+      && effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED
+      && !readyForFinance;
 
     return (
       <>
@@ -631,18 +618,6 @@ export function CampLifecycleForm({
             disabled={disabled}
           />
           <ExecutionStatusField effectiveStatus={effectiveStatus} />
-          {canMarkCompleted ? (
-            <div className="full camp-execution-complete-row">
-              <button
-                type="button"
-                className="btn secondary btn-sm camp-execution-complete-btn"
-                disabled={disabled}
-                onClick={handleMarkCompleted}
-              >
-                Mark Complete
-              </button>
-            </div>
-          ) : null}
           {cancelledClosure ? (
             <div className="full camp-execution-action-note-wrap">
               <p className="meta-text camp-execution-action-note">
@@ -657,9 +632,15 @@ export function CampLifecycleForm({
               </button>
             </div>
           ) : null}
-          {!cancelledClosure && effectiveStatus === EXECUTION_STATUS.MARKED_EXECUTED && !isExecutionReadyForFinance(form, mappedConsumables) ? (
+          {needsExecutionDetails ? (
             <p className="meta-text camp-execution-action-note full">
-              Action required: complete Out Time, Travelled Kms, Patients, Product Count, documents, and consumables, then Mark Complete.
+              Action required: complete Out Time, Travelled Kms, Patients, Product Count, documents,
+              and Consumables Tracking (enter 0 if none used). Save to move to Finance &amp; Settlement.
+            </p>
+          ) : null}
+          {readyForFinance && effectiveStatus !== EXECUTION_STATUS.CAMP_COMPLETED ? (
+            <p className="meta-text camp-execution-action-note full">
+              All execution details are complete. Save to move this camp to Finance &amp; Settlement.
             </p>
           ) : null}
         </div>

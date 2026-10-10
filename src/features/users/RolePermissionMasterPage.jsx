@@ -16,6 +16,7 @@ import {
   buildUserAccessDraft,
   hasAnyModuleAccess,
   permissionsFromModuleMatrix,
+  preserveUnmappedPermissions,
   tierIsOnInMatrix,
   tiersForModule,
   toggleModuleTierInMatrix,
@@ -57,18 +58,27 @@ function buildUserDraftFromRecord(user, modules, roles) {
   };
 }
 
-function resolveAccessPayload(userDraft, modules, roles) {
+function resolveAccessPayload(userDraft, modules, roles, previousPermissions = []) {
   const adminRole = roles.find((r) => r.permissions?.includes('*'));
   const adminRoleId = adminRole ? roleIdOf(adminRole) : '';
   const hasAdmin = Boolean(adminRoleId && userDraft.roleIds.includes(adminRoleId));
   if (hasAdmin) {
     return { roleIds: [adminRoleId], grantedPermissions: [] };
   }
-  const grantedPermissions = permissionsFromModuleMatrix(modules, userDraft.moduleAccess);
+  const fromMatrix = permissionsFromModuleMatrix(modules, userDraft.moduleAccess);
+  const grantedPermissions = preserveUnmappedPermissions(
+    modules,
+    fromMatrix,
+    previousPermissions
+  );
   if (!grantedPermissions.length) {
     return null;
   }
   return { roleIds: [], grantedPermissions };
+}
+
+function draftSyncKey(userId, modules, roles) {
+  return `${userId}|m:${modules?.length || 0}|r:${roles?.length || 0}`;
 }
 
 function mergeUserRecord(users, saved) {
@@ -194,11 +204,14 @@ export default function RolePermissionMasterPage() {
       setUserDraft(EMPTY_USER);
       return;
     }
-    const userKey = String(editingUserId);
-    if (syncedUserIdRef.current === userKey) return;
+    // Wait for the permission catalog so View/Edit/Request toggles hydrate correctly.
+    if (!modules.length) return;
 
-    const user = users.find((u) => String(u.id) === userKey);
+    const user = users.find((u) => String(u.id) === String(editingUserId));
     if (!user) return;
+
+    const userKey = draftSyncKey(editingUserId, modules, roles);
+    if (syncedUserIdRef.current === userKey) return;
 
     syncedUserIdRef.current = userKey;
     setUserDraft(buildUserDraftFromRecord(user, modules, roles));
@@ -279,7 +292,10 @@ export default function RolePermissionMasterPage() {
   const saveUser = async (e) => {
     e.preventDefault();
     if (!canWrite) return;
-    const access = resolveAccessPayload(userDraft, modules, roles);
+    const previousPermissions = creatingUser
+      ? []
+      : editingUser?.permissions || editingUser?.grantedPermissions || [];
+    const access = resolveAccessPayload(userDraft, modules, roles, previousPermissions);
     if (!access) {
       setError('Assign at least one access option in Control Center below');
       return;
@@ -316,13 +332,14 @@ export default function RolePermissionMasterPage() {
         });
         setCreatingUser(false);
         skipDraftSyncRef.current = true;
-        syncedUserIdRef.current = String(data.id);
+        syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
         setUsers((prev) => mergeUserRecord(prev, data));
         setEditingUserId(data.id);
         setUserDraft(buildUserDraftFromRecord(data, modules, roles));
         void loadUsers();
-        setMsg('User created.');
+        setMsg('Person created.');
       } else if (editingUserId) {
+        const wasActive = editingUser?.isActive !== false;
         const body = {
           fullName: userDraft.fullName,
           phone: userDraft.phone,
@@ -335,14 +352,20 @@ export default function RolePermissionMasterPage() {
         if (pwd) body.password = pwd;
         const { data } = await api(`/users/${editingUserId}`, { method: 'PATCH', body });
         skipDraftSyncRef.current = true;
-        syncedUserIdRef.current = String(data.id);
+        syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
         setUsers((prev) => mergeUserRecord(prev, data));
         setUserDraft(buildUserDraftFromRecord(data, modules, roles));
         void loadUsers();
+        const blocked = wasActive && data.isActive === false;
+        const unblocked = !wasActive && data.isActive !== false;
         setMsg(
           pwd
             ? 'Password and access saved. Use the new password on next sign-in.'
-            : 'Access saved permanently.'
+            : blocked
+              ? 'Person blocked — they cannot sign in.'
+              : unblocked
+                ? 'Person unblocked — they can sign in again.'
+              : 'Changes saved.'
         );
       }
     } catch (err) {
@@ -353,15 +376,25 @@ export default function RolePermissionMasterPage() {
   };
 
   const removeUser = async () => {
-    if (!editingUserId || !canDelete || editingUserId === me?.id) return;
-    if (!window.confirm(`Delete user “${editingUser?.fullName || editingUser?.email}”?`)) return;
+    if (!editingUserId || !canDelete) return;
+    if (String(editingUserId) === String(me?.id || me?._id)) return;
+    if (!window.confirm(`Delete “${editingUser?.fullName || editingUser?.email}”? This cannot be undone.`)) {
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMsg('');
     try {
       await api(`/users/${editingUserId}`, { method: 'DELETE' });
+      syncedUserIdRef.current = '';
       setEditingUserId('');
+      setUserDraft(EMPTY_USER);
       await loadUsers();
-      setMsg('User deleted');
+      setMsg('Person deleted.');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -392,8 +425,8 @@ export default function RolePermissionMasterPage() {
       <section className="rp-section rp-section--modules">
         <h4>Control Center</h4>
         <p className="muted rp-hint">
-          Choose what this person can do in each application independently. Viewer on one app does not
-          affect another. Use All for every option on that app only.
+          Choose View, Edit, Request, Approve, and related access per application. Options on one app
+          do not affect another. Use All for every option on that app only.
         </p>
         {designationTemplate && (
           <p className="muted rp-hint rp-hint--template">
@@ -709,16 +742,27 @@ export default function RolePermissionMasterPage() {
                 {!creatingUser && (
                   <section className="rp-section">
                     <h4>Status</h4>
-                    <label className={`perm-check ${userDraft.isActive ? 'is-on' : ''}`}>
+                    <label
+                      className={`perm-check ${userDraft.isActive ? 'is-on' : 'is-blocked'}`}
+                    >
                       <input
                         type="checkbox"
                         checked={userDraft.isActive}
-                        disabled={!canWrite || String(editingUserId) === String(me?.id)}
-                        onChange={(e) => setUserDraft({ ...userDraft, isActive: e.target.checked })}
+                        disabled={
+                          !canWrite ||
+                          String(editingUserId) === String(me?.id || me?._id)
+                        }
+                        onChange={(e) =>
+                          setUserDraft({ ...userDraft, isActive: e.target.checked })
+                        }
                       />
                       <span>
-                        <strong>Account active</strong>
-                        <em className="mono-sm">Inactive people cannot sign in</em>
+                        <strong>{userDraft.isActive ? 'Account active' : 'Account blocked'}</strong>
+                        <em className="mono-sm">
+                          {userDraft.isActive
+                            ? 'Uncheck and Save to block sign-in'
+                            : 'Check and Save to restore sign-in'}
+                        </em>
                       </span>
                     </label>
                   </section>
@@ -727,18 +771,35 @@ export default function RolePermissionMasterPage() {
                 {canWrite && (
                   <div className="rp-actions">
                     <button className="btn" type="submit" disabled={busy}>
-                      {busy ? 'Saving…' : creatingUser ? 'Create person' : 'Save changes'}
+                      {busy
+                        ? 'Saving…'
+                        : creatingUser
+                          ? 'Add person'
+                          : 'Update'}
                     </button>
                     {(creatingUser || editingUserId) && (
-                      <button className="btn secondary" type="button" onClick={cancelUserForm}>
+                      <button
+                        className="btn secondary"
+                        type="button"
+                        disabled={busy}
+                        onClick={cancelUserForm}
+                      >
                         Cancel
                       </button>
                     )}
-                    {!creatingUser && editingUserId && String(editingUserId) !== String(me?.id) && canDelete && (
-                      <button className="btn danger" type="button" onClick={removeUser}>
-                        Delete
-                      </button>
-                    )}
+                    {!creatingUser &&
+                      editingUserId &&
+                      String(editingUserId) !== String(me?.id || me?._id) &&
+                      canDelete && (
+                        <button
+                          className="btn danger"
+                          type="button"
+                          disabled={busy}
+                          onClick={removeUser}
+                        >
+                          Delete
+                        </button>
+                      )}
                   </div>
                 )}
               </>

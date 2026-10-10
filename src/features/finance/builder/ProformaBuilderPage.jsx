@@ -34,6 +34,10 @@ export default function ProformaBuilderPage() {
     loadingDoc,
     submitDocument,
     approveDocument,
+    docMeta,
+    orgList,
+    orgProfileId,
+    changeOrgProfileId,
     rejectDocument,
     cancelDocument,
     issueDocument,
@@ -71,6 +75,10 @@ export default function ProformaBuilderPage() {
       onSaveNow={saveNow}
       onSubmit={submitDocument}
       onApprove={approveDocument}
+      docMeta={docMeta}
+      orgList={orgList}
+      orgProfileId={orgProfileId}
+      onOrgProfileIdChange={changeOrgProfileId}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { applyOrgMasterToInvoiceForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
@@ -22,14 +22,26 @@ function freshBillOfSupplyForm() {
 }
 
 export function useBillOfSupplyBuilder() {
-  const { data: orgMaster } = useCommercialOrgMaster();
+  const [orgProfileId, setOrgProfileIdState] = useState('default');
+  const { data: orgMaster, orgList, selectOrg } = useCommercialOrgMaster({ orgId: orgProfileId });
   const persistence = usePersistedCommercialBuilder({
     documentType: 'bill_of_supply',
     slug: 'bill-of-supply',
     buildFreshForm: freshBillOfSupplyForm,
     applyOrgMaster: applyOrg,
     orgMaster,
+    onOrgProfileIdChange: setOrgProfileIdState,
   });
+
+  const changeOrgProfileId = useCallback(
+    async (id) => {
+      const next = String(id || 'default');
+      setOrgProfileIdState(next);
+      persistence.setOrgProfileId(next);
+      await selectOrg(next);
+    },
+    [persistence, selectOrg]
+  );
 
   const { form, setForm, readOnly } = persistence;
 
@@ -183,5 +195,8 @@ export function useBillOfSupplyBuilder() {
     newBillOfSupply: persistence.newDocument,
     clearDraft: persistence.newDocument,
     orgMaster,
+    orgList,
+    orgProfileId: persistence.form?.orgProfileId || orgProfileId,
+    changeOrgProfileId,
   };
 }

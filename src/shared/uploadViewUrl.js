@@ -10,13 +10,14 @@ export function isDirectUploadPath(url = '') {
 }
 
 /**
- * Turn a stored `/uploads/...` (or already-signed) path into a browser-openable URL.
- * Re-signs expired-looking raw upload paths via the API.
+ * Turn a stored `/uploads/...` or signed file path into a browser-openable URL.
+ * Always re-signs upload paths (including expired signed tokens) via the API so
+ * Master One View never opens a stale JWT.
  */
 export async function resolveUploadViewUrl(url = '') {
   const raw = String(url || '').trim();
   if (!raw) return '';
-  if (isDirectUploadPath(raw)) {
+  if (isDirectUploadPath(raw) || raw.includes('/files/signed')) {
     const { data } = await api('/files/sign', { method: 'POST', body: { path: raw } });
     return apiUrl(data?.url || '');
   }

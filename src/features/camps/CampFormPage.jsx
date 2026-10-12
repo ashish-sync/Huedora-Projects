@@ -38,10 +38,7 @@ import {
   resolveCampSlot,
   hasReachedLifecycleStage,
   canVisitLifecycleStage,
-  isExecutionReadyForFinance,
   isExecutionCancellationForFinance,
-  getExecutionFinanceBlockers,
-  getExecutionConsumablesBlockers,
   todayIsoDate,
   syncExecutionStatusForSave,
   EXECUTION_STATUS,
@@ -1098,39 +1095,16 @@ export default function CampFormPage() {
       }
     }
 
-    if (activeStage === 'execution' && !isExecutionCancellationForFinance(form)) {
-      const consumableBlockers = getExecutionConsumablesBlockers(form, mappedConsumables);
-      if (consumableBlockers.length) {
-        setError(consumableBlockers[0]);
-        return;
-      }
-    }
-
-    if (
-      activeStage === 'execution'
-      && normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
-      && !isExecutionCancellationForFinance(form)
-    ) {
-      const blockers = getExecutionFinanceBlockers(form, mappedConsumables);
-      if (blockers.length) {
-        setError(`Complete execution before Finance: ${blockers.join('; ')}.`);
-        return;
-      }
-    }
-
     const trimmed = trimFormStrings(form, formStringFields);
     const contactFields = syncPrimaryContactFields(normalizeContactPersons(form));
-    const explicitMarkComplete = activeStage === 'execution' && form.markComplete === true;
+    // Server auto-advances to Financial when execution is complete; never send Camp Completed from the client.
     const executionStatus = activeStage === 'execution'
-      ? (explicitMarkComplete
-        ? EXECUTION_STATUS.CAMP_COMPLETED
-        : syncExecutionStatusForSave({
-          ...form,
-          // Ordinary Save must never send Camp Completed — Mark Complete button sets that.
-          executionStatus: normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
-            ? EXECUTION_STATUS.MARKED_EXECUTED
-            : form.executionStatus,
-        }))
+      ? syncExecutionStatusForSave({
+        ...form,
+        executionStatus: normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
+          ? EXECUTION_STATUS.MARKED_EXECUTED
+          : form.executionStatus,
+      })
       : form.executionStatus;
     const requiredProductIds = mappedConsumables.map((item) => item.productId);
     const consumablesUsed = activeStage === 'execution'
@@ -1164,7 +1138,6 @@ export default function CampFormPage() {
         ? maxLifecycleStage(reachedLifecycleStage, activeStage)
         : 'request',
       lifecycleOnly: isEdit && activeStage !== 'request',
-      ...(explicitMarkComplete ? { markComplete: true } : {}),
       ...(isEdit && (campMeta?.updatedAt || form.updatedAt)
         ? { expectedUpdatedAt: campMeta?.updatedAt || form.updatedAt }
         : {}),
@@ -1172,7 +1145,6 @@ export default function CampFormPage() {
     delete payload.hqManuallyEdited;
     delete payload.addressPlacesAvailable;
     delete payload.markComplete;
-    if (explicitMarkComplete) payload.markComplete = true;
 
     // Documents are owned by upload/delete endpoints — never replace via full-form Save.
     delete payload.executionDocuments;
@@ -1181,17 +1153,12 @@ export default function CampFormPage() {
       payload.clearExecutionDocuments = true;
     }
 
-    // Consumables: only send when execution stage and user touched them (or explicit clear).
-    const baselineConsumables = Array.isArray(campMeta?.consumablesUsed)
-      ? campMeta.consumablesUsed
-      : [];
-    const consumablesChanged = activeStage === 'execution'
-      && JSON.stringify(normalizeConsumablesUsed(baselineConsumables, { requiredProductIds }))
-        !== JSON.stringify(consumablesUsed);
+    // Always send consumables on execution save so server can auto-advance when complete
+    // (including explicit 0 Usage/Wastage). Empty arrays still need an explicit clear flag.
     if (form.clearConsumablesUsed === true) {
       payload.consumablesUsed = [];
       payload.clearConsumablesUsed = true;
-    } else if (consumablesChanged) {
+    } else if (activeStage === 'execution') {
       payload.consumablesUsed = consumablesUsed;
     } else {
       delete payload.consumablesUsed;
@@ -1209,7 +1176,9 @@ export default function CampFormPage() {
       if (isEdit) {
         const res = await campApi.update(id, payload);
         savedCamp = res.data?.data || res.data;
-        if (explicitMarkComplete && savedCamp) {
+        // Server auto-moves complete Execution saves into Finance & Settlement.
+        if (savedCamp && normalizeLifecycleStage(savedCamp.lifecycleStage, 'request') === 'financial'
+          && activeStage === 'execution') {
           setForm(campToForm(savedCamp));
           setCampMeta((prev) => ({ ...prev, ...savedCamp }));
           setActiveStage('financial');

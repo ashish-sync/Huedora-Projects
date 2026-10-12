@@ -31,6 +31,7 @@ function invoiceLikeToPayload(form, documentType) {
   const adj = form.adjustments || {};
   const ship = form.shipTo || {};
   return {
+    orgProfileId: form.orgProfileId || 'default',
     clientMasterId: form.clientMasterId || null,
     clientId: form.clientId || null,
     clientPurchaseOrderId: form.clientPurchaseOrderId || null,
@@ -122,6 +123,7 @@ function proformaToPayload(form) {
     });
   }
   return {
+    orgProfileId: form.orgProfileId || 'default',
     clientMasterId: form.clientMasterId || null,
     clientId: form.clientId || null,
     recipientName: trim(recipient.name),
@@ -167,6 +169,7 @@ function poToPayload(form) {
   const commercial = form.commercial || {};
   const po = form.po || {};
   return {
+    orgProfileId: form.orgProfileId || 'default',
     vendorName: trim(vendor.name),
     vendorAddress: trim(vendor.address),
     vendorGstin: trim(vendor.gstin),
@@ -239,6 +242,7 @@ function deliveryChallanToPayload(form) {
   const dispatch = form.dispatch || {};
   const ack = form.acknowledgement || {};
   return {
+    orgProfileId: form.orgProfileId || 'default',
     clientMasterId: form.clientMasterId || null,
     clientId: form.clientId || null,
     documentDate: trim(inv.issueDate),
@@ -719,24 +723,28 @@ function mergePo(doc) {
 }
 
 export function apiDocToForm(documentType, doc) {
+  let form;
   if (!doc) {
-    if (documentType === 'proforma') return defaultProformaForm();
-    if (documentType === 'purchase_order') return defaultPurchaseOrderForm();
-    if (documentType === 'credit_note') return defaultCreditNoteForm();
-    if (documentType === 'debit_note') return defaultDebitNoteForm();
-    if (documentType === 'delivery_challan') return defaultDeliveryChallanForm();
-    if (documentType === 'bill_of_supply') return defaultBillOfSupplyForm();
-    if (documentType === 'quotation') return defaultQuotationForm();
-    return defaultInvoiceForm();
-  }
-  if (documentType === 'proforma') return mergeProforma(doc);
-  if (documentType === 'purchase_order') return mergePo(doc);
-  if (documentType === 'credit_note') return mergeInvoiceLike(defaultCreditNoteForm(), doc);
-  if (documentType === 'debit_note') return mergeInvoiceLike(defaultDebitNoteForm(), doc);
-  if (documentType === 'delivery_challan') return mergeDeliveryChallan(doc);
-  if (documentType === 'bill_of_supply') return mergeInvoiceLike(defaultBillOfSupplyForm(), doc);
-  if (documentType === 'quotation') return mergeInvoiceLike(defaultQuotationForm(), doc);
-  return mergeInvoiceLike(defaultInvoiceForm(), doc);
+    if (documentType === 'proforma') form = defaultProformaForm();
+    else if (documentType === 'purchase_order') form = defaultPurchaseOrderForm();
+    else if (documentType === 'credit_note') form = defaultCreditNoteForm();
+    else if (documentType === 'debit_note') form = defaultDebitNoteForm();
+    else if (documentType === 'delivery_challan') form = defaultDeliveryChallanForm();
+    else if (documentType === 'bill_of_supply') form = defaultBillOfSupplyForm();
+    else if (documentType === 'quotation') form = defaultQuotationForm();
+    else form = defaultInvoiceForm();
+  } else if (documentType === 'proforma') form = mergeProforma(doc);
+  else if (documentType === 'purchase_order') form = mergePo(doc);
+  else if (documentType === 'credit_note') form = mergeInvoiceLike(defaultCreditNoteForm(), doc);
+  else if (documentType === 'debit_note') form = mergeInvoiceLike(defaultDebitNoteForm(), doc);
+  else if (documentType === 'delivery_challan') form = mergeDeliveryChallan(doc);
+  else if (documentType === 'bill_of_supply') form = mergeInvoiceLike(defaultBillOfSupplyForm(), doc);
+  else if (documentType === 'quotation') form = mergeInvoiceLike(defaultQuotationForm(), doc);
+  else form = mergeInvoiceLike(defaultInvoiceForm(), doc);
+  return {
+    ...form,
+    orgProfileId: doc?.orgProfileId || form.orgProfileId || 'default',
+  };
 }
 
 export async function loadCommercialDocument(id) {

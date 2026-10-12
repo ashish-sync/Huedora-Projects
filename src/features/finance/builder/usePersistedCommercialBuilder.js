@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/auth.jsx';
+import { orgMasterFromDocument } from '../commercialOrgMaster.js';
 import {
   apiDocToForm,
   fetchServerPdfBlob,
@@ -29,6 +30,7 @@ export function usePersistedCommercialBuilder({
   buildFreshForm,
   applyOrgMaster,
   orgMaster,
+  onOrgProfileIdChange,
 }) {
   const { id: routeId } = useParams();
   const navigate = useNavigate();
@@ -37,7 +39,10 @@ export function usePersistedCommercialBuilder({
   const [docId, setDocId] = useState(routeId || null);
   const [status, setStatus] = useState('Draft');
   const [docMeta, setDocMeta] = useState(null);
-  const [form, setForm] = useState(() => applyOrgMaster(buildFreshForm(), orgMaster));
+  const [form, setForm] = useState(() => ({
+    ...applyOrgMaster(buildFreshForm(), orgMaster),
+    orgProfileId: orgMaster?._id || 'default',
+  }));
   const [saveState, setSaveState] = useState('idle');
   const [savedAt, setSavedAt] = useState(null);
   const [error, setError] = useState('');
@@ -57,7 +62,10 @@ export function usePersistedCommercialBuilder({
 
   useEffect(() => {
     if (!orgMaster || !isEditableStatus(statusRef.current, { isAdmin: admin })) return;
-    setForm((prev) => applyOrgMaster(prev, orgMaster));
+    setForm((prev) => ({
+      ...applyOrgMaster(prev, orgMaster),
+      orgProfileId: prev.orgProfileId || orgMaster._id || 'default',
+    }));
   }, [orgMaster, applyOrgMaster, admin]);
 
   useEffect(() => {
@@ -77,7 +85,13 @@ export function usePersistedCommercialBuilder({
         if (doc.documentType && doc.documentType !== documentType) {
           throw new Error('Document type does not match this builder');
         }
-        const nextForm = applyOrgMaster(apiDocToForm(documentType, doc), orgMaster);
+        const orgId = doc.orgProfileId || 'default';
+        onOrgProfileIdChange?.(orgId);
+        const masterForDoc = orgMasterFromDocument(doc, orgMaster);
+        const nextForm = {
+          ...applyOrgMaster(apiDocToForm(documentType, doc), masterForDoc),
+          orgProfileId: orgId,
+        };
         setForm(nextForm);
         setDocId(doc._id);
         setStatus(doc.status || 'Draft');
@@ -98,7 +112,8 @@ export function usePersistedCommercialBuilder({
     return () => {
       cancelled = true;
     };
-  }, [routeId, documentType, applyOrgMaster, orgMaster]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeId, documentType]);
 
   const persist = useCallback(
     async (nextForm, { navigateOnCreate = true } = {}) => {
@@ -175,9 +190,23 @@ export function usePersistedCommercialBuilder({
     return persistRef.current(formRef.current);
   }, []);
 
+  const setOrgProfileId = useCallback(
+    (orgId) => {
+      const id = String(orgId || 'default');
+      onOrgProfileIdChange?.(id);
+      setForm((prev) => ({ ...prev, orgProfileId: id }));
+      skipNextAutosave.current = false;
+    },
+    [onOrgProfileIdChange]
+  );
+
   const newDocument = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    const fresh = applyOrgMaster(buildFreshForm(), orgMaster);
+    const orgId = orgMaster?._id || formRef.current?.orgProfileId || 'default';
+    const fresh = {
+      ...applyOrgMaster(buildFreshForm(), orgMaster),
+      orgProfileId: orgId,
+    };
     skipNextAutosave.current = true;
     setForm(fresh);
     setDocId(null);
@@ -330,6 +359,7 @@ export function usePersistedCommercialBuilder({
     readOnly,
     saveNow,
     newDocument,
+    setOrgProfileId,
     submitDocument: () => runLifecycle('submit'),
     approveDocument: () => runLifecycle('approve'),
     rejectDocument: () => runLifecycle('reject'),

@@ -1,6 +1,8 @@
 import { api } from '../../shared/api.js';
 
 const CACHE_KEY = 'tylo_commercial_org_master_v1';
+const CACHE_KEY_PREFIX = 'tylo_commercial_org_master_v2:';
+const LIST_CACHE_KEY = 'tylo_commercial_org_list_v1';
 
 /** Base64 logo/signature blobs are too large for localStorage (~5MB quota) and live on the API. */
 const CACHE_OMIT_KEYS = ['logoDataUrl', 'paymentQrDataUrl', 'signatureDataUrl'];
@@ -83,19 +85,26 @@ export const ORG_LETTERHEAD_KEYS = [
   'website',
 ];
 
-export function loadOrgMasterCache() {
+function cacheKeyForOrg(orgId) {
+  const id = String(orgId || 'default').trim() || 'default';
+  return `${CACHE_KEY_PREFIX}${id}`;
+}
+
+export function loadOrgMasterCache(orgId = 'default') {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw =
+      localStorage.getItem(cacheKeyForOrg(orgId)) ||
+      (orgId === 'default' ? localStorage.getItem(CACHE_KEY) : null);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (parsed?.logoDataUrl || parsed?.paymentQrDataUrl || parsed?.signatureDataUrl) {
-      saveOrgMasterCache(parsed);
+      saveOrgMasterCache(parsed, orgId);
       return toCachePayload(parsed);
     }
     return parsed;
   } catch {
     try {
-      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(cacheKeyForOrg(orgId));
     } catch {
       /* ignore */
     }
@@ -103,15 +112,19 @@ export function loadOrgMasterCache() {
   }
 }
 
-export function saveOrgMasterCache(data) {
+export function saveOrgMasterCache(data, orgId) {
   if (!data || typeof localStorage === 'undefined') return;
   const payload = toCachePayload(data);
   if (!payload) return;
+  const id = String(orgId || data._id || data.id || 'default');
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    localStorage.setItem(cacheKeyForOrg(id), JSON.stringify(payload));
+    if (id === 'default' || data.isDefault) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    }
   } catch (err) {
     try {
-      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(cacheKeyForOrg(id));
     } catch {
       /* ignore */
     }
@@ -121,18 +134,60 @@ export function saveOrgMasterCache(data) {
   }
 }
 
-export async function fetchCommercialOrgMaster() {
-  const res = await api('/finance/org-profile');
-  const data = res.data || res;
-  saveOrgMasterCache(data);
+export async function fetchCommercialOrgList() {
+  const res = await api('/finance/org-profiles');
+  const data = res.data || [];
+  try {
+    localStorage.setItem(LIST_CACHE_KEY, JSON.stringify(data));
+  } catch {
+    /* ignore */
+  }
   return data;
 }
 
-export async function saveCommercialOrgMaster(payload) {
-  const res = await api('/finance/org-profile', { method: 'PATCH', body: payload });
+export function loadOrgListCache() {
+  try {
+    const raw = localStorage.getItem(LIST_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCommercialOrgMaster(orgId = 'default') {
+  const id = String(orgId || 'default').trim() || 'default';
+  const path = id === 'default' ? '/finance/org-profile' : `/finance/org-profiles/${encodeURIComponent(id)}`;
+  const res = await api(path);
   const data = res.data || res;
-  saveOrgMasterCache(data);
+  saveOrgMasterCache(data, data._id || id);
   return data;
+}
+
+export async function saveCommercialOrgMaster(payload, orgId = 'default') {
+  const id = String(orgId || payload?._id || 'default').trim() || 'default';
+  const path = id === 'default' ? '/finance/org-profile' : `/finance/org-profiles/${encodeURIComponent(id)}`;
+  const res = await api(path, { method: 'PATCH', body: payload });
+  const data = res.data || res;
+  saveOrgMasterCache(data, data._id || id);
+  return data;
+}
+
+export async function createCommercialOrgMaster(payload) {
+  const res = await api('/finance/org-profiles', { method: 'POST', body: payload });
+  const data = res.data || res;
+  saveOrgMasterCache(data, data._id);
+  return data;
+}
+
+/** Prefer frozen issuance snapshot when present. */
+export function orgMasterFromDocument(doc, liveMaster) {
+  if (doc?.orgSnapshot && typeof doc.orgSnapshot === 'object') {
+    const stage = String(doc.status || '');
+    if (stage === 'Issued' || stage === 'Approved' || stage === 'Cancelled') {
+      return { ...doc.orgSnapshot, _id: doc.orgProfileId || doc.orgSnapshot.orgProfileId };
+    }
+  }
+  return liveMaster;
 }
 
 /**
@@ -287,6 +342,7 @@ export function getOrgMasterDisplay(master) {
 
 export function emptyOrgMasterForm() {
   return {
+    name: '',
     legalName: '',
     brandLine: '',
     registeredOffice: '',
@@ -310,6 +366,7 @@ export function emptyOrgMasterForm() {
 
 export function orgMasterToPayload(form) {
   return {
+    name: form.name || form.legalName,
     legalName: form.legalName,
     brandLine: form.brandLine,
     registeredOffice: form.registeredOffice,

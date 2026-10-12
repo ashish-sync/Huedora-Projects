@@ -8,6 +8,10 @@ import { fetchContactsList } from '../../shared/contactsApi.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { NAV } from '../../shared/labels.js';
+import {
+  APPROVAL_AUTHORITY_LABEL,
+  canActorApproveSubject,
+} from '../../shared/approvalAuthority.js';
 import { isVendorContact } from '../agreements/contactPicklists.js';
 import {
   VENDOR_BILL_EDITABLE_STATUSES,
@@ -94,8 +98,9 @@ export default function FinanceVendorBillDetailPage() {
   const { id } = useParams();
   const isNew = id === 'new';
   const navigate = useNavigate();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const canWrite = can('finance:write') || can('*');
+  const canFinanceApprove = can('finance:approve') || can('*');
 
   const [bill, setBill] = useState(null);
   const [form, setForm] = useState(() => billToForm(null));
@@ -123,6 +128,15 @@ export default function FinanceVendorBillDetailPage() {
   const editable = isNew || VENDOR_BILL_EDITABLE_STATUSES.has(status);
   const payable = VENDOR_BILL_PAYABLE_STATUSES.has(status);
   const existingAttachments = Array.isArray(bill?.attachments) ? bill.attachments : [];
+  const approvalSubject =
+    bill?.approvalSubject ||
+    (bill?.submittedById || bill?.createdById
+      ? { _id: bill.submittedById || bill.createdById }
+      : null);
+  const mayApproveBill =
+    canFinanceApprove && canActorApproveSubject(user, approvalSubject, can);
+  const isVerifierSelf =
+    bill?.verifiedById && String(bill.verifiedById) === String(user?.id || user?._id);
 
   const expenseCategories = expenseMaster.expenseCategories || [];
   const expenseSubCategories = expenseMaster.expenseSubCategories || [];
@@ -723,32 +737,42 @@ export default function FinanceVendorBillDetailPage() {
           {!isNew && canWrite && status === 'verified' ? (
             <div className="finance-vendor-bill-actions card-inset">
             <h4>Approval</h4>
-            <div className="field">
-              <label>Rejection reason (if rejecting)</label>
-              <textarea
-                rows={2}
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-              />
-            </div>
-            <div className="finance-docs-actions">
-              <button
-                type="button"
-                className="btn primary"
-                disabled={busy}
-                onClick={() => transition('approved')}
-              >
-                Approve
-              </button>
-              <button
-                type="button"
-                className="btn danger"
-                disabled={busy || !rejectReason.trim()}
-                onClick={() => transition('rejected', { rejectionReason: rejectReason.trim() })}
-              >
-                Reject
-              </button>
-            </div>
+            {mayApproveBill && !isVerifierSelf ? (
+              <>
+                <div className="field">
+                  <label>Rejection reason (if rejecting)</label>
+                  <textarea
+                    rows={2}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                  />
+                </div>
+                <div className="finance-docs-actions">
+                  <button
+                    type="button"
+                    className="btn primary"
+                    disabled={busy}
+                    onClick={() => transition('approved')}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    className="btn danger"
+                    disabled={busy || !rejectReason.trim()}
+                    onClick={() => transition('rejected', { rejectionReason: rejectReason.trim() })}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="muted">
+                {isVerifierSelf
+                  ? 'Segregation of duties: the verifier cannot approve this bill.'
+                  : `Awaiting ${APPROVAL_AUTHORITY_LABEL}.`}
+              </p>
+            )}
             </div>
           ) : null}
 

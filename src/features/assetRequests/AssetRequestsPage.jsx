@@ -20,7 +20,12 @@ import { categoriesForType } from '../../shared/productMasterConfig.js';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import '../notifications/notifications.css';
-import { canApproveRequestType, approvalRuleLabel, isAdminApprover } from './requestApproval.js';
+import { approvalRuleLabel } from './requestApproval.js';
+import {
+  APPROVAL_AUTHORITY_LABEL,
+  canActorApproveSubject,
+  isApprovalAuthorityExempt,
+} from '../../shared/approvalAuthority.js';
 import {
   MASTER_MODULES,
   entitiesForModule,
@@ -453,10 +458,16 @@ export default function AssetRequestsPage() {
     can('repairs:write') ||
     can('maintenance:write') ||
     can('*');
-  const canApprove =
-    can('asset-requests:approve') || can('movements:approve') || isAdminApprover(user, can);
-  const userCanApproveType = (requestType) => canApproveRequestType(user, can, requestType);
-  const adminCanOverrideOwn = isAdminApprover(user, can);
+  const canComplete =
+    can('asset-requests:approve') || can('movements:approve') || can('*');
+  const authorityExempt = isApprovalAuthorityExempt(user, can);
+  const userCanApproveRow = (row) => {
+    const subject =
+      row?.requestorId && typeof row.requestorId === 'object'
+        ? row.requestorId
+        : { _id: row?.requestorId };
+    return canActorApproveSubject(user, subject, can);
+  };
 
   const [rows, setRows] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -3309,6 +3320,7 @@ export default function AssetRequestsPage() {
           <tbody>
             {filteredRows.map((r) => {
               const isMine = String(r.requestorId?._id || r.requestorId) === String(user?.id);
+              const mayApprove = userCanApproveRow(r);
               const isActive = r.status === 'REQUESTED' || r.status === 'APPROVED';
               const isServiceRequest =
                 r.requestType === 'REPAIR' || r.requestType === 'MAINTENANCE';
@@ -3362,10 +3374,8 @@ export default function AssetRequestsPage() {
                     <div className="arq-actions">
                       {r.requestType === 'HIRING' ? (
                         <>
-                          {canApprove &&
-                            userCanApproveType(r.requestType) &&
-                            ['REQUESTED', 'APPROVED'].includes(r.status) &&
-                            (!isMine || adminCanOverrideOwn) && (
+                          {mayApprove &&
+                            ['REQUESTED', 'APPROVED'].includes(r.status) && (
                               <>
                                 <button
                                   type="button"
@@ -3385,16 +3395,13 @@ export default function AssetRequestsPage() {
                                 )}
                               </>
                             )}
-                          {r.status === 'REQUESTED' && isMine && !adminCanOverrideOwn && (
+                          {r.status === 'REQUESTED' && isMine && !authorityExempt && (
                             <span className="muted mono-sm">Awaiting fulfillment</span>
                           )}
-                          {r.status === 'REQUESTED' &&
-                            !isMine &&
-                            canApprove &&
-                            !userCanApproveType(r.requestType) && (
-                            <span className="muted mono-sm">Awaiting Operations Leader or Admin</span>
+                          {r.status === 'REQUESTED' && !isMine && !mayApprove && (
+                            <span className="muted mono-sm">Awaiting {APPROVAL_AUTHORITY_LABEL}</span>
                           )}
-                          {isActive && (canApprove || (canRequest && isMine)) && (
+                          {isActive && (mayApprove || canComplete || (canRequest && isMine)) && (
                             <button
                               type="button"
                               className="btn secondary btn-compact"
@@ -3414,7 +3421,7 @@ export default function AssetRequestsPage() {
                           )}
                           {!r.jdAttachment &&
                             isActive &&
-                            (canApprove || (canRequest && isMine)) && (
+                            (mayApprove || canComplete || (canRequest && isMine)) && (
                               <button
                                 type="button"
                                 className="btn secondary btn-compact"
@@ -3434,10 +3441,7 @@ export default function AssetRequestsPage() {
                       ) : (
                         <>
                       <WatchFollowButton entityType="AssetRequest" entityId={r._id} />
-                      {canApprove &&
-                        userCanApproveType(r.requestType) &&
-                        r.status === 'REQUESTED' &&
-                        (!isMine || adminCanOverrideOwn) && (
+                      {mayApprove && r.status === 'REQUESTED' && (
                         <>
                           <button type="button" className="btn btn-compact" onClick={() => act(r._id, 'approve')}>
                             Approve
@@ -3451,23 +3455,20 @@ export default function AssetRequestsPage() {
                           </button>
                         </>
                       )}
-                      {r.status === 'REQUESTED' &&
-                        !isMine &&
-                        canApprove &&
-                        !userCanApproveType(r.requestType) && (
+                      {r.status === 'REQUESTED' && !isMine && !mayApprove && (
                         <span className="muted mono-sm">
                           Awaiting {approvalRuleLabel(r.requestType)}
                         </span>
                       )}
-                      {canApprove && r.status === 'APPROVED' && (
+                      {canComplete && r.status === 'APPROVED' && (
                         <button type="button" className="btn secondary btn-compact" onClick={() => act(r._id, 'complete')}>
                           Complete
                         </button>
                       )}
-                      {r.status === 'REQUESTED' && isMine && !adminCanOverrideOwn && (
+                      {r.status === 'REQUESTED' && isMine && !authorityExempt && (
                         <span className="muted mono-sm">Awaiting approval</span>
                       )}
-                      {isActive && (canApprove || (canRequest && isMine)) && (
+                      {isActive && (mayApprove || canComplete || (canRequest && isMine)) && (
                         <button
                           type="button"
                           className="btn secondary btn-compact"
@@ -3507,7 +3508,7 @@ export default function AssetRequestsPage() {
                       )}
                       {isServiceRequest &&
                         isActive &&
-                        (canApprove || (canRequest && isMine)) && (
+                        (mayApprove || canComplete || (canRequest && isMine)) && (
                         <>
                           <button
                             type="button"

@@ -324,7 +324,7 @@ export default function CampExecutePage() {
         {error ? <div className="camp-execute__error" role="alert">{error}</div> : null}
         {locked ? (
           <div className="camp-execute__success" role="status">
-            Submitted for Camp One review. The team will Mark Complete separately.
+            Submitted for Camp One review. When all execution details are complete and saved, the camp moves to Finance &amp; Settlement.
           </div>
         ) : notice ? (
           <div className="camp-execute__success" role="status">{notice}</div>

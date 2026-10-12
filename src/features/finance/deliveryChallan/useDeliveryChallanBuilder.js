@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { applyOrgMasterToInvoiceForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { clampTextLines } from '../documentGenerator/inlineEdit.jsx';
@@ -42,14 +42,26 @@ const ORG_LOCKED_FROM_PATHS = new Set([
 ]);
 
 export function useDeliveryChallanBuilder() {
-  const { data: orgMaster } = useCommercialOrgMaster();
+  const [orgProfileId, setOrgProfileIdState] = useState('default');
+  const { data: orgMaster, orgList, selectOrg } = useCommercialOrgMaster({ orgId: orgProfileId });
   const persistence = usePersistedCommercialBuilder({
     documentType: 'delivery_challan',
     slug: 'delivery-challan',
     buildFreshForm: freshDeliveryChallanForm,
     applyOrgMaster: applyOrg,
     orgMaster,
+    onOrgProfileIdChange: setOrgProfileIdState,
   });
+
+  const changeOrgProfileId = useCallback(
+    async (id) => {
+      const next = String(id || 'default');
+      setOrgProfileIdState(next);
+      persistence.setOrgProfileId(next);
+      await selectOrg(next);
+    },
+    [persistence, selectOrg]
+  );
 
   const { form, setForm, readOnly } = persistence;
 
@@ -146,5 +158,8 @@ export function useDeliveryChallanBuilder() {
     newDeliveryChallan: persistence.newDocument,
     clearDraft: persistence.newDocument,
     orgMaster,
+    orgList,
+    orgProfileId: persistence.form?.orgProfileId || orgProfileId,
+    changeOrgProfileId,
   };
 }

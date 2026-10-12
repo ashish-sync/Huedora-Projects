@@ -16,36 +16,44 @@ describe('camp lifecycle finance transition', () => {
   });
 
   it('detects execution ready for finance', () => {
-    expect(
-      isExecutionReadyForFinance({
-        executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
-        chargeableStatus: 'Chargeable',
-        inTime: '09:00',
-        attire: 'No Issues',
-        outTime: '12:00',
-        kmRoundTrip: 10,
-        actualPatients: 5,
-        rxCount: 2,
-        executionDocuments: [
-          { docType: 'doctor_form' },
-          { docType: 'patient_form' },
-        ],
-      }),
-    ).toBe(true);
+    const completeCamp = {
+      executionStatus: EXECUTION_STATUS.MARKED_EXECUTED,
+      chargeableStatus: 'Chargeable',
+      inTime: '09:00',
+      attire: 'No Issues',
+      outTime: '12:00',
+      kmRoundTrip: 10,
+      actualPatients: 5,
+      rxCount: 2,
+      executionDocuments: [
+        { docType: 'doctor_form' },
+        { docType: 'patient_form' },
+      ],
+      consumablesUsed: [
+        { productId: 'p1', quantityUsed: 0, wastage: 0 },
+      ],
+    };
+    const mapped = [{ productId: 'p1', itemName: 'Test Strip' }];
+
+    expect(isExecutionReadyForFinance(completeCamp, mapped)).toBe(true);
 
     expect(
       getExecutionFinanceBlockers({
-        executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
-        chargeableStatus: 'Chargeable',
-        inTime: '09:00',
-        attire: 'No Issues',
-        outTime: '12:00',
-        kmRoundTrip: 10,
-        actualPatients: 5,
-        rxCount: 2,
+        ...completeCamp,
         executionDocuments: [{ docType: 'doctor_form' }],
-      }),
+      }, mapped),
     ).toEqual(['Upload at least one PF (patient form) document']);
+
+    expect(
+      getExecutionFinanceBlockers(completeCamp, mapped),
+    ).toEqual([]);
+
+    expect(
+      getExecutionFinanceBlockers({
+        ...completeCamp,
+        consumablesUsed: [{ productId: 'p1', quantityUsed: '', wastage: '' }],
+      }, mapped),
+    ).toEqual(['Enter Usage and Wastage for Test Strip (use 0 if none)']);
   });
 
   it('skips execution completion fields for Cancelled by Tylo/Client', () => {

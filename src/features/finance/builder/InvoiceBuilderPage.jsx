@@ -35,9 +35,13 @@ export default function InvoiceBuilderPage() {
     docId,
     submitDocument,
     approveDocument,
+    docMeta,
     rejectDocument,
     cancelDocument,
     issueDocument,
+    orgList,
+    orgProfileId,
+    changeOrgProfileId,
   } = useInvoiceBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -71,6 +75,10 @@ export default function InvoiceBuilderPage() {
       onSaveNow={saveNow}
       onSubmit={submitDocument}
       onApprove={approveDocument}
+      docMeta={docMeta}
+      orgList={orgList}
+      orgProfileId={orgProfileId}
+      onOrgProfileIdChange={changeOrgProfileId}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}

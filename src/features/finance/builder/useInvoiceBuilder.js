@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { applyOrgMasterToInvoiceForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import {
@@ -22,14 +22,26 @@ function freshInvoiceForm() {
 }
 
 export function useInvoiceBuilder() {
-  const { data: orgMaster } = useCommercialOrgMaster();
+  const [orgProfileId, setOrgProfileIdState] = useState('default');
+  const { data: orgMaster, orgList, selectOrg } = useCommercialOrgMaster({ orgId: orgProfileId });
   const persistence = usePersistedCommercialBuilder({
     documentType: 'client_invoice',
     slug: 'invoice',
     buildFreshForm: freshInvoiceForm,
     applyOrgMaster: applyOrg,
     orgMaster,
+    onOrgProfileIdChange: setOrgProfileIdState,
   });
+
+  const changeOrgProfileId = useCallback(
+    async (id) => {
+      const next = String(id || 'default');
+      setOrgProfileIdState(next);
+      persistence.setOrgProfileId(next);
+      await selectOrg(next);
+    },
+    [persistence, selectOrg]
+  );
 
   const { form, setForm, readOnly } = persistence;
 
@@ -161,5 +173,8 @@ export function useInvoiceBuilder() {
     newInvoice: persistence.newDocument,
     clearDraft: persistence.newDocument,
     orgMaster,
+    orgList,
+    orgProfileId: form.orgProfileId || orgProfileId,
+    changeOrgProfileId,
   };
 }

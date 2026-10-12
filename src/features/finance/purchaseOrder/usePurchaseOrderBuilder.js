@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { applyOrgMasterToPurchaseOrderForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { usePersistedCommercialBuilder } from '../builder/usePersistedCommercialBuilder.js';
@@ -44,14 +44,26 @@ function freshPoForm() {
 }
 
 export function usePurchaseOrderBuilder() {
-  const { data: orgMaster } = useCommercialOrgMaster();
+  const [orgProfileId, setOrgProfileIdState] = useState('default');
+  const { data: orgMaster, orgList, selectOrg } = useCommercialOrgMaster({ orgId: orgProfileId });
   const persistence = usePersistedCommercialBuilder({
     documentType: 'purchase_order',
     slug: 'purchase-order',
     buildFreshForm: freshPoForm,
     applyOrgMaster: applyOrg,
     orgMaster,
+    onOrgProfileIdChange: setOrgProfileIdState,
   });
+
+  const changeOrgProfileId = useCallback(
+    async (id) => {
+      const next = String(id || 'default');
+      setOrgProfileIdState(next);
+      persistence.setOrgProfileId(next);
+      await selectOrg(next);
+    },
+    [persistence, selectOrg]
+  );
 
   const { form, setForm, readOnly } = persistence;
   const totals = useMemo(() => computePurchaseOrderTotals(form), [form]);
@@ -198,5 +210,8 @@ export function usePurchaseOrderBuilder() {
     clearVendorContact,
     newPurchaseOrder: persistence.newDocument,
     orgMaster,
+    orgList,
+    orgProfileId: persistence.form?.orgProfileId || orgProfileId,
+    changeOrgProfileId,
   };
 }

@@ -105,6 +105,10 @@ export default function InvoiceBuilderShell({
   children,
   /** 'landscape' (default) or 'portrait' — Purchase Order uses portrait A4. */
   pageOrientation = 'landscape',
+  docMeta = null,
+  orgList = [],
+  orgProfileId = 'default',
+  onOrgProfileIdChange,
 }) {
   const previewRef = useRef(null);
   const autoPrintStarted = useRef(false);
@@ -113,10 +117,15 @@ export default function InvoiceBuilderShell({
   const { wrapRef, scale, zoomIn, zoomOut, resetZoom, fitToWidth, pagePx } = usePreviewScale({
     orientation: pageOrientation,
   });
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const canApprove = canApproveCommercialDocument(user);
+  const approvalSubject =
+    docMeta?.approvalSubject ||
+    (docMeta?.submittedById || docMeta?.createdById
+      ? { _id: docMeta.submittedById || docMeta.createdById }
+      : null);
+  const canApprove = canApproveCommercialDocument(user, approvalSubject, can);
   const isDraftLike = isDraftingStage(status);
   const isSubmitted = status === 'Submitted';
   const isIssued = isIssuedStage(status);
@@ -236,6 +245,26 @@ export default function InvoiceBuilderShell({
             ) : null}
           </div>
           <SaveIndicator state={saveState} savedAt={savedAt} status={status} docId={docId} />
+          {orgList?.length ? (
+            <label className="ib-org-picker" title="Issuing organisation">
+              <span className="ib-org-picker-label">Org</span>
+              <select
+                value={orgProfileId || 'default'}
+                disabled={busy || !isDraftLike || !onOrgProfileIdChange}
+                onChange={(e) => onOrgProfileIdChange?.(e.target.value)}
+              >
+                {orgList.map((org) => {
+                  const id = String(org._id || org.id);
+                  return (
+                    <option key={id} value={id}>
+                      {org.name || org.legalName || id}
+                      {org.isDefault ? ' (default)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          ) : null}
         </div>
 
         <div className="ib-toolbar-center">
@@ -293,7 +322,7 @@ export default function InvoiceBuilderShell({
               className="ib-primary-btn"
               disabled={busy}
               onClick={() => onSubmit?.()}
-              title="Send to Operations Head or Senior Manager for approval"
+              title="Send to your Reporting Manager for approval"
             >
               {busyAction === 'submit' ? 'Sending…' : 'Request Approval'}
             </button>
@@ -323,7 +352,10 @@ export default function InvoiceBuilderShell({
             </button>
           ) : null}
           {isSubmitted && !canApprove ? (
-            <span className="ib-save ib-save--idle" title="Awaiting Operations Head or Senior Manager">
+            <span
+              className="ib-save ib-save--idle"
+              title="Awaiting Reporting Manager, or Director / Business Head / Manager"
+            >
               Awaiting approval
             </span>
           ) : null}

@@ -1,5 +1,8 @@
-/** Mirrors server commercial approver designations (Operations Head OR Senior Manager). */
-export const COMMERCIAL_APPROVER_DESIGNATIONS = ['operations head', 'senior manager'];
+import {
+  canActorApproveSubject,
+  isApprovalExemptDesignation,
+  normalizeDesignationKey,
+} from '../../../shared/approvalAuthority.js';
 
 /** Who may open / edit Organisation master (Admin via *). */
 export const ORG_MASTER_EDITOR_DESIGNATIONS = [
@@ -8,27 +11,20 @@ export const ORG_MASTER_EDITOR_DESIGNATIONS = [
   'manager',
 ];
 
-export function normalizeDesignationKey(designation) {
-  return String(designation || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-}
-
-export function isCommercialApproverDesignation(designation) {
-  return COMMERCIAL_APPROVER_DESIGNATIONS.includes(normalizeDesignationKey(designation));
-}
+export { normalizeDesignationKey, isApprovalExemptDesignation };
 
 export function isOrgMasterEditorDesignation(designation) {
   return ORG_MASTER_EDITOR_DESIGNATIONS.includes(normalizeDesignationKey(designation));
 }
 
-/** Admin (*) or Operations Head / Senior Manager designation. */
-export function canApproveCommercialDocument(user) {
-  if (!user) return false;
-  const perms = user.permissions || [];
-  if (perms.includes('*')) return true;
-  return isCommercialApproverDesignation(user.designation);
+/**
+ * Option A: Reporting Manager of submitter, or Director / Business Head / Manager / Admin.
+ * @param {object} user
+ * @param {object|string|null} subject - approvalSubject or submitter id
+ */
+export function canApproveCommercialDocument(user, subject = null, can = null) {
+  if (!user || !subject) return false;
+  return canActorApproveSubject(user, subject, can);
 }
 
 /** Admin (*) or Operations Head / Senior Manager / Manager. */

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { applyOrgMasterToProformaForm } from '../commercialOrgMaster.js';
 import { useCommercialOrgMaster } from '../useCommercialOrgMaster.js';
 import { computeInvoiceTotals, resolveTaxMode } from '../invoiceGenerator/invoiceCalculations.js';
@@ -27,14 +27,26 @@ function freshProformaForm() {
 }
 
 export function useProformaBuilder() {
-  const { data: orgMaster } = useCommercialOrgMaster();
+  const [orgProfileId, setOrgProfileIdState] = useState('default');
+  const { data: orgMaster, orgList, selectOrg } = useCommercialOrgMaster({ orgId: orgProfileId });
   const persistence = usePersistedCommercialBuilder({
     documentType: 'proforma',
     slug: 'proforma',
     buildFreshForm: freshProformaForm,
     applyOrgMaster: applyOrg,
     orgMaster,
+    onOrgProfileIdChange: setOrgProfileIdState,
   });
+
+  const changeOrgProfileId = useCallback(
+    async (id) => {
+      const next = String(id || 'default');
+      setOrgProfileIdState(next);
+      persistence.setOrgProfileId(next);
+      await selectOrg(next);
+    },
+    [persistence, selectOrg]
+  );
 
   const { form, setForm, readOnly } = persistence;
 
@@ -178,5 +190,8 @@ export function useProformaBuilder() {
     clearClientMasterRecipient,
     newProforma: persistence.newDocument,
     orgMaster,
+    orgList,
+    orgProfileId: persistence.form?.orgProfileId || orgProfileId,
+    changeOrgProfileId,
   };
 }

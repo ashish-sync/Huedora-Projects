@@ -47,21 +47,8 @@ export function requiredApproverKeysForType(requestType) {
   }
 }
 
-export function approvalRuleLabel(requestType) {
-  const t = String(requestType || '').trim().toUpperCase();
-  switch (t) {
-    case 'REPAIR':
-    case 'MAINTENANCE':
-      return 'Operations Leader, Training Manager, or Admin';
-    case 'LOGISTICS':
-    case 'MOVEMENT':
-    case 'HIRING':
-      return 'Operations Leader or Admin';
-    case 'TRAINING':
-      return 'Training Manager or Admin';
-    default:
-      return 'an authorized approver or Admin';
-  }
+export function approvalRuleLabel(_requestType) {
+  return 'Reporting Manager, or Director / Business Head / Manager';
 }
 
 function userApproverKeys(user) {

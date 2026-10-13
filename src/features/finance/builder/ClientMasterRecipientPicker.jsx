@@ -59,6 +59,7 @@ function optionLabel(row) {
 
 /**
  * Typeahead Client Master pick (replaces bulk limit:500 bootstrap).
+ * Label is owned by the parent Field — this control is input + dropdown only.
  */
 export default function ClientMasterRecipientPicker({
   value = '',
@@ -96,14 +97,35 @@ export default function ClientMasterRecipientPicker({
     runSearch('');
   }, []);
 
+  // Sync label from selection only when the menu is closed — never while typing/searching.
   useEffect(() => {
+    if (open) return;
     if (!value) {
       setDisplayLabel('');
+      setQuery('');
       return;
     }
     const match = rows.find((r) => String(r._id) === String(value));
-    if (match) setDisplayLabel(optionLabel(match));
-  }, [value, rows]);
+    if (match) {
+      setDisplayLabel(optionLabel(match));
+      setQuery('');
+      return;
+    }
+    let cancelled = false;
+    clientMasterApi
+      .get(value)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const row = data?.data || data;
+        if (row && String(row._id) === String(value)) {
+          setDisplayLabel(optionLabel(row));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [value, rows, open]);
 
   useEffect(() => {
     function onDocClick(e) {
@@ -141,51 +163,54 @@ export default function ClientMasterRecipientPicker({
     onOpen: () => setOpen(true),
   });
 
+  const inputValue = open ? (query || displayLabel) : displayLabel;
+
   return (
-    <div className="ib-client-master-pick camp-client-typeahead" ref={wrapRef}>
-      <label>
-        Client Master
-        <input
-          type="text"
-          role="combobox"
-          aria-expanded={open}
-          aria-autocomplete="list"
-          aria-label="Pick recipient from Client Master"
-          disabled={disabled}
-          value={displayLabel}
-          placeholder={loading ? 'Loading…' : 'Search Client Master…'}
-          onChange={onInput}
-          onFocus={() => {
-            setOpen(true);
-            if (!rows.length) runSearch(query);
-          }}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-        />
-      </label>
-      {open && (
-        <ul className="camp-client-typeahead-menu" role="listbox">
-          {loading && <li className="camp-client-typeahead-empty">Searching…</li>}
-          {!loading && !rows.length && (
-            <li className="camp-client-typeahead-empty">No Client Master records</li>
-          )}
+    <div className="ib-client-master-pick ib-client-master-typeahead" ref={wrapRef}>
+      <input
+        type="text"
+        className="ib-input"
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        aria-label="Pick recipient from Client Master"
+        disabled={disabled}
+        value={inputValue}
+        placeholder={loading && !rows.length ? 'Loading…' : 'Search Client Master…'}
+        onChange={onInput}
+        onFocus={() => {
+          setOpen(true);
+          setQuery(displayLabel);
+          if (!rows.length) runSearch(query || displayLabel || '');
+        }}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
+      />
+      {open && !disabled ? (
+        <ul className="ib-client-master-typeahead-menu" role="listbox">
+          {loading ? (
+            <li className="ib-client-master-typeahead-empty">Searching…</li>
+          ) : null}
+          {!loading && !rows.length ? (
+            <li className="ib-client-master-typeahead-empty">No Client Master records</li>
+          ) : null}
           {rows.map((row, idx) => (
-            <li
-              key={String(row._id)}
-              ref={setItemRef(idx)}
-              role="option"
-              aria-selected={String(row._id) === String(value)}
-              className={getItemClassName(idx)}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                pick(row);
-              }}
-            >
-              {optionLabel(row)}
+            <li key={String(row._id)}>
+              <button
+                type="button"
+                ref={(node) => setItemRef(idx, node)}
+                role="option"
+                aria-selected={String(row._id) === String(value) || idx === activeIndex}
+                className={getItemClassName(idx, 'ib-client-master-typeahead-item')}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(row)}
+              >
+                {optionLabel(row)}
+              </button>
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
       {error ? <p className="ib-client-master-pick-error">{error}</p> : null}
     </div>
   );

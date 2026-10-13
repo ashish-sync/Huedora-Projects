@@ -127,13 +127,14 @@ export default function ProformaBuilderPanel({
       <Section title="Bill To" defaultOpen>
         {applyClientMasterRecipient ? (
           <div className="ib-grid" style={{ marginBottom: 12 }}>
-            <Field label="Client Master" span={2}>
+            <div className="ib-field ib-field--span">
+              <span className="ib-field-label">Client Master</span>
               <ClientMasterRecipientPicker
                 value={form.clientMasterId || ''}
                 onPick={(_row, patch) => applyClientMasterRecipient(patch)}
                 onClear={() => clearClientMasterRecipient?.()}
               />
-            </Field>
+            </div>
           </div>
         ) : null}
         <div className="ib-grid">

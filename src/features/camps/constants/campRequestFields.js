@@ -1,6 +1,9 @@
 /**
  * Camp One request-stage field labels and order.
  * Keep in sync with server manualPasteFieldConfig.json requestStageFields.
+ *
+ * Contact columns: TM/AM/RM/ZM/PM Name + Number (at least one level required on import).
+ * Legacy Contact Person Level/Name/Number still map when present in older files.
  */
 export const CAMP_REQUEST_FIELD_LABELS = {
   source: 'Source of Request',
@@ -18,9 +21,16 @@ export const CAMP_REQUEST_FIELD_LABELS = {
   pincode: 'PIN Code',
   city: 'City',
   expectedPatients: 'Expected Patients',
-  contactPersonLevel: 'Contact Person Level',
-  fieldPersonName: 'Contact Person Name',
-  fieldPersonPhone: 'Contact Person Number',
+  tmName: 'TM Name',
+  tmPhone: 'TM Number',
+  amName: 'AM Name',
+  amPhone: 'AM Number',
+  rmName: 'RM Name',
+  rmPhone: 'RM Number',
+  zmName: 'ZM Name',
+  zmPhone: 'ZM Number',
+  pmName: 'PM Name',
+  pmPhone: 'PM Number',
 };
 
 export const CAMP_REQUEST_FIELD_ORDER = [
@@ -39,9 +49,16 @@ export const CAMP_REQUEST_FIELD_ORDER = [
   'pincode',
   'city',
   'expectedPatients',
-  'contactPersonLevel',
-  'fieldPersonName',
-  'fieldPersonPhone',
+  'tmName',
+  'tmPhone',
+  'amName',
+  'amPhone',
+  'rmName',
+  'rmPhone',
+  'zmName',
+  'zmPhone',
+  'pmName',
+  'pmPhone',
 ];
 
 /** Context fields set from the paste wizard UI rather than tabular columns. */

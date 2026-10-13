@@ -144,14 +144,14 @@ export default function InvoiceBuilderPanel({
       <Section id="recipient" title={recipientTitle} defaultOpen>
         {applyClientMasterRecipient ? (
           <div className="ib-client-po-stack">
-            <label className="ib-field">
+            <div className="ib-field">
               <span className="ib-field-label">Client Master</span>
               <ClientMasterRecipientPicker
                 value={form.clientMasterId || ''}
                 onPick={(_row, patch) => applyClientMasterRecipient(patch)}
                 onClear={() => clearClientMasterRecipient?.()}
               />
-            </label>
+            </div>
             {poFields}
           </div>
         ) : null}

@@ -210,6 +210,70 @@
   color: var(--color-danger);
 }
 
+.ib-client-master-typeahead {
+  position: relative;
+}
+
+.ib-client-master-typeahead .ib-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ib-client-master-typeahead-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--ib-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated, var(--ib-surface));
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.ib-client-master-typeahead-menu li {
+  margin: 0;
+  padding: 0;
+}
+
+.ib-client-master-typeahead-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ib-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.ib-client-master-typeahead-item:hover,
+.ib-client-master-typeahead-item:focus-visible,
+.ib-client-master-typeahead-item.is-active {
+  background: color-mix(in srgb, var(--ib-accent, #635bff) 12%, transparent);
+  outline: none;
+}
+
+.ib-client-master-typeahead-empty {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--ib-muted);
+}
+
 .ib-client-po-stack {
   display: flex;
   flex-direction: column;

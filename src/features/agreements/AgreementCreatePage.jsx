@@ -1105,7 +1105,7 @@ export default function AgreementCreatePage() {
               <input value={title} onChange={(e) => setTitle(e.target.value)} required />
               <span className="muted" style={{ fontSize: 'var(--text-body-sm-size)' }}>
                 On Continue, the file is named as Recipient–Document–Date (e.g. Ashish-Service
-                Agreement-27/09/2026).
+                Agreement-27-09-2026).
               </span>
             </div>
             <div className="field">

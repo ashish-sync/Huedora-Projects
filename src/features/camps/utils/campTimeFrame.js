@@ -1,3 +1,4 @@
+import { formatTimeOfDay } from '../../../shared/dateFormat.js';
 import { CAMP_SLOTS, resolveCampSlot } from '../constants/campLifecycle';
 import { computeDurationHours } from './campSchedule';
 
@@ -10,6 +11,7 @@ function isCanonicalCampSlot(value) {
  * Slot is always derived from start time when possible (Morning / Noon / Evening).
  * Stored campSlot is only a fallback when start time cannot be parsed — and only
  * if it is already a canonical slot (ignore blank, "—", or junk from imports).
+ * Times always display as HH:mm (24-hour).
  */
 export function getCampTimeFrameDisplay({
   camp,
@@ -20,8 +22,10 @@ export function getCampTimeFrameDisplay({
   timeFrame,
 } = {}) {
   const source = camp || {};
-  const start = String(startTime ?? source.startTime ?? '').trim();
-  const end = String(endTime ?? source.endTime ?? '').trim();
+  const startRaw = String(startTime ?? source.startTime ?? '').trim();
+  const endRaw = String(endTime ?? source.endTime ?? '').trim();
+  const start = formatTimeOfDay(startRaw) || startRaw;
+  const end = formatTimeOfDay(endRaw) || endRaw;
   const storedSlot = String(campSlot ?? source.campSlot ?? '').trim();
   const derivedSlot = start ? resolveCampSlot(start) : '';
   const slot = derivedSlot || (isCanonicalCampSlot(storedSlot) ? storedSlot : '');

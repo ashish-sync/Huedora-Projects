@@ -389,7 +389,7 @@ export default function LandscapeInvoiceLikePreview({
                 ) : editable ? (
                   <span className="ti-meta-placeholder">Set on approval</span>
                 ) : (
-                  'DD/MM/YYYY'
+                  'DD-MM-YYYY'
                 )}
               </MetaCell>
               <MetaCell label="PO / WO No.">
@@ -411,7 +411,7 @@ export default function LandscapeInvoiceLikePreview({
                     onChange={(v) => onUpdate?.('invoice.poDate', v)}
                   />
                 ) : (
-                  formatDisplayDate(invoice?.poDate) || 'DD/MM/YYYY'
+                  formatDisplayDate(invoice?.poDate) || 'DD-MM-YYYY'
                 )}
               </MetaCell>
               <MetaCell label={dueLabel} hint={editable ? '30 days from approval' : undefined}>
@@ -420,7 +420,7 @@ export default function LandscapeInvoiceLikePreview({
                 ) : editable ? (
                   <span className="ti-meta-placeholder">Set on approval</span>
                 ) : (
-                  'DD/MM/YYYY'
+                  'DD-MM-YYYY'
                 )}
               </MetaCell>
               <MetaCell label="Project / Service Period">
@@ -458,7 +458,7 @@ export default function LandscapeInvoiceLikePreview({
                 onChange={(v) => onUpdate?.('invoice.issueDate', v)}
               />
             ) : (
-              formatDisplayDate(invoice?.issueDate) || 'DD/MM/YYYY'
+              formatDisplayDate(invoice?.issueDate) || 'DD-MM-YYYY'
             )}
           </MetaCell>
           <MetaCell label={dueLabel}>
@@ -469,7 +469,7 @@ export default function LandscapeInvoiceLikePreview({
                 onChange={(v) => onUpdate?.('invoice.dueDate', v)}
               />
             ) : (
-              formatDisplayDate(invoice?.dueDate) || 'DD/MM/YYYY'
+              formatDisplayDate(invoice?.dueDate) || 'DD-MM-YYYY'
             )}
           </MetaCell>
 
@@ -494,7 +494,7 @@ export default function LandscapeInvoiceLikePreview({
                     onChange={(v) => onUpdate?.('invoice.poDate', v)}
                   />
                 ) : (
-                  formatDisplayDate(invoice?.poDate) || 'DD/MM/YYYY'
+                  formatDisplayDate(invoice?.poDate) || 'DD-MM-YYYY'
                 )}
               </MetaCell>
               <MetaCell label="Project / Service Period">
@@ -578,7 +578,7 @@ export default function LandscapeInvoiceLikePreview({
                     onChange={(v) => onUpdate?.('invoice.originalInvoiceDate', v)}
                   />
                 ) : (
-                  formatDisplayDate(invoice?.originalInvoiceDate) || 'DD/MM/YYYY'
+                  formatDisplayDate(invoice?.originalInvoiceDate) || 'DD-MM-YYYY'
                 )}
               </MetaCell>
               {showReasonOnPreview && reasonField ? (

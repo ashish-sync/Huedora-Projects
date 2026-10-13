@@ -1,6 +1,7 @@
 /**
  * TYLO One display dates: DD-MM-YYYY, times: 24-hour HH:mm.
- * API / form values stay YYYY-MM-DD.
+ * API / form date values stay YYYY-MM-DD; clock times store/display as HH:mm.
+ * Accept AM/PM on input, always normalize to 24-hour for display/export/storage.
  */
 
 function expandYear(yearPart) {
@@ -68,15 +69,52 @@ export function formatDate(value) {
 /** Alias for explicit 4-digit year display */
 export const formatDateDDMMYYYY = formatDate;
 
-/** Display time as HH:mm (24-hour) */
+/**
+ * Normalize a clock time (09:00, 9:00 am, 930pm, 6.00 PM) to HH:mm (24-hour).
+ * Returns '' when the value cannot be parsed as a time of day.
+ */
+export function normalizeTimeOfDay(value) {
+  const raw = String(value ?? '').replace(/\s+/g, ' ').trim();
+  if (!raw) return '';
+
+  let text = raw
+    .replace(/\./g, ':')
+    .replace(/\b(onwards?|starting|from)\b/gi, '')
+    .trim();
+
+  const compact = text.match(/^(\d{1,2})([0-5]\d)\s*(am|pm)?$/i);
+  if (compact) {
+    text = `${compact[1]}:${compact[2]}${compact[3] ? ` ${compact[3]}` : ''}`;
+  }
+
+  const match = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  if (!match) return '';
+
+  let hours = Number(match[1]);
+  const minutes = match[2] != null ? Number(match[2]) : 0;
+  const meridiem = match[3]?.toUpperCase();
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes > 59) return '';
+  if (meridiem === 'PM' && hours < 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  if (!meridiem && hours > 23) return '';
+  if (hours < 0 || hours > 23) return '';
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+/** Display time as HH:mm (24-hour). Accepts Date, ISO datetime, or clock strings. */
 export function formatTime(value) {
   if (!value) return '';
+  const clock = normalizeTimeOfDay(value);
+  if (clock) return clock;
   const date = parseToDate(value);
   if (!date) return '';
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
 }
+
+/** Alias — prefer this name when formatting camp start/end columns. */
+export const formatTimeOfDay = formatTime;
 
 /** Display as DD-MM-YYYY HH:mm */
 export function formatDateTime(value) {

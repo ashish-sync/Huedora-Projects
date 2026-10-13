@@ -13,10 +13,14 @@ export const DEFAULT_CONTACT_PERSON_LEVEL = 'Territory Manager';
 const LEGACY_CONTACT_PERSON_LEVEL_ALIASES = {
   'TBM/MR': 'Territory Manager',
   TBM: 'Territory Manager',
+  TM: 'Territory Manager',
   MR: 'Territory Manager',
   ABM: 'Area Manager',
+  AM: 'Area Manager',
   RBM: 'Regional Manager',
+  RM: 'Regional Manager',
   ZBM: 'Zonal Manager',
+  ZM: 'Zonal Manager',
   PM: 'Product Manager',
 };
 

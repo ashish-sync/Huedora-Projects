@@ -306,11 +306,11 @@ export default function ImportPage() {
           <h3>Upload Excel / CSV</h3>
           {isAdminImport ? (
             <p className="import-intro">
-              Upload camp data from CSV with automatic header suggestions, or download the sample file. Columns match the Create Camp form.
+              Upload camp data from CSV with automatic header suggestions, or download the sample file. Include at least one contact level (TM / AM / RM / ZM / PM Name and Number); additional levels are optional.
             </p>
           ) : (
             <p className="import-intro">
-              Download the sample CSV file and fill in camp details using the same column headers as Create Camp.
+              Download the sample CSV and fill camp details. Contact columns are TM/AM/RM/ZM/PM Name and Number — at least one level is required.
             </p>
           )}
 

@@ -67,12 +67,14 @@ export function formatInr(n) {
 
 export function formatDisplayDate(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
+  const text = String(iso).trim();
+  const isoDay = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  if (isoDay) return `${isoDay[3]}-${isoDay[2]}-${isoDay[1]}`;
+  const d = new Date(text);
+  if (Number.isNaN(d.getTime())) return text;
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd} - ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]} - ${yyyy}`;
+  return `${dd}-${mm}-${d.getFullYear()}`;
 }
 
 export function computeLineItem(line, taxMode = 'igst') {

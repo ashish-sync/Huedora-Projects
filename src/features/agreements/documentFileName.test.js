@@ -13,7 +13,7 @@ describe('buildAgreementDocumentTitle', () => {
         documentDetails: 'Service Agreement',
         dateValue: '2026-09-27',
       })
-    ).toBe('Ashish-Service Agreement-27/09/2026');
+    ).toBe('Ashish-Service Agreement-27-09-2026');
   });
 
   it('trims parts and falls back when blank', () => {
@@ -23,13 +23,13 @@ describe('buildAgreementDocumentTitle', () => {
         documentDetails: '',
         dateValue: '2026-09-27',
       })
-    ).toBe('Ashish PP-Agreement-27/09/2026');
+    ).toBe('Ashish PP-Agreement-27-09-2026');
   });
 });
 
 describe('formatNomenclatureDate', () => {
-  it('formats ISO dates as DD/MM/YYYY', () => {
-    expect(formatNomenclatureDate('2026-09-27')).toBe('27/09/2026');
+  it('formats ISO dates as DD-MM-YYYY', () => {
+    expect(formatNomenclatureDate('2026-09-27')).toBe('27-09-2026');
   });
 });
 

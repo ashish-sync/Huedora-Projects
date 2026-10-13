@@ -1,26 +1,23 @@
+import { formatTimeOfDay, normalizeTimeOfDay } from '../../../shared/dateFormat.js';
 import { computeEndTime } from './campSchedule.js';
 import { isActiveHcwAssignedCamp } from './campHcwAssignmentActive.js';
 
 export { isActiveHcwAssignedCamp } from './campHcwAssignmentActive.js';
 
 function parseTimeToMinutes(timeStr) {
-  if (!timeStr) return null;
-  const parts = String(timeStr).trim().split(':');
+  const normalized = normalizeTimeOfDay(timeStr) || String(timeStr || '').trim();
+  if (!normalized) return null;
+  const parts = normalized.split(':');
   const hours = Number(parts[0]);
   const minutes = Number(parts[1] || 0);
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
   return hours * 60 + minutes;
 }
 
-/** Format HH:mm as 8:00 AM / 3:30 PM for assignment schedule UI. */
+/** Format camp clock times as HH:mm (24-hour) for assignment schedule UI. */
 export function formatCampTimeLabel(timeStr) {
-  const minutes = parseTimeToMinutes(timeStr);
-  if (minutes == null) return trimStr(timeStr) || '—';
-  const hours24 = Math.floor(minutes / 60) % 24;
-  const mins = minutes % 60;
-  const meridiem = hours24 >= 12 ? 'PM' : 'AM';
-  const hours12 = hours24 % 12 || 12;
-  return `${hours12}:${String(mins).padStart(2, '0')} ${meridiem}`;
+  const formatted = formatTimeOfDay(timeStr);
+  return formatted || trimStr(timeStr) || '—';
 }
 
 function trimStr(value) {

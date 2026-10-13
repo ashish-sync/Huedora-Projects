@@ -179,6 +179,10 @@ export function CampLifecycleForm({
   onConfirmPayment = null,
   onHoldPayment = null,
   onReleaseHold = null,
+  onSubmitToFinance = null,
+  canSubmitFinance = false,
+  showFinanceSubmit = false,
+  submitFinanceBusy = false,
   financialActionBusy = false,
   canSetHistoricalCampDates = false,
 }) {
@@ -858,46 +862,86 @@ export function CampLifecycleForm({
         </div>
 
         {!submitted && form.financePaymentStatus !== 'paid' ? (
-          <div className="full camp-finance-workflow-actions">
-            {(form.paymentSubmitStatus === 'payment_not_checked' || !form.paymentSubmitStatus) ? (
-              <button
-                type="button"
-                className="btn secondary btn-sm"
-                disabled={disabled || financialActionBusy || !onConfirmPayment}
-                onClick={() => onConfirmPayment?.()}
-              >
-                Confirm Payment
-              </button>
-            ) : null}
+          <div className="full camp-finance-payment-actions">
+            <div className="camp-finance-payment-actions__header">
+              <h4 className="camp-finance-section__title">Payment actions</h4>
+              <p className="meta-text">
+                Status: <strong>{financialWorkflowStatus(form).label}</strong>
+              </p>
+            </div>
+
             {form.paymentSubmitStatus === 'payment_hold' ? (
-              <button
-                type="button"
-                className="btn secondary btn-sm"
-                disabled={disabled || financialActionBusy || !onReleaseHold}
-                onClick={() => onReleaseHold?.()}
-              >
-                Release Hold
-              </button>
+              <div className="camp-finance-payment-actions__group">
+                <label className="camp-finance-remark-field">
+                  Unhold Remark
+                  <CampFormInput
+                    value={form.paymentRemark || ''}
+                    onChange={(e) => updateField('paymentRemark', e.target.value)}
+                    disabled={disabled || financialActionBusy}
+                    placeholder="Required when releasing Hold"
+                  />
+                </label>
+                <div className="camp-finance-payment-actions__buttons">
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled={disabled || financialActionBusy || !onReleaseHold}
+                    onClick={() => onReleaseHold?.(form.paymentRemark)}
+                  >
+                    Unhold
+                  </button>
+                </div>
+              </div>
             ) : (
-              <>
-                <label className="camp-hold-remark-field">
+              <div className="camp-finance-payment-actions__group">
+                {(form.paymentSubmitStatus === 'payment_not_checked' || !form.paymentSubmitStatus) ? (
+                  <div className="camp-finance-payment-actions__buttons">
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={disabled || financialActionBusy || !onConfirmPayment}
+                      onClick={() => onConfirmPayment?.()}
+                    >
+                      Confirm Payment
+                    </button>
+                  </div>
+                ) : null}
+
+                <label className="camp-finance-remark-field">
                   Hold Remark
                   <CampFormInput
                     value={form.paymentRemark || ''}
                     onChange={(e) => updateField('paymentRemark', e.target.value)}
-                    disabled={disabled || form.financePaymentStatus === 'paid'}
+                    disabled={disabled || financialActionBusy}
                     placeholder="Required when placing on Hold"
                   />
                 </label>
-                <button
-                  type="button"
-                  className="btn secondary btn-sm"
-                  disabled={disabled || financialActionBusy || !onHoldPayment}
-                  onClick={() => onHoldPayment?.(form.paymentRemark)}
-                >
-                  Hold
-                </button>
-              </>
+                <div className="camp-finance-payment-actions__buttons">
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled={disabled || financialActionBusy || !onHoldPayment}
+                    onClick={() => onHoldPayment?.(form.paymentRemark)}
+                  >
+                    Hold
+                  </button>
+                  {showFinanceSubmit ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={!canSubmitFinance || submitFinanceBusy || disabled}
+                      title={!canSubmitFinance && hcwFinanceBlockers.length
+                        ? hcwFinanceBlockers.join(' ')
+                        : (form.paymentSubmitStatus !== 'payment_confirmed'
+                          ? 'Confirm Payment before submitting'
+                          : undefined)}
+                      onClick={() => onSubmitToFinance?.()}
+                    >
+                      {submitFinanceBusy ? 'Submitting…' : 'Submit to Finance One'}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
             )}
           </div>
         ) : null}

@@ -97,6 +97,45 @@ const BULK_ACTION_COPY = {
     confirmLabel: 'Mark executed',
     confirmClass: '',
   },
+  confirmPayment: {
+    title: 'Confirm payment',
+    message: (count) => `Confirm payment for ${count} selected camp${count === 1 ? '' : 's'}?`,
+    confirmLabel: 'Confirm Payment',
+    confirmClass: '',
+  },
+  hold: {
+    title: 'Hold payment',
+    message: (count) => `Provide a Hold Remark before placing ${count} selected camp${count === 1 ? '' : 's'} on Hold.`,
+    confirmLabel: 'Hold',
+    confirmClass: 'danger',
+    requiresReason: true,
+    reasonLabel: 'Hold Remark',
+    reasonPlaceholder: 'Required for Hold',
+  },
+  unhold: {
+    title: 'Unhold payment',
+    message: (count) => `Provide an Unhold Remark before releasing Hold on ${count} selected camp${count === 1 ? '' : 's'}.`,
+    confirmLabel: 'Unhold',
+    confirmClass: '',
+    requiresReason: true,
+    reasonLabel: 'Unhold Remark',
+    reasonPlaceholder: 'Required for Unhold',
+  },
+  releaseHold: {
+    title: 'Unhold payment',
+    message: (count) => `Provide an Unhold Remark before releasing Hold on ${count} selected camp${count === 1 ? '' : 's'}.`,
+    confirmLabel: 'Unhold',
+    confirmClass: '',
+    requiresReason: true,
+    reasonLabel: 'Unhold Remark',
+    reasonPlaceholder: 'Required for Unhold',
+  },
+  submitToFinance: {
+    title: 'Submit to Finance One',
+    message: (count) => `Submit ${count} selected camp${count === 1 ? '' : 's'} to Finance One?`,
+    confirmLabel: 'Submit to Finance One',
+    confirmClass: '',
+  },
 };
 
 const CANCEL_OPTIONS = [

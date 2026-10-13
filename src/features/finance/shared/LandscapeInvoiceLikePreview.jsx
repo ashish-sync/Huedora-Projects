@@ -563,7 +563,7 @@ export default function LandscapeInvoiceLikePreview({
                   <InlineField
                     value={invoice?.[originalRefField] || ''}
                     onChange={(v) => onUpdate?.(`invoice.${originalRefField}`, v)}
-                    placeholder="TYLO/26-27/0001"
+                    placeholder="TCIN26-27/08/001"
                     mono
                   />
                 ) : (

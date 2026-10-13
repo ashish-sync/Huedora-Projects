@@ -698,7 +698,7 @@ export default function CampFormPage() {
     if (!id) return;
     const submitStatus = form.paymentSubmitStatus || 'payment_not_checked';
     if (submitStatus === 'payment_hold') {
-      setError('Release Hold before submitting to Finance One');
+      setError('Unhold before submitting to Finance One');
       return;
     }
     if (submitStatus !== 'payment_confirmed') {
@@ -778,17 +778,23 @@ export default function CampFormPage() {
     }
   }
 
-  async function handleReleaseHold() {
+  async function handleReleaseHold(remark) {
     if (!id) return;
+    if (!String(remark || form.paymentRemark || '').trim()) {
+      setError('Unhold Remark is required');
+      return;
+    }
     setFinancialActionBusy(true);
     setError('');
     try {
-      const res = await campApi.releaseHold(id);
+      const res = await campApi.releaseHold(id, {
+        paymentRemark: String(remark || form.paymentRemark || '').trim(),
+      });
       const camp = res.data?.data || res.data;
       setForm(campToForm(camp));
       setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
     } catch (err) {
-      setError(err?.message || 'Failed to release hold');
+      setError(err?.message || 'Failed to unhold payment');
     } finally {
       setFinancialActionBusy(false);
     }
@@ -1448,23 +1454,14 @@ export default function CampFormPage() {
         onConfirmPayment={isEdit && canManageFinancialStatus ? handleConfirmPayment : null}
         onHoldPayment={isEdit && canManageFinancialStatus ? handleHoldPayment : null}
         onReleaseHold={isEdit && canManageFinancialStatus ? handleReleaseHold : null}
+        onSubmitToFinance={showFinanceSubmit ? handleSubmitToFinance : null}
+        showFinanceSubmit={showFinanceSubmit}
+        canSubmitFinance={canSubmitFinance}
+        submitFinanceBusy={submitFinanceBusy}
         financialActionBusy={financialActionBusy}
       />
 
       <div className="form-actions">
-        {showFinanceSubmit ? (
-          <button
-            className="btn"
-            type="button"
-            disabled={!canSubmitFinance}
-            title={!canSubmitFinance && hcwFinanceBlockers.length
-              ? hcwFinanceBlockers.join(' ')
-              : (form.paymentSubmitStatus !== 'payment_confirmed' ? 'Confirm Payment before submitting' : undefined)}
-            onClick={handleSubmitToFinance}
-          >
-            {submitFinanceBusy ? 'Submitting…' : 'Submit to Finance One'}
-          </button>
-        ) : null}
         {canSubmit && (
           <button className="btn" type="submit" disabled={loading || uploadBusy}>
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Camp'}

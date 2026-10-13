@@ -315,7 +315,9 @@ export default function CampsPage() {
     });
     setConfirmCancelDetails(null);
     setConfirmClosureDetails(null);
-    setConfirmReasonDetails(action === 'reject' ? buildReasonDetails() : null);
+    setConfirmReasonDetails(
+      ['reject', 'hold', 'unhold', 'releaseHold'].includes(action) ? buildReasonDetails() : null,
+    );
     setError('');
   }
 
@@ -352,6 +354,17 @@ export default function CampsPage() {
             return;
           }
         }
+        if (['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)) {
+          const paymentRemark = confirmReasonDetails?.reason?.trim() || '';
+          if (!paymentRemark) {
+            setError(
+              confirmRequest.action === 'hold'
+                ? 'Hold Remark is required'
+                : 'Unhold Remark is required',
+            );
+            return;
+          }
+        }
 
         const { data } = await campApi.bulkAction({
           ids: validation.ids,
@@ -359,10 +372,13 @@ export default function CampsPage() {
           ...(confirmRequest.action === 'reject'
             ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
             : {}),
+          ...(['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)
+            ? { paymentRemark: confirmReasonDetails?.reason?.trim() || '' }
+            : {}),
         });
         setBulkMessage(`${data.summary.success} succeeded, ${data.summary.failed} failed`);
         if (data.results.failed.length) {
-          setError(data.results.failed.map((item) => `${item.campId}: ${item.reason}`).join(' | '));
+          setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
         }
       } else {
         const { action, camp } = confirmRequest;
@@ -735,6 +751,15 @@ export default function CampsPage() {
   const bulkRejectValidation = validateBulkCampAction('reject', selectedCamps, bulkAuth);
   const canAdminDeleteCamps = isSuperAdmin();
   const bulkDeleteValidation = validateBulkCampAction('delete', selectedCamps, bulkAuth);
+  const canFinanceWrite = hasPermission('finance:write');
+  const canBulkSubmitFinance = hasPermission('camps:request')
+    || hasPermission('camps:approve')
+    || hasPermission('camps:update')
+    || canFinanceWrite;
+  const bulkConfirmPaymentValidation = validateBulkCampAction('confirmPayment', selectedCamps, bulkAuth);
+  const bulkHoldValidation = validateBulkCampAction('hold', selectedCamps, bulkAuth);
+  const bulkUnholdValidation = validateBulkCampAction('unhold', selectedCamps, bulkAuth);
+  const bulkSubmitFinanceValidation = validateBulkCampAction('submitToFinance', selectedCamps, bulkAuth);
 
   const isRequestStage = workingStage === 'request';
   const isAssignmentStage = workingStage === 'assignment';
@@ -742,8 +767,10 @@ export default function CampsPage() {
   const isFinancialStage = workingStage === 'financial';
 
   const showBulkApproveRefuse = isRequestStage;
+  const showBulkFinanceActions = isFinancialStage && (canFinanceWrite || canBulkSubmitFinance);
   const showRowSelection = canAdminDeleteCamps
-    || (showBulkApproveRefuse && (canApproveCamps() || canRejectCamps()));
+    || (showBulkApproveRefuse && (canApproveCamps() || canRejectCamps()))
+    || showBulkFinanceActions;
   const showBulkBar = selectedIds.length > 0 && showRowSelection;
 
   function renderCampActions(camp) {
@@ -918,6 +945,46 @@ export default function CampsPage() {
               onClick={() => handleBulk('reject')}
             >
               Refuse Selected
+            </button>
+          )}
+          {canFinanceWrite && showBulkFinanceActions && (
+            <button
+              className="btn btn-compact"
+              disabled={bulkLoading || confirmLoading || !bulkConfirmPaymentValidation.ok}
+              title={!bulkConfirmPaymentValidation.ok ? bulkConfirmPaymentValidation.message : undefined}
+              onClick={() => handleBulk('confirmPayment')}
+            >
+              Confirm Payment
+            </button>
+          )}
+          {canBulkSubmitFinance && showBulkFinanceActions && (
+            <button
+              className="btn btn-compact"
+              disabled={bulkLoading || confirmLoading || !bulkSubmitFinanceValidation.ok}
+              title={!bulkSubmitFinanceValidation.ok ? bulkSubmitFinanceValidation.message : undefined}
+              onClick={() => handleBulk('submitToFinance')}
+            >
+              Submit to Finance One
+            </button>
+          )}
+          {canFinanceWrite && showBulkFinanceActions && (
+            <button
+              className="btn secondary btn-compact"
+              disabled={bulkLoading || confirmLoading || !bulkHoldValidation.ok}
+              title={!bulkHoldValidation.ok ? bulkHoldValidation.message : undefined}
+              onClick={() => handleBulk('hold')}
+            >
+              Hold
+            </button>
+          )}
+          {canFinanceWrite && showBulkFinanceActions && (
+            <button
+              className="btn secondary btn-compact"
+              disabled={bulkLoading || confirmLoading || !bulkUnholdValidation.ok}
+              title={!bulkUnholdValidation.ok ? bulkUnholdValidation.message : undefined}
+              onClick={() => handleBulk('unhold')}
+            >
+              Unhold
             </button>
           )}
           {canAdminDeleteCamps && (

@@ -18,8 +18,23 @@ export async function resolveUploadViewUrl(url = '') {
   const raw = String(url || '').trim();
   if (!raw) return '';
   if (isDirectUploadPath(raw) || raw.includes('/files/signed')) {
-    const { data } = await api('/files/sign', { method: 'POST', body: { path: raw } });
-    return apiUrl(data?.url || '');
+    try {
+      const { data } = await api('/files/sign', { method: 'POST', body: { path: raw } });
+      const signed = apiUrl(data?.url || '');
+      if (!signed) throw new Error('File link could not be signed');
+      return signed;
+    } catch (err) {
+      const msg = String(err?.message || err || '');
+      if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
+        throw new Error(
+          'Could not reach the file service. Check your connection and try again.',
+        );
+      }
+      if (/NOT_FOUND|File not found/i.test(msg)) {
+        throw new Error('This file is missing from storage. Re-upload it in Master One.');
+      }
+      throw err;
+    }
   }
   return apiUrl(raw);
 }

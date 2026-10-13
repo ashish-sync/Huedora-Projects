@@ -8,10 +8,15 @@ export function productImageUrl(ref) {
   return apiUrl(ref.url);
 }
 
-/** Prefer async resolve when a raw /uploads path might still be present. */
+/**
+ * Always re-sign upload / expired signed URLs before opening.
+ * Master One historically persisted short-lived JWTs; pass-through opens fail with 401.
+ */
 export async function productImageViewUrl(ref) {
   if (!ref?.url) return '';
-  if (isDirectUploadPath(ref.url)) return resolveUploadViewUrl(ref.url);
+  if (isDirectUploadPath(ref.url) || String(ref.url).includes('/files/signed')) {
+    return resolveUploadViewUrl(ref.url);
+  }
   return apiUrl(ref.url);
 }
 

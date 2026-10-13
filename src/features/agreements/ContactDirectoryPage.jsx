@@ -101,7 +101,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const isHcwStaff = isHcw && isHcwStaffResourceType(form.resourceType);
   const isHcwProvider = isHcw && form.resourceType === 'Service Provider';
   const showResourceType = isResource || isHcw;
-  const showBankAndAddress = !isClient && !isHcwProvider && Boolean(form.contactCategory);
+  // Service Provider is the payout payee for linked staff — banking/KYC must be editable here.
+  const showBankAndAddress = !isClient && Boolean(form.contactCategory);
   const professionKey = professionPicklistKey(form.contactCategory);
   const professionFallback = professionsForCategory(form.contactCategory);
   const categoryResourceTypes = resourceTypesForCategory(form.contactCategory);
@@ -825,6 +826,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                 onChange={(loc) => setForm((f) => ({ ...f, ...loc }))}
                 showDistrict={false}
                 showPin={showBankAndAddress}
+                pinFirst={showBankAndAddress}
               />
             </section>
             )}

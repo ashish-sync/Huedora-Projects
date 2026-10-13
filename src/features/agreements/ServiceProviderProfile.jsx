@@ -83,7 +83,8 @@ export default function ServiceProviderProfile({
                 })
               }
               showDistrict={false}
-              showPin={false}
+              showPin
+              pinFirst
               disabled={disabled}
               required
               labels={{ state: 'State', city: 'City' }}

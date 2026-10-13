@@ -726,7 +726,7 @@ export function CampLifecycleForm({
     return (
       <div className="form-grid">
         {assignedHcwLoading ? (
-          <p className="meta-text full">Checking assigned HCW profile…</p>
+          <p className="meta-text full">Loading full Contact Directory profile for finance checks…</p>
         ) : null}
         {showHcwBlockers ? (
           <div className="camp-finance-hcw-blockers full">

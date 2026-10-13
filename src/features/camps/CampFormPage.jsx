@@ -354,31 +354,48 @@ export default function CampFormPage() {
     };
   }, [form.hcwContactId, hcwContacts]);
 
+  // Financial readiness must use the full Contact Directory document.
+  // The assign=1 HCW list omits address / banking / KYC fields, so never trust it here.
   useEffect(() => {
     if (!isEdit || activeStage !== 'financial' || !form.hcwContactId) {
       setAssignedHcwContact(null);
+      setAssignedHcwLoading(false);
       return undefined;
     }
 
-    const cached = findAssignableHealthcareWorker(hcwContacts, form.hcwContactId);
-    if (cached) {
-      setAssignedHcwContact(cached);
-      return undefined;
-    }
-
-    if (embeddedServiceProviderId(form.hcwContactId)) {
+    const assignmentId = String(form.hcwContactId || '').trim();
+    const embeddedProviderId = embeddedServiceProviderId(assignmentId);
+    // Embedded roster rows are not Contact Directory documents — load the agency instead.
+    const fetchId = embeddedProviderId || assignmentId;
+    if (!fetchId) {
       setAssignedHcwContact(null);
+      setAssignedHcwLoading(false);
       return undefined;
     }
 
     let cancelled = false;
     setAssignedHcwLoading(true);
-    api(`/contacts/${form.hcwContactId}`)
+    api(`/contacts/${fetchId}`)
       .then((res) => {
-        if (!cancelled) setAssignedHcwContact(res.data || null);
+        if (cancelled) return;
+        const row = res.data || null;
+        if (!row) {
+          setAssignedHcwContact(null);
+          return;
+        }
+        // Keep spe: assignment id so payee resolution still treats this as SP-linked staff.
+        if (embeddedProviderId) {
+          setAssignedHcwContact({ ...row, _id: assignmentId, serviceProviderContactId: fetchId });
+        } else {
+          setAssignedHcwContact(row);
+        }
       })
       .catch(() => {
-        if (!cancelled) setAssignedHcwContact(null);
+        if (!cancelled) {
+          setAssignedHcwContact(
+            findAssignableHealthcareWorker(hcwContacts, assignmentId) || null,
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setAssignedHcwLoading(false);
@@ -387,7 +404,9 @@ export default function CampFormPage() {
     return () => {
       cancelled = true;
     };
-  }, [isEdit, activeStage, form.hcwContactId, hcwContacts]);
+    // intentionally omit hcwContacts — lean list churn must not cancel the full fetch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, activeStage, form.hcwContactId]);
 
   useEffect(() => {
     if (!isEdit || activeStage !== 'financial' || !assignedHcwContact) {
@@ -397,26 +416,36 @@ export default function CampFormPage() {
     }
 
     const resolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
-    if (resolved.payeeContact) {
-      setPayoutPayeeContact(resolved.payeeContact);
+    const rawPayeeId = String(resolved.payeeContactId || assignedHcwContact._id || '').trim();
+    const durablePayeeId = embeddedServiceProviderId(rawPayeeId)
+      || (rawPayeeId.startsWith('spe:') ? '' : rawPayeeId);
+
+    if (!durablePayeeId) {
+      setPayoutPayeeContact(resolved.payeeContact || assignedHcwContact);
       setPayoutPayeeLoading(false);
       return undefined;
     }
 
-    if (!resolved.payeeIsServiceProvider || !resolved.payeeContactId) {
+    // Assigned contact is already the full payee document (Individual / Full-Time / SP org).
+    const assignedIsFullPayee = String(assignedHcwContact._id) === String(durablePayeeId)
+      && Object.prototype.hasOwnProperty.call(assignedHcwContact, 'panNumber');
+    if (assignedIsFullPayee) {
       setPayoutPayeeContact(assignedHcwContact);
       setPayoutPayeeLoading(false);
       return undefined;
     }
 
+    // Always reload payee from Contact Directory — lean assign rows lack banking/KYC.
     let cancelled = false;
     setPayoutPayeeLoading(true);
-    api(`/contacts/${resolved.payeeContactId}`)
+    api(`/contacts/${durablePayeeId}`)
       .then((res) => {
-        if (!cancelled) setPayoutPayeeContact(res.data || null);
+        if (!cancelled) setPayoutPayeeContact(res.data || resolved.payeeContact || assignedHcwContact);
       })
       .catch(() => {
-        if (!cancelled) setPayoutPayeeContact(null);
+        if (!cancelled) {
+          setPayoutPayeeContact(resolved.payeeContact || assignedHcwContact);
+        }
       })
       .finally(() => {
         if (!cancelled) setPayoutPayeeLoading(false);
@@ -425,7 +454,8 @@ export default function CampFormPage() {
     return () => {
       cancelled = true;
     };
-  }, [isEdit, activeStage, assignedHcwContact, hcwContacts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lean hcwContacts must not cancel full payee fetch
+  }, [isEdit, activeStage, assignedHcwContact]);
 
   useEffect(() => {
     // Only hydrate clients list for edit when a client is already selected.
@@ -1290,7 +1320,11 @@ export default function CampFormPage() {
   const payeeResolved = resolveCampPayoutPayee(assignedHcwContact, hcwContacts);
   const payeeContact = payoutPayeeContact || payeeResolved.payeeContact;
   const payeeLabel = payeeResolved.payeeIsServiceProvider ? 'Service Provider' : 'HCW';
-  const hcwFinanceBlockers = activeStage === 'financial' && !financeSubmitted && !isCancelledForFinance
+  const hcwFinanceBlockers = activeStage === 'financial'
+    && !financeSubmitted
+    && !isCancelledForFinance
+    && !assignedHcwLoading
+    && !payoutPayeeLoading
     ? getHcwFinanceBlockers(payeeContact, { label: payeeLabel })
     : [];
   const showFinanceSubmit = isEdit

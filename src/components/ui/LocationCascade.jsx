@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { resolveZoneForState } from '../../constants/geoZones.js';
 import AdaptiveSelect from './AdaptiveSelect.jsx';
@@ -41,6 +41,7 @@ export default function LocationCascade({
   const [cities, setCities] = useState([]);
   const [pins, setPins] = useState([]);
   const [error, setError] = useState('');
+  const lastPinLookupRef = useRef('');
 
   const v = { ...empty, ...value };
 
@@ -118,22 +119,103 @@ export default function LocationCascade({
   }, [v.stateId, v.districtId, showPinCountsInOptions]);
 
   useEffect(() => {
-    if (!showPin || pinInputOnly || !v.cityId) {
+    if (!showPin || pinInputOnly) {
+      setPins([]);
+      return undefined;
+    }
+    // Prefer city-scoped PINs; many master rows only have state/district — fall back.
+    if (!v.cityId && !v.districtId && !v.stateId) {
       setPins([]);
       return undefined;
     }
     let cancelled = false;
-    api(`/geo/pin-codes?cityId=${encodeURIComponent(v.cityId)}&limit=100`)
-      .then((r) => {
-        if (!cancelled) setPins(r.data || []);
-      })
-      .catch(() => {
+    const load = async () => {
+      try {
+        if (v.cityId) {
+          const byCity = await api(
+            `/geo/pin-codes?cityId=${encodeURIComponent(v.cityId)}&limit=200`,
+          );
+          const cityPins = byCity.data || [];
+          if (cityPins.length) {
+            if (!cancelled) setPins(cityPins);
+            return;
+          }
+        }
+        if (v.districtId) {
+          const byDistrict = await api(
+            `/geo/pin-codes?districtId=${encodeURIComponent(v.districtId)}&limit=200`,
+          );
+          const districtPins = byDistrict.data || [];
+          if (districtPins.length) {
+            if (!cancelled) setPins(districtPins);
+            return;
+          }
+        }
+        if (v.stateId) {
+          const byState = await api(
+            `/geo/pin-codes?stateId=${encodeURIComponent(v.stateId)}&limit=200`,
+          );
+          if (!cancelled) setPins(byState.data || []);
+          return;
+        }
         if (!cancelled) setPins([]);
-      });
+      } catch {
+        if (!cancelled) setPins([]);
+      }
+    };
+    load();
     return () => {
       cancelled = true;
     };
-  }, [v.cityId, showPin, pinInputOnly]);
+  }, [v.cityId, v.districtId, v.stateId, showPin, pinInputOnly]);
+
+  // When a full 6-digit PIN is entered, resolve State / District / City from Pin Code Master.
+  useEffect(() => {
+    if (!showPin) return undefined;
+    const pin = String(v.pinCode || '').replace(/\D+/g, '');
+    if (pin.length !== 6) {
+      lastPinLookupRef.current = '';
+      return undefined;
+    }
+    if (lastPinLookupRef.current === pin) return undefined;
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      api(`/geo/pin-codes/lookup/${pin}`)
+        .then((r) => {
+          if (cancelled) return;
+          lastPinLookupRef.current = pin;
+          const resolved = r.resolved || (Array.isArray(r.data) && r.data[0]) || null;
+          if (!resolved) {
+            setError(`PIN ${pin} was not found in Pin Code Master`);
+            return;
+          }
+          setError('');
+          emit({
+            pinCode: pin,
+            stateId: resolved.stateId || v.stateId || '',
+            state: resolved.stateName || resolved.state || v.state || '',
+            districtId: resolved.districtId || v.districtId || '',
+            district: resolved.districtName || resolved.district || v.district || '',
+            cityId: resolved.cityId || v.cityId || '',
+            city: resolved.cityName || resolved.city || v.city || '',
+            zone: resolved.zone || (resolved.stateName ? resolveZoneForState(resolved.stateName) : v.zone),
+          });
+        })
+        .catch(() => {
+          if (!cancelled) {
+            lastPinLookupRef.current = pin;
+            setError(`PIN ${pin} was not found in Pin Code Master`);
+          }
+        });
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lookup once per PIN value
+  }, [v.pinCode, showPin]);
 
   const onState = (stateId) => {
     const st = states.find((s) => String(s._id) === String(stateId));

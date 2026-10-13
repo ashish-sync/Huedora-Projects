@@ -270,7 +270,7 @@ export default function InvoiceBuilderPanel({
                   onChange={(e) =>
                     update(`invoice.${panelConfig.originalInvoiceField || 'cnReference'}`, e.target.value)
                   }
-                  placeholder="TYLO/26-27/0001"
+                  placeholder="TCIN26-27/08/001"
                 />
               )}
             </Field>

@@ -62,6 +62,8 @@ const empty = {
   stateId: '',
   districtId: '',
   cityId: '',
+  /** Default Camp Payout amount when this HCW is assigned in Camp One. */
+  campAmount: '',
   providerEmployees: [],
 };
 
@@ -193,6 +195,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
         bankName: contactCategory === 'Client' ? '' : f.bankName,
         accountNumber: contactCategory === 'Client' ? '' : f.accountNumber,
+        campAmount: contactCategory === 'Healthcare Worker' ? f.campAmount : '',
         clearProviderEmployees: clearRoster ? true : undefined,
       };
     });
@@ -302,6 +305,13 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         body.ifscCode = '';
         body.bankName = '';
         body.accountNumber = '';
+        body.campAmount = 0;
+      }
+      if (isHcw) {
+        const amount = Number(form.campAmount);
+        body.campAmount = Number.isFinite(amount) && amount >= 0 ? amount : 0;
+      } else {
+        body.campAmount = 0;
       }
       if (!isResource && !isHcw) body.resourceType = '';
       if (isHcwProvider) {
@@ -465,6 +475,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
+      campAmount: c.campAmount != null && c.campAmount !== '' ? String(c.campAmount) : '',
       providerEmployees: employees,
     });
   };
@@ -844,6 +855,21 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                 showDistrict={false}
                 showPin={showBankAndAddress}
                 pinFirst={showBankAndAddress}
+                pinInputOnly={showBankAndAddress}
+                afterCity={isHcw ? (
+                  <>
+                    <label>Camp Amount</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={form.campAmount}
+                      onChange={(e) => setForm({ ...form, campAmount: e.target.value })}
+                      placeholder="Shows in Camp Payout when assigned"
+                    />
+                  </>
+                ) : null}
               />
             </section>
             )}
@@ -851,6 +877,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
             {showBankAndAddress && (
               <section className="cd-section cd-section--last">
                 <h4 className="cd-section-title">Address &amp; banking</h4>
+                <p className="cd-form-hint">
+                  Street address only — do not repeat PIN, city, or state (those are in Location). Banking and KYC are required for Finance payouts.
+                </p>
                 <div className="cd-form-grid">
                   <div className="field cd-span-2">
                     <label>Address</label>
@@ -858,6 +887,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       rows={2}
                       value={form.address}
                       onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      placeholder="Street / locality / landmark"
                     />
                   </div>
                   <div className="field">

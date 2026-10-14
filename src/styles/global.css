@@ -5427,7 +5427,13 @@ body:has(.login-page),
 
 .cd-provider-state .location-cascade {
   width: 100%;
-  grid-template-columns: 1fr;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.cd-provider-state .location-cascade .field {
+  margin: 0;
 }
 
 .cd-table .cd-col-provider {

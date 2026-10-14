@@ -53,7 +53,11 @@ import {
   formatFinanceAmountValue,
   sanitizeFinanceAmountInput,
 } from '../utils/campFinanceAmounts.js';
-import { resolveClientMasterPricingFromRecords } from '../utils/campClientMasterPricing.js';
+import {
+  isCampCancelledForRevenue,
+  isCampChargeable,
+  resolveClientMasterPricingFromRecords,
+} from '../utils/campClientMasterPricing.js';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -211,7 +215,6 @@ export function CampLifecycleForm({
 
   useEffect(() => {
     if (!clientMasterPricing || !updateFields || !derived.revenueAutoCalculated) return;
-    if (!revenueAutoSyncRef.current) return;
 
     const formula = {
       campRevenue: derived.formulaCampRevenue,
@@ -220,13 +223,18 @@ export function CampLifecycleForm({
       otherRevenue: derived.formulaOtherRevenue,
       totalRevenue: derived.formulaTotalRevenue,
     };
+    // Cancelled Non-Chargeable → always force 0 financial units (ignore manual overrides).
+    const forceZeroFinancialUnits = isCampCancelledForRevenue(form)
+      && !isCampChargeable(form);
+    if (!forceZeroFinancialUnits && !revenueAutoSyncRef.current) return;
+
     const hasStoredRevenue = FINANCE_REVENUE_PART_FIELDS.some(
       (key) => Number(form[key] || 0) !== 0,
     );
     const differsFromFormula = FINANCE_REVENUE_PART_FIELDS.some(
       (key) => Number(form[key] || 0) !== Number(formula[key] || 0),
     );
-    if (hasStoredRevenue && differsFromFormula) {
+    if (!forceZeroFinancialUnits && hasStoredRevenue && differsFromFormula) {
       revenueAutoSyncRef.current = false;
       return;
     }
@@ -249,6 +257,11 @@ export function CampLifecycleForm({
     form.overtimeRevenue,
     form.otherRevenue,
     form.totalRevenue,
+    form.chargeableStatus,
+    form.status,
+    form.executionStatus,
+    form.assignmentRefusalReason,
+    form.cancelledBy,
     updateFields,
   ]);
   const { options: specialtyOptions } = usePicklistOptions('camp.doctorSpecialty', DOCTOR_SPECIALTY_OPTIONS);

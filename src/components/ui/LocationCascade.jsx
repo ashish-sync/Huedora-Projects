@@ -35,6 +35,8 @@ export default function LocationCascade({
   showPinCountsInOptions = false,
   disabled = false,
   labels = {},
+  /** Optional field(s) rendered immediately after City (e.g. Camp Amount). */
+  afterCity = null,
 }) {
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -169,7 +171,8 @@ export default function LocationCascade({
     };
   }, [v.cityId, v.districtId, v.stateId, showPin, pinInputOnly]);
 
-  // When a full 6-digit PIN is entered, resolve State / District / City from Pin Code Master.
+  // When a full 6-digit PIN is entered, resolve State (and District) from Pin Code Master.
+  // With pinFirst, City is left for the user to pick from the state-scoped dropdown.
   useEffect(() => {
     if (!showPin) return undefined;
     const pin = String(v.pinCode || '').replace(/\D+/g, '');
@@ -191,15 +194,21 @@ export default function LocationCascade({
             return;
           }
           setError('');
+          const stateName = resolved.stateName || resolved.state || '';
+          const cityFromPin = pinFirst
+            ? { cityId: '', city: '' }
+            : {
+              cityId: resolved.cityId || v.cityId || '',
+              city: resolved.cityName || resolved.city || v.city || '',
+            };
           emit({
             pinCode: pin,
             stateId: resolved.stateId || v.stateId || '',
-            state: resolved.stateName || resolved.state || v.state || '',
-            districtId: resolved.districtId || v.districtId || '',
-            district: resolved.districtName || resolved.district || v.district || '',
-            cityId: resolved.cityId || v.cityId || '',
-            city: resolved.cityName || resolved.city || v.city || '',
-            zone: resolved.zone || (resolved.stateName ? resolveZoneForState(resolved.stateName) : v.zone),
+            state: stateName || v.state || '',
+            districtId: resolved.districtId || (pinFirst ? '' : v.districtId) || '',
+            district: resolved.districtName || resolved.district || (pinFirst ? '' : v.district) || '',
+            ...cityFromPin,
+            zone: resolved.zone || (stateName ? resolveZoneForState(stateName) : v.zone),
           });
         })
         .catch(() => {
@@ -215,7 +224,7 @@ export default function LocationCascade({
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lookup once per PIN value
-  }, [v.pinCode, showPin]);
+  }, [v.pinCode, showPin, pinFirst]);
 
   const onState = (stateId) => {
     const st = states.find((s) => String(s._id) === String(stateId));
@@ -248,7 +257,8 @@ export default function LocationCascade({
     emit({
       cityId: cityId || '',
       city: c?.name || '',
-      pinCode: '',
+      // PIN-first flows keep the typed PIN; cascade-style flows clear PIN when city changes.
+      ...(pinFirst ? {} : { pinCode: '' }),
       // keep district if city carries one
       districtId: c?.districtId || v.districtId || '',
       district:
@@ -306,17 +316,22 @@ export default function LocationCascade({
     </div>
   ) : null;
 
+  const pinResolved = pinFirst && String(v.pinCode || '').replace(/\D+/g, '').length === 6 && Boolean(v.stateId);
   const stateField = (
     <div className="field" key="state">
-      <label>{labels.state || 'State'}{required ? ' *' : ''}</label>
+      <label>
+        {labels.state || 'State'}
+        {required ? ' *' : ''}
+        {pinResolved ? ' (auto)' : ''}
+      </label>
       <AdaptiveSelect
         required={required}
-        disabled={disabled}
+        disabled={disabled || pinResolved}
         value={v.stateId}
         onChange={(e) => onState(e.target.value)}
         aria-label={labels.state || 'State'}
       >
-        <option value="">Select state</option>
+        <option value="">{pinResolved ? (v.state || 'State from PIN') : 'Select state'}</option>
           {states.map((s) => (
             <option key={s._id} value={s._id}>
               {s.name}
@@ -385,8 +400,14 @@ export default function LocationCascade({
     </div>
   ) : null;
 
+  const afterCityField = afterCity ? (
+    <div className="field location-cascade-after-city" key="after-city">
+      {afterCity}
+    </div>
+  ) : null;
+
   const geoFields = showCity
-    ? [stateField, zoneField, districtField, cityField].filter(Boolean)
+    ? [stateField, zoneField, districtField, cityField, afterCityField].filter(Boolean)
     : [stateField, zoneField, districtField].filter(Boolean);
 
   const orderedFields = pinFirst ? [pinField, ...geoFields] : [...geoFields, pinField];

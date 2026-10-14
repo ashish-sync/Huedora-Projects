@@ -88,7 +88,7 @@ export default function ServiceProviderProfile({
               pinInputOnly
               disabled={disabled}
               required
-              labels={{ state: 'State', city: 'City' }}
+              labels={{ state: 'State', city: 'City / District' }}
               afterCity={(
                 <>
                   <label>Camp Amount</label>

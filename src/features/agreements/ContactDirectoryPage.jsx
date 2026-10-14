@@ -591,7 +591,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   <th className="cd-col-prof">Profession</th>
                   <th className="cd-col-email">Email</th>
                   <th>Contact</th>
-                  <th>City</th>
+                  <th>City / District</th>
                   <th className="cd-col-state">State</th>
                   <th className="inv-col-actions">Actions</th>
                 </tr>
@@ -633,7 +633,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     <td className="cd-col-prof">{c.profession || '—'}</td>
                     <td className="cd-col-email">{c.email || '—'}</td>
                     <td>{c.contact || c.mobile || '—'}</td>
-                    <td>{c.city || '—'}</td>
+                    <td>{c.city || c.district || '—'}</td>
                     <td className="cd-col-state">{c.state || '—'}</td>
                     <td className="inv-col-actions">
                       {can('agreements:write') && (
@@ -856,6 +856,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                 showPin={showBankAndAddress}
                 pinFirst={showBankAndAddress}
                 pinInputOnly={showBankAndAddress}
+                labels={{ state: 'State', city: 'City / District' }}
                 afterCity={isHcw ? (
                   <>
                     <label>Camp Amount</label>
@@ -878,7 +879,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               <section className="cd-section cd-section--last">
                 <h4 className="cd-section-title">Address &amp; banking</h4>
                 <p className="cd-form-hint">
-                  Street address only — do not repeat PIN, city, or state (those are in Location). Banking and KYC are required for Finance payouts.
+                  Street address only — do not repeat PIN, city / district, or state (those are in Location). Banking and KYC are required for Finance payouts.
                 </p>
                 <div className="cd-form-grid">
                   <div className="field cd-span-2">

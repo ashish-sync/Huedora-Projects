@@ -74,10 +74,14 @@ export default function LocationCascade({
 
   useEffect(() => {
     if (!cities.length || v.cityId || !v.city) return;
-    const c = cities.find((x) => String(x.name).toLowerCase() === String(v.city).toLowerCase());
+    const needle = String(v.city).toLowerCase();
+    const c = cities.find((x) => String(x.name).toLowerCase() === needle)
+      || (v.district
+        ? cities.find((x) => String(x.name).toLowerCase() === String(v.district).toLowerCase())
+        : null);
     if (c) emit({ cityId: c._id, city: c.name });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cities, v.city, v.cityId]);
+  }, [cities, v.city, v.cityId, v.district]);
 
   useEffect(() => {
     if (!v.stateId) {
@@ -171,8 +175,7 @@ export default function LocationCascade({
     };
   }, [v.cityId, v.districtId, v.stateId, showPin, pinInputOnly]);
 
-  // When a full 6-digit PIN is entered, resolve State (and District) from Pin Code Master.
-  // With pinFirst, City is left for the user to pick from the state-scoped dropdown.
+  // When a full 6-digit PIN is entered, resolve State + City/District from Pin Code Master.
   useEffect(() => {
     if (!showPin) return undefined;
     const pin = String(v.pinCode || '').replace(/\D+/g, '');
@@ -195,19 +198,18 @@ export default function LocationCascade({
           }
           setError('');
           const stateName = resolved.stateName || resolved.state || '';
-          const cityFromPin = pinFirst
-            ? { cityId: '', city: '' }
-            : {
-              cityId: resolved.cityId || v.cityId || '',
-              city: resolved.cityName || resolved.city || v.city || '',
-            };
+          const districtName = resolved.districtName || resolved.district || '';
+          const cityName = resolved.cityName || resolved.city || '';
+          // City / District: prefer city from PIN Geography; fall back to district name.
+          const mappedCity = cityName || districtName || '';
           emit({
             pinCode: pin,
             stateId: resolved.stateId || v.stateId || '',
             state: stateName || v.state || '',
-            districtId: resolved.districtId || (pinFirst ? '' : v.districtId) || '',
-            district: resolved.districtName || resolved.district || (pinFirst ? '' : v.district) || '',
-            ...cityFromPin,
+            districtId: resolved.districtId || '',
+            district: districtName,
+            cityId: resolved.cityId || '',
+            city: mappedCity,
             zone: resolved.zone || (stateName ? resolveZoneForState(stateName) : v.zone),
           });
         })
@@ -224,7 +226,7 @@ export default function LocationCascade({
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lookup once per PIN value
-  }, [v.pinCode, showPin, pinFirst]);
+  }, [v.pinCode, showPin]);
 
   const onState = (stateId) => {
     const st = states.find((s) => String(s._id) === String(stateId));
@@ -316,7 +318,12 @@ export default function LocationCascade({
     </div>
   ) : null;
 
-  const pinResolved = pinFirst && String(v.pinCode || '').replace(/\D+/g, '').length === 6 && Boolean(v.stateId);
+  const pinResolved = pinFirst
+    && String(v.pinCode || '').replace(/\D+/g, '').length === 6
+    && Boolean(v.stateId);
+  const cityLabel = labels.city || 'City';
+  const cityDisplay = v.city || v.district || '';
+  const pinResolvedCity = pinResolved && Boolean(cityDisplay || v.cityId);
   const stateField = (
     <div className="field" key="state">
       <label>
@@ -381,22 +388,42 @@ export default function LocationCascade({
 
   const cityField = showCity ? (
     <div className="field" key="city">
-      <label>{labels.city || 'City'}{required ? ' *' : ''}</label>
-      <AdaptiveSelect
-        required={required}
-        disabled={disabled || !v.stateId || (showDistrict && districtRequired && !v.districtId)}
-        value={v.cityId}
-        onChange={(e) => onCity(e.target.value)}
-        aria-label={labels.city || 'City'}
-      >
-        <option value="">Select city</option>
-        {cities.map((c) => (
-          <option key={c._id} value={c._id}>
-            {c.name}
-            {optionSuffix(c)}
+      <label>
+        {cityLabel}
+        {required ? ' *' : ''}
+        {pinResolvedCity ? ' (auto)' : ''}
+      </label>
+      {pinResolvedCity && !v.cityId ? (
+        <input
+          disabled
+          readOnly
+          value={cityDisplay}
+          aria-label={cityLabel}
+        />
+      ) : (
+        <AdaptiveSelect
+          required={required}
+          disabled={
+            disabled
+            || pinResolvedCity
+            || !v.stateId
+            || (showDistrict && districtRequired && !v.districtId)
+          }
+          value={v.cityId}
+          onChange={(e) => onCity(e.target.value)}
+          aria-label={cityLabel}
+        >
+          <option value="">
+            {pinResolvedCity ? (cityDisplay || 'From PIN') : `Select ${cityLabel.toLowerCase()}`}
           </option>
-        ))}
-      </AdaptiveSelect>
+          {cities.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+              {optionSuffix(c)}
+            </option>
+          ))}
+        </AdaptiveSelect>
+      )}
     </div>
   ) : null;
 

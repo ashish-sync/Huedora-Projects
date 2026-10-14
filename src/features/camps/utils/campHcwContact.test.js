@@ -273,4 +273,17 @@ describe('buildHcwAssignCascade', () => {
     );
     expect(fields.hcwCategory).toBe('Phlebotomist');
   });
+
+  it('seeds campAmount into assignment fields for Camp Payout', () => {
+    const fields = contactToHcwFields({
+      _id: 'hcw-1',
+      name: 'Ravi',
+      contact: '9111000001',
+      profession: 'Nurse',
+      campAmount: 2500,
+    });
+    expect(fields.campAmount).toBe(2500);
+    expect(fields.totalPayout).toBe(2500);
+    expect(fields.hcwContactId).toBe('hcw-1');
+  });
 });

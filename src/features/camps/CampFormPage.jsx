@@ -457,6 +457,34 @@ export default function CampFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lean hcwContacts must not cancel full payee fetch
   }, [isEdit, activeStage, assignedHcwContact]);
 
+  // Seed Camp Payout once from Contact Directory when Financial opens with an empty amount.
+  // Also keep totalPayout in sync — seeding campAmount alone left totalPayout at 0, and saves
+  // then persisted that zero (appearing to wipe Camp Payout).
+  const campPayoutSeedKeyRef = useRef('');
+  useEffect(() => {
+    if (!isEdit || activeStage !== 'financial') return;
+    const hcwId = String(form.hcwContactId || '').trim();
+    const seedKey = `${id || ''}:${hcwId}`;
+    if (!hcwId || campPayoutSeedKeyRef.current === seedKey) return;
+    if (Number(form.campAmount || 0) > 0) {
+      campPayoutSeedKeyRef.current = seedKey;
+      return;
+    }
+    const fromAssigned = Number(assignedHcwContact?.campAmount);
+    const fromPayee = Number(payoutPayeeContact?.campAmount);
+    const amount = (Number.isFinite(fromAssigned) && fromAssigned > 0)
+      ? fromAssigned
+      : (Number.isFinite(fromPayee) && fromPayee > 0 ? fromPayee : 0);
+    if (amount <= 0) return;
+    campPayoutSeedKeyRef.current = seedKey;
+    const travelling = Number(form.travelling || 0) || 0;
+    const overtimeExpense = Number(form.overtimeExpense || 0) || 0;
+    const otherExpenses = Number(form.otherExpenses || 0) || 0;
+    const totalPayout = Math.round((amount + travelling + overtimeExpense + otherExpenses) * 100) / 100;
+    updateFields({ campAmount: amount, totalPayout });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed per camp+HCW
+  }, [isEdit, activeStage, id, form.hcwContactId, assignedHcwContact, payoutPayeeContact]);
+
   useEffect(() => {
     // Only hydrate clients list for edit when a client is already selected.
     // Empty search is owned by CampClientTypeahead (avoids duplicate /clients+/client-master).
@@ -770,6 +798,26 @@ export default function CampFormPage() {
     }
   }
 
+  function applyCampResponsePreservingFinance(camp) {
+    const next = campToForm(camp);
+    // Confirm/Hold/Unhold do not persist finance edits — keep local amounts if server still has zeros.
+    const financePreserveKeys = [
+      'campRevenue', 'travelRevenue', 'overtimeRevenue', 'otherRevenue', 'totalRevenue',
+      'campAmount', 'travelling', 'overtimeExpense', 'otherExpenses', 'totalPayout',
+      'netContribution', 'balance',
+    ];
+    setForm((prev) => {
+      const merged = { ...next };
+      for (const key of financePreserveKeys) {
+        const local = Number(prev[key] || 0);
+        const remote = Number(next[key] || 0);
+        if (local > 0 && remote === 0) merged[key] = prev[key];
+      }
+      return merged;
+    });
+    setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+  }
+
   async function handleConfirmPayment() {
     if (!id) return;
     setFinancialActionBusy(true);
@@ -777,8 +825,7 @@ export default function CampFormPage() {
     try {
       const res = await campApi.confirmPayment(id);
       const camp = res.data?.data || res.data;
-      setForm(campToForm(camp));
-      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+      applyCampResponsePreservingFinance(camp);
     } catch (err) {
       setError(err?.message || 'Failed to confirm payment');
     } finally {
@@ -799,8 +846,7 @@ export default function CampFormPage() {
         paymentRemark: String(remark || form.paymentRemark || '').trim(),
       });
       const camp = res.data?.data || res.data;
-      setForm(campToForm(camp));
-      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+      applyCampResponsePreservingFinance(camp);
     } catch (err) {
       setError(err?.message || 'Failed to put payment on hold');
     } finally {
@@ -821,8 +867,7 @@ export default function CampFormPage() {
         paymentRemark: String(remark || form.paymentRemark || '').trim(),
       });
       const camp = res.data?.data || res.data;
-      setForm(campToForm(camp));
-      setCampMeta((prev) => ({ ...prev, ...(camp || {}) }));
+      applyCampResponsePreservingFinance(camp);
     } catch (err) {
       setError(err?.message || 'Failed to unhold payment');
     } finally {
@@ -1201,8 +1246,24 @@ export default function CampFormPage() {
     }
 
     // Untouched finance zeros from the form must not overwrite persisted amounts.
+    // Exception: Camp Payout seeded from Contact Directory on assignment should persist.
     if (activeStage !== 'financial') {
-      FINANCE_KEYS.forEach((key) => { delete payload[key]; });
+      const keepCampAmount = activeStage === 'assignment'
+        && Number(form.campAmount || 0) > 0;
+      FINANCE_KEYS.forEach((key) => {
+        if (keepCampAmount && key === 'campAmount') return;
+        if (keepCampAmount && key === 'totalPayout') return;
+        delete payload[key];
+      });
+      if (keepCampAmount) {
+        const travelling = Number(form.travelling || 0) || 0;
+        const overtimeExpense = Number(form.overtimeExpense || 0) || 0;
+        const otherExpenses = Number(form.otherExpenses || 0) || 0;
+        payload.campAmount = Number(form.campAmount);
+        payload.totalPayout = Math.round(
+          (payload.campAmount + travelling + overtimeExpense + otherExpenses) * 100,
+        ) / 100;
+      }
     }
 
     setLoading(true);

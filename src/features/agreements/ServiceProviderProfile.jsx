@@ -85,64 +85,32 @@ export default function ServiceProviderProfile({
               showDistrict={false}
               showPin
               pinFirst
+              pinInputOnly
               disabled={disabled}
               required
               labels={{ state: 'State', city: 'City' }}
+              afterCity={(
+                <>
+                  <label>Camp Amount</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    disabled={disabled}
+                    value={form.campAmount ?? ''}
+                    onChange={(e) => onChange({ campAmount: e.target.value })}
+                    placeholder="Shows in Camp Payout when assigned"
+                  />
+                </>
+              )}
             />
           </div>
         </div>
       </section>
 
-      <section className="cd-section">
-        <h4 className="cd-section-title">Banking details</h4>
-        <p className="cd-form-hint">Optional PAN and bank account for payments.</p>
-        <div className="cd-form-grid">
-          <div className="field">
-            <label>PAN Number</label>
-            <input
-              disabled={disabled}
-              value={form.panNumber || ''}
-              onChange={(e) => onChange({ panNumber: e.target.value.toUpperCase() })}
-              placeholder="ABCDE1234F"
-            />
-          </div>
-          <div className="field">
-            <label>IFSC Code</label>
-            <input
-              disabled={disabled}
-              value={form.ifscCode || ''}
-              onChange={(e) => onChange({ ifscCode: e.target.value.toUpperCase() })}
-              placeholder="SBIN0001234"
-            />
-          </div>
-          <div className="field">
-            <label>Bank Name</label>
-            <input
-              disabled={disabled}
-              value={form.bankName || ''}
-              onChange={(e) => onChange({ bankName: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label>Account Number</label>
-            <input
-              disabled={disabled}
-              value={form.accountNumber || ''}
-              onChange={(e) => onChange({ accountNumber: e.target.value })}
-            />
-          </div>
-          <div className="field cd-span-2">
-            <label>Address</label>
-            <textarea
-              rows={2}
-              disabled={disabled}
-              value={form.address || ''}
-              onChange={(e) => onChange({ address: e.target.value })}
-              placeholder="Registered / billing address"
-            />
-          </div>
-        </div>
-      </section>
+      {/* Address, banking, and KYC live in Contact Directory "Address & banking"
+          so Service Providers do not see those fields twice. */}
 
       <section className="cd-section">
         <div className="cd-employee-head">

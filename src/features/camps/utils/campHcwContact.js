@@ -31,6 +31,11 @@ function providerByIdMap(contacts = []) {
   return map;
 }
 
+function contactCampAmount(contact) {
+  const n = Number(contact?.campAmount);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function enrichStaffWithProvider(contact, providersById) {
   const providerId = String(contact.serviceProviderContactId || '').trim();
   const provider = providerId ? providersById.get(providerId) : null;
@@ -39,6 +44,7 @@ function enrichStaffWithProvider(contact, providersById) {
     state: String(contact.state || '').trim() || provider?.state || '',
     city: String(contact.city || '').trim() || provider?.city || '',
     serviceProviderName: contact.serviceProviderName || provider?.name || '',
+    campAmount: contactCampAmount(contact) || contactCampAmount(provider),
   };
 }
 
@@ -84,6 +90,7 @@ export function listServiceProviderEmployees(contacts = []) {
         profession,
         state: provider.state || '',
         city: provider.city || '',
+        campAmount: contactCampAmount(provider),
         serviceProviderContactId: provider._id,
         serviceProviderName: provider.name || '',
         isProviderEmployee: true,
@@ -162,11 +169,15 @@ export function contactToHcwFields(contact, { fallbackProfessions = [] } = {}) {
     const matchedRole = fallbacks.find((role) => professionsMatch(contact.profession, role));
     hcwCategory = mapProfessionToHcwCategory(matchedRole || fallbacks[0] || '') || hcwCategory;
   }
+  const campAmount = contactCampAmount(contact);
   return {
     hcwContactId: contact._id || '',
     hcwCategory,
     hcwName: String(contact.name || '').trim(),
     hcwContact: contactPhone(contact),
+    // Seeds Camp One Finance → Camp Payout when this HCW is assigned.
+    // Keep totalPayout aligned so a later save does not persist totalPayout: 0.
+    ...(campAmount > 0 ? { campAmount, totalPayout: campAmount } : {}),
   };
 }
 

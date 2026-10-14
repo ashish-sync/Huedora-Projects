@@ -233,7 +233,7 @@ export default function CommunicationsPastePage() {
       ? [firstValidRow.clientName, firstValidRow.campaignName].filter(Boolean).join(' · ') || '—'
       : null;
     const historicalHint = historicalBlocked
-      ? ` · ${historicalBlocked} blocked (camp date >2 days ago — Team Leader only)`
+      ? ` · ${historicalBlocked} blocked (camp date >2 days ago — Team Leader or Admin only)`
       : '';
 
     return {

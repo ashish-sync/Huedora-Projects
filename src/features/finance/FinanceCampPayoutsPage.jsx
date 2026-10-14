@@ -308,7 +308,7 @@ export default function FinanceCampPayoutsPage() {
           </button>
         </td>
         <td>{row.payeeName || row.hcwName || '—'}</td>
-        <td className="finance-payout-col-date">{row.campDate || '—'}</td>
+        <td className="finance-payout-col-date">{row.campId || '—'}</td>
         <td>{row.expenseCategory || 'Healthcare Operations'}</td>
         <td>{row.expenseSubCategory || 'Camp Operations & Home Visits'}</td>
       </tr>
@@ -511,7 +511,7 @@ export default function FinanceCampPayoutsPage() {
                     <th>Method</th>
                     <th className="finance-payout-col-amount">Amount</th>
                     <th>Payee Name</th>
-                    <th>Expense date / Camp Date</th>
+                    <th>Camp ID</th>
                     <th>Expense Category</th>
                     <th>Expense Sub-Category</th>
                   </tr>

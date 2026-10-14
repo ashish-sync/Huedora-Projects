@@ -26,11 +26,12 @@ describe('campDatePolicy', () => {
       { campDate: isoOffset(-5) },
       { canSetHistorical: false },
     );
-    expect(errors[0]).toMatch(/Team Leaders/);
+    expect(errors[0]).toMatch(/Team Leaders or Admins/);
   });
 
-  it('does not grant historical dates to admin role without team leader designation', () => {
-    expect(canSetHistoricalCampDates({ designation: 'Administrator' })).toBe(false);
+  it('allows admin designation to set historical dates', () => {
+    expect(canSetHistoricalCampDates({ designation: 'Administrator' })).toBe(true);
+    expect(canSetHistoricalCampDates({ role: 'Admin' })).toBe(true);
   });
 
   it('allows team leaders', () => {

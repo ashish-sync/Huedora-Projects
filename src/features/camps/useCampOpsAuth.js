@@ -91,8 +91,8 @@ export function useCampOpsAuth() {
   }, [isAdmin, can]);
 
   const canSetHistoricalCampDates = useCallback(
-    () => canSetHistoricalCampDatesForUser(user),
-    [user],
+    () => canSetHistoricalCampDatesForUser(user) || isAdmin,
+    [user, isAdmin],
   );
 
   return {

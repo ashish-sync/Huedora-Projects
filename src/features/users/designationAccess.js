@@ -3,13 +3,14 @@ export const DESIGNATION_ACCESS_TEMPLATES = {
   'healthcare camp coordinator': {
     roleNames: ['Camp Coordinator'],
     summary:
-      'Document One, Camp One, Request One, Operations Dashboard & Notifications, and Verification One only.',
+      'Document One, Camp One (incl. Confirm / Hold / Unhold / Submit to Finance One), Request One, Operations Dashboard & Notifications, and Verification One.',
     modules: [
       { moduleId: 'agreements', access: 'All' },
       { moduleId: 'camps', access: 'All' },
       { moduleId: 'assetRequests', access: 'View, Request' },
       { moduleId: 'platform', access: 'All' },
       { moduleId: 'verifications', access: 'Viewer' },
+      { moduleId: 'finance', access: 'View, Add' },
     ],
   },
 };

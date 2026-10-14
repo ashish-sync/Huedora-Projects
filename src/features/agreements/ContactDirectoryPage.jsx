@@ -367,6 +367,20 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       load();
       loadServiceProviders();
     } catch (err) {
+      // After KYC/other writes, sync the concurrency token so Save can retry immediately.
+      if (editId && (err?.code === 'STALE_UPDATE' || err?.status === 409)) {
+        try {
+          const fresh = await api(`/contacts/${editId}`);
+          const row = fresh?.data;
+          if (row?.updatedAt) setEditUpdatedAt(row.updatedAt);
+          setError(
+            'Contact was updated (for example by a document upload). Click Save again to apply your changes.',
+          );
+          return;
+        } catch {
+          /* fall through to original message */
+        }
+      }
       setError(err.message);
     } finally {
       setBusy(false);
@@ -392,6 +406,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       formData.append('docType', docType);
       const res = await api(`/contacts/${editId}/kyc-document`, { method: 'POST', body: formData });
       const contact = res.data || {};
+      // KYC upload saves the contact and bumps updatedAt — keep the edit token in sync
+      // or the next Save falsely fails with STALE_UPDATE.
+      if (contact.updatedAt) setEditUpdatedAt(contact.updatedAt);
       setForm((current) => ({
         ...current,
         passbookCopyUrl: contact.passbookCopyUrl || '',

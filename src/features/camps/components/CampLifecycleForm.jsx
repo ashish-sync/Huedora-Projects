@@ -366,12 +366,12 @@ export function CampLifecycleForm({
           </div>
           {campDateHistorical && !canSetHistoricalCampDates ? (
             <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-              Camp date is more than 2 days before today. Only Team Leaders can use this date.
+              Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
             </p>
           ) : null}
           {requestDateHistorical && !canSetHistoricalCampDates ? (
             <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-              Request date is more than 2 days before today. Only Team Leaders can use this date.
+              Request date is more than 2 days before today. Only Team Leaders or Admins can use this date.
             </p>
           ) : null}
           {requestDateWarning ? (

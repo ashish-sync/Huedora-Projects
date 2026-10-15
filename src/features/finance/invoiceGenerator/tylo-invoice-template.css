@@ -643,9 +643,15 @@
   align-self: center;
 }
 
+/* Cleared / unsigned — empty body under DIGITAL SIGNATURE header */
+.ti-signature--blank {
+  min-height: 12mm;
+}
+
 @media print {
   .ti-click-sign__cta,
-  .ti-click-sign__action {
+  .ti-click-sign__action,
+  .ti-click-sign__hint {
     display: none !important;
   }
 }
@@ -661,8 +667,8 @@
 }
 
 .ti-lines--letterhead .ti-col-num { width: 5%; }
-.ti-lines--letterhead .ti-col-desc { width: 35%; }
-.ti-lines--letterhead .ti-col-sac { width: 11%; }
+.ti-lines--letterhead .ti-col-desc { width: 33%; }
+.ti-lines--letterhead .ti-col-sac { width: 13%; }
 .ti-lines--letterhead .ti-col-qty { width: 7%; }
 .ti-lines--letterhead .ti-col-rate { width: 14%; }
 .ti-lines--letterhead .ti-col-taxable { width: 18%; }
@@ -1154,6 +1160,11 @@
   text-align: center;
   padding-left: 1.2mm;
   padding-right: 1.2mm;
+}
+
+.ti-lines .ti-th-sac {
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .ti-lines .ti-th-desc {

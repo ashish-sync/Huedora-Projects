@@ -462,7 +462,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
               <th className="finance-docs-col-type">Type</th>
               <th className="finance-docs-col-recipient">Recipient</th>
               <th className="finance-docs-col-period" title="Project / Service Period">
-                Period
+                Reference
               </th>
               <th className="finance-docs-col-date">Date</th>
               <th className="num finance-docs-col-amount">Amount</th>

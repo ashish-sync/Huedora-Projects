@@ -216,13 +216,20 @@ export function resolveLineGstRates(line = {}, taxMode = 'igst') {
 export const DEFAULT_TAX_COLUMN_LABELS = {
   rateLabel: 'GST Rate %',
   amountLabel: 'GST',
+  hsnSacLabel: 'SAC / HSN',
 };
+
+/** Line-code column header — always SAC / HSN (covers goods and services). */
+export function normalizeHsnSacLabel(_value) {
+  return DEFAULT_TAX_COLUMN_LABELS.hsnSacLabel;
+}
 
 export function resolveTaxColumnLabels(form) {
   const custom = form?.taxColumnLabels || {};
   return {
     rateLabel: String(custom.rateLabel ?? '').trim() || DEFAULT_TAX_COLUMN_LABELS.rateLabel,
     amountLabel: String(custom.amountLabel ?? '').trim() || DEFAULT_TAX_COLUMN_LABELS.amountLabel,
+    hsnSacLabel: normalizeHsnSacLabel(custom.hsnSacLabel),
   };
 }
 

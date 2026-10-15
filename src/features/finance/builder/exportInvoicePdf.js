@@ -14,6 +14,11 @@ function waitForLayout() {
 }
 
 function replaceInputsWithText(root) {
+  // Unsigned Digital Signature chrome must not appear on download/print.
+  root
+    .querySelectorAll('.ti-click-sign__cta, .ti-click-sign__action, .ti-click-sign__hint')
+    .forEach((el) => el.remove());
+
   root.querySelectorAll('input, textarea, select').forEach((el) => {
     const span = document.createElement('span');
     span.className = 'ti-export-text';

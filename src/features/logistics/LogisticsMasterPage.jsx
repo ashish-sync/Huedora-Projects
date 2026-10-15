@@ -84,12 +84,6 @@ const MASTER_GROUPS = [
   },
 ];
 
-function groupsForScope(scope) {
-  if (!scope || scope === 'all') return MASTER_GROUPS;
-  const mapped = scope === 'logistics' ? 'movement' : scope;
-  return MASTER_GROUPS.filter((g) => g.scope === mapped);
-}
-
 function EmbeddedMaster({ kind }) {
   if (kind === 'contacts') return <ContactDirectoryPage embedded />;
   if (kind === 'templates') return <DocumentMasterPage embedded />;
@@ -182,6 +176,14 @@ function canonicalScope(raw) {
   return s || 'all';
 }
 
+/** First entity id for a deep-link scope (nav itself always shows all groups). */
+function defaultEntityForScope(scope) {
+  const mapped = canonicalScope(scope);
+  if (!mapped || mapped === 'all') return '';
+  const group = MASTER_GROUPS.find((g) => g.scope === mapped);
+  return group?.entities[0]?.id || '';
+}
+
 export default function LogisticsMasterPage({
   scope = 'all',
   title = 'Master One',
@@ -197,9 +199,10 @@ export default function LogisticsMasterPage({
   const canReadCamps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
   const canWriteCamps = can('camps:request') || can('camps:approve') || can('*');
   const resolvedScope = canonicalScope(scope);
+  // Hub grouping is navigation-only — always show every permitted Reference Data
+  // section so switching Products ↔ Document One etc. never collapses the sidebar.
   const visibleGroups = useMemo(() => {
-    const groups = groupsForScope(resolvedScope);
-    return groups.filter((g) => {
+    return MASTER_GROUPS.filter((g) => {
       if (g.scope === 'document') return canReadDocs;
       if (g.scope === 'camp') return canReadCamps;
       if (g.scope === 'movement' || g.scope === 'logistics') {
@@ -207,10 +210,10 @@ export default function LogisticsMasterPage({
       }
       return canWriteLogistics || can('logistics:read') || can('*');
     });
-  }, [resolvedScope, can, canWriteLogistics, canReadDocs, canReadCamps]);
+  }, [can, canWriteLogistics, canReadDocs, canReadCamps]);
   const entities = useMemo(() => visibleGroups.flatMap((g) => g.entities), [visibleGroups]);
   const [entityId, setEntityId] = useState(
-    () => initialEntity || entities[0]?.id || 'products'
+    () => initialEntity || defaultEntityForScope(scope) || 'products'
   );
   const entity = entities.find((e) => e.id === entityId) || entities[0];
   const activeGroup = visibleGroups.find((g) => g.entities.some((e) => e.id === entityId));

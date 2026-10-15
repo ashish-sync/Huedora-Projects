@@ -62,15 +62,17 @@ describe('clickToSign', () => {
     ).toBe('');
   });
 
-  it('clears click-to-sign mode', () => {
+  it('clears click-to-sign mode and image so the box can render blank', () => {
     const cleared = clearClickToSign({
       mode: CLICK_TO_SIGN_MODE,
       signedAt: '2026-10-01T12:00:00.000Z',
       signatoryName: 'TEST',
-      imageDataUrl: '',
+      imageDataUrl: 'data:image/png;base64,abc',
     });
     expect(cleared.mode).toBe('');
     expect(cleared.signedAt).toBe('');
+    expect(cleared.imageDataUrl).toBe('');
+    expect(cleared.signatoryName).toBe('TEST');
     expect(isClickToSignSignature(cleared)).toBe(false);
   });
 });

@@ -473,7 +473,7 @@ export default function InvoiceBuilderPanel({
                     placeholder="Shift+Enter for a second line"
                   />
                 </Field>
-                <Field label="SAC">
+                <Field label={taxLabels.hsnSacLabel}>
                   <input className={inputCls} value={line.hsnSac} onChange={(e) => updateLine(index, { hsnSac: e.target.value })} />
                 </Field>
                 <Field label="Qty">

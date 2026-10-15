@@ -19,14 +19,22 @@
 .master-list-title,
 .product-master-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-family: var(--font-family-display);
+  font-size: var(--text-section-title-size);
+  font-weight: var(--text-section-title-weight);
+  line-height: var(--text-section-title-leading);
+  letter-spacing: var(--text-section-title-tracking);
+  color: var(--color-text-primary, var(--ink));
 }
 
 .master-list-subtitle,
 .pm-enterprise .pm-subtitle,
 .pm-subtitle {
   margin: 4px 0 0;
-  font-size: 0.88rem;
+  font-size: var(--text-subtitle-size);
+  font-weight: var(--text-subtitle-weight);
+  line-height: var(--text-subtitle-leading);
+  color: var(--color-text-secondary, var(--muted));
 }
 
 .master-list-header__actions,

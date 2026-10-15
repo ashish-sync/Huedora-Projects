@@ -317,10 +317,10 @@ export default function FinanceCampPayoutsPage() {
   async function returnToCampFinancial() {
     if (!canReturn || !returnableRows.length) return;
     const label = returnableRows.length === 1
-      ? (returnableRows[0].campId || 'this camp')
+      ? `Camp ${returnableRows[0].campId || '—'}`
       : `${returnableRows.length} camps`;
     const confirmed = window.confirm(
-      `Return ${label} from Payout Queue to Camp One Financial (Pending Confirmation)?\n\nRevenue and payout amounts can be edited, then Confirm Payment and submit again.`,
+      `Return ${label} to Camp One Financial (Pending Confirmation)?\n\nRevenue and payout amounts can be edited and resubmitted for payment confirmation.`,
     );
     if (!confirmed) return;
 

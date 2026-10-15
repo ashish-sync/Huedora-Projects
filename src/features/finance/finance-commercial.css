@@ -1244,6 +1244,13 @@
   margin: 0 0 1rem;
 }
 
+.finance-payout-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
 /* Billing Center saved-documents grid — fit viewport, always one line per cell */
 .finance-docs-table-wrap {
   overflow-x: hidden;

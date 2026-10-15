@@ -649,74 +649,46 @@ export default function FinanceCampPayoutsPage() {
                     ) : null}
                   </header>
 
-                  {payMode === 'single' ? (
-                    <div className="finance-payout-settle__bank">
-                      <div className="finance-payout-settle__bank-grid">
-                        <div>
-                          <span>Bank</span>
-                          <strong>{payTargetRows[0].bankName || '—'}</strong>
+                  <div className="finance-payout-settle__grid">
+                    {payMode === 'single' ? (
+                      <>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Bank</span>
+                          <strong className="finance-payout-cell__value" title={payTargetRows[0].bankName || ''}>
+                            {payTargetRows[0].bankName || '—'}
+                          </strong>
                         </div>
-                        <div>
-                          <span>Account</span>
-                          <strong>{payTargetRows[0].accountNumber || '—'}</strong>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Account</span>
+                          <strong className="finance-payout-cell__value" title={payTargetRows[0].accountNumber || ''}>
+                            {payTargetRows[0].accountNumber || '—'}
+                          </strong>
                         </div>
-                        <div>
-                          <span>IFSC</span>
-                          <strong>{payTargetRows[0].ifscCode || '—'}</strong>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">IFSC</span>
+                          <strong className="finance-payout-cell__value" title={payTargetRows[0].ifscCode || ''}>
+                            {payTargetRows[0].ifscCode || '—'}
+                          </strong>
                         </div>
-                      </div>
-                      <div className="finance-payout-doc-actions">
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          disabled={!payTargetRows[0].panCardCopyUrl}
-                          onClick={() => openPayeeDoc(payTargetRows[0].panCardCopyUrl, 'PAN Card')}
-                        >
-                          View PAN Card
-                        </button>
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          disabled={!payTargetRows[0].passbookCopyUrl}
-                          onClick={() => openPayeeDoc(payTargetRows[0].passbookCopyUrl, 'Bank Account Proof')}
-                        >
-                          View Bank Proof
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="finance-payout-settle__summary">
-                      <div>
-                        <span>Items</span>
-                        <strong>{payTargetRows.length}</strong>
-                      </div>
-                      <div>
-                        <span>Due</span>
-                        <strong>{formatInr(settlementTotal)}</strong>
-                      </div>
-                      <div>
-                        <span>Unpaid</span>
-                        <strong>
-                          {payTargetRows.filter((row) => row.financePaymentStatus !== 'paid').length}
-                        </strong>
-                      </div>
-                    </div>
-                  )}
-
-                  {canWrite ? (
-                    <div className="finance-payout-settle__form">
-                      <div className="field finance-payout-settle__amount-field">
-                        <div className="finance-payout-settle__amount-label-row">
-                          <label htmlFor="finance-payout-paid-amount">Paid Amount</label>
-                          <button
-                            type="button"
-                            className="finance-payout-settle__fill-link"
-                            onClick={() => setDraft((d) => ({ ...d, paidAmount: String(settlementTotal) }))}
-                          >
-                            Fill due ({formatInr(settlementTotal)})
-                          </button>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Status</span>
+                          <strong className={`finance-payout-status-badge finance-payout-status-badge--${settlementStatus}`}>
+                            {settlementLabel}
+                          </strong>
                         </div>
-                        <div className="finance-payout-settle__amount-line">
+                        <div className="finance-payout-cell finance-payout-cell--input">
+                          <div className="finance-payout-cell__label-row">
+                            <label className="finance-payout-cell__label" htmlFor="finance-payout-paid-amount">Paid Amount</label>
+                            {canWrite ? (
+                              <button
+                                type="button"
+                                className="finance-payout-settle__fill-link"
+                                onClick={() => setDraft((d) => ({ ...d, paidAmount: String(settlementTotal) }))}
+                              >
+                                Fill due
+                              </button>
+                            ) : null}
+                          </div>
                           <div className="finance-payout-settle__amount-input">
                             <span className="finance-payout-settle__currency" aria-hidden="true">₹</span>
                             <input
@@ -729,36 +701,31 @@ export default function FinanceCampPayoutsPage() {
                               }
                               placeholder="0"
                               required
+                              disabled={!canWrite}
                             />
                           </div>
-                          <div className="finance-payout-settle__side-metrics">
-                            <div className="finance-payout-settle__metric">
-                              <span>Status</span>
-                              <strong className={`finance-payout-status-badge finance-payout-status-badge--${settlementStatus}`}>
-                                {settlementLabel}
-                              </strong>
-                            </div>
-                            <div className="finance-payout-settle__metric">
-                              <span>Balance</span>
-                              <strong>{formatInr(derivedBalance)}</strong>
-                            </div>
-                          </div>
                         </div>
-                      </div>
-
-                      <div className={`finance-payout-settle__row finance-payout-settle__row--2${needsPaymentProof ? '' : ' is-optional'}`}>
-                        <DateInput
-                          className="field finance-camp-payout-date"
-                          label="Payment Date"
-                          value={draft.paymentDate}
-                          onChange={(next) =>
-                            setDraft((d) => ({ ...d, paymentDate: next || '' }))
-                          }
-                          required={needsPaymentProof}
-                          max={todayIso()}
-                        />
-                        <div className="field">
-                          <label htmlFor="finance-payout-utr">Transaction ID / UTR</label>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Balance</span>
+                          <strong className="finance-payout-cell__value">{formatInr(derivedBalance)}</strong>
+                        </div>
+                        <div className={`finance-payout-cell finance-payout-cell--input${needsPaymentProof ? '' : ' is-optional'}`}>
+                          <span className="finance-payout-cell__label">Payment Date</span>
+                          <DateInput
+                            className="finance-camp-payout-date"
+                            label="Payment Date"
+                            hideLabel
+                            value={draft.paymentDate}
+                            onChange={(next) =>
+                              setDraft((d) => ({ ...d, paymentDate: next || '' }))
+                            }
+                            required={needsPaymentProof}
+                            max={todayIso()}
+                            disabled={!canWrite}
+                          />
+                        </div>
+                        <div className={`finance-payout-cell finance-payout-cell--input${needsPaymentProof ? '' : ' is-optional'}`}>
+                          <label className="finance-payout-cell__label" htmlFor="finance-payout-utr">Transaction ID / UTR</label>
                           <input
                             id="finance-payout-utr"
                             value={draft.transactionId}
@@ -766,58 +733,164 @@ export default function FinanceCampPayoutsPage() {
                               setDraft((d) => ({ ...d, transactionId: e.target.value }))
                             }
                             required={needsPaymentProof}
-                            placeholder={needsPaymentProof ? 'Enter UTR' : 'Optional when Not Paid'}
+                            placeholder={needsPaymentProof ? 'Enter UTR' : 'Optional'}
+                            disabled={!canWrite}
                           />
                         </div>
-                      </div>
-
-                      {payMode === 'bulk' ? (
-                        <p className="finance-payout-settle__hint">
-                          Partial amounts split by each camp’s share of {formatInr(settlementTotal)}.
-                        </p>
-                      ) : null}
-
-                      <div className="field finance-payout-settle__remark">
-                        <label htmlFor="finance-payout-remark">Payment Remark</label>
-                        <textarea
-                          id="finance-payout-remark"
-                          rows={2}
-                          value={draft.paymentRemark}
-                          onChange={(e) =>
-                            setDraft((d) => ({ ...d, paymentRemark: e.target.value }))
-                          }
-                          placeholder="Optional note"
-                        />
-                      </div>
-
-                      <div className="finance-payout-settle__actions">
                         <button
                           type="button"
-                          className="btn"
-                          disabled={busy}
-                          onClick={savePayout}
+                          className="finance-payout-cell finance-payout-cell--action"
+                          disabled={!payTargetRows[0].panCardCopyUrl}
+                          onClick={() => openPayeeDoc(payTargetRows[0].panCardCopyUrl, 'PAN Card')}
                         >
-                          {busy
-                            ? 'Saving…'
-                            : payMode === 'bulk'
-                              ? `Pay ${payTargetRows.length} items`
-                              : 'Save payment'}
+                          <span className="finance-payout-cell__label">Document</span>
+                          <strong className="finance-payout-cell__value">View PAN Card</strong>
                         </button>
-                        {canReturn && returnableRows.length ? (
-                          <button
-                            type="button"
-                            className="btn secondary"
-                            disabled={returnBusy || busy}
-                            onClick={returnToCampFinancial}
-                          >
-                            {returnBusy
-                              ? 'Returning…'
-                              : returnableRows.length > 1
-                                ? `Return ${returnableRows.length} to Camp One`
-                                : 'Return to Camp One Financial'}
-                          </button>
-                        ) : null}
-                      </div>
+                        <button
+                          type="button"
+                          className="finance-payout-cell finance-payout-cell--action"
+                          disabled={!payTargetRows[0].passbookCopyUrl}
+                          onClick={() => openPayeeDoc(payTargetRows[0].passbookCopyUrl, 'Bank Account Proof')}
+                        >
+                          <span className="finance-payout-cell__label">Document</span>
+                          <strong className="finance-payout-cell__value">View Bank Proof</strong>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Items</span>
+                          <strong className="finance-payout-cell__value">{payTargetRows.length}</strong>
+                        </div>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Due</span>
+                          <strong className="finance-payout-cell__value">{formatInr(settlementTotal)}</strong>
+                        </div>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Unpaid</span>
+                          <strong className="finance-payout-cell__value">
+                            {payTargetRows.filter((row) => row.financePaymentStatus !== 'paid').length}
+                          </strong>
+                        </div>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Status</span>
+                          <strong className={`finance-payout-status-badge finance-payout-status-badge--${settlementStatus}`}>
+                            {settlementLabel}
+                          </strong>
+                        </div>
+                        <div className="finance-payout-cell finance-payout-cell--input">
+                          <div className="finance-payout-cell__label-row">
+                            <label className="finance-payout-cell__label" htmlFor="finance-payout-paid-amount">Paid Amount</label>
+                            {canWrite ? (
+                              <button
+                                type="button"
+                                className="finance-payout-settle__fill-link"
+                                onClick={() => setDraft((d) => ({ ...d, paidAmount: String(settlementTotal) }))}
+                              >
+                                Fill due
+                              </button>
+                            ) : null}
+                          </div>
+                          <div className="finance-payout-settle__amount-input">
+                            <span className="finance-payout-settle__currency" aria-hidden="true">₹</span>
+                            <input
+                              id="finance-payout-paid-amount"
+                              type="text"
+                              inputMode="decimal"
+                              value={draft.paidAmount}
+                              onChange={(e) =>
+                                setDraft((d) => ({ ...d, paidAmount: e.target.value }))
+                              }
+                              placeholder="0"
+                              required
+                              disabled={!canWrite}
+                            />
+                          </div>
+                        </div>
+                        <div className="finance-payout-cell">
+                          <span className="finance-payout-cell__label">Balance</span>
+                          <strong className="finance-payout-cell__value">{formatInr(derivedBalance)}</strong>
+                        </div>
+                        <div className={`finance-payout-cell finance-payout-cell--input${needsPaymentProof ? '' : ' is-optional'}`}>
+                          <span className="finance-payout-cell__label">Payment Date</span>
+                          <DateInput
+                            className="finance-camp-payout-date"
+                            label="Payment Date"
+                            hideLabel
+                            value={draft.paymentDate}
+                            onChange={(next) =>
+                              setDraft((d) => ({ ...d, paymentDate: next || '' }))
+                            }
+                            required={needsPaymentProof}
+                            max={todayIso()}
+                            disabled={!canWrite}
+                          />
+                        </div>
+                        <div className={`finance-payout-cell finance-payout-cell--input${needsPaymentProof ? '' : ' is-optional'}`}>
+                          <label className="finance-payout-cell__label" htmlFor="finance-payout-utr-bulk">Transaction ID / UTR</label>
+                          <input
+                            id="finance-payout-utr-bulk"
+                            value={draft.transactionId}
+                            onChange={(e) =>
+                              setDraft((d) => ({ ...d, transactionId: e.target.value }))
+                            }
+                            required={needsPaymentProof}
+                            placeholder={needsPaymentProof ? 'Enter UTR' : 'Optional'}
+                            disabled={!canWrite}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {payMode === 'bulk' ? (
+                    <p className="finance-payout-settle__hint">
+                      Partial amounts split by each camp’s share of {formatInr(settlementTotal)}.
+                    </p>
+                  ) : null}
+
+                  <div className="finance-payout-cell finance-payout-cell--remark">
+                    <label className="finance-payout-cell__label" htmlFor="finance-payout-remark">Payment Remark</label>
+                    <textarea
+                      id="finance-payout-remark"
+                      rows={2}
+                      value={draft.paymentRemark}
+                      onChange={(e) =>
+                        setDraft((d) => ({ ...d, paymentRemark: e.target.value }))
+                      }
+                      placeholder="Optional note"
+                      disabled={!canWrite}
+                    />
+                  </div>
+
+                  {canWrite ? (
+                    <div className="finance-payout-settle__actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={busy}
+                        onClick={savePayout}
+                      >
+                        {busy
+                          ? 'Saving…'
+                          : payMode === 'bulk'
+                            ? `Pay ${payTargetRows.length} items`
+                            : 'Save payment'}
+                      </button>
+                      {canReturn && returnableRows.length ? (
+                        <button
+                          type="button"
+                          className="btn secondary"
+                          disabled={returnBusy || busy}
+                          onClick={returnToCampFinancial}
+                        >
+                          {returnBusy
+                            ? 'Returning…'
+                            : returnableRows.length > 1
+                              ? `Return ${returnableRows.length} to Camp One`
+                              : 'Return to Camp One Financial'}
+                        </button>
+                      ) : null}
                     </div>
                   ) : (
                     <>

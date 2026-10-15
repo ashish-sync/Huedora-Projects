@@ -200,7 +200,8 @@ export default function LocationCascade({
           const stateName = resolved.stateName || resolved.state || '';
           const districtName = resolved.districtName || resolved.district || '';
           const cityName = resolved.cityName || resolved.city || '';
-          // City / District: prefer city from PIN Geography; fall back to district name.
+          // City/District follows Pin Geography district; cityName is already
+          // district-corrected by the API when cityId is outside the PIN district.
           const mappedCity = cityName || districtName || '';
           emit({
             pinCode: pin,

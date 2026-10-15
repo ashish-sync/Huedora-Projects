@@ -19,6 +19,7 @@ import {
   buildPayoutPivotGroups,
   formatInr,
 } from './campPayoutPivot.js';
+import { canReturnCampFromPayoutQueue } from './campPayoutReturnAccess.js';
 
 function emptyDraft() {
   return {
@@ -34,8 +35,9 @@ function rowId(row) {
 }
 
 export default function FinanceCampPayoutsPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const canWrite = can('finance:write') || can('*');
+  const canReturn = canReturnCampFromPayoutQueue(user);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,6 +51,7 @@ export default function FinanceCampPayoutsPage() {
   const [focusId, setFocusId] = useState('');
   const [draft, setDraft] = useState(emptyDraft());
   const [busy, setBusy] = useState(false);
+  const [returnBusy, setReturnBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [exportBusy, setExportBusy] = useState(false);
   const [rowExportBusy, setRowExportBusy] = useState(false);
@@ -95,6 +98,10 @@ export default function FinanceCampPayoutsPage() {
 
   const payTargetRows = selectedRows.length ? selectedRows : (focusRow ? [focusRow] : []);
   const payMode = selectedRows.length > 1 ? 'bulk' : 'single';
+  const returnableRows = useMemo(
+    () => payTargetRows.filter((row) => String(row.financePaymentStatus || '') !== 'paid'),
+    [payTargetRows],
+  );
 
   useEffect(() => {
     if (!payTargetRows.length) {
@@ -274,6 +281,57 @@ export default function FinanceCampPayoutsPage() {
     setFocusId(id);
     setError('');
     setMsg('');
+  }
+
+  async function returnToCampFinancial() {
+    if (!canReturn || !returnableRows.length) return;
+    const label = returnableRows.length === 1
+      ? (returnableRows[0].campId || 'this camp')
+      : `${returnableRows.length} camps`;
+    const confirmed = window.confirm(
+      `Return ${label} from Payout Queue to Camp One Financial (Confirmed Payment)?\n\nThey can be reviewed and re-submitted from Camp One.`,
+    );
+    if (!confirmed) return;
+
+    setReturnBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      if (returnableRows.length === 1) {
+        const { message } = await api(
+          `/finance/camp-payouts/${returnableRows[0]._id}/return-to-camp-financial`,
+          { method: 'POST', body: {} },
+        );
+        const removedId = rowId(returnableRows[0]);
+        setRows((prev) => prev.filter((row) => rowId(row) !== removedId));
+        setFocusId((prev) => (String(prev) === removedId ? '' : prev));
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(removedId);
+          return next;
+        });
+        setMsg(message || 'Camp returned to Camp One Financial.');
+      } else {
+        const { data, message } = await api('/finance/camp-payouts/bulk-return-to-camp-financial', {
+          method: 'POST',
+          body: { ids: returnableRows.map((row) => row._id) },
+        });
+        const returnedIds = new Set((data?.returned || []).map((row) => rowId(row)));
+        setRows((prev) => prev.filter((row) => !returnedIds.has(rowId(row))));
+        setFocusId((prev) => (returnedIds.has(String(prev)) ? '' : prev));
+        clearSelection();
+        const skipped = Array.isArray(data?.skipped) ? data.skipped.length : 0;
+        setMsg(
+          message
+            || `Returned ${returnedIds.size} camp${returnedIds.size === 1 ? '' : 's'} to Camp One Financial`
+            + (skipped ? ` (${skipped} Payment Done skipped)` : ''),
+        );
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to return camp to Camp One Financial');
+    } finally {
+      setReturnBusy(false);
+    }
   }
 
   function renderCampRow(row) {
@@ -694,7 +752,7 @@ export default function FinanceCampPayoutsPage() {
                       </>
                     )}
 
-                    <div className="full">
+                    <div className="full finance-payout-action-row">
                       <button
                         type="button"
                         className="btn"
@@ -707,10 +765,42 @@ export default function FinanceCampPayoutsPage() {
                             ? `Pay ${payTargetRows.length} items`
                             : 'Save payment'}
                       </button>
+                      {canReturn && returnableRows.length ? (
+                        <button
+                          type="button"
+                          className="btn secondary"
+                          disabled={returnBusy || busy}
+                          onClick={returnToCampFinancial}
+                        >
+                          {returnBusy
+                            ? 'Returning…'
+                            : returnableRows.length > 1
+                              ? `Return ${returnableRows.length} to Camp One Financial`
+                              : 'Return to Camp One Financial'}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ) : (
-                  <p className="muted">You have read-only access to camp payouts.</p>
+                  <>
+                    <p className="muted">You have read-only access to camp payouts.</p>
+                    {canReturn && returnableRows.length ? (
+                      <div className="full finance-payout-action-row">
+                        <button
+                          type="button"
+                          className="btn secondary"
+                          disabled={returnBusy}
+                          onClick={returnToCampFinancial}
+                        >
+                          {returnBusy
+                            ? 'Returning…'
+                            : returnableRows.length > 1
+                              ? `Return ${returnableRows.length} to Camp One Financial`
+                              : 'Return to Camp One Financial'}
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </>
             )}

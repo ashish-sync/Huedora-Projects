@@ -13,6 +13,7 @@ import {
   approveCommercialDocument,
   rejectCommercialDocument,
   cancelCommercialDocument,
+  correctCommercialDocumentNumber,
 } from './builderPersistence.js';
 import {
   hasEnoughCommercialDraftContent,
@@ -342,6 +343,42 @@ export function usePersistedCommercialBuilder({
     return row;
   }, [resolveServerPdf]);
 
+  const applyIssuedRow = useCallback((row) => {
+    if (!row) return;
+    docIdRef.current = row._id;
+    statusRef.current = row.status || statusRef.current;
+    setDocId(row._id);
+    setStatus(row.status || statusRef.current);
+    setDocMeta(row);
+    if (row.documentNumber) {
+      setForm((prev) => {
+        const next = structuredClone(prev);
+        if (next.invoice) next.invoice.documentNumber = row.documentNumber;
+        if (next.document) next.document.documentNumber = row.documentNumber;
+        if (next.po) next.po.documentNumber = row.documentNumber;
+        return next;
+      });
+      skipNextAutosave.current = true;
+    }
+  }, []);
+
+  const correctIssuedNumber = useCallback(async ({ documentNumber, remark }) => {
+    const id = docIdRef.current;
+    if (!id) throw new Error('Save the document first');
+    setBusyAction('correct-number');
+    setError('');
+    try {
+      const row = await correctCommercialDocumentNumber(id, { documentNumber, remark });
+      applyIssuedRow(row);
+      return row;
+    } catch (err) {
+      setError(err.message || 'Could not correct document number');
+      throw err;
+    } finally {
+      setBusyAction('');
+    }
+  }, [applyIssuedRow]);
+
   const readOnly = !isEditableStatus(status, { isAdmin: admin });
 
   return {
@@ -365,6 +402,7 @@ export function usePersistedCommercialBuilder({
     rejectDocument: () => runLifecycle('reject'),
     issueDocument: () => runLifecycle('issue'),
     cancelDocument,
+    correctIssuedNumber,
     resolveServerPdf,
     exportServerPdf,
   };

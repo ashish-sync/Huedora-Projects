@@ -41,6 +41,8 @@ export default function ProformaBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    docId,
+    correctIssuedNumber,
   } = useProformaBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -79,6 +81,8 @@ export default function ProformaBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -101,6 +105,7 @@ export default function ProformaBuilderPage() {
           removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
         />
       }
     >

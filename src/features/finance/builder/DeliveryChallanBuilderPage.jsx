@@ -36,6 +36,8 @@ export default function DeliveryChallanBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    docId,
+    correctIssuedNumber,
   } = useDeliveryChallanBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -74,6 +76,8 @@ export default function DeliveryChallanBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -92,6 +96,7 @@ export default function DeliveryChallanBuilderPage() {
           removeLine={removeLine}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
         />
       }
     >

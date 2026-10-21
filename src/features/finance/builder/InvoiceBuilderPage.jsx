@@ -42,6 +42,7 @@ export default function InvoiceBuilderPage() {
     orgList,
     orgProfileId,
     changeOrgProfileId,
+    correctIssuedNumber,
   } = useInvoiceBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -79,6 +80,8 @@ export default function InvoiceBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -104,6 +107,7 @@ export default function InvoiceBuilderPage() {
           docId={docId}
           panelConfig={{
             panelLayout: 'parties',
+            documentType: 'client_invoice',
             docSectionTitle: 'Header',
             docNoLabel: 'Invoice no.',
             projectLabel: 'Project / Service Period',
@@ -117,6 +121,7 @@ export default function InvoiceBuilderPage() {
             showShipTo: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
+            issued: status === 'Issued' || status === 'Approved' || status === 'Cancelled',
           }}
         />
       }

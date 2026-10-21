@@ -41,6 +41,8 @@ export default function CreditNoteBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    docId,
+    correctIssuedNumber,
   } = useCreditNoteBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -79,6 +81,8 @@ export default function CreditNoteBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -103,6 +107,7 @@ export default function CreditNoteBuilderPage() {
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
             panelLayout: 'parties',
+            documentType: 'credit_note',
             docSectionTitle: 'Header',
             docNoLabel: 'Credit note no.',
             projectLabel: 'Project / Service Period',
@@ -121,6 +126,7 @@ export default function CreditNoteBuilderPage() {
             lockOriginalInvoiceFromSystem: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
+            issued: status === 'Issued' || status === 'Approved' || status === 'Cancelled',
           }}
         />
       }

@@ -14,11 +14,13 @@ import { FILTER } from '../../shared/labels.js';
 import { COMMERCIAL_DOC_TYPES, docTypeLabel } from './commercialDocumentConfig.js';
 import {
   buildEditPath,
+  correctCommercialDocumentNumber,
   deleteCommercialDocument,
   duplicateCommercialDocument,
   recordCommercialPayment,
   updateCommercialLifecycleStatus,
 } from './builder/builderPersistence.js';
+import CorrectDocumentNumberModal from './builder/CorrectDocumentNumberModal.jsx';
 import {
   COMMERCIAL_STAGE_FILTERS,
   commercialStatusFilterOptions,
@@ -72,6 +74,7 @@ function FinanceDocActionsMenu({
   onDuplicate,
   onPayment,
   onUpdateStatus,
+  onCorrectNumber,
   onDelete,
 }) {
   const [open, setOpen] = useState(false);
@@ -82,6 +85,7 @@ function FinanceDocActionsMenu({
   const showPayment = canWrite && canRecordPayment(row);
   const showStatus = canWrite && canEditLifecycleStatus(row);
   const showDuplicate = canWrite;
+  const showCorrect = admin && isIssuedStage(row?.status);
   const showDelete = admin;
 
   const placeMenu = useCallback(() => {
@@ -113,7 +117,7 @@ function FinanceDocActionsMenu({
       window.removeEventListener('resize', onReposition);
       window.removeEventListener('scroll', onReposition, true);
     };
-  }, [open, placeMenu, showPayment, showStatus, showDuplicate, showDelete]);
+  }, [open, placeMenu, showPayment, showStatus, showDuplicate, showCorrect, showDelete]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -166,6 +170,11 @@ function FinanceDocActionsMenu({
           {showStatus ? (
             <button type="button" role="menuitem" onClick={() => run(onUpdateStatus)}>
               Update Status
+            </button>
+          ) : null}
+          {showCorrect ? (
+            <button type="button" role="menuitem" onClick={() => run(onCorrectNumber)}>
+              Correct number
             </button>
           ) : null}
           {showDelete ? (
@@ -232,6 +241,10 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [statusRow, setStatusRow] = useState(null);
   const [statusValue, setStatusValue] = useState('');
   const [statusError, setStatusError] = useState('');
+
+  const [correctRow, setCorrectRow] = useState(null);
+  const [correctError, setCorrectError] = useState('');
+  const [correctBusy, setCorrectBusy] = useState(false);
 
   const load = useCallback(async () => {
     setListLoading(true);
@@ -564,6 +577,10 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                         onDuplicate={() => handleDuplicate(row)}
                         onPayment={() => openPayment(row)}
                         onUpdateStatus={() => openStatusUpdate(row)}
+                        onCorrectNumber={() => {
+                          setCorrectError('');
+                          setCorrectRow(row);
+                        }}
                         onDelete={() => handleDelete(row)}
                       />
                     </td>
@@ -695,6 +712,34 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           </div>
         </div>
       ) : null}
+
+      <CorrectDocumentNumberModal
+        open={Boolean(correctRow)}
+        row={correctRow}
+        documentCode={correctRow?.orgSnapshot?.documentCode}
+        busy={correctBusy}
+        error={correctError}
+        onClose={() => {
+          if (correctBusy) return;
+          setCorrectRow(null);
+          setCorrectError('');
+        }}
+        onSubmit={async ({ documentNumber, remark }) => {
+          if (!correctRow?._id) return;
+          setCorrectBusy(true);
+          setCorrectError('');
+          try {
+            await correctCommercialDocumentNumber(correctRow._id, { documentNumber, remark });
+            setPayMsg(`Document number updated to ${documentNumber}.`);
+            setCorrectRow(null);
+            await load();
+          } catch (e) {
+            setCorrectError(e.message || 'Could not correct document number');
+          } finally {
+            setCorrectBusy(false);
+          }
+        }}
+      />
     </>
   );
 

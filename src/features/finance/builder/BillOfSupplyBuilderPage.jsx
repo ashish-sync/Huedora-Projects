@@ -42,6 +42,7 @@ export default function BillOfSupplyBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    correctIssuedNumber,
   } = useBillOfSupplyBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -80,6 +81,8 @@ export default function BillOfSupplyBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -105,6 +108,7 @@ export default function BillOfSupplyBuilderPage() {
           docId={docId}
           panelConfig={{
             panelLayout: 'parties',
+            documentType: 'bill_of_supply',
             docSectionTitle: 'Header',
             docNoLabel: 'Bill of supply no.',
             projectLabel: 'Project / Service Period',
@@ -121,6 +125,7 @@ export default function BillOfSupplyBuilderPage() {
             hideReverseCharge: true,
             hideReceiptVoucher: true,
             hideTaxColumnTitles: true,
+            issued: status === 'Issued' || status === 'Approved' || status === 'Cancelled',
           }}
         />
       }

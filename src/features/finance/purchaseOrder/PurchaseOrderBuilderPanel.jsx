@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DocumentNumberField from '../builder/DocumentNumberField.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../shared/auth.jsx';
 import { formatMoney } from '../documentGenerator/formUi.jsx';
@@ -46,6 +47,7 @@ export default function PurchaseOrderBuilderPanel({
   removeLine,
   applyVendorContact,
   clearVendorContact,
+  issued = false,
 }) {
   const taxMode = resolveTaxMode(form.vendor?.stateCode, form.company?.stateCode);
   const { user } = useAuth();
@@ -71,7 +73,15 @@ export default function PurchaseOrderBuilderPanel({
       <Section title="Purchase order" defaultOpen>
         <div className="ib-fields">
           <Field label="PO no.">
-            <input className={inputCls} value={form.po?.documentNumber || ''} readOnly placeholder="Assigned on approval" />
+            <DocumentNumberField
+              className={inputCls}
+              value={form.po?.documentNumber || ''}
+              onChange={(next) => update('po.documentNumber', next)}
+              documentType="purchase_order"
+              documentCode={form.documentCode || form.company?.documentCode}
+              dateIso={form.po?.documentDate}
+              issued={issued}
+            />
           </Field>
           <Field label="PO date">
             <input

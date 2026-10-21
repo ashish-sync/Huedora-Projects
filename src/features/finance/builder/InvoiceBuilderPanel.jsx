@@ -15,6 +15,7 @@ import { formatStateLine, parseStateLine } from './stateLine.js';
 import ClientMasterRecipientPicker from './ClientMasterRecipientPicker.jsx';
 import ClientMasterPoTracker from './ClientMasterPoTracker.jsx';
 import OriginalTaxInvoicePicker from './OriginalTaxInvoicePicker.jsx';
+import DocumentNumberField from './DocumentNumberField.jsx';
 
 function Section({ id, title, badge, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -82,6 +83,8 @@ export default function InvoiceBuilderPanel({
     hideReceiptVoucher = false,
     hideTaxColumnTitles = false,
     maxLineItems = MAX_INVOICE_LINE_ITEMS,
+    documentType = 'client_invoice',
+    issued = false,
   } = panelConfig;
   const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
   const taxLabels = resolveTaxColumnLabels(form);
@@ -202,12 +205,14 @@ export default function InvoiceBuilderPanel({
       <Section id="invoice" title={docSectionTitle} defaultOpen>
         <div className="ib-grid">
           <Field label={docNoLabel}>
-            <input
+            <DocumentNumberField
               className={`${inputCls} ib-input--mono`}
               value={form.invoice.documentNumber}
-              readOnly
-              placeholder="Assigned on approval"
-              title="Document number is assigned when the document is approved"
+              onChange={(next) => update('invoice.documentNumber', next)}
+              documentType={documentType}
+              documentCode={form.documentCode || form.company?.documentCode}
+              dateIso={form.invoice.issueDate}
+              issued={issued}
             />
           </Field>
           <Field

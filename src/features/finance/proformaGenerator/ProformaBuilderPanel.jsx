@@ -14,6 +14,7 @@ import {
 } from '../invoiceGenerator/invoiceCalculations.js';
 import { MAX_PROFORMA_LINE_ITEMS } from './proformaStorage.js';
 import DateInput from '../../../components/ui/DateInput.jsx';
+import DocumentNumberField from '../builder/DocumentNumberField.jsx';
 
 function Section({ title, badge, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -52,6 +53,7 @@ export default function ProformaBuilderPanel({
   removeTerm,
   applyClientMasterRecipient,
   clearClientMasterRecipient,
+  issued = false,
 }) {
   const lineRows = (form.rows || []).filter((r) => r.type === 'line');
   const taxMode = resolveTaxMode(form.recipient?.stateCode, form.company?.stateCode);
@@ -78,12 +80,14 @@ export default function ProformaBuilderPanel({
       <Section title="Header" defaultOpen>
         <div className="ib-grid">
           <Field label="Proforma no.">
-            <input
+            <DocumentNumberField
               className={`${inputCls} ib-input--mono`}
               value={form.document.documentNumber}
-              readOnly
-              placeholder="Assigned on approval"
-              title="Document number is assigned when the document is approved"
+              onChange={(next) => update('document.documentNumber', next)}
+              documentType="proforma"
+              documentCode={form.documentCode || form.company?.documentCode}
+              dateIso={form.document.issueDate}
+              issued={issued}
             />
           </Field>
           <Field label="Project / Service Period">

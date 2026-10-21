@@ -41,6 +41,8 @@ export default function DebitNoteBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    docId,
+    correctIssuedNumber,
   } = useDebitNoteBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -79,6 +81,8 @@ export default function DebitNoteBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -103,6 +107,7 @@ export default function DebitNoteBuilderPage() {
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
             panelLayout: 'parties',
+            documentType: 'debit_note',
             docSectionTitle: 'Header',
             docNoLabel: 'Debit note no.',
             projectLabel: 'Project / Service Period',
@@ -122,6 +127,7 @@ export default function DebitNoteBuilderPage() {
             lockOriginalInvoiceFromSystem: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
+            issued: status === 'Issued' || status === 'Approved' || status === 'Cancelled',
           }}
         />
       }

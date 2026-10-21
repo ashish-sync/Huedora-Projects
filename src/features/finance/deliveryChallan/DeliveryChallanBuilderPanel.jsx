@@ -4,6 +4,7 @@ import { useAuth } from '../../../shared/auth.jsx';
 import { canManageOrganisationMaster } from '../builder/commercialApproval.js';
 import ClientMasterRecipientPicker from '../builder/ClientMasterRecipientPicker.jsx';
 import { MAX_DELIVERY_CHALLAN_LINE_ITEMS } from './deliveryChallanStorage.js';
+import DocumentNumberField from '../builder/DocumentNumberField.jsx';
 
 function Section({ title, badge, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -38,6 +39,7 @@ export default function DeliveryChallanBuilderPanel({
   removeLine,
   applyClientMasterRecipient,
   clearClientMasterRecipient,
+  issued = false,
 }) {
   const { user } = useAuth();
   const canOrgMaster = canManageOrganisationMaster(user);
@@ -62,11 +64,14 @@ export default function DeliveryChallanBuilderPanel({
       <Section title="Delivery challan" defaultOpen>
         <div className="ib-fields">
           <Field label="Delivery challan no.">
-            <input
+            <DocumentNumberField
               className={inputCls}
               value={form.invoice?.documentNumber || ''}
-              readOnly
-              placeholder="Assigned on approval"
+              onChange={(next) => update('invoice.documentNumber', next)}
+              documentType="delivery_challan"
+              documentCode={form.documentCode || form.company?.documentCode}
+              dateIso={form.invoice?.issueDate}
+              issued={issued}
             />
           </Field>
           <Field label="Challan date">

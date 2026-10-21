@@ -38,6 +38,8 @@ export default function PurchaseOrderBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    docId,
+    correctIssuedNumber,
   } = usePurchaseOrderBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -77,6 +79,8 @@ export default function PurchaseOrderBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -96,6 +100,7 @@ export default function PurchaseOrderBuilderPage() {
           removeLine={removeLine}
           applyVendorContact={applyVendorContact}
           clearVendorContact={clearVendorContact}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
         />
       }
     >

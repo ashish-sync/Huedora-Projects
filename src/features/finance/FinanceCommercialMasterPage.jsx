@@ -35,6 +35,7 @@ export default function FinanceCommercialMasterPage() {
         ...emptyOrgMasterForm(),
         ...data,
         name: data.name || data.legalName || '',
+        documentCode: data.documentCode || 'TC',
       });
     }
   }, [data, creating]);
@@ -70,7 +71,12 @@ export default function FinanceCommercialMasterPage() {
   const cancelCreate = () => {
     setCreating(false);
     if (data) {
-      setForm({ ...emptyOrgMasterForm(), ...data, name: data.name || data.legalName || '' });
+      setForm({
+        ...emptyOrgMasterForm(),
+        ...data,
+        name: data.name || data.legalName || '',
+        documentCode: data.documentCode || 'TC',
+      });
     }
   };
 

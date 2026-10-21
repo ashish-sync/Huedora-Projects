@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FileDrop, readFileAsDataUrl } from './documentGenerator/formUi.jsx';
+import { numberingPreviewForCode } from './documentNumbering.js';
 
 function ReadRow({ label, value }) {
   if (!value) return null;
@@ -110,6 +111,7 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
           <img src={master.logoDataUrl} alt="" className="org-master-card-logo" />
         ) : null}
         <div className="org-master-card-grid">
+          <ReadRow label="Document code" value={master.documentCode} />
           <ReadRow label="Address" value={master.registeredOffice} />
           <ReadRow label="Email" value={master.email} />
           <ReadRow label="Website" value={master.website} />
@@ -204,7 +206,38 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           </div>
         </Section>
 
-        <Section index="02" title="Tax registration" note="Letterhead line 2">
+        <Section index="02" title="Document numbering" note="PREFIX + FY/MM/SEQ">
+          <div className="org-master-form-grid org-master-form-grid--2">
+            <Field
+              label="Document code"
+              hint="2–5 letters"
+              className="org-master-form-span-2"
+            >
+              <input
+                className="org-master-input org-master-input--mono"
+                value={form.documentCode || ''}
+                disabled={disabled}
+                maxLength={5}
+                onChange={(e) => update('documentCode', e.target.value.toUpperCase())}
+                placeholder="TC"
+              />
+              <p className="org-master-field-help">
+                Used as the prefix for invoices, POs, bills of supply, and related documents.
+                Examples: Tylo Care <strong>TC</strong> or <strong>TYLO</strong>, Medrento <strong>MD</strong>, Rapid Diagno <strong>RD</strong>.
+              </p>
+            </Field>
+          </div>
+          <div className="org-master-prefix-preview" aria-label="Numbering examples">
+            {numberingPreviewForCode(form.documentCode || 'TC').map((row) => (
+              <span key={row.documentType} className="org-master-prefix-chip" title={row.example}>
+                {row.prefix}
+                <span>{row.label}</span>
+              </span>
+            ))}
+          </div>
+        </Section>
+
+        <Section index="03" title="Tax registration" note="Letterhead line 2">
           <div className="org-master-form-grid org-master-form-grid--3">
             <Field label="GSTIN" hint="header">
               <input
@@ -255,7 +288,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
         </Section>
 
         <div className="org-master-form-pair">
-          <Section index="03" title="Bank details" note="Document footer">
+          <Section index="04" title="Bank details" note="Document footer">
             <div className="org-master-form-grid org-master-form-grid--2">
               <Field label="Account holder" className="org-master-form-span-2">
                 <input
@@ -301,7 +334,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
             </div>
           </Section>
 
-          <Section index="04" title="Digital signature" note="Document footer">
+          <Section index="05" title="Digital signature" note="Document footer">
             <div className="org-master-sig-block">
               <div className="org-master-media-field">
                 <label className="org-master-field-label">Signature image</label>

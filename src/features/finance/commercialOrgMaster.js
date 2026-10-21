@@ -260,7 +260,8 @@ export function applyOrgMasterToInvoiceForm(form, master) {
   const company = companyFromOrg(master, form.company);
   return {
     ...form,
-    company,
+    documentCode: master?.documentCode || form.documentCode || '',
+    company: { ...company, documentCode: master?.documentCode || company.documentCode || '' },
     bank: bankFromOrg(master, form.bank, 'branchName'),
     signature: signatureFromOrg(master, form.signature, company.legalName),
   };
@@ -271,8 +272,10 @@ export function applyOrgMasterToProformaForm(form, master) {
   const company = companyFromOrg(master, form.company);
   return {
     ...form,
+    documentCode: master?.documentCode || form.documentCode || '',
     company: {
       ...company,
+      documentCode: master?.documentCode || company.documentCode || '',
       registeredOffice: company.registeredOffice || company.address,
     },
     bank: bankFromOrg(master, form.bank, 'bankBranch'),
@@ -291,7 +294,8 @@ export function applyOrgMasterToPurchaseOrderForm(form, master) {
 
   return {
     ...form,
-    company,
+    documentCode: master?.documentCode || form.documentCode || '',
+    company: { ...company, documentCode: master?.documentCode || company.documentCode || '' },
     buyer: {
       ...form.buyer,
       companyName: legal,
@@ -361,6 +365,7 @@ export function emptyOrgMasterForm() {
     udyam: '',
     state: '',
     stateCode: '',
+    documentCode: '',
   };
 }
 
@@ -385,5 +390,6 @@ export function orgMasterToPayload(form) {
     udyam: form.udyam,
     state: form.state,
     stateCode: form.stateCode,
+    documentCode: form.documentCode,
   };
 }

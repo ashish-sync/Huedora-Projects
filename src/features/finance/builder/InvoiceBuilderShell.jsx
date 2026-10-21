@@ -7,6 +7,7 @@ import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import ModalShell from '../../../components/ui/ModalShell.jsx';
 import WatchFollowButton from '../../notifications/WatchFollowButton.jsx';
 import { displayCommercialStage, isDraftingStage, isIssuedStage, normalizeCommercialStage } from '../commercialPaymentStatus.js';
+import CorrectDocumentNumberModal from './CorrectDocumentNumberModal.jsx';
 import './export-invoice.css';
 import './builder.css';
 import '../../notifications/notifications.css';
@@ -109,15 +110,19 @@ export default function InvoiceBuilderShell({
   orgList = [],
   orgProfileId = 'default',
   onOrgProfileIdChange,
+  onCorrectDocumentNumber,
 }) {
   const previewRef = useRef(null);
   const autoPrintStarted = useRef(false);
   const [exporting, setExporting] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [correctOpen, setCorrectOpen] = useState(false);
+  const [correctError, setCorrectError] = useState('');
   const { wrapRef, scale, zoomIn, zoomOut, resetZoom, fitToWidth, pagePx } = usePreviewScale({
     orientation: pageOrientation,
   });
-  const { user, can } = useAuth();
+  const { user, can, isAdmin } = useAuth();
+  const admin = Boolean(isAdmin?.());
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const approvalSubject =
@@ -314,6 +319,20 @@ export default function InvoiceBuilderShell({
               {printing ? 'Preparing…' : 'Print'}
             </button>
           ) : null}
+          {isIssued && admin && onCorrectDocumentNumber ? (
+            <button
+              type="button"
+              className="ib-text-btn"
+              disabled={busy}
+              onClick={() => {
+                setCorrectError('');
+                setCorrectOpen(true);
+              }}
+              title="Correct issued document number"
+            >
+              Correct number
+            </button>
+          ) : null}
 
           {/* Drafting: Request Approval */}
           {isDraftLike && onSubmit ? (
@@ -428,6 +447,30 @@ export default function InvoiceBuilderShell({
       </div>
 
       <ShortcutsModal open={shortcutsOpen} onClose={onShortcutsClose} newDocLabel={newDocShortcutLabel} />
+      <CorrectDocumentNumberModal
+        open={correctOpen}
+        row={{
+          documentNumber: docNumber,
+          documentType: docMeta?.documentType,
+          documentDate: docMeta?.documentDate,
+        }}
+        documentCode={
+          orgList.find((org) => String(org._id || org.id) === String(orgProfileId))?.documentCode
+          || docMeta?.orgSnapshot?.documentCode
+        }
+        busy={busyAction === 'correct-number'}
+        error={correctError}
+        onClose={() => setCorrectOpen(false)}
+        onSubmit={async (payload) => {
+          setCorrectError('');
+          try {
+            await onCorrectDocumentNumber?.(payload);
+            setCorrectOpen(false);
+          } catch (err) {
+            setCorrectError(err?.message || 'Could not correct document number');
+          }
+        }}
+      />
     </div>
   );
 }

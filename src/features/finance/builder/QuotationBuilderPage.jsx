@@ -41,6 +41,8 @@ export default function QuotationBuilderPage() {
     rejectDocument,
     cancelDocument,
     issueDocument,
+    docId,
+    correctIssuedNumber,
   } = useQuotationBuilder();
 
   const togglePanel = useCallback(() => setPanelOpen((v) => !v), []);
@@ -79,6 +81,8 @@ export default function QuotationBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
+      docId={docId}
+      onCorrectDocumentNumber={correctIssuedNumber}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -103,6 +107,7 @@ export default function QuotationBuilderPage() {
           clearClientMasterRecipient={clearClientMasterRecipient}
           panelConfig={{
             panelLayout: 'parties',
+            documentType: 'quotation',
             docSectionTitle: 'Header',
             docNoLabel: 'Quotation no.',
             projectLabel: 'Project / Service Period',
@@ -117,6 +122,7 @@ export default function QuotationBuilderPage() {
             showShipTo: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
+            issued: status === 'Issued' || status === 'Approved' || status === 'Cancelled',
           }}
         />
       }

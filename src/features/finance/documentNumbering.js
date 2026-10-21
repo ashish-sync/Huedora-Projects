@@ -2,9 +2,37 @@
 
 /**
  * PREFIXFY/MM/SEQ — e.g. TCIN26-27/08/001
- * TCIN Tax Invoice · TCPO Purchase Order · TCPI Proforma · TCQT Quotation
- * TCCN Credit Note · TCDN Debit Note · TCDC Delivery Challan · TCBS Bill of Supply
+ * Prefix = organisation documentCode (TC, MD, RD, TYLO) + type suffix.
  */
+export const DEFAULT_DOCUMENT_CODE = 'TC';
+
+export const DOCUMENT_TYPE_SUFFIXES = {
+  purchase_order: 'PO',
+  quotation: 'QT',
+  proforma: 'PI',
+  client_invoice: 'IN',
+  credit_note: 'CN',
+  debit_note: 'DN',
+  delivery_challan: 'DC',
+  bill_of_supply: 'BS',
+};
+
+export function normalizeDocumentCode(value) {
+  const raw = String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+  if (raw.length < 2 || raw.length > 5) return '';
+  return raw;
+}
+
+export function documentPrefix(documentType, documentCode = DEFAULT_DOCUMENT_CODE) {
+  const suffix = DOCUMENT_TYPE_SUFFIXES[documentType];
+  if (!suffix) return '';
+  const code = normalizeDocumentCode(documentCode) || DEFAULT_DOCUMENT_CODE;
+  return `${code}${suffix}`;
+}
+
 export const DOCUMENT_NUMBER_STANDARDS = [
   { documentType: 'purchase_order', prefix: 'TCPO', label: 'Purchase Order', example: 'TCPO26-27/08/001' },
   { documentType: 'quotation', prefix: 'TCQT', label: 'Quotation', example: 'TCQT26-27/08/001' },
@@ -34,36 +62,40 @@ function numberExample(prefix, dateIso) {
   return `${prefix}${fy}/${mm}/001`;
 }
 
-export function proformaNumberExample(dateIso) {
-  return numberExample('TCPI', dateIso);
+export function documentNumberExample(documentType, dateIso, documentCode = DEFAULT_DOCUMENT_CODE) {
+  return numberExample(documentPrefix(documentType, documentCode), dateIso);
 }
 
-export function purchaseOrderNumberExample(dateIso) {
-  return numberExample('TCPO', dateIso);
+export function proformaNumberExample(dateIso, documentCode) {
+  return documentNumberExample('proforma', dateIso, documentCode);
 }
 
-export function invoiceNumberExample(dateIso) {
-  return numberExample('TCIN', dateIso);
+export function purchaseOrderNumberExample(dateIso, documentCode) {
+  return documentNumberExample('purchase_order', dateIso, documentCode);
 }
 
-export function creditNoteNumberExample(dateIso) {
-  return numberExample('TCCN', dateIso);
+export function invoiceNumberExample(dateIso, documentCode) {
+  return documentNumberExample('client_invoice', dateIso, documentCode);
 }
 
-export function debitNoteNumberExample(dateIso) {
-  return numberExample('TCDN', dateIso);
+export function creditNoteNumberExample(dateIso, documentCode) {
+  return documentNumberExample('credit_note', dateIso, documentCode);
 }
 
-export function deliveryChallanNumberExample(dateIso) {
-  return numberExample('TCDC', dateIso);
+export function debitNoteNumberExample(dateIso, documentCode) {
+  return documentNumberExample('debit_note', dateIso, documentCode);
 }
 
-export function billOfSupplyNumberExample(dateIso) {
-  return numberExample('TCBS', dateIso);
+export function deliveryChallanNumberExample(dateIso, documentCode) {
+  return documentNumberExample('delivery_challan', dateIso, documentCode);
 }
 
-export function quotationNumberExample(dateIso) {
-  return numberExample('TCQT', dateIso);
+export function billOfSupplyNumberExample(dateIso, documentCode) {
+  return documentNumberExample('bill_of_supply', dateIso, documentCode);
+}
+
+export function quotationNumberExample(dateIso, documentCode) {
+  return documentNumberExample('quotation', dateIso, documentCode);
 }
 
 /** Local preview helper — PREFIXFY/MM/SEQ with 3-digit sequence. */
@@ -79,4 +111,13 @@ export function localDocumentPeriodKey(dateIso) {
   const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   return `${fy}_${mm}`;
+}
+
+export function numberingPreviewForCode(documentCode) {
+  const code = normalizeDocumentCode(documentCode) || DEFAULT_DOCUMENT_CODE;
+  return DOCUMENT_NUMBER_STANDARDS.map((row) => ({
+    ...row,
+    prefix: documentPrefix(row.documentType, code),
+    example: documentNumberExample(row.documentType, null, code),
+  }));
 }

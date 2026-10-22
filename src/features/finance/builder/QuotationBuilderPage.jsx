@@ -83,6 +83,9 @@ export default function QuotationBuilderPage() {
       onOrgProfileIdChange={changeOrgProfileId}
       docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="quotation"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.invoice?.issueDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -105,6 +108,8 @@ export default function QuotationBuilderPage() {
           removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
+          documentType="quotation"
           panelConfig={{
             panelLayout: 'parties',
             documentType: 'quotation',

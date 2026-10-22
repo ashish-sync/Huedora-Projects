@@ -83,6 +83,9 @@ export default function CreditNoteBuilderPage() {
       onOrgProfileIdChange={changeOrgProfileId}
       docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="credit_note"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.invoice?.issueDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -105,6 +108,8 @@ export default function CreditNoteBuilderPage() {
           removeTerm={removeTerm}
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
+          documentType="credit_note"
           panelConfig={{
             panelLayout: 'parties',
             documentType: 'credit_note',

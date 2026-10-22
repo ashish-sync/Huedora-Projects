@@ -6,8 +6,8 @@ import { canApproveCommercialDocument } from './commercialApproval.js';
 import { exportDocumentPdf, printDocumentPreview } from './exportInvoicePdf.js';
 import ModalShell from '../../../components/ui/ModalShell.jsx';
 import WatchFollowButton from '../../notifications/WatchFollowButton.jsx';
-import { displayCommercialStage, isDraftingStage, isIssuedStage, normalizeCommercialStage } from '../commercialPaymentStatus.js';
 import CorrectDocumentNumberModal from './CorrectDocumentNumberModal.jsx';
+import { displayCommercialStage, isDraftingStage, isIssuedStage, normalizeCommercialStage } from '../commercialPaymentStatus.js';
 import './export-invoice.css';
 import './builder.css';
 import '../../notifications/notifications.css';
@@ -111,18 +111,22 @@ export default function InvoiceBuilderShell({
   orgProfileId = 'default',
   onOrgProfileIdChange,
   onCorrectDocumentNumber,
+  documentType = '',
+  documentCode = '',
+  documentDate = '',
 }) {
   const previewRef = useRef(null);
   const autoPrintStarted = useRef(false);
   const [exporting, setExporting] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const [correctOpen, setCorrectOpen] = useState(false);
-  const [correctError, setCorrectError] = useState('');
   const { wrapRef, scale, zoomIn, zoomOut, resetZoom, fitToWidth, pagePx } = usePreviewScale({
     orientation: pageOrientation,
   });
   const { user, can, isAdmin } = useAuth();
   const admin = Boolean(isAdmin?.());
+  const [correctOpen, setCorrectOpen] = useState(false);
+  const [correctBusy, setCorrectBusy] = useState(false);
+  const [correctError, setCorrectError] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const approvalSubject =
@@ -319,7 +323,7 @@ export default function InvoiceBuilderShell({
               {printing ? 'Preparing…' : 'Print'}
             </button>
           ) : null}
-          {isIssued && admin && onCorrectDocumentNumber ? (
+          {admin && (isIssued || isCancelled) && onCorrectDocumentNumber ? (
             <button
               type="button"
               className="ib-text-btn"
@@ -451,23 +455,27 @@ export default function InvoiceBuilderShell({
         open={correctOpen}
         row={{
           documentNumber: docNumber,
-          documentType: docMeta?.documentType,
-          documentDate: docMeta?.documentDate,
+          documentType,
+          documentDate,
         }}
-        documentCode={
-          orgList.find((org) => String(org._id || org.id) === String(orgProfileId))?.documentCode
-          || docMeta?.orgSnapshot?.documentCode
-        }
-        busy={busyAction === 'correct-number'}
+        documentCode={documentCode}
+        busy={correctBusy}
         error={correctError}
-        onClose={() => setCorrectOpen(false)}
-        onSubmit={async (payload) => {
+        onClose={() => {
+          if (correctBusy) return;
+          setCorrectOpen(false);
+          setCorrectError('');
+        }}
+        onSubmit={async ({ documentNumber, remark }) => {
+          setCorrectBusy(true);
           setCorrectError('');
           try {
-            await onCorrectDocumentNumber?.(payload);
+            await onCorrectDocumentNumber?.({ documentNumber, remark });
             setCorrectOpen(false);
           } catch (err) {
             setCorrectError(err?.message || 'Could not correct document number');
+          } finally {
+            setCorrectBusy(false);
           }
         }}
       />

@@ -83,6 +83,9 @@ export default function ProformaBuilderPage() {
       onOrgProfileIdChange={changeOrgProfileId}
       docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="proforma"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.document?.issueDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}

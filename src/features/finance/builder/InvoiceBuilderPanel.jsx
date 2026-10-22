@@ -55,6 +55,8 @@ export default function InvoiceBuilderPanel({
   applyClientMasterRecipient,
   clearClientMasterRecipient,
   docId = '',
+  issued = false,
+  documentType = 'client_invoice',
   panelConfig = {},
 }) {
   const {
@@ -83,8 +85,6 @@ export default function InvoiceBuilderPanel({
     hideReceiptVoucher = false,
     hideTaxColumnTitles = false,
     maxLineItems = MAX_INVOICE_LINE_ITEMS,
-    documentType = 'client_invoice',
-    issued = false,
   } = panelConfig;
   const taxMode = resolveTaxMode(form.billTo?.stateCode, form.company?.stateCode);
   const taxLabels = resolveTaxColumnLabels(form);
@@ -209,7 +209,7 @@ export default function InvoiceBuilderPanel({
               className={`${inputCls} ib-input--mono`}
               value={form.invoice.documentNumber}
               onChange={(next) => update('invoice.documentNumber', next)}
-              documentType={documentType}
+              documentType={panelConfig.documentType || documentType}
               documentCode={form.documentCode || form.company?.documentCode}
               dateIso={form.invoice.issueDate}
               issued={issued}

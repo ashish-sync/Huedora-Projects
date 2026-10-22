@@ -41,10 +41,8 @@ function formatMoney(n) {
   return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 }
 
-/** Official number exists only after approval (Issued). Never fall back to internal docKey. */
+/** Official number after approval, or an admin-reserved number on Draft/Submitted. */
 function displayDocumentNumber(row) {
-  const stage = normalizeCommercialStage(row?.status);
-  if (stage === 'Draft' || stage === 'Submitted') return '—';
   return row?.documentNumber || '—';
 }
 
@@ -85,7 +83,8 @@ function FinanceDocActionsMenu({
   const showPayment = canWrite && canRecordPayment(row);
   const showStatus = canWrite && canEditLifecycleStatus(row);
   const showDuplicate = canWrite;
-  const showCorrect = admin && isIssuedStage(row?.status);
+  const showCorrect =
+    admin && (isIssuedStage(row?.status) || normalizeCommercialStage(row?.status) === 'Cancelled');
   const showDelete = admin;
 
   const placeMenu = useCallback(() => {

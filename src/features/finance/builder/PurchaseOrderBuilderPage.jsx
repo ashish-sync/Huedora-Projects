@@ -81,6 +81,9 @@ export default function PurchaseOrderBuilderPage() {
       onOrgProfileIdChange={changeOrgProfileId}
       docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="purchase_order"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.po?.documentDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}

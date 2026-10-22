@@ -25,15 +25,6 @@ function trim(v) {
   return v == null ? '' : String(v).trim();
 }
 
-function formRequestedDocumentNumber(form) {
-  return trim(
-    form?.invoice?.documentNumber
-    || form?.document?.documentNumber
-    || form?.po?.documentNumber
-    || form?.requestedDocumentNumber
-  );
-}
-
 function invoiceLikeToPayload(form, documentType) {
   const bill = form.billTo || {};
   const inv = form.invoice || {};
@@ -86,8 +77,7 @@ function invoiceLikeToPayload(form, documentType) {
     recipientStateName: trim(bill.stateName),
     vehicleNo: trim(ship.vehicleNo),
     transporterName: trim(ship.transporterName),
-    documentNumber: '',
-    requestedDocumentNumber: formRequestedDocumentNumber(form),
+    documentNumber: trim(inv.documentNumber),
     lineItems: (form.lineItems || [])
       .filter((row) => trim(row.description) || Number(row.qty) || Number(row.rate))
       .map((row, index) => ({
@@ -164,8 +154,7 @@ function proformaToPayload(form) {
     shipToGstin: trim(ship.gstin),
     shipToStateCode: trim(ship.stateCode),
     shipToStateName: trim(ship.stateName),
-    documentNumber: '',
-    requestedDocumentNumber: formRequestedDocumentNumber(form),
+    documentNumber: trim(doc.documentNumber),
     lineItems,
     builderForm: builderFormForPersist(form),
     documentType: 'proforma',
@@ -224,8 +213,7 @@ function poToPayload(form) {
     notes: trim(form.notes),
     customNotes: trim(form.notes),
     roundOff: form.roundOff,
-    documentNumber: '',
-    requestedDocumentNumber: formRequestedDocumentNumber(form),
+    documentNumber: trim(po.documentNumber),
     lineItems: (form.lineItems || [])
       .filter((row) => trim(row.description) || Number(row.qty) || Number(row.rate))
       .map((row, index) => ({
@@ -295,8 +283,7 @@ function deliveryChallanToPayload(form) {
     receivedDate: trim(ack.receivedDate),
     declaration: trim(form.declaration),
     customNotes: trim(form.declaration),
-    documentNumber: '',
-    requestedDocumentNumber: formRequestedDocumentNumber(form),
+    documentNumber: trim(inv.documentNumber),
     lineItems: (form.lineItems || [])
       .filter(
         (row) =>
@@ -429,11 +416,8 @@ export function formToApiPayload(documentType, form) {
   return invoiceLikeToPayload(form, 'client_invoice');
 }
 
-/** Official numbers exist only after approval. Drafts show the admin-requested override. */
+/** Show reserved (admin) numbers on drafts as well as issued numbers. */
 function officialDocumentNumber(doc) {
-  if (['Draft', 'Submitted', 'Uploaded'].includes(doc?.status)) {
-    return doc?.requestedDocumentNumber || '';
-  }
   return doc?.documentNumber || '';
 }
 
@@ -808,14 +792,6 @@ export async function approveCommercialDocument(id) {
   return res.data;
 }
 
-export async function correctCommercialDocumentNumber(id, { documentNumber, remark } = {}) {
-  const res = await api(`/finance/commercial-documents/${id}/correct-number`, {
-    method: 'POST',
-    body: JSON.stringify({ documentNumber, remark }),
-  });
-  return res.data;
-}
-
 export async function rejectCommercialDocument(id) {
   const res = await api(`/finance/commercial-documents/${id}/reject`, {
     method: 'POST',
@@ -845,6 +821,14 @@ export async function updateCommercialLifecycleStatus(id, status) {
   const res = await api(`/finance/commercial-documents/${id}/lifecycle-status`, {
     method: 'POST',
     body: JSON.stringify({ status }),
+  });
+  return res.data;
+}
+
+export async function correctCommercialDocumentNumber(id, { documentNumber, remark }) {
+  const res = await api(`/finance/commercial-documents/${id}/correct-document-number`, {
+    method: 'POST',
+    body: JSON.stringify({ documentNumber, remark }),
   });
   return res.data;
 }

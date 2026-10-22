@@ -1,20 +1,31 @@
 /** Commercial document numbering — keep in sync with server documentNumbering.js */
 
 /**
- * PREFIXFY/MM/SEQ — e.g. TCIN26-27/08/001
- * Prefix = organisation documentCode (TC, MD, RD, TYLO) + type suffix.
+ * PREFIXFY/MM/SEQ — PREFIX = {org documentCode}{type suffix}
+ * e.g. TCIN26-27/08/001 · MDIN26-27/08/001 · RDPO26-27/08/001
  */
 export const DEFAULT_DOCUMENT_CODE = 'TC';
 
 export const DOCUMENT_TYPE_SUFFIXES = {
-  purchase_order: 'PO',
-  quotation: 'QT',
-  proforma: 'PI',
   client_invoice: 'IN',
+  purchase_order: 'PO',
+  proforma: 'PI',
+  quotation: 'QT',
   credit_note: 'CN',
   debit_note: 'DN',
   delivery_challan: 'DC',
   bill_of_supply: 'BS',
+};
+
+export const DOCUMENT_NUMBER_LABELS = {
+  purchase_order: 'Purchase Order',
+  quotation: 'Quotation',
+  proforma: 'Proforma Invoice',
+  client_invoice: 'Tax Invoice',
+  credit_note: 'Credit Note',
+  debit_note: 'Debit Note',
+  delivery_challan: 'Delivery Challan',
+  bill_of_supply: 'Bill of Supply',
 };
 
 export function normalizeDocumentCode(value) {
@@ -22,29 +33,39 @@ export function normalizeDocumentCode(value) {
     .trim()
     .toUpperCase()
     .replace(/[^A-Z]/g, '');
-  if (raw.length < 2 || raw.length > 5) return '';
-  return raw;
+  if (raw.length >= 2 && raw.length <= 5) return raw;
+  return DEFAULT_DOCUMENT_CODE;
 }
 
-export function documentPrefix(documentType, documentCode = DEFAULT_DOCUMENT_CODE) {
+export function prefixForDocumentType(documentType, documentCode = DEFAULT_DOCUMENT_CODE) {
   const suffix = DOCUMENT_TYPE_SUFFIXES[documentType];
   if (!suffix) return '';
-  const code = normalizeDocumentCode(documentCode) || DEFAULT_DOCUMENT_CODE;
-  return `${code}${suffix}`;
+  return `${normalizeDocumentCode(documentCode)}${suffix}`;
 }
 
-export const DOCUMENT_NUMBER_STANDARDS = [
-  { documentType: 'purchase_order', prefix: 'TCPO', label: 'Purchase Order', example: 'TCPO26-27/08/001' },
-  { documentType: 'quotation', prefix: 'TCQT', label: 'Quotation', example: 'TCQT26-27/08/001' },
-  { documentType: 'proforma', prefix: 'TCPI', label: 'Proforma Invoice', example: 'TCPI26-27/08/001' },
-  { documentType: 'client_invoice', prefix: 'TCIN', label: 'Tax Invoice', example: 'TCIN26-27/08/001' },
-  { documentType: 'credit_note', prefix: 'TCCN', label: 'Credit Note', example: 'TCCN26-27/08/001' },
-  { documentType: 'debit_note', prefix: 'TCDN', label: 'Debit Note', example: 'TCDN26-27/08/001' },
-  { documentType: 'delivery_challan', prefix: 'TCDC', label: 'Delivery Challan', example: 'TCDC26-27/08/001' },
-  { documentType: 'bill_of_supply', prefix: 'TCBS', label: 'Bill of Supply', example: 'TCBS26-27/08/001' },
-];
+export const DOCUMENT_NUMBER_STANDARDS = Object.entries(DOCUMENT_TYPE_SUFFIXES).map(
+  ([documentType, suffix]) => {
+    const prefix = `${DEFAULT_DOCUMENT_CODE}${suffix}`;
+    return {
+      documentType,
+      prefix,
+      label: DOCUMENT_NUMBER_LABELS[documentType] || documentType,
+      example: `${prefix}26-27/08/001`,
+    };
+  },
+);
 
 export const DOCUMENT_NUMBER_FORMAT = 'PREFIXFY/MM/SEQ';
+
+export function numberingPreviewForCode(documentCode = DEFAULT_DOCUMENT_CODE) {
+  const code = normalizeDocumentCode(documentCode);
+  return Object.entries(DOCUMENT_TYPE_SUFFIXES).map(([documentType, suffix]) => ({
+    documentType,
+    prefix: `${code}${suffix}`,
+    label: DOCUMENT_NUMBER_LABELS[documentType] || documentType,
+    example: `${code}${suffix}26-27/08/001`,
+  }));
+}
 
 /** Indian FY label e.g. 26-27 for Apr 2026 – Mar 2027 */
 export function fiscalYearLabel(dateIso) {
@@ -63,7 +84,8 @@ function numberExample(prefix, dateIso) {
 }
 
 export function documentNumberExample(documentType, dateIso, documentCode = DEFAULT_DOCUMENT_CODE) {
-  return numberExample(documentPrefix(documentType, documentCode), dateIso);
+  const prefix = prefixForDocumentType(documentType, documentCode);
+  return prefix ? numberExample(prefix, dateIso) : '';
 }
 
 export function proformaNumberExample(dateIso, documentCode) {
@@ -111,13 +133,4 @@ export function localDocumentPeriodKey(dateIso) {
   const fy = fiscalYearLabel(d);
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   return `${fy}_${mm}`;
-}
-
-export function numberingPreviewForCode(documentCode) {
-  const code = normalizeDocumentCode(documentCode) || DEFAULT_DOCUMENT_CODE;
-  return DOCUMENT_NUMBER_STANDARDS.map((row) => ({
-    ...row,
-    prefix: documentPrefix(row.documentType, code),
-    example: documentNumberExample(row.documentType, null, code),
-  }));
 }

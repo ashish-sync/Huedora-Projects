@@ -35,7 +35,6 @@ export default function FinanceCommercialMasterPage() {
         ...emptyOrgMasterForm(),
         ...data,
         name: data.name || data.legalName || '',
-        documentCode: data.documentCode || 'TC',
       });
     }
   }, [data, creating]);
@@ -71,12 +70,7 @@ export default function FinanceCommercialMasterPage() {
   const cancelCreate = () => {
     setCreating(false);
     if (data) {
-      setForm({
-        ...emptyOrgMasterForm(),
-        ...data,
-        name: data.name || data.legalName || '',
-        documentCode: data.documentCode || 'TC',
-      });
+      setForm({ ...emptyOrgMasterForm(), ...data, name: data.name || data.legalName || '' });
     }
   };
 
@@ -151,7 +145,7 @@ export default function FinanceCommercialMasterPage() {
                 >
                   <strong>{org.name || org.legalName || 'Organisation'}</strong>
                   <span className="muted mono-sm">
-                    {[org.gstin, org.isDefault ? 'Default' : ''].filter(Boolean).join(' · ') || '—'}
+                    {[org.documentCode, org.gstin, org.isDefault ? 'Default' : ''].filter(Boolean).join(' · ') || '—'}
                   </span>
                 </button>
               );

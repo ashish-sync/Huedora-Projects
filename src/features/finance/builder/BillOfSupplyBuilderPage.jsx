@@ -83,6 +83,9 @@ export default function BillOfSupplyBuilderPage() {
       onOrgProfileIdChange={changeOrgProfileId}
       docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="bill_of_supply"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.invoice?.issueDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -106,6 +109,8 @@ export default function BillOfSupplyBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           docId={docId}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
+          documentType="bill_of_supply"
           panelConfig={{
             panelLayout: 'parties',
             documentType: 'bill_of_supply',

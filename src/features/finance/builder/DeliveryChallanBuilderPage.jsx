@@ -78,6 +78,9 @@ export default function DeliveryChallanBuilderPage() {
       onOrgProfileIdChange={changeOrgProfileId}
       docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="delivery_challan"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.invoice?.issueDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}

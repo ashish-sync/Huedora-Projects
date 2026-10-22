@@ -80,8 +80,10 @@ export default function InvoiceBuilderPage() {
       orgList={orgList}
       orgProfileId={orgProfileId}
       onOrgProfileIdChange={changeOrgProfileId}
-      docId={docId}
       onCorrectDocumentNumber={correctIssuedNumber}
+      documentType="client_invoice"
+      documentCode={form.documentCode || form.company?.documentCode}
+      documentDate={form.invoice?.issueDate}
       onReject={rejectDocument}
       onCancel={cancelDocument}
       onIssue={issueDocument}
@@ -105,9 +107,10 @@ export default function InvoiceBuilderPage() {
           applyClientMasterRecipient={applyClientMasterRecipient}
           clearClientMasterRecipient={clearClientMasterRecipient}
           docId={docId}
+          issued={status === 'Issued' || status === 'Approved' || status === 'Cancelled'}
+          documentType="client_invoice"
           panelConfig={{
             panelLayout: 'parties',
-            documentType: 'client_invoice',
             docSectionTitle: 'Header',
             docNoLabel: 'Invoice no.',
             projectLabel: 'Project / Service Period',
@@ -121,7 +124,6 @@ export default function InvoiceBuilderPage() {
             showShipTo: true,
             hideReverseCharge: true,
             hideReceiptVoucher: true,
-            issued: status === 'Issued' || status === 'Approved' || status === 'Cancelled',
           }}
         />
       }

@@ -209,7 +209,7 @@ function companyFromOrg(master, formCompany = {}) {
   const address = orgVal(master, 'registeredOffice', formCompany?.address || formCompany?.registeredOffice);
   return {
     ...formCompany,
-    documentCode: orgVal(master, 'documentCode', formCompany?.documentCode || 'TC'),
+    documentCode: orgVal(master, 'documentCode', formCompany?.documentCode || ''),
     logoDataUrl: orgVal(master, 'logoDataUrl', formCompany?.logoDataUrl),
     legalName: orgVal(master, 'legalName', formCompany?.legalName),
     brandLine: orgVal(master, 'brandLine', formCompany?.brandLine),
@@ -261,7 +261,7 @@ export function applyOrgMasterToInvoiceForm(form, master) {
   const company = companyFromOrg(master, form.company);
   return {
     ...form,
-    documentCode: master?.documentCode || form.documentCode || company.documentCode || 'TC',
+    documentCode: master?.documentCode || form.documentCode || company.documentCode || '',
     company,
     bank: bankFromOrg(master, form.bank, 'branchName'),
     signature: signatureFromOrg(master, form.signature, company.legalName),
@@ -273,7 +273,7 @@ export function applyOrgMasterToProformaForm(form, master) {
   const company = companyFromOrg(master, form.company);
   return {
     ...form,
-    documentCode: master?.documentCode || form.documentCode || company.documentCode || 'TC',
+    documentCode: master?.documentCode || form.documentCode || company.documentCode || '',
     company: {
       ...company,
       registeredOffice: company.registeredOffice || company.address,
@@ -294,7 +294,7 @@ export function applyOrgMasterToPurchaseOrderForm(form, master) {
 
   return {
     ...form,
-    documentCode: master?.documentCode || form.documentCode || company.documentCode || 'TC',
+    documentCode: master?.documentCode || form.documentCode || company.documentCode || '',
     company,
     buyer: {
       ...form.buyer,
@@ -347,7 +347,7 @@ export function getOrgMasterDisplay(master) {
 export function emptyOrgMasterForm() {
   return {
     name: '',
-    documentCode: 'TC',
+    documentCode: '',
     legalName: '',
     brandLine: '',
     registeredOffice: '',

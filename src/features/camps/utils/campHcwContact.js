@@ -169,15 +169,11 @@ export function contactToHcwFields(contact, { fallbackProfessions = [] } = {}) {
     const matchedRole = fallbacks.find((role) => professionsMatch(contact.profession, role));
     hcwCategory = mapProfessionToHcwCategory(matchedRole || fallbacks[0] || '') || hcwCategory;
   }
-  const campAmount = contactCampAmount(contact);
   return {
     hcwContactId: contact._id || '',
     hcwCategory,
     hcwName: String(contact.name || '').trim(),
     hcwContact: contactPhone(contact),
-    // Seeds Camp One Finance → Camp Payout when this HCW is assigned.
-    // Keep totalPayout aligned so a later save does not persist totalPayout: 0.
-    ...(campAmount > 0 ? { campAmount, totalPayout: campAmount } : {}),
   };
 }
 

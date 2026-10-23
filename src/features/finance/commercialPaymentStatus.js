@@ -5,6 +5,35 @@ export function netReceivableFromPreGst(subtotal) {
   return Math.round(preGst * 0.9 * 100) / 100;
 }
 
+export const APPLICABLE_TDS_RATES = [0, 1, 2, 10];
+
+export function normalizeTdsRate(value) {
+  const n = Number(value);
+  return APPLICABLE_TDS_RATES.includes(n) ? n : 0;
+}
+
+/** Invoice Taxable Value — pre-GST subtotal, not grand total. */
+export function taxableValueFromDocument(row) {
+  const n = Number(row?.subtotal);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.round(n * 100) / 100;
+}
+
+/** TDS Amount = Applicable TDS % of Taxable Value. */
+export function tdsAmountFromTaxableValue(taxableValue, rate) {
+  const taxable = Number(taxableValue);
+  const pct = normalizeTdsRate(rate);
+  if (!Number.isFinite(taxable) || taxable <= 0 || pct === 0) return 0;
+  return Math.round(((taxable * pct) / 100) * 100) / 100;
+}
+
+export function expectedReceivedAfterTds(grandTotal, tdsAmount) {
+  const amount = Number(grandTotal);
+  const tds = Number(tdsAmount) || 0;
+  if (!Number.isFinite(amount)) return 0;
+  return Math.round(Math.max(0, amount - tds) * 100) / 100;
+}
+
 /** Calendar days from approvedAt (or issuedAt) to `now`. */
 export function daysSinceDocumentApproved(row, now = new Date()) {
   const raw = row?.approvedAt || row?.issuedAt;

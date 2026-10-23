@@ -12,6 +12,7 @@ import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FILTER } from '../../shared/labels.js';
 import { COMMERCIAL_DOC_TYPES, docTypeLabel } from './commercialDocumentConfig.js';
+import { fetchCommercialOrgList, loadOrgListCache } from './commercialOrgMaster.js';
 import {
   buildEditPath,
   correctCommercialDocumentNumber,
@@ -22,23 +23,33 @@ import {
 } from './builder/builderPersistence.js';
 import CorrectDocumentNumberModal from './builder/CorrectDocumentNumberModal.jsx';
 import {
+  APPLICABLE_TDS_RATES,
   COMMERCIAL_STAGE_FILTERS,
   commercialStatusFilterOptions,
   displayCommercialStage,
+  expectedReceivedAfterTds,
   isAutoPaymentStatusType,
   isIssuedStage,
   isManualLifecycleStatusType,
-  netReceivableFromPreGst,
   normalizeCommercialStage,
+  normalizeTdsRate,
   paymentStatusPillClass,
   resolveCommercialDisplayStatus,
   COMMERCIAL_STATUS_BY_TYPE,
+  taxableValueFromDocument,
+  tdsAmountFromTaxableValue,
 } from './commercialPaymentStatus.js';
 
 function formatMoney(n) {
   const num = Number(n);
   if (!Number.isFinite(num)) return '—';
   return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function displayPaidReceived(row) {
+  const num = Number(row?.paidAmount);
+  if (!Number.isFinite(num) || num <= 0) return '—';
+  return `₹ ${formatMoney(num)}`;
 }
 
 /** Official number after approval, or an admin-reserved number on Draft/Submitted. */
@@ -222,6 +233,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [limit, setLimit] = useState(25);
   const [q, setQ] = useState('');
   const debouncedQ = useDebouncedValue(q, 300);
+  const [orgList, setOrgList] = useState(() => loadOrgListCache());
+  const [orgProfileId, setOrgProfileId] = useState('');
   const [status, setStatus] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
@@ -233,6 +246,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
 
   const [payRow, setPayRow] = useState(null);
   const [payAmount, setPayAmount] = useState('');
+  const [payTdsRate, setPayTdsRate] = useState(0);
   const [payBusy, setPayBusy] = useState(false);
   const [payError, setPayError] = useState('');
   const [payMsg, setPayMsg] = useState('');
@@ -251,6 +265,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (debouncedQ.trim()) params.set('q', debouncedQ.trim());
+      if (orgProfileId) params.set('orgProfileId', orgProfileId);
       if (status) params.set('status', status);
       if (paymentStatus) params.set('paymentStatus', paymentStatus);
       if (documentType) params.set('documentType', documentType);
@@ -263,23 +278,38 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     } finally {
       setListLoading(false);
     }
-  }, [page, limit, debouncedQ, status, paymentStatus, documentType]);
+  }, [page, limit, debouncedQ, orgProfileId, status, paymentStatus, documentType]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchCommercialOrgList()
+      .then((list) => {
+        if (!cancelled) setOrgList(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function openPayment(row) {
     setPayError('');
     setPayMsg('');
     setPayRow(row);
-    const netReceivable = netReceivableFromPreGst(row.subtotal);
+    const rate = normalizeTdsRate(row.tdsRate);
+    setPayTdsRate(rate);
+    const tdsAmount = tdsAmountFromTaxableValue(taxableValueFromDocument(row), rate);
+    const expected = expectedReceivedAfterTds(row.grandTotal, tdsAmount);
     const existing = Number(row.paidAmount);
     setPayAmount(
       Number.isFinite(existing) && existing > 0
         ? String(existing)
-        : netReceivable != null
-          ? String(netReceivable)
+        : expected > 0
+          ? String(expected)
           : '',
     );
   }
@@ -288,7 +318,17 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     if (payBusy) return;
     setPayRow(null);
     setPayAmount('');
+    setPayTdsRate(0);
     setPayError('');
+  }
+
+  function changePayTdsRate(nextRate) {
+    const rate = normalizeTdsRate(nextRate);
+    setPayTdsRate(rate);
+    if (!payRow) return;
+    const tdsAmount = tdsAmountFromTaxableValue(taxableValueFromDocument(payRow), rate);
+    const expected = expectedReceivedAfterTds(payRow.grandTotal, tdsAmount);
+    setPayAmount(expected > 0 ? String(expected) : '');
   }
 
   async function submitPayment() {
@@ -297,7 +337,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     setPayError('');
     setPayMsg('');
     try {
-      const updated = await recordCommercialPayment(payRow._id, payAmount);
+      const updated = await recordCommercialPayment(payRow._id, payAmount, payTdsRate);
       const display = resolveCommercialDisplayStatus(updated);
       setPayMsg(
         display === 'Paid'
@@ -308,6 +348,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       );
       setPayRow(null);
       setPayAmount('');
+      setPayTdsRate(0);
       await load();
     } catch (e) {
       setPayError(e.message || 'Failed to record payment');
@@ -387,7 +428,9 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     }
   }
 
-  const payNetReceivable = payRow ? netReceivableFromPreGst(payRow.subtotal) : null;
+  const payInvoiceAmount = payRow ? Number(payRow.grandTotal) : null;
+  const payTaxableValue = payRow ? taxableValueFromDocument(payRow) : 0;
+  const payTdsAmount = payRow ? tdsAmountFromTaxableValue(payTaxableValue, payTdsRate) : 0;
   const payDisplayStatus = payRow ? resolveCommercialDisplayStatus(payRow) : '';
   const statusFilterOptions = commercialStatusFilterOptions(documentType);
   const statusModalOptions = statusRow
@@ -415,6 +458,26 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           placeholder="Search recipient, number, project…"
           aria-label="Search documents"
         />
+        <AdaptiveSelect
+          value={orgProfileId}
+          onChange={(e) => {
+            setOrgProfileId(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filter by organisation"
+        >
+          <option value="">{FILTER.ALL_ORGANISATIONS}</option>
+          {orgList.map((org) => {
+            const id = String(org._id || org.id || '');
+            if (!id) return null;
+            return (
+              <option key={id} value={id}>
+                {org.name || org.legalName || id}
+                {org.isDefault ? ' (default)' : ''}
+              </option>
+            );
+          })}
+        </AdaptiveSelect>
         <AdaptiveSelect
           value={documentType}
           onChange={(e) => {
@@ -478,8 +541,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
               </th>
               <th className="finance-docs-col-date">Date</th>
               <th className="num finance-docs-col-amount">Amount</th>
-              <th className="num finance-docs-col-net" title="Net Receivable">
-                Net
+              <th className="num finance-docs-col-paid" title="Received">
+                Received
               </th>
               <th className="finance-docs-col-stage">Stage</th>
               <th className="finance-docs-col-status">Status</th>
@@ -496,8 +559,10 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
             ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={10} className="muted">
-                  No saved documents yet.
-                  {showCreateLink && canWrite ? (
+                  {orgProfileId
+                    ? 'No saved documents for this organisation.'
+                    : 'No saved documents yet.'}
+                  {!orgProfileId && showCreateLink && canWrite ? (
                     <>
                       {' '}
                       Open <strong>Billing Center</strong> to create a new document.
@@ -507,7 +572,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
               </tr>
             ) : (
               rows.map((row) => {
-                const netReceivable = netReceivableFromPreGst(row.subtotal);
+                const paidReceived = displayPaidReceived(row);
                 const stageLabel = displayCommercialStage(row.status);
                 const stageSlug = normalizeCommercialStage(row.status).toLowerCase();
                 const statusDisplay = resolveCommercialDisplayStatus(row);
@@ -545,11 +610,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                     <td className="num finance-docs-col-amount" title={`₹ ${formatMoney(row.grandTotal)}`}>
                       ₹ {formatMoney(row.grandTotal)}
                     </td>
-                    <td
-                      className="num finance-docs-col-net"
-                      title={netReceivable == null ? '—' : `₹ ${formatMoney(netReceivable)}`}
-                    >
-                      {netReceivable == null ? '—' : `₹ ${formatMoney(netReceivable)}`}
+                    <td className="num finance-docs-col-paid" title={paidReceived}>
+                      {paidReceived}
                     </td>
                     <td className="finance-docs-col-stage" title={stageLabel}>
                       <span className={`status-pill status-pill--${stageSlug}`}>
@@ -621,30 +683,55 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                 <span className={paymentStatusPillClass(payDisplayStatus)}>{payDisplayStatus}</span>
               </p>
             ) : null}
-            <div className="field">
-              <label>Net Receivable</label>
-              <input
-                readOnly
-                value={payNetReceivable == null ? '—' : `₹ ${formatMoney(payNetReceivable)}`}
-              />
+            <div className="finance-payment-modal-grid">
+              <div className="field">
+                <label>Amount</label>
+                <input
+                  readOnly
+                  value={
+                    payInvoiceAmount == null || !Number.isFinite(payInvoiceAmount)
+                      ? '—'
+                      : `₹ ${formatMoney(payInvoiceAmount)}`
+                  }
+                />
+              </div>
+              <div className="field">
+                <label>Applicable TDS</label>
+                <AdaptiveSelect
+                  value={String(payTdsRate)}
+                  onChange={(e) => changePayTdsRate(e.target.value)}
+                  aria-label="Applicable TDS"
+                  disabled={payBusy}
+                >
+                  {APPLICABLE_TDS_RATES.map((rate) => (
+                    <option key={rate} value={String(rate)}>
+                      {rate}%
+                    </option>
+                  ))}
+                </AdaptiveSelect>
+              </div>
+              <div className="field">
+                <label>TDS Amount</label>
+                <input readOnly value={`₹ ${formatMoney(payTdsAmount)}`} />
+              </div>
+              <div className="field">
+                <label>Payment amount *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  autoFocus
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  disabled={payBusy}
+                />
+              </div>
             </div>
-            <div className="field">
-              <label>Payment amount *</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                autoFocus
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                disabled={payBusy}
-              />
-              <p className="field-hint muted">
-                Same as Net Receivable → Paid. Any other amount → Partially Paid. While unpaid,
-                Tax Invoice / Bill of Supply Status is Unpaid under 30D (≤30 days from approval) or
-                Unpaid over 30D. Debit Note unpaid Status is Pending Collection.
-              </p>
-            </div>
+            <p className="finance-payment-modal-note">
+              TDS is {payTdsRate}% of Taxable Value
+              {payTaxableValue > 0 ? ` (₹ ${formatMoney(payTaxableValue)})` : ''}. Amount − TDS →
+              Paid.
+            </p>
             {payError ? <FeedbackBanner variant="error">{payError}</FeedbackBanner> : null}
             <div className="modal-actions">
               <button type="button" className="btn secondary" disabled={payBusy} onClick={closePayment}>

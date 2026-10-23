@@ -17,8 +17,10 @@ export function isCampDateDueForExecution(camp = {}, now = new Date()) {
   return daysFromToday(campDate, now) <= EXECUTION_ADVANCE_DAYS_BEFORE;
 }
 
-export function getAssignmentBlockers(camp = {}) {
+export function getAssignmentBlockers(camp = {}, { isAdmin = false } = {}) {
   const blockers = [];
+
+  if (isAdmin) return blockers;
 
   if (['cancelled', 'rejected'].includes(camp.status)) {
     blockers.push(`Camp is ${String(camp.status).replaceAll('_', ' ')} and cannot be assigned.`);
@@ -38,10 +40,10 @@ export function getAssignmentBlockers(camp = {}) {
 }
 
 /** First-time assign or change HCW after assignment (unless finance-locked / terminal). */
-export function canAssignCamp(camp = {}) {
-  return getAssignmentBlockers(camp).length === 0;
+export function canAssignCamp(camp = {}, { isAdmin = false } = {}) {
+  return getAssignmentBlockers(camp, { isAdmin }).length === 0;
 }
 
-export function canReassignCamp(camp = {}) {
-  return isCampAssigned(camp) && canAssignCamp(camp);
+export function canReassignCamp(camp = {}, { isAdmin = false } = {}) {
+  return isCampAssigned(camp) && canAssignCamp(camp, { isAdmin });
 }

@@ -274,7 +274,7 @@ describe('buildHcwAssignCascade', () => {
     expect(fields.hcwCategory).toBe('Phlebotomist');
   });
 
-  it('seeds campAmount into assignment fields for Camp Payout', () => {
+  it('does not seed campAmount on assignment — only Executed camps auto-pick payout', () => {
     const fields = contactToHcwFields({
       _id: 'hcw-1',
       name: 'Ravi',
@@ -282,8 +282,8 @@ describe('buildHcwAssignCascade', () => {
       profession: 'Nurse',
       campAmount: 2500,
     });
-    expect(fields.campAmount).toBe(2500);
-    expect(fields.totalPayout).toBe(2500);
+    expect(fields.campAmount).toBeUndefined();
+    expect(fields.totalPayout).toBeUndefined();
     expect(fields.hcwContactId).toBe('hcw-1');
   });
 });

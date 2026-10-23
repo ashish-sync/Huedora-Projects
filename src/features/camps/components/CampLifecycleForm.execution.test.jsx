@@ -91,4 +91,37 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByText('Chargeable Status')).toBeTruthy();
     expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
   });
+
+  it('lets Admin edit Execution Status after Finance', async () => {
+    render(
+      <CampLifecycleForm
+        form={{
+          ...emptyLifecycleForm(),
+          campDate: '2099-08-01',
+          startTime: '09:00',
+          endTime: '12:00',
+          lifecycleStage: 'financial',
+          executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
+          submittedToFinanceAt: '2026-10-01T00:00:00.000Z',
+          consumablesUsed: [],
+        }}
+        updateField={vi.fn()}
+        updateFields={vi.fn()}
+        activeStage="execution"
+        onStageChange={vi.fn()}
+        campStatus="executed"
+        reachedLifecycleStage="financial"
+        campId="camp-1"
+        onUploadDocuments={vi.fn()}
+        isAdmin
+        stageReadOnly={{ execution: false }}
+      />,
+    );
+    const status = screen.getByLabelText('Execution Status');
+    expect(status).toBeTruthy();
+    expect(status.disabled).toBe(false);
+    expect(status.value).toBe(EXECUTION_STATUS.MARKED_EXECUTED);
+    expect(screen.getByText(/after Finance/i)).toBeTruthy();
+    expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
+  });
 });

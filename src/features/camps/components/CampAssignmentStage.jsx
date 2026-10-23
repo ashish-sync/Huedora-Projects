@@ -42,6 +42,7 @@ export function CampAssignmentStage({
   disabled = false,
   campStatus = 'pending_review',
   excludeCampId = '',
+  isAdmin = false,
 }) {
   const [copyState, setCopyState] = useState('');
   const [copyHint, setCopyHint] = useState('');
@@ -52,10 +53,10 @@ export function CampAssignmentStage({
     && (form.assignmentStatus === 'Assigned'
       || Boolean(form.hcwContactId)
       || form.lifecycleStage === 'execution');
-  const financeLocked = Boolean(form.submittedToFinanceAt);
-  const fieldsDisabled = disabled || isTerminal || financeLocked;
+  const financeLocked = Boolean(form.submittedToFinanceAt) && !isAdmin;
+  const fieldsDisabled = disabled || (isTerminal && !isAdmin) || financeLocked;
   const canCopyDetails = Boolean(form.hcwName || form.hcwContactId);
-  const canRaiseHireRequest = !isTerminal;
+  const canRaiseHireRequest = !isTerminal || isAdmin;
   const canChangeHcw = isAssigned && !fieldsDisabled;
   const hireProfessions = clientMasterProfessions.length
     ? clientMasterProfessions
@@ -77,7 +78,7 @@ export function CampAssignmentStage({
     }, 3500);
   }
 
-  if (campStatus !== 'approved' && !isTerminal) {
+  if (campStatus !== 'approved' && campStatus !== 'executed' && !isTerminal && !isAdmin) {
     return (
       <div className="camp-assignment-stage">
         <div className="camp-assignment-callout camp-assignment-callout--wait" role="status">
@@ -112,7 +113,7 @@ export function CampAssignmentStage({
     setReassigning(false);
   }
 
-  if (isTerminal) {
+  if (isTerminal && !isAdmin) {
     return (
       <div className="camp-assignment-stage">
         <div className="camp-assignment-callout" role="status">
@@ -138,9 +139,11 @@ export function CampAssignmentStage({
             <p className="camp-assignment-subtitle">
               {financeLocked
                 ? 'Locked after Finance submit — the HCW cannot be changed.'
-                : inExecution
-                  ? 'This camp is in Execution. You can still change the healthcare worker if needed.'
-                  : 'Assigned camps move to Execution. Change the HCW below if needed.'}
+                : form.submittedToFinanceAt && isAdmin
+                  ? 'Admin can still change the healthcare worker after Finance submit.'
+                  : inExecution
+                    ? 'This camp is in Execution. You can still change the healthcare worker if needed.'
+                    : 'Assigned camps move to Execution. Change the HCW below if needed.'}
             </p>
           </div>
           <div className="camp-assignment-header-actions">

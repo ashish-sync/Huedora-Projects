@@ -29,6 +29,8 @@ import {
   normalizeExecutionStatus,
   resolveEffectiveExecutionStatus,
   executionStatusLabel,
+  EXECUTION_STATUS_ADMIN_OPTIONS,
+  executionStatusAdminValue,
   computePunctualityLateness,
   formatLatenessHhMm,
 } from '../constants/campLifecycle';
@@ -123,7 +125,24 @@ function PunctualityField({ value, campStartTime, inTime }) {
 
 function ExecutionStatusField({
   effectiveStatus,
+  storedStatus,
+  isAdmin = false,
+  disabled = false,
+  onChange,
 }) {
+  if (isAdmin) {
+    return (
+      <div className="camp-execution-status-field">
+        <SelectField
+          label="Execution Status"
+          value={executionStatusAdminValue(storedStatus || effectiveStatus)}
+          onChange={onChange}
+          options={EXECUTION_STATUS_ADMIN_OPTIONS}
+          disabled={disabled}
+        />
+      </div>
+    );
+  }
   return (
     <div className="camp-execution-status-field">
       <ReadOnlyField label="Execution Status" value={executionStatusLabel(effectiveStatus)} />
@@ -189,6 +208,7 @@ export function CampLifecycleForm({
   submitFinanceBusy = false,
   financialActionBusy = false,
   canSetHistoricalCampDates = false,
+  isAdmin = false,
 }) {
   const resolvedActiveStage = normalizeLifecycleStage(activeStage, 'request');
   const clientMasterPricing = useMemo(
@@ -605,6 +625,7 @@ export function CampLifecycleForm({
         disabled={stageDisabled('assignment')}
         campStatus={campStatus}
         excludeCampId={campId || ''}
+        isAdmin={isAdmin}
       />
     );
   }
@@ -634,8 +655,28 @@ export function CampLifecycleForm({
             options={CHARGEABLE_STATUSES}
             disabled={disabled}
           />
-          <ExecutionStatusField effectiveStatus={effectiveStatus} />
-          {cancelledClosure ? (
+          <ExecutionStatusField
+            effectiveStatus={effectiveStatus}
+            storedStatus={form.executionStatus}
+            isAdmin={isAdmin}
+            disabled={disabled}
+            onChange={(value) => {
+              if (
+                value === EXECUTION_STATUS.MARKED_EXECUTED
+                && normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
+              ) {
+                updateField('executionStatus', EXECUTION_STATUS.CAMP_COMPLETED);
+                return;
+              }
+              updateField('executionStatus', value);
+            }}
+          />
+          {isAdmin && reachedLifecycleStage === 'financial' ? (
+            <p className="meta-text camp-execution-action-note full">
+              Admin can update execution details after Finance. Save keeps the camp on Finance &amp; Settlement.
+            </p>
+          ) : null}
+          {cancelledClosure && !isAdmin ? (
             <div className="full camp-execution-action-note-wrap">
               <p className="meta-text camp-execution-action-note">
                 This camp was cancelled. Open Finance &amp; Settlement to complete closure billing.

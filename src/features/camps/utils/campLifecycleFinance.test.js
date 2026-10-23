@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canEditLifecycleStage,
   canVisitLifecycleStage,
   EXECUTION_STATUS,
   getExecutionFinanceBlockers,
@@ -64,6 +65,19 @@ describe('camp lifecycle finance transition', () => {
     expect(isExecutionReadyForFinance(cancelledCamp)).toBe(true);
     expect(getExecutionFinanceBlockers(cancelledCamp)).toEqual([]);
     expect(isExecutionCancellationForFinance(cancelledCamp)).toBe(true);
+  });
+
+  it('gives Admin super-access to reached stages after Financial / Payment Done', () => {
+    const financial = { financePaymentStatus: '' };
+    const paid = { financePaymentStatus: 'paid' };
+    expect(canEditLifecycleStage('executed', 'request', 'financial', financial, { isAdmin: true })).toBe(true);
+    expect(canEditLifecycleStage('executed', 'assignment', 'financial', financial, { isAdmin: true })).toBe(true);
+    expect(canEditLifecycleStage('executed', 'execution', 'financial', financial, { isAdmin: true })).toBe(true);
+    expect(canEditLifecycleStage('executed', 'execution', 'financial', paid, { isAdmin: true })).toBe(true);
+    expect(canEditLifecycleStage('executed', 'request', 'financial', financial, { isAdmin: false })).toBe(false);
+    expect(canEditLifecycleStage('executed', 'assignment', 'financial', financial, { isAdmin: false })).toBe(false);
+    expect(canEditLifecycleStage('executed', 'execution', 'financial', paid, { isAdmin: false })).toBe(false);
+    expect(canEditLifecycleStage('executed', 'financial', 'execution', financial, { isAdmin: true })).toBe(false);
   });
 
   it('recognizes legacy cancelled camps from assignment refusal reason', () => {

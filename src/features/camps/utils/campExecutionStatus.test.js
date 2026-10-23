@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   EXECUTION_STATUS,
+  executionStatusAdminValue,
+  isCampExecutedForPayout,
   normalizeExecutionStatus,
   resolveEffectiveExecutionStatus,
   resolveScheduledExecutionStatus,
@@ -31,6 +33,22 @@ describe('execution status lifecycle', () => {
     expect(resolveScheduledExecutionStatus(camp, beforeStart)).toBe(EXECUTION_STATUS.CAMP_SCHEDULED);
     expect(resolveScheduledExecutionStatus(camp, during)).toBe(EXECUTION_STATUS.CAMP_ONGOING);
     expect(resolveScheduledExecutionStatus(camp, afterEnd)).toBe(EXECUTION_STATUS.MARKED_EXECUTED);
+  });
+
+  it('maps stored execution statuses onto the Admin select', () => {
+    expect(executionStatusAdminValue(EXECUTION_STATUS.CAMP_SCHEDULED)).toBe(EXECUTION_STATUS.CAMP_SCHEDULED);
+    expect(executionStatusAdminValue(EXECUTION_STATUS.CAMP_COMPLETED)).toBe(EXECUTION_STATUS.MARKED_EXECUTED);
+    expect(executionStatusAdminValue('Cancelled by Client')).toBe('Cancelled by Client');
+  });
+
+  it('auto-picks Camp Payout only when Execution Status is Executed', () => {
+    expect(isCampExecutedForPayout({ executionStatus: EXECUTION_STATUS.MARKED_EXECUTED })).toBe(true);
+    expect(isCampExecutedForPayout({ executionStatus: EXECUTION_STATUS.CAMP_COMPLETED })).toBe(true);
+    expect(isCampExecutedForPayout({ executionStatus: 'Executed' })).toBe(true);
+    expect(isCampExecutedForPayout({ executionStatus: EXECUTION_STATUS.CAMP_SCHEDULED })).toBe(false);
+    expect(isCampExecutedForPayout({ executionStatus: 'Cancelled by Tylo' })).toBe(false);
+    expect(isCampExecutedForPayout({ executionStatus: 'Cancelled by Client' })).toBe(false);
+    expect(isCampExecutedForPayout({ status: 'executed', executionStatus: 'Cancelled by Tylo' })).toBe(false);
   });
 
   it('keeps camp completed status over schedule', () => {

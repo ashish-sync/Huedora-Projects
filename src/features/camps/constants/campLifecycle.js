@@ -232,6 +232,12 @@ export function isExecutionCancellationStatus(executionStatus) {
   return EXECUTION_CANCELLATION_STATUSES.includes(normalizeExecutionStatus(executionStatus));
 }
 
+/** Camp Payout auto-picks Contact Directory amount only when Execution Status is Executed. */
+export function isCampExecutedForPayout(camp = {}) {
+  const exec = normalizeExecutionStatus(camp?.executionStatus);
+  return exec === EXECUTION_STATUS.MARKED_EXECUTED || exec === EXECUTION_STATUS.CAMP_COMPLETED;
+}
+
 export function isExecutionCancellationForFinance(camp = {}) {
   if (isExecutionCancellationStatus(camp.executionStatus)) return true;
   const reason = normalizeExecutionStatus(camp.assignmentRefusalReason || '');
@@ -297,6 +303,25 @@ export function executionStatusLabel(status) {
     'Cancelled by Client': 'Cancelled by Client',
   };
   return labels[normalized] || normalized || '—';
+}
+
+/** Stored values for the Admin Execution Status select. */
+export const EXECUTION_STATUS_ADMIN_OPTIONS = [
+  { value: EXECUTION_STATUS.CAMP_SCHEDULED, label: 'Planned' },
+  { value: EXECUTION_STATUS.MARKED_EXECUTED, label: 'Executed' },
+  { value: 'Cancelled by Tylo', label: 'Cancelled by Tylo' },
+  { value: 'Cancelled by Client', label: 'Cancelled by Client' },
+];
+
+export function executionStatusAdminValue(status) {
+  const normalized = normalizeExecutionStatus(status);
+  if (normalized === EXECUTION_STATUS.CAMP_COMPLETED || normalized === EXECUTION_STATUS.MARKED_EXECUTED) {
+    return EXECUTION_STATUS.MARKED_EXECUTED;
+  }
+  if (normalized === EXECUTION_STATUS.CAMP_ONGOING) return EXECUTION_STATUS.CAMP_SCHEDULED;
+  if (EXECUTION_CANCELLATION_STATUSES.includes(normalized)) return normalized;
+  if (normalized === 'Cancelled') return 'Cancelled by Tylo';
+  return EXECUTION_STATUS.CAMP_SCHEDULED;
 }
 
 export function syncExecutionStatusForSave(camp = {}, now = new Date()) {
@@ -545,6 +570,12 @@ export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, c
   const paymentDone = String(context.financePaymentStatus || '').trim() === 'paid';
   if (paymentDone && !isAdmin) return false;
 
+  // Admin super-access: any reached stage stays editable (HCW, dates, patients, etc.).
+  if (isAdmin) {
+    if (stage === 'financial') return reached === 'financial';
+    return hasReachedLifecycleStage(reached, stage);
+  }
+
   if (campStatus === 'cancelled') {
     if (stage !== 'financial') return false;
     if (!isExecutionCancellationForFinance(context)) return false;
@@ -556,8 +587,9 @@ export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, c
     return ['executed', 'approved', 'cancelled'].includes(campStatus);
   }
 
-  if (reached === 'financial' && !isAdmin) {
+  if (reached === 'financial') {
     if (stage === 'execution' || stage === 'assignment') return false;
+    if (stage === 'request') return ['pending_review', 'rejected'].includes(campStatus);
   }
 
   if (!hasReachedLifecycleStage(reached, stage)) return false;

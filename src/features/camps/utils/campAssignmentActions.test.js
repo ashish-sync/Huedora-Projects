@@ -29,4 +29,15 @@ describe('campAssignmentActions', () => {
     expect(canAssignCamp(camp)).toBe(false);
     expect(getAssignmentBlockers(camp)[0]).toMatch(/finance/i);
   });
+
+  it('lets Admin change HCW after Finance submit or Executed', () => {
+    const submitted = {
+      status: 'executed',
+      assignmentStatus: 'Assigned',
+      submittedToFinanceAt: '2026-08-10T00:00:00.000Z',
+    };
+    expect(canAssignCamp(submitted)).toBe(false);
+    expect(canAssignCamp(submitted, { isAdmin: true })).toBe(true);
+    expect(getAssignmentBlockers(submitted, { isAdmin: true })).toEqual([]);
+  });
 });

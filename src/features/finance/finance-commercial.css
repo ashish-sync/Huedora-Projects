@@ -1566,16 +1566,17 @@
   }
 }
 
-/* Billing Center saved-documents grid — fit viewport, always one line per cell */
+/* Billing Center saved-documents grid — one line per cell.
+   Fixed columns are sized to known formats; Number stays fully visible. */
 .finance-docs-table-wrap {
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: visible;
   max-width: 100%;
 }
 
 .finance-docs-table {
   width: 100%;
-  min-width: 0;
+  min-width: 74rem;
   table-layout: fixed;
   border-collapse: collapse;
 }
@@ -1586,80 +1587,91 @@
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-left: 0.4rem;
-  padding-right: 0.4rem;
+  padding: 0.5rem 0.55rem;
 }
 
-/* Number → Stage always stay on a single line, truncate if long */
-.finance-docs-table .finance-docs-col-number,
-.finance-docs-table .finance-docs-col-type,
+/* Recipient / Reference share leftover space */
 .finance-docs-table .finance-docs-col-recipient,
-.finance-docs-table .finance-docs-col-period,
-.finance-docs-table .finance-docs-col-date,
-.finance-docs-table .finance-docs-col-amount,
-.finance-docs-table .finance-docs-col-net,
-.finance-docs-table .finance-docs-col-stage {
+.finance-docs-table .finance-docs-col-period {
   white-space: nowrap !important;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 0; /* force fixed-layout ellipsis */
+  max-width: 0;
 }
 
+/* PREFIXFY/MM/SEQ up to 5-letter org code, e.g. ABCDEIN26-27/08/001 */
 .finance-docs-table .finance-docs-col-number {
-  width: 12%;
+  width: 11.5rem;
+  min-width: 11.5rem;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap !important;
+}
+
+.finance-docs-table th.finance-docs-col-number {
+  font-family: inherit;
+}
+
+.finance-docs-table td.finance-docs-col-number {
+  font-family: var(--font-family-mono, var(--mono));
 }
 
 .finance-docs-table .finance-docs-col-type {
-  width: 9%;
+  width: 7.75rem;
+  min-width: 7.75rem;
 }
 
 .finance-docs-table .finance-docs-col-recipient {
-  width: 14%;
+  width: 16%;
 }
 
 .finance-docs-table .finance-docs-col-period {
-  width: 12%;
+  width: 11%;
 }
 
+/* DD-MM-YYYY */
 .finance-docs-table .finance-docs-col-date {
-  width: 5.75rem;
-  max-width: 5.75rem;
+  width: 6.25rem;
+  min-width: 6.25rem;
+  max-width: 6.25rem;
 }
 
+/* ₹ + up to 9 digits with grouping, e.g. ₹ 12,34,56,789 */
 .finance-docs-table .finance-docs-col-amount,
-.finance-docs-table .finance-docs-col-net {
-  width: 8%;
+.finance-docs-table .finance-docs-col-paid {
+  width: 7.75rem;
+  min-width: 7.75rem;
+  max-width: 7.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Longest Stage: Cancelled */
 .finance-docs-table .finance-docs-col-stage {
-  width: 5.75rem;
-  max-width: 5.75rem;
+  width: 6.25rem;
+  min-width: 6.25rem;
+  max-width: 6.25rem;
 }
 
+/* Longest Status: Pending Adjustment */
 .finance-docs-table .finance-docs-col-status {
-  width: 7.25rem;
+  width: 10.25rem;
+  min-width: 10.25rem;
+  max-width: 10.25rem;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .finance-docs-table .finance-docs-col-actions {
-  width: 4.25rem;
-  max-width: 4.25rem;
+  width: 3.75rem;
+  min-width: 3.75rem;
+  max-width: 3.75rem;
   text-align: center;
   overflow: visible;
-  padding-left: 0.2rem;
-  padding-right: 0.2rem;
-}
-
-.finance-docs-table th.finance-docs-col-actions {
-  font-size: 0.72rem;
-  letter-spacing: 0.01em;
-  overflow: hidden;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
 }
 
 .finance-docs-actions-menu {
-  position: relative;
   display: inline-flex;
   justify-content: center;
   width: 100%;
@@ -1680,25 +1692,30 @@
 
 .finance-docs-actions-trigger {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   margin: 0;
   width: 2rem;
   height: 2rem;
   padding: 0;
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--surface, #fff);
-  color: var(--color-text, #111827);
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-sunken, #f1f5f9);
+  color: var(--ink, #111827);
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   cursor: pointer;
 }
 
 .finance-docs-actions-trigger:hover,
 .finance-docs-actions-trigger[aria-expanded='true'] {
-  background: var(--surface-muted, #f8fafc);
-  border-color: color-mix(in srgb, var(--brand, #1e3a5f) 35%, #e5e7eb);
+  background: color-mix(in srgb, var(--brand, #1e3a5f) 8%, var(--bg-sunken, #f1f5f9));
+  border-color: color-mix(in srgb, var(--brand, #1e3a5f) 35%, var(--line, #e5e7eb));
+  color: var(--brand, #1e3a5f);
 }
 
 .finance-docs-actions-trigger:disabled {
@@ -1753,7 +1770,9 @@
 }
 
 .finance-payment-modal {
-  max-width: 420px;
+  width: min(100%, 26rem);
+  max-width: 26rem;
+  padding: var(--space-4);
 }
 
 .finance-payment-modal-meta {
@@ -1764,20 +1783,62 @@
   margin: 0 0 1rem;
 }
 
-.finance-payment-modal .field-hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.8rem;
+.finance-payment-modal .modal-title {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-h3-size);
 }
 
-/* Status (payment / lifecycle) colours */
-.finance-pay-status--paid,
-.finance-pay-status--fully-paid {
-  background: #dcfce7;
-  color: #15803d;
+.finance-payment-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-items: start;
 }
 
-.finance-pay-status--unpaid-under-30d {
-  background: #e0f2fe;
+.finance-payment-modal-grid .field {
+  margin-bottom: 0;
+  gap: 0.3rem;
+}
+
+.finance-payment-modal-grid .field label {
+  min-height: 1.1rem;
+  display: flex;
+  align-items: flex-end;
+}
+
+.finance-payment-modal-grid .field input,
+.finance-payment-modal-grid .field select,
+.finance-payment-modal-grid .field .tylo-select {
+  height: var(--control-h) !important;
+  min-height: var(--control-h) !important;
+  max-height: var(--control-h) !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 520px) {
+  .finance-payment-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.finance-payment-modal-meta {
+  margin: 0 0 var(--space-2);
+}
+
+.finance-payment-modal-status {
+  margin: 0 0 var(--space-3);
+}
+
+.finance-payment-modal-note {
+  margin: var(--space-2) 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-text-secondary, var(--muted));
+}
+
+.finance-payment-modal .modal-actions {
+  margin-top: var(--space-3);
   color: #0369a1;
 }
 

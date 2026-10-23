@@ -44,6 +44,7 @@ import {
   EXECUTION_STATUS,
   normalizeExecutionStatus,
   normalizeLifecycleStage,
+  isCampExecutedForPayout,
 } from './constants/campLifecycle';
 import { useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { validateRequestStageForm } from './utils/validateRequestStage';
@@ -145,6 +146,11 @@ export default function CampFormPage() {
       preferredStage = 'financial';
     }
     setActiveStage(preferredStage);
+
+    if (isCampAdmin) {
+      setReadOnly(false);
+      return;
+    }
 
     const assignmentEditable = hasReachedLifecycleStage(loadedStage, 'assignment')
       && camp.status === 'approved'
@@ -457,12 +463,13 @@ export default function CampFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lean hcwContacts must not cancel full payee fetch
   }, [isEdit, activeStage, assignedHcwContact]);
 
-  // Seed Camp Payout once from Contact Directory when Financial opens with an empty amount.
-  // Also keep totalPayout in sync — seeding campAmount alone left totalPayout at 0, and saves
-  // then persisted that zero (appearing to wipe Camp Payout).
+  // Seed Camp Payout once from Contact Directory when an Executed camp opens Financial
+  // with an empty amount. Planned / cancelled camps stay manual. Also keep totalPayout
+  // in sync — seeding campAmount alone left totalPayout at 0, and saves then persisted that zero.
   const campPayoutSeedKeyRef = useRef('');
   useEffect(() => {
     if (!isEdit || activeStage !== 'financial') return;
+    if (!isCampExecutedForPayout(form)) return;
     const hcwId = String(form.hcwContactId || '').trim();
     const seedKey = `${id || ''}:${hcwId}`;
     if (!hcwId || campPayoutSeedKeyRef.current === seedKey) return;
@@ -483,7 +490,7 @@ export default function CampFormPage() {
     const totalPayout = Math.round((amount + travelling + overtimeExpense + otherExpenses) * 100) / 100;
     updateFields({ campAmount: amount, totalPayout });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot seed per camp+HCW
-  }, [isEdit, activeStage, id, form.hcwContactId, assignedHcwContact, payoutPayeeContact]);
+  }, [isEdit, activeStage, id, form.hcwContactId, form.executionStatus, assignedHcwContact, payoutPayeeContact]);
 
   useEffect(() => {
     // Only hydrate clients list for edit when a client is already selected.
@@ -1095,8 +1102,8 @@ export default function CampFormPage() {
 
   async function handleSubmit(e, { acknowledgeGapOverride = false } = {}) {
     if (e?.preventDefault) e.preventDefault();
-    if (readOnly && campStatus === 'cancelled') return;
-    if (activeStage === 'financial') return;
+    if (readOnly && campStatus === 'cancelled' && !isCampAdmin) return;
+    if (activeStage === 'financial' && !isCampAdmin) return;
     if (!acknowledgeGapOverride) setHcwGapConflict(null);
 
     if (!isEdit && activeStage !== 'request') {
@@ -1180,12 +1187,14 @@ export default function CampFormPage() {
     const contactFields = syncPrimaryContactFields(normalizeContactPersons(form));
     // Server auto-advances to Financial when execution is complete; never send Camp Completed from the client.
     const executionStatus = activeStage === 'execution'
-      ? syncExecutionStatusForSave({
-        ...form,
-        executionStatus: normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
-          ? EXECUTION_STATUS.MARKED_EXECUTED
-          : form.executionStatus,
-      })
+      ? (isCampAdmin
+        ? form.executionStatus
+        : syncExecutionStatusForSave({
+          ...form,
+          executionStatus: normalizeExecutionStatus(form.executionStatus) === EXECUTION_STATUS.CAMP_COMPLETED
+            ? EXECUTION_STATUS.MARKED_EXECUTED
+            : form.executionStatus,
+        }))
       : form.executionStatus;
     const requiredProductIds = mappedConsumables.map((item) => item.productId);
     const consumablesUsed = activeStage === 'execution'
@@ -1246,24 +1255,11 @@ export default function CampFormPage() {
     }
 
     // Untouched finance zeros from the form must not overwrite persisted amounts.
-    // Exception: Camp Payout seeded from Contact Directory on assignment should persist.
+    // Camp Payout is auto-picked only for Executed camps on Financial — never on assignment.
     if (activeStage !== 'financial') {
-      const keepCampAmount = activeStage === 'assignment'
-        && Number(form.campAmount || 0) > 0;
       FINANCE_KEYS.forEach((key) => {
-        if (keepCampAmount && key === 'campAmount') return;
-        if (keepCampAmount && key === 'totalPayout') return;
         delete payload[key];
       });
-      if (keepCampAmount) {
-        const travelling = Number(form.travelling || 0) || 0;
-        const overtimeExpense = Number(form.overtimeExpense || 0) || 0;
-        const otherExpenses = Number(form.otherExpenses || 0) || 0;
-        payload.campAmount = Number(form.campAmount);
-        payload.totalPayout = Math.round(
-          (payload.campAmount + travelling + overtimeExpense + otherExpenses) * 100,
-        ) / 100;
-      }
     }
 
     setLoading(true);
@@ -1273,9 +1269,11 @@ export default function CampFormPage() {
       if (isEdit) {
         const res = await campApi.update(id, payload);
         savedCamp = res.data?.data || res.data;
-        // Server auto-moves complete Execution saves into Finance & Settlement.
+        // First-time complete Execution saves move into Finance. Admin corrections
+        // on an already-financial camp stay on the Execution tab.
         if (savedCamp && normalizeLifecycleStage(savedCamp.lifecycleStage, 'request') === 'financial'
-          && activeStage === 'execution') {
+          && activeStage === 'execution'
+          && reachedLifecycleStage !== 'financial') {
           setForm(campToForm(savedCamp));
           setCampMeta((prev) => ({ ...prev, ...savedCamp }));
           setActiveStage('financial');
@@ -1405,13 +1403,19 @@ export default function CampFormPage() {
     && !assignedHcwLoading
     && !payoutPayeeLoading
     && !submitFinanceBusy;
-  const canSubmit = campStatus !== 'cancelled'
-    && campStatus !== 'rejected'
-    && activeStage !== 'financial'
-    && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
+  const canSubmit = (
+    isCampAdmin
+      ? canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
+      : (
+        campStatus !== 'cancelled'
+        && campStatus !== 'rejected'
+        && activeStage !== 'financial'
+        && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
+        && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus))
+      )
+  )
     && (!hasNoDivisions || activeStage !== 'request')
-    && (!hasNoMethods || activeStage !== 'request')
-    && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus));
+    && (!hasNoMethods || activeStage !== 'request');
 
   return (
     <form ref={formRef} className="form-card camp-lifecycle-page" onSubmit={handleSubmit} autoComplete="off" data-form-type="other">
@@ -1546,6 +1550,7 @@ export default function CampFormPage() {
         mappedConsumables={mappedConsumables}
         clientMasterRecords={clientMasterRecords}
         canSetHistoricalCampDates={canSetHistoricalCampDates()}
+        isAdmin={isCampAdmin}
         onConfirmPayment={isEdit && canManageFinancialStatus ? handleConfirmPayment : null}
         onHoldPayment={isEdit && canManageFinancialStatus ? handleHoldPayment : null}
         onReleaseHold={isEdit && canManageFinancialStatus ? handleReleaseHold : null}

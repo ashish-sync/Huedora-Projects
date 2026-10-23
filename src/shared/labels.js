@@ -107,6 +107,7 @@ export const FILTER = {
   ALL_STATUSES: 'All Statuses',
   ALL_TYPES: 'All Types',
   ALL_CAMPS: 'All Camps',
+  ALL_ORGANISATIONS: 'All Organisations',
 };
 
 /** Standard toolbar / header action labels (Excel export, sample, import). */

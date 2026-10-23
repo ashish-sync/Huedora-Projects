@@ -2,17 +2,33 @@ import { describe, expect, it } from 'vitest';
 import {
   daysSinceDocumentApproved,
   displayCommercialStage,
+  expectedReceivedAfterTds,
   netReceivableFromPreGst,
   normalizeCommercialStage,
+  normalizeTdsRate,
   paymentStatusFromAgeingDays,
   paymentStatusPillClass,
   resolveCommercialDisplayStatus,
+  taxableValueFromDocument,
+  tdsAmountFromTaxableValue,
 } from './commercialPaymentStatus.js';
 
 describe('commercialPaymentStatus', () => {
   it('computes Net Receivable as 90% of pre-GST', () => {
     expect(netReceivableFromPreGst(100)).toBe(90);
     expect(netReceivableFromPreGst(0)).toBeNull();
+  });
+
+  it('computes TDS from Taxable Value, not Amount', () => {
+    expect(normalizeTdsRate('10')).toBe(10);
+    expect(normalizeTdsRate(7)).toBe(0);
+    expect(taxableValueFromDocument({ subtotal: 1000, grandTotal: 1180 })).toBe(1000);
+    expect(tdsAmountFromTaxableValue(1000, 0)).toBe(0);
+    expect(tdsAmountFromTaxableValue(1000, 1)).toBe(10);
+    expect(tdsAmountFromTaxableValue(1000, 2)).toBe(20);
+    expect(tdsAmountFromTaxableValue(1000, 10)).toBe(100);
+    expect(tdsAmountFromTaxableValue(1000, 10)).not.toBe(118);
+    expect(expectedReceivedAfterTds(1180, 100)).toBe(1080);
   });
 
   it('maps Stage display labels with legacy aliases', () => {

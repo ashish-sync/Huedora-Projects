@@ -808,10 +808,10 @@ export async function cancelCommercialDocument(id) {
   return res.data;
 }
 
-export async function recordCommercialPayment(id, amount) {
+export async function recordCommercialPayment(id, amount, tdsRate = 0) {
   const res = await api(`/finance/commercial-documents/${id}/payment`, {
     method: 'POST',
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({ amount, tdsRate }),
   });
   return res.data;
 }

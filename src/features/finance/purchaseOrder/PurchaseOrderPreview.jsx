@@ -12,6 +12,7 @@ import { InlineAddChip, InlineField, InlineTableInput, InlineTextarea } from '..
 import '../documentGenerator/inline-edit.css';
 import { defaultPoLineItem, MAX_PO_LINE_ITEMS } from './purchaseOrderStorage.js';
 import { formatCompanyLetterhead } from '../shared/companyLetterhead.js';
+import { orgBrandCssVars } from '../shared/orgBrandColors.js';
 import './purchase-order.css';
 
 function money(n) {
@@ -109,7 +110,7 @@ export default function PurchaseOrderPreview({
 
   return (
     <div ref={previewRef} className="po-print-root">
-      <article className="po-doc" aria-label="Purchase Order">
+      <article className="po-doc" aria-label="Purchase Order" style={orgBrandCssVars(company)}>
         <header className="po-header">
           <div className="po-header-brand">
             {hasLogo ? (

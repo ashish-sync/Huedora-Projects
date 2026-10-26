@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import { emptyOrgMasterForm, orgMasterToPayload } from './commercialOrgMaster.js';
 import { DEFAULT_HEADER_DISPLAY_KEYS, sanitizeHeaderDisplayKeys } from './shared/companyLetterhead.js';
+import {
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_SECONDARY_COLOR,
+  sanitizeBrandColor,
+} from './shared/orgBrandColors.js';
 import { CommercialOrgMasterForm } from './CommercialOrgMasterCard.jsx';
 import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { useCommercialOrgMaster } from './useCommercialOrgMaster.js';
@@ -38,6 +43,8 @@ export default function FinanceCommercialMasterPage() {
         name: data.name || data.legalName || '',
         headerDisplayKeys:
           sanitizeHeaderDisplayKeys(data.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
+        primaryColor: sanitizeBrandColor(data.primaryColor) || DEFAULT_PRIMARY_COLOR,
+        secondaryColor: sanitizeBrandColor(data.secondaryColor) || DEFAULT_SECONDARY_COLOR,
       });
     }
   }, [data, creating]);
@@ -79,6 +86,8 @@ export default function FinanceCommercialMasterPage() {
         name: data.name || data.legalName || '',
         headerDisplayKeys:
           sanitizeHeaderDisplayKeys(data.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
+        primaryColor: sanitizeBrandColor(data.primaryColor) || DEFAULT_PRIMARY_COLOR,
+        secondaryColor: sanitizeBrandColor(data.secondaryColor) || DEFAULT_SECONDARY_COLOR,
       });
     }
   };

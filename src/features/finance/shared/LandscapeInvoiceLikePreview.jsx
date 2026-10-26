@@ -15,6 +15,7 @@ import { defaultLineItem, MAX_INVOICE_LINE_ITEMS, isStaleMsmeDeclaration, isStal
 import '../invoiceGenerator/tylo-invoice-template.css';
 import { LANDSCAPE_DOC_CONFIGS } from './landscapeDocConfigs.js';
 import { formatCompanyLetterhead } from './companyLetterhead.js';
+import { orgBrandCssVars } from './orgBrandColors.js';
 import { formatStateLine, parseStateLine } from '../builder/stateLine.js';
 import {
   applyClickToSign,
@@ -329,7 +330,11 @@ export default function LandscapeInvoiceLikePreview({
 
   return (
     <div ref={previewRef} className="invoice-print-root">
-      <article className={`tylo-invoice tylo-invoice--${docKey}`} aria-label={documentTitle}>
+      <article
+        className={`tylo-invoice tylo-invoice--${docKey}`}
+        aria-label={documentTitle}
+        style={orgBrandCssVars(company)}
+      >
         <header className="ti-header">
           <div className="ti-header-brand">
             {hasLogo ? (

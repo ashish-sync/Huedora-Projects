@@ -7,6 +7,12 @@ import {
   formatCompanyLetterhead,
   resolveHeaderDisplayKeys,
 } from './shared/companyLetterhead.js';
+import {
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_SECONDARY_COLOR,
+  resolveOrgBrandColors,
+  sanitizeBrandColor,
+} from './shared/orgBrandColors.js';
 
 function ReadRow({ label, value }) {
   if (!value) return null;
@@ -118,6 +124,10 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
         ) : null}
         <div className="org-master-card-grid">
           <ReadRow label="Document code" value={master.documentCode} />
+          <ReadRow
+            label="Brand colours"
+            value={`${resolveOrgBrandColors(master).primary} · ${resolveOrgBrandColors(master).secondary}`}
+          />
           <ReadRow label="Address" value={master.registeredOffice} />
           <ReadRow label="Email" value={master.email} />
           <ReadRow label="Website" value={master.website} />
@@ -139,6 +149,36 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
         ) : null}
       </div>
     </div>
+  );
+}
+
+function BrandColorField({ label, hint, value, disabled, onChange }) {
+  const hex = sanitizeBrandColor(value) || '';
+  return (
+    <Field label={label} hint={hint}>
+      <div className="org-master-color-control">
+        <input
+          type="color"
+          className="org-master-color-swatch"
+          value={(hex || '#203E64').toLowerCase()}
+          disabled={disabled}
+          aria-label={`${label} colour`}
+          onChange={(e) => onChange(sanitizeBrandColor(e.target.value) || hex)}
+        />
+        <input
+          className="org-master-input org-master-input--mono"
+          value={value || ''}
+          disabled={disabled}
+          spellCheck={false}
+          placeholder="#203E64"
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={() => {
+            const next = sanitizeBrandColor(value);
+            if (next) onChange(next);
+          }}
+        />
+      </div>
+    </Field>
   );
 }
 
@@ -278,7 +318,41 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           />
         </Section>
 
-        <Section index="03" title="Document numbering" note="PREFIX + FY/MM/SEQ">
+        <Section index="03" title="Brand colours" note="Generated documents">
+          <p className="org-master-header-picker-lead">
+            Primary is used for titles, table headers, and totals. Secondary is used for light bands
+            and row fills. Tylo Care defaults are {DEFAULT_PRIMARY_COLOR} and {DEFAULT_SECONDARY_COLOR}.
+          </p>
+          <div className="org-master-form-grid org-master-form-grid--2">
+            <BrandColorField
+              label="Primary"
+              hint="Headers and accents"
+              value={form.primaryColor}
+              disabled={disabled}
+              onChange={(value) => update('primaryColor', value)}
+            />
+            <BrandColorField
+              label="Secondary"
+              hint="Light fills"
+              value={form.secondaryColor}
+              disabled={disabled}
+              onChange={(value) => update('secondaryColor', value)}
+            />
+          </div>
+          <div
+            className="org-master-color-preview"
+            aria-hidden="true"
+            style={{
+              '--org-primary': resolveOrgBrandColors(form).primary,
+              '--org-secondary': resolveOrgBrandColors(form).secondary,
+            }}
+          >
+            <span className="org-master-color-preview-bar">Invoice</span>
+            <span className="org-master-color-preview-wash">Secondary fill</span>
+          </div>
+        </Section>
+
+        <Section index="04" title="Document numbering" note="PREFIX + FY/MM/SEQ">
           <div className="org-master-form-grid org-master-form-grid--2">
             <Field
               label="Document code"
@@ -309,7 +383,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           </div>
         </Section>
 
-        <Section index="04" title="Tax registration" note="Registration numbers">
+        <Section index="05" title="Tax registration" note="Registration numbers">
           <div className="org-master-form-grid org-master-form-grid--3">
             <Field label="GSTIN">
               <input
@@ -360,7 +434,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
         </Section>
 
         <div className="org-master-form-pair">
-          <Section index="05" title="Bank details" note="Document footer">
+          <Section index="06" title="Bank details" note="Document footer">
             <div className="org-master-form-grid org-master-form-grid--2">
               <Field label="Account holder" className="org-master-form-span-2">
                 <input
@@ -406,7 +480,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
             </div>
           </Section>
 
-          <Section index="06" title="Digital signature" note="Document footer">
+          <Section index="07" title="Digital signature" note="Document footer">
             <div className="org-master-sig-block">
               <div className="org-master-media-field">
                 <label className="org-master-field-label">Signature image</label>

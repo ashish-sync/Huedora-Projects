@@ -1,5 +1,10 @@
 import { api } from '../../shared/api.js';
 import { DEFAULT_HEADER_DISPLAY_KEYS, sanitizeHeaderDisplayKeys } from './shared/companyLetterhead.js';
+import {
+  DEFAULT_PRIMARY_COLOR,
+  DEFAULT_SECONDARY_COLOR,
+  sanitizeBrandColor,
+} from './shared/orgBrandColors.js';
 
 const CACHE_KEY = 'tylo_commercial_org_master_v1';
 const CACHE_KEY_PREFIX = 'tylo_commercial_org_master_v2:';
@@ -38,6 +43,8 @@ export const ORG_MASTER_FIELD_GROUPS = [
       { key: 'registeredOffice', label: 'Registered address', type: 'textarea' },
       { key: 'email', label: 'Email', type: 'email', headerPick: true },
       { key: 'website', label: 'Website', type: 'text', headerPick: true },
+      { key: 'primaryColor', label: 'Primary colour', type: 'color' },
+      { key: 'secondaryColor', label: 'Secondary colour', type: 'color' },
     ],
   },
   {
@@ -85,6 +92,8 @@ export const ORG_LETTERHEAD_KEYS = [
   'email',
   'website',
   'headerDisplayKeys',
+  'primaryColor',
+  'secondaryColor',
 ];
 
 function cacheKeyForOrg(orgId) {
@@ -226,6 +235,14 @@ function companyFromOrg(master, formCompany = {}) {
       sanitizeHeaderDisplayKeys(master.headerDisplayKeys)
       ?? sanitizeHeaderDisplayKeys(formCompany?.headerDisplayKeys)
       ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
+    primaryColor:
+      sanitizeBrandColor(master.primaryColor)
+      || sanitizeBrandColor(formCompany?.primaryColor)
+      || DEFAULT_PRIMARY_COLOR,
+    secondaryColor:
+      sanitizeBrandColor(master.secondaryColor)
+      || sanitizeBrandColor(formCompany?.secondaryColor)
+      || DEFAULT_SECONDARY_COLOR,
     state: orgVal(master, 'state', formCompany?.state),
     stateCode: orgVal(master, 'stateCode', formCompany?.stateCode),
   };
@@ -340,6 +357,8 @@ export function getOrgMasterDisplay(master) {
     udyam: master.udyam,
     headerDisplayKeys:
       sanitizeHeaderDisplayKeys(master.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
+    primaryColor: sanitizeBrandColor(master.primaryColor) || DEFAULT_PRIMARY_COLOR,
+    secondaryColor: sanitizeBrandColor(master.secondaryColor) || DEFAULT_SECONDARY_COLOR,
     signatureDataUrl: master.signatureDataUrl,
     signatoryName: master.signatoryName,
     bank: {
@@ -373,6 +392,8 @@ export function emptyOrgMasterForm() {
     cin: '',
     udyam: '',
     headerDisplayKeys: [...DEFAULT_HEADER_DISPLAY_KEYS],
+    primaryColor: DEFAULT_PRIMARY_COLOR,
+    secondaryColor: DEFAULT_SECONDARY_COLOR,
     state: '',
     stateCode: '',
   };
@@ -399,6 +420,8 @@ export function orgMasterToPayload(form) {
     cin: form.cin,
     udyam: form.udyam,
     headerDisplayKeys: sanitizeHeaderDisplayKeys(form.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
+    primaryColor: sanitizeBrandColor(form.primaryColor) || DEFAULT_PRIMARY_COLOR,
+    secondaryColor: sanitizeBrandColor(form.secondaryColor) || DEFAULT_SECONDARY_COLOR,
     state: form.state,
     stateCode: form.stateCode,
   };

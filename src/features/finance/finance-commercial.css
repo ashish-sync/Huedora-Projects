@@ -453,6 +453,59 @@
   color: var(--muted);
 }
 
+.org-master-color-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.org-master-color-swatch {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.org-master-color-swatch:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.org-master-color-preview {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  min-height: 40px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
+}
+
+.org-master-color-preview-bar,
+.org-master-color-preview-wash {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.org-master-color-preview-bar {
+  background: var(--org-primary, #203E64);
+  color: #fff;
+}
+
+.org-master-color-preview-wash {
+  background: var(--org-secondary, #E7EDF4);
+  color: var(--org-primary, #203E64);
+}
+
 .org-master-identity-row {
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);

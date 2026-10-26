@@ -6,6 +6,7 @@ import {
   DELIVERY_CHALLAN_DECLARATION,
   MAX_DELIVERY_CHALLAN_LINE_ITEMS,
 } from './deliveryChallanStorage.js';
+import { orgBrandCssVars } from '../shared/orgBrandColors.js';
 import './delivery-challan.css';
 
 function FieldRow({ label, children }) {
@@ -57,7 +58,7 @@ export default function DeliveryChallanPreview({
 
   return (
     <div ref={previewRef} className="dc-print-root">
-      <article className="dc-doc" aria-label="Delivery Challan">
+      <article className="dc-doc" aria-label="Delivery Challan" style={orgBrandCssVars(company)}>
         <div className="dc-aligned-top">
           <div className="dc-header-brand">
             {hasLogo ? (

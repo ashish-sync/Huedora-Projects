@@ -14,8 +14,9 @@
   --dc-muted: #475569;
   --dc-line: rgba(15, 23, 42, 0.18);
   --dc-line-soft: rgba(15, 23, 42, 0.1);
-  --dc-accent: #1e3a5f;
-  --dc-accent-light: #e8eef5;
+  --dc-accent: #203E64;
+  --dc-accent-light: #E7EDF4;
+  --dc-accent-dark: #1B3454;
   --dc-radius: 4px;
   --dc-gap: 0.85mm;
 
@@ -185,7 +186,7 @@
   font-weight: 700;
   font-size: 14.5px;
   letter-spacing: -0.01em;
-  color: var(--dc-accent, #1e3a5f);
+  color: var(--dc-accent, #203E64);
 }
 
 .dc-company-sep {
@@ -266,7 +267,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #fff;
-  background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
+  background: linear-gradient(135deg, var(--dc-accent) 0%, var(--dc-accent-dark, var(--dc-accent)) 100%);
   border-radius: 4px;
   white-space: nowrap;
   flex-shrink: 0;

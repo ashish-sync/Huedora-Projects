@@ -127,6 +127,7 @@ export default function InvoiceBuilderShell({
   const [correctOpen, setCorrectOpen] = useState(false);
   const [correctBusy, setCorrectBusy] = useState(false);
   const [correctError, setCorrectError] = useState('');
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const approvalSubject =
@@ -389,7 +390,7 @@ export default function InvoiceBuilderShell({
               type="button"
               className="ib-text-btn ib-text-btn--danger"
               disabled={busy}
-              onClick={() => onCancel?.()}
+              onClick={() => setConfirmCancelOpen(true)}
               title="Cancel document"
             >
               {busyAction === 'cancel' ? 'Cancelling…' : 'Cancel'}
@@ -450,6 +451,42 @@ export default function InvoiceBuilderShell({
         </aside>
       </div>
 
+      {confirmCancelOpen ? (
+        <ModalShell
+          onClose={() => {
+            if (busyAction === 'cancel') return;
+            setConfirmCancelOpen(false);
+          }}
+          titleId="ib-cancel-confirm-title"
+          overlayClassName="confirm-backdrop"
+          panelClassName="confirm-dialog card"
+          closeOnOverlayClick={busyAction !== 'cancel'}
+        >
+          <h3 id="ib-cancel-confirm-title">Cancel document?</h3>
+          <p>Do you want to cancel this?</p>
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={busyAction === 'cancel'}
+              onClick={() => setConfirmCancelOpen(false)}
+            >
+              No
+            </button>
+            <button
+              type="button"
+              className="btn danger"
+              disabled={busy}
+              onClick={() => {
+                setConfirmCancelOpen(false);
+                onCancel?.();
+              }}
+            >
+              Yes
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
       <ShortcutsModal open={shortcutsOpen} onClose={onShortcutsClose} newDocLabel={newDocShortcutLabel} />
       <CorrectDocumentNumberModal
         open={correctOpen}

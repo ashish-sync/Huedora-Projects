@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
 import { FileDrop, readFileAsDataUrl } from './documentGenerator/formUi.jsx';
 import { numberingPreviewForCode } from './documentNumbering.js';
+import {
+  DEFAULT_HEADER_DISPLAY_KEYS,
+  HEADER_DISPLAY_OPTIONS,
+  formatCompanyLetterhead,
+  resolveHeaderDisplayKeys,
+} from './shared/companyLetterhead.js';
 
 function ReadRow({ label, value }) {
   if (!value) return null;
@@ -136,6 +142,55 @@ export default function CommercialOrgMasterCard({ master, compact = false, varia
   );
 }
 
+function HeaderDisplayPicker({ form, disabled, onChange }) {
+  const selected = resolveHeaderDisplayKeys(form);
+  const selectedSet = new Set(selected);
+  const preview = formatCompanyLetterhead({
+    ...form,
+    address: form.registeredOffice,
+    headerDisplayKeys: selected,
+  });
+
+  function toggle(key) {
+    const next = new Set(selectedSet);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    onChange(DEFAULT_HEADER_DISPLAY_KEYS.filter((item) => next.has(item)));
+  }
+
+  return (
+    <div className="org-master-header-picker">
+      <p className="org-master-header-picker-lead">
+        Legal name and registered address always print on line 1. Pick what appears on line 2.
+      </p>
+      <div className="org-master-header-chips" role="group" aria-label="Header line 2 fields">
+        {HEADER_DISPLAY_OPTIONS.map((opt) => {
+          const on = selectedSet.has(opt.key);
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              className={`org-master-header-chip${on ? ' is-on' : ''}`}
+              aria-pressed={on}
+              disabled={disabled}
+              onClick={() => toggle(opt.key)}
+            >
+              <span className="org-master-header-chip-check" aria-hidden="true">
+                {on ? '✓' : ''}
+              </span>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="org-master-header-preview" aria-live="polite">
+        <span className="org-master-header-preview-label">Preview</span>
+        {preview.line2 || 'Nothing selected for line 2.'}
+      </p>
+    </div>
+  );
+}
+
 export function CommercialOrgMasterForm({ form, setForm, disabled }) {
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -154,7 +209,16 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
             </div>
             <div className="org-master-identity-fields">
               <div className="org-master-form-grid org-master-form-grid--2">
-                <Field label="Legal name" hint="header" className="org-master-form-span-2">
+                <Field label="Organisation display name" className="org-master-form-span-2">
+                  <input
+                    className="org-master-input"
+                    value={form.name || ''}
+                    disabled={disabled}
+                    onChange={(e) => update('name', e.target.value)}
+                    placeholder="e.g. Tylo Care Private Limited"
+                  />
+                </Field>
+                <Field label="Legal name" className="org-master-form-span-2">
                   <input
                     className="org-master-input"
                     value={form.legalName || ''}
@@ -163,7 +227,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                     placeholder="Tylo Care Private Limited"
                   />
                 </Field>
-                <Field label="Tagline">
+                <Field label="Tagline" className="org-master-form-span-2">
                   <input
                     className="org-master-input"
                     value={form.brandLine || ''}
@@ -172,7 +236,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                     placeholder="Bringing Healthcare Closer"
                   />
                 </Field>
-                <Field label="Email" hint="header">
+                <Field label="Email">
                   <input
                     className="org-master-input"
                     type="email"
@@ -182,7 +246,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                     placeholder="growth@tylocare.com"
                   />
                 </Field>
-                <Field label="Website" hint="header" className="org-master-form-span-2">
+                <Field label="Website">
                   <input
                     className="org-master-input"
                     value={form.website || ''}
@@ -191,7 +255,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                     placeholder="tylocare.com"
                   />
                 </Field>
-                <Field label="Registered address" hint="header" className="org-master-form-span-2">
+                <Field label="Registered address" className="org-master-form-span-2">
                   <textarea
                     className="org-master-input org-master-input--textarea"
                     rows={2}
@@ -206,7 +270,15 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           </div>
         </Section>
 
-        <Section index="02" title="Document numbering" note="PREFIX + FY/MM/SEQ">
+        <Section index="02" title="Document header" note="Line 2">
+          <HeaderDisplayPicker
+            form={form}
+            disabled={disabled}
+            onChange={(keys) => update('headerDisplayKeys', keys)}
+          />
+        </Section>
+
+        <Section index="03" title="Document numbering" note="PREFIX + FY/MM/SEQ">
           <div className="org-master-form-grid org-master-form-grid--2">
             <Field
               label="Document code"
@@ -237,9 +309,9 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
           </div>
         </Section>
 
-        <Section index="03" title="Tax registration" note="Letterhead line 2">
+        <Section index="04" title="Tax registration" note="Registration numbers">
           <div className="org-master-form-grid org-master-form-grid--3">
-            <Field label="GSTIN" hint="header">
+            <Field label="GSTIN">
               <input
                 className="org-master-input"
                 value={form.gstin || ''}
@@ -248,7 +320,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                 placeholder="27AANCT2428H1Z4"
               />
             </Field>
-            <Field label="CIN" hint="header">
+            <Field label="CIN">
               <input
                 className="org-master-input"
                 value={form.cin || ''}
@@ -257,7 +329,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                 placeholder="U86909MH2026PTC472417"
               />
             </Field>
-            <Field label="Udyam Registration No." hint="header">
+            <Field label="Udyam Registration No.">
               <input
                 className="org-master-input"
                 value={form.udyam || ''}
@@ -288,7 +360,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
         </Section>
 
         <div className="org-master-form-pair">
-          <Section index="04" title="Bank details" note="Document footer">
+          <Section index="05" title="Bank details" note="Document footer">
             <div className="org-master-form-grid org-master-form-grid--2">
               <Field label="Account holder" className="org-master-form-span-2">
                 <input
@@ -334,7 +406,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
             </div>
           </Section>
 
-          <Section index="05" title="Digital signature" note="Document footer">
+          <Section index="06" title="Digital signature" note="Document footer">
             <div className="org-master-sig-block">
               <div className="org-master-media-field">
                 <label className="org-master-field-label">Signature image</label>

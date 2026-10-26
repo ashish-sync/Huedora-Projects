@@ -289,9 +289,6 @@ export function usePersistedCommercialBuilder({
       navigate('/finance-one/billing');
       return;
     }
-    if (!window.confirm('Cancel this document? This cannot be undone from here.')) {
-      return;
-    }
     setBusyAction('cancel');
     setError('');
     try {

@@ -3,6 +3,7 @@ import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import { emptyOrgMasterForm, orgMasterToPayload } from './commercialOrgMaster.js';
+import { DEFAULT_HEADER_DISPLAY_KEYS, sanitizeHeaderDisplayKeys } from './shared/companyLetterhead.js';
 import { CommercialOrgMasterForm } from './CommercialOrgMasterCard.jsx';
 import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { useCommercialOrgMaster } from './useCommercialOrgMaster.js';
@@ -35,6 +36,8 @@ export default function FinanceCommercialMasterPage() {
         ...emptyOrgMasterForm(),
         ...data,
         name: data.name || data.legalName || '',
+        headerDisplayKeys:
+          sanitizeHeaderDisplayKeys(data.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
       });
     }
   }, [data, creating]);
@@ -70,7 +73,13 @@ export default function FinanceCommercialMasterPage() {
   const cancelCreate = () => {
     setCreating(false);
     if (data) {
-      setForm({ ...emptyOrgMasterForm(), ...data, name: data.name || data.legalName || '' });
+      setForm({
+        ...emptyOrgMasterForm(),
+        ...data,
+        name: data.name || data.legalName || '',
+        headerDisplayKeys:
+          sanitizeHeaderDisplayKeys(data.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
+      });
     }
   };
 
@@ -155,15 +164,6 @@ export default function FinanceCommercialMasterPage() {
         </aside>
 
         <form id="org-master-form" className="finance-org-master-form-wrap" onSubmit={handleSave}>
-          <div className="field" style={{ marginBottom: '1rem' }}>
-            <label>Organisation display name</label>
-            <input
-              value={form.name || ''}
-              disabled={!canEdit || busy}
-              placeholder="e.g. Tylo Care Private Limited"
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </div>
           {creating ? (
             <p className="muted" style={{ marginBottom: '1rem' }}>
               Creating a new organisation. Cancel to return to the selected profile.

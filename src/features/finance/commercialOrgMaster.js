@@ -1,4 +1,5 @@
 import { api } from '../../shared/api.js';
+import { DEFAULT_HEADER_DISPLAY_KEYS, sanitizeHeaderDisplayKeys } from './shared/companyLetterhead.js';
 
 const CACHE_KEY = 'tylo_commercial_org_master_v1';
 const CACHE_KEY_PREFIX = 'tylo_commercial_org_master_v2:';
@@ -32,11 +33,11 @@ export const ORG_MASTER_FIELD_GROUPS = [
       'Legal name, address, email, and website used on document headers across all commercial docs.',
     fields: [
       { key: 'logoDataUrl', label: 'Logo', type: 'logo' },
-      { key: 'legalName', label: 'Legal name', type: 'text', required: true, header: true },
+      { key: 'legalName', label: 'Legal name', type: 'text', required: true },
       { key: 'brandLine', label: 'Tagline', type: 'text' },
-      { key: 'registeredOffice', label: 'Registered address', type: 'textarea', header: true },
-      { key: 'email', label: 'Email', type: 'email', header: true },
-      { key: 'website', label: 'Website', type: 'text', header: true },
+      { key: 'registeredOffice', label: 'Registered address', type: 'textarea' },
+      { key: 'email', label: 'Email', type: 'email', headerPick: true },
+      { key: 'website', label: 'Website', type: 'text', headerPick: true },
     ],
   },
   {
@@ -44,9 +45,9 @@ export const ORG_MASTER_FIELD_GROUPS = [
     title: 'Tax registration',
     description: 'GSTIN, CIN, and Udyam on header line 2; state drives CGST/SGST vs IGST.',
     fields: [
-      { key: 'gstin', label: 'GSTIN', type: 'text', header: true },
-      { key: 'cin', label: 'CIN', type: 'text', header: true },
-      { key: 'udyam', label: 'Udyam Registration No.', type: 'text', header: true },
+      { key: 'gstin', label: 'GSTIN', type: 'text', headerPick: true },
+      { key: 'cin', label: 'CIN', type: 'text', headerPick: true },
+      { key: 'udyam', label: 'Udyam Registration No.', type: 'text', headerPick: true },
       { key: 'state', label: 'State', type: 'text' },
       { key: 'stateCode', label: 'State code', type: 'text' },
     ],
@@ -83,6 +84,7 @@ export const ORG_LETTERHEAD_KEYS = [
   'udyam',
   'email',
   'website',
+  'headerDisplayKeys',
 ];
 
 function cacheKeyForOrg(orgId) {
@@ -220,6 +222,10 @@ function companyFromOrg(master, formCompany = {}) {
     gstin: orgVal(master, 'gstin', formCompany?.gstin),
     cin: orgVal(master, 'cin', formCompany?.cin),
     udyam: orgVal(master, 'udyam', formCompany?.udyam),
+    headerDisplayKeys:
+      sanitizeHeaderDisplayKeys(master.headerDisplayKeys)
+      ?? sanitizeHeaderDisplayKeys(formCompany?.headerDisplayKeys)
+      ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
     state: orgVal(master, 'state', formCompany?.state),
     stateCode: orgVal(master, 'stateCode', formCompany?.stateCode),
   };
@@ -332,6 +338,8 @@ export function getOrgMasterDisplay(master) {
     state: master.state,
     stateCode: master.stateCode,
     udyam: master.udyam,
+    headerDisplayKeys:
+      sanitizeHeaderDisplayKeys(master.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
     signatureDataUrl: master.signatureDataUrl,
     signatoryName: master.signatoryName,
     bank: {
@@ -364,6 +372,7 @@ export function emptyOrgMasterForm() {
     gstin: '',
     cin: '',
     udyam: '',
+    headerDisplayKeys: [...DEFAULT_HEADER_DISPLAY_KEYS],
     state: '',
     stateCode: '',
   };
@@ -389,6 +398,7 @@ export function orgMasterToPayload(form) {
     gstin: form.gstin,
     cin: form.cin,
     udyam: form.udyam,
+    headerDisplayKeys: sanitizeHeaderDisplayKeys(form.headerDisplayKeys) ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
     state: form.state,
     stateCode: form.stateCode,
   };

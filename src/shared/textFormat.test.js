@@ -17,4 +17,10 @@ describe('textFormat', () => {
     expect(formatTextValue('  sn-1001  ', 'serialNumber')).toBe('SN-1001');
     expect(formatTextValue('  not initiated  ', 'agreementStatus')).toBe('not initiated');
   });
+
+  it('keeps extra billing address lines', () => {
+    expect(formatTextValue('Pune HQ\n3rd Floor, Extra Landmark', 'billingAddress')).toBe(
+      'Pune HQ\n3rd Floor, Extra Landmark',
+    );
+  });
 });

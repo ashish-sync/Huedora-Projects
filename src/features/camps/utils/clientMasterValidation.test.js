@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateClientMasterForm } from './clientMasterValidation.js';
+import { recordToForm, validateClientMasterForm } from './clientMasterValidation.js';
 
 const validBase = {
   programName: 'Wellness Program',
@@ -81,5 +81,19 @@ describe('validateClientMasterForm', () => {
       assignedUserEmails: 'ops@client.com, user@client.in',
     });
     expect(errors.assignedUserEmails).toBeUndefined();
+  });
+});
+
+describe('recordToForm billing', () => {
+  it('keeps extra address lines from the Client Master row', () => {
+    const form = recordToForm({
+      billingAddress: 'Pune HQ\n3rd Floor, Extra Landmark',
+      billing: { address: 'Pune HQ' },
+      clientName: 'Acme',
+      programName: 'Wellness',
+      campName: 'BMD',
+      campType: 'HCW Only',
+    });
+    expect(form.billingAddress).toBe('Pune HQ\n3rd Floor, Extra Landmark');
   });
 });

@@ -177,7 +177,9 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     clientId: clientId ? String(clientId) : '',
     clientName: keepClientName ? (record.clientName || '') : '',
     clientCode: record.clientCode || record.client?.code || '',
-    billingAddress: record.billingAddress || billing.address || '',
+    billingAddress: String(record.billingAddress || '').trim()
+      ? record.billingAddress
+      : (billing.address || ''),
     billingGstin: record.billingGstin || billing.gstin || '',
     billingPan: record.billingPan || billing.pan || '',
     billingStateName: record.billingStateName || billing.stateName || '',

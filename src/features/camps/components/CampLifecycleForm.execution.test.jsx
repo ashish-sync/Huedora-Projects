@@ -20,12 +20,13 @@ vi.mock('../campOpsApi.js', () => ({
   },
 }));
 
-function renderExecutionForm(overrides = {}) {
+function renderExecutionForm(overrides = {}, formProps = {}) {
   const form = {
     ...emptyLifecycleForm(),
     campDate: '2099-08-01',
     startTime: '09:00',
     endTime: '12:00',
+    durationHours: 3,
     lifecycleStage: 'execution',
     executionStatus: EXECUTION_STATUS.CAMP_SCHEDULED,
     consumablesUsed: [],
@@ -43,6 +44,7 @@ function renderExecutionForm(overrides = {}) {
       reachedLifecycleStage="execution"
       campId="camp-1"
       onUploadDocuments={vi.fn()}
+      {...formProps}
     />,
   );
 }
@@ -122,6 +124,36 @@ describe('CampLifecycleForm execution stage', () => {
     expect(status.disabled).toBe(false);
     expect(status.value).toBe(EXECUTION_STATUS.MARKED_EXECUTED);
     expect(screen.getByText(/after Finance/i)).toBeTruthy();
+    expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
+  });
+
+  it('recomputes Extra hours on an existing camp from the Client Master snapshot', async () => {
+    renderExecutionForm({
+      inTime: '09:00',
+      outTime: '15:00',
+      durationHours: 3,
+      extraHours: 3,
+      clientMasterCampDuration: '4:00',
+    });
+    expect(screen.getByLabelText('Total Hours').value).toBe('6');
+    expect(screen.getByLabelText('Extra hours').value).toBe('2');
+    expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
+  });
+
+  it('shows Extra hours as Total Hours minus Client Master camp duration', async () => {
+    renderExecutionForm(
+      { inTime: '09:00', outTime: '15:00', durationHours: 3 },
+      {
+        clientMasterRecords: [{
+          campDuration: '4:00',
+          isActive: true,
+          executedCampUnit: 0,
+          otUnit: 0,
+        }],
+      },
+    );
+    expect(screen.getByLabelText('Total Hours').value).toBe('6');
+    expect(screen.getByLabelText('Extra hours').value).toBe('2');
     expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
   });
 });

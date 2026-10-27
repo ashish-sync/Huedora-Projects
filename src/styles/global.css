@@ -5226,7 +5226,7 @@ body:has(.login-page),
 /* Contact Directory */
 .cd-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
   gap: 16px;
   align-items: start;
 }
@@ -5240,7 +5240,38 @@ body:has(.login-page),
 }
 
 .cd-table {
-  min-width: 920px;
+  min-width: 1080px;
+}
+
+.cd-table td {
+  white-space: nowrap;
+}
+
+.cd-col-name {
+  min-width: 180px;
+  max-width: 240px;
+}
+
+.cd-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cd-name-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cd-col-category {
+  white-space: nowrap;
 }
 
 .cd-table .cd-col-email {
@@ -5262,6 +5293,10 @@ body:has(.login-page),
   top: 12px;
   max-height: calc(100vh - 120px);
   overflow: auto;
+}
+
+.cd-form--editing {
+  box-shadow: inset 3px 0 0 var(--brand);
 }
 
 .cd-form-head {
@@ -5317,6 +5352,23 @@ body:has(.login-page),
 
 .cd-form-grid .cd-span-2 {
   grid-column: 1 / -1;
+}
+
+.cd-class-pair {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.cd-class-pair--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cd-class-pair .field {
+  margin: 0;
+  min-width: 0;
 }
 
 .cd-form-hint {
@@ -5390,7 +5442,7 @@ body:has(.login-page),
 }
 
 .cd-employee-list {
-  margin: 0;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
@@ -5398,31 +5450,91 @@ body:has(.login-page),
   gap: 10px;
 }
 
-.cd-employee-row {
+.cd-employee-card {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
+  min-width: 0;
+}
+
+.cd-employee-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cd-employee-card-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .cd-employee-fields {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
+  min-width: 0;
 }
 
-.cd-employee-fields .field:last-child {
-  grid-column: 1 / -1;
+.cd-employee-fields .field {
+  margin: 0;
+  min-width: 0;
+}
+
+.cd-employee-fields .field label {
+  font-size: 0.78rem;
+  margin-bottom: 4px;
 }
 
 .cd-employee-remove {
   flex-shrink: 0;
-  margin-top: 22px;
-  font-size: 0.8rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.cd-amount-input {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  height: var(--control-h);
+}
+
+.cd-amount-prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-default, var(--line));
+  border-right: 0;
+  border-radius: var(--control-radius) 0 0 var(--control-radius);
+  background: var(--color-bg-sunken, var(--surface));
+  color: var(--color-text-secondary, var(--muted));
+  font-size: var(--text-body-sm-size, 0.82rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cd-employee-amount .cd-amount-input input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: var(--control-h);
+  border-radius: 0 var(--control-radius) var(--control-radius) 0;
 }
 
 .cd-provider-state .location-cascade {
@@ -5430,6 +5542,10 @@ body:has(.login-page),
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
+}
+
+.cd-provider-state .location-cascade .field:last-child {
+  grid-column: 1 / -1;
 }
 
 .cd-provider-state .location-cascade .field {

@@ -8,11 +8,89 @@ let accessToken = null;
 let refreshPromise = null;
 /** Bumped on logout so late refresh responses cannot restore a cleared session. */
 let authGeneration = 0;
+/** Timer that refreshes the access JWT before it expires. */
+let accessRefreshTimer = null;
 
 const ACCESS_KEY = 'tylo_one_access';
 const LEGACY_ACCESS_KEY = LEGACY_ACCESS_STORAGE_KEY;
 /** Tab-scoped latch: after logout, block cookie refresh until the next login. */
 const LOGOUT_LATCH_KEY = 'tylo_one_logged_out';
+/** Fired when cookie refresh fails so AuthProvider can send the user to login. */
+export const SESSION_EXPIRED_EVENT = 'tylo:session-expired';
+/** Refresh this many ms before the access JWT `exp`. */
+const ACCESS_REFRESH_LEAD_MS = 2 * 60 * 1000;
+
+export function readAccessTokenExpiryMs(token) {
+  if (!token || typeof token !== 'string') return 0;
+  const parts = token.split('.');
+  if (parts.length < 2) return 0;
+  try {
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(padded);
+    const payload = JSON.parse(json);
+    const exp = Number(payload?.exp);
+    return Number.isFinite(exp) ? exp * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function emitSessionExpired() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearAccessRefreshTimer() {
+  if (accessRefreshTimer) {
+    clearTimeout(accessRefreshTimer);
+    accessRefreshTimer = null;
+  }
+}
+
+function scheduleAccessRefresh(token) {
+  clearAccessRefreshTimer();
+  const expMs = readAccessTokenExpiryMs(token);
+  if (!expMs) return;
+  const remaining = expMs - Date.now();
+  if (remaining <= 0) return;
+  const delay = remaining <= ACCESS_REFRESH_LEAD_MS
+    ? 1000
+    : remaining - ACCESS_REFRESH_LEAD_MS;
+  accessRefreshTimer = setTimeout(() => {
+    accessRefreshTimer = null;
+    refreshAccessToken().catch(() => {
+      /* refreshAccessToken emits session-expired on failure */
+    });
+  }, delay);
+  accessRefreshTimer?.unref?.();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== ACCESS_KEY) return;
+    if (event.newValue) {
+      accessToken = event.newValue;
+      scheduleAccessRefresh(event.newValue);
+      return;
+    }
+    accessToken = null;
+    clearAccessRefreshTimer();
+    emitSessionExpired();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const token = accessToken || readAccessStorage();
+    const expMs = readAccessTokenExpiryMs(token);
+    if (!expMs) return;
+    if (expMs - Date.now() <= ACCESS_REFRESH_LEAD_MS) {
+      refreshAccessToken().catch(() => {});
+    }
+  });
+}
 
 function writeAccessStorage(token) {
   try {
@@ -75,10 +153,12 @@ export function setAccessToken(token) {
     setLogoutLatch(false);
     accessToken = token;
     writeAccessStorage(token);
+    scheduleAccessRefresh(token);
     return;
   }
   accessToken = null;
   writeAccessStorage(null);
+  clearAccessRefreshTimer();
 }
 
 /**
@@ -91,6 +171,7 @@ export function clearLocalAuthSession() {
   accessToken = null;
   writeAccessStorage(null);
   refreshPromise = null;
+  clearAccessRefreshTimer();
   return authGeneration;
 }
 
@@ -157,6 +238,7 @@ export async function refreshAccessToken() {
 
       if (!res.ok) {
         setAccessToken(null);
+        emitSessionExpired();
         const err = new Error(json?.error?.message || 'Session expired');
         err.status = res.status;
         err.code = json?.error?.code;
@@ -165,6 +247,7 @@ export async function refreshAccessToken() {
       const next = json?.data?.accessToken;
       if (!next) {
         setAccessToken(null);
+        emitSessionExpired();
         throw new Error('Session expired');
       }
 

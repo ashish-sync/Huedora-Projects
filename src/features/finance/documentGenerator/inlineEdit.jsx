@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { formatInr, inrTypingValue, parseInrAmount } from '../invoiceGenerator/invoiceCalculations.js';
+
 /** Inline field primitives — Zoho/Tally-style click-to-edit on the document */
 
 export function clampTextLines(text, maxLines) {
@@ -76,12 +79,38 @@ export function InlineAddChip({ label, onClick }) {
   );
 }
 
-export function InlineTableInput({ value, onChange, placeholder, className = '', align = 'left' }) {
+export function InlineTableInput({
+  value,
+  onChange,
+  placeholder,
+  className = '',
+  align = 'left',
+  format,
+}) {
+  const [focused, setFocused] = useState(false);
+  const isInr = format === 'inr';
+  const display = isInr
+    ? (focused
+      ? inrTypingValue(value)
+      : (value === '' || value == null ? '' : formatInr(value)))
+    : (value ?? '');
+
   return (
     <input
       className={`ei-inline ei-inline--cell ei-inline--${align} ${className}`.trim()}
-      value={value ?? ''}
-      onChange={(e) => onChange?.(e.target.value)}
+      value={display}
+      inputMode={isInr ? 'decimal' : undefined}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onChange={(e) => {
+        if (!isInr) {
+          onChange?.(e.target.value);
+          return;
+        }
+        const typed = inrTypingValue(e.target.value);
+        const parsed = parseInrAmount(typed);
+        onChange?.(parsed === '' ? '' : parsed);
+      }}
       placeholder={placeholder}
     />
   );

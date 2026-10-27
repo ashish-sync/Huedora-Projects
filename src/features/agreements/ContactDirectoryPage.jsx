@@ -23,7 +23,7 @@ import {
   CONTACT_KYC_HINT,
   CONTACT_KYC_MAX_BYTES,
 } from './contactKycUpload.js';
-import ServiceProviderProfile from './ServiceProviderProfile.jsx';
+import ServiceProviderProfile, { hydrateProviderEmployeesForForm } from './ServiceProviderProfile.jsx';
 import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
@@ -307,7 +307,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         body.accountNumber = '';
         body.campAmount = 0;
       }
-      if (isHcw) {
+      if (isHcwProvider) {
+        body.campAmount = 0;
+      } else if (isHcw) {
         const amount = Number(form.campAmount);
         body.campAmount = Number.isFinite(amount) && amount >= 0 ? amount : 0;
       } else {
@@ -448,7 +450,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     setEditId(c._id);
     setRosterTouched(false);
     setEditUpdatedAt(c.updatedAt || '');
-    const employees = Array.isArray(c.providerEmployees) ? c.providerEmployees : [];
+    const isProvider = contactCategory === 'Healthcare Worker' && resourceType === 'Service Provider';
+    const employees = hydrateProviderEmployeesForForm(
+      Array.isArray(c.providerEmployees) ? c.providerEmployees : [],
+      isProvider ? c.campAmount : 0,
+    );
     setRosterSnapshot(employees);
     setLinkSnapshot(String(c.serviceProviderContactId || '').trim());
     setForm({
@@ -475,7 +481,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
-      campAmount: c.campAmount != null && c.campAmount !== '' ? String(c.campAmount) : '',
+      campAmount: isProvider
+        ? ''
+        : (c.campAmount != null && c.campAmount !== '' ? String(c.campAmount) : ''),
       providerEmployees: employees,
     });
   };
@@ -598,11 +606,14 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               </thead>
               <tbody>
                 {rows.map((c) => (
-                  <tr key={c._id}>
-                    <td>
-                      <strong>{c.name}</strong>
+                  <tr key={c._id} className={editId === c._id ? 'is-selected' : undefined}>
+                    <td className="cd-col-name">
+                      <strong className="cd-name">{c.name}</strong>
+                      {c.profession ? (
+                        <span className="cd-name-meta">{c.profession}</span>
+                      ) : null}
                     </td>
-                    <td>
+                    <td className="cd-col-category">
                       {c.contactCategory ||
                         (['Vendor', 'Supplier'].includes(c.resourceType)
                           ? 'Vendor'
@@ -673,7 +684,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         </div>
 
         {can('agreements:write') && (
-          <form className="card cd-form" onSubmit={save}>
+          <form className={`card cd-form${editId ? ' cd-form--editing' : ''}`} onSubmit={save}>
             <header className="cd-form-head">
               <h3>{editId ? 'Edit contact' : 'Create new contact'}</h3>
             </header>
@@ -681,6 +692,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
             <section className="cd-section">
               <h4 className="cd-section-title">Classification</h4>
               <div className="cd-form-grid">
+                <div className={`cd-class-pair${showResourceType ? '' : ' cd-class-pair--single'}`}>
                 <div className="field">
                   <label>Contact Category *</label>
                   <AdaptiveSelect
@@ -732,6 +744,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     />
                   </div>
                 )}
+                </div>
 
                 {isHcwStaff && (
                   <div className="field cd-span-2">

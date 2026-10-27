@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCampPayoutPayee } from './campPayoutPayee.js';
+import {
+  campAmountForAssignedHcw,
+  resolveCampPayoutPayee,
+} from './campPayoutPayee.js';
 
 describe('resolveCampPayoutPayee', () => {
   it('uses the assigned HCW when no service provider is linked', () => {
@@ -52,5 +55,46 @@ describe('resolveCampPayoutPayee', () => {
     const resolved = resolveCampPayoutPayee(embedded, [provider]);
     expect(resolved.payeeIsServiceProvider).toBe(true);
     expect(resolved.payeeName).toBe('Roster Agency');
+  });
+
+  it('maps Camp Amount from the assigned Service Provider employee, not the agency', () => {
+    const provider = {
+      _id: 'sp-9',
+      name: 'Roster Agency',
+      contactCategory: 'Healthcare Worker',
+      resourceType: 'Service Provider',
+      campAmount: 9999,
+      providerEmployees: [
+        { id: 'emp-a', name: 'Embedded Tech', mobile: '9000000001', campAmount: 1800 },
+        { id: 'emp-b', name: 'Other Tech', mobile: '9000000002', campAmount: 2400 },
+      ],
+    };
+    const amount = campAmountForAssignedHcw({
+      assignmentId: 'spe:sp-9:emp-b',
+      assignedContact: null,
+      payeeContact: provider,
+    });
+    expect(amount).toBe(2400);
+  });
+
+  it('uses the linked staff contact Camp Amount, not the agency', () => {
+    const provider = {
+      _id: 'sp-1',
+      name: 'Care Agency',
+      contactCategory: 'Healthcare Worker',
+      resourceType: 'Service Provider',
+      campAmount: 5000,
+    };
+    const employee = {
+      _id: 'emp-1',
+      name: 'Ravi Kumar',
+      serviceProviderContactId: 'sp-1',
+      campAmount: 1750,
+    };
+    expect(campAmountForAssignedHcw({
+      assignmentId: 'emp-1',
+      assignedContact: employee,
+      payeeContact: provider,
+    })).toBe(1750);
   });
 });

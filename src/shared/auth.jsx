@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, clearLocalAuthSession, loadStoredToken, refreshAccessToken, setAccessToken } from './api.js';
+import { api, clearLocalAuthSession, loadStoredToken, refreshAccessToken, SESSION_EXPIRED_EVENT, setAccessToken } from './api.js';
 import { beginInsightSession, clearInsightSession } from './pickHealthcareInsight.js';
 import { exitAppFullscreen } from './fullscreen.js';
 import { isBootSequenceEnabled, loginExperience } from './loginExperienceConfig.js';
@@ -36,13 +36,21 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    const onExpired = () => {
+      setUser(null);
+      setBootSessionActive(false);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
+
+  useEffect(() => {
     refreshMe();
   }, [refreshMe]);
 
   const login = useCallback(async (email, password) => {
     const { data } = await api('/auth/login', { method: 'POST', body: { email, password } });
     setAccessToken(data.accessToken);
-    // Login already returns the public user — skip a second /auth/me round-trip.
     const me = data.user || (await api('/auth/me')).data;
     setUser(me);
     if (loginExperience.healthcareInsights) {

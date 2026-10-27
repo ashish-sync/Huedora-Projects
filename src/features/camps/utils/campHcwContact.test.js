@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHcwAssignCascade,
   contactToHcwFields,
+  listServiceProviderEmployees,
   professionsMatch,
 } from './campHcwContact.js';
 
@@ -272,6 +273,27 @@ describe('buildHcwAssignCascade', () => {
       { fallbackProfessions: ['Phlebotomist', 'Technician'] },
     );
     expect(fields.hcwCategory).toBe('Phlebotomist');
+  });
+
+  it('lists each Service Provider employee with their own campAmount', () => {
+    const rows = [
+      {
+        _id: 'sp1',
+        contactCategory: 'Healthcare Worker',
+        resourceType: 'Service Provider',
+        name: 'Acme Diagnostics',
+        state: 'Delhi',
+        city: 'New Delhi',
+        campAmount: 9999,
+        providerEmployees: [
+          { id: 'e1', name: 'Karan Mehta', mobile: '9888777666', profession: 'Technician', campAmount: 1500 },
+          { id: 'e2', name: 'Neha Rao', mobile: '9888777667', profession: 'Technician', campAmount: 2100 },
+        ],
+      },
+    ];
+    const people = listServiceProviderEmployees(rows);
+    expect(people.find((p) => p.name === 'Karan Mehta')?.campAmount).toBe(1500);
+    expect(people.find((p) => p.name === 'Neha Rao')?.campAmount).toBe(2100);
   });
 
   it('does not seed campAmount on assignment — only Executed camps auto-pick payout', () => {

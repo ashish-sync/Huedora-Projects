@@ -8,7 +8,23 @@ export function emptyProviderEmployee() {
     name: '',
     mobile: '',
     profession: '',
+    campAmount: '',
   };
+}
+
+/** Copy a legacy agency-level Camp Amount onto employees that do not have their own rate. */
+export function hydrateProviderEmployeesForForm(employees = [], providerCampAmount) {
+  const list = Array.isArray(employees) ? employees : [];
+  const inherited = Number(providerCampAmount);
+  const carry = Number.isFinite(inherited) && inherited > 0 ? inherited : 0;
+  return list.map((emp) => {
+    const own = Number(emp?.campAmount);
+    const amount = Number.isFinite(own) && own > 0 ? own : carry;
+    return {
+      ...emp,
+      campAmount: amount ? String(amount) : (emp?.campAmount === 0 || emp?.campAmount === '0' ? '0' : ''),
+    };
+  });
 }
 
 export default function ServiceProviderProfile({
@@ -49,7 +65,7 @@ export default function ServiceProviderProfile({
               placeholder="Agency / provider name"
             />
           </div>
-          <div className="field">
+          <div className="field cd-span-2">
             <label>Mobile Number *</label>
             <input
               required
@@ -89,21 +105,6 @@ export default function ServiceProviderProfile({
               disabled={disabled}
               required
               labels={{ state: 'State', city: 'City / District' }}
-              afterCity={(
-                <>
-                  <label>Camp Amount</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    disabled={disabled}
-                    value={form.campAmount ?? ''}
-                    onChange={(e) => onChange({ campAmount: e.target.value })}
-                    placeholder="Shows in Camp Payout when assigned"
-                  />
-                </>
-              )}
             />
           </div>
         </div>
@@ -122,16 +123,30 @@ export default function ServiceProviderProfile({
           )}
         </div>
         <p className="cd-form-hint">
-          Map staff under this provider for reporting and assignments. Camp pickers still use full
-          Healthcare Worker contacts when needed.
+          Camp Amount becomes Camp Payout in Camp One when this person is assigned.
         </p>
         {employees.length > 0 ? (
           <ul className="cd-employee-list">
             {employees.map((emp, index) => (
-              <li key={emp.id || index} className="cd-employee-row">
+              <li key={emp.id || index} className="cd-employee-card">
+                <div className="cd-employee-card-head">
+                  <span className="cd-employee-card-title">
+                    {emp.name?.trim() || `Employee ${index + 1}`}
+                  </span>
+                  {!disabled && (
+                    <button
+                      type="button"
+                      className="inv-link cd-employee-remove"
+                      onClick={() => removeEmployee(index)}
+                      aria-label={`Remove employee ${emp.name || index + 1}`}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
                 <div className="cd-employee-fields">
                   <div className="field">
-                    <label>Employee Name *</label>
+                    <label>Name *</label>
                     <input
                       required
                       disabled={disabled}
@@ -141,7 +156,7 @@ export default function ServiceProviderProfile({
                     />
                   </div>
                   <div className="field">
-                    <label>Mobile Number *</label>
+                    <label>Mobile *</label>
                     <input
                       required
                       disabled={disabled}
@@ -162,17 +177,23 @@ export default function ServiceProviderProfile({
                       onChange={(e) => updateEmployee(index, { profession: e.target.value })}
                     />
                   </div>
+                  <div className="field cd-employee-amount">
+                    <label>Camp Amount</label>
+                    <div className="cd-amount-input">
+                      <span className="cd-amount-prefix" aria-hidden="true">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        disabled={disabled}
+                        value={emp.campAmount ?? ''}
+                        onChange={(e) => updateEmployee(index, { campAmount: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
                 </div>
-                {!disabled && (
-                  <button
-                    type="button"
-                    className="inv-link cd-employee-remove"
-                    onClick={() => removeEmployee(index)}
-                    aria-label={`Remove employee ${emp.name || index + 1}`}
-                  >
-                    Remove
-                  </button>
-                )}
               </li>
             ))}
           </ul>

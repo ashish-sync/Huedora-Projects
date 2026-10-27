@@ -60,9 +60,25 @@ export function amountInWordsIndian(amount) {
 }
 
 export function formatInr(n) {
-  const num = Number(n);
+  const num = Number(String(n ?? '').replace(/,/g, ''));
   if (!Number.isFinite(num)) return '0.00';
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Strip grouping commas so "1,00,000.50" can be parsed. */
+export function parseInrAmount(raw) {
+  const cleaned = String(raw ?? '').replace(/,/g, '').trim();
+  if (cleaned === '' || cleaned === '.') return '';
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : '';
+}
+
+export function inrTypingValue(raw) {
+  const s = String(raw ?? '').replace(/,/g, '');
+  const kept = s.replace(/[^\d.]/g, '');
+  const parts = kept.split('.');
+  if (parts.length <= 2) return kept;
+  return `${parts[0]}.${parts.slice(1).join('')}`;
 }
 
 export function formatDisplayDate(iso) {

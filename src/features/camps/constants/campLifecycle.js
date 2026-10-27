@@ -17,7 +17,7 @@ import {
   CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
 } from '../utils/campFinanceExpense.js';
 import { resolveCampClientId } from '../utils/clientMasterCascade.js';
-import { computeCampRevenueFromPricing } from '../utils/campClientMasterPricing.js';
+import { computeCampRevenueFromPricing, computeOvertimeHours } from '../utils/campClientMasterPricing.js';
 
 export { CONTACT_PERSON_LEVEL_OPTIONS };
 
@@ -496,7 +496,6 @@ export function resolvePunctuality(campStartTime, inTime) {
 }
 
 export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
-  const durationHours = Number(form.durationHours) || 0;
   const campSlot = resolveCampSlot(form.startTime);
 
   let totalHours = form.totalHours;
@@ -510,10 +509,10 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
     }
   }
 
-  let extraHours = 0;
-  if (totalHours != null && durationHours > 0) {
-    extraHours = Math.max(0, Math.round((totalHours - durationHours) * 100) / 100);
-  }
+  const extraHours = computeOvertimeHours(totalHours, {
+    campDuration: pricing?.campDuration || form.clientMasterCampDuration,
+    durationHours: form.durationHours,
+  });
 
   const autoRevenue = pricing
     ? computeCampRevenueFromPricing({ ...form, totalHours, extraHours }, pricing)
@@ -664,6 +663,7 @@ export function emptyLifecycleForm() {
     outTime: '',
     totalHours: '',
     extraHours: 0,
+    clientMasterCampDuration: '',
     kmRoundTrip: '',
     punctuality: '',
     attire: '',
@@ -758,6 +758,7 @@ export function campToForm(camp) {
     outTime: camp.outTime || '',
     totalHours: camp.totalHours ?? '',
     extraHours: camp.extraHours ?? 0,
+    clientMasterCampDuration: camp.clientMasterCampDuration || '',
     kmRoundTrip: camp.kmRoundTrip ?? '',
     punctuality: camp.punctuality || '',
     attire: camp.attire || '',

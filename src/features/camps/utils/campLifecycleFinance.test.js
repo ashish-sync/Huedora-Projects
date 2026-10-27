@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canEditLifecycleStage,
   canVisitLifecycleStage,
+  computeLifecycleDerived,
   EXECUTION_STATUS,
   getExecutionFinanceBlockers,
   hasReachedLifecycleStage,
@@ -89,5 +90,42 @@ describe('camp lifecycle finance transition', () => {
     };
     expect(isExecutionCancellationForFinance(legacy)).toBe(true);
     expect(getExecutionFinanceBlockers(legacy)).toEqual([]);
+  });
+
+  it('recomputes Extra hours for an existing camp from the Client Master snapshot', () => {
+    const derived = computeLifecycleDerived({
+      inTime: '09:00',
+      outTime: '15:00',
+      durationHours: 3,
+      extraHours: 3,
+      clientMasterCampDuration: '4:00',
+    });
+    expect(derived.totalHours).toBe(6);
+    expect(derived.extraHours).toBe(2);
+  });
+
+  it('computes Extra hours from Client Master camp duration, not the scheduled slot', () => {
+    const pricing = { campDuration: '4:00', otUnit: 400, executedCampUnit: 0 };
+    const derived = computeLifecycleDerived({
+      inTime: '09:00',
+      outTime: '15:00',
+      durationHours: 3,
+    }, { pricing });
+    expect(derived.totalHours).toBe(6);
+    expect(derived.extraHours).toBe(2);
+  });
+
+  it('recomputes Extra hours when Out Time changes', () => {
+    const pricing = { campDuration: '4:00' };
+    expect(computeLifecycleDerived({
+      inTime: '09:00',
+      outTime: '13:00',
+      durationHours: 3,
+    }, { pricing }).extraHours).toBe(0);
+    expect(computeLifecycleDerived({
+      inTime: '09:00',
+      outTime: '15:00',
+      durationHours: 3,
+    }, { pricing }).extraHours).toBe(2);
   });
 });

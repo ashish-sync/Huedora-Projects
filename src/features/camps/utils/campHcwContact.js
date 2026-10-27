@@ -44,7 +44,7 @@ function enrichStaffWithProvider(contact, providersById) {
     state: String(contact.state || '').trim() || provider?.state || '',
     city: String(contact.city || '').trim() || provider?.city || '',
     serviceProviderName: contact.serviceProviderName || provider?.name || '',
-    campAmount: contactCampAmount(contact) || contactCampAmount(provider),
+    campAmount: contactCampAmount(contact),
   };
 }
 
@@ -90,7 +90,7 @@ export function listServiceProviderEmployees(contacts = []) {
         profession,
         state: provider.state || '',
         city: provider.city || '',
-        campAmount: contactCampAmount(provider),
+        campAmount: contactCampAmount(employee) || contactCampAmount(provider),
         serviceProviderContactId: provider._id,
         serviceProviderName: provider.name || '',
         isProviderEmployee: true,

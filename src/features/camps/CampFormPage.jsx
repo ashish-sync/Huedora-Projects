@@ -54,7 +54,12 @@ import { HcwAssignmentGapAlert } from './components/HcwAssignmentGapAlert.jsx';
 import { syncPrimaryContactFields, normalizeContactPersons } from './utils/campContactPersons.js';
 import { mergeConsumablesWithTemplate, normalizeConsumablesUsed } from './utils/campConsumables.js';
 import { getHcwFinanceBlockers, isHcwReadyForFinance } from './utils/hcwFinanceReadiness.js';
-import { embeddedServiceProviderId, resolveCampPayoutPayee } from './utils/campPayoutPayee.js';
+import {
+  campAmountForAssignedHcw,
+  embeddedServiceProviderId,
+  findEmbeddedProviderEmployee,
+  resolveCampPayoutPayee,
+} from './utils/campPayoutPayee.js';
 import { findAssignableHealthcareWorker } from './utils/campHcwContact.js';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
@@ -391,7 +396,17 @@ export default function CampFormPage() {
         }
         // Keep spe: assignment id so payee resolution still treats this as SP-linked staff.
         if (embeddedProviderId) {
-          setAssignedHcwContact({ ...row, _id: assignmentId, serviceProviderContactId: fetchId });
+          const employee = findEmbeddedProviderEmployee(row, assignmentId);
+          setAssignedHcwContact({
+            ...row,
+            _id: assignmentId,
+            serviceProviderContactId: fetchId,
+            name: employee?.name || row.name,
+            contact: employee?.mobile || employee?.contact || row.contact,
+            profession: employee?.profession || row.profession,
+            campAmount: employee?.campAmount ?? 0,
+            isProviderEmployee: true,
+          });
         } else {
           setAssignedHcwContact(row);
         }
@@ -477,11 +492,11 @@ export default function CampFormPage() {
       campPayoutSeedKeyRef.current = seedKey;
       return;
     }
-    const fromAssigned = Number(assignedHcwContact?.campAmount);
-    const fromPayee = Number(payoutPayeeContact?.campAmount);
-    const amount = (Number.isFinite(fromAssigned) && fromAssigned > 0)
-      ? fromAssigned
-      : (Number.isFinite(fromPayee) && fromPayee > 0 ? fromPayee : 0);
+    const amount = campAmountForAssignedHcw({
+      assignmentId: hcwId,
+      assignedContact: assignedHcwContact,
+      payeeContact: payoutPayeeContact,
+    });
     if (amount <= 0) return;
     campPayoutSeedKeyRef.current = seedKey;
     const travelling = Number(form.travelling || 0) || 0;

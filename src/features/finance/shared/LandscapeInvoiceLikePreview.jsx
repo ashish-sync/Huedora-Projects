@@ -772,8 +772,10 @@ export default function LandscapeInvoiceLikePreview({
                       {editable ? (
                         <InlineTableInput
                           value={line.rate}
-                          onChange={(v) => onUpdateLine?.(index, { rate: Number(v) })}
+                          onChange={(v) => onUpdateLine?.(index, { rate: v === '' ? '' : Number(v) })}
                           align="right"
+                          format="inr"
+                          placeholder="0.00"
                         />
                       ) : (
                         money(line.rate)

@@ -50,6 +50,7 @@ import {
 } from '../utils/campContactPersons';
 import { formatDoctorName, formatContactPersonName } from '../../../shared/textFormat.js';
 import {
+  CANCELLATION_LOCKED_PAYOUT_FIELDS,
   FINANCE_PAYOUT_PART_FIELDS,
   FINANCE_REVENUE_PART_FIELDS,
   formatFinanceAmountValue,
@@ -58,6 +59,7 @@ import {
 import {
   isCampCancelledForRevenue,
   isCampChargeable,
+  looksLikeStaleScheduledOvertime,
   resolveClientMasterPricingFromRecords,
 } from '../utils/campClientMasterPricing.js';
 
@@ -248,12 +250,18 @@ export function CampLifecycleForm({
       && !isCampChargeable(form);
     if (!forceZeroFinancialUnits && !revenueAutoSyncRef.current) return;
 
-    const hasStoredRevenue = FINANCE_REVENUE_PART_FIELDS.some(
-      (key) => Number(form[key] || 0) !== 0,
+    const staleOvertime = looksLikeStaleScheduledOvertime(
+      { ...form, totalHours: derived.totalHours },
+      clientMasterPricing,
     );
-    const differsFromFormula = FINANCE_REVENUE_PART_FIELDS.some(
-      (key) => Number(form[key] || 0) !== Number(formula[key] || 0),
-    );
+    const hasStoredRevenue = FINANCE_REVENUE_PART_FIELDS.some((key) => {
+      if (key === 'overtimeRevenue' && staleOvertime) return false;
+      return Number(form[key] || 0) !== 0;
+    });
+    const differsFromFormula = FINANCE_REVENUE_PART_FIELDS.some((key) => {
+      if (key === 'overtimeRevenue' && staleOvertime) return false;
+      return Number(form[key] || 0) !== Number(formula[key] || 0);
+    });
     if (!forceZeroFinancialUnits && hasStoredRevenue && differsFromFormula) {
       revenueAutoSyncRef.current = false;
       return;
@@ -282,6 +290,7 @@ export function CampLifecycleForm({
     form.executionStatus,
     form.assignmentRefusalReason,
     form.cancelledBy,
+    derived.totalHours,
     updateFields,
   ]);
   const { options: specialtyOptions } = usePicklistOptions('camp.doctorSpecialty', DOCTOR_SPECIALTY_OPTIONS);
@@ -376,6 +385,16 @@ export function CampLifecycleForm({
           </div>
           <div className="camp-request-dates-row full">
             <label>
+              Request Date
+              <DateInput
+                hideLabel
+                value={form.requestDate}
+                onChange={(v) => updateField('requestDate', v)}
+                disabled={disabled}
+                min={earliestAllowedDate}
+              />
+            </label>
+            <label>
               Camp Date
               <DateInput
                 hideLabel
@@ -386,25 +405,15 @@ export function CampLifecycleForm({
                 min={earliestAllowedDate}
               />
             </label>
-            <label>
-              Request Date
-              <DateInput
-                hideLabel
-                value={form.requestDate}
-                onChange={(v) => updateField('requestDate', v)}
-                disabled={disabled}
-                min={earliestAllowedDate}
-              />
-            </label>
           </div>
-          {campDateHistorical && !canSetHistoricalCampDates ? (
-            <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-              Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
-            </p>
-          ) : null}
           {requestDateHistorical && !canSetHistoricalCampDates ? (
             <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
               Request date is more than 2 days before today. Only Team Leaders or Admins can use this date.
+            </p>
+          ) : null}
+          {campDateHistorical && !canSetHistoricalCampDates ? (
+            <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
+              Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
             </p>
           ) : null}
           {requestDateWarning ? (
@@ -760,8 +769,10 @@ export function CampLifecycleForm({
     const disabled = stageDisabled('financial');
     const submitted = Boolean(form.submittedToFinanceAt);
     const showHcwBlockers = !submitted && hcwFinanceBlockers.length > 0;
+    const lockStandardPayouts = isExecutionCancellationForFinance({ status: campStatus, ...form });
 
     function updateFinanceAmount(field, raw) {
+      if (lockStandardPayouts && (CANCELLATION_LOCKED_PAYOUT_FIELDS.includes(field) || field === 'totalPayout')) return;
       const nextValue = sanitizeFinanceAmountInput(raw);
       const isRevenuePart = FINANCE_REVENUE_PART_FIELDS.includes(field);
       const isPayoutPart = FINANCE_PAYOUT_PART_FIELDS.includes(field);
@@ -861,19 +872,19 @@ export function CampLifecycleForm({
               label="Camp Payout"
               value={form.campAmount}
               onChange={(v) => updateFinanceAmount('campAmount', v)}
-              disabled={disabled}
+              disabled={disabled || lockStandardPayouts}
             />
             <FinanceAmountField
               label="Travel Payout"
               value={form.travelling}
               onChange={(v) => updateFinanceAmount('travelling', v)}
-              disabled={disabled}
+              disabled={disabled || lockStandardPayouts}
             />
             <FinanceAmountField
               label="Overtime Payout"
               value={form.overtimeExpense}
               onChange={(v) => updateFinanceAmount('overtimeExpense', v)}
-              disabled={disabled}
+              disabled={disabled || lockStandardPayouts}
             />
             <FinanceAmountField
               label="Other Payouts"
@@ -882,6 +893,11 @@ export function CampLifecycleForm({
               disabled={disabled}
             />
           </div>
+          {lockStandardPayouts && !disabled ? (
+            <p className="meta-text">
+              Camp, Travel, and Overtime payouts are locked when execution is Cancelled by Tylo or Cancelled by Client. Other Payouts stays editable.
+            </p>
+          ) : null}
         </div>
 
         <div className="camp-finance-section full">
@@ -897,7 +913,7 @@ export function CampLifecycleForm({
               label="Total Payout"
               value={form.totalPayout ?? derived.totalPayout}
               onChange={(v) => updateFinanceAmount('totalPayout', v)}
-              disabled={disabled}
+              disabled={disabled || lockStandardPayouts}
             />
             <ReadOnlyField
               label="Net Contribution"

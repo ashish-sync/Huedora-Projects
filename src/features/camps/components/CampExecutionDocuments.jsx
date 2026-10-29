@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { apiUrl } from '../../../shared/config.js';
-import { EXECUTION_DOC_TYPES, normalizeExecutionDocType } from '../constants/campLifecycle.js';
+import { EXECUTION_DOC_TYPES, isGpsSelfieDocType, normalizeExecutionDocType } from '../constants/campLifecycle.js';
 import { executionDocumentDisplayName } from '../utils/executionDocumentName.js';
 
 const EXEC_DOC_ACCEPT =
@@ -148,7 +148,7 @@ export function CampExecutionDocuments({
         {EXECUTION_DOC_TYPES.map((type) => {
           const typeDocs = docsForType(docs, type.value);
           const isUploaded = typeDocs.length > 0;
-          const isGpsSelfie = type.value === 'gps_selfie';
+          const isGpsSelfie = isGpsSelfieDocType(type.value);
           const isOther = type.value === 'other';
           const rowUploadLocked = disabled
             || uploadBusy

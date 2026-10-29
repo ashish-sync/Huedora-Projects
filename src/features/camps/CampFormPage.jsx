@@ -951,7 +951,7 @@ export default function CampFormPage() {
     if (!id || !fileList?.length) return;
     let files = Array.from(fileList);
     for (const file of files) {
-      const isGps = docType === 'gps_selfie';
+      const isGps = docType === 'gps_selfie' || docType === 'gps_selfie_out';
       const pre = validateUploadFile(file, {
         maxBytes: 10 * 1024 * 1024,
         acceptExt: isGps
@@ -964,7 +964,7 @@ export default function CampFormPage() {
         return;
       }
     }
-    if (docType === 'gps_selfie') {
+    if (docType === 'gps_selfie' || docType === 'gps_selfie_out') {
       try {
         const { prepareGpsSelfieForUpload } = await import('./utils/prepareGpsSelfieForUpload.js');
         files = await Promise.all(files.map((file) => prepareGpsSelfieForUpload(file)));
@@ -982,6 +982,7 @@ export default function CampFormPage() {
         ...prev,
         executionDocuments: fromServer.executionDocuments,
         inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+        outTimeSelfieUrl: fromServer.outTimeSelfieUrl,
         updatedAt: camp.updatedAt || prev.updatedAt,
       }));
       setCampMeta((prev) => (prev
@@ -1013,6 +1014,7 @@ export default function CampFormPage() {
         ...prev,
         executionDocuments: fromServer.executionDocuments,
         inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+        outTimeSelfieUrl: fromServer.outTimeSelfieUrl,
         updatedAt: camp.updatedAt || prev.updatedAt,
       }));
       setCampMeta((prev) => (
@@ -1022,6 +1024,7 @@ export default function CampFormPage() {
             ...camp,
             executionDocuments: fromServer.executionDocuments,
             inTimeSelfieUrl: fromServer.inTimeSelfieUrl,
+            outTimeSelfieUrl: fromServer.outTimeSelfieUrl,
             updatedAt: camp.updatedAt || prev.updatedAt,
           }
           : prev

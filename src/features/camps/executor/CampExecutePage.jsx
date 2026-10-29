@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Calendar, Check, ChevronLeft, ChevronRight, Info, MapPin, Save, Trash2, User, FileText, Send,
+  Calendar, Camera, Check, ChevronLeft, ChevronRight, MapPin, Save, Trash2, Upload, User, FileText, Send,
 } from 'lucide-react';
 import { campExecuteApi } from './campExecuteApi.js';
 import { prepareGpsSelfieForUpload } from '../utils/prepareGpsSelfieForUpload.js';
+import { formatTime } from '../../../shared/dateFormat.js';
 import { GpsSelfieCapture } from './GpsSelfieCapture.jsx';
 import './campExecute.css';
 
@@ -12,15 +13,27 @@ const TYLO_LOGO_SRC = '/brand/tylo-logo.jpg';
 
 const STEPS = [
   { id: 'details', label: 'Camp Details' },
-  { id: 'documents', label: 'Documents' },
   { id: 'consumables', label: 'Consumables' },
+  { id: 'documents', label: 'Documents' },
 ];
 
 const DOC_LABELS = {
   doctor_form: 'Doctor Form (DF)',
   patient_form: 'Patient Form (PF)',
   gps_selfie: 'GPS Selfie (GS)',
+  gps_selfie_out: 'GPS Selfie Out (GO)',
 };
+
+const GPS_IN = 'gps_selfie';
+const GPS_OUT = 'gps_selfie_out';
+
+function emptyConsRow() {
+  return { productId: '', itemName: '', quantityUsed: '', wastage: '', unit: '', uomId: '' };
+}
+
+function hasEnteredConsumable(row) {
+  return Boolean(String(row?.itemName || '').trim() || String(row?.productId || '').trim());
+}
 
 function readGeolocation() {
   return new Promise((resolve, reject) => {
@@ -42,11 +55,38 @@ function readGeolocation() {
   });
 }
 
-function applyContext(data, setters) {
-  const { setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables } = setters;
+function clockFromGpsContext(data, { saved, capturedAt, docType }) {
+  const existing = formatTime(saved) || String(saved || '').trim();
+  if (existing) return existing;
+  const gpsCaptured = formatTime(capturedAt);
+  if (gpsCaptured) return gpsCaptured;
+  const selfie = (data?.documents || []).find((d) => d.docType === docType);
+  return formatTime(selfie?.uploadedAt) || '';
+}
+
+function inTimeFromContext(data) {
+  return clockFromGpsContext(data, {
+    saved: data?.form?.inTime,
+    capturedAt: data?.form?.executorGps?.capturedAt,
+    docType: GPS_IN,
+  });
+}
+
+function outTimeFromContext(data) {
+  return clockFromGpsContext(data, {
+    saved: data?.form?.outTime,
+    capturedAt: data?.form?.executorGpsOut?.capturedAt,
+    docType: GPS_OUT,
+  });
+}
+
+function applyContext(data, setters, { hydrateConsumables = false } = {}) {
+  const {
+    setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables, setConsumablesOn,
+  } = setters;
   setContext(data);
-  setInTime(data?.form?.inTime || '');
-  setOutTime(data?.form?.outTime || '');
+  setInTime(inTimeFromContext(data));
+  if (setOutTime) setOutTime(outTimeFromContext(data));
   setPatients(
     data?.form?.patientsScreened === '' || data?.form?.patientsScreened == null
       ? ''
@@ -58,19 +98,13 @@ function applyContext(data, setters) {
       : String(data.form.productCount),
   );
   const rows = Array.isArray(data?.form?.consumablesUsed) ? data.form.consumablesUsed : [];
-  if (rows.length) {
-    setConsumables(rows.map((row) => ({ ...row })));
-  } else if (Array.isArray(data?.consumableOptions) && data.consumableOptions.length) {
-    setConsumables(data.consumableOptions.map((item) => ({
-      productId: item.productId,
-      itemName: item.itemName,
-      unit: item.unit || '',
-      uomId: item.uomId || '',
-      quantityUsed: '',
-      wastage: '',
-    })));
-  } else {
-    setConsumables([{ productId: '', itemName: '', quantityUsed: '', wastage: '', unit: '', uomId: '' }]);
+  const entered = rows.filter(hasEnteredConsumable);
+  if (hydrateConsumables) {
+    setConsumablesOn(entered.length > 0);
+    setConsumables(entered.length ? entered.map((row) => ({ ...row })) : [emptyConsRow()]);
+  } else if (entered.length) {
+    setConsumablesOn(true);
+    setConsumables(entered.map((row) => ({ ...row })));
   }
 }
 
@@ -91,7 +125,8 @@ export default function CampExecutePage() {
   const [patients, setPatients] = useState('');
   const [productCount, setProductCount] = useState('');
   const [consumables, setConsumables] = useState([]);
-  const [gpsCaptureOpen, setGpsCaptureOpen] = useState(false);
+  const [consumablesOn, setConsumablesOn] = useState(false);
+  const [gpsCaptureKind, setGpsCaptureKind] = useState('');
   const fileRefs = useRef({});
 
   const locked = Boolean(context?.invite?.locked);
@@ -104,8 +139,8 @@ export default function CampExecutePage() {
       .then((data) => {
         if (!active) return;
         applyContext(data, {
-          setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables,
-        });
+          setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables, setConsumablesOn,
+        }, { hydrateConsumables: true });
       })
       .catch((err) => {
         if (active) setError(err.message || 'This execution link is unavailable');
@@ -116,33 +151,40 @@ export default function CampExecutePage() {
     return () => { active = false; };
   }, [token]);
 
-  const draftBody = useMemo(() => ({
-    inTime,
-    outTime,
-    patientsScreened: patients === '' ? '' : Number(patients),
-    productCount: productCount === '' ? '' : Number(productCount),
-    consumablesUsed: consumables
-      .filter((row) => row.itemName || row.productId)
-      .map((row) => ({
-        ...row,
-        productId: row.productId || `free:${String(row.itemName || '').trim().toLowerCase()}`,
-      })),
-  }), [inTime, outTime, patients, productCount, consumables]);
+  const draftBody = useMemo(() => {
+    const body = {
+      patientsScreened: patients === '' ? '' : Number(patients),
+      productCount: productCount === '' ? '' : Number(productCount),
+      consumablesUsed: consumablesOn
+        ? consumables
+          .filter(hasEnteredConsumable)
+          .map((row) => ({
+            ...row,
+            productId: row.productId || `free:${String(row.itemName || '').trim().toLowerCase()}`,
+          }))
+        : [],
+    };
+    if (String(inTime).trim()) body.inTime = String(inTime).trim();
+    if (String(outTime).trim()) body.outTime = String(outTime).trim();
+    return body;
+  }, [inTime, outTime, patients, productCount, consumables, consumablesOn]);
 
-  const detailsReady = Boolean(String(inTime).trim() && String(outTime).trim()
-    && patients !== '' && productCount !== '');
+  const detailsReady = Boolean(patients !== '' && productCount !== '');
 
-  const docsReady = ['doctor_form', 'patient_form', 'gps_selfie']
+  const gpsReady = context?.documentStatus?.[GPS_IN] === 'uploaded';
+  const gpsOutReady = context?.documentStatus?.[GPS_OUT] === 'uploaded';
+  const paperDocsReady = ['doctor_form', 'patient_form']
     .every((type) => context?.documentStatus?.[type] === 'uploaded');
+  const docsReady = paperDocsReady && gpsReady && gpsOutReady;
 
-  async function saveDraft({ silent = false } = {}) {
-    setBusy(true);
+  async function saveDraft({ silent = false, body, manageBusy = true } = {}) {
+    if (manageBusy) setBusy(true);
     setError('');
     if (!silent) setNotice('');
     try {
-      const data = await campExecuteApi.saveDraft(token, draftBody);
+      const data = await campExecuteApi.saveDraft(token, body || draftBody);
       applyContext(data, {
-        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables,
+        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables, setConsumablesOn,
       });
       if (!silent) setNotice('Draft saved');
       return data;
@@ -150,17 +192,22 @@ export default function CampExecutePage() {
       setError(err.message || 'Could not save draft');
       throw err;
     } finally {
-      setBusy(false);
+      if (manageBusy) setBusy(false);
     }
   }
 
   async function goNext() {
     try {
-      if (step === 0 && !detailsReady) {
-        setError('Fill In Time, Out Time, Patients Screened, and Product Count');
+      if (step === 0 && !gpsReady) {
+        setError('Capture the GPS Selfie before continuing');
+        return;
+      }
+      if (step === 1 && !detailsReady) {
+        setError('Fill Patients Screened and Product Count');
         return;
       }
       await saveDraft({ silent: true });
+      setGpsCaptureKind('');
       setError('');
       setNotice('');
       setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -175,12 +222,21 @@ export default function CampExecutePage() {
     setError('');
     setNotice('');
     try {
-      await saveDraft({ silent: true });
       let uploadFile = file;
       let gps = null;
-      if (docType === 'gps_selfie') {
+      let inTimeFromSelfie = '';
+      let outTimeFromSelfie = '';
+      if (docType === GPS_IN || docType === GPS_OUT) {
         gps = await readGeolocation();
         const capturedAt = new Date();
+        const clock = formatTime(capturedAt);
+        if (docType === GPS_IN) {
+          inTimeFromSelfie = clock;
+          if (clock) setInTime(clock);
+        } else {
+          outTimeFromSelfie = clock;
+          if (clock) setOutTime(clock);
+        }
         uploadFile = await prepareGpsSelfieForUpload(file, {
           watermark: {
             campId: camp?.campId || '',
@@ -190,17 +246,30 @@ export default function CampExecutePage() {
           },
         });
       }
+      await saveDraft({
+        silent: true,
+        manageBusy: false,
+        body: {
+          ...draftBody,
+          ...(inTimeFromSelfie ? { inTime: inTimeFromSelfie } : {}),
+          ...(outTimeFromSelfie ? { outTime: outTimeFromSelfie } : {}),
+        },
+      });
       const data = await campExecuteApi.uploadDocument(token, {
         file: uploadFile,
         docType,
         ...(gps || {}),
+        ...(inTimeFromSelfie ? { inTime: inTimeFromSelfie } : {}),
+        ...(outTimeFromSelfie ? { outTime: outTimeFromSelfie } : {}),
       });
       applyContext(data, {
-        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables,
+        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables, setConsumablesOn,
       });
-      setNotice(docType === 'gps_selfie'
-        ? `${DOC_LABELS[docType]} captured`
-        : `${DOC_LABELS[docType]} uploaded`);
+      if (inTimeFromSelfie && !formatTime(data?.form?.inTime)) setInTime(inTimeFromSelfie);
+      if (outTimeFromSelfie && !formatTime(data?.form?.outTime)) setOutTime(outTimeFromSelfie);
+      if (docType !== GPS_IN && docType !== GPS_OUT) {
+        setNotice(`${DOC_LABELS[docType]} uploaded`);
+      }
     } catch (err) {
       setError(err.message || 'Upload failed');
     } finally {
@@ -215,7 +284,7 @@ export default function CampExecutePage() {
     try {
       const data = await campExecuteApi.deleteDocument(token, doc.fileId || doc.id);
       applyContext(data, {
-        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables,
+        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables, setConsumablesOn,
       });
     } catch (err) {
       setError(err.message || 'Could not remove document');
@@ -226,7 +295,7 @@ export default function CampExecutePage() {
 
   async function onSubmit() {
     if (!docsReady) {
-      setError('Upload Doctor Form and Patient Form, and capture GPS Selfie before submitting');
+      setError('Upload Doctor Form and Patient Form, and capture both GPS Selfies before submitting');
       return;
     }
     setBusy(true);
@@ -235,7 +304,7 @@ export default function CampExecutePage() {
     try {
       const data = await campExecuteApi.submit(token, draftBody);
       applyContext(data, {
-        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables,
+        setContext, setInTime, setOutTime, setPatients, setProductCount, setConsumables, setConsumablesOn,
       });
       setNotice('Execution submitted for Camp One review');
     } catch (err) {
@@ -269,10 +338,93 @@ export default function CampExecutePage() {
     );
   }
 
-  const gps = context.form?.executorGps;
+  function renderGpsLocation(gps) {
+    if (gps?.latitude == null) return null;
+    const coords = `${Number(gps.latitude).toFixed(4)}, ${Number(gps.longitude).toFixed(4)}`;
+    return (
+      <div className="camp-execute__gps">
+        <MapPin size={14} aria-hidden="true" />
+        <span>{coords}</span>
+        {gps.withinRadius === true ? (
+          <span className="camp-execute__badge">Within {context.gps?.radiusMeters || 250} m</span>
+        ) : null}
+        {gps.withinRadius === false ? (
+          <span className="camp-execute__status is-req">
+            Outside {context.gps?.radiusMeters || 250} m
+            {gps.distanceMeters != null ? ` (${gps.distanceMeters} m)` : ''}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderGpsSelfiePanel(kind) {
+    const isOut = kind === GPS_OUT;
+    const uploaded = docForType(context.documents, kind);
+    const gps = isOut ? context.form?.executorGpsOut : context.form?.executorGps;
+    const captureOpen = gpsCaptureKind === kind;
+    const alt = isOut ? 'Check-out selfie' : 'Check-in selfie';
+    const removeLabel = isOut ? 'Remove out GPS selfie' : 'Remove GPS selfie';
+    return (
+      <div className="camp-execute__selfie">
+        {uploaded ? (
+          <div className="camp-execute__selfie-result">
+            <div className="camp-execute__selfie-photo-wrap">
+              {uploaded.url ? (
+                <img className="camp-execute__selfie-photo" src={uploaded.url} alt={alt} />
+              ) : (
+                <div className="camp-execute__selfie-photo camp-execute__selfie-photo--empty">
+                  <Camera size={28} aria-hidden="true" />
+                </div>
+              )}
+              {!locked ? (
+                <button
+                  type="button"
+                  className="camp-execute__selfie-remove"
+                  aria-label={removeLabel}
+                  disabled={busy}
+                  onClick={() => onDeleteDoc(uploaded)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              ) : null}
+            </div>
+            {renderGpsLocation(gps)}
+          </div>
+        ) : captureOpen ? (
+          <GpsSelfieCapture
+            open
+            busy={busy}
+            onCancel={() => setGpsCaptureKind('')}
+            onCapture={async (file) => {
+              setGpsCaptureKind('');
+              await onUpload(kind, file);
+            }}
+          />
+        ) : (
+          <>
+            <button
+              type="button"
+              className="camp-execute__upload-btn"
+              disabled={busy || locked}
+              onClick={() => {
+                setError('');
+                setNotice('');
+                setGpsCaptureKind(kind);
+              }}
+            >
+              <Camera size={18} aria-hidden="true" />
+              Capture GPS Selfie
+            </button>
+            {renderGpsLocation(gps)}
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className={`camp-execute${step === 0 ? ' camp-execute--fit' : ''}`}>
+    <div className={`camp-execute${step !== 1 ? ' camp-execute--fit' : ''}`}>
       <header className="camp-execute__header">
         <button
           type="button"
@@ -326,7 +478,7 @@ export default function CampExecutePage() {
           <div className="camp-execute__success" role="status">
             Submitted for Camp One review. When all execution details are complete and saved, the camp moves to Finance &amp; Settlement.
           </div>
-        ) : notice ? (
+        ) : step > 0 && notice ? (
           <div className="camp-execute__success" role="status">{notice}</div>
         ) : null}
 
@@ -362,29 +514,32 @@ export default function CampExecutePage() {
               </div>
             </section>
 
+            <section className="camp-execute__card camp-execute__card--selfie">
+              <div className="camp-execute__section-title-row">
+                <h2 className="camp-execute__section-title">
+                  GPS Selfie
+                  {' '}
+                  <span className="req" aria-hidden="true">*</span>
+                </h2>
+                {gpsReady ? (
+                  <span className="camp-execute__status is-ok">Captured</span>
+                ) : null}
+              </div>
+              {!gpsReady && gpsCaptureKind !== GPS_IN ? (
+                <p className="camp-execute__section-copy">
+                  Capture a live check-in photo at the clinic. Photos from the gallery cannot be used.
+                </p>
+              ) : null}
+              {renderGpsSelfiePanel(GPS_IN)}
+            </section>
+          </>
+        ) : null}
+
+        {step === 1 ? (
+          <>
             <section className="camp-execute__card">
               <h2 className="camp-execute__section-title">Execution Information</h2>
               <div className="camp-execute__fields">
-                <div className="camp-execute__field">
-                  <label htmlFor="ce-in">In Time <span className="req">*</span></label>
-                  <input
-                    id="ce-in"
-                    type="time"
-                    value={inTime}
-                    disabled={locked || busy}
-                    onChange={(e) => setInTime(e.target.value)}
-                  />
-                </div>
-                <div className="camp-execute__field">
-                  <label htmlFor="ce-out">Out Time <span className="req">*</span></label>
-                  <input
-                    id="ce-out"
-                    type="time"
-                    value={outTime}
-                    disabled={locked || busy}
-                    onChange={(e) => setOutTime(e.target.value)}
-                  />
-                </div>
                 <div className="camp-execute__field">
                   <label htmlFor="ce-patients">Patients Screened <span className="req">*</span></label>
                   <input
@@ -411,264 +566,236 @@ export default function CampExecutePage() {
                 </div>
               </div>
             </section>
+
+            <section className="camp-execute__card">
+              <label className="camp-execute__check">
+                <input
+                  type="checkbox"
+                  checked={consumablesOn}
+                  disabled={locked || busy}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setConsumablesOn(checked);
+                    if (checked && !consumables.length) setConsumables([emptyConsRow()]);
+                  }}
+                />
+                <span>Consumables Used</span>
+              </label>
+              {consumablesOn ? (
+                <>
+                  <div className="camp-execute__cons-list">
+                    {consumables.map((row, index) => {
+                      const unitLabel = String(row.unit || '').trim();
+                      return (
+                        <article className="camp-execute__cons-card" key={`${row.productId || 'row'}-${index}`}>
+                          <div className="camp-execute__cons-item-row">
+                            <label className="camp-execute__cons-field">
+                              <span>Item name</span>
+                              {context.consumableOptions?.length ? (
+                                <select
+                                  value={row.productId || ''}
+                                  disabled={locked || busy}
+                                  onChange={(e) => {
+                                    const opt = context.consumableOptions.find((o) => o.productId === e.target.value);
+                                    setConsumables((rows) => rows.map((r, i) => (
+                                      i === index
+                                        ? {
+                                          ...r,
+                                          productId: opt?.productId || '',
+                                          itemName: opt?.itemName || '',
+                                          unit: opt?.unit || '',
+                                          uomId: opt?.uomId || '',
+                                        }
+                                        : r
+                                    )));
+                                  }}
+                                >
+                                  <option value="">Select item</option>
+                                  {context.consumableOptions.map((opt) => (
+                                    <option key={opt.productId} value={opt.productId}>{opt.itemName}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  value={row.itemName || ''}
+                                  disabled={locked || busy}
+                                  placeholder="Item name"
+                                  onChange={(e) => {
+                                    const name = e.target.value;
+                                    setConsumables((rows) => rows.map((r, i) => (
+                                      i === index
+                                        ? { ...r, itemName: name, productId: name ? `free:${name.trim().toLowerCase()}` : '' }
+                                        : r
+                                    )));
+                                  }}
+                                />
+                              )}
+                            </label>
+                            {!locked ? (
+                              <button
+                                type="button"
+                                className="camp-execute__icon-btn camp-execute__icon-btn--danger"
+                                aria-label="Remove item"
+                                onClick={() => setConsumables((rows) => (
+                                  rows.length <= 1
+                                    ? [emptyConsRow()]
+                                    : rows.filter((_, i) => i !== index)
+                                ))}
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <div className="camp-execute__cons-qty-row">
+                            <label className="camp-execute__cons-field">
+                              <span>
+                                Used
+                                {unitLabel ? ` (${unitLabel})` : ''}
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                value={row.quantityUsed}
+                                disabled={locked || busy}
+                                placeholder="0"
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setConsumables((rows) => rows.map((r, i) => (
+                                    i === index ? { ...r, quantityUsed: value } : r
+                                  )));
+                                }}
+                              />
+                            </label>
+                            <label className="camp-execute__cons-field">
+                              <span>
+                                Wastage
+                                {unitLabel ? ` (${unitLabel})` : ''}
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                value={row.wastage}
+                                disabled={locked || busy}
+                                placeholder="0"
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setConsumables((rows) => rows.map((r, i) => (
+                                    i === index ? { ...r, wastage: value } : r
+                                  )));
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  {!locked ? (
+                    <button
+                      type="button"
+                      className="camp-execute__add-btn"
+                      disabled={busy}
+                      onClick={() => setConsumables((rows) => [...rows, emptyConsRow()])}
+                    >
+                      + Add another row
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+            </section>
           </>
         ) : null}
 
-        {step === 1 ? (
+        {step === 2 ? (
+          <>
           <section className="camp-execute__card">
             <h2 className="camp-execute__section-title">Upload Documents</h2>
-            {['doctor_form', 'patient_form', 'gps_selfie'].map((type) => {
-              const uploaded = docForType(context.documents, type);
-              const status = context.documentStatus?.[type] === 'uploaded' ? 'uploaded' : 'required';
-              const isGps = type === 'gps_selfie';
-              return (
-                <div key={type} className="camp-execute__doc">
-                  <div className="camp-execute__doc-head">
-                    <strong>
-                      {DOC_LABELS[type]}
-                      {' '}
-                      <span className="req">*</span>
-                    </strong>
-                    <span className={`camp-execute__status ${status === 'uploaded' ? 'is-ok' : 'is-req'}`}>
-                      {status === 'uploaded' ? (isGps ? 'Captured' : 'Uploaded') : 'Required'}
-                    </span>
-                  </div>
-                  {uploaded ? (
-                    <div className="camp-execute__file">
-                      {isGps && uploaded.url ? (
-                        <img src={uploaded.url} alt="GPS selfie" />
-                      ) : (
-                        <FileText size={22} aria-hidden="true" color="var(--ce-brand)" />
-                      )}
-                      <div className="camp-execute__file-meta">
-                        <strong>{uploaded.fileName}</strong>
-                        <span>{isGps ? 'Live capture' : 'Document'}</span>
-                      </div>
-                      {!locked ? (
-                        <button
-                          type="button"
-                          className="camp-execute__icon-btn"
-                          aria-label="Remove"
-                          disabled={busy}
-                          onClick={() => onDeleteDoc(uploaded)}
-                        >
-                          <Trash2 size={18} color="var(--ce-danger)" />
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : isGps ? (
-                    gpsCaptureOpen ? (
-                      <GpsSelfieCapture
-                        open
-                        busy={busy}
-                        onCancel={() => setGpsCaptureOpen(false)}
-                        onCapture={async (file) => {
-                          setGpsCaptureOpen(false);
-                          await onUpload('gps_selfie', file);
-                        }}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className="camp-execute__upload-btn"
-                        disabled={busy || locked}
-                        onClick={() => {
-                          setError('');
-                          setNotice('');
-                          setGpsCaptureOpen(true);
-                        }}
-                      >
-                        Capture GPS Selfie
-                      </button>
-                    )
-                  ) : (
-                    <>
-                      <input
-                        ref={(el) => { fileRefs.current[type] = el; }}
-                        type="file"
-                        accept="application/pdf,image/*"
-                        hidden
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          e.target.value = '';
-                          if (file) onUpload(type, file);
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="camp-execute__upload-btn"
-                        disabled={busy || locked}
-                        onClick={() => fileRefs.current[type]?.click()}
-                      >
-                        Upload file
-                      </button>
-                    </>
-                  )}
-                  {isGps && gps?.latitude != null ? (
-                    <div className="camp-execute__gps">
-                      <span>
-                        Location captured:
-                        {' '}
-                        {Number(gps.latitude).toFixed(4)}
-                        ,
-                        {' '}
-                        {Number(gps.longitude).toFixed(4)}
-                      </span>
-                      {gps.withinRadius === true ? (
-                        <span className="camp-execute__badge">Within {context.gps?.radiusMeters || 250} m</span>
-                      ) : null}
-                      {gps.withinRadius === false ? (
-                        <span className="camp-execute__status is-req">
-                          Outside {context.gps?.radiusMeters || 250} m
-                          {gps.distanceMeters != null ? ` (${gps.distanceMeters} m)` : ''}
-                        </span>
-                      ) : null}
-                      {gps.withinRadius == null ? (
-                        <span className="camp-execute__badge is-warn">Clinic GPS not set — location saved</span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </section>
-        ) : null}
-
-        {step === 2 ? (
-          <section className="camp-execute__card">
-            <h2 className="camp-execute__section-title">Consumables Used</h2>
-            <div className="camp-execute__info">
-              <Info size={18} aria-hidden="true" />
-              <span>Optional — enter only items used during the camp.</span>
-            </div>
-            <div className="camp-execute__cons-list">
-              {consumables.map((row, index) => {
-                const unitLabel = String(row.unit || '').trim();
+            <div className="camp-execute__docs-row">
+              {['doctor_form', 'patient_form'].map((type) => {
+                const uploaded = docForType(context.documents, type);
+                const status = context.documentStatus?.[type] === 'uploaded' ? 'uploaded' : 'required';
                 return (
-                  <article className="camp-execute__cons-card" key={`${row.productId || 'row'}-${index}`}>
-                    <div className="camp-execute__cons-card-top">
-                      <span className="camp-execute__cons-card-title">
-                        {row.itemName?.trim() || `Item ${index + 1}`}
-                      </span>
-                      {!locked ? (
-                        <button
-                          type="button"
-                          className="camp-execute__icon-btn camp-execute__icon-btn--danger"
-                          aria-label="Remove item"
-                          onClick={() => setConsumables((rows) => (
-                            rows.length <= 1
-                              ? [{ productId: '', itemName: '', quantityUsed: '', wastage: '', unit: '', uomId: '' }]
-                              : rows.filter((_, i) => i !== index)
-                          ))}
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                  <div key={type} className="camp-execute__doc camp-execute__doc--tile">
+                    <div className="camp-execute__doc-head camp-execute__doc-head--tile">
+                      <strong>
+                        {DOC_LABELS[type]}
+                        {' '}
+                        <span className="req">*</span>
+                      </strong>
+                      {status === 'uploaded' ? (
+                        <span className="camp-execute__status is-ok">Uploaded</span>
                       ) : null}
                     </div>
-
-                    <label className="camp-execute__cons-field">
-                      <span>Item</span>
-                      {context.consumableOptions?.length ? (
-                        <select
-                          value={row.productId || ''}
-                          disabled={locked || busy}
+                    {uploaded ? (
+                      <div className="camp-execute__file camp-execute__file--tile">
+                        <FileText size={22} aria-hidden="true" color="var(--ce-brand)" />
+                        <div className="camp-execute__file-meta">
+                          <strong>{uploaded.fileName}</strong>
+                        </div>
+                        {!locked ? (
+                          <button
+                            type="button"
+                            className="camp-execute__icon-btn"
+                            aria-label={`Remove ${DOC_LABELS[type]}`}
+                            disabled={busy}
+                            onClick={() => onDeleteDoc(uploaded)}
+                          >
+                            <Trash2 size={16} color="var(--ce-danger)" />
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          ref={(el) => { fileRefs.current[type] = el; }}
+                          type="file"
+                          accept="application/pdf,image/*"
+                          hidden
                           onChange={(e) => {
-                            const opt = context.consumableOptions.find((o) => o.productId === e.target.value);
-                            setConsumables((rows) => rows.map((r, i) => (
-                              i === index
-                                ? {
-                                  ...r,
-                                  productId: opt?.productId || '',
-                                  itemName: opt?.itemName || '',
-                                  unit: opt?.unit || '',
-                                  uomId: opt?.uomId || '',
-                                }
-                                : r
-                            )));
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            if (file) onUpload(type, file);
                           }}
+                        />
+                        <button
+                          type="button"
+                          className="camp-execute__upload-icon"
+                          disabled={busy || locked}
+                          aria-label={`Upload ${DOC_LABELS[type]}`}
+                          onClick={() => fileRefs.current[type]?.click()}
                         >
-                          <option value="">Select item</option>
-                          {context.consumableOptions.map((opt) => (
-                            <option key={opt.productId} value={opt.productId}>{opt.itemName}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          value={row.itemName || ''}
-                          disabled={locked || busy}
-                          placeholder="Item name"
-                          onChange={(e) => {
-                            const name = e.target.value;
-                            setConsumables((rows) => rows.map((r, i) => (
-                              i === index
-                                ? { ...r, itemName: name, productId: name ? `free:${name.trim().toLowerCase()}` : '' }
-                                : r
-                            )));
-                          }}
-                        />
-                      )}
-                    </label>
-
-                    <div className="camp-execute__cons-qty-row">
-                      <label className="camp-execute__cons-field">
-                        <span>
-                          Used
-                          {unitLabel ? ` (${unitLabel})` : ''}
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          inputMode="numeric"
-                          value={row.quantityUsed}
-                          disabled={locked || busy}
-                          placeholder="0"
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setConsumables((rows) => rows.map((r, i) => (
-                              i === index ? { ...r, quantityUsed: value } : r
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="camp-execute__cons-field">
-                        <span>
-                          Wastage
-                          {unitLabel ? ` (${unitLabel})` : ''}
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          inputMode="numeric"
-                          value={row.wastage}
-                          disabled={locked || busy}
-                          placeholder="0"
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setConsumables((rows) => rows.map((r, i) => (
-                              i === index ? { ...r, wastage: value } : r
-                            )));
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </article>
+                          <Upload size={22} strokeWidth={2.25} aria-hidden="true" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 );
               })}
             </div>
-            {!locked ? (
-              <button
-                type="button"
-                className="camp-execute__add-btn"
-                disabled={busy}
-                onClick={() => setConsumables((rows) => [
-                  ...rows,
-                  { productId: '', itemName: '', quantityUsed: '', wastage: '', unit: '', uomId: '' },
-                ])}
-              >
-                + Add Another Item
-              </button>
-            ) : null}
           </section>
+
+          <section className="camp-execute__card camp-execute__card--selfie">
+            <div className="camp-execute__section-title-row">
+              <h2 className="camp-execute__section-title">
+                GPS Selfie
+                {' '}
+                <span className="req" aria-hidden="true">*</span>
+              </h2>
+              {gpsOutReady ? (
+                <span className="camp-execute__status is-ok">Captured</span>
+              ) : null}
+            </div>
+            {!gpsOutReady && gpsCaptureKind !== GPS_OUT ? (
+              <p className="camp-execute__section-copy">
+                Capture a live check-out photo at the clinic. This sets Out Time. Photos from the gallery cannot be used.
+              </p>
+            ) : null}
+            {renderGpsSelfiePanel(GPS_OUT)}
+          </section>
+          </>
         ) : null}
       </main>
 

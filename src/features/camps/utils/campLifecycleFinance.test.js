@@ -58,6 +58,14 @@ describe('camp lifecycle finance transition', () => {
     ).toEqual(['Enter Usage and Wastage for Test Strip (use 0 if none)']);
   });
 
+  it('treats Cancelled by Tylo the same as Cancelled by Client for finance cancellation', () => {
+    expect(isExecutionCancellationForFinance({ executionStatus: 'Cancelled by Tylo' })).toBe(true);
+    expect(isExecutionCancellationForFinance({ executionStatus: 'Cancelled by Client' })).toBe(true);
+    expect(isExecutionCancellationForFinance({
+      executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
+    })).toBe(false);
+  });
+
   it('skips execution completion fields for Cancelled by Tylo/Client', () => {
     const cancelledCamp = {
       executionStatus: 'Cancelled by Client',
@@ -90,6 +98,28 @@ describe('camp lifecycle finance transition', () => {
     };
     expect(isExecutionCancellationForFinance(legacy)).toBe(true);
     expect(getExecutionFinanceBlockers(legacy)).toEqual([]);
+  });
+
+  it('replaces stale overtime $ that still matches scheduled-slot Extra hours', () => {
+    const derived = computeLifecycleDerived({
+      inTime: '09:00',
+      outTime: '15:00',
+      durationHours: 3,
+      extraHours: 3,
+      overtimeRevenue: 1200,
+      campRevenue: 5000,
+      travelRevenue: 0,
+      otherRevenue: 0,
+    }, {
+      pricing: {
+        campDuration: '4:00',
+        otUnit: 400,
+        executedCampUnit: 5000,
+      },
+    });
+    expect(derived.extraHours).toBe(2);
+    expect(derived.overtimeRevenue).toBe(800);
+    expect(derived.totalRevenue).toBe(5800);
   });
 
   it('recomputes Extra hours for an existing camp from the Client Master snapshot', () => {

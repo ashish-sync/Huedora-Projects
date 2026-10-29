@@ -29,13 +29,15 @@ export const campExecuteApi = {
     }).then(parseJson);
   },
 
-  async uploadDocument(token, { file, docType, latitude, longitude, accuracy }) {
+  async uploadDocument(token, { file, docType, latitude, longitude, accuracy, inTime, outTime }) {
     const form = new FormData();
     form.append('documents', file);
     form.append('docType', docType);
     if (latitude != null) form.append('latitude', String(latitude));
     if (longitude != null) form.append('longitude', String(longitude));
     if (accuracy != null) form.append('accuracy', String(accuracy));
+    if (inTime) form.append('inTime', String(inTime));
+    if (outTime) form.append('outTime', String(outTime));
     return fetch(apiUrl(`/camp-execute/${encodeURIComponent(token)}/documents`), {
       method: 'POST',
       credentials: 'omit',

@@ -1,27 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { Download } from 'lucide-react';
 import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { DateRangeFilters } from './DateRangeFilters';
 import { dashboardApi, campApi } from '../campOpsApi.js';
-import { CAMP_PATH, campManageEditPath } from '../../../shared/moduleRoutes.js';
-import { formatDateDDMMYYYY } from '../utils/dateFormat.js';
+import { CAMP_PATH } from '../../../shared/moduleRoutes.js';
+import { ACTION } from '../../../shared/labels.js';
 import {
-  RequestReviewStatusBadge,
-  AssignmentStatusBadge,
-  ExecutionStatusBadge,
-  FinanceSettlementStatusBadge,
-} from './DashboardWidgets.jsx';
+  operationsBoardExportFilename,
+  operationsBoardExportPath,
+} from '../utils/campOperationsBoardQuery.js';
 import '../campOps.css';
 import '../campOps.theme.css';
 
 const EMPTY_RANGE = { dateFrom: '', dateTo: '' };
-
-function StatusBadgeForStage({ stageId, camp }) {
-  if (stageId === 'request') return <RequestReviewStatusBadge camp={camp} />;
-  if (stageId === 'assignment') return <AssignmentStatusBadge camp={camp} />;
-  if (stageId === 'execution') return <ExecutionStatusBadge camp={camp} />;
-  return <FinanceSettlementStatusBadge camp={camp} />;
-}
 
 function buildManagePath({ stageId, statusValue = '', dateFrom = '', dateTo = '' } = {}) {
   const params = new URLSearchParams();
@@ -33,202 +25,10 @@ function buildManagePath({ stageId, statusValue = '', dateFrom = '', dateTo = ''
   return `${CAMP_PATH.MANAGE}${query ? `?${query}` : ''}`;
 }
 
-function buildListParams({ stageId, statusValue, dateFrom, dateTo, search, page = 1 }) {
-  const params = {
-    page,
-    limit: 50,
-    search: search || undefined,
-    dateFrom: dateFrom || undefined,
-    dateTo: dateTo || undefined,
-  };
-
-  if (!statusValue) {
-    if (stageId === 'execution') {
-      params.boardStage = 'execution';
-    } else {
-      params.lifecycleStage = stageId;
-    }
-    return params;
-  }
-
-  if (stageId === 'request') {
-    params.lifecycleStage = 'request';
-    params.requestReviewStatus = statusValue;
-  } else if (stageId === 'assignment') {
-    params.lifecycleStage = 'assignment';
-    params.assignmentFilter = statusValue;
-  } else if (stageId === 'execution') {
-    if (statusValue === 'cancelled_by_tylo' || statusValue === 'cancelled_by_client') {
-      params.lifecycleStage = 'financial';
-      params.executionFilter = statusValue;
-    } else {
-      params.lifecycleStage = 'execution';
-      params.executionFilter = statusValue;
-    }
-  } else if (stageId === 'financial') {
-    params.lifecycleStage = 'financial';
-    params.financialFilter = statusValue;
-  }
-
-  return params;
-}
-
-function OperationsPivotPanel({
-  selection,
-  dateFrom,
-  dateTo,
-  onClose,
-  onOpenCamp,
-}) {
-  const [search, setSearch] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [rows, setRows] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const title = selection?.statusLabel
-    ? `${selection.stageLabel} · ${selection.statusLabel}`
-    : selection?.stageLabel || 'Camps';
-
-  const load = useCallback(async (page = 1, searchValue = appliedSearch) => {
-    if (!selection?.stageId) return;
-    setLoading(true);
-    try {
-      const params = buildListParams({
-        stageId: selection.stageId,
-        statusValue: selection.statusValue || '',
-        dateFrom,
-        dateTo,
-        search: searchValue,
-        page,
-      });
-      const { data } = await campApi.list(params);
-      setRows(Array.isArray(data?.data) ? data.data : []);
-      setPagination(data?.pagination || null);
-      setError('');
-    } catch (err) {
-      setError(err?.message || 'Failed to load camps');
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selection, dateFrom, dateTo, appliedSearch]);
-
-  useEffect(() => {
-    load(1, appliedSearch);
-  }, [load, appliedSearch, selection?.stageId, selection?.statusValue]);
-
-  return (
-    <aside className="ops-board-pivot" aria-label="Camp pivot list">
-      <header className="ops-board-pivot__header">
-        <div>
-          <p className="ops-board-pivot__eyebrow">Pivot list</p>
-          <h3>{title}</h3>
-          <p className="meta-text">
-            {pagination?.total != null ? `${pagination.total} camp${pagination.total === 1 ? '' : 's'}` : '—'}
-            {selection?.count != null ? ` · board count ${selection.count}` : ''}
-          </p>
-        </div>
-        <button type="button" className="btn secondary btn-sm" onClick={onClose}>
-          Close
-        </button>
-      </header>
-
-      <form
-        className="ops-board-pivot__filters"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setAppliedSearch(search.trim());
-        }}
-      >
-        <input
-          className="search-field"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Filter by camp ID, client, doctor, city…"
-          aria-label="Filter pivot camps"
-        />
-        <button type="submit" className="btn secondary btn-sm">Apply</button>
-      </form>
-
-      {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
-      {loading ? <p className="meta-text">Loading camps…</p> : null}
-
-      {!loading && !rows.length ? (
-        <p className="empty-state ops-board-pivot__empty">No camps in this slice.</p>
-      ) : null}
-
-      {rows.length > 0 ? (
-        <div className="ops-board-pivot__table-wrap">
-          <table className="data-table ops-board-pivot__table">
-            <thead>
-              <tr>
-                <th>Camp ID</th>
-                <th>Client</th>
-                <th>Division / Method</th>
-                <th>Date</th>
-                <th>Doctor</th>
-                <th>HCW</th>
-                <th>City</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((camp) => (
-                <tr key={camp._id}>
-                  <td>
-                    <button
-                      type="button"
-                      className="linkish"
-                      onClick={() => onOpenCamp(camp)}
-                    >
-                      {camp.campId || camp._id}
-                    </button>
-                  </td>
-                  <td>{camp.clientName || '—'}</td>
-                  <td>
-                    {[camp.campaignType, camp.campaignName].filter(Boolean).join(' / ') || '—'}
-                  </td>
-                  <td>{formatDateDDMMYYYY(camp.campDate) || '—'}</td>
-                  <td>{camp.doctorName || '—'}</td>
-                  <td>{camp.hcwName || '—'}</td>
-                  <td>{camp.city || '—'}</td>
-                  <td>
-                    <StatusBadgeForStage stageId={selection.stageId} camp={camp} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      {pagination && pagination.totalPages > 1 ? (
-        <div className="ops-board-pivot__pager">
-          <button
-            type="button"
-            className="btn secondary btn-sm"
-            disabled={pagination.page <= 1 || loading}
-            onClick={() => load(pagination.page - 1)}
-          >
-            Previous
-          </button>
-          <span className="meta-text">
-            Page {pagination.page} / {pagination.totalPages}
-          </span>
-          <button
-            type="button"
-            className="btn secondary btn-sm"
-            disabled={pagination.page >= pagination.totalPages || loading}
-            onClick={() => load(pagination.page + 1)}
-          >
-            Next
-          </button>
-        </div>
-      ) : null}
-    </aside>
-  );
+async function downloadOperationsSlice(slice, extra = {}) {
+  const path = operationsBoardExportPath({ ...slice, ...extra });
+  const filename = operationsBoardExportFilename(slice);
+  await campApi.downloadListExport(path, filename);
 }
 
 /** Camp One lifecycle operations board (Module Review → Camp One). */
@@ -237,7 +37,6 @@ export default function CampOperationsBoard({
   initialFrom = '',
   initialTo = '',
 } = {}) {
-  const navigate = useNavigate();
   const [board, setBoard] = useState(null);
   const [error, setError] = useState('');
   const [dateFrom, setDateFrom] = useState(initialFrom || '');
@@ -246,7 +45,9 @@ export default function CampOperationsBoard({
     dateFrom: initialFrom || '',
     dateTo: initialTo || '',
   });
-  const [selection, setSelection] = useState(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const [exportingKey, setExportingKey] = useState('');
 
   const loadBoard = useCallback(async (range = appliedRange) => {
     try {
@@ -267,31 +68,36 @@ export default function CampOperationsBoard({
     setDateFrom(next.dateFrom);
     setDateTo(next.dateTo);
     setAppliedRange(next);
-    setSelection(null);
   }, [initialFrom, initialTo]);
 
   function applyRange(range) {
     setDateFrom(range.dateFrom);
     setDateTo(range.dateTo);
     setAppliedRange(range);
-    setSelection(null);
   }
 
   const stages = useMemo(() => board?.stages || [], [board]);
 
-  function openSlice({ stageId, stageLabel, statusValue = '', statusLabel = '', count }) {
-    setSelection({
-      stageId,
-      stageLabel,
-      statusValue,
-      statusLabel,
-      count,
-    });
+  function sliceKey({ stageId, statusValue = '' } = {}) {
+    return `${stageId || ''}:${statusValue || ''}`;
   }
 
-  function openCamp(camp) {
-    if (!camp?._id) return;
-    navigate(campManageEditPath(camp._id));
+  async function exportSlice(slice) {
+    if (!slice?.stageId || exportBusy) return;
+    setExportBusy(true);
+    setExportingKey(sliceKey(slice));
+    setExportError('');
+    try {
+      await downloadOperationsSlice(slice, {
+        dateFrom: appliedRange.dateFrom,
+        dateTo: appliedRange.dateTo,
+      });
+    } catch (err) {
+      setExportError(err?.message || 'Download failed');
+    } finally {
+      setExportBusy(false);
+      setExportingKey('');
+    }
   }
 
   if (error && !board) {
@@ -302,22 +108,29 @@ export default function CampOperationsBoard({
     return <div className="empty-state">Loading operations board…</div>;
   }
 
+  const manageDates = {
+    dateFrom: appliedRange.dateFrom,
+    dateTo: appliedRange.dateTo,
+  };
+
   return (
     <div className={`camp-ops-root ops-board-host${embedded ? ' ops-board-host--embedded' : ''}`}>
-      <div className={`ops-board ${selection ? 'ops-board--split' : ''}`}>
+      <div className="ops-board">
         <div className="ops-board__main">
           {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
+          {exportError ? (
+            <p className="ops-board-export-status" role="alert">{exportError}</p>
+          ) : null}
 
           <section className={`ops-board-hero${embedded ? ' ops-board-hero--embedded' : ''}`} aria-label="Total camps">
-            <button
-              type="button"
+            <Link
               className="ops-board-hero__total"
-              onClick={() => setSelection(null)}
-              title="Clear pivot selection"
+              to={buildManagePath(manageDates)}
+              title="Open all camps in Manage"
             >
               <span className="ops-board-hero__label">Total Camps</span>
               <strong className="ops-board-hero__value">{board.total ?? 0}</strong>
-            </button>
+            </Link>
             <div className="ops-board-hero__meta">
               <p className="meta-text">
                 Scoped to your Camp One access
@@ -345,43 +158,59 @@ export default function CampOperationsBoard({
             {stages.map((stage) => (
               <article key={stage.id} className={`ops-board-card ops-board-card--${stage.id}`}>
                 <header className="ops-board-card__header">
-                  <button
-                    type="button"
+                  <Link
                     className="ops-board-card__stage"
-                    onClick={() => openSlice({
-                      stageId: stage.id,
-                      stageLabel: stage.label,
-                      count: stage.total,
-                    })}
+                    to={buildManagePath({ stageId: stage.id, ...manageDates })}
+                    title={`Open ${stage.label} camps in Manage`}
                   >
                     <span>{stage.label}</span>
                     <strong>{stage.total}</strong>
-                  </button>
+                  </Link>
                 </header>
                 <ul className="ops-board-card__statuses">
                   {(stage.statuses || []).map((row) => {
-                    const active = selection?.stageId === stage.id
-                      && selection?.statusValue === row.value;
+                    const key = sliceKey({ stageId: stage.id, statusValue: row.value });
+                    const slice = {
+                      stageId: stage.id,
+                      stageLabel: stage.label,
+                      statusValue: row.value,
+                      statusLabel: row.label,
+                      count: row.count,
+                    };
                     return (
                       <li key={row.value}>
-                        <button
-                          type="button"
+                        <Link
                           className={[
                             'ops-board-status',
                             `ops-board-status--${row.value}`,
                             row.attention ? 'is-attention' : '',
-                            active ? 'is-active' : '',
                           ].filter(Boolean).join(' ')}
-                          onClick={() => openSlice({
+                          to={buildManagePath({
                             stageId: stage.id,
-                            stageLabel: stage.label,
                             statusValue: row.value,
-                            statusLabel: row.label,
-                            count: row.count,
+                            ...manageDates,
                           })}
+                          title={`Open ${row.label} camps in Manage`}
                         >
                           <span className="ops-board-status__label">{row.label}</span>
                           <span className="ops-board-status__count">{row.count}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          className="ops-board-status__download"
+                          aria-label={`Download ${row.label} camps`}
+                          title={`Download Excel of ${row.label} camps`}
+                          disabled={exportBusy || !(row.count > 0)}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            exportSlice(slice);
+                          }}
+                        >
+                          <Download size={15} strokeWidth={2} aria-hidden="true" />
+                          <span className="sr-only">
+                            {exportBusy && exportingKey === key ? ACTION.DOWNLOADING : ACTION.DOWNLOAD}
+                          </span>
                         </button>
                       </li>
                     );
@@ -392,8 +221,7 @@ export default function CampOperationsBoard({
                     className="meta-text"
                     to={buildManagePath({
                       stageId: stage.id,
-                      dateFrom: appliedRange.dateFrom,
-                      dateTo: appliedRange.dateTo,
+                      ...manageDates,
                     })}
                   >
                     Open in Manage →
@@ -403,16 +231,6 @@ export default function CampOperationsBoard({
             ))}
           </section>
         </div>
-
-        {selection ? (
-          <OperationsPivotPanel
-            selection={selection}
-            dateFrom={appliedRange.dateFrom}
-            dateTo={appliedRange.dateTo}
-            onClose={() => setSelection(null)}
-            onOpenCamp={openCamp}
-          />
-        ) : null}
       </div>
     </div>
   );

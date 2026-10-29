@@ -17,7 +17,11 @@ import {
   CAMP_FINANCE_EXPENSE_SUB_CATEGORY,
 } from '../utils/campFinanceExpense.js';
 import { resolveCampClientId } from '../utils/clientMasterCascade.js';
-import { computeCampRevenueFromPricing, computeOvertimeHours } from '../utils/campClientMasterPricing.js';
+import {
+  computeCampRevenueFromPricing,
+  computeOvertimeHours,
+  looksLikeStaleScheduledOvertime,
+} from '../utils/campClientMasterPricing.js';
 
 export { CONTACT_PERSON_LEVEL_OPTIONS };
 
@@ -89,7 +93,14 @@ export function normalizeExecutionDocType(docType) {
   const raw = String(docType || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
   if (raw === 'doctor_form' || raw === 'df' || raw.includes('doctor')) return 'doctor_form';
   if (raw === 'patient_form' || raw === 'pf' || raw.includes('patient')) return 'patient_form';
+  if (raw === 'gps_selfie_out' || raw === 'go' || raw === 'gso') return 'gps_selfie_out';
+  if (raw === 'gps_selfie' || raw === 'gs') return 'gps_selfie';
   return raw;
+}
+
+export function isGpsSelfieDocType(docType) {
+  const type = normalizeExecutionDocType(docType);
+  return type === 'gps_selfie' || type === 'gps_selfie_out';
 }
 
 function hasExecutionDocType(docs, targetType) {
@@ -364,6 +375,7 @@ export const EXECUTION_DOC_TYPES = [
   { value: 'doctor_form', label: 'Doctor Form (DF)' },
   { value: 'patient_form', label: 'Patient Form (PF)' },
   { value: 'gps_selfie', label: 'GPS Selfie (GS)' },
+  { value: 'gps_selfie_out', label: 'GPS Selfie Out (GO)' },
   { value: 'other', label: 'Other document (OT)' },
 ];
 
@@ -389,15 +401,23 @@ export function financePaymentStatusLabel(value) {
   return '';
 }
 
-export function resolveInTimeSelfieUrl(campOrForm = {}) {
-  if (campOrForm.inTimeSelfieUrl) return campOrForm.inTimeSelfieUrl;
+function resolveSelfieUrl(campOrForm = {}, urlKey, docType) {
+  if (campOrForm[urlKey]) return campOrForm[urlKey];
   const docs = Array.isArray(campOrForm.executionDocuments) ? campOrForm.executionDocuments : [];
-  const selfies = docs.filter((d) => d.docType === 'gps_selfie');
+  const selfies = docs.filter((d) => d.docType === docType);
   if (!selfies.length) return '';
   const latest = selfies.sort((a, b) =>
     String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || ''))
   )[0];
   return latest?.url || '';
+}
+
+export function resolveInTimeSelfieUrl(campOrForm = {}) {
+  return resolveSelfieUrl(campOrForm, 'inTimeSelfieUrl', 'gps_selfie');
+}
+
+export function resolveOutTimeSelfieUrl(campOrForm = {}) {
+  return resolveSelfieUrl(campOrForm, 'outTimeSelfieUrl', 'gps_selfie_out');
 }
 
 const DURATION_OPTIONS = [3, 4, 5, 6, 8];
@@ -519,9 +539,15 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
     : null;
 
   // Editable persisted values win; Client Master formula is only a default/suggestion.
+  // Overtime $ that still matches the old scheduled-slot Extra hours formula is stale auto data.
   const campRevenue = Number(form.campRevenue) || 0;
   const travelRevenue = Number(form.travelRevenue) || 0;
-  const overtimeRevenue = Number(form.overtimeRevenue) || 0;
+  const overtimeRevenue = autoRevenue && looksLikeStaleScheduledOvertime(
+    { ...form, totalHours },
+    pricing,
+  )
+    ? autoRevenue.overtimeRevenue
+    : Number(form.overtimeRevenue) || 0;
   const otherRevenue = Number(form.otherRevenue) || 0;
   const otherRevenuePatients = autoRevenue ? autoRevenue.otherRevenuePatients : 0;
   const otherRevenueDistance = autoRevenue ? autoRevenue.otherRevenueDistance : 0;
@@ -661,6 +687,7 @@ export function emptyLifecycleForm() {
     inTime: '',
     inTimeSelfieUrl: '',
     outTime: '',
+    outTimeSelfieUrl: '',
     totalHours: '',
     extraHours: 0,
     clientMasterCampDuration: '',
@@ -756,6 +783,7 @@ export function campToForm(camp) {
     inTime: camp.inTime || '',
     inTimeSelfieUrl: resolveInTimeSelfieUrl(camp),
     outTime: camp.outTime || '',
+    outTimeSelfieUrl: resolveOutTimeSelfieUrl(camp),
     totalHours: camp.totalHours ?? '',
     extraHours: camp.extraHours ?? 0,
     clientMasterCampDuration: camp.clientMasterCampDuration || '',

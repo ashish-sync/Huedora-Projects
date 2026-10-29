@@ -194,6 +194,10 @@ export const campApi = {
     `${BASE}/camps/${id}/finance-export`,
     `Camp_Finance_${String(campId).replace(/[^\w.-]+/g, '_')}.xlsx`,
   ),
+  downloadListExport: (path, filename) => downloadExcel(
+    path,
+    filename || 'Camps_Export.xlsx',
+  ),
   downloadExportSample: async () => ({ data: await getBlob(`${BASE}/camps/export/sample`) }),
 };
 

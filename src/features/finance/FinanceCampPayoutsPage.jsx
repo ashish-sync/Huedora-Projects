@@ -220,7 +220,7 @@ export default function FinanceCampPayoutsPage() {
       }
       if (!String(draft.paymentDate || '').trim()) {
         setError('Payment Date is required when Paid Amount is greater than zero.');
-        return;
+          return;
       }
     }
 
@@ -628,25 +628,25 @@ export default function FinanceCampPayoutsPage() {
                 <div className="finance-payout-settle">
                   <header className="finance-payout-settle__head">
                     <div>
-                      <p className="finance-camp-payouts-section-label">
-                        {payMode === 'bulk' ? 'Bulk payment' : 'Payment'}
-                      </p>
-                      <h3>
-                        {payMode === 'bulk'
+                  <p className="finance-camp-payouts-section-label">
+                    {payMode === 'bulk' ? 'Bulk payment' : 'Payment'}
+                  </p>
+                  <h3>
+                    {payMode === 'bulk'
                           ? `${payTargetRows.length} camps selected`
-                          : (payTargetRows[0].payeeName || payTargetRows[0].hcwName || payTargetRows[0].campId || 'Payout')}
-                      </h3>
-                    </div>
+                      : (payTargetRows[0].payeeName || payTargetRows[0].hcwName || payTargetRows[0].campId || 'Payout')}
+                  </h3>
+                </div>
                     {payMode === 'single' && focusRow ? (
-                      <button
-                        type="button"
-                        className="btn secondary btn-compact"
-                        disabled={rowExportBusy}
-                        onClick={downloadSelectedPayout}
-                      >
-                        {rowExportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      className="btn secondary btn-compact"
+                      disabled={rowExportBusy}
+                      onClick={downloadSelectedPayout}
+                    >
+                      {rowExportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
+                    </button>
+                ) : null}
                   </header>
 
                   <div className="finance-payout-settle__grid">
@@ -851,16 +851,16 @@ export default function FinanceCampPayoutsPage() {
 
                   <div className="finance-payout-cell finance-payout-cell--remark">
                     <label className="finance-payout-cell__label" htmlFor="finance-payout-remark">Payment Remark</label>
-                    <textarea
+                          <textarea
                       id="finance-payout-remark"
-                      rows={2}
-                      value={draft.paymentRemark}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, paymentRemark: e.target.value }))
-                      }
+                            rows={2}
+                            value={draft.paymentRemark}
+                            onChange={(e) =>
+                              setDraft((d) => ({ ...d, paymentRemark: e.target.value }))
+                            }
                       placeholder="Optional note"
                       disabled={!canWrite}
-                    />
+                          />
                   </div>
 
                   {canWrite ? (
@@ -891,10 +891,10 @@ export default function FinanceCampPayoutsPage() {
                               : 'Return to Camp One Financial'}
                         </button>
                       ) : null}
-                    </div>
-                  ) : (
+                  </div>
+                ) : (
                     <>
-                      <p className="muted">You have read-only access to camp payouts.</p>
+                  <p className="muted">You have read-only access to camp payouts.</p>
                       {canReturn && returnableRows.length ? (
                         <div className="finance-payout-settle__actions">
                           <button

@@ -3,7 +3,7 @@
  * Stored: {campId}__{DOCTOR}{CODE}.ext · Display: {DOCTOR}{CODE}.ext
  */
 
-const DOC_CODE_PATTERN = 'DF|PF|GS|OT|DOC';
+const DOC_CODE_PATTERN = 'DF|PF|GS|GO|OT|DOC';
 
 export function stripLegacyCampDateFromExecutionName(name = '') {
   const raw = String(name || '').trim();

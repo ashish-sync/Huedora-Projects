@@ -8098,6 +8098,13 @@
   margin: 0.15rem 0 0.35rem;
 }
 
+.camp-ops-root .camp-finance-section input:disabled {
+  background: var(--bg-sunken, #f1f5f9);
+  color: var(--muted, #64748b);
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
 .camp-ops-root .camp-finance-section__title {
   margin: 0;
   font-size: 0.78rem;
@@ -9992,11 +9999,6 @@
   gap: 1.25rem;
 }
 
-.camp-ops-root .ops-board--split {
-  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 1.15fr);
-  align-items: start;
-}
-
 .camp-ops-root .ops-board__main {
   display: flex;
   flex-direction: column;
@@ -10025,6 +10027,7 @@
   cursor: pointer;
   padding: 0;
   color: inherit;
+  text-decoration: none;
 }
 
 .camp-ops-root .ops-board-hero__total:hover .ops-board-hero__value {
@@ -10117,6 +10120,7 @@
   color: inherit;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
   box-sizing: border-box;
 }
 
@@ -10154,6 +10158,9 @@
 }
 
 .camp-ops-root .ops-board-card__statuses > li {
+  display: flex;
+  align-items: stretch;
+  gap: 0.2rem;
   height: var(--ops-board-row-h);
   flex: 0 0 var(--ops-board-row-h);
   min-height: var(--ops-board-row-h);
@@ -10161,7 +10168,9 @@
 }
 
 .camp-ops-root .ops-board-status {
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
   height: 100%;
   min-height: 0;
   max-height: 100%;
@@ -10176,6 +10185,7 @@
   color: inherit;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
   box-sizing: border-box;
   overflow: hidden;
   transition: border-color 120ms ease, background-color 120ms ease;
@@ -10186,19 +10196,9 @@
   border-color: var(--line);
 }
 
-.camp-ops-root .ops-board-status.is-active {
-  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
-  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated, #fff));
-}
-
 .camp-ops-root .ops-board-status.is-attention {
   background: color-mix(in srgb, var(--warn, #ca8a04) 10%, var(--bg-elevated, #fff));
   border-color: color-mix(in srgb, var(--warn, #ca8a04) 22%, var(--line));
-}
-
-.camp-ops-root .ops-board-status.is-attention.is-active {
-  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
-  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated, #fff));
 }
 
 .camp-ops-root .ops-board-status__label {
@@ -10209,13 +10209,47 @@
   font-weight: 500;
   color: var(--ink-soft, var(--ink, #0f172a));
   line-height: 1.25;
-  max-height: 2.5em;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  word-break: break-word;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.camp-ops-root .ops-board-status__download {
+  flex: 0 0 1.85rem;
+  width: 1.85rem;
+  min-width: 1.85rem;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--ink-soft, var(--ink, #0f172a));
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.camp-ops-root .ops-board-status__download:hover:not(:disabled) {
+  background: var(--bg-sunken, var(--surface-muted, #f8fafc));
+  border-color: var(--line);
+  color: var(--brand);
+}
+
+.camp-ops-root .ops-board-status__download:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.camp-ops-root .ops-board-status__download svg {
+  display: block;
+}
+
+.camp-ops-root .ops-board-export-status {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--danger, #b91c1c);
 }
 
 .camp-ops-root .ops-board-status__count {
@@ -10269,102 +10303,9 @@
   color: var(--brand);
 }
 
-.camp-ops-root .ops-board-pivot {
-  position: sticky;
-  top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  min-height: 24rem;
-  max-height: calc(100vh - 7rem);
-  padding: 1rem 1.05rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card, var(--radius-lg, 12px));
-  background: var(--bg-elevated, #fff);
-  overflow: hidden;
-}
-
-.camp-ops-root .ops-board-pivot__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding-bottom: 0.15rem;
-}
-
-.camp-ops-root .ops-board-pivot__eyebrow {
-  margin: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted, var(--text-muted, #64748b));
-}
-
-.camp-ops-root .ops-board-pivot__header h3 {
-  margin: 0.2rem 0 0;
-  font-size: 1rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  color: var(--ink, var(--text, #0f172a));
-}
-
-.camp-ops-root .ops-board-pivot__filters {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.camp-ops-root .ops-board-pivot__filters .search-field {
-  flex: 1;
-}
-
-.camp-ops-root .ops-board-pivot__table-wrap {
-  overflow: auto;
-  flex: 1;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm, 8px);
-}
-
-.camp-ops-root .ops-board-pivot__table {
-  margin: 0;
-  font-size: 0.8125rem;
-}
-
-.camp-ops-root .ops-board-pivot__table th {
-  position: sticky;
-  top: 0;
-  background: var(--bg-sunken, #f8fafc);
-  z-index: 1;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted, var(--text-muted, #64748b));
-}
-
-.camp-ops-root .ops-board-pivot__pager {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.camp-ops-root .ops-board-pivot__empty {
-  margin: 1rem 0;
-}
-
 @media (max-width: 1100px) {
   .camp-ops-root .ops-board-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .camp-ops-root .ops-board--split {
-    grid-template-columns: 1fr;
-  }
-
-  .camp-ops-root .ops-board-pivot {
-    position: static;
-    max-height: none;
   }
 }
 

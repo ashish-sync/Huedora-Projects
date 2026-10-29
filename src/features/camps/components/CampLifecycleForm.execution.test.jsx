@@ -61,8 +61,9 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByText('Doctor Form (DF)')).toBeTruthy();
     expect(screen.getByText('Patient Form (PF)')).toBeTruthy();
     expect(screen.getByText('GPS Selfie (GS)')).toBeTruthy();
+    expect(screen.getByText('GPS Selfie Out (GO)')).toBeTruthy();
     expect(screen.getByPlaceholderText('Other document type')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Upload' }).length).toBe(4);
+    expect(screen.getAllByRole('button', { name: 'Upload' }).length).toBe(5);
     expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
   });
 
@@ -155,5 +156,65 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByLabelText('Total Hours').value).toBe('6');
     expect(screen.getByLabelText('Extra hours').value).toBe('2');
     expect(await screen.findByText('Consumables Tracking')).toBeTruthy();
+  });
+
+  it('locks Camp, Travel, and Overtime payouts when cancelled by Tylo or Client', () => {
+    render(
+      <CampLifecycleForm
+        form={{
+          ...emptyLifecycleForm(),
+          campDate: '2099-08-01',
+          startTime: '09:00',
+          endTime: '12:00',
+          lifecycleStage: 'financial',
+          executionStatus: 'Cancelled by Client',
+          campAmount: 0,
+          travelling: 0,
+          overtimeExpense: 0,
+          otherExpenses: 0,
+        }}
+        updateField={vi.fn()}
+        updateFields={vi.fn()}
+        activeStage="financial"
+        onStageChange={vi.fn()}
+        campStatus="cancelled"
+        reachedLifecycleStage="financial"
+        campId="camp-1"
+      />,
+    );
+    expect(screen.getByLabelText('Camp Payout').disabled).toBe(true);
+    expect(screen.getByLabelText('Travel Payout').disabled).toBe(true);
+    expect(screen.getByLabelText('Overtime Payout').disabled).toBe(true);
+    expect(screen.getByLabelText('Other Payouts').disabled).toBe(false);
+  });
+
+  it('keeps all payout fields editable for executed camps', () => {
+    render(
+      <CampLifecycleForm
+        form={{
+          ...emptyLifecycleForm(),
+          campDate: '2099-08-01',
+          startTime: '09:00',
+          endTime: '12:00',
+          lifecycleStage: 'financial',
+          executionStatus: EXECUTION_STATUS.CAMP_COMPLETED,
+          campAmount: 1800,
+          travelling: 200,
+          overtimeExpense: 100,
+          otherExpenses: 50,
+        }}
+        updateField={vi.fn()}
+        updateFields={vi.fn()}
+        activeStage="financial"
+        onStageChange={vi.fn()}
+        campStatus="executed"
+        reachedLifecycleStage="financial"
+        campId="camp-1"
+      />,
+    );
+    expect(screen.getByLabelText('Camp Payout').disabled).toBe(false);
+    expect(screen.getByLabelText('Travel Payout').disabled).toBe(false);
+    expect(screen.getByLabelText('Overtime Payout').disabled).toBe(false);
+    expect(screen.getByLabelText('Other Payouts').disabled).toBe(false);
   });
 });

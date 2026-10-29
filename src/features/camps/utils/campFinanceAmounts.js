@@ -22,3 +22,5 @@ export function parseFinanceAmount(value) {
 
 export const FINANCE_REVENUE_PART_FIELDS = ['campRevenue', 'travelRevenue', 'overtimeRevenue', 'otherRevenue'];
 export const FINANCE_PAYOUT_PART_FIELDS = ['campAmount', 'travelling', 'overtimeExpense', 'otherExpenses'];
+/** Locked on Financial when Execution Status is Cancelled by Tylo / Client. */
+export const CANCELLATION_LOCKED_PAYOUT_FIELDS = ['campAmount', 'travelling', 'overtimeExpense'];

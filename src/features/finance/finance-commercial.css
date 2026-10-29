@@ -63,6 +63,126 @@
   font-size: 0.8rem;
 }
 
+.finance-shell .module-sub-nav--bar.finance-sub-nav {
+  overflow: visible;
+  flex-wrap: wrap;
+}
+
+.finance-sub-nav-tools {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.finance-sub-nav-dates {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-sm);
+  min-height: var(--control-h-sm);
+  padding: 0 4px 0 2px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-button);
+  background: var(--color-bg-elevated);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.finance-sub-nav-dates:focus-within {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
+  box-shadow: var(--dropdown-focus-ring);
+}
+
+.finance-sub-nav-dates .date-input-field {
+  width: 8.75rem;
+  min-width: 8.25rem;
+  flex: 0 0 auto;
+}
+
+.finance-sub-nav-dates .date-input-control {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: calc(var(--control-h-sm) - 4px);
+  min-height: calc(var(--control-h-sm) - 4px);
+  max-height: calc(var(--control-h-sm) - 4px);
+}
+
+.finance-sub-nav-dates .date-input-display {
+  height: calc(var(--control-h-sm) - 4px);
+  min-height: calc(var(--control-h-sm) - 4px);
+  max-height: calc(var(--control-h-sm) - 4px);
+  padding: 0 28px 0 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--text-body-sm-size);
+  line-height: calc(var(--control-h-sm) - 6px);
+}
+
+.finance-sub-nav-dates .date-input-display:focus {
+  box-shadow: none;
+}
+
+.finance-sub-nav-dates .date-input-picker-btn {
+  width: 22px;
+  height: 22px;
+  right: 2px;
+}
+
+.finance-sub-nav-dates .date-input-picker-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.finance-sub-nav-dates-sep {
+  flex: 0 0 auto;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-body-sm-size);
+  font-weight: 600;
+  line-height: 1;
+  padding: 0 2px;
+  user-select: none;
+}
+
+.finance-sub-nav-dates-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.finance-sub-nav-dates-clear:hover {
+  background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  color: var(--color-brand-primary);
+}
+
+.finance-sub-nav-export {
+  flex: 0 0 auto;
+}
+
+.finance-sub-nav-export-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .finance-proforma-grid,
   .finance-line-item-grid {
@@ -74,6 +194,11 @@
     overflow-x: auto;
     flex-wrap: nowrap;
     padding-bottom: var(--space-1);
+  }
+
+  .finance-shell .module-sub-nav--bar.finance-sub-nav {
+    overflow: visible;
+    flex-wrap: wrap;
   }
 }
 

@@ -95,7 +95,7 @@ export default function FinanceSavedDocumentsNavTools() {
         {exportBusy ? ACTION.EXPORTING : 'Export'}
       </button>
       {exportError ? (
-        <span className="finance-sub-nav-export-status" role="status">
+        <span className="finance-sub-nav-export-status" role="alert">
           {exportError}
         </span>
       ) : null}

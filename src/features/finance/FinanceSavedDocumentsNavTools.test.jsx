@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { downloadExcel } from '../../shared/api.js';
 import FinanceSavedDocumentsNavTools from './FinanceSavedDocumentsNavTools.jsx';
 
 vi.mock('../../shared/api.js', () => ({
@@ -9,6 +10,7 @@ vi.mock('../../shared/api.js', () => ({
 describe('FinanceSavedDocumentsNavTools', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    downloadExcel.mockClear();
   });
 
   afterEach(() => {
@@ -23,6 +25,19 @@ describe('FinanceSavedDocumentsNavTools', () => {
     expect(screen.getByLabelText('To date')).toBeTruthy();
     expect(screen.getByPlaceholderText('From')).toBeTruthy();
     expect(screen.getByPlaceholderText('To')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
+    const exportBtn = screen.getByRole('button', { name: 'Export' });
+    expect(exportBtn).toBeTruthy();
+    expect(exportBtn.getAttribute('title')).toBe('Download Excel of the current list');
+  });
+
+  it('downloads Excel when Export is clicked', async () => {
+    render(<FinanceSavedDocumentsNavTools />);
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    await waitFor(() => {
+      expect(downloadExcel).toHaveBeenCalledWith(
+        '/finance/commercial-documents/export',
+        'Saved_Documents.xlsx',
+      );
+    });
   });
 });

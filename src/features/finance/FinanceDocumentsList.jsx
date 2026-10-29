@@ -39,6 +39,11 @@ import {
   taxableValueFromDocument,
   tdsAmountFromTaxableValue,
 } from './commercialPaymentStatus.js';
+import {
+  readStoredSavedDocumentFilters,
+  subscribeSavedDocumentFilters,
+  writeStoredSavedDocumentFilters,
+} from './financeDocumentsFilterStorage.js';
 
 function formatMoney(n) {
   const num = Number(n);
@@ -229,15 +234,19 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
 
   const [rows, setRows] = useState([]);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
-  const [q, setQ] = useState('');
+  const [savedFilters] = useState(readStoredSavedDocumentFilters);
+  const [page, setPage] = useState(savedFilters.page);
+  const [limit, setLimit] = useState(savedFilters.limit);
+  const [q, setQ] = useState(savedFilters.q);
   const debouncedQ = useDebouncedValue(q, 300);
   const [orgList, setOrgList] = useState(() => loadOrgListCache());
-  const [orgProfileId, setOrgProfileId] = useState('');
-  const [status, setStatus] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState('');
-  const [documentType, setDocumentType] = useState('');
+  const [orgProfileId, setOrgProfileId] = useState(savedFilters.orgProfileId);
+  const [status, setStatus] = useState(savedFilters.status);
+  const [paymentStatus, setPaymentStatus] = useState(savedFilters.paymentStatus);
+  const [documentType, setDocumentType] = useState(savedFilters.documentType);
+  const [dateFrom, setDateFrom] = useState(savedFilters.dateFrom);
+  const [dateTo, setDateTo] = useState(savedFilters.dateTo);
+  const skipDatePageReset = useRef(true);
   const [error, setError] = useState('');
   const [listLoading, setListLoading] = useState(false);
   const [deleteBusyId, setDeleteBusyId] = useState('');
@@ -269,6 +278,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       if (status) params.set('status', status);
       if (paymentStatus) params.set('paymentStatus', paymentStatus);
       if (documentType) params.set('documentType', documentType);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
       const res = await api(`/finance/commercial-documents?${params}`);
       setRows(res.data || []);
       setListMeta(res.meta || { page, limit, total: 0, pages: 0 });
@@ -278,11 +289,40 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     } finally {
       setListLoading(false);
     }
-  }, [page, limit, debouncedQ, orgProfileId, status, paymentStatus, documentType]);
+  }, [page, limit, debouncedQ, orgProfileId, status, paymentStatus, documentType, dateFrom, dateTo]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    writeStoredSavedDocumentFilters({
+      q,
+      orgProfileId,
+      documentType,
+      status,
+      paymentStatus,
+      dateFrom,
+      dateTo,
+      page,
+      limit,
+    });
+  }, [q, orgProfileId, documentType, status, paymentStatus, dateFrom, dateTo, page, limit]);
+
+  useEffect(() => {
+    return subscribeSavedDocumentFilters((next) => {
+      setDateFrom(next.dateFrom);
+      setDateTo(next.dateTo);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (skipDatePageReset.current) {
+      skipDatePageReset.current = false;
+      return;
+    }
+    setPage(1);
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
     let cancelled = false;

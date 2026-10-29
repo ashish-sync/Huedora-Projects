@@ -6,6 +6,8 @@ import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 import AppErrorBoundary from '../../components/AppErrorBoundary.jsx';
 import { canManageOrganisationMaster } from './builder/commercialApproval.js';
 import { FINANCE_BUILDER_EDITOR_ROUTE } from './financeBuilderRoutes.js';
+import FinanceSavedDocumentsNavTools from './FinanceSavedDocumentsNavTools.jsx';
+import './finance-commercial.css';
 
 const NAV_ITEMS = [
   { to: '/finance-one/billing', end: false, label: NAV.BILLING_CENTER },
@@ -24,6 +26,7 @@ export default function FinanceLayout() {
   const canOrgMaster = canManageOrganisationMaster(user);
 
   const navItems = canOrgMaster ? [...NAV_ITEMS, ORG_MASTER_NAV] : NAV_ITEMS;
+  const isBillingList = pathname === '/finance-one/billing' || pathname === '/finance-one/billing/';
 
   if (!allowed) {
     return (
@@ -63,8 +66,10 @@ export default function FinanceLayout() {
         description={MODULE_BLURB.FINANCE}
       >
         <ModuleSubNav
+          className={isBillingList ? 'finance-sub-nav' : undefined}
           ariaLabel={`${MODULE.FINANCE} sections`}
           items={navItems}
+          actions={isBillingList ? <FinanceSavedDocumentsNavTools /> : null}
         />
         <AppErrorBoundary title="Finance One failed">
           <Outlet />

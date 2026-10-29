@@ -48,6 +48,29 @@
   background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-elevated));
 }
 
+.module-sub-nav--bar.module-sub-nav--with-actions {
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
+.module-sub-nav__links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.module-sub-nav__actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
 /* ── Segmented variant (inline pill group) ─────────────────── */
 
 .module-sub-nav--segmented,

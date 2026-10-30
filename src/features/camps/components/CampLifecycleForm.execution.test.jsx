@@ -62,6 +62,8 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByText('Patient Form (PF)')).toBeTruthy();
     expect(screen.getByText('GPS Selfie (GS)')).toBeTruthy();
     expect(screen.getByText('GPS Selfie Out (GO)')).toBeTruthy();
+    expect(screen.getByText('GPS Selfie Out (GO)').closest('.camp-execution-doc-row').textContent).toMatch(/Optional/);
+    expect(screen.getByText('GPS Selfie (GS)').closest('.camp-execution-doc-row').textContent).toMatch(/Required/);
     expect(screen.getByPlaceholderText('Other document type')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Upload' }).length).toBe(5);
     expect(await screen.findByText('Consumables Tracking')).toBeTruthy();

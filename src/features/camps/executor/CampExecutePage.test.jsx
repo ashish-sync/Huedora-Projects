@@ -30,7 +30,16 @@ vi.mock('../utils/prepareGpsSelfieForUpload.js', () => ({
   prepareGpsSelfieForUpload: vi.fn(async (file) => file),
 }));
 
-function makeContext({ gpsUploaded = false, gpsOutUploaded = false, inTime = '', outTime = '', capturedAt } = {}) {
+function makeContext({
+  gpsUploaded = false,
+  gpsOutUploaded = false,
+  paperDocsUploaded = false,
+  inTime = '',
+  outTime = '',
+  capturedAt,
+  patientsScreened = '',
+  productCount = '',
+} = {}) {
   return {
     invite: { locked: false },
     camp: {
@@ -42,8 +51,8 @@ function makeContext({ gpsUploaded = false, gpsOutUploaded = false, inTime = '',
     form: {
       inTime,
       outTime,
-      patientsScreened: '',
-      productCount: '',
+      patientsScreened,
+      productCount,
       consumablesUsed: [],
       executorGps: capturedAt ? { capturedAt, latitude: 19.15, longitude: 72.85 } : null,
       executorGpsOut: null,
@@ -61,12 +70,26 @@ function makeContext({ gpsUploaded = false, gpsOutUploaded = false, inTime = '',
         url: 'https://example.com/so.webp',
         fileId: 'f2',
       }] : []),
+      ...(paperDocsUploaded ? [
+        {
+          docType: 'doctor_form',
+          fileName: 'df.pdf',
+          url: 'https://example.com/df.pdf',
+          fileId: 'f3',
+        },
+        {
+          docType: 'patient_form',
+          fileName: 'pf.pdf',
+          url: 'https://example.com/pf.pdf',
+          fileId: 'f4',
+        },
+      ] : []),
     ],
     documentStatus: {
-      doctor_form: 'required',
-      patient_form: 'required',
+      doctor_form: paperDocsUploaded ? 'uploaded' : 'required',
+      patient_form: paperDocsUploaded ? 'uploaded' : 'required',
       gps_selfie: gpsUploaded ? 'uploaded' : 'required',
-      gps_selfie_out: gpsOutUploaded ? 'uploaded' : 'required',
+      gps_selfie_out: gpsOutUploaded ? 'uploaded' : 'optional',
     },
     gps: { radiusMeters: 250 },
     consumableOptions: [],
@@ -88,6 +111,7 @@ describe('CampExecutePage activity form layout', () => {
     campExecuteApi.load.mockReset();
     campExecuteApi.saveDraft.mockReset();
     campExecuteApi.uploadDocument.mockReset();
+    campExecuteApi.submit.mockReset();
     campExecuteApi.saveDraft.mockImplementation(async (_token, body) => makeContext({
       gpsUploaded: true,
       inTime: body?.inTime || '',
@@ -307,5 +331,32 @@ describe('CampExecutePage activity form layout', () => {
     expect(campExecuteApi.uploadDocument.mock.calls[0][1].docType).toBe('gps_selfie_out');
     expect(campExecuteApi.uploadDocument.mock.calls[0][1].outTime).toBe(expected);
     expect(campExecuteApi.saveDraft.mock.calls.some((call) => call[1].outTime === expected)).toBe(true);
+  });
+
+  it('allows submit without GPS Selfie Out', async () => {
+    const ready = makeContext({
+      gpsUploaded: true,
+      paperDocsUploaded: true,
+      inTime: '09:02',
+      patientsScreened: 0,
+      productCount: 0,
+    });
+    campExecuteApi.load.mockResolvedValue(ready);
+    campExecuteApi.saveDraft.mockResolvedValue(ready);
+    campExecuteApi.submit.mockResolvedValue(ready);
+
+    renderPage();
+    await screen.findByText('26-10-0019');
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('checkbox', { name: 'Consumables Used' });
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('heading', { name: 'Upload Documents' });
+
+    const submit = screen.getByRole('button', { name: 'Submit' });
+    expect(submit.disabled).toBe(false);
+    fireEvent.click(submit);
+    await waitFor(() => {
+      expect(campExecuteApi.submit).toHaveBeenCalled();
+    });
   });
 });

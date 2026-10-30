@@ -175,7 +175,7 @@ export default function CampExecutePage() {
   const gpsOutReady = context?.documentStatus?.[GPS_OUT] === 'uploaded';
   const paperDocsReady = ['doctor_form', 'patient_form']
     .every((type) => context?.documentStatus?.[type] === 'uploaded');
-  const docsReady = paperDocsReady && gpsReady && gpsOutReady;
+  const docsReady = paperDocsReady && gpsReady;
 
   async function saveDraft({ silent = false, body, manageBusy = true } = {}) {
     if (manageBusy) setBusy(true);
@@ -295,7 +295,7 @@ export default function CampExecutePage() {
 
   async function onSubmit() {
     if (!docsReady) {
-      setError('Upload Doctor Form and Patient Form, and capture both GPS Selfies before submitting');
+      setError('Upload Doctor Form and Patient Form, and capture the GPS Selfie before submitting');
       return;
     }
     setBusy(true);
@@ -779,11 +779,7 @@ export default function CampExecutePage() {
 
           <section className="camp-execute__card camp-execute__card--selfie">
             <div className="camp-execute__section-title-row">
-              <h2 className="camp-execute__section-title">
-                GPS Selfie
-                {' '}
-                <span className="req" aria-hidden="true">*</span>
-              </h2>
+              <h2 className="camp-execute__section-title">GPS Selfie</h2>
               {gpsOutReady ? (
                 <span className="camp-execute__status is-ok">Captured</span>
               ) : null}

@@ -193,6 +193,17 @@ describe('CampOperationsBoard export', () => {
     expect(total.getAttribute('href')).toContain('campaignType=Oncology');
     expect(total.getAttribute('href')).toContain('campaign=BMD');
 
+    const section = screen.getByRole('link', { name: /Review Pending/i });
+    expect(section.getAttribute('href')).toContain('/camp-one/manage');
+    expect(section.getAttribute('href')).toContain('client=client-1');
+    expect(section.getAttribute('href')).toContain('campaignType=Oncology');
+    expect(section.getAttribute('href')).toContain('campaign=BMD');
+
+    const openInManage = screen.getAllByRole('link', { name: /Open in Manage/i });
+    expect(openInManage[0].getAttribute('href')).toContain('client=client-1');
+    expect(openInManage[0].getAttribute('href')).toContain('campaignType=Oncology');
+    expect(openInManage[0].getAttribute('href')).toContain('campaign=BMD');
+
     fireEvent.click(screen.getByRole('button', { name: 'Download Review Pending camps' }));
     await waitFor(() => {
       expect(campApi.downloadListExport).toHaveBeenCalled();

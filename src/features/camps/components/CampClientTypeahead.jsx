@@ -12,6 +12,7 @@ export function CampClientTypeahead({
   disabled = false,
   required = false,
   hideLabel = false,
+  allowedClients = null,
 }) {
   const [query, setQuery] = useState('');
   const [options, setOptions] = useState([]);
@@ -33,7 +34,21 @@ export function CampClientTypeahead({
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
+  const allowedKey = Array.isArray(allowedClients)
+    ? allowedClients.map((client) => String(client?._id || '')).join('|')
+    : 'api';
+
   function runSearch(text) {
+    const needle = String(text || '').trim().toLowerCase();
+    if (Array.isArray(allowedClients)) {
+      const rows = (needle
+        ? allowedClients.filter((client) => String(client?.name || '').toLowerCase().includes(needle))
+        : allowedClients
+      ).slice(0, 40);
+      setOptions(rows);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     searchClientsWithMasters(text, { limit: 40 })
       .then((rows) => setOptions(rows))
@@ -43,7 +58,9 @@ export function CampClientTypeahead({
 
   useEffect(() => {
     runSearch('');
-  }, []);
+    // allowedKey refreshes local options when Method / Division changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedKey]);
 
   function onInput(e) {
     const next = e.target.value;

@@ -8,8 +8,9 @@ import { dashboardApi, campApi, clientMasterApi } from '../campOpsApi.js';
 import { CAMP_PATH } from '../../../shared/moduleRoutes.js';
 import { ACTION, MODULE } from '../../../shared/labels.js';
 import {
-  campNamesForDivision,
-  parseClientMasterDivisions,
+  clientsForOpsBoardScope,
+  divisionsForOpsBoardMethod,
+  parseOpsBoardFilterCatalog,
 } from '../utils/clientMasterCascade.js';
 import {
   operationsBoardExportFilename,
@@ -28,6 +29,7 @@ function buildManagePath({
   client = '',
   campaignType = '',
   campaign = '',
+  assignedUser = '',
 } = {}) {
   const params = new URLSearchParams();
   if (stageId) params.set('stage', stageId);
@@ -37,6 +39,7 @@ function buildManagePath({
   if (client) params.set('client', client);
   if (campaignType) params.set('campaignType', campaignType);
   if (campaign) params.set('campaign', campaign);
+  if (assignedUser) params.set('assignedUser', assignedUser);
   const query = params.toString();
   return `${CAMP_PATH.MANAGE}${query ? `?${query}` : ''}`;
 }
@@ -68,13 +71,28 @@ export default function CampOperationsBoard({
   const [clientName, setClientName] = useState('');
   const [campaignType, setCampaignType] = useState('');
   const [campaignName, setCampaignName] = useState('');
-  const [divisionPrograms, setDivisionPrograms] = useState([]);
-  const [divisionOptions, setDivisionOptions] = useState([]);
-  const [programsLoading, setProgramsLoading] = useState(false);
+  const [assignedUserEmail, setAssignedUserEmail] = useState('');
+  const [filterCatalog, setFilterCatalog] = useState(() => parseOpsBoardFilterCatalog());
+  const [catalogLoading, setCatalogLoading] = useState(true);
 
-  const methodOptions = useMemo(
-    () => campNamesForDivision(divisionPrograms, campaignType),
-    [divisionPrograms, campaignType],
+  const methodOptions = filterCatalog.methods;
+  const divisionOptions = useMemo(
+    () => divisionsForOpsBoardMethod(filterCatalog, campaignName),
+    [filterCatalog, campaignName],
+  );
+  const clientOptions = useMemo(
+    () => clientsForOpsBoardScope(filterCatalog, {
+      campaign: campaignName,
+      campaignType,
+    }),
+    [filterCatalog, campaignName, campaignType],
+  );
+  const assignedUserOptions = useMemo(
+    () => (filterCatalog.assignedUsers || []).map((user) => ({
+      email: user.email,
+      label: user.name ? `${user.name} · ${user.email}` : user.email,
+    })),
+    [filterCatalog],
   );
 
   const boardQuery = useMemo(() => ({
@@ -83,7 +101,8 @@ export default function CampOperationsBoard({
     ...(clientId ? { client: clientId } : {}),
     ...(campaignType ? { campaignType } : {}),
     ...(campaignName ? { campaign: campaignName } : {}),
-  }), [appliedRange, clientId, campaignType, campaignName]);
+    ...(assignedUserEmail ? { assignedUser: assignedUserEmail } : {}),
+  }), [appliedRange, clientId, campaignType, campaignName, assignedUserEmail]);
 
   const loadBoard = useCallback(async (params = boardQuery) => {
     try {
@@ -107,35 +126,21 @@ export default function CampOperationsBoard({
   }, [initialFrom, initialTo]);
 
   useEffect(() => {
-    if (!clientId) {
-      setDivisionPrograms([]);
-      setDivisionOptions([]);
-      setProgramsLoading(false);
-      return undefined;
-    }
     let cancelled = false;
-    setProgramsLoading(true);
-    clientMasterApi.listDivisionsByClient(
-      clientId,
-      clientName ? { clientName } : undefined,
-    )
+    setCatalogLoading(true);
+    clientMasterApi.listOpsBoardFilters()
       .then(({ data }) => {
         if (cancelled) return;
-        const parsed = parseClientMasterDivisions(data);
-        setDivisionPrograms(parsed.programs);
-        setDivisionOptions(parsed.divisions);
+        setFilterCatalog(parseOpsBoardFilterCatalog(data));
       })
       .catch(() => {
-        if (!cancelled) {
-          setDivisionPrograms([]);
-          setDivisionOptions([]);
-        }
+        if (!cancelled) setFilterCatalog(parseOpsBoardFilterCatalog());
       })
       .finally(() => {
-        if (!cancelled) setProgramsLoading(false);
+        if (!cancelled) setCatalogLoading(false);
       });
     return () => { cancelled = true; };
-  }, [clientId, clientName]);
+  }, []);
 
   function applyRange(range) {
     setDateFrom(range.dateFrom);
@@ -178,19 +183,26 @@ export default function CampOperationsBoard({
     client: clientId,
     campaignType,
     campaign: campaignName,
+    assignedUser: assignedUserEmail,
   };
+
+  function onMethodChange(value) {
+    setCampaignName(value);
+    setCampaignType('');
+    setClientId('');
+    setClientName('');
+  }
+
+  function onDivisionChange(value) {
+    setCampaignType(value);
+    setClientId('');
+    setClientName('');
+  }
 
   function onClientChange(id, client) {
     const nextId = String(id || '').trim();
     setClientId(nextId);
     setClientName(String(client?.name || '').trim());
-    setCampaignType('');
-    setCampaignName('');
-  }
-
-  function onDivisionChange(value) {
-    setCampaignType(value);
-    setCampaignName('');
   }
 
   return (
@@ -212,33 +224,6 @@ export default function CampOperationsBoard({
               <strong className="ops-board-hero__value">{board.total ?? 0}</strong>
             </Link>
             <div className="ops-board-hero__filters">
-              <div className="ops-board-hero__filter">
-                <span>Client Name</span>
-                <CampClientTypeahead
-                  value={clientId}
-                  selectedLabel={clientName}
-                  onChange={onClientChange}
-                  hideLabel
-                />
-              </div>
-              <label className="ops-board-hero__filter" htmlFor="ops-board-division">
-                <span>{MODULE.DIVISION_THERAPY}</span>
-                <select
-                  id="ops-board-division"
-                  className="tylo-select"
-                  aria-label={MODULE.DIVISION_THERAPY}
-                  value={campaignType}
-                  disabled={!clientId || programsLoading}
-                  onChange={(e) => onDivisionChange(e.target.value)}
-                >
-                  <option value="">
-                    {programsLoading ? 'Loading…' : 'All'}
-                  </option>
-                  {divisionOptions.map((division) => (
-                    <option key={division} value={division}>{division}</option>
-                  ))}
-                </select>
-              </label>
               <label className="ops-board-hero__filter" htmlFor="ops-board-method">
                 <span>{MODULE.METHOD}</span>
                 <select
@@ -246,24 +231,67 @@ export default function CampOperationsBoard({
                   className="tylo-select"
                   aria-label={MODULE.METHOD}
                   value={campaignName}
-                  disabled={!campaignType || programsLoading}
-                  onChange={(e) => setCampaignName(e.target.value)}
+                  disabled={catalogLoading}
+                  onChange={(e) => onMethodChange(e.target.value)}
                 >
                   <option value="">
-                    {programsLoading ? 'Loading…' : 'All'}
+                    {catalogLoading ? 'Loading…' : 'All'}
                   </option>
                   {methodOptions.map((method) => (
                     <option key={method} value={method}>{method}</option>
                   ))}
                 </select>
               </label>
+              <label className="ops-board-hero__filter" htmlFor="ops-board-division">
+                <span>{MODULE.DIVISION_THERAPY}</span>
+                <select
+                  id="ops-board-division"
+                  className="tylo-select"
+                  aria-label={MODULE.DIVISION_THERAPY}
+                  value={campaignType}
+                  disabled={!campaignName || catalogLoading}
+                  onChange={(e) => onDivisionChange(e.target.value)}
+                >
+                  <option value="">
+                    {catalogLoading ? 'Loading…' : 'All'}
+                  </option>
+                  {divisionOptions.map((division) => (
+                    <option key={division} value={division}>{division}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="ops-board-hero__filter">
+                <span>Client Name</span>
+                <CampClientTypeahead
+                  value={clientId}
+                  selectedLabel={clientName}
+                  onChange={onClientChange}
+                  hideLabel
+                  disabled={!campaignName || catalogLoading}
+                  allowedClients={campaignName ? clientOptions : []}
+                />
+              </div>
+              <label className="ops-board-hero__filter" htmlFor="ops-board-assigned-user">
+                <span>{MODULE.ASSIGNED_USERS}</span>
+                <select
+                  id="ops-board-assigned-user"
+                  className="tylo-select"
+                  aria-label={MODULE.ASSIGNED_USERS}
+                  value={assignedUserEmail}
+                  disabled={catalogLoading}
+                  onChange={(e) => setAssignedUserEmail(e.target.value)}
+                >
+                  <option value="">
+                    {catalogLoading ? 'Loading…' : 'All'}
+                  </option>
+                  {assignedUserOptions.map((user) => (
+                    <option key={user.email} value={user.email}>{user.label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
-            <div className="ops-board-hero__meta">
-              <p className="meta-text">
-                Scoped to your Camp One access
-                {board.scope?.designation ? ` · ${board.scope.designation}` : ''}
-              </p>
-              {!embedded ? (
+            {!embedded ? (
+              <div className="ops-board-hero__meta">
                 <DateRangeFilters
                   idPrefix="ops-board-date"
                   dateFrom={dateFrom}
@@ -277,8 +305,8 @@ export default function CampOperationsBoard({
                   onClear={() => applyRange(EMPTY_RANGE)}
                   showClear={Boolean(appliedRange.dateFrom || appliedRange.dateTo)}
                 />
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </section>
 
           <section className="ops-board-grid" aria-label="Lifecycle stage board">

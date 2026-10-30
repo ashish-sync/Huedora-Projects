@@ -73,5 +73,39 @@ describe('CampLifecycleForm program request mode', () => {
     expect(screen.queryByText('Camp Start Time')).toBeNull();
     expect(screen.queryByText('Camp End Time')).toBeNull();
     expect(screen.queryByTestId('location-fields')).toBeNull();
+
+    const order = [
+      'Doctor Name',
+      'Doctor Code',
+      'Specialty',
+      'Camp Date',
+      'Start Time',
+      'End Time',
+      'Camp / Clinic Address',
+      'Contact Person Level',
+      'Contact Person Name',
+      'Contact Person Number',
+      'HQ',
+      'Expected Patients',
+      'Remarks',
+    ];
+    const positions = order.map((label) => screen.getByText(label, { exact: false }));
+    for (let i = 0; i < positions.length - 1; i += 1) {
+      expect(
+        positions[i].compareDocumentPosition(positions[i + 1]) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+
+    const pairLabels = (left, right) => {
+      const row = screen.getByText(left, { exact: false }).closest('.camp-request-pair-row');
+      expect(row).toBeTruthy();
+      expect(row.contains(screen.getByText(right, { exact: false }))).toBe(true);
+    };
+    pairLabels('Doctor Name', 'Doctor Code');
+    pairLabels('Specialty', 'Camp Date');
+    pairLabels('Start Time', 'End Time');
+    pairLabels('Contact Person Level', 'Contact Person Name');
+    pairLabels('Contact Person Number', 'HQ');
+    pairLabels('Expected Patients', 'Remarks');
   });
 });

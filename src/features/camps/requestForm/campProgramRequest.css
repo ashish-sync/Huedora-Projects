@@ -9,42 +9,68 @@
   --camp-form-row-gap: 12px;
 }
 
-.camp-program-request__header.camp-execute__header {
-  grid-template-columns: 1fr;
-  justify-items: center;
-}
-
-.camp-program-request.camp-execute .camp-program-request__body.camp-execute__body {
-  max-width: 920px;
-  padding-bottom: 2rem;
-}
-
 .camp-program-request__body {
-  max-width: 920px;
+  max-width: 640px;
   margin: 0 auto;
   width: 100%;
   padding: 1rem 0.9rem 2.5rem;
 }
 
+.camp-program-request__sheet {
+  background: var(--ce-card);
+  border: 1px solid var(--ce-line-soft);
+  border-radius: 16px;
+  padding: 1.05rem 1.05rem 1.2rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.camp-program-request__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.1rem 0 0.85rem;
+  margin: 0 0 0.9rem;
+  border-bottom: 1px solid var(--ce-line-soft);
+}
+
+.camp-program-request__logo {
+  display: block;
+  width: auto;
+  height: 36px;
+  max-width: min(148px, 48vw);
+  object-fit: contain;
+}
+
+.camp-program-request__brand h1 {
+  margin: 0;
+  color: var(--ce-ink);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: none;
+}
+
 .camp-program-request__status {
-  margin: 2rem 0;
+  margin: 1.25rem 0 0.4rem;
   text-align: center;
   color: var(--ce-muted);
 }
 
 .camp-program-request__program {
-  margin: 0 0 0.85rem;
-  font-size: 0.92rem;
+  margin: 0 0 0.95rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--ce-ink-soft);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .camp-program-request__form {
-  background: var(--ce-card);
-  border: 1px solid var(--ce-line-soft);
-  border-radius: 14px;
-  padding: 1rem 1rem 1.15rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
 }
 
 .camp-program-request__form .camp-lifecycle-form {
@@ -52,13 +78,40 @@
 }
 
 .camp-program-request__form .camp-request-grid {
-  gap: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.camp-program-request__form .camp-request-doctor-row,
-.camp-program-request__form .camp-request-schedule-row,
-.camp-program-request__form .camp-request-footer-row {
+.camp-program-request__form .camp-request-pair-row {
   align-items: end;
+}
+
+.camp-program-request__form .camp-address-field-block {
+  width: 100%;
+}
+
+.camp-program-request__form .camp-request-level-select,
+.camp-program-request__form .adaptive-select-host,
+.camp-program-request__form .adaptive-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.camp-program-request__form .adaptive-select__control {
+  min-height: var(--control-h, 40px) !important;
+}
+
+.camp-program-request__form .adaptive-select__single-value,
+.camp-program-request__form .adaptive-select__placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.camp-program-request__form .adaptive-select__menu,
+.camp-program-request__form + .adaptive-select__menu-portal .adaptive-select__menu {
+  min-width: 16rem;
 }
 
 .camp-program-request__actions {
@@ -67,50 +120,57 @@
   margin-top: 1rem;
 }
 
-@media (max-width: 900px) {
-  .camp-program-request .camp-ops-root .camp-request-doctor-row,
-  .camp-program-request .camp-ops-root .camp-request-schedule-row,
-  .camp-program-request .camp-ops-root .camp-request-footer-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 8px 8px;
-  }
-
-  .camp-program-request .camp-ops-root .camp-request-contacts .camp-request-contact-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) auto !important;
-    gap: 8px 8px;
-    align-items: end;
-  }
+/* Keep the 2-up field pairs on phones; do not inherit Camp One's 1-column stack. */
+.camp-program-request .camp-ops-root .camp-request-pair-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px 12px;
 }
 
 @media (max-width: 720px) {
   .camp-program-request {
-    --control-h: 2.4rem;
+    --control-h: 2.5rem;
     --camp-form-col-gap: 8px;
+    --camp-form-row-gap: 10px;
   }
 
   .camp-program-request__body {
-    padding: 0.65rem 0.55rem 1.5rem;
+    padding: 0.7rem 0.55rem 1.5rem;
   }
 
-  .camp-program-request__form {
-    padding: 0.7rem 0.65rem 0.9rem;
-    border-radius: 12px;
+  .camp-program-request__sheet {
+    padding: 0.85rem 0.75rem 1rem;
+    border-radius: 14px;
+  }
+
+  .camp-program-request__brand {
+    padding-bottom: 0.7rem;
+    margin-bottom: 0.75rem;
+    gap: 0.2rem;
+  }
+
+  .camp-program-request__logo {
+    height: 32px;
+  }
+
+  .camp-program-request__brand h1 {
+    font-size: 0.98rem;
   }
 
   .camp-program-request__program {
-    font-size: 0.82rem;
-    margin-bottom: 0.7rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
   }
 
   .camp-program-request__form .camp-request-grid {
+    gap: 10px;
+  }
+
+  .camp-program-request .camp-ops-root .camp-request-pair-row {
     gap: 10px 8px;
   }
 
-  .camp-program-request__form .camp-request-doctor-row > label,
-  .camp-program-request__form .camp-request-schedule-row > label,
-  .camp-program-request__form .camp-request-footer-row > label,
-  .camp-program-request__form .camp-request-contacts .camp-request-contact-row > label {
-    font-size: 0.64rem;
+  .camp-program-request__form .camp-request-pair-row > label {
+    font-size: 0.68rem;
     line-height: 1.25;
   }
 
@@ -132,8 +192,8 @@
   .camp-program-request__form input[type='time'] {
     min-width: 0;
     max-width: 100%;
-    padding-left: 0.35rem;
-    padding-right: 0.2rem;
+    padding-left: 0.4rem;
+    padding-right: 0.25rem;
   }
 
   .camp-program-request__actions {
@@ -146,25 +206,8 @@
   }
 }
 
-@media (max-width: 420px) {
-  .camp-program-request .camp-ops-root .camp-request-footer-row {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  .camp-program-request .camp-ops-root .camp-request-footer-row > label:last-child {
-    grid-column: 1 / -1;
-  }
-
-  .camp-program-request .camp-ops-root .camp-request-contacts .camp-request-contact-row {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  .camp-program-request .camp-ops-root .camp-request-contacts .camp-request-contact-row > label:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .camp-program-request .camp-ops-root .camp-contact-remove-btn {
-    grid-column: 1 / -1;
-    justify-self: end;
+@media (max-width: 360px) {
+  .camp-program-request .camp-ops-root .camp-request-pair-row {
+    grid-template-columns: 1fr !important;
   }
 }

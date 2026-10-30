@@ -9,6 +9,27 @@ import { normalizeHealthcareWorkers } from './healthcareWorkers.js';
 
 
 
+function parseAssignedEmails(raw) {
+  if (Array.isArray(raw)) {
+    return raw.map((item) => String(item || '').trim()).filter(Boolean);
+  }
+  return String(raw || '')
+    .split(/[;,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseAssignedUsersByCamp(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const next = {};
+  for (const [campName, emails] of Object.entries(raw)) {
+    const key = String(campName || '').trim();
+    if (!key) continue;
+    next[key] = parseAssignedEmails(emails);
+  }
+  return next;
+}
+
 export function parseClientMasterDivisions(data) {
 
   const programs = Array.isArray(data?.data)
@@ -25,6 +46,10 @@ export function parseClientMasterDivisions(data) {
 
           : [],
 
+        assignedUserEmails: parseAssignedEmails(item?.assignedUserEmails),
+
+        assignedUsersByCamp: parseAssignedUsersByCamp(item?.assignedUsersByCamp),
+
         isActive: item?.isActive !== false,
 
       }))
@@ -37,10 +62,127 @@ export function parseClientMasterDivisions(data) {
 
   const divisions = [...new Set(programs.map((item) => item.programName))];
 
+  const assignedUsers = Array.isArray(data?.assignedUsers)
+    ? data.assignedUsers
+      .map((item) => ({
+        email: String(item?.email || '').trim(),
+        name: String(item?.name || '').trim(),
+      }))
+      .filter((item) => item.email)
+    : [];
 
+  return { programs, divisions, assignedUsers };
 
-  return { programs, divisions };
+}
 
+function pushUniqueEmails(target, emails) {
+  const seen = new Set(target.map((email) => email.toLowerCase()));
+  for (const email of emails || []) {
+    const value = String(email || '').trim();
+    const key = value.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    target.push(value);
+  }
+  return target;
+}
+
+export function parseOpsBoardFilterCatalog(data = {}) {
+  const source = data?.methods ? data : {};
+  const methods = Array.isArray(source.methods)
+    ? source.methods.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const divisionsByMethod = {};
+  for (const [method, divisions] of Object.entries(source.divisionsByMethod || {})) {
+    const key = String(method || '').trim();
+    if (!key) continue;
+    divisionsByMethod[key] = (Array.isArray(divisions) ? divisions : [])
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+  }
+  const parseClients = (rows) => (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      _id: String(row?._id || row?.id || '').trim(),
+      name: String(row?.name || '').trim(),
+    }))
+    .filter((row) => row._id);
+
+  const clientsByMethod = {};
+  for (const [method, rows] of Object.entries(source.clientsByMethod || {})) {
+    const key = String(method || '').trim();
+    if (!key) continue;
+    clientsByMethod[key] = parseClients(rows);
+  }
+
+  const clientsByMethodDivision = {};
+  for (const [method, divisions] of Object.entries(source.clientsByMethodDivision || {})) {
+    const methodKey = String(method || '').trim();
+    if (!methodKey || !divisions || typeof divisions !== 'object') continue;
+    clientsByMethodDivision[methodKey] = {};
+    for (const [division, rows] of Object.entries(divisions)) {
+      const divisionKey = String(division || '').trim();
+      if (!divisionKey) continue;
+      clientsByMethodDivision[methodKey][divisionKey] = parseClients(rows);
+    }
+  }
+
+  const assignedUsers = Array.isArray(source.assignedUsers)
+    ? source.assignedUsers
+      .map((item) => ({
+        email: String(item?.email || '').trim(),
+        name: String(item?.name || '').trim(),
+      }))
+      .filter((item) => item.email)
+    : [];
+
+  return {
+    methods,
+    divisionsByMethod,
+    clientsByMethod,
+    clientsByMethodDivision,
+    assignedUsers,
+  };
+}
+
+export function divisionsForOpsBoardMethod(catalog, method) {
+  const key = String(method || '').trim();
+  if (!key) return [];
+  return [...(catalog?.divisionsByMethod?.[key] || [])];
+}
+
+export function clientsForOpsBoardScope(catalog, { campaign = '', campaignType = '' } = {}) {
+  const method = String(campaign || '').trim();
+  const division = String(campaignType || '').trim();
+  if (!method) return [];
+  if (division) {
+    return [...(catalog?.clientsByMethodDivision?.[method]?.[division] || [])];
+  }
+  return [...(catalog?.clientsByMethod?.[method] || [])];
+}
+
+/** Assigned User login emails for the selected Client Master scope. */
+export function assignedUserEmailsForProgramScope(programs = [], {
+  campaignType = '',
+  campaign = '',
+} = {}) {
+  const emails = [];
+  const division = String(campaignType || '').trim();
+  const method = String(campaign || '').trim();
+  const rows = Array.isArray(programs) ? programs : [];
+
+  if (!division) {
+    for (const program of rows) pushUniqueEmails(emails, program?.assignedUserEmails);
+    return emails;
+  }
+
+  const program = rows.find((item) => item?.programName === division);
+  if (!program) return [];
+  if (!method) {
+    pushUniqueEmails(emails, program.assignedUserEmails);
+    return emails;
+  }
+  pushUniqueEmails(emails, program.assignedUsersByCamp?.[method]);
+  return emails;
 }
 
 

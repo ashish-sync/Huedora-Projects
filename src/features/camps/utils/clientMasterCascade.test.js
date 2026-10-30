@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyClientMasterCascade,
+  assignedUserEmailsForProgramScope,
+  clientsForOpsBoardScope,
   diagnoseClientMasterHcwGap,
+  divisionsForOpsBoardMethod,
   parseClientMasterDivisions,
+  parseOpsBoardFilterCatalog,
   pickSingleOption,
   resolveCampClientId,
   resolveClientMasterAssignedUserEmails,
@@ -22,6 +26,61 @@ describe('parseClientMasterDivisions', () => {
 
     expect(programs).toHaveLength(1);
     expect(divisions).toEqual(['Ortho']);
+  });
+
+  it('keeps assigned users from Client Master for the operations board filter', () => {
+    const parsed = parseClientMasterDivisions({
+      data: [{
+        programName: 'Oncology',
+        campNames: ['BMD', 'Dietician'],
+        assignedUserEmails: ['ops@tylo.test', 'lead@tylo.test'],
+        assignedUsersByCamp: {
+          BMD: ['ops@tylo.test'],
+          Dietician: ['lead@tylo.test'],
+        },
+        isActive: true,
+      }],
+      assignedUsers: [{ email: 'ops@tylo.test', name: 'Ops User' }],
+    });
+    expect(parsed.assignedUsers).toEqual([{ email: 'ops@tylo.test', name: 'Ops User' }]);
+    expect(assignedUserEmailsForProgramScope(parsed.programs)).toEqual([
+      'ops@tylo.test',
+      'lead@tylo.test',
+    ]);
+    expect(assignedUserEmailsForProgramScope(parsed.programs, {
+      campaignType: 'Oncology',
+      campaign: 'BMD',
+    })).toEqual(['ops@tylo.test']);
+  });
+});
+
+describe('ops board filter catalog', () => {
+  const catalog = parseOpsBoardFilterCatalog({
+    methods: ['BMD', 'Dietician'],
+    divisionsByMethod: { BMD: ['Oncology'], Dietician: ['Cardio'] },
+    clientsByMethod: {
+      BMD: [{ _id: 'client-1', name: 'Acme' }],
+      Dietician: [{ _id: 'client-2', name: 'Beta' }],
+    },
+    clientsByMethodDivision: {
+      BMD: { Oncology: [{ _id: 'client-1', name: 'Acme' }] },
+    },
+    assignedUsers: [{ email: 'ops@tylo.test', name: 'Ops User' }],
+  });
+
+  it('lists divisions under the selected method', () => {
+    expect(divisionsForOpsBoardMethod(catalog, 'BMD')).toEqual(['Oncology']);
+    expect(divisionsForOpsBoardMethod(catalog, '')).toEqual([]);
+  });
+
+  it('lists clients for method, then method + division', () => {
+    expect(clientsForOpsBoardScope(catalog, { campaign: 'BMD' })).toEqual([
+      { _id: 'client-1', name: 'Acme' },
+    ]);
+    expect(clientsForOpsBoardScope(catalog, { campaign: 'BMD', campaignType: 'Oncology' })).toEqual([
+      { _id: 'client-1', name: 'Acme' },
+    ]);
+    expect(clientsForOpsBoardScope(catalog, { campaign: '' })).toEqual([]);
   });
 });
 

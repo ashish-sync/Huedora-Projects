@@ -12,6 +12,7 @@ export function buildOperationsBoardListParams({
   client = '',
   campaignType = '',
   campaign = '',
+  assignedUser = '',
   page = 1,
   includePaging = true,
 } = {}) {
@@ -28,6 +29,7 @@ export function buildOperationsBoardListParams({
   if (client) params.client = client;
   if (campaignType) params.campaignType = campaignType;
   if (campaign) params.campaign = campaign;
+  if (assignedUser) params.assignedUser = assignedUser;
 
   if (!statusValue) {
     if (stageId === 'execution') {

@@ -27,6 +27,7 @@ export const MODULE = {
   EMAIL: 'Email',
   METHOD: 'Method',
   DIVISION_THERAPY: 'Division / Therapy',
+  ASSIGNED_USERS: 'Assigned Users',
   SERVICE_MODEL: 'Service Model',
 };
 

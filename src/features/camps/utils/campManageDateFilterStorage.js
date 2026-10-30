@@ -16,6 +16,7 @@ const EMPTY_FILTERS = {
   client: '',
   campaign: '',
   campaignType: '',
+  assignedUser: '',
 };
 
 function safeParse(raw) {
@@ -86,6 +87,7 @@ export function readStoredManageFilters() {
     client: String(fromFilters?.client || '').trim(),
     campaign: String(fromFilters?.campaign || '').trim(),
     campaignType: String(fromFilters?.campaignType || '').trim(),
+    assignedUser: String(fromFilters?.assignedUser || '').trim(),
   };
 }
 
@@ -106,6 +108,10 @@ export function writeStoredManageFilters(patch = {}) {
         patch.campaignType !== undefined
           ? String(patch.campaignType || '').trim().slice(0, 80)
           : current.campaignType,
+      assignedUser:
+        patch.assignedUser !== undefined
+          ? String(patch.assignedUser || '').trim().slice(0, 120)
+          : current.assignedUser,
     };
 
     const hasAny =
@@ -115,6 +121,7 @@ export function writeStoredManageFilters(patch = {}) {
       || next.client
       || next.campaign
       || next.campaignType
+      || next.assignedUser
       || Object.values(next.statusByStage).some(Boolean);
 
     if (!hasAny) {

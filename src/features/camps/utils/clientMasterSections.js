@@ -33,7 +33,7 @@ export const CLIENT_MASTER_SECTIONS = [
   {
     id: 'program',
     title: 'Program Configuration',
-    description: 'Division, method, service model, and camp timing',
+    description: 'Division, method, service model, camp timing, and camp request form',
     fields: [
       'programName',
       'campName',

@@ -13,6 +13,7 @@ export function ClientMasterSectionCard({
   onSave,
   onCancel,
   children,
+  extra = null,
 }) {
   return (
     <section
@@ -77,6 +78,7 @@ export function ClientMasterSectionCard({
       ) : (
         <div className="client-master-section-body">{children}</div>
       )}
+      {extra ? <div className="client-master-section-extra">{extra}</div> : null}
     </section>
   );
 }

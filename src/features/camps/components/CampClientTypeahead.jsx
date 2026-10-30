@@ -11,6 +11,7 @@ export function CampClientTypeahead({
   onChange,
   disabled = false,
   required = false,
+  hideLabel = false,
 }) {
   const [query, setQuery] = useState('');
   const [options, setOptions] = useState([]);
@@ -49,6 +50,7 @@ export function CampClientTypeahead({
     setQuery(next);
     setDisplayLabel(next);
     setOpen(true);
+    if (!String(next).trim() && value) onChange?.('', null);
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => runSearch(next), 220);
   }
@@ -71,29 +73,36 @@ export function CampClientTypeahead({
     onOpen: () => setOpen(true),
   });
 
+  const input = (
+    <input
+      type="text"
+      role="combobox"
+      aria-label={hideLabel ? 'Client Name' : undefined}
+      aria-expanded={open}
+      aria-autocomplete="list"
+      value={open ? (query || displayLabel) : displayLabel}
+      onChange={onInput}
+      onFocus={() => {
+        setOpen(true);
+        setQuery(displayLabel);
+        if (!options.length) runSearch(displayLabel || '');
+      }}
+      onKeyDown={handleKeyDown}
+      disabled={disabled}
+      required={required && !value}
+      placeholder="Search client…"
+      autoComplete="off"
+    />
+  );
+
   return (
     <div className="camp-client-typeahead" ref={wrapRef}>
-      <label>
-        Client Name
-        <input
-          type="text"
-          role="combobox"
-          aria-expanded={open}
-          aria-autocomplete="list"
-          value={open ? (query || displayLabel) : displayLabel}
-          onChange={onInput}
-          onFocus={() => {
-            setOpen(true);
-            setQuery(displayLabel);
-            if (!options.length) runSearch(displayLabel || '');
-          }}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          required={required && !value}
-          placeholder="Search client…"
-          autoComplete="off"
-        />
-      </label>
+      {hideLabel ? input : (
+        <label>
+          Client Name
+          {input}
+        </label>
+      )}
       {open && !disabled ? (
         <ul className="camp-client-typeahead-list" role="listbox">
           {loading ? <li className="meta-text">Searching…</li> : null}

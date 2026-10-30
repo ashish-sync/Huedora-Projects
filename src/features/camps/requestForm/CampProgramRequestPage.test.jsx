@@ -59,6 +59,7 @@ describe('CampProgramRequestPage', () => {
     const form = await screen.findByTestId('request-form');
     expect(form.getAttribute('data-lock')).toBe('true');
     expect(form.getAttribute('data-request-only')).toBe('true');
+    expect(screen.getByRole('heading', { name: 'New Camp Request' })).toBeTruthy();
     expect(screen.getByText(/Acme Health · Viva BMD · BMD/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /submit request/i })).toBeTruthy();
     await waitFor(() => expect(load).toHaveBeenCalledWith('token-1'));

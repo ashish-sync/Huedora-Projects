@@ -83,8 +83,23 @@
   gap: 12px;
 }
 
-.camp-program-request__form .camp-request-pair-row {
-  align-items: end;
+.camp-program-request__form .camp-request-contacts,
+.camp-program-request__form .camp-request-contact-block {
+  display: contents;
+}
+
+.camp-program-request__form .camp-request-contact-label {
+  display: inline;
+  line-height: inherit;
+}
+
+.camp-program-request__form .camp-contact-add-btn {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  margin-left: 0.35em;
+  vertical-align: -0.1em;
+  flex: none;
 }
 
 .camp-program-request__form .camp-address-field-block {
@@ -99,7 +114,9 @@
 }
 
 .camp-program-request__form .adaptive-select__control {
+  height: var(--control-h, 40px) !important;
   min-height: var(--control-h, 40px) !important;
+  max-height: var(--control-h, 40px) !important;
 }
 
 .camp-program-request__form .adaptive-select__single-value,
@@ -174,7 +191,7 @@
     line-height: 1.25;
   }
 
-  .camp-program-request__form .camp-request-grid input,
+  .camp-program-request__form .camp-request-grid input:not(.date-input-native),
   .camp-program-request__form .camp-request-grid select,
   .camp-program-request__form .camp-address-input,
   .camp-program-request__form .date-input-display {

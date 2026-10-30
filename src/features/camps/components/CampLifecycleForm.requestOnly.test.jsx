@@ -85,7 +85,7 @@ describe('CampLifecycleForm program request mode', () => {
       'Contact Person Level',
       'Contact Person Name',
       'Contact Person Number',
-      'HQ',
+      'HQ (Headquarter)',
       'Expected Patients',
       'Remarks',
     ];
@@ -105,7 +105,7 @@ describe('CampLifecycleForm program request mode', () => {
     pairLabels('Specialty', 'Camp Date');
     pairLabels('Start Time', 'End Time');
     pairLabels('Contact Person Level', 'Contact Person Name');
-    pairLabels('Contact Person Number', 'HQ');
+    pairLabels('Contact Person Number', 'HQ (Headquarter)');
     pairLabels('Expected Patients', 'Remarks');
   });
 });

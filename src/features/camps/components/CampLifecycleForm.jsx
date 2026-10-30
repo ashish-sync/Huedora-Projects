@@ -4,7 +4,6 @@ import CampAddressField from './CampAddressField.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
-import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
 import { CampFormInput } from './CampFormInput.jsx';
@@ -592,7 +591,7 @@ export function CampLifecycleForm({
               <div className="camp-request-contacts full">
                 {contactPersons.map((contact, index) => (
                   <div className="camp-request-contact-block" key={`contact-${index}`}>
-                    <div className="camp-request-pair-row">
+                    <div className="camp-request-pair-row full">
                       <label>
                         <span className="camp-request-contact-label">
                           Contact Person Level
@@ -609,9 +608,8 @@ export function CampLifecycleForm({
                             </button>
                           ) : null}
                         </span>
-                        <AdaptiveSelect
-                          className="camp-request-level-select"
-                          threshold={1}
+                        <select
+                          {...bindAutofillBlockSelect()}
                           value={contact.level || DEFAULT_CONTACT_PERSON_LEVEL}
                           onChange={(e) => updateContactPerson(index, { level: e.target.value })}
                           disabled={disabled}
@@ -621,7 +619,7 @@ export function CampLifecycleForm({
                           {CONTACT_PERSON_LEVEL_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                           ))}
-                        </AdaptiveSelect>
+                        </select>
                       </label>
                       <label>
                         Contact Person Name
@@ -634,17 +632,23 @@ export function CampLifecycleForm({
                         />
                       </label>
                     </div>
-                    <div className="camp-request-pair-row">
-                      <PhoneField
-                        label="Contact Person Number"
-                        value={contact.phone || ''}
-                        onChange={(value) => updateContactPerson(index, { phone: value })}
-                        required
-                        disabled={disabled}
-                      />
+                    <div className="camp-request-pair-row full">
+                      <label>
+                        Contact Person Number
+                        <CampFormInput
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={10}
+                          placeholder="10-digit mobile number"
+                          value={contact.phone || ''}
+                          onChange={(e) => updateContactPerson(index, { phone: e.target.value.replace(/[^\d]/g, '').slice(0, 10) })}
+                          disabled={disabled}
+                          required
+                        />
+                      </label>
                       {index === 0 ? (
                         <label>
-                          HQ
+                          HQ (Headquarter)
                           <CampFormInput
                             value={form.hq}
                             onChange={(e) => updateFields?.({ hq: e.target.value, hqManuallyEdited: true })}

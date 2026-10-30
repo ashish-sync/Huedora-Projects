@@ -44,7 +44,7 @@ input.camps-filter-search,
   padding-left: var(--control-pad-inline-start);
 }
 
-.camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
+.camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input):not(.date-input-native),
 .camp-ops-root .camp-request-grid select,
 .camp-ops-root .camp-request-grid .date-input-display,
 .camp-ops-root .camp-request-grid .camp-address-autocomplete-host input,

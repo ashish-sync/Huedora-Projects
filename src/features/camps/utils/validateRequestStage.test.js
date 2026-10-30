@@ -87,4 +87,16 @@ describe('validateRequestStageForm', () => {
     expect(errors).toEqual([]);
     expect(isRequestStageComplete({ ...validRequest, expectedPatients: '0' })).toBe(true);
   });
+
+  it('skips PIN, state, zone, district, and city when skipLocation is set', () => {
+    const errors = validateRequestStageForm({
+      ...validRequest,
+      state: '',
+      district: '',
+      city: '',
+      pincode: '',
+      zone: '',
+    }, { skipLocation: true });
+    expect(errors).toEqual([]);
+  });
 });

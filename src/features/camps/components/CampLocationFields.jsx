@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import PinLocationLookup from '../../../components/ui/PinLocationLookup.jsx';
 import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import { fetchGeoStates, fetchGeoDistricts, fetchGeoCities } from '../../../shared/geoApi.js';
+import { useGeoLookup } from '../../../shared/GeoLookupContext.jsx';
 
 /**
  * True when PIN lookup / cascade moved to a different place and city should reset.
@@ -46,6 +47,10 @@ export default function CampLocationFields({
 
   const [cities, setCities] = useState([]);
   const [cityError, setCityError] = useState('');
+  const geoLookup = useGeoLookup();
+  const loadStates = geoLookup?.fetchStates || fetchGeoStates;
+  const loadDistricts = geoLookup?.fetchDistricts || fetchGeoDistricts;
+  const loadCities = geoLookup?.fetchCities || fetchGeoCities;
 
   const emit = (patch) => onChange?.({ ...v, ...patch });
 
@@ -53,7 +58,7 @@ export default function CampLocationFields({
     if (v.stateId || !v.state) return undefined;
 
     let cancelled = false;
-    fetchGeoStates()
+    loadStates()
       .then((states) => {
         if (cancelled) return;
         const state = (states || []).find(
@@ -73,7 +78,7 @@ export default function CampLocationFields({
     if (v.districtId || !v.stateId || !v.district) return undefined;
 
     let cancelled = false;
-    fetchGeoDistricts(v.stateId)
+    loadDistricts(v.stateId)
       .then((districts) => {
         if (cancelled) return;
         const district = (districts || []).find(
@@ -97,7 +102,7 @@ export default function CampLocationFields({
     }
 
     let cancelled = false;
-    fetchGeoCities(v.stateId)
+    loadCities(v.stateId)
       .then((rows) => {
         if (!cancelled) {
           setCities(rows || []);

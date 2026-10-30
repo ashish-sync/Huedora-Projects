@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { formatDate, toApiDateValue } from '../../shared/dateFormat.js';
 import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 
@@ -34,7 +34,6 @@ export function DateInput({
 }) {
   const autoId = useId();
   const id = idProp || autoId;
-  const pickerRef = useRef(null);
   const apiValue = toApiDateValue(value) || '';
 
   const [displayValue, setDisplayValue] = useState(() => (apiValue ? formatDate(apiValue) : ''));
@@ -80,18 +79,6 @@ export function DateInput({
     onChange?.(next);
   }
 
-  function openPicker() {
-    if (disabled) return;
-    const picker = pickerRef.current;
-    if (!picker) return;
-    if (typeof picker.showPicker === 'function') {
-      picker.showPicker();
-      return;
-    }
-    picker.focus();
-    picker.click();
-  }
-
   const control = (
     <div className={`date-input-control${disabled ? ' is-disabled' : ''}`}>
       <input
@@ -113,26 +100,17 @@ export function DateInput({
           onBlur: (e) => commitDisplay(e.target.value),
         })}
       />
-      <button
-        type="button"
-        className="date-input-picker-btn"
-        onClick={openPicker}
-        disabled={disabled}
-        aria-label={label ? `Open calendar for ${label}` : 'Open calendar'}
-        tabIndex={-1}
-      >
+      <span className="date-input-picker-btn" aria-hidden="true">
         <CalendarIcon />
-      </button>
+      </span>
       <input
-        ref={pickerRef}
         type="date"
         className="date-input-native"
         value={apiValue}
         min={min || undefined}
         max={max || undefined}
         disabled={disabled}
-        tabIndex={-1}
-        aria-hidden="true"
+        aria-label={label ? `Open calendar for ${label}` : (ariaLabel || 'Open calendar')}
         onChange={handlePickerChange}
         {...bindAutofillBlock()}
       />

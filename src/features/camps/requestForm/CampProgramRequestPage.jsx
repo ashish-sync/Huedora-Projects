@@ -137,71 +137,74 @@ export default function CampProgramRequestPage() {
   const divisionOptions = context?.programName ? [context.programName] : [];
   const campNameOptions = context?.campName ? [context.campName] : [];
 
+  const brand = (
+    <header className="camp-program-request__brand">
+      <img
+        className="camp-program-request__logo"
+        src={TYLO_LOGO_SRC}
+        alt="TYLO"
+        width={140}
+        height={40}
+        decoding="async"
+      />
+      <h1>New Camp Request</h1>
+    </header>
+  );
+
   return (
     <div className="camp-execute camp-program-request">
-      <header className="camp-execute__header camp-program-request__header">
-        <div className="camp-execute__brand">
-          <img
-            className="camp-execute__brand-logo"
-            src={TYLO_LOGO_SRC}
-            alt="TYLO"
-            width={140}
-            height={48}
-            decoding="async"
-          />
-          <span>New Camp Request</span>
-        </div>
-      </header>
-
-      <main className="camp-execute__body camp-program-request__body">
-        {loading ? (
-          <p className="camp-program-request__status">Loading form…</p>
-        ) : submitted ? (
-          <div className="camp-execute__success" role="status">
-            Request submitted for Camp One review
-            {submitted.campId ? ` as ${submitted.campId}` : ''}.
-          </div>
-        ) : !context ? (
-          <div className="camp-execute__error" role="alert">
-            {error || 'This camp request form is not available'}
-          </div>
-        ) : (
-          <form className="camp-ops-root camp-program-request__form" onSubmit={handleSubmit} autoComplete="off">
-            <AutofillDecoyFields />
-            {error ? <div className="camp-execute__error" role="alert">{error}</div> : null}
-            <p className="camp-program-request__program">
-              {context.clientName}
-              {context.programName ? ` · ${context.programName}` : ''}
-              {context.campName ? ` · ${context.campName}` : ''}
-            </p>
-            <GeoLookupContext.Provider value={geoLookup}>
-              <CampLifecycleForm
-                form={form}
-                updateField={updateField}
-                updateFields={updateFields}
-                activeStage="request"
-                onStageChange={() => {}}
-                campStatus="pending_review"
-                divisionOptions={divisionOptions}
-                campNameOptions={campNameOptions}
-                reachedLifecycleStage="request"
-                requestOnly
-                lockProgramFields
-                canSetHistoricalCampDates={false}
-                onValidationError={setError}
-              />
-            </GeoLookupContext.Provider>
-            <div className="camp-program-request__actions">
-              <button
-                type="submit"
-                className="camp-execute__btn primary camp-execute__btn--submit"
-                disabled={busy}
-              >
-                {busy ? 'Submitting…' : 'Submit request'}
-              </button>
+      <main className="camp-program-request__body">
+        <section className="camp-program-request__sheet">
+          {brand}
+          {loading ? (
+            <p className="camp-program-request__status">Loading form…</p>
+          ) : submitted ? (
+            <div className="camp-execute__success" role="status">
+              Request submitted for Camp One review
+              {submitted.campId ? ` as ${submitted.campId}` : ''}.
             </div>
-          </form>
-        )}
+          ) : !context ? (
+            <div className="camp-execute__error" role="alert">
+              {error || 'This camp request form is not available'}
+            </div>
+          ) : (
+            <form className="camp-ops-root camp-program-request__form" onSubmit={handleSubmit} autoComplete="off">
+              <AutofillDecoyFields />
+              {error ? <div className="camp-execute__error" role="alert">{error}</div> : null}
+              <p className="camp-program-request__program">
+                {context.clientName}
+                {context.programName ? ` · ${context.programName}` : ''}
+                {context.campName ? ` · ${context.campName}` : ''}
+              </p>
+              <GeoLookupContext.Provider value={geoLookup}>
+                <CampLifecycleForm
+                  form={form}
+                  updateField={updateField}
+                  updateFields={updateFields}
+                  activeStage="request"
+                  onStageChange={() => {}}
+                  campStatus="pending_review"
+                  divisionOptions={divisionOptions}
+                  campNameOptions={campNameOptions}
+                  reachedLifecycleStage="request"
+                  requestOnly
+                  lockProgramFields
+                  canSetHistoricalCampDates={false}
+                  onValidationError={setError}
+                />
+              </GeoLookupContext.Provider>
+              <div className="camp-program-request__actions">
+                <button
+                  type="submit"
+                  className="camp-execute__btn primary camp-execute__btn--submit"
+                  disabled={busy}
+                >
+                  {busy ? 'Submitting…' : 'Submit request'}
+                </button>
+              </div>
+            </form>
+          )}
+        </section>
       </main>
     </div>
   );

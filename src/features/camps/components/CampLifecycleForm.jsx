@@ -4,6 +4,7 @@ import CampAddressField from './CampAddressField.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
+import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
 import { CampFormInput } from './CampFormInput.jsx';
@@ -391,7 +392,7 @@ export function CampLifecycleForm({
           )}
           {lockProgramFields ? (
             <>
-              <div className="camp-request-doctor-row full">
+              <div className="camp-request-pair-row full">
                 <label>
                   Doctor Name
                   <CampFormInput
@@ -406,6 +407,8 @@ export function CampLifecycleForm({
                   Doctor Code
                   <CampFormInput value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
                 </label>
+              </div>
+              <div className="camp-request-pair-row full">
                 <label>
                   Specialty
                   <OtherAwareSelect
@@ -418,8 +421,6 @@ export function CampLifecycleForm({
                     disabled={disabled}
                   />
                 </label>
-              </div>
-              <div className="camp-request-schedule-row full">
                 <label>
                   Camp Date
                   <DateInput
@@ -431,6 +432,13 @@ export function CampLifecycleForm({
                     min={earliestAllowedDate}
                   />
                 </label>
+              </div>
+              {campDateHistorical && !canSetHistoricalCampDates ? (
+                <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
+                  Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
+                </p>
+              ) : null}
+              <div className="camp-request-pair-row full">
                 <label>
                   Start Time
                   <CampFormInput type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} disabled={disabled} required />
@@ -440,11 +448,6 @@ export function CampLifecycleForm({
                   <CampFormInput type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} disabled={disabled} required />
                 </label>
               </div>
-              {campDateHistorical && !canSetHistoricalCampDates ? (
-                <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-                  Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
-                </p>
-              ) : null}
             </>
           ) : (
             <>
@@ -584,102 +587,213 @@ export function CampLifecycleForm({
               />
             </div>
           )}
-          <div className="camp-request-contacts full">
-            {contactPersons.map((contact, index) => (
-              <div className="camp-request-contact-row" key={`contact-${index}`}>
-                <label>
-                  <span className="camp-request-contact-label">
-                    Contact Person Level
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        className="camp-contact-add-btn"
-                        onClick={addContactPerson}
+          {lockProgramFields ? (
+            <>
+              <div className="camp-request-contacts full">
+                {contactPersons.map((contact, index) => (
+                  <div className="camp-request-contact-block" key={`contact-${index}`}>
+                    <div className="camp-request-pair-row">
+                      <label>
+                        <span className="camp-request-contact-label">
+                          Contact Person Level
+                          {index === 0 ? (
+                            <button
+                              type="button"
+                              className="camp-contact-add-btn"
+                              onClick={addContactPerson}
+                              disabled={disabled}
+                              aria-label="Add another contact person"
+                              title="Add contact person"
+                            >
+                              +
+                            </button>
+                          ) : null}
+                        </span>
+                        <AdaptiveSelect
+                          className="camp-request-level-select"
+                          threshold={1}
+                          value={contact.level || DEFAULT_CONTACT_PERSON_LEVEL}
+                          onChange={(e) => updateContactPerson(index, { level: e.target.value })}
+                          disabled={disabled}
+                          required
+                          aria-label="Contact Person Level"
+                        >
+                          {CONTACT_PERSON_LEVEL_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </AdaptiveSelect>
+                      </label>
+                      <label>
+                        Contact Person Name
+                        <CampFormInput
+                          value={contact.name || ''}
+                          onChange={(e) => updateContactPerson(index, { name: e.target.value })}
+                          onBlur={(e) => updateContactPerson(index, { name: formatContactPersonName(e.target.value) })}
+                          disabled={disabled}
+                          required
+                        />
+                      </label>
+                    </div>
+                    <div className="camp-request-pair-row">
+                      <PhoneField
+                        label="Contact Person Number"
+                        value={contact.phone || ''}
+                        onChange={(value) => updateContactPerson(index, { phone: value })}
+                        required
                         disabled={disabled}
-                        aria-label="Add another contact person"
-                        title="Add contact person"
-                      >
-                        +
-                      </button>
-                    ) : null}
-                  </span>
-                  <select
-                    {...bindAutofillBlockSelect()}
-                    value={contact.level || DEFAULT_CONTACT_PERSON_LEVEL}
-                    onChange={(e) => updateContactPerson(index, { level: e.target.value })}
-                    disabled={disabled}
-                    required
-                  >
-                    <option value="">Select…</option>
-                    {CONTACT_PERSON_LEVEL_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </label>
+                      />
+                      {index === 0 ? (
+                        <label>
+                          HQ
+                          <CampFormInput
+                            value={form.hq}
+                            onChange={(e) => updateFields?.({ hq: e.target.value, hqManuallyEdited: true })}
+                            disabled={disabled}
+                            required
+                          />
+                        </label>
+                      ) : (
+                        <div className="camp-request-contact-remove-cell">
+                          <button
+                            type="button"
+                            className="camp-contact-remove-btn"
+                            onClick={() => removeContactPerson(index)}
+                            disabled={disabled}
+                            aria-label={`Remove contact person ${index + 1}`}
+                            title="Remove contact person"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="camp-request-pair-row full">
                 <label>
-                  Contact Person Name
+                  Expected Patients
                   <CampFormInput
-                    value={contact.name || ''}
-                    onChange={(e) => updateContactPerson(index, { name: e.target.value })}
-                    onBlur={(e) => updateContactPerson(index, { name: formatContactPersonName(e.target.value) })}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={form.expectedPatients === '' || form.expectedPatients == null ? '' : String(form.expectedPatients)}
+                    onChange={(e) => updateField('expectedPatients', e.target.value.replace(/[^\d]/g, ''))}
                     disabled={disabled}
                     required
                   />
                 </label>
-                <PhoneField
-                  label="Contact Person Number"
-                  value={contact.phone || ''}
-                  onChange={(value) => updateContactPerson(index, { phone: value })}
-                  required
-                  disabled={disabled}
-                />
-                {index > 0 ? (
-                  <button
-                    type="button"
-                    className="camp-contact-remove-btn"
-                    onClick={() => removeContactPerson(index)}
+                <label>
+                  Remarks
+                  <CampFormInput
+                    type="text"
+                    value={form.remarks}
+                    onChange={(e) => updateField('remarks', e.target.value)}
                     disabled={disabled}
-                    aria-label={`Remove contact person ${index + 1}`}
-                    title="Remove contact person"
-                  >
-                    ×
-                  </button>
-                ) : null}
+                  />
+                </label>
               </div>
-            ))}
-          </div>
-          <div className="camp-request-footer-row full">
-            <label>
-              HQ
-              <CampFormInput
-                value={form.hq}
-                onChange={(e) => updateFields?.({ hq: e.target.value, hqManuallyEdited: true })}
-                disabled={disabled}
-                required
-              />
-            </label>
-            <label>
-              Expected Patients
-              <CampFormInput
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={form.expectedPatients === '' || form.expectedPatients == null ? '' : String(form.expectedPatients)}
-                onChange={(e) => updateField('expectedPatients', e.target.value.replace(/[^\d]/g, ''))}
-                disabled={disabled}
-                required
-              />
-            </label>
-            <label>
-              Remarks
-              <CampFormInput
-                type="text"
-                value={form.remarks}
-                onChange={(e) => updateField('remarks', e.target.value)}
-                disabled={disabled}
-              />
-            </label>
-          </div>
+            </>
+          ) : (
+            <>
+              <div className="camp-request-contacts full">
+                {contactPersons.map((contact, index) => (
+                  <div className="camp-request-contact-row" key={`contact-${index}`}>
+                    <label>
+                      <span className="camp-request-contact-label">
+                        Contact Person Level
+                        {index === 0 ? (
+                          <button
+                            type="button"
+                            className="camp-contact-add-btn"
+                            onClick={addContactPerson}
+                            disabled={disabled}
+                            aria-label="Add another contact person"
+                            title="Add contact person"
+                          >
+                            +
+                          </button>
+                        ) : null}
+                      </span>
+                      <select
+                        {...bindAutofillBlockSelect()}
+                        value={contact.level || DEFAULT_CONTACT_PERSON_LEVEL}
+                        onChange={(e) => updateContactPerson(index, { level: e.target.value })}
+                        disabled={disabled}
+                        required
+                      >
+                        <option value="">Select…</option>
+                        {CONTACT_PERSON_LEVEL_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Contact Person Name
+                      <CampFormInput
+                        value={contact.name || ''}
+                        onChange={(e) => updateContactPerson(index, { name: e.target.value })}
+                        onBlur={(e) => updateContactPerson(index, { name: formatContactPersonName(e.target.value) })}
+                        disabled={disabled}
+                        required
+                      />
+                    </label>
+                    <PhoneField
+                      label="Contact Person Number"
+                      value={contact.phone || ''}
+                      onChange={(value) => updateContactPerson(index, { phone: value })}
+                      required
+                      disabled={disabled}
+                    />
+                    {index > 0 ? (
+                      <button
+                        type="button"
+                        className="camp-contact-remove-btn"
+                        onClick={() => removeContactPerson(index)}
+                        disabled={disabled}
+                        aria-label={`Remove contact person ${index + 1}`}
+                        title="Remove contact person"
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <div className="camp-request-footer-row full">
+                <label>
+                  HQ
+                  <CampFormInput
+                    value={form.hq}
+                    onChange={(e) => updateFields?.({ hq: e.target.value, hqManuallyEdited: true })}
+                    disabled={disabled}
+                    required
+                  />
+                </label>
+                <label>
+                  Expected Patients
+                  <CampFormInput
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={form.expectedPatients === '' || form.expectedPatients == null ? '' : String(form.expectedPatients)}
+                    onChange={(e) => updateField('expectedPatients', e.target.value.replace(/[^\d]/g, ''))}
+                    disabled={disabled}
+                    required
+                  />
+                </label>
+                <label>
+                  Remarks
+                  <CampFormInput
+                    type="text"
+                    value={form.remarks}
+                    onChange={(e) => updateField('remarks', e.target.value)}
+                    disabled={disabled}
+                  />
+                </label>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

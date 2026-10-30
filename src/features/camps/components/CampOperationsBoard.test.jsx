@@ -11,6 +11,29 @@ vi.mock('../campOpsApi.js', () => ({
   campApi: {
     downloadListExport: vi.fn(async () => {}),
   },
+  clientMasterApi: {
+    listDivisionsByClient: vi.fn(async () => ({
+      data: {
+        data: [{ programName: 'Oncology', campNames: ['BMD'], isActive: true }],
+      },
+    })),
+  },
+}));
+
+vi.mock('./CampClientTypeahead.jsx', () => ({
+  CampClientTypeahead: ({ value, onChange }) => (
+    <select
+      aria-label="Client Name"
+      value={value}
+      onChange={(e) => {
+        const next = e.target.value;
+        onChange(next, next ? { _id: next, name: 'Acme' } : null);
+      }}
+    >
+      <option value="">All clients</option>
+      <option value="client-1">Acme</option>
+    </select>
+  ),
 }));
 
 const SECTIONS = [
@@ -127,5 +150,57 @@ describe('CampOperationsBoard export', () => {
     expect(section.getAttribute('href')).toContain('stage=request');
     expect(section.getAttribute('href')).toContain('status=review_pending');
     expect(section.getAttribute('href')).toContain('dateFrom=2026-10-01');
+  });
+
+  it('renders Client Name, Division / Therapy, and Method next to Total Camps', async () => {
+    renderBoard();
+    await screen.findByText('14');
+    expect(screen.getByText('Client Name')).toBeTruthy();
+    expect(screen.getByLabelText('Client Name')).toBeTruthy();
+    expect(screen.getByLabelText('Division / Therapy')).toBeTruthy();
+    expect(screen.getByLabelText('Method')).toBeTruthy();
+    expect(screen.getByLabelText('Division / Therapy').disabled).toBe(true);
+    expect(screen.getByLabelText('Method').disabled).toBe(true);
+  });
+
+  it('filters the board and Manage links by client, division, and method', async () => {
+    renderBoard();
+    await screen.findByText('14');
+
+    fireEvent.change(screen.getByLabelText('Client Name'), { target: { value: 'client-1' } });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Division / Therapy').disabled).toBe(false);
+    });
+    fireEvent.change(screen.getByLabelText('Division / Therapy'), { target: { value: 'Oncology' } });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Method').disabled).toBe(false);
+    });
+    fireEvent.change(screen.getByLabelText('Method'), { target: { value: 'BMD' } });
+
+    await waitFor(() => {
+      const last = dashboardApi.operations.mock.calls.at(-1)?.[0];
+      expect(last).toMatchObject({
+        client: 'client-1',
+        campaignType: 'Oncology',
+        campaign: 'BMD',
+        dateFrom: '2026-10-01',
+        dateTo: '2026-10-29',
+      });
+    });
+
+    const total = screen.getByRole('link', { name: /Total Camps/i });
+    expect(total.getAttribute('href')).toContain('client=client-1');
+    expect(total.getAttribute('href')).toContain('campaignType=Oncology');
+    expect(total.getAttribute('href')).toContain('campaign=BMD');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Download Review Pending camps' }));
+    await waitFor(() => {
+      expect(campApi.downloadListExport).toHaveBeenCalled();
+    });
+    const [path] = campApi.downloadListExport.mock.calls.at(-1);
+    const url = new URL(path, 'http://local.test');
+    expect(url.searchParams.get('client')).toBe('client-1');
+    expect(url.searchParams.get('campaignType')).toBe('Oncology');
+    expect(url.searchParams.get('campaign')).toBe('BMD');
   });
 });

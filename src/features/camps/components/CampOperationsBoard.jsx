@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { DateRangeFilters } from './DateRangeFilters';
-import { dashboardApi, campApi } from '../campOpsApi.js';
+import { CampClientTypeahead } from './CampClientTypeahead.jsx';
+import { dashboardApi, campApi, clientMasterApi } from '../campOpsApi.js';
 import { CAMP_PATH } from '../../../shared/moduleRoutes.js';
-import { ACTION } from '../../../shared/labels.js';
+import { ACTION, MODULE } from '../../../shared/labels.js';
+import {
+  campNamesForDivision,
+  parseClientMasterDivisions,
+} from '../utils/clientMasterCascade.js';
 import {
   operationsBoardExportFilename,
   operationsBoardExportPath,
@@ -15,12 +20,23 @@ import '../campOps.theme.css';
 
 const EMPTY_RANGE = { dateFrom: '', dateTo: '' };
 
-function buildManagePath({ stageId, statusValue = '', dateFrom = '', dateTo = '' } = {}) {
+function buildManagePath({
+  stageId,
+  statusValue = '',
+  dateFrom = '',
+  dateTo = '',
+  client = '',
+  campaignType = '',
+  campaign = '',
+} = {}) {
   const params = new URLSearchParams();
   if (stageId) params.set('stage', stageId);
   if (statusValue) params.set('status', statusValue);
   if (dateFrom) params.set('dateFrom', dateFrom);
   if (dateTo) params.set('dateTo', dateTo);
+  if (client) params.set('client', client);
+  if (campaignType) params.set('campaignType', campaignType);
+  if (campaign) params.set('campaign', campaign);
   const query = params.toString();
   return `${CAMP_PATH.MANAGE}${query ? `?${query}` : ''}`;
 }
@@ -48,16 +64,36 @@ export default function CampOperationsBoard({
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState('');
   const [exportingKey, setExportingKey] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [campaignType, setCampaignType] = useState('');
+  const [campaignName, setCampaignName] = useState('');
+  const [divisionPrograms, setDivisionPrograms] = useState([]);
+  const [divisionOptions, setDivisionOptions] = useState([]);
+  const [programsLoading, setProgramsLoading] = useState(false);
 
-  const loadBoard = useCallback(async (range = appliedRange) => {
+  const methodOptions = useMemo(
+    () => campNamesForDivision(divisionPrograms, campaignType),
+    [divisionPrograms, campaignType],
+  );
+
+  const boardQuery = useMemo(() => ({
+    dateFrom: appliedRange.dateFrom,
+    dateTo: appliedRange.dateTo,
+    ...(clientId ? { client: clientId } : {}),
+    ...(campaignType ? { campaignType } : {}),
+    ...(campaignName ? { campaign: campaignName } : {}),
+  }), [appliedRange, clientId, campaignType, campaignName]);
+
+  const loadBoard = useCallback(async (params = boardQuery) => {
     try {
-      const { data } = await dashboardApi.operations(range);
+      const { data } = await dashboardApi.operations(params);
       setBoard(data);
       setError('');
     } catch (err) {
       setError(err?.message || 'Failed to load operations board');
     }
-  }, [appliedRange]);
+  }, [boardQuery]);
 
   useEffect(() => {
     loadBoard();
@@ -69,6 +105,37 @@ export default function CampOperationsBoard({
     setDateTo(next.dateTo);
     setAppliedRange(next);
   }, [initialFrom, initialTo]);
+
+  useEffect(() => {
+    if (!clientId) {
+      setDivisionPrograms([]);
+      setDivisionOptions([]);
+      setProgramsLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setProgramsLoading(true);
+    clientMasterApi.listDivisionsByClient(
+      clientId,
+      clientName ? { clientName } : undefined,
+    )
+      .then(({ data }) => {
+        if (cancelled) return;
+        const parsed = parseClientMasterDivisions(data);
+        setDivisionPrograms(parsed.programs);
+        setDivisionOptions(parsed.divisions);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDivisionPrograms([]);
+          setDivisionOptions([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProgramsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [clientId, clientName]);
 
   function applyRange(range) {
     setDateFrom(range.dateFrom);
@@ -88,10 +155,7 @@ export default function CampOperationsBoard({
     setExportingKey(sliceKey(slice));
     setExportError('');
     try {
-      await downloadOperationsSlice(slice, {
-        dateFrom: appliedRange.dateFrom,
-        dateTo: appliedRange.dateTo,
-      });
+      await downloadOperationsSlice(slice, boardQuery);
     } catch (err) {
       setExportError(err?.message || 'Download failed');
     } finally {
@@ -108,10 +172,26 @@ export default function CampOperationsBoard({
     return <div className="empty-state">Loading operations board…</div>;
   }
 
-  const manageDates = {
+  const manageQuery = {
     dateFrom: appliedRange.dateFrom,
     dateTo: appliedRange.dateTo,
+    client: clientId,
+    campaignType,
+    campaign: campaignName,
   };
+
+  function onClientChange(id, client) {
+    const nextId = String(id || '').trim();
+    setClientId(nextId);
+    setClientName(String(client?.name || '').trim());
+    setCampaignType('');
+    setCampaignName('');
+  }
+
+  function onDivisionChange(value) {
+    setCampaignType(value);
+    setCampaignName('');
+  }
 
   return (
     <div className={`camp-ops-root ops-board-host${embedded ? ' ops-board-host--embedded' : ''}`}>
@@ -125,12 +205,59 @@ export default function CampOperationsBoard({
           <section className={`ops-board-hero${embedded ? ' ops-board-hero--embedded' : ''}`} aria-label="Total camps">
             <Link
               className="ops-board-hero__total"
-              to={buildManagePath(manageDates)}
+              to={buildManagePath(manageQuery)}
               title="Open all camps in Manage"
             >
               <span className="ops-board-hero__label">Total Camps</span>
               <strong className="ops-board-hero__value">{board.total ?? 0}</strong>
             </Link>
+            <div className="ops-board-hero__filters">
+              <div className="ops-board-hero__filter">
+                <span>Client Name</span>
+                <CampClientTypeahead
+                  value={clientId}
+                  selectedLabel={clientName}
+                  onChange={onClientChange}
+                  hideLabel
+                />
+              </div>
+              <label className="ops-board-hero__filter" htmlFor="ops-board-division">
+                <span>{MODULE.DIVISION_THERAPY}</span>
+                <select
+                  id="ops-board-division"
+                  className="tylo-select"
+                  aria-label={MODULE.DIVISION_THERAPY}
+                  value={campaignType}
+                  disabled={!clientId || programsLoading}
+                  onChange={(e) => onDivisionChange(e.target.value)}
+                >
+                  <option value="">
+                    {programsLoading ? 'Loading…' : 'All'}
+                  </option>
+                  {divisionOptions.map((division) => (
+                    <option key={division} value={division}>{division}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="ops-board-hero__filter" htmlFor="ops-board-method">
+                <span>{MODULE.METHOD}</span>
+                <select
+                  id="ops-board-method"
+                  className="tylo-select"
+                  aria-label={MODULE.METHOD}
+                  value={campaignName}
+                  disabled={!campaignType || programsLoading}
+                  onChange={(e) => setCampaignName(e.target.value)}
+                >
+                  <option value="">
+                    {programsLoading ? 'Loading…' : 'All'}
+                  </option>
+                  {methodOptions.map((method) => (
+                    <option key={method} value={method}>{method}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="ops-board-hero__meta">
               <p className="meta-text">
                 Scoped to your Camp One access
@@ -160,7 +287,7 @@ export default function CampOperationsBoard({
                 <header className="ops-board-card__header">
                   <Link
                     className="ops-board-card__stage"
-                    to={buildManagePath({ stageId: stage.id, ...manageDates })}
+                    to={buildManagePath({ stageId: stage.id, ...manageQuery })}
                     title={`Open ${stage.label} camps in Manage`}
                   >
                     <span>{stage.label}</span>
@@ -188,7 +315,7 @@ export default function CampOperationsBoard({
                           to={buildManagePath({
                             stageId: stage.id,
                             statusValue: row.value,
-                            ...manageDates,
+                            ...manageQuery,
                           })}
                           title={`Open ${row.label} camps in Manage`}
                         >
@@ -221,7 +348,7 @@ export default function CampOperationsBoard({
                     className="meta-text"
                     to={buildManagePath({
                       stageId: stage.id,
-                      ...manageDates,
+                      ...manageQuery,
                     })}
                   >
                     Open in Manage →

@@ -114,6 +114,9 @@ export default function CampsPage() {
   const [campTypeFilter, setCampTypeFilter] = useState(() => (
     searchParams.get('campaignType') || readStoredManageFilters().campaignType || ''
   ));
+  const [assignedUserFilter, setAssignedUserFilter] = useState(() => (
+    searchParams.get('assignedUser') || readStoredManageFilters().assignedUser || ''
+  ));
   const [search, setSearch] = useState(() => (
     searchParams.get('findCampId')
       || searchParams.get('q')
@@ -149,6 +152,7 @@ export default function CampsPage() {
     clientFilter: '',
     campaignFilter: '',
     campTypeFilter: '',
+    assignedUserFilter: '',
     workingStage: 'request',
     status: '',
     page: 1,
@@ -161,6 +165,7 @@ export default function CampsPage() {
     clientFilter,
     campaignFilter,
     campTypeFilter,
+    assignedUserFilter,
     workingStage,
     status,
     page,
@@ -199,6 +204,7 @@ export default function CampsPage() {
     const urlClient = searchParams.get('client') || '';
     const urlCampaign = searchParams.get('campaign') || '';
     const urlCampType = searchParams.get('campaignType') || '';
+    const urlAssignedUser = searchParams.get('assignedUser') || '';
 
     const nextDateFrom = urlFrom || stored.dateFrom;
     const nextDateTo = urlTo || stored.dateTo;
@@ -206,6 +212,7 @@ export default function CampsPage() {
     const nextClient = urlClient || stored.client;
     const nextCampaign = urlCampaign || stored.campaign;
     const nextCampType = urlCampType || stored.campaignType;
+    const nextAssignedUser = urlAssignedUser || stored.assignedUser;
 
     if (!urlFrom && !urlTo && (stored.dateFrom || stored.dateTo)) {
       setDateFrom(stored.dateFrom);
@@ -215,6 +222,7 @@ export default function CampsPage() {
     if (!urlClient && stored.client) setClientFilter(stored.client);
     if (!urlCampaign && stored.campaign) setCampaignFilter(stored.campaign);
     if (!urlCampType && stored.campaignType) setCampTypeFilter(stored.campaignType);
+    if (!urlAssignedUser && stored.assignedUser) setAssignedUserFilter(stored.assignedUser);
     if (!urlStatus) {
       setStatusByStage((prev) => ({
         ...stored.statusByStage,
@@ -237,6 +245,8 @@ export default function CampsPage() {
       else next.delete('campaign');
       if (nextCampType) next.set('campaignType', nextCampType);
       else next.delete('campaignType');
+      if (nextAssignedUser) next.set('assignedUser', nextAssignedUser);
+      else next.delete('assignedUser');
       const stageStatus = urlStatus
         || stored.statusByStage[workingStage]
         || '';
@@ -257,8 +267,9 @@ export default function CampsPage() {
       client: clientFilter,
       campaign: campaignFilter,
       campaignType: campTypeFilter,
+      assignedUser: assignedUserFilter,
     });
-  }, [search, statusByStage, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter]);
+  }, [search, statusByStage, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignedUserFilter]);
 
   useEffect(() => {
     const refresh = () => {
@@ -467,6 +478,7 @@ export default function CampsPage() {
       if (q.clientFilter) params.client = q.clientFilter;
       if (q.campaignFilter) params.campaign = q.campaignFilter;
       if (q.campTypeFilter) params.campaignType = q.campTypeFilter;
+      if (q.assignedUserFilter) params.assignedUser = q.assignedUserFilter;
       if (
         q.workingStage === 'request' ||
         q.workingStage === 'assignment' ||
@@ -547,6 +559,7 @@ export default function CampsPage() {
     if (searchParams.has('client')) setClientFilter(searchParams.get('client') || '');
     if (searchParams.has('campaign')) setCampaignFilter(searchParams.get('campaign') || '');
     if (searchParams.has('campaignType')) setCampTypeFilter(searchParams.get('campaignType') || '');
+    if (searchParams.has('assignedUser')) setAssignedUserFilter(searchParams.get('assignedUser') || '');
     if (searchParams.has('q') || searchParams.has('findCampId')) {
       setSearch(searchParams.get('findCampId') || searchParams.get('q') || '');
     }
@@ -590,7 +603,7 @@ export default function CampsPage() {
     }, 80);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, workingStage]);
+  }, [status, dateFrom, dateTo, clientFilter, campaignFilter, campTypeFilter, assignedUserFilter, workingStage]);
 
   function handlePageChange(nextPage) {
     loadCamps(nextPage, pageSize);
@@ -609,6 +622,7 @@ export default function CampsPage() {
     const nextClient = overrides.client ?? clientFilter;
     const nextCampaign = overrides.campaign ?? campaignFilter;
     const nextCampType = overrides.campaignType ?? campTypeFilter;
+    const nextAssignedUser = overrides.assignedUser ?? assignedUserFilter;
     const nextSearch = overrides.search ?? search;
 
     if (workingStage) params.set('stage', workingStage);
@@ -618,6 +632,7 @@ export default function CampsPage() {
     if (nextClient) params.set('client', nextClient);
     if (nextCampaign) params.set('campaign', nextCampaign);
     if (nextCampType) params.set('campaignType', nextCampType);
+    if (nextAssignedUser) params.set('assignedUser', nextAssignedUser);
     if (nextSearch) params.set('q', nextSearch);
     return params;
   }
@@ -654,6 +669,7 @@ export default function CampsPage() {
     setClientFilter('');
     setCampaignFilter('');
     setCampTypeFilter('');
+    setAssignedUserFilter('');
     setSearch('');
     clearStoredManageFilters();
     setSearchParams(workingStage ? { stage: workingStage } : {});
@@ -727,6 +743,16 @@ export default function CampsPage() {
       onRemove: () => {
         setCampTypeFilter('');
         updateFilters({ campaignType: '' });
+      },
+    });
+  }
+  if (assignedUserFilter) {
+    activeChips.push({
+      key: 'assignedUser',
+      label: `Assigned Users: ${assignedUserFilter}`,
+      onRemove: () => {
+        setAssignedUserFilter('');
+        updateFilters({ assignedUser: '' });
       },
     });
   }

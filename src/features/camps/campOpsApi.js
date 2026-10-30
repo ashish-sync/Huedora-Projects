@@ -248,6 +248,7 @@ export const clientMasterApi = {
     `${BASE}/client-masters/by-client/${clientId}/divisions`,
     params,
   ),
+  listOpsBoardFilters: () => get(`${BASE}/client-masters/ops-board-filters`),
   get: (id) => get(`${BASE}/client-masters/${id}`),
   create: (payload) => post(`${BASE}/client-masters`, payload),
   update: (id, payload) => put(`${BASE}/client-masters/${id}`, payload),

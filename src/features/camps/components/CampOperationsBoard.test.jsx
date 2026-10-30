@@ -12,19 +12,26 @@ vi.mock('../campOpsApi.js', () => ({
     downloadListExport: vi.fn(async () => {}),
   },
   clientMasterApi: {
-    listDivisionsByClient: vi.fn(async () => ({
+    listOpsBoardFilters: vi.fn(async () => ({
       data: {
-        data: [{ programName: 'Oncology', campNames: ['BMD'], isActive: true }],
+        methods: ['BMD'],
+        divisionsByMethod: { BMD: ['Oncology'] },
+        clientsByMethod: { BMD: [{ _id: 'client-1', name: 'Acme' }] },
+        clientsByMethodDivision: {
+          BMD: { Oncology: [{ _id: 'client-1', name: 'Acme' }] },
+        },
+        assignedUsers: [{ email: 'ops@tylo.test', name: 'Ops User' }],
       },
     })),
   },
 }));
 
 vi.mock('./CampClientTypeahead.jsx', () => ({
-  CampClientTypeahead: ({ value, onChange }) => (
+  CampClientTypeahead: ({ value, onChange, disabled }) => (
     <select
       aria-label="Client Name"
       value={value}
+      disabled={disabled}
       onChange={(e) => {
         const next = e.target.value;
         onChange(next, next ? { _id: next, name: 'Acme' } : null);
@@ -152,30 +159,47 @@ describe('CampOperationsBoard export', () => {
     expect(section.getAttribute('href')).toContain('dateFrom=2026-10-01');
   });
 
-  it('renders Client Name, Division / Therapy, and Method next to Total Camps', async () => {
+  it('renders Method, Division / Therapy, Client Name, then Assigned Users next to Total Camps', async () => {
     renderBoard();
     await screen.findByText('14');
-    expect(screen.getByText('Client Name')).toBeTruthy();
+    const method = screen.getByText('Method');
+    const division = screen.getByText('Division / Therapy');
+    const client = screen.getByText('Client Name');
+    const assigned = screen.getByText('Assigned Users');
+    expect(method.compareDocumentPosition(division) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(division.compareDocumentPosition(client) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(client.compareDocumentPosition(assigned) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByLabelText('Client Name')).toBeTruthy();
-    expect(screen.getByLabelText('Division / Therapy')).toBeTruthy();
-    expect(screen.getByLabelText('Method')).toBeTruthy();
-    expect(screen.getByLabelText('Division / Therapy').disabled).toBe(true);
-    expect(screen.getByLabelText('Method').disabled).toBe(true);
-  });
-
-  it('filters the board and Manage links by client, division, and method', async () => {
-    renderBoard();
-    await screen.findByText('14');
-
-    fireEvent.change(screen.getByLabelText('Client Name'), { target: { value: 'client-1' } });
-    await waitFor(() => {
-      expect(screen.getByLabelText('Division / Therapy').disabled).toBe(false);
-    });
-    fireEvent.change(screen.getByLabelText('Division / Therapy'), { target: { value: 'Oncology' } });
     await waitFor(() => {
       expect(screen.getByLabelText('Method').disabled).toBe(false);
+      expect(screen.getByLabelText('Assigned Users').disabled).toBe(false);
     });
+    expect(screen.getByLabelText('Division / Therapy').disabled).toBe(true);
+    expect(screen.getByLabelText('Client Name').disabled).toBe(true);
+  });
+
+  it('filters Method first, then Division, then Client Name, with Assigned Users independent', async () => {
+    renderBoard();
+    await screen.findByText('14');
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Method').disabled).toBe(false);
+      expect(screen.getByLabelText('Assigned Users').disabled).toBe(false);
+    });
+    expect(screen.getByRole('option', { name: 'Ops User · ops@tylo.test' })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Assigned Users'), { target: { value: 'ops@tylo.test' } });
+
     fireEvent.change(screen.getByLabelText('Method'), { target: { value: 'BMD' } });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Division / Therapy').disabled).toBe(false);
+      expect(screen.getByLabelText('Client Name').disabled).toBe(false);
+    });
+    fireEvent.change(screen.getByLabelText('Division / Therapy'), { target: { value: 'Oncology' } });
+    fireEvent.change(screen.getByLabelText('Client Name'), { target: { value: 'client-1' } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Assigned Users').value).toBe('ops@tylo.test');
+    });
 
     await waitFor(() => {
       const last = dashboardApi.operations.mock.calls.at(-1)?.[0];
@@ -183,6 +207,7 @@ describe('CampOperationsBoard export', () => {
         client: 'client-1',
         campaignType: 'Oncology',
         campaign: 'BMD',
+        assignedUser: 'ops@tylo.test',
         dateFrom: '2026-10-01',
         dateTo: '2026-10-29',
       });
@@ -192,17 +217,20 @@ describe('CampOperationsBoard export', () => {
     expect(total.getAttribute('href')).toContain('client=client-1');
     expect(total.getAttribute('href')).toContain('campaignType=Oncology');
     expect(total.getAttribute('href')).toContain('campaign=BMD');
+    expect(total.getAttribute('href')).toContain('assignedUser=ops%40tylo.test');
 
     const section = screen.getByRole('link', { name: /Review Pending/i });
     expect(section.getAttribute('href')).toContain('/camp-one/manage');
     expect(section.getAttribute('href')).toContain('client=client-1');
     expect(section.getAttribute('href')).toContain('campaignType=Oncology');
     expect(section.getAttribute('href')).toContain('campaign=BMD');
+    expect(section.getAttribute('href')).toContain('assignedUser=ops%40tylo.test');
 
     const openInManage = screen.getAllByRole('link', { name: /Open in Manage/i });
     expect(openInManage[0].getAttribute('href')).toContain('client=client-1');
     expect(openInManage[0].getAttribute('href')).toContain('campaignType=Oncology');
     expect(openInManage[0].getAttribute('href')).toContain('campaign=BMD');
+    expect(openInManage[0].getAttribute('href')).toContain('assignedUser=ops%40tylo.test');
 
     fireEvent.click(screen.getByRole('button', { name: 'Download Review Pending camps' }));
     await waitFor(() => {
@@ -213,5 +241,6 @@ describe('CampOperationsBoard export', () => {
     expect(url.searchParams.get('client')).toBe('client-1');
     expect(url.searchParams.get('campaignType')).toBe('Oncology');
     expect(url.searchParams.get('campaign')).toBe('BMD');
+    expect(url.searchParams.get('assignedUser')).toBe('ops@tylo.test');
   });
 });

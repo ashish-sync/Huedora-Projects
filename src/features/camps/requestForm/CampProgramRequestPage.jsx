@@ -237,6 +237,14 @@ export default function CampProgramRequestPage() {
 
   const brand = (
     <header className="camp-program-request__brand">
+      <img
+        className="camp-program-request__logo"
+        src={TYLO_LOGO_SRC}
+        alt="TYLO"
+        width={140}
+        height={40}
+        decoding="async"
+      />
       <h1>New Camp Request</h1>
       <div className="camp-program-request__brand-end">
         {context ? (
@@ -272,14 +280,6 @@ export default function CampProgramRequestPage() {
             />
           </div>
         ) : null}
-        <img
-          className="camp-program-request__logo"
-          src={TYLO_LOGO_SRC}
-          alt="TYLO"
-          width={140}
-          height={40}
-          decoding="async"
-        />
       </div>
     </header>
   );

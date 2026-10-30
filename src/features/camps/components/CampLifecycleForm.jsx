@@ -4,6 +4,7 @@ import CampAddressField from './CampAddressField.jsx';
 import CampLocationFields from './CampLocationFields.jsx';
 import { CampNameSelect } from './CampNameSelect';
 import { DateInput } from './DateInput';
+import { TimeInput } from '../../../components/ui/TimeInput.jsx';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
 import { CampFormInput } from './CampFormInput.jsx';
@@ -440,11 +441,25 @@ export function CampLifecycleForm({
               <div className="camp-request-pair-row full">
                 <label>
                   Start Time
-                  <CampFormInput type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} disabled={disabled} required />
+                  <TimeInput
+                    hideLabel
+                    label="Start Time"
+                    value={form.startTime}
+                    onChange={(v) => updateField('startTime', v)}
+                    disabled={disabled}
+                    required
+                  />
                 </label>
                 <label>
                   End Time
-                  <CampFormInput type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} disabled={disabled} required />
+                  <TimeInput
+                    hideLabel
+                    label="End Time"
+                    value={form.endTime}
+                    onChange={(v) => updateField('endTime', v)}
+                    disabled={disabled}
+                    required
+                  />
                 </label>
               </div>
             </>
@@ -491,11 +506,25 @@ export function CampLifecycleForm({
               <div className="camp-request-times full">
                 <label>
                   Camp Start Time
-                  <CampFormInput type="time" value={form.startTime} onChange={(e) => updateField('startTime', e.target.value)} disabled={disabled} required />
+                  <TimeInput
+                    hideLabel
+                    label="Camp Start Time"
+                    value={form.startTime}
+                    onChange={(v) => updateField('startTime', v)}
+                    disabled={disabled}
+                    required
+                  />
                 </label>
                 <label>
                   Camp End Time
-                  <CampFormInput type="time" value={form.endTime} onChange={(e) => updateField('endTime', e.target.value)} disabled={disabled} required />
+                  <TimeInput
+                    hideLabel
+                    label="Camp End Time"
+                    value={form.endTime}
+                    onChange={(v) => updateField('endTime', v)}
+                    disabled={disabled}
+                    required
+                  />
                 </label>
                 <ReadOnlyField label="Camp Duration" value={durationLabel} />
                 <ReadOnlyField label="Camp Slot" value={derived.campSlot} />

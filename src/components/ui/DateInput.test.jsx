@@ -24,4 +24,14 @@ describe('DateInput calendar', () => {
     });
     expect(onChange).toHaveBeenCalledWith('2026-11-02');
   });
+
+  it('keeps hideLabel aria-label unique from the calendar overlay', () => {
+    render(
+      <DateInput hideLabel aria-label="From date" placeholder="From" value="" onChange={vi.fn()} />,
+    );
+
+    expect(screen.getByLabelText('From date')).toBeTruthy();
+    expect(screen.getByLabelText('Open calendar for From date')).toBeTruthy();
+    expect(screen.getByPlaceholderText('From')).toBeTruthy();
+  });
 });

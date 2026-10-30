@@ -150,7 +150,7 @@ export default function App() {
       <Route path="/camp-request/:token" element={<Suspense fallback={<PageLoader />}><CampProgramRequestPage /></Suspense>} />
       <Route path="/c/:token" element={<Suspense fallback={<PageLoader />}><CampProgramRequestPage /></Suspense>} />
       <Route
-        path="/*"
+        path="*"
         element={
           <PrivateRoute>
             <Layout>

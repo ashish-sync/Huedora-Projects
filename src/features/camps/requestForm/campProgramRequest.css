@@ -26,19 +26,28 @@
 
 .camp-program-request__brand {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.28rem;
+  justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.1rem 0 0.85rem;
   margin: 0 0 0.9rem;
   border-bottom: 1px solid var(--ce-line-soft);
+}
+
+.camp-program-request__brand-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .camp-program-request__logo {
   display: block;
   width: auto;
   height: 36px;
-  max-width: min(148px, 48vw);
+  max-width: min(148px, 42vw);
   object-fit: contain;
 }
 
@@ -50,6 +59,78 @@
   letter-spacing: 0;
   line-height: 1.2;
   text-transform: none;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.camp-program-request__bulk {
+  position: relative;
+}
+
+.camp-program-request__bulk-btn {
+  min-height: 2.2rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--ce-brand);
+  background: #fff;
+  color: var(--ce-brand);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.camp-program-request__bulk-btn:hover:not(:disabled),
+.camp-program-request__bulk-btn[aria-expanded='true'] {
+  background: var(--ce-brand-soft);
+}
+
+.camp-program-request__bulk-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.camp-program-request__bulk-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 13.75rem;
+  padding: 0.28rem;
+  background: #fff;
+  border: 1px solid var(--ce-line);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.camp-program-request__bulk-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ce-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.camp-program-request__bulk-menu button:hover {
+  background: var(--ce-brand-soft);
+  color: var(--ce-brand);
+}
+
+.camp-program-request__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .camp-program-request__status {
@@ -139,8 +220,16 @@
 
 /* Keep the 2-up field pairs on phones; do not inherit Camp One's 1-column stack. */
 .camp-program-request .camp-ops-root .camp-request-pair-row {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.camp-program-request__form .camp-request-pair-row > label {
+  min-width: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 720px) {
@@ -162,7 +251,11 @@
   .camp-program-request__brand {
     padding-bottom: 0.7rem;
     margin-bottom: 0.75rem;
-    gap: 0.2rem;
+    gap: 0.5rem;
+  }
+
+  .camp-program-request__brand-end {
+    gap: 0.45rem;
   }
 
   .camp-program-request__logo {
@@ -170,7 +263,13 @@
   }
 
   .camp-program-request__brand h1 {
-    font-size: 0.98rem;
+    font-size: 0.92rem;
+  }
+
+  .camp-program-request__bulk-btn {
+    min-height: 2rem;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem;
   }
 
   .camp-program-request__program {
@@ -201,16 +300,10 @@
   }
 
   .camp-program-request__form .date-input-field,
-  .camp-program-request__form .date-input-control {
+  .camp-program-request__form .date-input-control,
+  .camp-program-request__form .time-input-control {
     min-width: 0;
     width: 100%;
-  }
-
-  .camp-program-request__form input[type='time'] {
-    min-width: 0;
-    max-width: 100%;
-    padding-left: 0.4rem;
-    padding-right: 0.25rem;
   }
 
   .camp-program-request__actions {

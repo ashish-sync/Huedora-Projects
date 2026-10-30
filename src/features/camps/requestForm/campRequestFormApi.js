@@ -32,6 +32,31 @@ export const campRequestFormApi = {
     }).then(parseJson).then((json) => json.data);
   },
 
+  downloadSample(token) {
+    return fetch(tokenPath(token, '/import/sample'), {
+      credentials: 'omit',
+      cache: 'no-store',
+    }).then(async (res) => {
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        const err = new Error(json?.error?.message || json?.message || 'Could not download the sample template');
+        err.status = res.status;
+        throw err;
+      }
+      return res.blob();
+    });
+  },
+
+  uploadData(token, file) {
+    const body = new FormData();
+    body.append('file', file);
+    return fetch(tokenPath(token, '/import'), {
+      method: 'POST',
+      credentials: 'omit',
+      body,
+    }).then(parseJson).then((json) => json.data);
+  },
+
   lookupPin(token, pin) {
     return fetch(tokenPath(token, `/geo/pin/${encodeURIComponent(pin)}`), {
       credentials: 'omit',

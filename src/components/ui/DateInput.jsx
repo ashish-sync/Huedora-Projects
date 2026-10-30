@@ -35,6 +35,7 @@ export function DateInput({
   const autoId = useId();
   const id = idProp || autoId;
   const apiValue = toApiDateValue(value) || '';
+  const fieldName = label || ariaLabel;
 
   const [displayValue, setDisplayValue] = useState(() => (apiValue ? formatDate(apiValue) : ''));
 
@@ -110,7 +111,7 @@ export function DateInput({
         min={min || undefined}
         max={max || undefined}
         disabled={disabled}
-        aria-label={label ? `Open calendar for ${label}` : (ariaLabel || 'Open calendar')}
+        aria-label={fieldName ? `Open calendar for ${fieldName}` : 'Open calendar'}
         onChange={handlePickerChange}
         {...bindAutofillBlock()}
       />

@@ -29,8 +29,15 @@
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 
-.date-input-display::placeholder {
+.date-input-display::placeholder,
+.date-input-display.is-placeholder {
   color: var(--color-text-tertiary);
+}
+
+span.date-input-display {
+  display: flex;
+  align-items: center;
+  pointer-events: none;
 }
 
 .date-input-display:focus {
@@ -115,6 +122,21 @@
 .date-input-control.is-disabled .date-input-native {
   pointer-events: none;
   cursor: not-allowed;
+}
+
+/* Time: stretch the native picker over the whole control so iPhone Safari
+   can open the wheel, while overflow clips its wide intrinsic chrome. */
+.time-input-control {
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+}
+
+.time-input-native {
+  left: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .date-range-filter-field .date-input-field,

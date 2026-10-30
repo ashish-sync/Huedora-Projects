@@ -108,6 +108,20 @@ describe('campOperationsBoardQuery', () => {
     expect(url.searchParams.get('limit')).toBeNull();
   });
 
+  it('keeps client, division, and method filters on exports', () => {
+    const path = operationsBoardExportPath({
+      stageId: 'execution',
+      statusValue: 'planned',
+      client: 'client-1',
+      campaignType: 'Oncology',
+      campaign: 'BMD',
+    });
+    const url = new URL(path, 'http://local.test');
+    expect(url.searchParams.get('client')).toBe('client-1');
+    expect(url.searchParams.get('campaignType')).toBe('Oncology');
+    expect(url.searchParams.get('campaign')).toBe('BMD');
+  });
+
   it('names the workbook after the selected section', () => {
     expect(operationsBoardExportFilename({
       stageLabel: 'Request',

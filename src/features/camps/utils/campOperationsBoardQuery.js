@@ -9,6 +9,9 @@ export function buildOperationsBoardListParams({
   dateFrom = '',
   dateTo = '',
   search = '',
+  client = '',
+  campaignType = '',
+  campaign = '',
   page = 1,
   includePaging = true,
 } = {}) {
@@ -22,6 +25,9 @@ export function buildOperationsBoardListParams({
   if (search) params.search = search;
   if (dateFrom) params.dateFrom = dateFrom;
   if (dateTo) params.dateTo = dateTo;
+  if (client) params.client = client;
+  if (campaignType) params.campaignType = campaignType;
+  if (campaign) params.campaign = campaign;
 
   if (!statusValue) {
     if (stageId === 'execution') {

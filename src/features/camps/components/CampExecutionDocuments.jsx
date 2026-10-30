@@ -150,6 +150,7 @@ export function CampExecutionDocuments({
           const isUploaded = typeDocs.length > 0;
           const isGpsSelfie = isGpsSelfieDocType(type.value);
           const isOther = type.value === 'other';
+          const isOptional = isOther || type.value === 'gps_selfie_out';
           const rowUploadLocked = disabled
             || uploadBusy
             || (uploadsEnabled && isOther && !otherSpecify.trim());
@@ -184,9 +185,9 @@ export function CampExecutionDocuments({
                   <span className="camp-execution-doc-row-label">{type.label}</span>
                 )}
                 <span
-                  className={`camp-execution-doc-status ${isUploaded ? 'is-uploaded' : (isOther ? 'is-optional' : 'is-required')}`}
+                  className={`camp-execution-doc-status ${isUploaded ? 'is-uploaded' : (isOptional ? 'is-optional' : 'is-required')}`}
                 >
-                  {isUploaded ? 'Uploaded' : (isOther ? 'Optional' : 'Required')}
+                  {isUploaded ? 'Uploaded' : (isOptional ? 'Optional' : 'Required')}
                 </span>
               </div>
 

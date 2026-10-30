@@ -50,6 +50,10 @@ function buildExportFilters(filters = {}) {
   return payload;
 }
 
+export function exportTemplateId(template) {
+  return String(template?._id || template?.id || '').trim();
+}
+
 function allColumnKeys(sections = []) {
   return columnKeysForSections(sections, null);
 }
@@ -193,7 +197,7 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
     setSelectedTemplateId(templateId);
     setActivePresetId('');
     if (!templateId) return;
-    const template = templates.find((item) => String(item.id) === String(templateId));
+    const template = templates.find((item) => exportTemplateId(item) === String(templateId));
     if (!template) return;
     if (Array.isArray(template.columns) && template.columns.length) {
       setSelectedColumns(orderSelectedKeys(columnKeys, template.columns));
@@ -229,8 +233,9 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
         format,
       });
       const saved = data?.data || data;
-      setTemplates((prev) => [saved, ...prev.filter((item) => String(item.id) !== String(saved.id))]);
-      setSelectedTemplateId(String(saved.id));
+      const savedId = exportTemplateId(saved);
+      setTemplates((prev) => [saved, ...prev.filter((item) => exportTemplateId(item) !== savedId)]);
+      setSelectedTemplateId(savedId);
       setTemplateName('');
       setActivePresetId('');
     } catch (err) {
@@ -246,7 +251,7 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
     setTemplateBusy(true);
     try {
       await exportApi.deleteTemplate(selectedTemplateId);
-      setTemplates((prev) => prev.filter((item) => String(item.id) !== String(selectedTemplateId)));
+      setTemplates((prev) => prev.filter((item) => exportTemplateId(item) !== String(selectedTemplateId)));
       setSelectedTemplateId('');
     } catch (err) {
       window.alert(err?.message || 'Failed to delete export template');
@@ -303,9 +308,13 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
             aria-label="Load saved export template"
           >
             <option value="">Choose saved…</option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>{template.name}</option>
-            ))}
+            {templates.map((template) => {
+              const id = exportTemplateId(template);
+              if (!id) return null;
+              return (
+                <option key={id} value={id}>{template.name}</option>
+              );
+            })}
           </select>
         </label>
         <label className="camp-export-saved-field camp-export-saved-name">

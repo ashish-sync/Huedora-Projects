@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../shared/api.js';
+import { useGeoLookup } from '../../shared/GeoLookupContext.jsx';
 import { resolveZoneForState } from '../../constants/geoZones.js';
 
 const empty = {
@@ -27,6 +28,7 @@ export default function PinLocationLookup({
   labels = {},
 }) {
   const v = { ...empty, ...value };
+  const geoLookup = useGeoLookup();
   const [lookupState, setLookupState] = useState('idle');
   const [lookupError, setLookupError] = useState('');
   const lastLookupPin = useRef('');
@@ -60,7 +62,9 @@ export default function PinLocationLookup({
     const timer = setTimeout(() => {
       setLookupState('loading');
       setLookupError('');
-      api(`/geo/pin-codes/lookup/${pin}`)
+      (geoLookup?.lookupPin
+        ? geoLookup.lookupPin(pin)
+        : api(`/geo/pin-codes/lookup/${pin}`))
         .then((r) => {
           if (cancelled) return;
           const resolved = r.resolved || (Array.isArray(r.data) && r.data.length ? r.data[0] : null);

@@ -27,6 +27,7 @@ const VerificationsPage = lazy(() => import('../features/verifications/Verificat
 const AssetRequestsPage = lazy(() => import('../features/assetRequests/AssetRequestsPage.jsx'));
 const RequestProductUploadPage = lazy(() => import('../features/assetRequests/RequestProductUploadPage.jsx'));
 const CampExecutePage = lazy(() => import('../features/camps/executor/CampExecutePage.jsx'));
+const CampProgramRequestPage = lazy(() => import('../features/camps/requestForm/CampProgramRequestPage.jsx'));
 const ImportsPage = lazy(() => import('../features/imports/ImportsPage.jsx'));
 const AuditPage = lazy(() => import('../features/audit/AuditPage.jsx'));
 const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage.jsx'));
@@ -146,6 +147,8 @@ export default function App() {
       <Route path="/request-upload/:token" element={<Suspense fallback={<PageLoader />}><RequestProductUploadPage /></Suspense>} />
       <Route path="/camp-execute/:token" element={<Suspense fallback={<PageLoader />}><CampExecutePage /></Suspense>} />
       <Route path="/e/:token" element={<Suspense fallback={<PageLoader />}><CampExecutePage /></Suspense>} />
+      <Route path="/camp-request/:token" element={<Suspense fallback={<PageLoader />}><CampProgramRequestPage /></Suspense>} />
+      <Route path="/c/:token" element={<Suspense fallback={<PageLoader />}><CampProgramRequestPage /></Suspense>} />
       <Route
         path="/*"
         element={

@@ -45,21 +45,23 @@ export function validateRequestStageForm(form = {}, options = {}) {
   if (doctorNameError) errors.push(doctorNameError);
   if (!hasText(form.doctorCode)) errors.push('Doctor code is required');
   if (!hasText(form.campAddress)) errors.push('Camp address is required');
-  if (!hasText(form.state)) errors.push('State is required');
-  if (!hasText(form.district)) errors.push('District is required');
-  if (!hasText(form.city)) errors.push('City is required');
-  if (!/^\d{6}$/.test(String(form.pincode || '').trim())) errors.push('Valid 6-digit pin code is required');
-  if (!hasText(form.hq)) errors.push('HQ is required');
-  const stateName = String(form.state || '').trim();
-  const zone = String(form.zone || '').trim();
-  if (!zone) {
-    errors.push('Zone is required');
-  } else if (stateName) {
-    const expected = resolveZoneForState(stateName);
-    if (expected && expected !== zone) {
-      errors.push(`Zone must be ${expected} for ${stateName}`);
+  if (options.skipLocation !== true) {
+    if (!hasText(form.state)) errors.push('State is required');
+    if (!hasText(form.district)) errors.push('District is required');
+    if (!hasText(form.city)) errors.push('City is required');
+    if (!/^\d{6}$/.test(String(form.pincode || '').trim())) errors.push('Valid 6-digit pin code is required');
+    const stateName = String(form.state || '').trim();
+    const zone = String(form.zone || '').trim();
+    if (!zone) {
+      errors.push('Zone is required');
+    } else if (stateName) {
+      const expected = resolveZoneForState(stateName);
+      if (expected && expected !== zone) {
+        errors.push(`Zone must be ${expected} for ${stateName}`);
+      }
     }
   }
+  if (!hasText(form.hq)) errors.push('HQ is required');
 
   const expectedPatientsRaw = String(form.expectedPatients ?? '').trim();
   if (!expectedPatientsRaw) {

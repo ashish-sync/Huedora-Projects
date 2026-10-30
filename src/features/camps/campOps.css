@@ -4752,7 +4752,7 @@
 }
 
 /* Unified control sizing — match global --control-h / --control-radius */
-.camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input),
+.camp-ops-root .camp-request-grid input:not([type='file']):not(.adaptive-select__input):not(.master-search-input):not(.communications-search-input):not(.date-input-native),
 .camp-ops-root .camp-request-grid select,
 .camp-ops-root .camp-request-grid .field input:not(.adaptive-select__input):not(.master-search-input),
 .camp-ops-root .camp-request-grid .field select,

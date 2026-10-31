@@ -8,6 +8,8 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
+import { personRoleLabel, personStatusLabel } from '../dashboards/opsReviewCatalog.js';
+import '../audit/activityLog.css';
 import {
   DESIGNATION_ACCESS_TEMPLATES,
   getDesignationAccessTemplate,
@@ -297,7 +299,7 @@ export default function RolePermissionMasterPage() {
       : editingUser?.permissions || editingUser?.grantedPermissions || [];
     const access = resolveAccessPayload(userDraft, modules, roles, previousPermissions);
     if (!access) {
-      setError('Assign at least one access option in Control Center below');
+      setError('Assign at least one access option below');
       return;
     }
     const pwd = userDraft.password.trim();
@@ -423,10 +425,11 @@ export default function RolePermissionMasterPage() {
 
     return (
       <section className="rp-section rp-section--modules">
-        <h4>Control Center</h4>
+        <h4>Application access</h4>
         <p className="muted rp-hint">
-          Choose View, Edit, Request, Approve, and related access per application. Options on one app
-          do not affect another. Use All for every option on that app only.
+          Choose what this person can view, edit, request, and approve in each application.
+          Access on one application does not change another. Use All for every option on that
+          application only.
         </p>
         {designationTemplate && (
           <p className="muted rp-hint rp-hint--template">
@@ -504,7 +507,7 @@ export default function RolePermissionMasterPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
-      description="Manage people and assign application access in one place. Built-in roles apply per app."
+      description="Who can sign in, and what each person can do in each application."
       actions={
         <>
           <button
@@ -553,20 +556,19 @@ export default function RolePermissionMasterPage() {
         <div className="rp-layout">
           <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
-              <h3>People</h3>
+              {canViewUsers ? (
+                <MasterFilterShell>
+                  <MasterSearchField
+                    value={userQ}
+                    onChange={(e) => setUserQ(e.target.value)}
+                    placeholder="Search name, email, role…"
+                    aria-label="Search people"
+                  />
+                </MasterFilterShell>
+              ) : null}
             </div>
-            {canViewUsers ? (
-              <MasterFilterShell>
-                <MasterSearchField
-                  value={userQ}
-                  onChange={(e) => setUserQ(e.target.value)}
-                  placeholder="Search name, email, role…"
-                  aria-label="Search people"
-                />
-              </MasterFilterShell>
-            ) : null}
             {!canViewUsers && (
-              <p className="muted">You need users:read or users:write to list users.</p>
+              <p className="muted">You do not have permission to see the people list.</p>
             )}
             <div className="role-list">
               {filteredUsers.map((u) => (
@@ -584,20 +586,26 @@ export default function RolePermissionMasterPage() {
                     setError('');
                   }}
                 >
-                  <strong>
-                    {u.fullName || u.email}
-                    {String(u.id) === String(me?.id) ? ' (you)' : ''}
-                  </strong>
-                  <span className="muted mono-sm">
-                    {[u.designation, (u.roles || []).map((r) => r.name).filter(Boolean).join(', ')]
-                      .filter(Boolean)
-                      .join(' · ') || 'No roles'}
-                    {u.isActive === false ? ' · Inactive' : ''}
+                  <div className="activity-log-row__top">
+                    <strong>
+                      {u.fullName || u.email}
+                      {String(u.id) === String(me?.id) ? ' (you)' : ''}
+                    </strong>
+                    <span
+                      className={`activity-log-status${
+                        u.isActive === false ? ' activity-log-status--bad' : ' activity-log-status--ok'
+                      }`}
+                    >
+                      {personStatusLabel(u)}
+                    </span>
+                  </div>
+                  <span className="muted activity-log-row__meta">
+                    {personRoleLabel(u)}
                   </span>
                 </button>
               ))}
               {canViewUsers && !filteredUsers.length && (
-                <p className="muted rp-empty">{users.length ? 'No matches.' : 'No users yet.'}</p>
+                <p className="muted rp-empty">{users.length ? 'No matches.' : 'No people yet.'}</p>
               )}
             </div>
           </aside>
@@ -612,7 +620,7 @@ export default function RolePermissionMasterPage() {
               <>
                 <h3>{creatingUser ? 'Create person' : editingUser?.fullName || 'Person details'}</h3>
                 {editingUser && !creatingUser && (
-                  <p className="muted mono-sm rp-sub">{editingUser.email}</p>
+                  <p className="muted rp-sub">{editingUser.email}</p>
                 )}
 
                 <section className="rp-section">
@@ -640,7 +648,7 @@ export default function RolePermissionMasterPage() {
                       />
                     </div>
                     <div className="field">
-                      <label>Username *</label>
+                      <label>Sign-in name *</label>
                       <input
                         required
                         value={userDraft.username}
@@ -684,7 +692,7 @@ export default function RolePermissionMasterPage() {
                           setUserDraft({ ...userDraft, reportingManagerId: e.target.value })
                         }
                       >
-                        <option value="">— None (top level) —</option>
+                        <option value="">None — reports to no one</option>
                         {managerOptions.map((person) => (
                           <option key={person.id} value={person.id}>
                             {person.fullName || person.email}
@@ -700,10 +708,10 @@ export default function RolePermissionMasterPage() {
                   <h4>Password</h4>
                   <p className="muted rp-hint">
                     {creatingUser
-                      ? 'At least 12 characters. Stored securely and kept across restarts.'
+                      ? 'At least 12 characters.'
                       : passwordChangedLabel
-                        ? `Last changed ${passwordChangedLabel}. Leave blank to keep current.`
-                        : 'Leave blank to keep the current password (min 12 if resetting).'}
+                        ? `Last changed ${passwordChangedLabel}. Leave blank to keep the current password.`
+                        : 'Leave blank to keep the current password (at least 12 characters if resetting).'}
                   </p>
                   <div className="rp-form-grid">
                     <div className="field">
@@ -757,11 +765,11 @@ export default function RolePermissionMasterPage() {
                         }
                       />
                       <span>
-                        <strong>{userDraft.isActive ? 'Account active' : 'Account blocked'}</strong>
-                        <em className="mono-sm">
+                        <strong>{userDraft.isActive ? 'Can sign in' : 'Cannot sign in'}</strong>
+                        <em>
                           {userDraft.isActive
-                            ? 'Uncheck and Save to block sign-in'
-                            : 'Check and Save to restore sign-in'}
+                            ? 'Uncheck and save to stop this person signing in'
+                            : 'Check and save to let this person sign in again'}
                         </em>
                       </span>
                     </label>

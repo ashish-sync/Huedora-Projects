@@ -13,21 +13,28 @@ import {
   priorityClass,
 } from './notificationLinks.js';
 import { notificationImportanceLabel, notificationModuleLabel } from '../dashboards/opsReviewCatalog.js';
+import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import '../audit/activityLog.css';
 import './notifications.css';
 
 const PAGE_SIZE = 25;
 
 const INBOX_TABS = [
-  { id: 'approvals', label: 'Approvals', category: 'approvals' },
-  { id: 'updates', label: 'Updates', category: 'updates' },
+  { id: 'approvals', label: 'My Approvals', category: 'approvals' },
+  { id: 'reviews', label: 'My Reviews', category: 'reviews' },
+  { id: 'team', label: 'My Team Activity', category: 'team' },
   { id: 'all', label: 'All', category: '' },
 ];
 
+function inboxTabFromUrl(searchParams) {
+  const raw = String(searchParams.get('inbox') || searchParams.get('tab') || '').toLowerCase();
+  if (raw === 'updates') return 'team';
+  return INBOX_TABS.some((t) => t.id === raw) ? raw : 'approvals';
+}
+
 export default function NotificationsPage({ embedded = false } = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = String(searchParams.get('tab') || '').toLowerCase();
-  const initialTab = INBOX_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'approvals';
+  const initialTab = inboxTabFromUrl(searchParams);
   const fyiFromUrl = searchParams.get('fyi') === '1' || searchParams.get('informational') === '1';
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ page: 1, limit: PAGE_SIZE, total: 0, pages: 0 });
@@ -38,7 +45,6 @@ export default function NotificationsPage({ embedded = false } = {}) {
   const [unreadOnly, setUnreadOnly] = useState(true);
   const [priority, setPriority] = useState('');
   const [module, setModule] = useState('');
-  const [showArchived, setShowArchived] = useState(false);
   const [showInformational, setShowInformational] = useState(
     initialTab === 'updates' && fyiFromUrl
   );
@@ -54,7 +60,6 @@ export default function NotificationsPage({ embedded = false } = {}) {
     if (unreadOnly) params.set('unread', 'true');
     if (priority) params.set('priority', priority);
     if (module) params.set('module', module);
-    if (showArchived) params.set('archive', '1');
     if (q.trim()) params.set('q', q.trim());
     if (activeTab.category) params.set('category', activeTab.category);
     // Updates hide low-signal FYI (informational) unless opted in.
@@ -68,15 +73,15 @@ export default function NotificationsPage({ embedded = false } = {}) {
         emitNotificationsChanged();
       })
       .catch((e) => setError(e.message));
-  }, [unreadOnly, priority, module, showArchived, showInformational, q, page, activeTab.category]);
+  }, [unreadOnly, priority, module, showInformational, q, page, activeTab.category]);
 
   useEffect(() => {
-    const next = String(searchParams.get('tab') || '').toLowerCase();
-    if (INBOX_TABS.some((t) => t.id === next) && next !== inboxTab) {
+    const next = inboxTabFromUrl(searchParams);
+    if (next !== inboxTab) {
       setInboxTab(next);
     }
     const wantFyi = searchParams.get('fyi') === '1' || searchParams.get('informational') === '1';
-    if (next === 'updates' || inboxTab === 'updates') {
+    if (next === 'team' || inboxTab === 'team') {
       setShowInformational(wantFyi);
     }
   }, [searchParams, inboxTab]);
@@ -84,23 +89,24 @@ export default function NotificationsPage({ embedded = false } = {}) {
   const selectInboxTab = (tabId) => {
     setInboxTab(tabId);
     const next = new URLSearchParams(searchParams);
-    if (tabId === 'approvals') {
+    next.delete('fyi');
+    next.delete('informational');
+    if (embedded) {
       next.delete('tab');
-      next.delete('fyi');
-      next.delete('informational');
-    } else {
-      next.set('tab', tabId);
-      if (tabId !== 'updates') {
-        next.delete('fyi');
-        next.delete('informational');
-      }
+      if (tabId === 'approvals') next.delete('inbox');
+      else next.set('inbox', tabId);
+      setSearchParams(next, { replace: true });
+      return;
     }
+    next.delete('inbox');
+    if (tabId === 'approvals') next.delete('tab');
+    else next.set('tab', tabId);
     setSearchParams(next, { replace: true });
   };
 
   useEffect(() => {
     setPage(1);
-  }, [unreadOnly, priority, module, showArchived, showInformational, q, inboxTab]);
+  }, [unreadOnly, priority, module, showInformational, q, inboxTab]);
 
   useEffect(() => {
     load();
@@ -153,22 +159,122 @@ export default function NotificationsPage({ embedded = false } = {}) {
     inboxTab === 'approvals'
       ? {
           title: 'No approval requests',
-          description: 'Items that need your approval or review will appear here.',
+          description: 'Items that need your approval will appear here.',
         }
-      : inboxTab === 'updates'
+      : inboxTab === 'reviews'
         ? {
-            title: showInformational ? 'No updates' : 'No important updates',
-            description: showInformational
-              ? 'Status changes and everyday notices will appear here.'
-              : 'Important updates only. Choose “Include everyday notices” to see the rest.',
+            title: 'No reviews',
+            description: 'Exceptions that need your attention will appear here.',
+          }
+        : inboxTab === 'team'
+        ? {
+            title: 'No team activity',
+            description: 'Updates from your direct reports will appear here.',
           }
         : {
             title: 'No notifications',
             description: 'New alerts will appear here.',
           };
 
+  const filtersDirty = Boolean(q || priority || module || !unreadOnly || showInformational);
+
+  const clearFilters = () => {
+    setQ('');
+    setUnreadOnly(true);
+    setPriority('');
+    setModule('');
+    setShowInformational(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete('fyi');
+    next.delete('informational');
+    setSearchParams(next, { replace: true });
+  };
+
+  const inboxFilters = (
+    <>
+      <label className="ops-review-header__filter nc-inbox-filter--search">
+        <span>Search</span>
+        <input
+          className="ops-filter-input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Message or person"
+          aria-label="Search updates"
+        />
+      </label>
+      <label className="ops-review-header__filter">
+        <span>Waiting</span>
+        <AdaptiveSelect
+          value={unreadOnly ? 'unread' : 'all'}
+          onChange={(e) => setUnreadOnly(e.target.value === 'unread')}
+          aria-label="Filter by read state"
+        >
+          <option value="unread">Waiting for you</option>
+          <option value="all">Seen and waiting</option>
+        </AdaptiveSelect>
+      </label>
+      <label className="ops-review-header__filter">
+        <span>Importance</span>
+        <AdaptiveSelect
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          aria-label="Filter by importance"
+        >
+          <option value="">All importance</option>
+          <option value="informational">For your information</option>
+          <option value="important">Important</option>
+          <option value="critical">Needs attention now</option>
+        </AdaptiveSelect>
+      </label>
+      <label className="ops-review-header__filter">
+        <span>{embedded ? 'Source' : 'Module'}</span>
+        <AdaptiveSelect
+          value={module}
+          onChange={(e) => setModule(e.target.value)}
+          aria-label="Filter by module"
+        >
+          <option value="">All modules</option>
+          <option value="camp">Camp One</option>
+          <option value="finance">Finance One</option>
+          <option value="assets">Asset One / Requests</option>
+          <option value="documents">Document One</option>
+          <option value="masters">Master One</option>
+          <option value="system">Tylo One</option>
+        </AdaptiveSelect>
+      </label>
+      <div className="nc-inbox-filter-actions">
+        <button
+          className="btn secondary"
+          type="button"
+          onClick={clearFilters}
+          disabled={!filtersDirty}
+        >
+          Clear
+        </button>
+      </div>
+    </>
+  );
+
+  const inboxTabs = (
+    <div className="nc-tabs" role="tablist" aria-label="Notification inbox">
+      {INBOX_TABS.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={inboxTab === tab.id}
+          className={`nc-tab${inboxTab === tab.id ? ' is-active' : ''}`}
+          onClick={() => selectInboxTab(tab.id)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <PageShell
+      className={embedded ? '' : 'nc-inbox-page'}
       bare={embedded}
       breadcrumbs={embedded ? [] : [{ to: '/', label: MODULE.HOME }, { label: MODULE.INBOX }]}
       title={embedded ? '' : MODULE.INBOX}
@@ -186,145 +292,44 @@ export default function NotificationsPage({ embedded = false } = {}) {
         >
           {inboxTab === 'approvals'
             ? 'Mark approvals seen'
-            : inboxTab === 'updates'
-              ? 'Mark updates seen'
-              : 'Mark all seen'}
+            : inboxTab === 'reviews'
+              ? 'Mark reviews seen'
+              : inboxTab === 'team'
+                ? 'Mark team activity seen'
+                : 'Mark all seen'}
         </button>
       }
-      kpis={[
-        { label: 'Waiting', value: unread },
-        { label: 'In this view', value: meta.total ?? rows.length },
-      ]}
-      toolbar={
-      <form className="date-range-filter" aria-label="Inbox filters" onSubmit={(e) => e.preventDefault()}>
-        <div className="date-range-filter-fields">
-          <label className="date-range-filter-field ops-filter-field--grow">
-            <span>Search</span>
-            <input
-              className="ops-filter-input"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Message or person"
-              aria-label="Search updates"
-            />
-          </label>
-          <label className="date-range-filter-field ops-filter-field--md">
-            <span>Waiting</span>
-            <AdaptiveSelect
-              value={unreadOnly ? 'unread' : 'all'}
-              onChange={(e) => setUnreadOnly(e.target.value === 'unread')}
-              aria-label="Filter by read state"
-            >
-              <option value="unread">Waiting for you</option>
-              <option value="all">Seen and waiting</option>
-            </AdaptiveSelect>
-          </label>
-          <label className="date-range-filter-field ops-filter-field--md">
-            <span>Importance</span>
-            <AdaptiveSelect
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              aria-label="Filter by importance"
-            >
-              <option value="">All importance</option>
-              <option value="informational">For your information</option>
-              <option value="important">Important</option>
-              <option value="critical">Needs attention now</option>
-            </AdaptiveSelect>
-          </label>
-          <label className="date-range-filter-field ops-filter-field--md">
-            <span>Module</span>
-            <AdaptiveSelect
-              value={module}
-              onChange={(e) => setModule(e.target.value)}
-              aria-label="Filter by module"
-            >
-              <option value="">All modules</option>
-              <option value="camp">Camp One</option>
-              <option value="finance">Finance One</option>
-              <option value="assets">Asset One / Requests</option>
-              <option value="documents">Document One</option>
-              <option value="masters">Master One</option>
-              <option value="system">Tylo One</option>
-            </AdaptiveSelect>
-          </label>
-          <label className="date-range-filter-field ops-filter-field--sm">
-            <span>Age</span>
-            <AdaptiveSelect
-              value={showArchived ? 'archived' : 'active'}
-              onChange={(e) => setShowArchived(e.target.value === 'archived')}
-              aria-label="Filter by archive"
-            >
-              <option value="active">Current</option>
-              <option value="archived">Older than 7 days</option>
-            </AdaptiveSelect>
-          </label>
-          {inboxTab === 'updates' ? (
-            <label className="date-range-filter-field ops-filter-field--md">
-              <span>Everyday notices</span>
-              <AdaptiveSelect
-                value={showInformational ? 'fyi' : 'important'}
-                onChange={(e) => {
-                  const includeFyi = e.target.value === 'fyi';
-                  setShowInformational(includeFyi);
-                  const next = new URLSearchParams(searchParams);
-                  next.set('tab', 'updates');
-                  if (includeFyi) next.set('fyi', '1');
-                  else {
-                    next.delete('fyi');
-                    next.delete('informational');
-                  }
-                  setSearchParams(next, { replace: true });
-                }}
-                aria-label="Include everyday notices"
-              >
-                <option value="important">Important only</option>
-                <option value="fyi">Include everyday notices</option>
-              </AdaptiveSelect>
-            </label>
-          ) : null}
-          {q || priority || module || showArchived || !unreadOnly || showInformational ? (
-            <div className="date-range-filter-actions">
-              <button
-                className="btn secondary"
-                type="button"
-                onClick={() => {
-                  setQ('');
-                  setUnreadOnly(true);
-                  setPriority('');
-                  setModule('');
-                  setShowArchived(false);
-                  setShowInformational(false);
-                  const next = new URLSearchParams(searchParams);
-                  next.delete('fyi');
-                  next.delete('informational');
-                  setSearchParams(next, { replace: true });
-                }}
-              >
-                Clear
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </form>
-      }
     >
+      {embedded ? (
+        <OpsReviewSlot totalLabel="Total updates" totalValue={meta.total ?? rows.length}>
+          {inboxFilters}
+        </OpsReviewSlot>
+      ) : (
+        <div className="ops-review-header nc-inbox-header">
+          <div className="ops-review-header__meta nc-inbox-meta">
+            <div className="nc-inbox-totals">
+              <div className="ops-review-header__total">
+                <span className="ops-review-header__total-label">Waiting</span>
+                <strong className="ops-review-header__total-value">{unread}</strong>
+              </div>
+              <div className="ops-review-header__total">
+                <span className="ops-review-header__total-label">In this view</span>
+                <strong className="ops-review-header__total-value">{meta.total ?? rows.length}</strong>
+              </div>
+            </div>
+            <form
+              className="ops-review-header__filters"
+              aria-label="Inbox filters"
+              onSubmit={(e) => e.preventDefault()}
+            >
+              {inboxFilters}
+            </form>
+          </div>
+          {inboxTabs}
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
-
-      <div className="nc-tabs" role="tablist" aria-label="Notification inbox">
-        {INBOX_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={inboxTab === tab.id}
-            className={`nc-tab${inboxTab === tab.id ? ' is-active' : ''}`}
-            onClick={() => selectInboxTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {embedded ? inboxTabs : null}
 
       <div className="card card--flush nc-list">
         {rows.map((n) => {

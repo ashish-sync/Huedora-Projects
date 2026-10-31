@@ -13,6 +13,7 @@ import {
   importOutcomeSummary,
   importStatusLabel,
 } from '../dashboards/opsReviewCatalog.js';
+import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import '../audit/activityLog.css';
 
 export default function ImportsPage({ embedded = false } = {}) {
@@ -76,6 +77,14 @@ export default function ImportsPage({ embedded = false } = {}) {
           : 'Check a spreadsheet first, then save the good rows into Asset One or Verification One.'
       }
     >
+      {embedded ? (
+        <OpsReviewSlot
+          totalLabel="Total uploads"
+          totalValue={(result && !jobs.some((j) => String(j._id) === String(result._id))
+            ? jobs.length + 1
+            : jobs.length)}
+        />
+      ) : null}
       <ImportInProgressGuard active={busy} />
       {error ? <p className="error">{error}</p> : null}
 

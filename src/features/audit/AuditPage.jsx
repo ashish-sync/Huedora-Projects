@@ -8,6 +8,7 @@ import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { ACTIVITY_MODULES, ACTIVITY_STATUSES, describeActivity } from './activityLogCatalog.js';
+import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import './activityLog.css';
 import '../notifications/notifications.css';
 
@@ -208,6 +209,73 @@ export default function AuditPage({
   const selected = rows.find((row) => row._id === selectedId);
   const selectedDescribed = selected ? describeActivity(selected) : null;
 
+  const applyEmbedded = (patch) => {
+    const next = {
+      module: moduleId,
+      employee: employee.trim(),
+      status,
+      from,
+      to,
+      ...patch,
+    };
+    setApplied(next);
+    setPage(1);
+    setSelectedId('');
+  };
+
+  const filterClass = embedded ? 'ops-review-header__filter' : 'date-range-filter-field';
+  const filterFields = (
+    <>
+      <label className={filterClass}>
+        <span>Module</span>
+        <AdaptiveSelect
+          aria-label="Module"
+          value={moduleId}
+          onChange={(e) => {
+            const next = e.target.value;
+            setModuleId(next);
+            if (embedded) applyEmbedded({ module: next });
+          }}
+        >
+          <option value="">All modules</option>
+          {ACTIVITY_MODULES.map((mod) => (
+            <option key={mod.id} value={mod.id}>{mod.label}</option>
+          ))}
+        </AdaptiveSelect>
+      </label>
+      <label className={filterClass}>
+        <span>Employee</span>
+        <input
+          className="ops-filter-input"
+          value={employee}
+          onChange={(e) => {
+            setEmployee(e.target.value);
+            if (embedded) applyEmbedded({ employee: e.target.value.trim() });
+          }}
+          placeholder="Name or email"
+          aria-label="Employee"
+        />
+      </label>
+      <label className={filterClass}>
+        <span>Status</span>
+        <AdaptiveSelect
+          aria-label="Status"
+          value={status}
+          onChange={(e) => {
+            const next = e.target.value;
+            setStatus(next);
+            if (embedded) applyEmbedded({ status: next });
+          }}
+        >
+          <option value="">All statuses</option>
+          {ACTIVITY_STATUSES.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </AdaptiveSelect>
+      </label>
+    </>
+  );
+
   const toolbar = (
     <DateRangeFilter
       from={from}
@@ -217,44 +285,8 @@ export default function AuditPage({
       onSubmit={submitFilters}
       onClear={clearFilters}
       submitting={loading}
-      hideDates={embedded}
     >
-      <label className="date-range-filter-field ops-filter-field--md">
-        <span>Module</span>
-        <AdaptiveSelect
-          aria-label="Module"
-          value={moduleId}
-          onChange={(e) => setModuleId(e.target.value)}
-        >
-          <option value="">All modules</option>
-          {ACTIVITY_MODULES.map((mod) => (
-            <option key={mod.id} value={mod.id}>{mod.label}</option>
-          ))}
-        </AdaptiveSelect>
-      </label>
-      <label className="date-range-filter-field ops-filter-field--grow">
-        <span>Employee</span>
-        <input
-          className="ops-filter-input"
-          value={employee}
-          onChange={(e) => setEmployee(e.target.value)}
-          placeholder="Name or email"
-          aria-label="Employee"
-        />
-      </label>
-      <label className="date-range-filter-field ops-filter-field--sm">
-        <span>Status</span>
-        <AdaptiveSelect
-          aria-label="Status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">All statuses</option>
-          {ACTIVITY_STATUSES.map((item) => (
-            <option key={item.id} value={item.id}>{item.label}</option>
-          ))}
-        </AdaptiveSelect>
-      </label>
+      {filterFields}
     </DateRangeFilter>
   );
 
@@ -292,8 +324,13 @@ export default function AuditPage({
           </div>
         ) : null
       }
-      toolbar={toolbar}
+      toolbar={embedded ? null : toolbar}
     >
+      {embedded ? (
+        <OpsReviewSlot totalLabel="Total activities" totalValue={listMeta.total}>
+          {filterFields}
+        </OpsReviewSlot>
+      ) : null}
       {error ? <p className="error">{error}</p> : null}
 
       {view === 'technical' && canSeeTechnical ? (

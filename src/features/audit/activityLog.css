@@ -194,9 +194,28 @@
 
 .ops-filter-input,
 .date-range-filter-field .ops-filter-input {
-  text-transform: none;
-  font-weight: 500;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: var(--control-h, 40px);
+  min-height: var(--control-h, 40px);
+  max-height: var(--control-h, 40px);
+  margin: 0;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border-default, var(--line));
+  border-radius: var(--control-radius, 10px);
+  background: var(--color-bg-elevated, #fff);
+  color: var(--color-text-primary, inherit);
+  font-size: var(--text-body-sm-size, 0.8125rem);
+  font-weight: var(--text-body-sm-weight, 400);
   letter-spacing: normal;
+  text-transform: none;
+  line-height: calc(var(--control-h, 40px) - 2px);
+}
+
+.ops-filter-input::placeholder,
+.date-range-filter-field .ops-filter-input::placeholder {
+  color: var(--color-text-tertiary, var(--muted));
 }
 
 .ops-data-table {

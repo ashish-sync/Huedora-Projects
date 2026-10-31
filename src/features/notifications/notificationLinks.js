@@ -1,6 +1,7 @@
 import {
   campManageEditPath,
   documentOneDetailPath,
+  financeVendorBillPath,
   MODULE_PATH,
   FINANCE_PATH,
   CAMP_PATH,
@@ -33,6 +34,8 @@ export function notificationEntityPath(n) {
       return `${MODULE_PATH.VERIFICATION_ONE}?recordId=${encodeURIComponent(id)}`;
     case 'FinanceCommercialDocument':
       return `${FINANCE_PATH.BILLING}?docId=${encodeURIComponent(id)}`;
+    case 'FinanceInvoice':
+      return financeVendorBillPath(id);
     case 'PicklistSuggestion':
       return `${MODULE_PATH.MASTER_ONE}?scope=document&entity=picklist-approvals`;
     default:
@@ -59,6 +62,8 @@ export function priorityClass(priority) {
 export const APPROVAL_REQUEST_TYPES = Object.freeze([
   'PICKLIST_SUGGESTION',
   'CAMP_HCW_GAP_APPROVAL',
+  'COMMERCIAL_SUBMIT',
+  'VENDOR_BILL_VERIFIED',
 ]);
 
 const CAMP_FYI_NOTIFICATION_TYPES = new Set([
@@ -84,12 +89,20 @@ function isCampFyiNotificationType(type) {
  * (Request One, picklist, HCW gap override, etc.).
  * Routine Camp One “needs review” notices are FYI even on legacy rows.
  */
+export function isReviewNotification(n = {}) {
+  const kind = String(n?.meta?.kind || n?.kind || '').toLowerCase();
+  if (kind === 'review') return true;
+  return String(n?.meta?.involvement || '').toLowerCase() === 'review';
+}
+
 export function isApprovalRequestNotification(n = {}) {
   const type = String(n?.type || '').trim().toUpperCase();
+  const kind = String(n?.meta?.kind || n?.kind || '').toLowerCase();
+  if (kind === 'review' || kind === 'escalate') return false;
   if (isCampFyiNotificationType(type)) return false;
 
-  if (String(n?.meta?.kind || n?.kind || '').toLowerCase() === 'approval') return true;
-  if (String(n?.meta?.kind || n?.kind || '').toLowerCase() === 'update') return false;
+  if (kind === 'approval') return true;
+  if (kind === 'update') return false;
 
   if (APPROVAL_REQUEST_TYPES.includes(type)) return true;
 
@@ -107,6 +120,7 @@ export function isApprovalRequestNotification(n = {}) {
 /** Human category for inbox grouping / chips. */
 export function categoryLabel(n) {
   if (isApprovalRequestNotification(n)) return 'Approval';
+  if (isReviewNotification(n)) return 'Review';
   const type = String(n?.type || '');
   const module = String(n?.module || 'system').toLowerCase();
   if (/BULK/i.test(type)) return 'Bulk action';

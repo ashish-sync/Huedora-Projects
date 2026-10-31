@@ -1913,7 +1913,7 @@ export default function LogisticsOutwardPage() {
                         );
                         return (
                           <div className="arq-product-row" key={`issue-product-${index}`}>
-                            <div className="field">
+                            <div className="arq-product-cell">
                               <label>Product category *</label>
                               <AdaptiveSelect
                                 required
@@ -1946,7 +1946,7 @@ export default function LogisticsOutwardPage() {
                                 ))}
                               </AdaptiveSelect>
                             </div>
-                            <div className="field">
+                            <div className="arq-product-cell">
                               <label>Model/Variant/Name *</label>
                               <AdaptiveSelect
                                 required
@@ -1969,7 +1969,7 @@ export default function LogisticsOutwardPage() {
                                 ))}
                               </AdaptiveSelect>
                             </div>
-                            <div className="field">
+                            <div className="arq-product-cell">
                               <label>Qty *</label>
                               <input
                                 required
@@ -1984,7 +1984,7 @@ export default function LogisticsOutwardPage() {
                               />
                             </div>
                             {showSerial && (
-                              <div className="field">
+                              <div className="arq-product-cell">
                                 <label>Serial number *</label>
                                 {lineSerialOpts.length ? (
                                   <AdaptiveSelect
@@ -2026,7 +2026,7 @@ export default function LogisticsOutwardPage() {
                               </div>
                             )}
                             {showBatch && (
-                              <div className="field">
+                              <div className="arq-product-cell">
                                 <label>Batch number *</label>
                                 <AdaptiveSelect
                                   required
@@ -2066,7 +2066,7 @@ export default function LogisticsOutwardPage() {
                               </div>
                             )}
                             {expiryApplicable && (
-                              <div className="field">
+                              <div className="arq-product-cell">
                                 <label>Expiry date *</label>
                                 <AdaptiveSelect
                                   required
@@ -2106,14 +2106,17 @@ export default function LogisticsOutwardPage() {
                                 </AdaptiveSelect>
                               </div>
                             )}
-                            <button
-                              className="btn secondary btn-compact arq-product-remove"
-                              type="button"
-                              disabled={form.logisticsProductsConfirmed}
-                              onClick={() => removeIssueProduct(index)}
-                            >
-                              Remove
-                            </button>
+                            <div className="arq-product-cell arq-product-remove-cell">
+                              <span className="arq-product-remove-spacer" aria-hidden="true" />
+                              <button
+                                className="btn secondary arq-product-remove"
+                                type="button"
+                                disabled={form.logisticsProductsConfirmed}
+                                onClick={() => removeIssueProduct(index)}
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         );
                       })}

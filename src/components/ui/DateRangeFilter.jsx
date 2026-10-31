@@ -6,6 +6,8 @@ import DateInput from './DateInput.jsx';
 export default function DateRangeFilter({
   from = '',
   to = '',
+  fromLabel = 'From',
+  toLabel = 'To',
   onFromChange,
   onToChange,
   onSubmit,
@@ -39,7 +41,7 @@ export default function DateRangeFilter({
         {!hideDates ? (
           <>
             <label className="date-range-filter-field">
-              <span>From</span>
+              <span>{fromLabel}</span>
               <DateInput
                 hideLabel
                 aria-label="From date"
@@ -50,7 +52,7 @@ export default function DateRangeFilter({
               />
             </label>
             <label className="date-range-filter-field">
-              <span>To</span>
+              <span>{toLabel}</span>
               <DateInput
                 hideLabel
                 aria-label="To date"

@@ -41,6 +41,15 @@ describe('notificationLinks', () => {
     ).toBe('/master-one?scope=document&entity=picklist-approvals');
   });
 
+  it('deep-links vendor bills', () => {
+    expect(
+      notificationEntityPath({
+        entityType: 'FinanceInvoice',
+        entityId: 'bill-9',
+      }),
+    ).toBe('/finance-one/vendor-bills/bill-9');
+  });
+
   it('separates approval requests from status updates', () => {
     expect(
       isApprovalRequestNotification({
@@ -93,5 +102,13 @@ describe('notificationLinks', () => {
         title: 'New dropdown value needs approval',
       }),
     ).toBe(true);
+    expect(
+      isApprovalRequestNotification({
+        type: 'CAMP_REVIEW_OVERDUE',
+        title: 'Camp review overdue',
+        kind: 'review',
+        meta: { kind: 'review', involvement: 'review' },
+      }),
+    ).toBe(false);
   });
 });

@@ -90,6 +90,38 @@ export function CampClientTypeahead({
     onOpen: () => setOpen(true),
   });
 
+  if (Array.isArray(allowedClients)) {
+    const select = (
+      <select
+        className="tylo-select"
+        aria-label={hideLabel ? 'Client Name' : undefined}
+        value={value}
+        disabled={disabled}
+        required={required}
+        onChange={(e) => {
+          const nextId = e.target.value;
+          const client = allowedClients.find((row) => String(row?._id) === nextId) || null;
+          onChange?.(nextId, client);
+        }}
+      >
+        <option value="">{disabled ? 'All' : 'All'}</option>
+        {allowedClients.map((client) => (
+          <option key={client._id} value={client._id}>{client.name}</option>
+        ))}
+      </select>
+    );
+    return (
+      <div className="camp-client-typeahead camp-client-typeahead--select">
+        {hideLabel ? select : (
+          <label>
+            Client Name
+            {select}
+          </label>
+        )}
+      </div>
+    );
+  }
+
   const input = (
     <input
       type="text"
@@ -107,7 +139,7 @@ export function CampClientTypeahead({
       onKeyDown={handleKeyDown}
       disabled={disabled}
       required={required && !value}
-      placeholder="Search client…"
+      placeholder="All"
       autoComplete="off"
     />
   );

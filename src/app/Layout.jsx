@@ -280,14 +280,14 @@ export default function Layout({ children }) {
                     </span>
                   </Link>
                   <Link
-                    to="/notifications?tab=updates&fyi=1"
+                    to="/notifications?tab=team"
                     role="menuitem"
                     className={`header-notif-choice${fyiCount ? ' has-count' : ''}`}
                     onClick={() => setBellOpen(false)}
                   >
                     <span className="header-notif-choice-copy">
-                      <strong>Updates</strong>
-                      <span className="muted">What changed, including everyday notices</span>
+                      <strong>FYI / Notifications</strong>
+                      <span className="muted">Status updates and informational alerts</span>
                     </span>
                     <span className={`header-notif-choice-count${fyiCount ? ' is-active' : ''}`}>
                       {fyiCount > 99 ? '99+' : fyiCount}

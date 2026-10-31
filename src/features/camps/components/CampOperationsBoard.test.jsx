@@ -26,23 +26,6 @@ vi.mock('../campOpsApi.js', () => ({
   },
 }));
 
-vi.mock('./CampClientTypeahead.jsx', () => ({
-  CampClientTypeahead: ({ value, onChange, disabled }) => (
-    <select
-      aria-label="Client Name"
-      value={value}
-      disabled={disabled}
-      onChange={(e) => {
-        const next = e.target.value;
-        onChange(next, next ? { _id: next, name: 'Acme' } : null);
-      }}
-    >
-      <option value="">All clients</option>
-      <option value="client-1">Acme</option>
-    </select>
-  ),
-}));
-
 const SECTIONS = [
   ['request', 'review_pending', 'Review Pending'],
   ['request', 'review_overdue', 'Review Overdue'],

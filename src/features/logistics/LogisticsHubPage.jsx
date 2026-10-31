@@ -5,6 +5,7 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import { api } from '../../shared/api.js';
 import { MODULE, NAV } from '../../shared/labels.js';
+import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 
 const MAP_VIEW = { width: 420, height: 480, minLon: 68, maxLon: 97.5, minLat: 6.5, maxLat: 37.5 };
 const CITY_COORDS = {
@@ -372,6 +373,7 @@ export default function LogisticsHubPage({
       )}
 
       <section className="ilog-dash" aria-busy={busy}>
+        {embedded ? null : (
         <header className="ilog-dash-header">
           <div>
             <p className="ilog-dash-eyebrow">{MODULE.LOGISTICS}</p>
@@ -395,11 +397,71 @@ export default function LogisticsHubPage({
             </button>
           </div>
         </header>
+        )}
 
         {error && (
           <FeedbackBanner variant="error">{error}</FeedbackBanner>
         )}
 
+        {embedded ? (
+          <OpsReviewSlot
+            totalLabel="Total movements"
+            totalValue={Number(k.inwardQty || 0) + Number(k.outwardQty || 0)}
+          >
+            <label className="ops-review-header__filter">
+              <span>Product category</span>
+              <AdaptiveSelect
+                id="ilog-inv"
+                value={inventoryType}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setInventoryType(next);
+                  setApplied((prev) => ({ ...prev, inventoryType: next }));
+                }}
+              >
+                <option value="all">All categories</option>
+                {(data.filters?.inventoryTypes || []).map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </label>
+            <label className="ops-review-header__filter">
+              <span>Custodian / HCW</span>
+              <AdaptiveSelect
+                id="ilog-hcw"
+                value={hcwId}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setHcwId(next);
+                  setApplied((prev) => ({ ...prev, hcwId: next }));
+                }}
+              >
+                <option value="all">All custodians</option>
+                {(data.filters?.hcws || []).map((hcw) => (
+                  <option key={hcw.id} value={hcw.id}>
+                    {hcw.id}
+                    {hcw.name && hcw.name !== hcw.id ? `: ${hcw.name}` : ''}
+                  </option>
+                ))}
+              </AdaptiveSelect>
+            </label>
+            <label className="ops-review-header__filter">
+              <span>Display</span>
+              <AdaptiveSelect
+                aria-label="Display metric"
+                value={metric}
+                onChange={(e) => setMetric(e.target.value)}
+              >
+                <option value="quantity">Quantity</option>
+                <option value="amount">Amount</option>
+              </AdaptiveSelect>
+            </label>
+          </OpsReviewSlot>
+        ) : null}
+
+        {!embedded ? (
         <div className="ilog-filter-panel">
           <div className="ilog-filter-heading">
             <div>
@@ -451,6 +513,7 @@ export default function LogisticsHubPage({
             </div>
           </DateRangeFilter>
         </div>
+        ) : null}
 
         <div className="ilog-dash-body">
           <div className="ilog-kpi-sections">

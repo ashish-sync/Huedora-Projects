@@ -299,7 +299,7 @@ export default function RolePermissionMasterPage() {
       : editingUser?.permissions || editingUser?.grantedPermissions || [];
     const access = resolveAccessPayload(userDraft, modules, roles, previousPermissions);
     if (!access) {
-      setError('Assign at least one access option below');
+      setError('Assign at least one access option in Control Center below');
       return;
     }
     const pwd = userDraft.password.trim();
@@ -425,11 +425,10 @@ export default function RolePermissionMasterPage() {
 
     return (
       <section className="rp-section rp-section--modules">
-        <h4>Application access</h4>
+        <h4>Control Center</h4>
         <p className="muted rp-hint">
-          Choose what this person can view, edit, request, and approve in each application.
-          Access on one application does not change another. Use All for every option on that
-          application only.
+          Choose View, Edit, Request, Approve, and related access per application. Options on one app
+          do not affect another. Use All for every option on that app only.
         </p>
         {designationTemplate && (
           <p className="muted rp-hint rp-hint--template">
@@ -507,8 +506,8 @@ export default function RolePermissionMasterPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
+      description="Manage people and assign application access in one place. Built-in roles apply per app."
       description="Who can sign in, and what each person can do in each application."
-      actions={
         <>
           <button
             className="btn secondary"
@@ -556,6 +555,7 @@ export default function RolePermissionMasterPage() {
         <div className="rp-layout">
           <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
+              <h3>People</h3>
               {canViewUsers ? (
                 <MasterFilterShell>
                   <MasterSearchField
@@ -649,7 +649,6 @@ export default function RolePermissionMasterPage() {
                     </div>
                     <div className="field">
                       <label>Sign-in name *</label>
-                      <input
                         required
                         value={userDraft.username}
                         disabled={!canWrite || !creatingUser}
@@ -692,6 +691,7 @@ export default function RolePermissionMasterPage() {
                           setUserDraft({ ...userDraft, reportingManagerId: e.target.value })
                         }
                       >
+                        <option value="">— None (top level) —</option>
                         <option value="">None — reports to no one</option>
                         {managerOptions.map((person) => (
                           <option key={person.id} value={person.id}>
@@ -770,7 +770,6 @@ export default function RolePermissionMasterPage() {
                           {userDraft.isActive
                             ? 'Uncheck and save to stop this person signing in'
                             : 'Check and save to let this person sign in again'}
-                        </em>
                       </span>
                     </label>
                   </section>

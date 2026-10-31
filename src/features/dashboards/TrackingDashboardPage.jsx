@@ -1,9 +1,8 @@
 import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
-import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import OpsReviewHeader, { OpsReviewSlotProvider } from './OpsReviewHeader.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateRangeLabel } from '../../shared/dateFormat.js';
@@ -18,7 +17,23 @@ const NotificationsPage = lazy(() => import('../notifications/NotificationsPage.
 const ImportsPage = lazy(() => import('../imports/ImportsPage.jsx'));
 
 const EMBEDDED_REVIEW = new Set(['logistics', 'camps', 'audit', 'users', 'notifications', 'imports']);
-const DATELESS_REVIEW = new Set(['users', 'notifications', 'imports']);
+
+const REVIEW_TOTAL_LABELS = {
+  assets: 'Total assets',
+  agreements: 'Total documents',
+  contacts: 'Total contacts',
+  verifications: 'Total verifications',
+  camps: 'Total camps',
+  'asset-requests': 'Total requests',
+  logistics: 'Total movements',
+  finance: 'Total records',
+  'master-data': 'Total records',
+  movements: 'Total issuances',
+  imports: 'Total uploads',
+  notifications: 'Total updates',
+  audit: 'Total activities',
+  users: 'On the team',
+};
 
 function toYmd(d) {
   const y = d.getFullYear();
@@ -270,7 +285,6 @@ export default function TrackingDashboardPage() {
   const [submitted, setSubmitted] = useState(Boolean(wantsCampReview));
 
   const isEmbeddedModule = EMBEDDED_REVIEW.has(moduleId);
-  const hideReviewDates = DATELESS_REVIEW.has(moduleId);
 
   const loadOverview = useCallback(async () => {
     setOverviewLoading(true);
@@ -432,12 +446,6 @@ export default function TrackingDashboardPage() {
   };
 
   const summaryBlocks = breakdownEntries(data?.summary);
-  const kpiItems = [
-    { label: 'Records in range', value: data?.summary?.total ?? data?.total ?? 0 },
-    data?.summary?.unread != null ? { label: 'Waiting', value: data.summary.unread } : null,
-    data?.summary?.active != null ? { label: 'Active', value: data.summary.active } : null,
-    data?.summary?.inactive != null ? { label: 'Not signing in', value: data.summary.inactive } : null,
-  ].filter(Boolean);
 
   const health = overview?.health;
   const fin = overview?.financials;
@@ -448,10 +456,16 @@ export default function TrackingDashboardPage() {
     [overview]
   );
   const insight = useMemo(() => insightLine(overview), [overview]);
-  const reviewPresets = useMemo(
-    () => (moduleId === 'camps' ? [...CAMP_DAY_PRESETS, ...PRESETS] : PRESETS),
-    [moduleId]
-  );
+  const reviewPresets = useMemo(() => [...CAMP_DAY_PRESETS, ...PRESETS], []);
+  const fallbackTotal = useMemo(() => {
+    if (!submitted || isEmbeddedModule) return null;
+    if (!data) return null;
+    return {
+      label: REVIEW_TOTAL_LABELS[moduleId] || 'Total records',
+      value: data.summary?.total ?? data.total ?? data.rows?.length ?? 0,
+      href: data.linkTo || '',
+    };
+  }, [submitted, isEmbeddedModule, data, moduleId]);
 
   return (
     <PageShell
@@ -537,7 +551,6 @@ export default function TrackingDashboardPage() {
           ) : null}
         </>
       }
-      kpis={view === 'drilldown' && data ? kpiItems : undefined}
     >
       {(overviewError || error) && view === 'overview' ? (
         <FeedbackBanner variant="error">{overviewError || error}</FeedbackBanner>
@@ -849,80 +862,50 @@ export default function TrackingDashboardPage() {
       ) : null}
 
       {view === 'drilldown' ? (
-        <>
-          <div className="card track-range ops-review-filters" aria-label="Module review filters">
-        {!hideReviewDates ? (
-          <div className="track-range-presets" role="group" aria-label="Quick ranges">
-            {reviewPresets.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`track-range-chip${preset === p.id ? ' is-active' : ''}`}
-                onClick={() => applyPreset(p.id)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        <DateRangeFilter
-          className="date-range-filter--panel"
-          from={from}
-          to={to}
-          onFromChange={(next) => {
-            setFrom(next);
-            setPreset(detectPreset(next, to));
-          }}
-          onToChange={(next) => {
-            setTo(next);
-            setPreset(detectPreset(from, next));
-          }}
-          onSubmit={submitReview}
-          onClear={clearReview}
-          submitting={loading}
-          disabled={!moduleId}
-          hideDates={hideReviewDates}
-        >
-          <label className="date-range-filter-field module-review-module">
-            <span>Module</span>
-            <AdaptiveSelect
-              required
-              value={moduleId}
-              onChange={(e) => {
-                const next = e.target.value;
-                setModuleId(next);
-                setData(null);
-                setError('');
-                if (EMBEDDED_REVIEW.has(next)) {
-                  setSubmitted(true);
-                  setSearchParams((prev) => {
-                    const params = new URLSearchParams(prev);
-                    params.set('tab', 'drilldown');
-                    params.set('module', next);
-                    return params;
-                  }, { replace: true });
-                } else {
-                  setSubmitted(false);
-                }
-              }}
-              aria-label="Module"
-            >
-              <option value="">Select module</option>
-              {modules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </AdaptiveSelect>
-          </label>
-        </DateRangeFilter>
-      </div>
+        <OpsReviewSlotProvider>
+          <OpsReviewHeader
+            presets={reviewPresets}
+            preset={preset}
+            onPreset={applyPreset}
+            from={from}
+            to={to}
+            onFrom={(next) => {
+              setFrom(next);
+              setPreset(detectPreset(next, to));
+            }}
+            onTo={(next) => {
+              setTo(next);
+              setPreset(detectPreset(from, next));
+            }}
+            moduleId={moduleId}
+            modules={modules}
+            onModule={(next) => {
+              setModuleId(next);
+              setData(null);
+              setError('');
+              if (EMBEDDED_REVIEW.has(next)) {
+                setSubmitted(true);
+                setSearchParams((prev) => {
+                  const params = new URLSearchParams(prev);
+                  params.set('tab', 'drilldown');
+                  params.set('module', next);
+                  return params;
+                }, { replace: true });
+              } else {
+                setSubmitted(false);
+              }
+            }}
+            onSubmit={submitReview}
+            onClear={clearReview}
+            submitting={loading}
+            disabled={!moduleId}
+            fallbackTotal={fallbackTotal}
+          />
 
       {!submitted && !data ? (
         <EmptyState
           title="Choose a module to review"
-              description="Pick what you want to review. Team, inbox, and uploads open immediately. Other modules use the date range above — set From and To, then Submit."
+              description="Pick a module, set From and To, then Submit. Team, inbox, and uploads still open as soon as you choose them."
               action={
                 <button type="button" className="btn secondary" onClick={() => setDashboardView('overview')}>
                   Back to overview
@@ -937,18 +920,6 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'logistics' ? (
         <div className="module-review-logistics">
-          <div className="module-review-logistics-head">
-            <div>
-              <h2 className="module-review-logistics-title">Movement One dashboard</h2>
-              <p className="muted" style={{ margin: 0 }}>
-                Live stock movement for {rangeLabel}. Open Movement One for goods receipt and
-                goods issue actions.
-              </p>
-            </div>
-                <Link className="btn secondary btn-compact" to="/movement-one">
-              Open Movement One
-            </Link>
-          </div>
           <Suspense fallback={<p className="muted">Loading Movement One…</p>}>
             <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
           </Suspense>
@@ -965,9 +936,6 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'audit' ? (
         <div className="module-review-logistics">
-          <div className="module-review-logistics-head">
-            <h2 className="module-review-logistics-title">Activity Log</h2>
-          </div>
           <Suspense fallback={<p className="muted">Loading Activity Log…</p>}>
             <AuditPage embedded initialFrom={from} initialTo={to} />
           </Suspense>
@@ -976,9 +944,6 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'users' ? (
         <div className="module-review-logistics">
-          <div className="module-review-logistics-head">
-            <h2 className="module-review-logistics-title">Team</h2>
-          </div>
           <Suspense fallback={<p className="muted">Loading team…</p>}>
             <UsersPage embedded />
           </Suspense>
@@ -987,9 +952,6 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'notifications' ? (
         <div className="module-review-logistics">
-          <div className="module-review-logistics-head">
-            <h2 className="module-review-logistics-title">Updates &amp; approvals</h2>
-          </div>
           <Suspense fallback={<p className="muted">Loading inbox…</p>}>
             <NotificationsPage embedded />
           </Suspense>
@@ -998,9 +960,6 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'imports' ? (
         <div className="module-review-logistics">
-          <div className="module-review-logistics-head">
-            <h2 className="module-review-logistics-title">Spreadsheet uploads</h2>
-          </div>
           <Suspense fallback={<p className="muted">Loading uploads…</p>}>
             <ImportsPage embedded />
           </Suspense>
@@ -1094,7 +1053,7 @@ export default function TrackingDashboardPage() {
           </section>
         </div>
           ) : null}
-        </>
+        </OpsReviewSlotProvider>
       ) : null}
     </PageShell>
   );

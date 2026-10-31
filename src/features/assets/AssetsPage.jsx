@@ -446,7 +446,11 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         return;
       }
       if (custodyRequiresCustodianContact(form.custody) && !form.contactId) {
-        setError('Select a Healthcare Worker from Contact Directory.');
+        setError(
+          form.custody === 'Service Provider'
+            ? 'Select a Healthcare Worker with Type “Service Provider” from Contact Directory.'
+            : 'Select a Healthcare Worker with Type “Individual” from Contact Directory.'
+        );
         setBusy(false);
         return;
       }
@@ -454,7 +458,9 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
         const selected = contacts.find((c) => c._id === form.contactId);
         if (selected && !contactMatchesCustody(selected, form.custody)) {
           setError(
-            'Custodian Contact must be a Healthcare Worker from Contact Directory (Individual, Full-Time, Service Provider, or Other).'
+            form.custody === 'Service Provider'
+              ? 'Custodian Contact must be a Healthcare Worker with Type “Service Provider”.'
+              : 'Custodian Contact must be a Healthcare Worker with Type “Individual”.'
           );
           setBusy(false);
           return;
@@ -878,8 +884,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       <option value="">Select Contact Directory record</option>
                       {contacts
                         .filter((contact) => contactMatchesCustody(contact, form.custody))
-                        .slice()
-                        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'en', { sensitivity: 'base' }))
                         .map((contact) => (
                         <option key={contact._id} value={contact._id}>
                           {contact.name}

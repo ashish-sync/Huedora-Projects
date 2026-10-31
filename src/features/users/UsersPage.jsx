@@ -8,6 +8,7 @@ import { MODULE_PATH } from '../../shared/moduleRoutes.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { personRoleLabel, personStatusLabel } from '../dashboards/opsReviewCatalog.js';
+import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import '../audit/activityLog.css';
 
 export default function UsersPage({ embedded = false } = {}) {
@@ -75,12 +76,17 @@ export default function UsersPage({ embedded = false } = {}) {
           </Link>
         ) : null
       }
-      kpis={[
-        { label: 'On the team', value: rows.length },
-        { label: 'Active', value: activeCount },
-        { label: 'Not signing in', value: rows.length - activeCount },
-      ]}
+      kpis={
+        embedded
+          ? []
+          : [
+              { label: 'On the team', value: rows.length },
+              { label: 'Active', value: activeCount },
+              { label: 'Not signing in', value: rows.length - activeCount },
+            ]
+      }
       toolbar={
+        embedded ? null : (
         <form className="date-range-filter" aria-label="Team filters" onSubmit={(e) => e.preventDefault()}>
           <div className="date-range-filter-fields">
             <label className="date-range-filter-field ops-filter-field--grow">
@@ -122,8 +128,35 @@ export default function UsersPage({ embedded = false } = {}) {
             ) : null}
           </div>
         </form>
+        )
       }
     >
+      {embedded ? (
+        <OpsReviewSlot totalLabel="On the team" totalValue={filtered.length}>
+          <label className="ops-review-header__filter">
+            <span>Search</span>
+            <input
+              className="ops-filter-input"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Name, email, or role"
+              aria-label="Search team"
+            />
+          </label>
+          <label className="ops-review-header__filter">
+            <span>Status</span>
+            <AdaptiveSelect
+              aria-label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="">Everyone</option>
+              <option value="active">Active</option>
+              <option value="inactive">Not signing in</option>
+            </AdaptiveSelect>
+          </label>
+        </OpsReviewSlot>
+      ) : null}
       {error ? <p className="error">{error}</p> : null}
       <div className={`activity-log${selected ? ' activity-log--split' : ''}`}>
         <div className="card card--flush activity-log-list">

@@ -1,0 +1,290 @@
+.ops-review-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+  padding: 0.85rem 1.15rem 0.95rem;
+  border-radius: var(--radius-card, var(--radius-lg, 12px));
+  border: 1px solid var(--line);
+  background: var(--bg-elevated, #fff);
+}
+
+.ops-review-header__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ops-review-header__range {
+  width: 100%;
+  margin: 0;
+}
+
+.ops-review-header__range .date-range-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(9.5rem, 1fr)) auto;
+  align-items: end;
+  gap: 12px 16px;
+  width: 100%;
+}
+
+.ops-review-header__range .date-range-filter-field,
+.ops-review-header__range .module-review-module {
+  min-width: 0;
+}
+
+.ops-review-header__range .date-range-filter-field > span,
+.ops-review-header__range .module-review-module > span {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ops-review-header__range .date-range-filter-field .date-input-display,
+.ops-review-header__range .date-range-filter-field select,
+.ops-review-header__range .module-review-module .adaptive-select__control {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.ops-review-header__range .date-range-filter-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-self: end;
+  white-space: nowrap;
+}
+
+.ops-review-header__meta {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem 1.1rem;
+  padding-top: 0.15rem;
+  width: 100%;
+}
+
+.ops-review-header__meta[hidden] {
+  display: none;
+}
+
+.ops-review-header__total {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  min-width: 6.75rem;
+  padding: 0 0.35rem 0 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.ops-review-header__total-label,
+.ops-review-header__filter > span,
+.ops-review-header__filters .ops-board-hero__filter > span,
+.ops-review-header__filters .date-range-filter-field > span {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ops-review-header__total-value {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  min-height: var(--control-h, 40px);
+  font-size: 1.85rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--ink, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+a.ops-review-header__total:hover .ops-review-header__total-value {
+  color: var(--brand);
+}
+
+.ops-review-header__filters {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-left: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ops-review-header__filter,
+.ops-review-header__filters .ops-board-hero__filter,
+.ops-review-header__filters .date-range-filter-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex: 0 0 13.25rem;
+  width: 13.25rem;
+  max-width: 13.25rem;
+  min-width: 13.25rem;
+  margin: 0;
+}
+
+.ops-review-header__filters .ops-board-hero__filter {
+  width: 13.25rem;
+  max-width: 13.25rem;
+}
+
+.ops-review-header__filter .adaptive-select-host,
+.ops-review-header__filters .adaptive-select-host {
+  width: 100%;
+  min-width: 0;
+}
+
+.ops-review-header__filter select,
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input),
+.ops-review-header__filter .ops-filter-input,
+.ops-review-header__filters .ops-board-hero__filter select,
+.ops-review-header__filters .ops-board-hero__filter input:not(.date-input-native):not(.adaptive-select__input),
+.ops-review-header__filters .date-range-filter-field input:not(.date-input-native):not(.adaptive-select__input),
+.ops-review-header__filters .date-range-filter-field select,
+.ops-review-header__filters .ops-filter-input,
+.ops-review-header__filters .camp-client-typeahead input,
+.ops-review-header__filter .adaptive-select,
+.ops-review-header__filter .adaptive-select__control {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0;
+}
+
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input),
+.ops-review-header__filter .ops-filter-input,
+.ops-review-header__filters .ops-board-hero__filter input:not(.date-input-native):not(.adaptive-select__input),
+.ops-review-header__filters .date-range-filter-field input:not(.date-input-native):not(.adaptive-select__input),
+.ops-review-header__filters .ops-filter-input,
+.ops-review-header__filters .camp-client-typeahead input {
+  box-sizing: border-box;
+  height: var(--control-h, 40px) !important;
+  min-height: var(--control-h, 40px) !important;
+  max-height: var(--control-h, 40px) !important;
+  padding: 0 0.75rem !important;
+  border: 1px solid var(--color-border-default, var(--line)) !important;
+  border-radius: var(--control-radius, 10px) !important;
+  background: var(--color-bg-elevated, #fff) !important;
+  color: var(--color-text-primary, inherit);
+  font-size: var(--text-body-sm-size, 0.8125rem) !important;
+  font-weight: var(--text-body-sm-weight, 400) !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  line-height: calc(var(--control-h, 40px) - 2px);
+}
+
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input)::placeholder,
+.ops-review-header__filter .ops-filter-input::placeholder,
+.ops-review-header__filters .ops-filter-input::placeholder,
+.ops-review-header__filters .camp-client-typeahead input::placeholder {
+  color: var(--color-text-tertiary, var(--muted));
+}
+
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input):hover,
+.ops-review-header__filter .ops-filter-input:hover,
+.ops-review-header__filters .ops-filter-input:hover {
+  border-color: var(--color-border-strong, var(--line)) !important;
+  background: var(--color-bg-hover, #fff) !important;
+}
+
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input):focus,
+.ops-review-header__filter .ops-filter-input:focus,
+.ops-review-header__filters .ops-filter-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 35%, var(--color-border-default, var(--line))) !important;
+  box-shadow: var(--dropdown-focus-ring, 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent));
+  background: var(--color-bg-elevated, #fff) !important;
+}
+
+.ops-review-header__filter .adaptive-select,
+.ops-review-header__filters .adaptive-select,
+.ops-review-header__filter .adaptive-select__control,
+.ops-review-header__filters .adaptive-select__control {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.ops-review-header__filters .camp-client-typeahead {
+  width: 100%;
+  gap: 0;
+}
+
+.ops-review-header__filters .camp-client-typeahead input {
+  box-sizing: border-box;
+}
+
+.ops-review-header__filters .date-range-filter,
+.ops-review-header__filters .date-range-filter-fields {
+  display: contents;
+}
+
+.ops-review-header__filters .date-range-filter-actions {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .ops-review-header__range .date-range-filter-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-review-header__range .date-range-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .ops-review-header__meta,
+  .ops-review-header__filters {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .ops-review-header {
+    padding: 0.8rem 0.85rem 0.9rem;
+  }
+
+  .ops-review-header__range .date-range-filter-fields,
+  .ops-review-header__meta,
+  .ops-review-header__filters {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ops-review-header__filters {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .ops-review-header__filter,
+  .ops-review-header__filters .ops-board-hero__filter,
+  .ops-review-header__filters .date-range-filter-field {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}

@@ -12638,6 +12638,16 @@ button.vf-summary-card.is-clickable:hover,
   line-height: 1.25;
 }
 
+.arq-product-remove-cell {
+  grid-column: -1;
+}
+
+.arq-product-remove-cell > .arq-product-remove-spacer {
+  grid-row: 1;
+  display: block;
+  min-height: 1.25em;
+}
+
 .arq-product-cell > .adaptive-select-host,
 .arq-product-cell > select,
 .arq-product-cell > select.tylo-select,

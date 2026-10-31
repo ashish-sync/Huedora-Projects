@@ -7,6 +7,15 @@ import {
 } from './notificationLinks.js';
 
 describe('notificationLinks', () => {
+  it('deep-links assets to Asset One', () => {
+    expect(
+      notificationEntityPath({
+        entityType: 'Asset',
+        entityId: 'ast-1',
+      }),
+    ).toBe('/asset-one/assets/ast-1');
+  });
+
   it('deep-links camp entities to manage edit', () => {
     expect(
       notificationEntityPath({
@@ -74,6 +83,18 @@ describe('notificationLinks', () => {
       isApprovalRequestNotification({
         type: 'CAMP_HCW_GAP_APPROVAL',
         title: 'Camp 26-08-0012 needs approval — HCW gap under 30 minutes',
+      }),
+    ).toBe(true);
+    expect(
+      isApprovalRequestNotification({
+        type: 'CAMP_T2_APPROVAL',
+        title: 'Approval required — camp 26-11-0002 (scheduled camp date is within the next 2 days)',
+      }),
+    ).toBe(true);
+    expect(
+      isApprovalRequestNotification({
+        type: 'ASSET_CREATE_APPROVAL',
+        title: 'Approval required — new asset Probe X',
       }),
     ).toBe(true);
     expect(

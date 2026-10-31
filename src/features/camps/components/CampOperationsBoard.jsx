@@ -331,6 +331,76 @@ export default function CampOperationsBoard({
             </div>
           </section>
           )}
+
+          <section className="ops-board-grid" aria-label="Lifecycle stage board">
+            {stages.map((stage) => (
+              <article key={stage.id} className={`ops-board-card ops-board-card--${stage.id}`}>
+                <header className="ops-board-card__header">
+                  <Link
+                    className="ops-board-card__stage"
+                    to={buildManagePath({ stageId: stage.id, ...manageQuery })}
+                    title={`Open ${stage.label} camps in Manage`}
+                  >
+                    <span>{stage.label}</span>
+                    <strong>{stage.total}</strong>
+                  </Link>
+                </header>
+                <ul className="ops-board-card__statuses">
+                  {(stage.statuses || []).map((row) => {
+                    const key = sliceKey({ stageId: stage.id, statusValue: row.value });
+                    const slice = {
+                      stageId: stage.id,
+                      stageLabel: stage.label,
+                      statusValue: row.value,
+                      statusLabel: row.label,
+                      count: row.count,
+                    };
+                    return (
+                      <li key={row.value}>
+                        <Link
+                          className={[
+                            'ops-board-status',
+                            `ops-board-status--${row.value}`,
+                            row.attention ? 'is-attention' : '',
+                          ].filter(Boolean).join(' ')}
+                          to={buildManagePath({
+                            stageId: stage.id,
+                            statusValue: row.value,
+                            ...manageQuery,
+                          })}
+                          title={`Open ${row.label} camps in Manage`}
+                        >
+                          <span className="ops-board-status__label">{row.label}</span>
+                          <span className="ops-board-status__count">{row.count}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          className="ops-board-status__download"
+                          aria-label={`Download ${row.label} camps`}
+                          title={`Download Excel of ${row.label} camps`}
+                          disabled={exportBusy || !(row.count > 0)}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            exportSlice(slice);
+                          }}
+                        >
+                          <Download size={15} strokeWidth={2} aria-hidden="true" />
+                          <span className="sr-only">
+                            {exportBusy && exportingKey === key ? ACTION.DOWNLOADING : ACTION.DOWNLOAD}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <footer className="ops-board-card__footer">
+                  <Link
+                    className="meta-text"
+                    to={buildManagePath({
+                      stageId: stage.id,
+                      ...manageQuery,
+                    })}
                   >
                     Open in Manage →
                   </Link>

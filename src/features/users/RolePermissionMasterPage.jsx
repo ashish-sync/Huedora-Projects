@@ -5,6 +5,7 @@ import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import PageShell from '../../components/ui/PageShell.jsx';
+import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
@@ -23,6 +24,24 @@ import {
   tiersForModule,
   toggleModuleTierInMatrix,
 } from './moduleAccessTiers.js';
+
+const DEFAULT_DESIGNATIONS = [
+  'Healthcare Camp Coordinator',
+  'Individual Contributor',
+  'Team Lead',
+  'Senior Team Lead',
+  'Manager',
+  'Senior Manager',
+  'Product Manager',
+  'Operations Leader',
+  'Operations Manager',
+  'Operations Head',
+  'Training Manager',
+  'Director',
+  'Business Head',
+  'Head of Department',
+  'Vice President',
+];
 
 const EMPTY_USER = {
   email: '',
@@ -179,13 +198,14 @@ export default function RolePermissionMasterPage() {
     if (canViewUsers) {
       api('/users/designations')
         .then((res) => {
-          setDesignations(res.data || []);
+          setDesignations((res.data || []).filter(Boolean));
           setDesignationTemplates({
             ...DESIGNATION_ACCESS_TEMPLATES,
             ...(res.accessTemplates || {}),
           });
         })
         .catch(() => {
+          setDesignations(DEFAULT_DESIGNATIONS);
           setDesignationTemplates({ ...DESIGNATION_ACCESS_TEMPLATES });
         });
     }
@@ -290,6 +310,13 @@ export default function RolePermissionMasterPage() {
       .filter((u) => u.isActive !== false && String(u.id) !== excludeId)
       .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
   }, [users, creatingUser, editingUserId]);
+
+  const designationOptions = useMemo(() => {
+    const titles = [...(designations.length ? designations : DEFAULT_DESIGNATIONS)];
+    const current = String(userDraft.designation || '').trim();
+    if (current && !titles.includes(current)) titles.unshift(current);
+    return titles;
+  }, [designations, userDraft.designation]);
 
   const saveUser = async (e) => {
     e.preventDefault();
@@ -506,8 +533,8 @@ export default function RolePermissionMasterPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
-      description="Manage people and assign application access in one place. Built-in roles apply per app."
       description="Who can sign in, and what each person can do in each application."
+      actions={
         <>
           <button
             className="btn secondary"
@@ -649,6 +676,7 @@ export default function RolePermissionMasterPage() {
                     </div>
                     <div className="field">
                       <label>Sign-in name *</label>
+                      <input
                         required
                         value={userDraft.username}
                         disabled={!canWrite || !creatingUser}
@@ -666,40 +694,45 @@ export default function RolePermissionMasterPage() {
                       />
                     </div>
                     <div className="field">
-                      <label>Designation</label>
-                      <input
-                        list="user-designation-options"
+                      <label htmlFor="user-designation">Designation</label>
+                      <AdaptiveSelect
+                        id="user-designation"
+                        aria-label="Designation"
                         value={userDraft.designation}
                         disabled={!canWrite}
-                        placeholder="e.g. Healthcare Camp Coordinator"
+                        placeholder="Select designation"
                         onChange={(e) =>
                           setUserDraft((prev) => ({ ...prev, designation: e.target.value }))
                         }
-                      />
-                      <datalist id="user-designation-options">
-                        {designations.map((title) => (
-                          <option key={title} value={title} />
+                      >
+                        <option value="">Select designation</option>
+                        {designationOptions.map((title) => (
+                          <option key={title} value={title}>
+                            {title}
+                          </option>
                         ))}
-                      </datalist>
+                      </AdaptiveSelect>
                     </div>
                     <div className="field">
-                      <label>Reporting manager</label>
-                      <select
+                      <label htmlFor="user-reporting-manager">Reporting manager</label>
+                      <AdaptiveSelect
+                        id="user-reporting-manager"
+                        aria-label="Reporting manager"
                         value={userDraft.reportingManagerId}
                         disabled={!canWrite}
+                        placeholder="None — top of the line"
                         onChange={(e) =>
                           setUserDraft({ ...userDraft, reportingManagerId: e.target.value })
                         }
                       >
-                        <option value="">— None (top level) —</option>
-                        <option value="">None — reports to no one</option>
+                        <option value="">None — top of the line</option>
                         {managerOptions.map((person) => (
                           <option key={person.id} value={person.id}>
                             {person.fullName || person.email}
                             {person.designation ? ` · ${person.designation}` : ''}
                           </option>
                         ))}
-                      </select>
+                      </AdaptiveSelect>
                     </div>
                   </div>
                 </section>
@@ -770,6 +803,7 @@ export default function RolePermissionMasterPage() {
                           {userDraft.isActive
                             ? 'Uncheck and save to stop this person signing in'
                             : 'Check and save to let this person sign in again'}
+                        </em>
                       </span>
                     </label>
                   </section>

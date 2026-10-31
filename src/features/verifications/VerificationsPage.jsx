@@ -220,6 +220,18 @@ export default function VerificationsPage() {
       value: (board?.rows || []).length,
       tone: 'neutral',
     },
+    {
+      key: 'MANUAL',
+      label: 'Manual verifications',
+      value: board?.methodCounts?.manual || 0,
+      tone: 'neutral',
+    },
+    {
+      key: 'SELF',
+      label: 'Self-verification links',
+      value: board?.methodCounts?.selfVerify || 0,
+      tone: 'neutral',
+    },
   ];
 
   const loadActivity = async (recordId) => {
@@ -512,7 +524,7 @@ export default function VerificationsPage() {
           panelClassName={`vf-modal card${verifyStep === 'choose' ? ' is-compact' : ''}`}
         >
             <div className="vf-verify-head">
-              <div>
+              <div className="vf-verify-head-copy">
                 <h2 id="vf-modal-title">
                   {verifyStep === 'choose'
                     ? 'Verify'
@@ -525,7 +537,7 @@ export default function VerificationsPage() {
                   {active.holder?.name ? ` · ${active.holder.name}` : ''}
                 </p>
               </div>
-              <div className="row" style={{ gap: 8 }}>
+              <div className="vf-verify-head-actions">
                 <WatchFollowButton
                   entityType="VerificationRecord"
                   entityId={active.record?._id}
@@ -545,7 +557,7 @@ export default function VerificationsPage() {
             {verifyStep === 'choose' && (
               <div className="vf-choose-list">
                 <button type="button" className="vf-choose-btn" onClick={() => setVerifyStep('manual')}>
-                  Verify Manually
+                  <span>Verify Manually</span>
                 </button>
                 <button
                   type="button"
@@ -554,10 +566,10 @@ export default function VerificationsPage() {
                   disabled={!active.holder}
                   title={active.holder ? undefined : 'Assign a custodian in Asset Registry first'}
                 >
-                  Send link to Holder
+                  <span>Send link to Holder</span>
                 </button>
                 <button type="button" className="vf-choose-btn" onClick={() => setVerifyStep('call')}>
-                  Log call attempt
+                  <span>Log call attempt</span>
                 </button>
                 {!active.holder && (
                   <p className="muted vf-choose-hint">Assign a custodian before sending a link.</p>
@@ -886,7 +898,7 @@ export default function VerificationsPage() {
       )}
 
       <div
-        className="vf-summary"
+        className="vf-summary module-dash-kpis"
         role="group"
         aria-label="Verification summary"
         data-count={summaryItems.length}
@@ -897,7 +909,7 @@ export default function VerificationsPage() {
             <Comp
               key={item.key}
               type={item.onClick ? 'button' : undefined}
-              className={`vf-summary-card tone-${item.tone}${item.active ? ' is-active' : ''}${
+              className={`module-kpi vf-summary-card tone-${item.tone}${item.active ? ' is-active' : ''}${
                 item.onClick ? ' is-clickable' : ''
               }`}
               onClick={item.onClick}
@@ -929,42 +941,44 @@ export default function VerificationsPage() {
           ) : null}
         </div>
 
-        <label className="vf-toolbar-field">
-          <span>From</span>
-          <DateInput
-            hideLabel
-            aria-label="From date"
-            value={fromDate}
-            max={toDate || undefined}
-            disabled={loading}
-            onChange={setFromDate}
-          />
-        </label>
+        <div className="vf-toolbar-controls">
+          <label className="vf-toolbar-field">
+            <span>From</span>
+            <DateInput
+              hideLabel
+              aria-label="From date"
+              value={fromDate}
+              max={toDate || undefined}
+              disabled={loading}
+              onChange={setFromDate}
+            />
+          </label>
 
-        <label className="vf-toolbar-field">
-          <span>To</span>
-          <DateInput
-            hideLabel
-            aria-label="To date"
-            value={toDate}
-            min={fromDate || undefined}
-            disabled={loading}
-            onChange={setToDate}
-          />
-        </label>
+          <label className="vf-toolbar-field">
+            <span>To</span>
+            <DateInput
+              hideLabel
+              aria-label="To date"
+              value={toDate}
+              min={fromDate || undefined}
+              disabled={loading}
+              onChange={setToDate}
+            />
+          </label>
 
-        <div className="vf-toolbar-actions master-filter-actions">
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? 'Loading…' : 'Submit'}
-          </button>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={loading}
-            onClick={clearBoard}
-          >
-            Clear
-          </button>
+          <div className="vf-toolbar-actions master-filter-actions">
+            <button className="btn" type="submit" disabled={loading}>
+              {loading ? 'Loading…' : 'Submit'}
+            </button>
+            <button
+              className="btn secondary"
+              type="button"
+              disabled={loading}
+              onClick={clearBoard}
+            >
+              Clear
+            </button>
+          </div>
         </div>
       </form>
 

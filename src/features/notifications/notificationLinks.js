@@ -1,4 +1,5 @@
 import {
+  assetOneDetailPath,
   campManageEditPath,
   documentOneDetailPath,
   financeVendorBillPath,
@@ -16,6 +17,9 @@ export function notificationEntityPath(n) {
     if (n?.meta?.deepLinkHint === 'camp_manage') {
       return CAMP_PATH.MANAGE;
     }
+    if (n?.meta?.deepLinkHint === 'verification_one') {
+      return MODULE_PATH.VERIFICATION_ONE;
+    }
     return null;
   }
   const id = String(n.entityId);
@@ -28,6 +32,8 @@ export function notificationEntityPath(n) {
     case 'Movement':
       // Legacy Movement notifications → Request One Goods Issuance (same id space after cutover)
       return `${MODULE_PATH.REQUEST_ONE}?requestId=${encodeURIComponent(id)}`;
+    case 'Asset':
+      return assetOneDetailPath(id);
     case 'Agreement':
       return documentOneDetailPath(id);
     case 'VerificationRecord':
@@ -62,6 +68,8 @@ export function priorityClass(priority) {
 export const APPROVAL_REQUEST_TYPES = Object.freeze([
   'PICKLIST_SUGGESTION',
   'CAMP_HCW_GAP_APPROVAL',
+  'CAMP_T2_APPROVAL',
+  'ASSET_CREATE_APPROVAL',
   'COMMERCIAL_SUBMIT',
   'VENDOR_BILL_VERIFIED',
 ]);
@@ -78,6 +86,8 @@ const CAMP_FYI_NOTIFICATION_TYPES = new Set([
   'CAMP_BULK_SUCCESS',
   'CAMP_BULK_PARTIAL',
   'CAMP_BULK_REJECT',
+  'CAMP_CANCELLED_TYLO',
+  'CAMP_INFO_UNANSWERED',
 ]);
 
 function isCampFyiNotificationType(type) {

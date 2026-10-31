@@ -2,6 +2,10 @@
 export const MODULE = {
   HOME: 'Home',
   DASHBOARD: 'Operations Dashboard',
+  ACTIVITY_LOG: 'Activity Log',
+  TEAM: 'Team',
+  INBOX: 'Updates & approvals',
+  UPLOADS: 'Spreadsheet uploads',
   DOCUMENT_HUB: 'Document One',
   /** @deprecated Prefer DOCUMENT_HUB */
   ASSET_AGREEMENT: 'Document One',
@@ -81,6 +85,10 @@ export const MODULE_BLURB = {
   MASTER_DATA:
     'Products, Expense Master, Contact Directory, Document Templates, Signatures, Client Master, and PIN Geography.',
   DASHBOARD: 'Executive project health and module drill-down by date range.',
+  ACTIVITY_LOG: 'Who did what, where, and how it turned out.',
+  TEAM: 'Who is on Tylo One and whether they can sign in.',
+  INBOX: 'Approvals that need a decision, and updates on what changed.',
+  UPLOADS: 'Check a spreadsheet, then save the good rows.',
 };
 
 export const FIELD = {

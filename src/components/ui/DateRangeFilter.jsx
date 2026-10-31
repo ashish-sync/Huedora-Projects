@@ -14,6 +14,7 @@ export default function DateRangeFilter({
   submitLabel = 'Submit',
   clearLabel = 'Clear',
   disabled = false,
+  hideDates = false,
   className = '',
   children,
   hint,
@@ -31,32 +32,36 @@ export default function DateRangeFilter({
   return (
     <form
       className={`date-range-filter${className ? ` ${className}` : ''}`}
-      aria-label="Date range filter"
+      aria-label={hideDates ? 'Filters' : 'Date range filter'}
       onSubmit={handleSubmit}
     >
       <div className="date-range-filter-fields">
-        <label className="date-range-filter-field">
-          <span>From</span>
-          <DateInput
-            hideLabel
-            aria-label="From date"
-            value={from}
-            max={to || undefined}
-            disabled={disabled || submitting}
-            onChange={onFromChange}
-          />
-        </label>
-        <label className="date-range-filter-field">
-          <span>To</span>
-          <DateInput
-            hideLabel
-            aria-label="To date"
-            value={to}
-            min={from || undefined}
-            disabled={disabled || submitting}
-            onChange={onToChange}
-          />
-        </label>
+        {!hideDates ? (
+          <>
+            <label className="date-range-filter-field">
+              <span>From</span>
+              <DateInput
+                hideLabel
+                aria-label="From date"
+                value={from}
+                max={to || undefined}
+                disabled={disabled || submitting}
+                onChange={onFromChange}
+              />
+            </label>
+            <label className="date-range-filter-field">
+              <span>To</span>
+              <DateInput
+                hideLabel
+                aria-label="To date"
+                value={to}
+                min={from || undefined}
+                disabled={disabled || submitting}
+                onChange={onToChange}
+              />
+            </label>
+          </>
+        ) : null}
         {children}
         <div className="date-range-filter-actions">
           <button className="btn" type="submit" disabled={disabled || submitting}>

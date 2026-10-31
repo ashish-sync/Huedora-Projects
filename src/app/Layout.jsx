@@ -263,7 +263,7 @@ export default function Layout({ children }) {
               {bellOpen ? (
                 <div className="header-notif-panel" role="menu" aria-label="Notification options">
                   <div className="header-notif-panel-head">
-                    <span>Notifications</span>
+                    <span>Updates & approvals</span>
                   </div>
                   <Link
                     to="/notifications?tab=approvals"
@@ -286,8 +286,8 @@ export default function Layout({ children }) {
                     onClick={() => setBellOpen(false)}
                   >
                     <span className="header-notif-choice-copy">
-                      <strong>FYI / Notifications</strong>
-                      <span className="muted">Status updates and informational alerts</span>
+                      <strong>Updates</strong>
+                      <span className="muted">What changed, including everyday notices</span>
                     </span>
                     <span className={`header-notif-choice-count${fyiCount ? ' is-active' : ''}`}>
                       {fyiCount > 99 ? '99+' : fyiCount}

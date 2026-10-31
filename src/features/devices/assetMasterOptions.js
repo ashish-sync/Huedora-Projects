@@ -47,19 +47,11 @@ export function custodyRequiresCustodianContact(custody) {
 }
 
 /**
- * Individual custody → Healthcare Worker / Individual.
- * Service Provider custody → Healthcare Worker / Service Provider.
+ * Individual or Service Provider custody can be linked to any Healthcare Worker
+ * (Individual, Full-Time, Service Provider, or Other).
  */
 export function contactMatchesCustody(contact, custody) {
   if (!custodyRequiresCustodianContact(custody)) return true;
   if (!contact) return false;
-  const category = String(contact.contactCategory || '').trim();
-  const resourceType = String(contact.resourceType || '').trim();
-  if (custody === 'Service Provider') {
-    return category === 'Healthcare Worker' && resourceType === 'Service Provider';
-  }
-  if (custody === 'Individual') {
-    return category === 'Healthcare Worker' && resourceType === 'Individual';
-  }
-  return true;
+  return String(contact.contactCategory || '').trim() === 'Healthcare Worker';
 }

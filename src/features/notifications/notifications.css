@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: 0;
 }
 
 .nc-tabs {
@@ -47,7 +47,7 @@
 }
 
 .nc-row {
-  padding: var(--space-3) 0;
+  padding: 0.85rem 1.05rem;
   border-bottom: 1px solid var(--line);
 }
 
@@ -56,11 +56,7 @@
 }
 
 .nc-row.is-unread {
-  background: color-mix(in srgb, var(--brand) 4%, transparent);
-  margin: 0 calc(-1 * var(--space-3));
-  padding-left: var(--space-3);
-  padding-right: var(--space-3);
-  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--brand) 5%, transparent);
 }
 
 .nc-row-main {
@@ -314,4 +310,11 @@
   justify-content: center;
   gap: var(--space-3);
   margin-top: var(--space-3);
+}
+
+.nc-list .empty-state {
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  padding: 1.35rem 1.05rem;
 }

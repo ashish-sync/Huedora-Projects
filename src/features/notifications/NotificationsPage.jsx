@@ -5,16 +5,15 @@ import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
-import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
 import {
   categoryLabel,
   isApprovalRequestNotification,
   notificationEntityPath,
   priorityClass,
-  priorityLabel,
 } from './notificationLinks.js';
+import { notificationImportanceLabel, notificationModuleLabel } from '../dashboards/opsReviewCatalog.js';
+import '../audit/activityLog.css';
 import './notifications.css';
 
 const PAGE_SIZE = 25;
@@ -25,7 +24,7 @@ const INBOX_TABS = [
   { id: 'all', label: 'All', category: '' },
 ];
 
-export default function NotificationsPage() {
+export default function NotificationsPage({ embedded = false } = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = String(searchParams.get('tab') || '').toLowerCase();
   const initialTab = INBOX_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'approvals';
@@ -160,8 +159,8 @@ export default function NotificationsPage() {
         ? {
             title: showInformational ? 'No updates' : 'No important updates',
             description: showInformational
-              ? 'Status changes and informational alerts will appear here.'
-              : 'Important and critical updates only. Choose “Include FYI” to see informational notices.',
+              ? 'Status changes and everyday notices will appear here.'
+              : 'Important updates only. Choose “Include everyday notices” to see the rest.',
           }
         : {
             title: 'No notifications',
@@ -170,9 +169,14 @@ export default function NotificationsPage() {
 
   return (
     <PageShell
-      breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: 'Notifications' }]}
-      title="Notification Center"
-      description="Approvals need action. Updates stay quieter — FYI/informational notices are hidden by default."
+      bare={embedded}
+      breadcrumbs={embedded ? [] : [{ to: '/', label: MODULE.HOME }, { label: MODULE.INBOX }]}
+      title={embedded ? '' : MODULE.INBOX}
+      description={
+        embedded
+          ? ''
+          : 'Approvals need a decision. Updates tell you what changed. Everyday notices stay hidden unless you ask for them.'
+      }
       actions={
         <button
           className="btn secondary"
@@ -181,17 +185,129 @@ export default function NotificationsPage() {
           disabled={(meta.total || 0) === 0 && rows.length === 0}
         >
           {inboxTab === 'approvals'
-            ? 'Mark approvals read'
+            ? 'Mark approvals seen'
             : inboxTab === 'updates'
-              ? 'Mark updates read'
-              : 'Mark all read'}
+              ? 'Mark updates seen'
+              : 'Mark all seen'}
         </button>
       }
       kpis={[
-        { label: 'On page', value: rows.length },
-        { label: 'Unread (page)', value: unread },
-        { label: 'Total', value: meta.total ?? rows.length },
+        { label: 'Waiting', value: unread },
+        { label: 'In this view', value: meta.total ?? rows.length },
       ]}
+      toolbar={
+      <form className="date-range-filter" aria-label="Inbox filters" onSubmit={(e) => e.preventDefault()}>
+        <div className="date-range-filter-fields">
+          <label className="date-range-filter-field ops-filter-field--grow">
+            <span>Search</span>
+            <input
+              className="ops-filter-input"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Message or person"
+              aria-label="Search updates"
+            />
+          </label>
+          <label className="date-range-filter-field ops-filter-field--md">
+            <span>Waiting</span>
+            <AdaptiveSelect
+              value={unreadOnly ? 'unread' : 'all'}
+              onChange={(e) => setUnreadOnly(e.target.value === 'unread')}
+              aria-label="Filter by read state"
+            >
+              <option value="unread">Waiting for you</option>
+              <option value="all">Seen and waiting</option>
+            </AdaptiveSelect>
+          </label>
+          <label className="date-range-filter-field ops-filter-field--md">
+            <span>Importance</span>
+            <AdaptiveSelect
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              aria-label="Filter by importance"
+            >
+              <option value="">All importance</option>
+              <option value="informational">For your information</option>
+              <option value="important">Important</option>
+              <option value="critical">Needs attention now</option>
+            </AdaptiveSelect>
+          </label>
+          <label className="date-range-filter-field ops-filter-field--md">
+            <span>Module</span>
+            <AdaptiveSelect
+              value={module}
+              onChange={(e) => setModule(e.target.value)}
+              aria-label="Filter by module"
+            >
+              <option value="">All modules</option>
+              <option value="camp">Camp One</option>
+              <option value="finance">Finance One</option>
+              <option value="assets">Asset One / Requests</option>
+              <option value="documents">Document One</option>
+              <option value="masters">Master One</option>
+              <option value="system">Tylo One</option>
+            </AdaptiveSelect>
+          </label>
+          <label className="date-range-filter-field ops-filter-field--sm">
+            <span>Age</span>
+            <AdaptiveSelect
+              value={showArchived ? 'archived' : 'active'}
+              onChange={(e) => setShowArchived(e.target.value === 'archived')}
+              aria-label="Filter by archive"
+            >
+              <option value="active">Current</option>
+              <option value="archived">Older than 7 days</option>
+            </AdaptiveSelect>
+          </label>
+          {inboxTab === 'updates' ? (
+            <label className="date-range-filter-field ops-filter-field--md">
+              <span>Everyday notices</span>
+              <AdaptiveSelect
+                value={showInformational ? 'fyi' : 'important'}
+                onChange={(e) => {
+                  const includeFyi = e.target.value === 'fyi';
+                  setShowInformational(includeFyi);
+                  const next = new URLSearchParams(searchParams);
+                  next.set('tab', 'updates');
+                  if (includeFyi) next.set('fyi', '1');
+                  else {
+                    next.delete('fyi');
+                    next.delete('informational');
+                  }
+                  setSearchParams(next, { replace: true });
+                }}
+                aria-label="Include everyday notices"
+              >
+                <option value="important">Important only</option>
+                <option value="fyi">Include everyday notices</option>
+              </AdaptiveSelect>
+            </label>
+          ) : null}
+          {q || priority || module || showArchived || !unreadOnly || showInformational ? (
+            <div className="date-range-filter-actions">
+              <button
+                className="btn secondary"
+                type="button"
+                onClick={() => {
+                  setQ('');
+                  setUnreadOnly(true);
+                  setPriority('');
+                  setModule('');
+                  setShowArchived(false);
+                  setShowInformational(false);
+                  const next = new URLSearchParams(searchParams);
+                  next.delete('fyi');
+                  next.delete('informational');
+                  setSearchParams(next, { replace: true });
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </form>
+      }
     >
       {error && <p className="error">{error}</p>}
 
@@ -210,76 +326,7 @@ export default function NotificationsPage() {
         ))}
       </div>
 
-      <MasterFilterShell>
-        <MasterSearchField
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search title, body, type…"
-          aria-label="Search notifications"
-        />
-        <AdaptiveSelect
-          value={unreadOnly ? 'unread' : 'all'}
-          onChange={(e) => setUnreadOnly(e.target.value === 'unread')}
-          aria-label="Filter by read state"
-        >
-          <option value="unread">Unread only</option>
-          <option value="all">All</option>
-        </AdaptiveSelect>
-        <AdaptiveSelect
-          value={priority}
-          onChange={(e) => setPriority(e.target.value)}
-          aria-label="Filter by severity"
-        >
-          <option value="">All severities</option>
-          <option value="informational">Informational</option>
-          <option value="important">Important</option>
-          <option value="critical">Critical</option>
-        </AdaptiveSelect>
-        <AdaptiveSelect
-          value={module}
-          onChange={(e) => setModule(e.target.value)}
-          aria-label="Filter by module"
-        >
-          <option value="">All modules</option>
-          <option value="camp">Camp</option>
-          <option value="finance">Finance</option>
-          <option value="assets">Assets / Requests</option>
-          <option value="documents">Documents</option>
-          <option value="masters">Masters</option>
-          <option value="system">System</option>
-        </AdaptiveSelect>
-        <AdaptiveSelect
-          value={showArchived ? 'archived' : 'active'}
-          onChange={(e) => setShowArchived(e.target.value === 'archived')}
-          aria-label="Filter by archive"
-        >
-          <option value="active">Active</option>
-          <option value="archived">Archived (7+ days)</option>
-        </AdaptiveSelect>
-        {inboxTab === 'updates' ? (
-          <AdaptiveSelect
-            value={showInformational ? 'fyi' : 'important'}
-            onChange={(e) => {
-              const includeFyi = e.target.value === 'fyi';
-              setShowInformational(includeFyi);
-              const next = new URLSearchParams(searchParams);
-              next.set('tab', 'updates');
-              if (includeFyi) next.set('fyi', '1');
-              else {
-                next.delete('fyi');
-                next.delete('informational');
-              }
-              setSearchParams(next, { replace: true });
-            }}
-            aria-label="Include FYI informational updates"
-          >
-            <option value="important">Important + critical</option>
-            <option value="fyi">Include FYI</option>
-          </AdaptiveSelect>
-        ) : null}
-      </MasterFilterShell>
-
-      <div className="card nc-list">
+      <div className="card card--flush nc-list">
         {rows.map((n) => {
           const href = notificationEntityPath(n);
           const changes = Array.isArray(n.changes) ? n.changes : [];
@@ -304,7 +351,7 @@ export default function NotificationsPage() {
                   {!n.readAt ? (
                     <span className="header-bell-badge notification-unread-dot" aria-hidden="true" />
                   ) : null}
-                  <span className={priorityClass(n.priority)}>{priorityLabel(n.priority)}</span>
+                  <span className={priorityClass(n.priority)}>{notificationImportanceLabel(n.priority)}</span>
                   <span className={`nc-category${isApproval ? ' nc-category--approval' : ''}`}>
                     {categoryLabel(n)}
                   </span>
@@ -315,7 +362,9 @@ export default function NotificationsPage() {
                 </div>
                 {n.body ? <div className="muted nc-body">{n.body}</div> : null}
                 <div className="muted nc-meta">
-                  {n.readAt ? 'Read' : 'Unread'} · {n.module || 'system'} · {n.type}
+                  {n.readAt ? 'Seen' : 'Waiting'}
+                  {' · '}
+                  {notificationModuleLabel(n.module)}
                   {n.actorEmail ? ` · ${n.actorEmail}` : ''}
                   {' · '}
                   {formatDateTime(n.groupedAt || n.createdAt)}

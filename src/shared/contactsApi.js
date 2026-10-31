@@ -9,16 +9,18 @@ export function fetchContactsList({
   limit = 200,
   contactCategory = '',
   resourceType = '',
+  fullDirectory = false,
   ttlMs = 2 * 60 * 1000,
   useCache = true,
   signal = null,
 } = {}) {
-  const lim = Math.max(1, Math.min(500, Number(limit) || 200));
+  const lim = Math.max(1, Math.min(2000, Number(limit) || 200));
   const cat = String(contactCategory || '').trim();
   const rt = String(resourceType || '').trim();
   const params = new URLSearchParams({ limit: String(lim) });
   if (cat) params.set('contactCategory', cat);
   if (rt) params.set('resourceType', rt);
+  if (fullDirectory) params.set('fullDirectory', '1');
   const cacheKey = `contacts:list:v1:${params.toString()}`;
 
   const loader = async () => {

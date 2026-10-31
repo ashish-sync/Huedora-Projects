@@ -54,7 +54,7 @@ function OrgTreeNode({ node, depth = 0, onSelect, defaultExpanded = true }) {
           </button>
 
           <div className="org-node-meta">
-            {inactive ? <span className="org-pill org-pill--muted">Inactive</span> : null}
+            {inactive ? <span className="org-pill org-pill--muted">Not signing in</span> : null}
             {teamSize > 0 ? (
               <span className="org-pill org-pill--team" title="Total people in this branch">
                 {teamSize} in team

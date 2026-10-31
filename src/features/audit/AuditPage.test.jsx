@@ -30,9 +30,14 @@ describe('AuditPage Activity Log', () => {
   beforeEach(() => {
     authState.can = () => true;
     authState.isAdmin = () => false;
-    api.mockResolvedValue({
-      data: [ROW],
-      meta: { page: 1, limit: 25, total: 1, pages: 1 },
+    api.mockImplementation(async (path) => {
+      if (String(path).startsWith('/audit-logs/')) {
+        return { data: ROW };
+      }
+      return {
+        data: [ROW],
+        meta: { page: 1, limit: 25, total: 1, pages: 1 },
+      };
     });
   });
 

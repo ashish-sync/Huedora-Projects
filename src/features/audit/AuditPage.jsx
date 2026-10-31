@@ -12,6 +12,20 @@ import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import './activityLog.css';
 import '../notifications/notifications.css';
 
+function ymd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function defaultActivityRange() {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - 29);
+  return { from: ymd(from), to: ymd(to) };
+}
+
 function StatusPill({ status, failed }) {
   return (
     <span className={`activity-log-status${failed ? ' activity-log-status--bad' : ' activity-log-status--ok'}`}>
@@ -120,15 +134,17 @@ export default function AuditPage({
   const [moduleId, setModuleId] = useState('');
   const [employee, setEmployee] = useState('');
   const [status, setStatus] = useState('');
-  const [from, setFrom] = useState(initialFrom || '');
-  const [to, setTo] = useState(initialTo || '');
+  const fallbackRange = defaultActivityRange();
+  const [from, setFrom] = useState(initialFrom || fallbackRange.from);
+  const [to, setTo] = useState(initialTo || fallbackRange.to);
   const [applied, setApplied] = useState({
     module: '',
     employee: '',
     status: '',
-    from: initialFrom || '',
-    to: initialTo || '',
+    from: initialFrom || fallbackRange.from,
+    to: initialTo || fallbackRange.to,
   });
+  const [detailRow, setDetailRow] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -137,14 +153,35 @@ export default function AuditPage({
   const [selectedId, setSelectedId] = useState('');
 
   useEffect(() => {
-    setFrom(initialFrom || '');
-    setTo(initialTo || '');
+    const next = defaultActivityRange();
+    const nextFrom = initialFrom || next.from;
+    const nextTo = initialTo || next.to;
+    setFrom(nextFrom);
+    setTo(nextTo);
     setApplied((prev) => ({
       ...prev,
-      from: initialFrom || '',
-      to: initialTo || '',
+      from: nextFrom,
+      to: nextTo,
     }));
   }, [initialFrom, initialTo]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDetailRow(null);
+      return undefined;
+    }
+    const listed = rows.find((row) => row._id === selectedId);
+    setDetailRow(listed || null);
+    let cancelled = false;
+    api(`/audit-logs/${selectedId}`)
+      .then((r) => {
+        if (!cancelled && r?.data && !Array.isArray(r.data)) setDetailRow(r.data);
+      })
+      .catch(() => {
+        /* keep the slim list row */
+      });
+    return () => { cancelled = true; };
+  }, [selectedId, rows]);
 
   const load = (filters = applied, pageNum = page, pageLimit = limit) => {
     setLoading(true);
@@ -197,8 +234,9 @@ export default function AuditPage({
     setModuleId('');
     setEmployee('');
     setStatus('');
-    const nextFrom = embedded ? initialFrom || '' : '';
-    const nextTo = embedded ? initialTo || '' : '';
+    const fallback = defaultActivityRange();
+    const nextFrom = embedded ? initialFrom || fallback.from : fallback.from;
+    const nextTo = embedded ? initialTo || fallback.to : fallback.to;
     setFrom(nextFrom);
     setTo(nextTo);
     setApplied({ module: '', employee: '', status: '', from: nextFrom, to: nextTo });
@@ -206,7 +244,7 @@ export default function AuditPage({
     setSelectedId('');
   };
 
-  const selected = rows.find((row) => row._id === selectedId);
+  const selected = detailRow || rows.find((row) => row._id === selectedId);
   const selectedDescribed = selected ? describeActivity(selected) : null;
 
   const applyEmbedded = (patch) => {

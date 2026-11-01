@@ -52,6 +52,7 @@ export function defaultPurchaseOrderForm() {
       email: '',
     },
     contactId: '',
+    vendorMasterId: '',
     vendor: {
       name: '',
       code: '',

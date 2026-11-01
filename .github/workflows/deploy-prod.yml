@@ -51,6 +51,9 @@ jobs:
         # Vite/Tailwind live in devDependencies — do not omit them.
         run: npm ci
 
+      - name: Check source file integrity
+        run: npm run check:integrity
+
       - name: Run unit tests
         run: npm test
 

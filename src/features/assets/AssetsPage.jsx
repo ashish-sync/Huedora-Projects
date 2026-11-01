@@ -6,6 +6,7 @@ import { fetchContactsList } from '../../shared/contactsApi.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 
 import { MODULE, FIELD, NAV, ACTION } from '../../shared/labels.js';
+import ImportActionButton from '../../components/ui/ImportActionButton.jsx';
 import { normalizeSerialNumber } from '../../shared/textFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
@@ -231,7 +232,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const [busy, setBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
-  const fileRef = useRef(null);
   const formRef = useRef(null);
 
   const [viewRow, setViewRow] = useState(null);
@@ -300,7 +300,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       setError(err.message);
     } finally {
       setImportBusy(false);
-      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -651,27 +650,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           </button>
           {canWrite ? (
             <>
-              <button className="btn secondary btn-compact" type="button" onClick={downloadSample}>
-                {ACTION.SAMPLE_FORMAT}
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
+              <ImportActionButton
+                canImport
+                hasSample
+                compact
+                onImport={runImport}
+                onSample={downloadSample}
+                importBusy={importBusy}
                 accept=".csv,.xlsx,.xls,.xlsb,text/csv"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) runImport(f);
-                }}
               />
-              <button
-                className="btn secondary btn-compact"
-                type="button"
-                disabled={importBusy}
-                onClick={() => fileRef.current?.click()}
-              >
-                {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
-              </button>
               <button className="btn btn-compact" type="button" onClick={openCreate}>
                 + Add asset
               </button>

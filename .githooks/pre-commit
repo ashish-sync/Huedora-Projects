@@ -1,0 +1,13 @@
+#!/bin/sh
+# Refuse commits that empty or unexpectedly gut tracked source files.
+# Installed locally by scripts/install-git-hooks.mjs (no git config change).
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root" || exit 1
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node is required to run source-file integrity checks." >&2
+  exit 1
+fi
+
+exec node scripts/check-source-file-integrity.mjs --staged

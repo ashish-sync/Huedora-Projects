@@ -45,3 +45,13 @@ function norm(name) {
 export function gstStateCodeForName(stateName) {
   return GST_STATE_CODE_BY_NAME[norm(stateName)] || '';
 }
+
+export function gstStateNameForCode(stateCode) {
+  const code = String(stateCode || '').replace(/\D+/g, '').padStart(2, '0');
+  if (!code || code === '00') return '';
+  const slug = Object.keys(GST_STATE_CODE_BY_NAME).find(
+    (name) => GST_STATE_CODE_BY_NAME[name] === code
+  );
+  if (!slug) return '';
+  return slug.replace(/\b\w/g, (ch) => ch.toUpperCase());
+}

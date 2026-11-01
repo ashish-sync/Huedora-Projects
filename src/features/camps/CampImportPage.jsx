@@ -6,12 +6,12 @@ import { useAuth } from './useCampOpsAuth.js';
 import { ClientPaginatedTable } from './components/ClientPaginatedTable';
 import { dashboardApi, importApi } from './campOpsApi.js';
 import { DEFAULT_PAGE_SIZE } from './constants/pagination';
-import { ACTION } from '../../shared/labels.js';
+import ImportActionButton from '../../components/ui/ImportActionButton.jsx';
 import { trimString } from './utils/trimInput';
 import { formatDateDDMMYYYY } from './utils/dateFormat';
 import { downloadCampSampleFile } from './utils/campSampleDownload.js';
 import { getErrorMessage, validateImportFileClient } from '../../shared/importErrors.js';
-import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
+import { IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
 import { importDuplicateRowView, importInvalidRowView, importPreviewSummary } from './utils/campImportPreview.js';
 
 const STEPS_ADMIN = ['Upload', 'Map Headers', 'Preview', 'Import'];
@@ -314,32 +314,23 @@ export default function ImportPage() {
             </p>
           )}
 
-          <div className="sample-download-panel">
-            <div>
-              <strong>{isAdminImport ? 'Standard import format' : 'Step 1: Use the standard format'}</strong>
-              <p>
-                Download the sample file with Create Camp column headers and example rows.
-                State, zone, district, and HQ are filled from PIN Code during import.
-              </p>
-            </div>
-            <button type="button" className="btn secondary" onClick={handleDownloadSample} disabled={loading}>
-              {ACTION.SAMPLE_FORMAT}
-            </button>
-          </div>
-
           <div className="upload-zone">
-            <p><strong>{isAdminImport ? 'Upload your file' : 'Step 2: Upload your completed file'}</strong></p>
-            <p className="import-muted">{IMPORT_ACCEPT_HINT}</p>
-            <label className={`btn${loading ? ' is-disabled' : ''}`}>
-              Choose file
-              <input
-                type="file"
-                accept={IMPORT_ACCEPT_ATTR}
-                disabled={loading}
-                onChange={(e) => handleUpload(e.target.files?.[0])}
-                title={IMPORT_ACCEPT_HINT}
-              />
-            </label>
+            <p>
+              <strong>{isAdminImport ? 'Import camps' : 'Download the sample, then import your file'}</strong>
+            </p>
+            <p className="import-muted">
+              Open Import for the sample format and to upload your file. State, zone, district, and HQ
+              are filled from PIN Code. {IMPORT_ACCEPT_HINT}
+            </p>
+            <ImportActionButton
+              canImport
+              hasSample
+              onImport={handleUpload}
+              onSample={handleDownloadSample}
+              importBusy={loading}
+              disabled={loading}
+              title={IMPORT_ACCEPT_HINT}
+            />
           </div>
         </div>
       )}

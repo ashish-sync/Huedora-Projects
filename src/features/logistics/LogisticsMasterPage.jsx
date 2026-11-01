@@ -13,6 +13,14 @@ import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import { PRODUCT_TYPES } from '../../shared/productTypes.js';
 import { INVENTORY_TRACKING_OPTIONS } from '../../shared/productMasterConfig.js';
+import FilePicker from '../../components/ui/FilePicker.jsx';
+import { validateUploadFile } from '../../shared/importErrors.js';
+import { openUploadView } from '../../shared/uploadViewUrl.js';
+import { vendorMasterApi } from '../finance/builder/vendorMasterApi.js';
+import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
+import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
+import { SUPPLY_CATEGORIES } from '../agreements/contactPicklists.js';
+import VendorMasterFormGrid from './VendorMasterFormGrid.jsx';
 
 const ProductMasterPage = lazy(() => import('./ProductMasterPage.jsx'));
 const ExpenseMasterPage = lazy(() => import('./ExpenseMasterPage.jsx'));
@@ -43,6 +51,31 @@ const MASTER_GROUPS = [
     label: 'Finance',
     scope: 'movement',
     entities: [
+      {
+        id: 'vendors',
+        label: 'Vendor Master',
+        path: '/logistics/vendors',
+        partyType: 'Vendor',
+        pdfUpload: true,
+        fields: [
+          'name',
+          'supplyCategory',
+          'contactName',
+          'phone',
+          'email',
+          'address',
+          'pinCode',
+          'state',
+          'stateCode',
+          'gstin',
+          'panCard',
+          'ifscCode',
+          'bankName',
+          'accountNumber',
+          'remarks',
+        ],
+        tableFields: ['name', 'contactName', 'phone', 'email', 'state', 'gstin', 'supplyCategory'],
+      },
       {
         id: 'expense-categories',
         label: 'Expense Master',
@@ -114,15 +147,22 @@ function entitySingular(label) {
 
 const FIELD_LABELS = {
   code: 'Code',
-  name: 'Name',
+  name: 'Legal Name',
   description: 'Description',
-  contactName: 'Contact name',
-  email: 'Email',
-  phone: 'Phone',
+  contactName: 'Contact Name',
+  email: 'Email Address',
+  phone: 'Contact Number',
   city: 'City',
   state: 'State',
+  pinCode: 'PIN Code',
+  stateCode: 'State Code',
   gstin: 'GSTIN',
   panCard: 'PAN Card',
+  ifscCode: 'IFSC Code',
+  bankName: 'Bank Name',
+  accountNumber: 'Account Number',
+  remarks: 'Remark',
+  supplyCategory: 'Supply Category',
   partyType: 'Type',
   address: 'Address',
   level: 'Level',
@@ -239,6 +279,7 @@ export default function LogisticsMasterPage({
     () => (entity?.fields || []).filter((f) => f !== 'code' && f !== 'sku'),
     [entity?.fields]
   );
+  const tableFields = entity?.tableFields || entity?.fields || [];
   const useCompactForm = formFields.length <= 3;
   const usePairFormLayout = useCompactForm && formFields.length === 2;
   const [rows, setRows] = useState([]);
@@ -256,11 +297,17 @@ export default function LogisticsMasterPage({
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfPickerKey, setPdfPickerKey] = useState(0);
   const editingRow = useMemo(
     () => (editingId ? rows.find((r) => r._id === editingId) : null),
     [editingId, rows]
   );
   const excelConfig = masterExcelFor(entityId);
+  const { options: supplyCategoryOptions } = usePicklistOptions(
+    'contact.supplyCategory',
+    SUPPLY_CATEGORIES
+  );
 
   useEffect(() => {
     if (initialEntity && entities.some((e) => e.id === initialEntity)) {
@@ -300,6 +347,8 @@ export default function LogisticsMasterPage({
     setForm(emptyFor(formFields));
     setEditingId('');
     setContactPick('');
+    setPdfFile(null);
+    setPdfPickerKey((n) => n + 1);
     setMsg('');
     setPage(1);
   }, [entityId, formFields, entity]);
@@ -346,6 +395,8 @@ export default function LogisticsMasterPage({
     }
     setForm(next);
     setContactPick(row.contactId || '');
+    setPdfFile(null);
+    setPdfPickerKey((n) => n + 1);
     setMsg('');
     setError('');
   };
@@ -353,7 +404,26 @@ export default function LogisticsMasterPage({
   const cancelEdit = () => {
     setEditingId('');
     setContactPick('');
+    setPdfFile(null);
+    setPdfPickerKey((n) => n + 1);
     setForm(emptyFor(formFields));
+  };
+
+  const onVendorPdfPick = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setPdfFile(null);
+      return;
+    }
+    const invalid = validateUploadFile(file, { acceptExt: ['.pdf'], label: 'PDF' });
+    if (invalid) {
+      setError(invalid);
+      setPdfFile(null);
+      setPdfPickerKey((n) => n + 1);
+      return;
+    }
+    setError('');
+    setPdfFile(file);
   };
 
   const applyContact = (contactId) => {
@@ -369,6 +439,7 @@ export default function LogisticsMasterPage({
       phone: c.contact || c.mobile || '',
       city: c.city || '',
       state: c.state || '',
+      address: c.address || f.address,
     }));
   };
 
@@ -404,6 +475,7 @@ export default function LogisticsMasterPage({
           phone: c.contact || c.mobile || '',
           city: c.city || '',
           state: c.state || '',
+          address: c.address || '',
           gstin: '',
           panCard: '',
           isActive: true,
@@ -429,6 +501,11 @@ export default function LogisticsMasterPage({
       const body = { ...form };
       delete body.code;
       delete body.sku;
+      if (entity.id === 'vendors' && !String(body.supplyCategory || '').trim()) {
+        setError('Supply Category is required');
+        setBusy(false);
+        return;
+      }
       if (entity.fromContacts && contactPick) body.contactId = contactPick;
       if (body.parentId === '') body.parentId = null;
       if (body.warehouseId === '') body.warehouseId = null;
@@ -443,12 +520,24 @@ export default function LogisticsMasterPage({
       if (body.defaultInvoiceAmount !== undefined && body.defaultInvoiceAmount !== '') {
         body.defaultInvoiceAmount = Number(body.defaultInvoiceAmount) || 0;
       }
+      let savedId = editingId;
       if (editingId) {
         await api(`${entity.path}/${editingId}`, { method: 'PATCH', body });
         setMsg('Updated.');
       } else {
-        await api(entity.path, { method: 'POST', body });
+        const created = await api(entity.path, { method: 'POST', body });
+        savedId = created?.data?._id || '';
         setMsg('Created.');
+      }
+      if (entity.pdfUpload && pdfFile && savedId) {
+        try {
+          await vendorMasterApi.uploadPdf(savedId, pdfFile);
+        } catch (uploadErr) {
+          setError(`Vendor saved, but the PDF could not be uploaded: ${uploadErr.message}`);
+          cancelEdit();
+          load();
+          return;
+        }
       }
       cancelEdit();
       load();
@@ -589,29 +678,52 @@ export default function LogisticsMasterPage({
           className={`card logistics-form${useCompactForm ? ' logistics-form--compact' : ''}`}
           onSubmit={save}
         >
-          <h3>{editingId ? `Edit ${entitySingular(entity.label)}` : `New ${entitySingular(entity.label)}`}</h3>
-          {editingId ? (
-            <div className="logistics-form-grid logistics-form-grid--meta">
-              <div className="field">
-                <label htmlFor="lm-code">Code</label>
-                <input id="lm-code" value={editingRow?.code || ''} readOnly disabled />
+          {entity.id === 'vendors' ? (
+            <div className="logistics-form-heading">
+              <div className="logistics-form-heading__copy">
+                <h3>
+                  {editingId ? `Edit ${entitySingular(entity.label)}` : `New ${entitySingular(entity.label)}`}
+                </h3>
+                <p className="muted logistics-form-hint">
+                  Used by Finance One Purchase Orders and vendor bills.
+                </p>
               </div>
-              {entity.fields.includes('sku') ? (
-                <div className="field">
-                  <label htmlFor="lm-sku">SKU</label>
-                  <input id="lm-sku" value={editingRow?.sku || ''} readOnly disabled />
-                </div>
-              ) : null}
-              <p className="muted logistics-form-hint">
-                Assigned automatically and cannot be changed.
-              </p>
+              <div className="logistics-form-actions logistics-form-actions--inline logistics-form-heading__actions">
+                <button className="btn secondary" type="button" onClick={cancelEdit} disabled={busy}>
+                  {editingId ? 'Cancel' : 'Close'}
+                </button>
+                <button className="btn" type="submit" disabled={busy}>
+                  {busy ? 'Saving…' : 'Submit'}
+                </button>
+              </div>
             </div>
           ) : (
-            <p className="muted logistics-form-hint">
-              {entity.fields.includes('sku')
-                ? 'Code and SKU are assigned automatically on save.'
-                : 'Code is assigned automatically on save.'}
-            </p>
+            <>
+              <h3>{editingId ? `Edit ${entitySingular(entity.label)}` : `New ${entitySingular(entity.label)}`}</h3>
+              {editingId ? (
+                <div className="logistics-form-grid logistics-form-grid--meta">
+                  <div className="field">
+                    <label htmlFor="lm-code">Code</label>
+                    <input id="lm-code" value={editingRow?.code || ''} readOnly disabled />
+                  </div>
+                  {entity.fields.includes('sku') ? (
+                    <div className="field">
+                      <label htmlFor="lm-sku">SKU</label>
+                      <input id="lm-sku" value={editingRow?.sku || ''} readOnly disabled />
+                    </div>
+                  ) : null}
+                  <p className="muted logistics-form-hint">
+                    Assigned automatically and cannot be changed.
+                  </p>
+                </div>
+              ) : (
+                <p className="muted logistics-form-hint">
+                  {entity.fields.includes('sku')
+                    ? 'Code and SKU are assigned automatically on save.'
+                    : 'Code is assigned automatically on save.'}
+                </p>
+              )}
+            </>
           )}
           {entity.fromContacts && editingId ? (
             <div className="field" style={{ marginBottom: 12 }}>
@@ -639,6 +751,26 @@ export default function LogisticsMasterPage({
               </AdaptiveSelect>
             </div>
           ) : null}
+          {entity.id === 'vendors' ? (
+            <VendorMasterFormGrid
+              form={form}
+              setForm={setForm}
+              supplyCategoryOptions={supplyCategoryOptions}
+              vendorCode={editingRow?.code || ''}
+              pdfPickerKey={pdfPickerKey}
+              pdfFile={pdfFile}
+              existingDocument={editingRow?.document || null}
+              onPdfPick={onVendorPdfPick}
+              onOpenDocument={
+                editingRow?.document?.url
+                  ? () =>
+                      openUploadView(editingRow.document.url).catch((err) => setError(err.message))
+                  : undefined
+              }
+              busy={busy}
+            />
+          ) : null}
+          {entity.id !== 'vendors' ? (
           <div
             className={`logistics-form-grid${
               usePairFormLayout
@@ -712,6 +844,16 @@ export default function LogisticsMasterPage({
                     <option value="false">No</option>
                     <option value="true">Yes</option>
                   </AdaptiveSelect>
+                ) : field === 'supplyCategory' ? (
+                  <OtherAwareSelect
+                    id={`lm-${field}`}
+                    required
+                    picklistKey="contact.supplyCategory"
+                    source="vendor-master"
+                    options={supplyCategoryOptions}
+                    value={form.supplyCategory || ''}
+                    onChange={(e) => setForm({ ...form, supplyCategory: e.target.value })}
+                  />
                 ) : field === 'partyType' ? (
                   <AdaptiveSelect
                     id={`lm-${field}`}
@@ -753,13 +895,46 @@ export default function LogisticsMasterPage({
                 ) : (
                   <input
                     id={`lm-${field}`}
-                    required={field === 'name'}
+                    required={field === 'name' || field === 'supplyCategory'}
                     value={form[field]}
                     onChange={(e) => setForm({ ...form, [field]: e.target.value })}
                   />
                 )}
               </div>
             ))}
+            {entity.pdfUpload ? (
+              <div className="field logistics-form-field--full">
+                <label htmlFor="lm-vendor-pdf">Upload PDF</label>
+                <FilePicker
+                  key={pdfPickerKey}
+                  id="lm-vendor-pdf"
+                  accept=".pdf,application/pdf"
+                  buttonLabel={pdfFile ? 'Replace PDF' : 'Browse PDF'}
+                  emptyLabel="No PDF chosen"
+                  disabled={busy}
+                  onChange={onVendorPdfPick}
+                />
+                {editingRow?.document?.name || editingRow?.document?.url ? (
+                  <p className="muted logistics-form-hint">
+                    Current file: {editingRow.document.name || 'Vendor PDF'}
+                    {' · '}
+                    <button
+                      type="button"
+                      className="inv-link"
+                      onClick={() =>
+                        openUploadView(editingRow.document.url).catch((err) => setError(err.message))
+                      }
+                    >
+                      View
+                    </button>
+                  </p>
+                ) : (
+                  <p className="muted logistics-form-hint">
+                    Optional. PDF only — GST certificate, PAN, or vendor agreement.
+                  </p>
+                )}
+              </div>
+            ) : null}
             {usePairFormLayout ? (
               <div className="logistics-form-actions logistics-form-actions--inline">
                 <button className="btn" type="submit" disabled={busy}>
@@ -773,7 +948,8 @@ export default function LogisticsMasterPage({
               </div>
             ) : null}
           </div>
-          {!usePairFormLayout ? (
+          ) : null}
+          {!usePairFormLayout && entity.id !== 'vendors' ? (
           <div className="logistics-form-actions">
             <button className="btn" type="submit" disabled={busy}>
               {busy ? 'Saving…' : editingId ? 'Save changes' : 'Add'}
@@ -819,16 +995,17 @@ export default function LogisticsMasterPage({
         <table className="inv-table">
           <thead>
             <tr>
-              {entity.fields.map((f) => (
+              {tableFields.map((f) => (
                 <th key={f}>{FIELD_LABELS[f] || f}</th>
               ))}
+              {entity.pdfUpload ? <th>PDF</th> : null}
               <th className="inv-col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row._id}>
-                {entity.fields.map((f) => (
+                {tableFields.map((f) => (
                   <td key={f}>
                     {f === 'warehouseId'
                       ? warehouseName(row.warehouseId)
@@ -837,6 +1014,23 @@ export default function LogisticsMasterPage({
                         : String(row[f])}
                   </td>
                 ))}
+                {entity.pdfUpload ? (
+                  <td>
+                    {row.document?.url ? (
+                      <button
+                        type="button"
+                        className="inv-link"
+                        onClick={() =>
+                          openUploadView(row.document.url).catch((err) => setError(err.message))
+                        }
+                      >
+                        {row.document.name || 'View PDF'}
+                      </button>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                ) : null}
                 <td className="inv-col-actions">
                   <div className="inv-row-actions">
                     {canWrite && (
@@ -855,7 +1049,7 @@ export default function LogisticsMasterPage({
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={entity.fields.length + 1}>
+                <td colSpan={tableFields.length + (entity.pdfUpload ? 1 : 0) + 1}>
                   <p className="muted" style={{ padding: 16, margin: 0 }}>
                     No records yet.
                   </p>

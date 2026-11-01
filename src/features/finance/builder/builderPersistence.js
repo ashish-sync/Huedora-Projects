@@ -231,6 +231,7 @@ function poToPayload(form) {
     builderForm: builderFormForPersist(form),
     documentType: 'purchase_order',
     contactId: form.contactId || null,
+    vendorMasterId: form.vendorMasterId || null,
   };
 }
 

@@ -1,15 +1,16 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { ACTION } from '../../shared/labels.js';
-import { IMPORT_ACCEPT_ATTR, IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
+import { IMPORT_ACCEPT_HINT } from '../../shared/importFilePolicy.js';
 import {
   getErrorMessage,
   validateImportFileClient,
   formatRowImportError,
 } from '../../shared/importErrors.js';
+import ImportActionButton from '../ui/ImportActionButton.jsx';
 
 /**
- * Standard master actions: Download, Sample format, Import.
+ * Standard master actions: Download and Import (sample lives inside Import).
  * Import accepts CSV (primary) or XLSB; samples are CSV.
  */
 export default function MasterExcelToolbar({
@@ -27,7 +28,6 @@ export default function MasterExcelToolbar({
   downloadLabel = ACTION.DOWNLOAD,
   importHint = IMPORT_ACCEPT_HINT,
 }) {
-  const fileRef = useRef(null);
   const [exportBusy, setExportBusy] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
@@ -35,7 +35,6 @@ export default function MasterExcelToolbar({
 
   const compactClass = compact ? ' btn-compact' : '';
   const downloadBtnClass = `btn${compactClass}`;
-  const secondaryBtnClass = `btn secondary${compactClass}`;
   const acceptHint = importHint || IMPORT_ACCEPT_HINT;
 
   const reportError = (err) => {
@@ -79,7 +78,6 @@ export default function MasterExcelToolbar({
     const pre = validateImportFileClient(file);
     if (pre) {
       reportError(pre);
-      if (fileRef.current) fileRef.current.value = '';
       return;
     }
     setImportBusy(true);
@@ -102,7 +100,6 @@ export default function MasterExcelToolbar({
       reportError(err);
     } finally {
       setImportBusy(false);
-      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -126,39 +123,16 @@ export default function MasterExcelToolbar({
           {exportBusy ? ACTION.DOWNLOADING : downloadLabel}
         </button>
       ) : null}
-      {samplePath ? (
-        <button
-          className={secondaryBtnClass}
-          type="button"
-          disabled={sampleBusy}
-          onClick={handleSample}
-        >
-          {sampleBusy ? ACTION.DOWNLOADING : ACTION.SAMPLE_FORMAT}
-        </button>
-      ) : null}
-      {canImport && importPath ? (
-        <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept={IMPORT_ACCEPT_ATTR}
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) runImport(f);
-            }}
-          />
-          <button
-            className={secondaryBtnClass}
-            type="button"
-            disabled={importBusy}
-            onClick={() => fileRef.current?.click()}
-            title={acceptHint}
-          >
-            {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
-          </button>
-        </>
-      ) : null}
+      <ImportActionButton
+        canImport={Boolean(canImport && importPath)}
+        hasSample={Boolean(samplePath)}
+        onImport={runImport}
+        onSample={handleSample}
+        importBusy={importBusy}
+        sampleBusy={sampleBusy}
+        compact={compact}
+        title={acceptHint}
+      />
       {msg && !onError ? <span className="muted mono-sm">{msg}</span> : null}
     </div>
   );

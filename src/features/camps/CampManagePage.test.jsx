@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import CampsPage from './CampManagePage.jsx';
 import { CampWorkingStageProvider, useCampWorkingStage } from './CampWorkingStageContext.jsx';
 import { campApi } from './campOpsApi.js';
@@ -141,6 +141,49 @@ describe('CampManagePage', () => {
       const lastParams = campApi.list.mock.calls[campApi.list.mock.calls.length - 1]?.[0] || {};
       expect(lastParams.dateFrom).toBe('2026-09-01');
       expect(lastParams.dateTo).toBe('2026-09-28');
+    });
+  });
+
+  it('keeps a single Manage history entry so Back returns to Operations Dashboard', async () => {
+    const user = userEvent.setup();
+    const returnTo = '/dashboard?tab=drilldown&module=camps&from=2026-10-01&to=2026-10-31&preset=month';
+    const manage = `/camp-one/manage?stage=execution&status=planned&dateFrom=2026-10-01&dateTo=2026-10-31&returnTo=${encodeURIComponent(returnTo)}`;
+
+    function HistoryProbe() {
+      const navigate = useNavigate();
+      const location = useLocation();
+      return (
+        <>
+          <div data-testid="full-path">{`${location.pathname}${location.search}`}</div>
+          <button type="button" onClick={() => navigate(-1)}>Go back</button>
+        </>
+      );
+    }
+
+    render(
+      <MemoryRouter initialEntries={[returnTo, manage]}>
+        <CampWorkingStageProvider initialStage="execution">
+          <HistoryProbe />
+          <Routes>
+            <Route path="/dashboard" element={<div>Dashboard</div>} />
+            <Route path="/camp-one/manage" element={<CampsPage />} />
+          </Routes>
+        </CampWorkingStageProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Demo')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('full-path').textContent).toContain('/camp-one/manage');
+      expect(screen.getByTestId('full-path').textContent).toContain('returnTo=');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Go back' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('full-path').textContent).toContain('/dashboard');
+      expect(screen.getByTestId('full-path').textContent).toContain('tab=drilldown');
+      expect(screen.getByTestId('full-path').textContent).toContain('module=camps');
+      expect(screen.getByTestId('full-path').textContent).toContain('from=2026-10-01');
     });
   });
 });

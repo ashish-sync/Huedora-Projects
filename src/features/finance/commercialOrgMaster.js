@@ -43,6 +43,7 @@ export const ORG_MASTER_FIELD_GROUPS = [
       { key: 'registeredOffice', label: 'Registered address', type: 'textarea' },
       { key: 'email', label: 'Email', type: 'email', headerPick: true },
       { key: 'website', label: 'Website', type: 'text', headerPick: true },
+      { key: 'phone', label: 'Contact', type: 'text' },
       { key: 'primaryColor', label: 'Primary colour', type: 'color' },
       { key: 'secondaryColor', label: 'Secondary colour', type: 'color' },
     ],
@@ -228,19 +229,20 @@ function companyFromOrg(master, formCompany = {}) {
     registeredOffice: address,
     email: orgVal(master, 'email', formCompany?.email),
     website: orgVal(master, 'website', formCompany?.website),
+    phone: orgVal(master, 'phone', formCompany?.phone),
     gstin: orgVal(master, 'gstin', formCompany?.gstin),
     cin: orgVal(master, 'cin', formCompany?.cin),
     udyam: orgVal(master, 'udyam', formCompany?.udyam),
     headerDisplayKeys:
-      sanitizeHeaderDisplayKeys(master.headerDisplayKeys)
+      sanitizeHeaderDisplayKeys(master?.headerDisplayKeys)
       ?? sanitizeHeaderDisplayKeys(formCompany?.headerDisplayKeys)
       ?? [...DEFAULT_HEADER_DISPLAY_KEYS],
     primaryColor:
-      sanitizeBrandColor(master.primaryColor)
+      sanitizeBrandColor(master?.primaryColor)
       || sanitizeBrandColor(formCompany?.primaryColor)
       || DEFAULT_PRIMARY_COLOR,
     secondaryColor:
-      sanitizeBrandColor(master.secondaryColor)
+      sanitizeBrandColor(master?.secondaryColor)
       || sanitizeBrandColor(formCompany?.secondaryColor)
       || DEFAULT_SECONDARY_COLOR,
     state: orgVal(master, 'state', formCompany?.state),
@@ -380,6 +382,7 @@ export function emptyOrgMasterForm() {
     registeredOffice: '',
     email: '',
     website: '',
+    phone: '',
     accountHolder: '',
     bankName: '',
     accountNumber: '',
@@ -408,6 +411,7 @@ export function orgMasterToPayload(form) {
     registeredOffice: form.registeredOffice,
     email: form.email,
     website: form.website,
+    phone: form.phone,
     accountHolder: form.accountHolder,
     bankName: form.bankName,
     accountNumber: form.accountNumber,

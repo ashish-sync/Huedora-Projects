@@ -8,6 +8,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { formatDateRangeLabel } from '../../shared/dateFormat.js';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { getQuickDateRange } from '../camps/utils/dateRange.js';
+import { buildOpsReviewReturnTo, withOpsReviewReturnTo } from './opsReviewReturn.js';
 
 const LogisticsHubPage = lazy(() => import('../logistics/LogisticsHubPage.jsx'));
 const CampOperationsBoard = lazy(() => import('../camps/components/CampOperationsBoard.jsx'));
@@ -89,6 +90,32 @@ function detectPreset(from, to) {
   }
   if (!from && !to) return 'all';
   return 'custom';
+}
+
+function initialRangeFromSearch(searchParams) {
+  const from = searchParams.get('from') || '';
+  const to = searchParams.get('to') || '';
+  const preset = searchParams.get('preset') || '';
+  if (from || to) {
+    return { from, to, preset: preset || detectPreset(from, to) };
+  }
+  if (preset) {
+    const ranged = rangeForPreset(preset);
+    if (ranged) return { from: ranged.from, to: ranged.to, preset };
+    return { from: '', to: '', preset };
+  }
+  const month = rangeForPreset('month');
+  return { from: month.from, to: month.to, preset: 'month' };
+}
+
+function applyRangeToParams(params, nextFrom, nextTo, nextPreset) {
+  if (nextFrom) params.set('from', nextFrom);
+  else params.delete('from');
+  if (nextTo) params.set('to', nextTo);
+  else params.delete('to');
+  if (nextPreset) params.set('preset', nextPreset);
+  else params.delete('preset');
+  return params;
 }
 
 function breakdownEntries(summary = {}) {
@@ -274,9 +301,10 @@ export default function TrackingDashboardPage() {
 
   const [modules, setModules] = useState([]);
   const [moduleId, setModuleId] = useState(wantsCampReview ? 'camps' : '');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [preset, setPreset] = useState('month');
+  const bootRange = initialRangeFromSearch(searchParams);
+  const [from, setFrom] = useState(bootRange.from);
+  const [to, setTo] = useState(bootRange.to);
+  const [preset, setPreset] = useState(bootRange.preset);
 
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -301,11 +329,6 @@ export default function TrackingDashboardPage() {
   }, []);
 
   useEffect(() => {
-    const initial = rangeForPreset('month');
-    if (initial) {
-      setFrom(initial.from);
-      setTo(initial.to);
-    }
     loadOverview();
     api('/dashboards/modules')
       .then((r) => {
@@ -329,12 +352,19 @@ export default function TrackingDashboardPage() {
     setSubmitted(true);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
-      if (params.get('tab') === 'drilldown' && params.get('module') === 'camps') return prev;
+      const alreadyReview = params.get('tab') === 'drilldown' && params.get('module') === 'camps';
+      applyRangeToParams(params, from, to, preset);
+      if (alreadyReview
+        && (params.get('from') || '') === (from || '')
+        && (params.get('to') || '') === (to || '')
+        && (params.get('preset') || '') === (preset || '')) {
+        return prev;
+      }
       params.set('tab', 'drilldown');
       params.set('module', 'camps');
       return params;
     }, { replace: true });
-  }, [wantsCampReview, setSearchParams]);
+  }, [wantsCampReview, from, to, preset, setSearchParams]);
 
   const applyPreset = (id) => {
     setPreset(id);
@@ -350,6 +380,22 @@ export default function TrackingDashboardPage() {
     return formatDateRangeLabel(from, to).replace(' to ', ' → ');
   }, [from, to]);
 
+  useEffect(() => {
+    if (view !== 'drilldown') return;
+    setSearchParams((prev) => {
+      if (
+        (prev.get('from') || '') === (from || '')
+        && (prev.get('to') || '') === (to || '')
+        && (prev.get('preset') || '') === (preset || '')
+      ) {
+        return prev;
+      }
+      const params = new URLSearchParams(prev);
+      applyRangeToParams(params, from, to, preset);
+      return params;
+    }, { replace: true });
+  }, [view, from, to, preset, setSearchParams]);
+
   const setDashboardView = (next) => {
     setView(next);
     setSearchParams((prev) => {
@@ -357,6 +403,7 @@ export default function TrackingDashboardPage() {
       if (next === 'drilldown') {
         params.set('tab', 'drilldown');
         if (moduleId) params.set('module', moduleId);
+        applyRangeToParams(params, from, to, preset);
       } else {
         params.delete('tab');
         params.delete('module');
@@ -377,6 +424,7 @@ export default function TrackingDashboardPage() {
       params.set('tab', 'drilldown');
       if (next) params.set('module', next);
       else params.delete('module');
+      applyRangeToParams(params, from, to, preset);
       return params;
     }, { replace: true });
   };
@@ -394,6 +442,7 @@ export default function TrackingDashboardPage() {
       const params = new URLSearchParams(prev);
       params.set('tab', 'drilldown');
       params.set('module', moduleId);
+      applyRangeToParams(params, from, to, preset);
       return params;
     }, { replace: true });
     if (EMBEDDED_REVIEW.has(moduleId)) {
@@ -443,7 +492,27 @@ export default function TrackingDashboardPage() {
     setData(null);
     setSubmitted(false);
     setError('');
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      applyRangeToParams(params, '', '', 'all');
+      params.delete('client');
+      params.delete('campaign');
+      params.delete('campaignType');
+      params.delete('assignedUser');
+      return params;
+    }, { replace: true });
   };
+
+  const campReviewReturnTo = buildOpsReviewReturnTo({
+    from,
+    to,
+    preset,
+    client: searchParams.get('client') || '',
+    campaign: searchParams.get('campaign') || '',
+    campaignType: searchParams.get('campaignType') || '',
+    assignedUser: searchParams.get('assignedUser') || '',
+  });
+  const openCampOneHref = `/camp-one/manage?${withOpsReviewReturnTo(new URLSearchParams(), campReviewReturnTo)}`;
 
   const summaryBlocks = breakdownEntries(data?.summary);
 
@@ -510,7 +579,7 @@ export default function TrackingDashboardPage() {
             </Link>
           ) : null}
           {view === 'drilldown' && submitted && moduleId === 'camps' ? (
-            <Link className="btn secondary" to="/camp-one/manage">
+            <Link className="btn secondary" to={openCampOneHref} state={{ returnTo: campReviewReturnTo }}>
               Open Camp One
             </Link>
           ) : null}
@@ -929,7 +998,12 @@ export default function TrackingDashboardPage() {
       {submitted && moduleId === 'camps' && canSeeCampOps ? (
         <div className="module-review-logistics module-review-camps">
           <Suspense fallback={<p className="muted">Loading Camp One board…</p>}>
-            <CampOperationsBoard embedded initialFrom={from} initialTo={to} />
+            <CampOperationsBoard
+              embedded
+              initialFrom={from}
+              initialTo={to}
+              reviewPreset={preset}
+            />
           </Suspense>
         </div>
       ) : null}

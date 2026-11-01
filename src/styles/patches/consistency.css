@@ -558,7 +558,7 @@ html[data-theme='dark'] .camp-ops-root .dashboard-filter-panel {
   border-color: var(--color-border-default);
 }
 
-/* ── Excel toolbar actions (Download / Sample format / Import) ─ */
+/* ── Excel toolbar actions (Download / Import, sample inside Import) ─ */
 
 .inv-header-actions,
 .master-excel-toolbar {
@@ -566,6 +566,63 @@ html[data-theme='dark'] .camp-ops-root .dashboard-filter-panel {
   flex-wrap: wrap;
   gap: var(--stack-sm);
   align-items: center;
+  overflow: visible;
+}
+
+.import-action {
+  position: relative;
+  display: inline-flex;
+}
+
+.import-action__caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 0.4rem;
+  border-left: 0.28rem solid transparent;
+  border-right: 0.28rem solid transparent;
+  border-top: 0.32rem solid currentColor;
+  opacity: 0.75;
+}
+
+.import-action__menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 40;
+  min-width: 11.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border-default, var(--line));
+  border-radius: var(--control-radius, var(--radius-sm));
+  background: var(--color-bg-elevated, var(--bg-elevated));
+  box-shadow: 0 10px 24px rgb(15 23 42 / 12%);
+}
+
+.import-action__menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: calc(var(--control-radius, var(--radius-sm)) - 2px);
+  background: transparent;
+  color: var(--color-text-primary, var(--ink));
+  font: inherit;
+  font-size: var(--text-body-sm-size, 0.82rem);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-action__menu button:hover {
+  background: var(--color-bg-hover, var(--brand-soft));
+  color: var(--color-text-primary, var(--ink));
+}
+
+.master-filter-shell,
+.pm-filter-shell,
+.master-filter-actions,
+.pm-filter-actions {
+  overflow: visible;
 }
 
 .inv-header-actions .btn,

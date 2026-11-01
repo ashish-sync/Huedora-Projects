@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { readOpsReviewReturnTo, withOpsReviewReturnTo } from '../dashboards/opsReviewReturn.js';
 import {
   CampsFilters,
   REQUEST_STATUS_OPTIONS,
@@ -84,6 +85,7 @@ export default function CampsPage() {
     canEditCampRecord,
   } = useAuth();
   const { workingStage, workingStageMeta, setWorkingStage } = useCampWorkingStage();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [camps, setCamps] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -230,9 +232,13 @@ export default function CampsPage() {
       }));
     }
 
+    const urlStage = searchParams.get('stage') || searchParams.get('lifecycleStage') || '';
+    const incomingReturnTo = readOpsReviewReturnTo(searchParams, location.state);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      if (workingStage) next.set('stage', workingStage);
+      const stageToWrite = urlStage || workingStage;
+      if (stageToWrite) next.set('stage', stageToWrite);
+      withOpsReviewReturnTo(next, incomingReturnTo);
       if (nextDateFrom) next.set('dateFrom', nextDateFrom);
       else next.delete('dateFrom');
       if (nextDateTo) next.set('dateTo', nextDateTo);
@@ -248,7 +254,7 @@ export default function CampsPage() {
       if (nextAssignedUser) next.set('assignedUser', nextAssignedUser);
       else next.delete('assignedUser');
       const stageStatus = urlStatus
-        || stored.statusByStage[workingStage]
+        || stored.statusByStage[urlStage || workingStage]
         || '';
       if (stageStatus) next.set('status', stageStatus);
       else next.delete('status');
@@ -588,7 +594,7 @@ export default function CampsPage() {
       if (stageStatus) next.set('status', stageStatus);
       else next.delete('status');
       return next;
-    });
+    }, { replace: true });
   }, [workingStage, setSearchParams]);
 
   useEffect(() => {
@@ -634,6 +640,8 @@ export default function CampsPage() {
     if (nextCampType) params.set('campaignType', nextCampType);
     if (nextAssignedUser) params.set('assignedUser', nextAssignedUser);
     if (nextSearch) params.set('q', nextSearch);
+    const returnTo = searchParams.get('returnTo');
+    if (returnTo) params.set('returnTo', returnTo);
     return params;
   }
 
@@ -647,7 +655,7 @@ export default function CampsPage() {
   }
 
   function updateFilters(overrides = {}) {
-    setSearchParams(buildFilterParams(overrides));
+    setSearchParams(buildFilterParams(overrides), { replace: true });
   }
 
   function handleStatusChange(value) {
@@ -672,7 +680,14 @@ export default function CampsPage() {
     setAssignedUserFilter('');
     setSearch('');
     clearStoredManageFilters();
-    setSearchParams(workingStage ? { stage: workingStage } : {});
+    setSearchParams((prev) => {
+      const next = workingStage
+        ? new URLSearchParams({ stage: workingStage })
+        : new URLSearchParams();
+      const returnTo = prev.get('returnTo');
+      if (returnTo) next.set('returnTo', returnTo);
+      return next;
+    }, { replace: true });
   }
 
   function handleFilterChange(value) {

@@ -26,7 +26,7 @@ export default function MasterDataPage() {
       return 'Products — shared catalog for assets, inventory, and movements.';
     }
     if (scope === 'movement' || scope === 'logistics') {
-      return 'Expense Master — categories and sub-categories for Finance One Requests.';
+      return 'Vendor Master and Expense Master for Finance One documents and requests.';
     }
     if (scope === 'document') {
       return 'Contact Directory, Document Templates, Signatures, and Picklist approvals.';

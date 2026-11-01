@@ -10,7 +10,7 @@ import {
   patchLineGstRate,
   resolveTaxMode,
 } from '../invoiceGenerator/invoiceCalculations.js';
-import VendorContactPicker from '../builder/VendorContactPicker.jsx';
+import VendorMasterPicker from '../builder/VendorMasterPicker.jsx';
 import { MAX_PO_LINE_ITEMS } from './purchaseOrderStorage.js';
 
 function Section({ title, badge, defaultOpen = false, children }) {
@@ -45,8 +45,8 @@ export default function PurchaseOrderBuilderPanel({
   updateLine,
   addLine,
   removeLine,
-  applyVendorContact,
-  clearVendorContact,
+  applyVendorMaster,
+  clearVendorMaster,
   issued = false,
 }) {
   const taxMode = resolveTaxMode(form.vendor?.stateCode, form.company?.stateCode);
@@ -124,11 +124,12 @@ export default function PurchaseOrderBuilderPanel({
       </Section>
 
       <Section title="Vendor" defaultOpen badge={form.vendor?.name ? 1 : 0}>
-        {applyVendorContact ? (
-          <VendorContactPicker
-            value={form.contactId || ''}
-            onPick={(_row, patch) => applyVendorContact(patch)}
-            onClear={() => clearVendorContact?.()}
+        {applyVendorMaster ? (
+          <VendorMasterPicker
+            value={form.vendorMasterId || ''}
+            onPick={(_row, patch) => applyVendorMaster(patch)}
+            onClear={() => clearVendorMaster?.()}
+            disabled={issued}
           />
         ) : null}
         <div className="ib-grid">

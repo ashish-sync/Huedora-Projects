@@ -4,7 +4,7 @@ import { resolveCampSlot } from '../constants/campLifecycle';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
 import { isValidPhone } from '../../../shared/validation.js';
 import { getDoctorNameFormatError } from '../../../shared/textFormat.js';
-import { getHistoricalCampDateErrors } from './campDatePolicy.js';
+import { getFutureRequestDateError, getHistoricalCampDateErrors } from './campDatePolicy.js';
 import { CONTACT_PERSON_LEVEL_OPTIONS } from '../constants/campLifecycle.js';
 import { normalizeContactPersons } from './campContactPersons.js';
 
@@ -82,6 +82,9 @@ export function validateRequestStageForm(form = {}, options = {}) {
       errors.push(`${label} number must be exactly 10 digits`);
     }
   });
+
+  const futureRequestDateError = getFutureRequestDateError(form.requestDate);
+  if (futureRequestDateError) errors.push(futureRequestDateError);
 
   errors.push(...getHistoricalCampDateErrors(
     { campDate: form.campDate, requestDate: form.requestDate },

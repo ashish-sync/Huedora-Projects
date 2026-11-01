@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PhoneField } from '../../components/ui/PhoneField.jsx';
 import { FileDrop, readFileAsDataUrl } from './documentGenerator/formUi.jsx';
 import { numberingPreviewForCode } from './documentNumbering.js';
 import {
@@ -249,16 +250,16 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
             </div>
             <div className="org-master-identity-fields">
               <div className="org-master-form-grid org-master-form-grid--2">
-                <Field label="Organisation display name" className="org-master-form-span-2">
+                <Field label="Display name">
                   <input
                     className="org-master-input"
                     value={form.name || ''}
                     disabled={disabled}
                     onChange={(e) => update('name', e.target.value)}
-                    placeholder="e.g. Tylo Care Private Limited"
+                    placeholder="e.g. Tylo Care"
                   />
                 </Field>
-                <Field label="Legal name" className="org-master-form-span-2">
+                <Field label="Legal name">
                   <input
                     className="org-master-input"
                     value={form.legalName || ''}
@@ -267,7 +268,7 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                     placeholder="Tylo Care Private Limited"
                   />
                 </Field>
-                <Field label="Tagline" className="org-master-form-span-2">
+                <Field label="Tagline">
                   <input
                     className="org-master-input"
                     value={form.brandLine || ''}
@@ -293,6 +294,18 @@ export function CommercialOrgMasterForm({ form, setForm, disabled }) {
                     disabled={disabled}
                     onChange={(e) => update('website', e.target.value)}
                     placeholder="tylocare.com"
+                  />
+                </Field>
+                <Field label="Contact">
+                  <PhoneField
+                    id="org-master-phone"
+                    hideLabel
+                    aria-label="Contact"
+                    label="Contact"
+                    value={form.phone || ''}
+                    disabled={disabled}
+                    inputClassName="org-master-input"
+                    onChange={(phone) => update('phone', phone)}
                   />
                 </Field>
                 <Field label="Registered address" className="org-master-form-span-2">

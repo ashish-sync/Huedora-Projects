@@ -15,6 +15,7 @@ import {
   formatRowImportError,
 } from '../../shared/importErrors.js';
 import { IMPORT_ACCEPT_ATTR } from '../../shared/importFilePolicy.js';
+import ImportActionButton from '../../components/ui/ImportActionButton.jsx';
 import {
   OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -77,7 +78,6 @@ export default function DevicesPage() {
   const [deletingId, setDeletingId] = useState('');
   const [statusBusyId, setStatusBusyId] = useState('');
   const [exportBusy, setExportBusy] = useState(false);
-  const fileRef = useRef(null);
   const formRef = useRef(null);
 
   const load = () => {
@@ -249,7 +249,6 @@ export default function DevicesPage() {
     const pre = validateImportFileClient(file);
     if (pre) {
       setError(pre);
-      if (fileRef.current) fileRef.current.value = '';
       return;
     }
     setImportBusy(true);
@@ -275,7 +274,6 @@ export default function DevicesPage() {
       setError(getErrorMessage(err, 'Import failed. Use a .csv or Excel (.xlsx / .xls / .xlsb) file matching the sample format.'));
     } finally {
       setImportBusy(false);
-      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -302,27 +300,14 @@ export default function DevicesPage() {
           </button>
           {canWrite ? (
             <>
-              <button className="btn secondary" type="button" onClick={downloadSample}>
-                {ACTION.SAMPLE_FORMAT}
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
+              <ImportActionButton
+                canImport
+                hasSample
+                onImport={runImport}
+                onSample={downloadSample}
+                importBusy={importBusy}
                 accept={IMPORT_ACCEPT_ATTR}
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) runImport(f);
-                }}
               />
-              <button
-                className="btn secondary"
-                type="button"
-                disabled={importBusy}
-                onClick={() => fileRef.current?.click()}
-              >
-                {importBusy ? ACTION.IMPORTING : ACTION.IMPORT}
-              </button>
               <button className="btn" type="button" onClick={openCreate}>
                 + Add asset
               </button>

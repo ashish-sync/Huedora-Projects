@@ -13,7 +13,10 @@ export const DOCTOR_SPECIALTY_OPTIONS = [
 ];
 
 export {
-  daysFromToday,
   isRequestDateFarFromToday,
+  isRequestDateNeedingApproval,
+  isCampDateNeedingApproval,
   isHistoricalCampDate,
+  isFutureRequestDate,
+  localTodayIso,
 } from '../utils/campDatePolicy.js';

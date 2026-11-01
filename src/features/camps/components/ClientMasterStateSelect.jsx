@@ -4,11 +4,13 @@ import { fetchGeoStates } from '../../../shared/geoApi.js';
 import { gstStateCodeForName } from '../utils/indiaGstStateCodes.js';
 
 export function ClientMasterStateSelect({
+  id,
   stateName = '',
   stateCode = '',
   onChange,
   disabled = false,
   error = '',
+  showStateCode = false,
 }) {
   const [states, setStates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,18 +33,20 @@ export function ClientMasterStateSelect({
     };
   }, []);
 
-  const selectedId = states.find(
-    (row) => String(row.name).toLowerCase() === String(stateName || '').trim().toLowerCase(),
-  )?._id || '';
+  const paddedCode = String(stateCode || '').replace(/\D+/g, '').padStart(2, '0');
+  const selectedId =
+    states.find((row) => String(row.name).toLowerCase() === String(stateName || '').trim().toLowerCase())
+      ?._id ||
+    (paddedCode && paddedCode !== '00'
+      ? states.find((row) => gstStateCodeForName(row.name) === paddedCode)?._id
+      : '') ||
+    '';
 
   return (
     <>
       <AdaptiveSelect
-        value={selectedId}
-        disabled={disabled || loading}
-        threshold={8}
-        onChange={(e) => {
-          const id = e.target.value;
+        id={id}
+        aria-label="State"
           const row = states.find((item) => String(item._id) === String(id));
           if (!row) {
             onChange?.({ stateName: '', stateCode: '' });

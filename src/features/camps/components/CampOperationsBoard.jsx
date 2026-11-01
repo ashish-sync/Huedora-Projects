@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { DateRangeFilters } from './DateRangeFilters';
 import { dashboardApi, campApi, clientMasterApi } from '../campOpsApi.js';
-import { CAMP_PATH } from '../../../shared/moduleRoutes.js';
+import { CAMP_PATH, MODULE_PATH } from '../../../shared/moduleRoutes.js';
+import { buildOpsReviewReturnTo, withOpsReviewReturnTo } from '../../dashboards/opsReviewReturn.js';
 import { ACTION, MODULE } from '../../../shared/labels.js';
 import {
   clientsForOpsBoardScope,
@@ -30,6 +31,7 @@ function buildManagePath({
   campaignType = '',
   campaign = '',
   assignedUser = '',
+  returnTo = '',
 } = {}) {
   const params = new URLSearchParams();
   if (stageId) params.set('stage', stageId);
@@ -40,6 +42,7 @@ function buildManagePath({
   if (campaignType) params.set('campaignType', campaignType);
   if (campaign) params.set('campaign', campaign);
   if (assignedUser) params.set('assignedUser', assignedUser);
+  withOpsReviewReturnTo(params, returnTo);
   const query = params.toString();
   return `${CAMP_PATH.MANAGE}${query ? `?${query}` : ''}`;
 }
@@ -55,7 +58,11 @@ export default function CampOperationsBoard({
   embedded = false,
   initialFrom = '',
   initialTo = '',
+  reviewPreset = '',
 } = {}) {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const persistBoardFilters = embedded && location.pathname === MODULE_PATH.DASHBOARD;
   const [board, setBoard] = useState(null);
   const [error, setError] = useState('');
   const [dateFrom, setDateFrom] = useState(initialFrom || '');
@@ -67,10 +74,18 @@ export default function CampOperationsBoard({
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState('');
   const [exportingKey, setExportingKey] = useState('');
-  const [clientId, setClientId] = useState('');
-  const [campaignType, setCampaignType] = useState('');
-  const [campaignName, setCampaignName] = useState('');
-  const [assignedUserEmail, setAssignedUserEmail] = useState('');
+  const [clientId, setClientId] = useState(() => (
+    persistBoardFilters ? (searchParams.get('client') || '') : ''
+  ));
+  const [campaignType, setCampaignType] = useState(() => (
+    persistBoardFilters ? (searchParams.get('campaignType') || '') : ''
+  ));
+  const [campaignName, setCampaignName] = useState(() => (
+    persistBoardFilters ? (searchParams.get('campaign') || '') : ''
+  ));
+  const [assignedUserEmail, setAssignedUserEmail] = useState(() => (
+    persistBoardFilters ? (searchParams.get('assignedUser') || '') : ''
+  ));
   const [filterCatalog, setFilterCatalog] = useState(() => parseOpsBoardFilterCatalog());
   const [catalogLoading, setCatalogLoading] = useState(true);
   const reviewSlot = useOpsReviewSlotState();
@@ -125,6 +140,28 @@ export default function CampOperationsBoard({
     setDateTo(next.dateTo);
     setAppliedRange(next);
   }, [initialFrom, initialTo]);
+
+  useEffect(() => {
+    if (!persistBoardFilters) return;
+    setSearchParams((prev) => {
+      const same =
+        (prev.get('client') || '') === (clientId || '')
+        && (prev.get('campaign') || '') === (campaignName || '')
+        && (prev.get('campaignType') || '') === (campaignType || '')
+        && (prev.get('assignedUser') || '') === (assignedUserEmail || '');
+      if (same) return prev;
+      const next = new URLSearchParams(prev);
+      if (clientId) next.set('client', clientId);
+      else next.delete('client');
+      if (campaignName) next.set('campaign', campaignName);
+      else next.delete('campaign');
+      if (campaignType) next.set('campaignType', campaignType);
+      else next.delete('campaignType');
+      if (assignedUserEmail) next.set('assignedUser', assignedUserEmail);
+      else next.delete('assignedUser');
+      return next;
+    }, { replace: true });
+  }, [persistBoardFilters, clientId, campaignName, campaignType, assignedUserEmail, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,6 +220,18 @@ export default function CampOperationsBoard({
     );
   }
 
+  const returnTo = embedded
+    ? buildOpsReviewReturnTo({
+        from: appliedRange.dateFrom || initialFrom,
+        to: appliedRange.dateTo || initialTo,
+        preset: reviewPreset,
+        client: clientId,
+        campaign: campaignName,
+        campaignType,
+        assignedUser: assignedUserEmail,
+      })
+    : '';
+
   const manageQuery = {
     dateFrom: appliedRange.dateFrom,
     dateTo: appliedRange.dateTo,
@@ -190,7 +239,10 @@ export default function CampOperationsBoard({
     campaignType,
     campaign: campaignName,
     assignedUser: assignedUserEmail,
+    returnTo,
   };
+
+  const manageLinkState = returnTo ? { returnTo } : undefined;
 
   function onMethodChange(value) {
     setCampaignName(value);
@@ -306,6 +358,7 @@ export default function CampOperationsBoard({
             <Link
               className="ops-board-hero__total"
               to={buildManagePath(manageQuery)}
+              state={manageLinkState}
               title="Open all camps in Manage"
             >
               <span className="ops-board-hero__label">Total Camps</span>
@@ -339,6 +392,7 @@ export default function CampOperationsBoard({
                   <Link
                     className="ops-board-card__stage"
                     to={buildManagePath({ stageId: stage.id, ...manageQuery })}
+                    state={manageLinkState}
                     title={`Open ${stage.label} camps in Manage`}
                   >
                     <span>{stage.label}</span>
@@ -368,6 +422,7 @@ export default function CampOperationsBoard({
                             statusValue: row.value,
                             ...manageQuery,
                           })}
+                          state={manageLinkState}
                           title={`Open ${row.label} camps in Manage`}
                         >
                           <span className="ops-board-status__label">{row.label}</span>
@@ -401,6 +456,7 @@ export default function CampOperationsBoard({
                       stageId: stage.id,
                       ...manageQuery,
                     })}
+                    state={manageLinkState}
                   >
                     Open in Manage →
                   </Link>

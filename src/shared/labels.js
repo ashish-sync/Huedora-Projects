@@ -126,6 +126,7 @@ export const ACTION = {
   DOWNLOADING: 'Downloading…',
   SAMPLE_FORMAT: 'Sample format',
   IMPORT: 'Import',
+  IMPORT_FILE: 'Import file',
   IMPORTING: 'Importing…',
   EXPORTING: 'Exporting…',
 };

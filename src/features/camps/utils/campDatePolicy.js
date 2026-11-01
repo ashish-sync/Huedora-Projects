@@ -1,4 +1,4 @@
-/** Dates more than this many days before today require Team Leader or Admin. */
+/** Dates more than this many days before today need Reporting Manager approval. */
 export const CAMP_HISTORICAL_DATE_THRESHOLD_DAYS = 2;
 
 const ADMIN_DESIGNATION_KEYS = new Set(['admin', 'administrator']);
@@ -64,6 +64,43 @@ export function isRequestDateFarFromToday(dateValue) {
   return Math.abs(daysFromToday(dateValue)) > CAMP_HISTORICAL_DATE_THRESHOLD_DAYS;
 }
 
+export const FUTURE_REQUEST_DATE_ERROR = 'Request date cannot be in the future';
+export const REQUEST_DATE_APPROVAL_REASON = 'request_date_historical';
+export const CAMP_DATE_APPROVAL_REASON = 'camp_date_historical';
+
+export function isFutureRequestDate(dateValue) {
+  if (!dateValue) return false;
+  return daysFromToday(dateValue) > 0;
+}
+
+export function getFutureRequestDateError(dateValue) {
+  return isFutureRequestDate(dateValue) ? FUTURE_REQUEST_DATE_ERROR : '';
+}
+
+export function localTodayIso(now = new Date()) {
+  const date = new Date(now);
+  date.setHours(0, 0, 0, 0);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function isRequestDateNeedingApproval(dateValue) {
+  return isHistoricalCampDate(dateValue);
+}
+
+export function isCampDateNeedingApproval(dateValue) {
+  return isHistoricalCampDate(dateValue);
+}
+
+export function campCreateApprovalReasons({ campDate, requestDate } = {}) {
+  const reasons = [];
+  if (isHistoricalCampDate(requestDate)) reasons.push(REQUEST_DATE_APPROVAL_REASON);
+  if (isHistoricalCampDate(campDate)) reasons.push(CAMP_DATE_APPROVAL_REASON);
+  return reasons;
+}
+
 export function canSetHistoricalCampDates(user) {
   if (!user) return false;
   return isTeamLeaderDesignation(user.designation) || isAdminUser(user);
@@ -79,31 +116,6 @@ export function minAllowedCampDateIso() {
   return `${year}-${month}-${day}`;
 }
 
-export function getHistoricalCampDateErrors(
-  { campDate, requestDate } = {},
-  { canSetHistorical = false, existing = null } = {},
-) {
-  if (canSetHistorical) return [];
-
-  const errors = [];
-  const checks = [
-    ['campDate', 'Camp date', campDate],
-    ['requestDate', 'Request date', requestDate],
-  ];
-
-  for (const [key, label, value] of checks) {
-    if (!value) continue;
-    const normalized = String(value).slice(0, 10);
-    if (!normalized || !isHistoricalCampDate(normalized)) continue;
-
-    const existingNormalized = existing?.[key] ? String(existing[key]).slice(0, 10) : '';
-    if (existing && normalized === existingNormalized) continue;
-
-    errors.push(
-      `${label} is more than ${CAMP_HISTORICAL_DATE_THRESHOLD_DAYS} days before today `
-        + 'and can only be set by Team Leaders or Admins',
-    );
-  }
-
-  return errors;
+export function getHistoricalCampDateErrors() {
+  return [];
 }

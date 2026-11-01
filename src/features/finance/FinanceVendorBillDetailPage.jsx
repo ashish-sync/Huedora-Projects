@@ -4,7 +4,6 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { DateInput } from '../../components/ui/DateInput.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { api, apiUrl } from '../../shared/api.js';
-import { fetchContactsList } from '../../shared/contactsApi.js';
 import { formatDate } from '../../shared/dateFormat.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { NAV } from '../../shared/labels.js';
@@ -12,7 +11,7 @@ import {
   APPROVAL_AUTHORITY_LABEL,
   canActorApproveSubject,
 } from '../../shared/approvalAuthority.js';
-import { isVendorContact } from '../agreements/contactPicklists.js';
+import VendorMasterPicker from './builder/VendorMasterPicker.jsx';
 import {
   VENDOR_BILL_EDITABLE_STATUSES,
   VENDOR_BILL_PAYABLE_STATUSES,
@@ -27,6 +26,7 @@ const EMPTY_FORM = {
   billNumber: '',
   vendorName: '',
   contactId: '',
+  vendorMasterId: '',
   billDate: '',
   dueDate: '',
   amount: '',
@@ -81,6 +81,7 @@ function billToForm(bill) {
     billNumber: bill.billNumber || bill.invoiceNumber || '',
     vendorName: bill.vendorName || '',
     contactId: bill.contactId ? String(bill.contactId) : '',
+    vendorMasterId: bill.vendorMasterId ? String(bill.vendorMasterId) : '',
     billDate,
     dueDate: bill.dueDate || addDaysIso(billDate, 30),
     amount: toMoneyInput(bill.amount),
@@ -104,7 +105,6 @@ export default function FinanceVendorBillDetailPage() {
 
   const [bill, setBill] = useState(null);
   const [form, setForm] = useState(() => billToForm(null));
-  const [vendorContacts, setVendorContacts] = useState([]);
   const [expenseMaster, setExpenseMaster] = useState({
     expenseCategories: [],
     expenseSubCategories: [],
@@ -194,9 +194,6 @@ export default function FinanceVendorBillDetailPage() {
   }, [loadBill]);
 
   useEffect(() => {
-    fetchContactsList({ limit: 500, contactCategory: 'Vendor' })
-      .then((rows) => setVendorContacts(rows.filter((c) => isVendorContact(c))))
-      .catch(() => setVendorContacts([]));
     api('/logistics/expense-master')
       .then((r) =>
         setExpenseMaster({
@@ -207,12 +204,20 @@ export default function FinanceVendorBillDetailPage() {
       .catch(() => setExpenseMaster({ expenseCategories: [], expenseSubCategories: [] }));
   }, []);
 
-  function pickVendor(contactId) {
-    const contact = vendorContacts.find((row) => String(row._id) === String(contactId));
+  function pickVendor(_row, patch) {
     setForm((prev) => ({
       ...prev,
-      contactId,
-      vendorName: contact?.name || prev.vendorName,
+      vendorMasterId: patch?.vendorMasterId || '',
+      contactId: patch?.contactId || '',
+      vendorName: patch?.vendorName || prev.vendorName,
+    }));
+  }
+
+  function clearVendor() {
+    setForm((prev) => ({
+      ...prev,
+      vendorMasterId: '',
+      contactId: '',
     }));
   }
 
@@ -275,6 +280,7 @@ export default function FinanceVendorBillDetailPage() {
       billNumber: form.billNumber.trim(),
       vendorName: form.vendorName.trim(),
       contactId: form.contactId || null,
+      vendorMasterId: form.vendorMasterId || null,
       billDate: form.billDate || todayIso(),
       dueDate: form.dueDate || '',
       amount: computeTaxableAmount(form.totalAmount, form.taxAmount),
@@ -483,23 +489,13 @@ export default function FinanceVendorBillDetailPage() {
 
           <div className="form-grid finance-vendor-bill-form">
           <div className="field">
-            <label>Vendor *</label>
-            <AdaptiveSelect
-              required
-              threshold={1}
+            <label>Vendor Master *</label>
+            <VendorMasterPicker
+              value={form.vendorMasterId}
+              onPick={pickVendor}
+              onClear={clearVendor}
               disabled={!editable || !canWrite}
-              placeholder="Search vendor…"
-              value={form.contactId}
-              onChange={(e) => pickVendor(e.target.value)}
-            >
-              <option value="">Select from Contact Directory (Vendor)</option>
-              {vendorContacts.map((contact) => (
-                <option key={contact._id} value={contact._id}>
-                  {contact.name || 'Unnamed'}
-                  {contact.city ? ` · ${contact.city}` : ''}
-                </option>
-              ))}
-            </AdaptiveSelect>
+            />
           </div>
           <div className="field">
             <label>Vendor name *</label>

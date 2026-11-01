@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { CampManageHeaderActions } from './components/CampManageHeaderActions.jsx';
 import { CampWorkingStageSelect } from './components/CampWorkingStageSelect.jsx';
 import { CampWorkingStageProvider, useCampWorkingStage } from './CampWorkingStageContext.jsx';
@@ -8,6 +8,7 @@ import PageShell, { Breadcrumbs } from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
 import AppErrorBoundary from '../../components/AppErrorBoundary.jsx';
 import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
+import { readOpsReviewReturnTo } from '../dashboards/opsReviewReturn.js';
 import { useSuppressBrowserAutofill } from '../../shared/suppressBrowserAutofill.js';
 import './campOps.css';
 import './campOps.theme.css';
@@ -62,7 +63,9 @@ function CampOpsLayoutBody({
       >
         <header className="camp-ops-strip">
           <div className="camp-ops-strip__main">
-            <Breadcrumbs items={breadcrumbs} />
+            <div className="camp-ops-strip__nav">
+              <Breadcrumbs items={breadcrumbs} />
+            </div>
             <div className="camp-ops-strip__headline">
               <div className="camp-ops-strip__title-block">
                 <div className="camp-ops-strip__title-row">
@@ -102,11 +105,18 @@ function CampOpsLayoutBody({
 
 export default function CampOpsLayout() {
   const { hasPermission } = useCampOpsAuth();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
+  const [searchParams] = useSearchParams();
+  const returnTo = readOpsReviewReturnTo(searchParams, location.state);
+  const initialStage = searchParams.get('stage') || '';
   const meta = getPageMeta(pathname);
   const isCampsList = isCampsListRoute(pathname);
   const showCampToolbar = isCampsList;
   const showStageSelect = !isCreateCampsRoute(pathname);
+  const manageListTo = returnTo
+    ? `/camp-one/manage?returnTo=${encodeURIComponent(returnTo)}`
+    : '/camp-one/manage';
 
   const allowed =
     hasPermission('camps:read')
@@ -117,15 +127,20 @@ export default function CampOpsLayout() {
   const breadcrumbs = useMemo(() => {
     const items = [
       { to: '/', label: MODULE.HOME },
+    ];
+    if (returnTo) {
+      items.push({ to: returnTo, label: MODULE.DASHBOARD });
+    }
+    items.push(
       pathname === '/camp-one/manage'
         ? { label: MODULE.CAMP_MANAGEMENT }
-        : { to: '/camp-one/manage', label: MODULE.CAMP_MANAGEMENT },
-    ];
+        : { to: manageListTo, label: MODULE.CAMP_MANAGEMENT },
+    );
     if (pathname !== '/camp-one/manage' && meta.title) {
       items.push({ label: meta.title });
     }
     return items;
-  }, [pathname, meta.title]);
+  }, [pathname, meta.title, returnTo, manageListTo]);
 
   const navItems = useMemo(() => {
     const items = [
@@ -156,7 +171,7 @@ export default function CampOpsLayout() {
   }
 
   return (
-    <CampWorkingStageProvider>
+    <CampWorkingStageProvider initialStage={initialStage}>
       <CampOpsLayoutBody
         breadcrumbs={breadcrumbs}
         meta={meta}

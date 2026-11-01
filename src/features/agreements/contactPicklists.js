@@ -2,6 +2,14 @@
 
 export const CONTACT_CATEGORIES = ['Resource', 'Client', 'Vendor', 'Healthcare Worker'];
 
+/** New contacts — Vendor Master is the single create path for finance vendors. */
+export const DIRECTORY_CREATE_CATEGORIES = CONTACT_CATEGORIES.filter((c) => c !== 'Vendor');
+
+export function directoryCategoryChoices(currentCategory = '') {
+  if (String(currentCategory || '').trim() === 'Vendor') return CONTACT_CATEGORIES;
+  return DIRECTORY_CREATE_CATEGORIES;
+}
+
 export const RESOURCE_TYPES = [
   'Full-Time',
   'Contractual',

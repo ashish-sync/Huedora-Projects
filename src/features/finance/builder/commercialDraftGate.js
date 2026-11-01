@@ -204,6 +204,7 @@ function countPurchaseOrderEntries(form) {
     po.vendorQuoteDate,
     po.projectCostCentre,
     form?.contactId,
+    form?.vendorMasterId,
     special.deliverySchedule,
     special.warranty,
     special.replacementPolicy,

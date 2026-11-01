@@ -12,6 +12,12 @@
     "lint:camps": "eslint src/features/camps",
     "test": "vitest run",
     "test:camps": "vitest run src/features/camps",
+    "check:integrity": "node scripts/check-source-file-integrity.mjs",
+    "backup:protected": "node scripts/backup-protected-sources.mjs",
+    "watch:protected": "node scripts/watch-protected-sources.mjs",
+    "restore:protected": "node scripts/restore-protected-source.mjs",
+    "simulate:integrity": "node scripts/simulate-source-integrity-failures.mjs",
+    "hooks:install": "node scripts/install-git-hooks.mjs",
     "verify": "npm run lint && npm run test",
     "verify:camps": "npm run lint:actions && npm run test:camps",
     "preview": "vite preview"

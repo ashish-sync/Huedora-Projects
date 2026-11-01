@@ -38,8 +38,13 @@ import {
 import { financialWorkflowStatus } from '../constants/campWorkflowStatuses.js';
 import { ACTION } from '../../../shared/labels.js';
 import { validateRequestStageForm } from '../utils/validateRequestStage';
-import { DOCTOR_SPECIALTY_OPTIONS, isRequestDateFarFromToday, isHistoricalCampDate } from '../constants/doctorSpecialty';
-import { minAllowedCampDateIso } from '../utils/campDatePolicy';
+import {
+  DOCTOR_SPECIALTY_OPTIONS,
+  isCampDateNeedingApproval,
+  isFutureRequestDate,
+  isRequestDateNeedingApproval,
+  localTodayIso,
+} from '../constants/doctorSpecialty';
 import { computeDurationHours } from '../utils/campSchedule';
 import { CampAssignmentStage } from './CampAssignmentStage';
 import CampConsumablesUsed from './CampConsumablesUsed.jsx';
@@ -210,7 +215,7 @@ export function CampLifecycleForm({
   showFinanceSubmit = false,
   submitFinanceBusy = false,
   financialActionBusy = false,
-  canSetHistoricalCampDates = false,
+  canSetHistoricalCampDates: _canSetHistoricalCampDates = false,
   isAdmin = false,
   requestOnly = false,
   lockProgramFields = false,
@@ -297,11 +302,10 @@ export function CampLifecycleForm({
     updateFields,
   ]);
   const { options: specialtyOptions } = usePicklistOptions('camp.doctorSpecialty', DOCTOR_SPECIALTY_OPTIONS);
-  const requestDateWarning = isRequestDateFarFromToday(form.requestDate)
-    && !isHistoricalCampDate(form.requestDate);
-  const campDateHistorical = isHistoricalCampDate(form.campDate);
-  const requestDateHistorical = isHistoricalCampDate(form.requestDate);
-  const earliestAllowedDate = canSetHistoricalCampDates ? undefined : minAllowedCampDateIso();
+  const requestDateFuture = isFutureRequestDate(form.requestDate);
+  const requestDateNeedsApproval = isRequestDateNeedingApproval(form.requestDate);
+  const campDateNeedsApproval = isCampDateNeedingApproval(form.campDate);
+  const todayIso = localTodayIso();
 
   const stageDisabled = (stage) => stageReadOnly[stage] ?? false;
 
@@ -429,13 +433,12 @@ export function CampLifecycleForm({
                     onChange={(v) => updateField('campDate', v)}
                     disabled={disabled}
                     required
-                    min={earliestAllowedDate}
                   />
                 </label>
               </div>
-              {campDateHistorical && !canSetHistoricalCampDates ? (
-                <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-                  Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
+              {campDateNeedsApproval ? (
+                <p className="meta-text full camp-request-date-warning">
+                  Camp date is more than 2 days before today and needs Reporting Manager approval.
                 </p>
               ) : null}
               <div className="camp-request-pair-row full">
@@ -473,7 +476,7 @@ export function CampLifecycleForm({
                     value={form.requestDate}
                     onChange={(v) => updateField('requestDate', v)}
                     disabled={disabled}
-                    min={earliestAllowedDate}
+                    max={todayIso}
                   />
                 </label>
                 <label>
@@ -484,23 +487,22 @@ export function CampLifecycleForm({
                     onChange={(v) => updateField('campDate', v)}
                     disabled={disabled}
                     required
-                    min={earliestAllowedDate}
                   />
                 </label>
               </div>
-              {requestDateHistorical && !canSetHistoricalCampDates ? (
+              {requestDateFuture ? (
                 <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-                  Request date is more than 2 days before today. Only Team Leaders or Admins can use this date.
+                  Request date cannot be in the future.
                 </p>
               ) : null}
-              {campDateHistorical && !canSetHistoricalCampDates ? (
-                <p className="meta-text full camp-request-date-warning camp-request-date-warning--error">
-                  Camp date is more than 2 days before today. Only Team Leaders or Admins can use this date.
-                </p>
-              ) : null}
-              {requestDateWarning ? (
+              {requestDateNeedsApproval ? (
                 <p className="meta-text full camp-request-date-warning">
-                  Request date is more than 2 days from today. Confirm this is intentional.
+                  Request date is more than 2 days before today and needs Reporting Manager approval.
+                </p>
+              ) : null}
+              {campDateNeedsApproval ? (
+                <p className="meta-text full camp-request-date-warning">
+                  Camp date is more than 2 days before today and needs Reporting Manager approval.
                 </p>
               ) : null}
               <div className="camp-request-times full">

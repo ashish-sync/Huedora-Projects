@@ -179,11 +179,12 @@ export function usePurchaseOrderBuilder() {
     [readOnly, setForm]
   );
 
-  const applyVendorContact = useCallback(
+  const applyVendorMaster = useCallback(
     (patch) => {
       if (readOnly || !patch) return;
       setForm((prev) => ({
         ...prev,
+        vendorMasterId: patch.vendorMasterId || '',
         contactId: patch.contactId || '',
         vendor: { ...prev.vendor, ...(patch.vendor || {}) },
       }));
@@ -191,9 +192,9 @@ export function usePurchaseOrderBuilder() {
     [readOnly, setForm]
   );
 
-  const clearVendorContact = useCallback(() => {
+  const clearVendorMaster = useCallback(() => {
     if (readOnly) return;
-    setForm((prev) => ({ ...prev, contactId: '' }));
+    setForm((prev) => ({ ...prev, vendorMasterId: '', contactId: '' }));
   }, [readOnly, setForm]);
 
   return {
@@ -206,8 +207,8 @@ export function usePurchaseOrderBuilder() {
     updateTerm,
     addTerm,
     removeTerm,
-    applyVendorContact,
-    clearVendorContact,
+    applyVendorMaster,
+    clearVendorMaster,
     newPurchaseOrder: persistence.newDocument,
     orgMaster,
     orgList,

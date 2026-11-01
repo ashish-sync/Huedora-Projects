@@ -5,6 +5,7 @@ import { api, apiUrl } from '../../shared/api.js';
 import { invalidateContactsCaches } from '../../shared/contactsApi.js';
 import { openUploadView } from '../../shared/uploadViewUrl.js';
 import { MODULE } from '../../shared/labels.js';
+import { MODULE_PATH } from '../../shared/moduleRoutes.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
@@ -27,7 +28,7 @@ import ServiceProviderProfile, { hydrateProviderEmployeesForForm } from './Servi
 import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
-  CONTACT_CATEGORIES,
+  directoryCategoryChoices,
   HCW_RESOURCE_TYPES,
   RESOURCE_TYPES,
   SUPPLY_CATEGORIES,
@@ -701,12 +702,19 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                     onChange={(e) => onCategoryChange(e.target.value)}
                   >
                     <option value="">Select…</option>
-                    {CONTACT_CATEGORIES.map((t) => (
+                    {directoryCategoryChoices(form.contactCategory).map((t) => (
                       <option key={t} value={t}>
                         {t}
                       </option>
                     ))}
                   </AdaptiveSelect>
+                  <p className="cd-form-hint">
+                    Vendors for Finance One are created in{' '}
+                    <Link to={`${MODULE_PATH.MASTER_ONE}?scope=movement&entity=vendors`}>
+                      Vendor Master
+                    </Link>
+                    , not here.
+                  </p>
                 </div>
 
                 {showResourceType && (

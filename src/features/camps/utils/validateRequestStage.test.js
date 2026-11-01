@@ -71,12 +71,9 @@ describe('validateRequestStageForm', () => {
     expect(errors).toContain('Enter doctor name without Dr or Dr. — use Title Case (e.g. Rajesh Kumar)');
   });
 
-  it('rejects historical camp dates for non-team-leaders', () => {
-    const errors = validateRequestStageForm(
-      { ...validRequest, campDate: isoOffset(-5) },
-      { canSetHistorical: false },
-    );
-    expect(errors.some((message) => /Team Leaders/.test(message))).toBe(true);
+  it('allows historical camp dates for any user', () => {
+    const errors = validateRequestStageForm({ ...validRequest, campDate: isoOffset(-5) });
+    expect(errors).toEqual([]);
   });
 
   it('accepts zero expected patients', () => {
@@ -86,6 +83,30 @@ describe('validateRequestStageForm', () => {
     });
     expect(errors).toEqual([]);
     expect(isRequestStageComplete({ ...validRequest, expectedPatients: '0' })).toBe(true);
+  });
+
+  it('blocks request dates in the future', () => {
+    const errors = validateRequestStageForm({
+      ...validRequest,
+      requestDate: isoOffset(1),
+    });
+    expect(errors).toContain('Request date cannot be in the future');
+  });
+
+  it('allows yesterday and T-2 request dates without a future-date error', () => {
+    expect(validateRequestStageForm({
+      ...validRequest,
+      requestDate: isoOffset(-1),
+    })).not.toContain('Request date cannot be in the future');
+    expect(validateRequestStageForm({
+      ...validRequest,
+      requestDate: isoOffset(-2),
+    })).toEqual([]);
+  });
+
+  it('allows historical request dates for any user', () => {
+    const errors = validateRequestStageForm({ ...validRequest, requestDate: isoOffset(-5) });
+    expect(errors).toEqual([]);
   });
 
   it('skips PIN, state, zone, district, and city when skipLocation is set', () => {

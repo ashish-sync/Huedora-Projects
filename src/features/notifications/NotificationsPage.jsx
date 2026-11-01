@@ -12,9 +12,12 @@ import {
   notificationEntityPath,
   priorityClass,
 } from './notificationLinks.js';
+import {
+  decisionLabel,
+  inboxDecisionFor,
+} from './notificationDecision.js';
 import { notificationImportanceLabel, notificationModuleLabel } from '../dashboards/opsReviewCatalog.js';
 import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
-import '../audit/activityLog.css';
 import './notifications.css';
 
 const PAGE_SIZE = 25;
@@ -50,6 +53,7 @@ export default function NotificationsPage({ embedded = false } = {}) {
   );
   const [q, setQ] = useState('');
   const [expandedId, setExpandedId] = useState('');
+  const [busyId, setBusyId] = useState('');
 
   const activeTab = INBOX_TABS.find((t) => t.id === inboxTab) || INBOX_TABS[0];
 
@@ -137,6 +141,49 @@ export default function NotificationsPage({ embedded = false } = {}) {
       load();
     } catch (e) {
       setError(e.message);
+    }
+  };
+
+  const decide = async (n, decision) => {
+    const action = inboxDecisionFor(n);
+    if (!action) return;
+    const path = decision === 'approve' ? action.approvePath : action.rejectPath;
+    if (!path) return;
+    setBusyId(`${n._id}:${decision}`);
+    setError('');
+    try {
+      let reason = '';
+      if (decision !== 'approve') {
+        reason = window.prompt(`${action.rejectLabel || 'Refuse'} reason (optional)`) || '';
+      }
+      await api(path, {
+        method: 'POST',
+        body: decision === 'approve' ? {} : { reason, rejectionReason: reason, remarks: reason },
+      });
+      try {
+        await api(`/notifications/${n._id}/actioned`, {
+          method: 'POST',
+          body: { decision },
+        });
+      } catch {
+        /* Domain action already succeeded; inbox stamp is best-effort. */
+      }
+      setRows((prev) =>
+        prev.map((row) => (
+          row._id === n._id
+            ? {
+                ...row,
+                readAt: row.readAt || new Date().toISOString(),
+                meta: { ...(row.meta || {}), decision },
+              }
+            : row
+        ))
+      );
+      emitNotificationsChanged();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusyId('');
     }
   };
 
@@ -337,68 +384,95 @@ export default function NotificationsPage({ embedded = false } = {}) {
           const changes = Array.isArray(n.changes) ? n.changes : [];
           const open = expandedId === n._id;
           const isApproval = isApprovalRequestNotification(n);
+          const decision = inboxDecisionFor(n);
+          const settled = decisionLabel(n.meta?.decision);
           return (
-            <div
+            <article
               key={n._id}
-              className={`nc-row notification-row${n.readAt ? '' : ' is-unread'}${
-                isApproval ? ' nc-row--approval' : ''
+              className={`nc-card${n.readAt ? '' : ' is-unread'}${
+                isApproval ? ' nc-card--approval' : ''
               }`}
             >
-              <button
-                type="button"
-                className="nc-row-main"
-                onClick={() => {
-                  markRead(n);
-                  setExpandedId(open ? '' : n._id);
-                }}
-              >
-                <div className="nc-row-head">
-                  {!n.readAt ? (
-                    <span className="header-bell-badge notification-unread-dot" aria-hidden="true" />
-                  ) : null}
-                  <span className={priorityClass(n.priority)}>{notificationImportanceLabel(n.priority)}</span>
-                  <span className={`nc-category${isApproval ? ' nc-category--approval' : ''}`}>
-                    {categoryLabel(n)}
-                  </span>
-                  <strong className="nc-title">{n.title}</strong>
-                  {n.groupCount > 1 ? (
-                    <span className="nc-group-count">{n.groupCount} updates</span>
-                  ) : null}
-                </div>
-                {n.body ? <div className="muted nc-body">{n.body}</div> : null}
-                <div className="muted nc-meta">
-                  {n.readAt ? 'Seen' : 'Waiting'}
-                  {' · '}
-                  {notificationModuleLabel(n.module)}
-                  {n.actorEmail ? ` · ${n.actorEmail}` : ''}
-                  {' · '}
-                  {formatDateTime(n.groupedAt || n.createdAt)}
-                </div>
-              </button>
+              <div className="nc-card__main">
+                <button
+                  type="button"
+                  className="nc-card__content"
+                  onClick={() => {
+                    markRead(n);
+                    setExpandedId(open ? '' : n._id);
+                  }}
+                >
+                  <div className="nc-card__chips">
+                    {!n.readAt ? (
+                      <span className="nc-card__unread" aria-hidden="true" />
+                    ) : null}
+                    <span className={priorityClass(n.priority)}>{notificationImportanceLabel(n.priority)}</span>
+                    <span className={`nc-category${isApproval ? ' nc-category--approval' : ''}`}>
+                      {categoryLabel(n)}
+                    </span>
+                    {n.groupCount > 1 ? (
+                      <span className="nc-group-count">{n.groupCount} updates</span>
+                    ) : null}
+                    {settled ? (
+                      <span className="nc-card__settled">{settled}</span>
+                    ) : null}
+                  </div>
+                  <h3 className="nc-card__title">{n.title}</h3>
+                  {n.body ? <p className="nc-card__body">{n.body}</p> : null}
+                  <p className="nc-card__meta">
+                    <span>{n.readAt ? 'Seen' : 'Waiting'}</span>
+                    <span>{notificationModuleLabel(n.module)}</span>
+                    {n.actorEmail ? <span>{n.actorEmail}</span> : null}
+                    <span>{formatDateTime(n.groupedAt || n.createdAt)}</span>
+                  </p>
+                </button>
 
-              {open && changes.length ? (
-                <ul className="nc-changes">
-                  {changes.map((c) => (
-                    <li key={`${c.field}-${c.to}`}>
-                      <span className="nc-change-label">{c.label || c.field}</span>
-                      <span className="nc-change-values">
-                        <span className="nc-from">{c.from == null || c.from === '' ? '—' : c.from}</span>
-                        <span aria-hidden="true"> → </span>
-                        <span className="nc-to">{c.to == null || c.to === '' ? '—' : c.to}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+                {open && changes.length ? (
+                  <ul className="nc-changes">
+                    {changes.map((c) => (
+                      <li key={`${c.field}-${c.to}`}>
+                        <span className="nc-change-label">{c.label || c.field}</span>
+                        <span className="nc-change-values">
+                          <span className="nc-from">{c.from == null || c.from === '' ? '—' : c.from}</span>
+                          <span aria-hidden="true"> → </span>
+                          <span className="nc-to">{c.to == null || c.to === '' ? '—' : c.to}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
 
-              <div className="nc-row-actions">
+              <div className="nc-card__actions">
+                {decision ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-compact"
+                      disabled={Boolean(busyId)}
+                      onClick={() => decide(n, 'approve')}
+                    >
+                      {busyId === `${n._id}:approve` ? 'Approving…' : 'Approve'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn secondary btn-compact"
+                      disabled={Boolean(busyId)}
+                      onClick={() => decide(n, 'refuse')}
+                    >
+                      {busyId === `${n._id}:refuse`
+                        ? 'Working…'
+                        : (decision.rejectLabel || 'Refuse')}
+                    </button>
+                  </>
+                ) : null}
                 {href ? (
                   <Link
                     to={href}
                     className="btn secondary btn-compact"
                     onClick={() => markRead(n)}
                   >
-                    {isApproval ? 'Review' : 'Open'}
+                    {isApproval && decision ? 'Open' : isApproval ? 'Review' : 'Open'}
                   </Link>
                 ) : null}
                 {n.type === 'IMPORT_ERRORS' && (n.meta?.downloadPath || n._id) ? (
@@ -414,7 +488,7 @@ export default function NotificationsPage({ embedded = false } = {}) {
                   </button>
                 ) : null}
               </div>
-            </div>
+            </article>
           );
         })}
         {!rows.length && (

@@ -12,8 +12,10 @@ function normalizeWorkingStage(next) {
   return DEFAULT_WORKING_STAGE;
 }
 
-export function CampWorkingStageProvider({ children }) {
-  const [workingStage, setWorkingStageState] = useState(DEFAULT_WORKING_STAGE);
+export function CampWorkingStageProvider({ children, initialStage }) {
+  const [workingStage, setWorkingStageState] = useState(() => (
+    normalizeWorkingStage(initialStage)
+  ));
 
   const setWorkingStage = useCallback((next) => {
     setWorkingStageState(normalizeWorkingStage(next));

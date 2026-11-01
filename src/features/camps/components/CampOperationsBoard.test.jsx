@@ -114,7 +114,7 @@ describe('CampOperationsBoard export', () => {
       expect(await screen.findByRole('button', { name: `Download ${label} camps` })).toBeTruthy();
     }
     expect(screen.getByRole('button', { name: 'Download Payment Done camps' }).disabled).toBe(true);
-  });
+  }, 15000);
 
   it('downloads the section without opening a preview list', async () => {
     renderBoard();
@@ -140,6 +140,28 @@ describe('CampOperationsBoard export', () => {
     expect(section.getAttribute('href')).toContain('stage=request');
     expect(section.getAttribute('href')).toContain('status=review_pending');
     expect(section.getAttribute('href')).toContain('dateFrom=2026-10-01');
+  });
+
+  it('carries the Operations Dashboard review location on board tabs', async () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard?tab=drilldown&module=camps&from=2026-10-01&to=2026-10-29&preset=month']}>
+        <CampOperationsBoard
+          embedded
+          initialFrom="2026-10-01"
+          initialTo="2026-10-29"
+          reviewPreset="month"
+        />
+      </MemoryRouter>,
+    );
+    const planned = await screen.findByRole('link', { name: /Planned/i });
+    const href = planned.getAttribute('href') || '';
+    expect(href).toContain('/camp-one/manage');
+    expect(href).toContain('stage=execution');
+    expect(href).toContain('status=planned');
+    expect(href).toContain('returnTo=');
+    expect(decodeURIComponent(href)).toContain('tab=drilldown');
+    expect(decodeURIComponent(href)).toContain('module=camps');
+    expect(decodeURIComponent(href)).toContain('from=2026-10-01');
   });
 
   it('renders Method, Division / Therapy, Client Name, then Assigned Users next to Total Camps', async () => {

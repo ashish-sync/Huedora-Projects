@@ -1,6 +1,7 @@
 /**
  * Camp / clinic address — plain text by default.
- * Public Camp Request Form can pass `lookup` to enable server-side Ola autocomplete.
+ * Public Camp Request Form, Create Camp, and Contact Directory can pass `lookup`
+ * to enable the shared server-side Ola autocomplete.
  */
 import { bindAutofillBlock } from '../../../shared/suppressBrowserAutofill.js';
 import PublicOlaAddressAutocomplete from '../requestForm/PublicOlaAddressAutocomplete.jsx';
@@ -11,6 +12,7 @@ export default function CampAddressField({
   disabled = false,
   required = false,
   lookup = null,
+  placeholder,
 }) {
   const address = value.campAddress || '';
 
@@ -23,6 +25,7 @@ export default function CampAddressField({
         onChange={onChange}
         disabled={disabled}
         required={required}
+        placeholder={placeholder || 'Search or type camp / clinic address'}
       />
     );
   }
@@ -38,7 +41,7 @@ export default function CampAddressField({
         latitude: '',
         longitude: '',
       })}
-      placeholder="Enter camp / clinic address"
+      placeholder={placeholder || 'Enter camp / clinic address'}
       required={required}
       disabled={disabled}
       {...bindAutofillBlock()}

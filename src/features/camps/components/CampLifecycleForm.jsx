@@ -8,6 +8,7 @@ import { TimeInput } from '../../../components/ui/TimeInput.jsx';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
 import { CampFormInput } from './CampFormInput.jsx';
+import CampTravelKmField from './CampTravelKmField.jsx';
 import { CampClientTypeahead } from './CampClientTypeahead.jsx';
 import { usePicklistOptions } from '../../../shared/usePicklistOptions.js';
 import { CampLifecycleStepper } from './CampLifecycleStepper';
@@ -946,10 +947,24 @@ export function CampLifecycleForm({
           </label>
           <ReadOnlyField label="Total Hours" value={derived.totalHours} />
           <ReadOnlyField label="Extra hours" value={derived.extraHours} />
-          <label>
-            Travelled Kms (Round Trip)
-            <CampFormInput type="number" value={form.kmRoundTrip} onChange={(e) => updateField('kmRoundTrip', e.target.value)} disabled={disabled} />
-          </label>
+          <CampTravelKmField
+            value={form.kmRoundTrip}
+            source={form.kmRoundTripSource}
+            status={form.kmRoundTripEstimateStatus}
+            reason={form.kmRoundTripManualReason}
+            disabled={disabled}
+            onKmChange={(next) => {
+              if (form.kmRoundTripSource !== 'manual' && String(next) !== String(form.kmRoundTrip)) {
+                updateFields?.({
+                  kmRoundTrip: next,
+                  kmRoundTripSource: 'manual',
+                });
+                return;
+              }
+              updateField('kmRoundTrip', next);
+            }}
+            onReasonChange={(reason) => updateField('kmRoundTripManualReason', reason)}
+          />
           <PunctualityField
             value={derived.punctuality}
             campStartTime={form.startTime}

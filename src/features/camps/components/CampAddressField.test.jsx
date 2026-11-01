@@ -21,4 +21,16 @@ describe('CampAddressField', () => {
     });
     expect(screen.queryByRole('combobox')).toBeNull();
   });
+
+  it('uses the shared Ola autocomplete when lookup is provided', () => {
+    render(
+      <CampAddressField
+        value={{ campAddress: '' }}
+        lookup={{ autocomplete: vi.fn() }}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('combobox')).toBeTruthy();
+    expect(screen.getByPlaceholderText(/Search or type camp/)).toBeTruthy();
+  });
 });

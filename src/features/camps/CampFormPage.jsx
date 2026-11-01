@@ -61,6 +61,20 @@ import {
   resolveCampPayoutPayee,
 } from './utils/campPayoutPayee.js';
 import { findAssignableHealthcareWorker } from './utils/campHcwContact.js';
+import { autocompleteOlaMaps, estimateOlaRoundTripKm } from '../../shared/olaMapsApi.js';
+import {
+  TRAVEL_STATUS,
+  estimatedTravelStatus,
+  hasExistingTravelKm,
+  hasValidCampCoords,
+  readTravelEstimateCache,
+  resolveHcwOriginCoords,
+  resolveHcwTravelPin,
+  shouldKeepManualTravel,
+  travelEstimateKey,
+  usableEstimatedKm,
+  writeTravelEstimateCache,
+} from './utils/campTravelEstimate.js';
 
 const EDITABLE_STATUSES = ['pending_review', 'approved', 'rejected'];
 const NO_DIVISION_MESSAGE = 'Create business unit / division first in Master One → Client Master before creating a camp.';
@@ -69,6 +83,7 @@ const NO_METHOD_MESSAGE = 'Configure method in Master One → Client Master for 
 const formStringFields = [
   'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state', 'district',
   'pincode', 'latitude', 'longitude', 'googlePlaceId', 'startTime', 'endTime', 'contactPersonLevel', 'fieldPersonName', 'fieldPersonPhone', 'remarks',
+  'kmRoundTripSource', 'kmRoundTripManualReason', 'kmRoundTripEstimateStatus', 'kmRoundTripEstimateKey',
   'hq', 'zone', 'hcwCategory', 'hcwName', 'hcwContact', 'hcwContactId', 'cancellationReason', 'chargeableStatus',
   'inTime', 'outTime', 'attire', 'labCoat', 'transactionId', 'paymentRemark',
   'assignmentStatus', 'assignmentDecision', 'assignmentRefusalReason', 'executionStatus', 'source', 'requestDate',
@@ -131,6 +146,7 @@ export default function CampFormPage() {
   const [clientMasterRecords, setClientMasterRecords] = useState([]);
   const [clientMasterLoading, setClientMasterLoading] = useState(false);
   const [clientMasterLoadFailed, setClientMasterLoadFailed] = useState(false);
+  const travelEstimateSeqRef = useRef(0);
   const hcwContactsLoadedRef = useRef(false);
   const hcwPersonSearchTimerRef = useRef(null);
   const hcwFilterFetchTimerRef = useRef(null);
@@ -1364,6 +1380,112 @@ export default function CampFormPage() {
     financial: readOnly || !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts),
   }), [readOnly, campStatus, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts]);
 
+  const addressLookup = useMemo(() => ({ autocomplete: autocompleteOlaMaps }), []);
+
+  useEffect(() => {
+    if (!isEdit || normalizeLifecycleStage(activeStage, 'request') !== 'execution') return undefined;
+    if (stageReadOnly.execution) return undefined;
+
+    const contact = findAssignableHealthcareWorker(hcwContacts, form.hcwContactId)
+      || (assignedHcwContact && String(assignedHcwContact._id) === String(form.hcwContactId)
+        ? assignedHcwContact
+        : null);
+    const pin = resolveHcwTravelPin(contact, hcwContacts);
+    const destLat = form.latitude;
+    const destLng = form.longitude;
+    const key = travelEstimateKey({ pin, destLat, destLng });
+    const origin = resolveHcwOriginCoords(contact);
+
+    if (shouldKeepManualTravel(form.kmRoundTripSource)) return undefined;
+
+    let status = '';
+    if (!form.hcwContactId) status = TRAVEL_STATUS.NO_HCW;
+    else if (!pin) status = TRAVEL_STATUS.PIN_MISSING;
+    else if (!hasValidCampCoords(form)) status = TRAVEL_STATUS.COORDS_MISSING;
+
+    if (status) {
+      if (form.kmRoundTripEstimateStatus !== status) {
+        updateFields({
+          kmRoundTripEstimateStatus: status,
+          ...(key ? { kmRoundTripEstimateKey: key } : {}),
+        });
+      }
+      return undefined;
+    }
+
+    if (form.kmRoundTripEstimateKey === key && hasExistingTravelKm(form.kmRoundTrip)) {
+      const nextStatus = estimatedTravelStatus(pin);
+      if (form.kmRoundTripSource === 'auto' && form.kmRoundTripEstimateStatus !== nextStatus) {
+        updateFields({ kmRoundTripEstimateStatus: nextStatus });
+      }
+      return undefined;
+    }
+
+    if (!form.kmRoundTripSource && hasExistingTravelKm(form.kmRoundTrip) && !form.kmRoundTripEstimateKey) {
+      updateFields({ kmRoundTripEstimateKey: key });
+      return undefined;
+    }
+
+    const cachedKm = usableEstimatedKm(readTravelEstimateCache(key)?.kmRoundTrip);
+    if (cachedKm) {
+      updateFields({
+        kmRoundTrip: cachedKm,
+        kmRoundTripSource: 'auto',
+        kmRoundTripEstimateStatus: estimatedTravelStatus(pin),
+        kmRoundTripEstimateKey: key,
+      });
+      return undefined;
+    }
+
+    const seq = ++travelEstimateSeqRef.current;
+    if (form.kmRoundTripEstimateStatus !== TRAVEL_STATUS.ESTIMATING) {
+      updateFields({ kmRoundTripEstimateStatus: TRAVEL_STATUS.ESTIMATING });
+    }
+
+    estimateOlaRoundTripKm({ pin, destLat, destLng, ...origin })
+      .then((data) => {
+        if (seq !== travelEstimateSeqRef.current) return;
+        const km = usableEstimatedKm(data?.kmRoundTrip);
+        if (!km) {
+          updateFields({
+            kmRoundTripEstimateStatus: TRAVEL_STATUS.UNAVAILABLE,
+            kmRoundTripEstimateKey: key,
+          });
+          return;
+        }
+        writeTravelEstimateCache(key, data);
+        updateFields({
+          kmRoundTrip: km,
+          kmRoundTripSource: 'auto',
+          kmRoundTripEstimateStatus: estimatedTravelStatus(pin),
+          kmRoundTripEstimateKey: key,
+        });
+      })
+      .catch(() => {
+        if (seq !== travelEstimateSeqRef.current) return;
+        updateFields({
+          kmRoundTripEstimateStatus: TRAVEL_STATUS.UNAVAILABLE,
+          kmRoundTripEstimateKey: key,
+        });
+      });
+
+    return () => {
+      travelEstimateSeqRef.current += 1;
+    };
+  }, [
+    isEdit,
+    activeStage,
+    stageReadOnly.execution,
+    form.hcwContactId,
+    form.latitude,
+    form.longitude,
+    form.kmRoundTrip,
+    form.kmRoundTripSource,
+    form.kmRoundTripEstimateKey,
+    hcwContacts,
+    assignedHcwContact,
+  ]);
+
   if (fetching) {
     return <div className="empty-state">Loading camp...</div>;
   }
@@ -1569,6 +1691,7 @@ export default function CampFormPage() {
         clientMasterRecords={clientMasterRecords}
         canSetHistoricalCampDates={canSetHistoricalCampDates()}
         isAdmin={isCampAdmin}
+        addressLookup={addressLookup}
         onConfirmPayment={isEdit && canManageFinancialStatus ? handleConfirmPayment : null}
         onHoldPayment={isEdit && canManageFinancialStatus ? handleHoldPayment : null}
         onReleaseHold={isEdit && canManageFinancialStatus ? handleReleaseHold : null}

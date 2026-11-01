@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { bindAutofillBlock } from '../../../shared/suppressBrowserAutofill.js';
+import './olaAddressAutocomplete.css';
 
 const MIN_QUERY_LEN = 3;
 const DEBOUNCE_MS = 400;
@@ -15,6 +16,7 @@ export default function PublicOlaAddressAutocomplete({
   onChange,
   disabled = false,
   required = false,
+  placeholder = 'Search or type camp / clinic address',
 }) {
   const listId = useId();
   const rootRef = useRef(null);
@@ -111,6 +113,7 @@ export default function PublicOlaAddressAutocomplete({
       googlePlaceId: item.placeId || '',
       latitude: item.latitude || '',
       longitude: item.longitude || '',
+      pinCode: item.pinCode || '',
     });
     inputRef.current?.blur();
   }
@@ -145,7 +148,7 @@ export default function PublicOlaAddressAutocomplete({
         value={value}
         onChange={(e) => emitManual(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Search or type camp / clinic address"
+        placeholder={placeholder}
         enterKeyHint="search"
         inputMode="text"
         {...bindAutofillBlock({

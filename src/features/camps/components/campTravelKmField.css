@@ -1,0 +1,66 @@
+.camp-travel-km-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.camp-travel-km-field__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+}
+
+.camp-travel-km-field__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.camp-travel-km-field__badge--auto {
+  background: #e8f4ee;
+  color: #146c43;
+}
+
+.camp-travel-km-field__badge--manual {
+  background: #eef2f7;
+  color: #334155;
+}
+
+.camp-travel-km-field__status {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted, #5b6472);
+}
+
+.camp-travel-km-field__reason {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.camp-travel-km-field__reason span {
+  font-size: 0.78rem;
+  color: var(--muted, #5b6472);
+}
+
+.camp-travel-km-field__reason textarea {
+  min-height: 64px;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+@media (max-width: 720px) {
+  .camp-travel-km-field input[type='number'] {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}

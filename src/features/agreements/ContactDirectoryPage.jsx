@@ -15,6 +15,8 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import PublicOlaAddressAutocomplete from '../camps/requestForm/PublicOlaAddressAutocomplete.jsx';
+import { autocompleteOlaMaps } from '../../shared/olaMapsApi.js';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import { validateUploadFile } from '../../shared/importErrors.js';
@@ -54,6 +56,9 @@ const empty = {
   district: '',
   pinCode: '',
   address: '',
+  latitude: '',
+  longitude: '',
+  googlePlaceId: '',
   panNumber: '',
   ifscCode: '',
   bankName: '',
@@ -192,6 +197,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         profession: nextProfessions.includes(f.profession) ? f.profession : '',
         address: contactCategory === 'Client' ? '' : f.address,
         pinCode: contactCategory === 'Client' ? '' : f.pinCode,
+        latitude: contactCategory === 'Client' ? '' : f.latitude,
+        longitude: contactCategory === 'Client' ? '' : f.longitude,
+        googlePlaceId: contactCategory === 'Client' ? '' : f.googlePlaceId,
         panNumber: contactCategory === 'Client' ? '' : f.panNumber,
         ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
         bankName: contactCategory === 'Client' ? '' : f.bankName,
@@ -302,6 +310,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       if (isClient) {
         body.address = '';
         body.pinCode = '';
+        body.latitude = '';
+        body.longitude = '';
+        body.googlePlaceId = '';
         body.panNumber = '';
         body.ifscCode = '';
         body.bankName = '';
@@ -473,6 +484,9 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       district: c.district || '',
       pinCode: c.pinCode || '',
       address: c.address || '',
+      latitude: c.latitude || '',
+      longitude: c.longitude || '',
+      googlePlaceId: c.googlePlaceId || '',
       panNumber: c.panNumber || '',
       ifscCode: c.ifscCode || '',
       bankName: c.bankName || '',
@@ -905,11 +919,21 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                 <div className="cd-form-grid">
                   <div className="field cd-span-2">
                     <label>Address</label>
-                    <textarea
-                      rows={2}
+                    <PublicOlaAddressAutocomplete
                       value={form.address}
-                      onChange={(e) => setForm({ ...form, address: e.target.value })}
-                      placeholder="Street / locality / landmark"
+                      selectedPlaceId={form.googlePlaceId || ''}
+                      lookup={{ autocomplete: autocompleteOlaMaps }}
+                      placeholder="Search or type home address"
+                      onChange={(loc) => setForm((f) => ({
+                        ...f,
+                        address: loc.campAddress ?? f.address,
+                        googlePlaceId: loc.googlePlaceId ?? '',
+                        latitude: loc.latitude ?? '',
+                        longitude: loc.longitude ?? '',
+                        ...(loc.addressManualEntry === false && loc.pinCode
+                          ? { pinCode: loc.pinCode }
+                          : {}),
+                      }))}
                     />
                   </div>
                   <div className="field">

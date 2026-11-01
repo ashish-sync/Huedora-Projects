@@ -65,6 +65,7 @@ describe('PublicOlaAddressAutocomplete', () => {
       googlePlaceId: SUGGESTION.placeId,
       latitude: SUGGESTION.latitude,
       longitude: SUGGESTION.longitude,
+      pinCode: '',
     });
   });
 

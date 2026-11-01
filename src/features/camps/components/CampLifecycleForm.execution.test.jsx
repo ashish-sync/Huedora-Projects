@@ -57,6 +57,7 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByDisplayValue('Planned')).toBeTruthy();
     expect(screen.getByText('Chargeable Status')).toBeTruthy();
     expect(screen.getByText('In Time')).toBeTruthy();
+    expect(screen.getByText('Travelled Kms (Round Trip)')).toBeTruthy();
     expect(screen.getByText('Execution Documents')).toBeTruthy();
     expect(screen.getByText('Doctor Form (DF)')).toBeTruthy();
     expect(screen.getByText('Patient Form (PF)')).toBeTruthy();
@@ -218,5 +219,16 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByLabelText('Travel Payout').disabled).toBe(false);
     expect(screen.getByLabelText('Overtime Payout').disabled).toBe(false);
     expect(screen.getByLabelText('Other Payouts').disabled).toBe(false);
+  });
+
+  it('shows travel estimate status and keeps the km field editable', () => {
+    renderExecutionForm({
+      kmRoundTrip: '',
+      kmRoundTripSource: '',
+      kmRoundTripEstimateStatus: 'HCW PIN code is missing in Contact Directory — enter distance manually.',
+    });
+    expect(screen.getByText(/PIN code is missing/i)).toBeTruthy();
+    const km = screen.getByLabelText('Travelled Kms (Round Trip)');
+    expect(km.disabled).toBe(false);
   });
 });

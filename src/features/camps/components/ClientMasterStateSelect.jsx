@@ -47,7 +47,12 @@ export function ClientMasterStateSelect({
       <AdaptiveSelect
         id={id}
         aria-label="State"
-          const row = states.find((item) => String(item._id) === String(id));
+        value={selectedId}
+        disabled={disabled || loading}
+        threshold={8}
+        onChange={(e) => {
+          const nextId = e.target.value;
+          const row = states.find((item) => String(item._id) === String(nextId));
           if (!row) {
             onChange?.({ stateName: '', stateCode: '' });
             return;
@@ -59,11 +64,14 @@ export function ClientMasterStateSelect({
         }}
       >
         <option value="">{loading ? 'Loading states…' : 'Select state'}</option>
-        {states.map((row) => (
-          <option key={row._id} value={row._id}>
-            {row.name}
-          </option>
-        ))}
+        {states.map((row) => {
+          const code = gstStateCodeForName(row.name);
+          return (
+            <option key={row._id} value={row._id}>
+              {showStateCode && code ? `${row.name} (${code})` : row.name}
+            </option>
+          );
+        })}
       </AdaptiveSelect>
       {error ? <small className="field-error">{error}</small> : null}
     </>

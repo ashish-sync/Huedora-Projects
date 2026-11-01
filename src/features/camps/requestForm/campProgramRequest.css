@@ -316,6 +316,52 @@
   }
 }
 
+.camp-program-request .public-ola-address {
+  position: relative;
+  z-index: 6;
+  width: 100%;
+}
+
+.camp-program-request .public-ola-address__hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--ce-muted);
+}
+
+.camp-program-request .public-ola-address__list {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: min(40vh, 280px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0.28rem;
+}
+
+.camp-program-request .public-ola-address__list button {
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+.camp-program-request .public-ola-address__empty {
+  padding: 0.75rem 0.85rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--ce-muted);
+}
+
+@media (max-width: 720px) {
+  .camp-program-request .public-ola-address__list {
+    max-height: min(36vh, 260px);
+  }
+}
+
 @media (max-width: 360px) {
   .camp-program-request .camp-ops-root .camp-request-pair-row {
     grid-template-columns: 1fr !important;

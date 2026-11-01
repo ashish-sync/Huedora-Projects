@@ -88,4 +88,13 @@ export const campRequestFormApi = {
       cache: 'no-store',
     }).then(parseJson).then((json) => json.data || []);
   },
+
+  autocompleteAddress(token, input) {
+    const q = String(input || '').trim();
+    if (q.length < 3) return Promise.resolve([]);
+    return fetch(tokenPath(token, `/geo/ola/autocomplete?input=${encodeURIComponent(q)}`), {
+      credentials: 'omit',
+      cache: 'no-store',
+    }).then(parseJson).then((json) => (Array.isArray(json.data) ? json.data : []));
+  },
 };

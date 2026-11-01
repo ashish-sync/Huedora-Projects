@@ -219,6 +219,7 @@ export function CampLifecycleForm({
   isAdmin = false,
   requestOnly = false,
   lockProgramFields = false,
+  addressLookup = null,
 }) {
   const resolvedActiveStage = normalizeLifecycleStage(activeStage, 'request');
   const clientMasterPricing = useMemo(
@@ -571,16 +572,20 @@ export function CampLifecycleForm({
             <CampAddressField
               disabled={disabled}
               required
+              lookup={addressLookup}
               value={{
                 campAddress: form.campAddress || '',
+                googlePlaceId: form.googlePlaceId || '',
+                latitude: form.latitude || '',
+                longitude: form.longitude || '',
               }}
               onChange={(loc) => {
                 updateFields?.({
                   campAddress: loc.campAddress ?? form.campAddress,
-                  addressManualEntry: true,
-                  googlePlaceId: '',
-                  latitude: '',
-                  longitude: '',
+                  addressManualEntry: loc.addressManualEntry !== false,
+                  googlePlaceId: loc.googlePlaceId ?? '',
+                  latitude: loc.latitude ?? '',
+                  longitude: loc.longitude ?? '',
                   ...(form.hqManuallyEdited ? {} : { hq: loc.city ?? form.city ?? '' }),
                 });
               }}

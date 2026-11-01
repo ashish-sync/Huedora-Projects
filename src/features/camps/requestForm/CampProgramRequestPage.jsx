@@ -143,6 +143,10 @@ export default function CampProgramRequestPage() {
     fetchCities: (stateId) => campRequestFormApi.fetchCities(token, stateId),
   }), [token]);
 
+  const addressLookup = useMemo(() => ({
+    autocomplete: (input) => campRequestFormApi.autocompleteAddress(token, input),
+  }), [token]);
+
   async function handleSubmit(e) {
     e?.preventDefault?.();
     if (busy || uploading || submitted) return;
@@ -330,6 +334,7 @@ export default function CampProgramRequestPage() {
                   reachedLifecycleStage="request"
                   requestOnly
                   lockProgramFields
+                  addressLookup={addressLookup}
                   canSetHistoricalCampDates={false}
                   onValidationError={setError}
                 />

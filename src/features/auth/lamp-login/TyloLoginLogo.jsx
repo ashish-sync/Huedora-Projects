@@ -9,7 +9,7 @@ export default function TyloLoginLogo({ className = '' }) {
       <img
         className="ll-tylo-mark__logo"
         src="/brand/tylo-logo.jpg"
-        alt="TYLO — Bringing Healthcare Closer"
+        alt="TYLO: Bringing Healthcare Closer"
         draggable={false}
       />
     </div>

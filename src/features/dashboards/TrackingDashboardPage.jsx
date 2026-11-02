@@ -269,7 +269,7 @@ function insightLine(overview) {
   const pending = (overview.pending || []).reduce((s, p) => s + (Number(p.count) || 0), 0);
   const breached = overview.repairsSla?.breached || 0;
   if (alerts === 0 && pending === 0 && breached === 0) {
-    return 'All queues clear — no critical risks or SLA breaches right now.';
+    return 'All queues are clear. No critical risks or SLA breaches reported.';
   }
   const parts = [];
   if (pending > 0) parts.push(`${pending} pending action${pending === 1 ? '' : 's'}`);
@@ -540,7 +540,7 @@ export default function TrackingDashboardPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="Executive project health — KPIs, pending work, risks, and financials in one view."
+      description="Executive project health: KPIs, pending work, operational risks, and finances."
       actions={
         <>
           <div className="ops-view-toggle" role="tablist" aria-label="Dashboard view">
@@ -632,6 +632,18 @@ export default function TrackingDashboardPage() {
         <div className="ops-overview">
           {overviewLoading && !overview ? <OverviewSkeleton /> : null}
 
+          {!overviewLoading && !overview && !overviewError ? (
+            <EmptyState
+              title="No dashboard data available"
+              description="The dashboard returned no overview data. Use Refresh to try again."
+              action={(
+                <button className="btn secondary" type="button" onClick={loadOverview}>
+                  Refresh
+                </button>
+              )}
+            />
+          ) : null}
+
           {overview ? (
             <>
               <section className={`ops-hero ops-hero--${health?.tone || 'ok'}`}>
@@ -688,7 +700,7 @@ export default function TrackingDashboardPage() {
                 <div className="ops-section-head">
                   <div>
                     <h3 id="ops-kpi-heading">Critical KPIs</h3>
-                    <p>Live cross-module metrics — open any tile to act.</p>
+                    <p>Live cross-module metrics. Select any card to take action.</p>
                   </div>
                 </div>
                 <div className="ops-kpi-grid" aria-label="Critical KPIs">
@@ -860,7 +872,7 @@ export default function TrackingDashboardPage() {
                 <div className="ops-section-head">
                   <div>
                     <h3 id="ops-modules-heading">Module portfolio</h3>
-                    <p>Status by module — open to work, or drill into a dated review.</p>
+                    <p>Status by module. Select a module to work on it, or drill into a dated review.</p>
                   </div>
                 </div>
                 <div className="ops-module-grid">

@@ -10,10 +10,23 @@
   --duration-slow: 280ms;
 }
 
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --duration-fast: 0.01ms;
     --duration: 0.01ms;
     --duration-slow: 0.01ms;
+  }
+
+  .skeleton {
+    animation: none !important;
   }
 }

@@ -67,5 +67,5 @@ export function importOutcomeSummary(job = {}) {
   if (total || ok) {
     return `${kind}. ${ok || total} rows ${String(job.mode || '').toUpperCase() === 'DRY_RUN' ? 'look correct' : 'were saved'}.`;
   }
-  return `${kind} — ${status.toLowerCase()}.`;
+  return `${kind}: ${status.toLowerCase()}.`;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ConfirmDialog from '../ui/ConfirmDialog.jsx';
 import {
   collectProductImages,
   isImageFile,
@@ -11,15 +12,16 @@ import { isDirectUploadPath, resolveUploadViewUrl } from '../../shared/uploadVie
 
 function ProductThumb({ img }) {
   const [src, setSrc] = useState(() => productImageUrl(img));
+  const imageUrl = img?.url;
   useEffect(() => {
     let cancelled = false;
-    const raw = img?.url || '';
+    const raw = imageUrl || '';
     if (!raw) {
       setSrc('');
       return undefined;
     }
     if (raw.startsWith('blob:') || !isDirectUploadPath(raw)) {
-      setSrc(productImageUrl(img) || raw);
+      setSrc(productImageUrl({ url: raw }) || raw);
       return undefined;
     }
     resolveUploadViewUrl(raw)
@@ -27,12 +29,12 @@ function ProductThumb({ img }) {
         if (!cancelled) setSrc(href);
       })
       .catch(() => {
-        if (!cancelled) setSrc(productImageUrl(img));
+        if (!cancelled) setSrc(productImageUrl({ url: raw }));
       });
     return () => {
       cancelled = true;
     };
-  }, [img?.url]);
+  }, [imageUrl]);
 
   return (
     <a href={src || '#'} target="_blank" rel="noreferrer" className="product-images-thumb-link">
@@ -67,6 +69,7 @@ export default function ProductImagesPanel({
   const [busyMode, setBusyMode] = useState('');
   const [error, setError] = useState('');
   const [pendingPreviews, setPendingPreviews] = useState([]);
+  const [imageToRemove, setImageToRemove] = useState(null);
   const images = collectProductImages(product);
   const allowPending = Boolean(canWrite && !productId && typeof onPendingChange === 'function');
 
@@ -117,14 +120,20 @@ export default function ProductImagesPanel({
     }
   }
 
-  async function handleRemove(img) {
+  function handleRemove(img) {
     if (!productId || !canWrite) return;
     const filename = resolveProductImageFilename(img);
     if (!filename) {
-      setError('Image reference is missing — reload the product and try again');
+      setError('Image reference is missing. Reload the product and try again.');
       return;
     }
-    if (!window.confirm('Remove this image from the product?')) return;
+    setImageToRemove(img);
+  }
+
+  async function handleRemoveConfirmed() {
+    if (!imageToRemove || !productId || !canWrite) return;
+    const filename = resolveProductImageFilename(imageToRemove);
+    setImageToRemove(null);
     setBusy(true);
     setBusyMode('remove');
     setError('');
@@ -227,6 +236,18 @@ export default function ProductImagesPanel({
           </button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={Boolean(imageToRemove)}
+        title="Remove Product Image"
+        message="Are you sure you want to remove this image from the product?"
+        confirmLabel="Remove Image"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        loading={busy && busyMode === 'remove'}
+        onConfirm={handleRemoveConfirmed}
+        onCancel={() => setImageToRemove(null)}
+      />
     </div>
   );
 }

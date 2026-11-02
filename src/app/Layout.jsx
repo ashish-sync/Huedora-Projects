@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BrandLogo from '../components/BrandLogo.jsx';
+import AppSidebar from './AppSidebar.jsx';
 import { Link, useLocation } from 'react-router-dom';
 import { apiFetch } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
@@ -15,7 +16,7 @@ import {
   playNotificationSound,
 } from '../shared/notificationSound.js';
 import AppErrorBoundary from '../components/AppErrorBoundary.jsx';
-import ModalShell from '../components/ui/ModalShell.jsx';
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
 import '../features/notifications/notifications.css';
 
 function initials(name = '') {
@@ -36,6 +37,41 @@ export default function Layout({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [fyiCount, setFyiCount] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('tylo:sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const toggleSidebarCollapse = useCallback(() => {
+    if (mobileNavOpen) {
+      setMobileNavOpen(false);
+      return;
+    }
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('tylo:sidebar-collapsed', String(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  }, [mobileNavOpen]);
+  const handleNavModulePick = useCallback(() => {
+    setMobileNavOpen(false);
+    setSidebarCollapsed(true);
+    try {
+      localStorage.setItem('tylo:sidebar-collapsed', 'true');
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const prevPathRef = useRef(pathname);
   const menuRef = useRef(null);
   const bellRef = useRef(null);
   const knownUnreadIdsRef = useRef(null);
@@ -108,7 +144,26 @@ export default function Layout({ children }) {
     setMenuOpen(false);
     setBellOpen(false);
     setConfirmLogout(false);
+    setMobileNavOpen(false);
+    if (prevPathRef.current !== pathname) {
+      prevPathRef.current = pathname;
+      setSidebarCollapsed(true);
+      try {
+        localStorage.setItem('tylo:sidebar-collapsed', 'true');
+      } catch {
+        // ignore storage errors
+      }
+    }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMobileNavOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
 
   useEffect(() => {
     if (!bellOpen) return undefined;
@@ -201,13 +256,50 @@ export default function Layout({ children }) {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <header className="app-header">
-        <Link to="/" className="brand" aria-label="TYLO One home">
-          <BrandLogo size={36} />
-          <strong className="brand-wordmark">
-            TYLO <span>One</span>
-          </strong>
-        </Link>
+
+      {/* ── Persistent Left Sidebar Navigation (Top to Bottom) ── */}
+      <div className={`sidebar-drawer-wrap${mobileNavOpen ? ' is-mobile-open' : ''}`}>
+        <AppSidebar
+          pathname={pathname}
+          can={can}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+          onNavigate={handleNavModulePick}
+        />
+      </div>
+      {mobileNavOpen ? (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      ) : null}
+
+      {/* ── Main Workspace Column (Header with Logo + Page Content) ── */}
+      <div className="app-main-column app-body">
+        <header className="app-header">
+        <div className="header-brand-group">
+          <button
+            type="button"
+            className="header-sidebar-toggle"
+            onClick={() => setMobileNavOpen((v) => !v)}
+            aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={mobileNavOpen}
+            title={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <Link to="/" className="brand" aria-label="TYLO One home">
+            <BrandLogo size={36} />
+            <strong className="brand-wordmark">
+              TYLO <span>One</span>
+            </strong>
+          </Link>
+        </div>
         <div className="header-actions">
           <button
             type="button"
@@ -341,34 +433,25 @@ export default function Layout({ children }) {
             )}
           </div>
         </div>
-      </header>
+        </header>
 
-      <main id="main-content" className={`main${isHome ? ' main--home' : ''}`} tabIndex={-1}>
-        <AppErrorBoundary title="This page failed to render" detail="The rest of TYLO One is still available — try again or open another module.">
-          {children}
-        </AppErrorBoundary>
-      </main>
+        <main id="main-content" className={`main${isHome ? ' main--home' : ''}`} tabIndex={-1}>
+          <AppErrorBoundary title="This page failed to render" detail="The rest of TYLO One is still available. Try refreshing or open another module.">
+            {children}
+          </AppErrorBoundary>
+        </main>
+      </div>
 
-      {confirmLogout ? (
-        <ModalShell
-          onClose={() => setConfirmLogout(false)}
-          titleId="logout-confirm-title"
-          overlayClassName="confirm-backdrop"
-          panelClassName="confirm-dialog card"
-          closeOnOverlayClick={!logoutBusy}
-        >
-          <h3 id="logout-confirm-title">Log out?</h3>
-          <p>Are you sure you want to log out?</p>
-          <div className="confirm-actions">
-            <button type="button" className="btn secondary" onClick={() => setConfirmLogout(false)}>
-              Cancel
-            </button>
-            <button type="button" className="btn" onClick={confirmAndLogout} disabled={logoutBusy}>
-              {logoutBusy ? 'Logging out…' : 'Log out'}
-            </button>
-          </div>
-        </ModalShell>
-      ) : null}
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Log out?"
+        message="Are you sure you want to log out?"
+        confirmLabel={logoutBusy ? 'Logging out…' : 'Log out'}
+        confirmVariant="primary"
+        loading={logoutBusy}
+        onConfirm={confirmAndLogout}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </div>
   );
 }

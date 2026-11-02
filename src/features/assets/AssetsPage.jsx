@@ -15,6 +15,8 @@ import ProductImagesPanel from '../../components/products/ProductImagesPanel.jsx
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import {
   OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -915,7 +917,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       product={selectedProduct}
                       compact
                       title="Product reference images"
-                      hint="From Product Master — for visual identification."
+                      hint="From Product Master: for visual identification."
                     />
                   </div>
                 </div>
@@ -924,21 +926,21 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           </div>
 
           <div className="form-actions">
-            <button className="btn" type="submit" disabled={busy}>
-              {busy ? 'Saving…' : editingId ? 'Save changes' : 'Add asset'}
-            </button>
-            <button className="btn secondary" type="button" disabled={busy} onClick={closeForm}>
+            <Button variant="primary" type="submit" loading={busy}>
+              {editingId ? 'Save changes' : 'Add asset'}
+            </Button>
+            <Button variant="secondary" type="button" disabled={busy} onClick={closeForm}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
       <MasterFilterShell
         actions={
-          <button className="btn secondary btn-compact" type="button" onClick={runSearch}>
+          <Button variant="secondary" size="compact" onClick={runSearch}>
             Refresh
-          </button>
+          </Button>
         }
       >
         <MasterSearchField
@@ -999,7 +1001,22 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
               </tr>
             </thead>
             <tbody>
-              {rows.map((a) => (
+              {loading && !rows.length ? (
+                Array.from({ length: 5 }).map((_, r) => (
+                  <tr key={`skeleton-${r}`}>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="65%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="85%" height="15px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="70%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="75%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="90px" height="22px" borderRadius="999px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="60%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="70%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="55%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="32px" height="28px" /></td>
+                  </tr>
+                ))
+              ) : (
+                rows.map((a) => (
                 <tr key={a._id}>
                   <td className="inv-muted-cell">
                     {assetClassificationLabel(a.productType || 'Medical Device')}
@@ -1028,7 +1045,8 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     />
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
               {!loading && !rows.length && (
                 <tr>
                   <td colSpan={9}>
@@ -1040,9 +1058,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                           : 'Add an asset or import Excel to start the inventory.'}
                       </p>
                       {canWrite && !agreementStatus && !custody && !q && (
-                        <button className="btn" type="button" onClick={openCreate}>
-                          + Add asset
-                        </button>
+                        <Button variant="primary" onClick={openCreate}>+ Add asset</Button>
                       )}
                     </div>
                   </td>
@@ -1077,9 +1093,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           >
             <div className="inv-modal-head">
               <h2 id="inv-view-title">{MODULE.ASSET_AGREEMENT}</h2>
-              <button type="button" className="btn secondary btn-compact" onClick={closeView}>
-                Close
-              </button>
+              <Button variant="secondary" size="compact" onClick={closeView}>Close</Button>
             </div>
             <p className="muted inv-modal-sub">
               {viewRow.deviceNameSnapshot} · {viewRow.serialNumber || 'No serial'}

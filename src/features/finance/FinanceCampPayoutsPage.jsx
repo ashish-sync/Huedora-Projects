@@ -63,6 +63,7 @@ export default function FinanceCampPayoutsPage() {
   const [draft, setDraft] = useState(emptyDraft());
   const [busy, setBusy] = useState(false);
   const [returnBusy, setReturnBusy] = useState(false);
+  const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
   const [msg, setMsg] = useState('');
   const [exportBusy, setExportBusy] = useState(false);
   const [rowExportBusy, setRowExportBusy] = useState(false);
@@ -107,7 +108,10 @@ export default function FinanceCampPayoutsPage() {
     [rows, focusId],
   );
 
-  const payTargetRows = selectedRows.length ? selectedRows : (focusRow ? [focusRow] : []);
+  const payTargetRows = useMemo(
+    () => selectedRows.length ? selectedRows : (focusRow ? [focusRow] : []),
+    [selectedRows, focusRow],
+  );
   const payMode = selectedRows.length > 1 ? 'bulk' : 'single';
   const returnableRows = useMemo(
     () => payTargetRows.filter((row) => String(row.financePaymentStatus || '') !== 'paid'),
@@ -142,7 +146,7 @@ export default function FinanceCampPayoutsPage() {
       paymentRemark: row.paymentRemark || '',
       paymentDate: toApiDateValue(row.financeProcessedAt) || todayIso(),
     });
-  }, [payMode, focusId, selectedIds, rows]);
+  }, [payMode, payTargetRows]);
 
   const settlementTotal = useMemo(() => {
     if (!payTargetRows.length) return 0;
@@ -253,7 +257,7 @@ export default function FinanceCampPayoutsPage() {
           },
         });
         setRows((prev) => prev.map((r) => (rowId(r) === rowId(updated) ? updated : r)));
-        setMsg(`Payment saved — ${settlementLabel}.`);
+        setMsg(`Payment saved: ${settlementLabel}.`);
       }
     } catch (err) {
       setError(err.message || 'Failed to save payment');
@@ -314,15 +318,13 @@ export default function FinanceCampPayoutsPage() {
     setMsg('');
   }
 
-  async function returnToCampFinancial() {
+  function returnToCampFinancial() {
     if (!canReturn || !returnableRows.length) return;
-    const label = returnableRows.length === 1
-      ? `Camp ${returnableRows[0].campId || '—'}`
-      : `${returnableRows.length} camps`;
-    const confirmed = window.confirm(
-      `Return ${label} to Camp One Financial (Pending Confirmation)?\n\nRevenue and payout amounts can be edited and resubmitted for payment confirmation.`,
-    );
-    if (!confirmed) return;
+    setReturnConfirmOpen(true);
+  }
+
+  async function executeReturnToCampFinancial() {
+    setReturnConfirmOpen(false);
 
     setReturnBusy(true);
     setError('');

@@ -4,6 +4,7 @@ import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE } from '../../shared/labels.js';
 import PageShell from '../../components/ui/PageShell.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
@@ -41,6 +42,8 @@ export default function LocationMasterPage({ embedded = false } = {}) {
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [loading, setLoading] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = () => {
     const params = new URLSearchParams({ page: String(page), limit: String(limit), active: 'false' });
@@ -106,15 +109,24 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     });
   };
 
-  const remove = async (id) => {
+  const remove = (id) => {
     if (!canDelete) return;
-    if (!window.confirm('Remove this PIN mapping?')) return;
+    setDeleteTargetId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetId || !canDelete) return;
+    const id = deleteTargetId;
+    setDeleteBusy(true);
     setError('');
     try {
       await api(`/geo/pin-codes/${id}`, { method: 'DELETE' });
+      setDeleteTargetId(null);
       load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -241,10 +253,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
             value={form}
             onChange={(loc) => setForm((prev) => ({ ...prev, ...loc }))}
           />
-          <div className="row" style={{ gap: '0.5rem', marginTop: '1rem' }}>
-            <button className="btn" type="submit">
-              {editId ? 'Save changes' : 'Add PIN'}
-            </button>
+          <div className="form-actions pin-master-actions">
             {editId ? (
               <button
                 className="btn secondary"
@@ -257,6 +266,9 @@ export default function LocationMasterPage({ embedded = false } = {}) {
                 Cancel
               </button>
             ) : null}
+            <button className="btn" type="submit">
+              {editId ? 'Save changes' : 'Add PIN'}
+            </button>
           </div>
         </form>
       ) : null}
@@ -271,6 +283,16 @@ export default function LocationMasterPage({ embedded = false } = {}) {
           setLimit(n);
           setPage(1);
         }}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteTargetId)}
+        title="Remove PIN Mapping"
+        message="Remove this PIN mapping from Location Master?"
+        confirmLabel={deleteBusy ? 'Removing…' : 'Remove mapping'}
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTargetId(null)}
       />
     </PageShell>
   );

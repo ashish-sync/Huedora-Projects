@@ -306,10 +306,29 @@
 }
 
 .camp-ops-root .bulk-bar {
-  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated)) !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-height: 40px !important;
+  background: color-mix(in srgb, var(--brand) 6%, var(--bg-elevated)) !important;
   border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line)) !important;
-  border-radius: var(--radius) !important;
-  padding: var(--stack-sm) var(--pad) !important;
+  border-radius: var(--radius-card, var(--radius-md)) !important;
+  padding: 6px 12px !important;
+}
+
+.camp-ops-root .bulk-bar span {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  color: var(--ink) !important;
+  margin-right: 4px !important;
+}
+
+.camp-ops-root .camp-working-stage-select {
+  height: var(--control-height-sm, 32px) !important;
+  min-height: var(--control-height-sm, 32px) !important;
+  font-size: 0.8125rem !important;
+  border-radius: var(--radius-sm) !important;
 }
 
 .camp-ops-root .communications-candidate-btn.is-active,

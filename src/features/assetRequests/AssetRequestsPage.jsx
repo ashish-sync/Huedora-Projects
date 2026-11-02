@@ -7,6 +7,7 @@ import { productAssetName, productOptionLabel } from '../../shared/productMaster
 import { FIELD, MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
@@ -48,6 +49,8 @@ import {
 } from '../camps/utils/clientMasterCascade.js';
 import { normalizeHealthcareWorkers } from '../camps/utils/healthcareWorkers.js';
 import { isVendorContact } from '../agreements/contactPicklists.js';
+
+const EMPTY_ARRAY = Object.freeze([]);
 
 const REQUEST_TYPES = [
   { value: 'SERVICE', label: 'Repair & Service Request', needsAsset: true },
@@ -418,7 +421,7 @@ function detailSummary(r) {
         : 'Raised for: Self'
       : '',
     r.requestType === 'REIMBURSEMENT' && r.associateWithClient
-      ? `Client: ${[r.clientCode, r.divisionTherapy || r.clientName].filter(Boolean).join(' · ') || '—'}`
+      ? `Client: ${[r.clientCode, r.divisionTherapy || r.clientName].filter(Boolean).join(' · ') || '-'}`
       : '',
     r.requestType === 'LOGISTICS' && (r.clientName || r.clientCode || r.divisionTherapy || r.hiringMethod)
       ? `Client: ${[r.clientName || r.clientCode, r.divisionTherapy, r.hiringMethod]
@@ -470,6 +473,8 @@ export default function AssetRequestsPage() {
   };
 
   const [rows, setRows] = useState([]);
+  const [cancelConfirmTarget, setCancelConfirmTarget] = useState(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [assets, setAssets] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [vendorContacts, setVendorContacts] = useState([]);
@@ -534,7 +539,7 @@ export default function AssetRequestsPage() {
       searchParams.get('requestId') || searchParams.get('movementId') || ''
     ).trim();
     if (!focusId) return;
-    setMsg(`Opened from notification — request ${focusId}`);
+    setMsg(`Opened from notification: request ${focusId}`);
     setTypeFilter('LOGISTICS');
   }, [searchParams]);
 
@@ -633,8 +638,8 @@ export default function AssetRequestsPage() {
   }, [contacts, vendorContacts]);
   // Prefer client SSOT so new categories (e.g. Document) show even if /logistics/meta is stale
   const logisticsProductTypes = FALLBACK_PRODUCT;
-  const logisticsProducts = logisticsMeta?.products || [];
-  const logisticsUoms = logisticsMeta?.uoms || [];
+  const logisticsProducts = logisticsMeta?.products || EMPTY_ARRAY;
+  const logisticsUoms = logisticsMeta?.uoms || EMPTY_ARRAY;
   const trainingDeviceProducts = useMemo(
     () =>
       logisticsProducts.filter(
@@ -643,8 +648,8 @@ export default function AssetRequestsPage() {
       ),
     [logisticsProducts]
   );
-  const expenseCategories = expenseMaster.expenseCategories || [];
-  const expenseSubCategories = expenseMaster.expenseSubCategories || [];
+  const expenseCategories = expenseMaster.expenseCategories || EMPTY_ARRAY;
+  const expenseSubCategories = expenseMaster.expenseSubCategories || EMPTY_ARRAY;
 
   const activeExpenseSubCategories = useMemo(
     () => expenseSubCategories.filter((row) => row.isActive !== false),
@@ -774,7 +779,7 @@ export default function AssetRequestsPage() {
             ...row,
             clientCode: code,
             divisionTherapy: division,
-            optionLabel: [code || '—', division || '—'].join(' · '),
+            optionLabel: [code || '-', division || '-'].join(' · '),
           };
         }),
     [clientMasters, clientsById]
@@ -1720,16 +1725,25 @@ export default function AssetRequestsPage() {
     }
   };
 
-  const cancelRequest = async (request) => {
-    if (!window.confirm(`Cancel request ${request.requestNumber || request._id}?`)) return;
+  const cancelRequest = (request) => {
+    setCancelConfirmTarget(request);
+  };
+
+  const handleConfirmCancelRequest = async () => {
+    if (!cancelConfirmTarget) return;
+    const req = cancelConfirmTarget;
+    setCancelBusy(true);
     setError('');
     setMsg('');
     try {
-      await api(`/asset-requests/${request._id}/cancel`, { method: 'POST', body: {} });
-      setMsg(`Request ${request.requestNumber || request._id} cancelled.`);
+      await api(`/asset-requests/${req._id}/cancel`, { method: 'POST', body: {} });
+      setMsg(`Request ${req.requestNumber || req._id} cancelled.`);
+      setCancelConfirmTarget(null);
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setCancelBusy(false);
     }
   };
 
@@ -1923,7 +1937,7 @@ export default function AssetRequestsPage() {
                   <label>Preferred vendor</label>
                   <AdaptiveSelect
                     threshold={1}
-                    placeholder="Optional — search Contact Directory…"
+                    placeholder="Optional: search Contact Directory…"
                     value={form.preferredVendorContactId}
                     onChange={(e) => {
                       const id = e.target.value;
@@ -3568,6 +3582,16 @@ export default function AssetRequestsPage() {
           }}
         />
       </div>
+      <ConfirmDialog
+        open={Boolean(cancelConfirmTarget)}
+        title="Cancel Asset Request"
+        message={`Cancel request ${cancelConfirmTarget?.requestNumber || cancelConfirmTarget?._id}?`}
+        confirmLabel={cancelBusy ? 'Cancelling…' : 'Cancel request'}
+        confirmVariant="danger"
+        loading={cancelBusy}
+        onConfirm={handleConfirmCancelRequest}
+        onCancel={() => setCancelConfirmTarget(null)}
+      />
     </PageShell>
   );
 }

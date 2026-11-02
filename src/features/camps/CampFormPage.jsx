@@ -31,6 +31,7 @@ import {
   parseClientMasterListResponse,
 } from './utils/clientMasterCascade';
 import {
+  canAuthorisedUserSaveCancelledOtherPayouts,
   canEditLifecycleStage,
   campToForm,
   emptyLifecycleForm,
@@ -65,6 +66,7 @@ import { autocompleteOlaMaps, estimateOlaRoundTripKm } from '../../shared/olaMap
 import {
   TRAVEL_STATUS,
   estimatedTravelStatus,
+  extractIndiaPin,
   hasExistingTravelKm,
   hasValidCampCoords,
   readTravelEstimateCache,
@@ -296,8 +298,8 @@ export default function CampFormPage() {
         professions,
         // Wider page for SP so embedded rosters are not truncated off the first page.
         pageSize: isServiceProvider ? Math.max(ASSIGN_HCW_INITIAL_LIMIT, 100) : ASSIGN_HCW_INITIAL_LIMIT,
-        maxPages: isServiceProvider ? 3 : 1,
-        useCache: true,
+        maxPages: isServiceProvider ? 3 : 2,
+        useCache: false,
         signal: controller?.signal,
       })
         .then((rows) => {
@@ -382,9 +384,11 @@ export default function CampFormPage() {
   }, [form.hcwContactId, hcwContacts]);
 
   // Financial readiness must use the full Contact Directory document.
+  // Execution travel estimate also needs PIN / origin coords from that document.
   // The assign=1 HCW list omits address / banking / KYC fields, so never trust it here.
   useEffect(() => {
-    if (!isEdit || activeStage !== 'financial' || !form.hcwContactId) {
+    const stage = normalizeLifecycleStage(activeStage, 'request');
+    if (!isEdit || !form.hcwContactId || (stage !== 'financial' && stage !== 'execution')) {
       setAssignedHcwContact(null);
       setAssignedHcwLoading(false);
       return undefined;
@@ -1136,8 +1140,15 @@ export default function CampFormPage() {
 
   async function handleSubmit(e, { acknowledgeGapOverride = false } = {}) {
     if (e?.preventDefault) e.preventDefault();
-    if (readOnly && campStatus === 'cancelled' && !isCampAdmin) return;
-    if (activeStage === 'financial' && !isCampAdmin) return;
+    const cancelledOtherPayoutsSave = canAuthorisedUserSaveCancelledOtherPayouts(
+      campStatus,
+      activeStage,
+      reachedLifecycleStage,
+      campLifecycleContext,
+      lifecycleEditOpts,
+    );
+    if (readOnly && campStatus === 'cancelled' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
+    if (activeStage === 'financial' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
     if (!acknowledgeGapOverride) setHcwGapConflict(null);
 
     if (!isEdit && activeStage !== 'request') {
@@ -1393,7 +1404,9 @@ export default function CampFormPage() {
     const pin = resolveHcwTravelPin(contact, hcwContacts);
     const destLat = form.latitude;
     const destLng = form.longitude;
-    const key = travelEstimateKey({ pin, destLat, destLng });
+    const destPin = form.pincode;
+    const hasDest = hasValidCampCoords(form) || Boolean(extractIndiaPin(destPin));
+    const key = travelEstimateKey({ pin, destLat, destLng, destPin });
     const origin = resolveHcwOriginCoords(contact);
 
     if (shouldKeepManualTravel(form.kmRoundTripSource)) return undefined;
@@ -1401,7 +1414,7 @@ export default function CampFormPage() {
     let status = '';
     if (!form.hcwContactId) status = TRAVEL_STATUS.NO_HCW;
     else if (!pin) status = TRAVEL_STATUS.PIN_MISSING;
-    else if (!hasValidCampCoords(form)) status = TRAVEL_STATUS.COORDS_MISSING;
+    else if (!hasDest) status = TRAVEL_STATUS.COORDS_MISSING;
 
     if (status) {
       if (form.kmRoundTripEstimateStatus !== status) {
@@ -1410,6 +1423,10 @@ export default function CampFormPage() {
           ...(key ? { kmRoundTripEstimateKey: key } : {}),
         });
       }
+      return undefined;
+    }
+
+    if (form.kmRoundTripEstimateKey === key && form.kmRoundTripEstimateStatus === TRAVEL_STATUS.UNAVAILABLE) {
       return undefined;
     }
 
@@ -1442,7 +1459,7 @@ export default function CampFormPage() {
       updateFields({ kmRoundTripEstimateStatus: TRAVEL_STATUS.ESTIMATING });
     }
 
-    estimateOlaRoundTripKm({ pin, destLat, destLng, ...origin })
+    estimateOlaRoundTripKm({ pin, destLat, destLng, destPin, ...origin })
       .then((data) => {
         if (seq !== travelEstimateSeqRef.current) return;
         const km = usableEstimatedKm(data?.kmRoundTrip);
@@ -1479,6 +1496,7 @@ export default function CampFormPage() {
     form.hcwContactId,
     form.latitude,
     form.longitude,
+    form.pincode,
     form.kmRoundTrip,
     form.kmRoundTripSource,
     form.kmRoundTripEstimateKey,
@@ -1543,15 +1561,25 @@ export default function CampFormPage() {
     && !assignedHcwLoading
     && !payoutPayeeLoading
     && !submitFinanceBusy;
+  const cancelledOtherPayoutsSave = canAuthorisedUserSaveCancelledOtherPayouts(
+    campStatus,
+    activeStage,
+    reachedLifecycleStage,
+    campLifecycleContext,
+    lifecycleEditOpts,
+  );
   const canSubmit = (
     isCampAdmin
       ? canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
       : (
-        campStatus !== 'cancelled'
-        && campStatus !== 'rejected'
-        && activeStage !== 'financial'
-        && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
-        && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus))
+        cancelledOtherPayoutsSave
+        || (
+          campStatus !== 'cancelled'
+          && campStatus !== 'rejected'
+          && activeStage !== 'financial'
+          && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
+          && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus))
+        )
       )
   )
     && (!hasNoDivisions || activeStage !== 'request')

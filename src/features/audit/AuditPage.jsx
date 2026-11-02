@@ -29,6 +29,7 @@ function defaultActivityRange() {
 function StatusPill({ status, failed }) {
   return (
     <span className={`activity-log-status${failed ? ' activity-log-status--bad' : ' activity-log-status--ok'}`}>
+      <span aria-hidden="true">{failed ? '✕' : '✓'}</span>
       {status}
     </span>
   );
@@ -37,16 +38,18 @@ function StatusPill({ status, failed }) {
 function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
   return (
     <section className="card activity-log-detail" aria-label="Activity details">
-      <div className="activity-log-row__top">
+      <div className="activity-log-detail__header">
         <StatusPill status={described.status} failed={described.failed} />
         {onClose ? (
-          <button type="button" className="btn ghost btn-compact" onClick={onClose}>
+          <button type="button" className="btn ghost btn-compact" onClick={onClose} aria-label="Close activity detail">
             Close
           </button>
         ) : null}
       </div>
+
       <h3>{described.title}</h3>
       <p className="activity-log-detail__summary">{described.summary}</p>
+
       <dl className="activity-log-facts">
         <div>
           <dt>Employee</dt>
@@ -71,9 +74,10 @@ function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
           <dd>{described.status}</dd>
         </div>
       </dl>
+
       {described.changes.length ? (
-        <>
-          <p className="section-label">What changed</p>
+        <div className="activity-diff-section">
+          <p className="activity-diff-label">What changed</p>
           <ul className="nc-changes">
             {described.changes.map((change) => (
               <li key={change.field}>
@@ -86,34 +90,39 @@ function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
               </li>
             ))}
           </ul>
-        </>
+        </div>
       ) : row.message ? (
         <p className="muted">{row.message}</p>
       ) : (
         <p className="muted">No further business details were stored for this activity.</p>
       )}
+
       {canSeeTechnical ? (
         <details className="activity-log-tech">
           <summary>Technical details</summary>
-          <dl className="activity-log-facts">
+          <dl className="activity-log-facts" style={{ marginTop: '8px' }}>
             <div>
               <dt>Event code</dt>
-              <dd><code className="mono-sm">{row.action || '—'}</code></dd>
+              <dd><code className="mono-sm">{row.action || '-'}</code></dd>
             </div>
             <div>
               <dt>Record type</dt>
-              <dd><code className="mono-sm">{row.entityType || '—'}</code></dd>
+              <dd><code className="mono-sm">{row.entityType || '-'}</code></dd>
             </div>
             <div>
               <dt>Record id</dt>
-              <dd><code className="mono-sm">{row.entityId ? String(row.entityId) : '—'}</code></dd>
+              <dd><code className="mono-sm">{row.entityId ? String(row.entityId) : '-'}</code></dd>
             </div>
             {row.ip ? (
               <div>
-                <dt>IP</dt>
+                <dt>IP Address</dt>
                 <dd><code className="mono-sm">{row.ip}</code></dd>
               </div>
             ) : null}
+            <div>
+              <dt>Raw Timestamp</dt>
+              <dd><code className="mono-sm">{row.at || '-'}</code></dd>
+            </div>
           </dl>
         </details>
       ) : null}
@@ -336,7 +345,7 @@ export default function AuditPage({
       description={
         embedded
           ? ''
-          : 'What happened across Tylo One — who did what, where, and how it turned out.'
+          : 'Unified audit trail of actions, approvals, transitions, and system changes across TYLO ONE.'
       }
       actions={
         canSeeTechnical ? (
@@ -363,6 +372,16 @@ export default function AuditPage({
         ) : null
       }
       toolbar={embedded ? null : toolbar}
+      stackMetrics={!embedded}
+      kpis={
+        embedded
+          ? []
+          : [
+              { label: 'Total Records', value: listMeta.total },
+              { label: 'Current View', value: `${rows.length} on page` },
+              { label: 'Date Window', value: `${from} → ${to}` },
+            ]
+      }
     >
       {embedded ? (
         <OpsReviewSlot totalLabel="Total activities" totalValue={listMeta.total}>
@@ -372,7 +391,7 @@ export default function AuditPage({
       {error ? <p className="error">{error}</p> : null}
 
       {view === 'technical' && canSeeTechnical ? (
-        <div className="card card--flush table-wrap">
+        <div className="activity-table-card table-wrap">
           <table className="ops-data-table">
             <thead>
               <tr>
@@ -387,19 +406,27 @@ export default function AuditPage({
               {rows.map((row) => (
                 <tr key={row._id}>
                   <td>{formatDateTime(row.at)}</td>
-                  <td>{row.actorEmail || row.actorType || '—'}</td>
+                  <td>{row.actorEmail || row.actorType || '-'}</td>
                   <td><code className="mono-sm">{row.action}</code></td>
                   <td>
-                    {row.entityType || '—'}
+                    {row.entityType || '-'}
                     {row.entityId ? ` ${String(row.entityId).slice(-6)}` : ''}
                   </td>
-                  <td>{row.result || '—'}</td>
+                  <td>
+                    <StatusPill
+                      status={row.result || '-'}
+                      failed={row.result !== 'SUCCESS' && row.result !== 'OK'}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {!rows.length && !loading ? (
-            <p className="muted activity-log-empty">No technical rows for this filter.</p>
+            <div className="activity-log-empty activity-log-empty--hero">
+              <span className="activity-log-empty-icon" aria-hidden="true">📋</span>
+              <p>No technical log entries recorded for this filter range.</p>
+            </div>
           ) : null}
         </div>
       ) : (
@@ -418,23 +445,32 @@ export default function AuditPage({
                 >
                   <div className="activity-log-row__top">
                     <p className="activity-log-row__title">{described.title}</p>
-                    <StatusPill status={described.status} failed={described.failed} />
+                    <div className="activity-log-row__badges">
+                      <span className="activity-module-pill">{described.moduleLabel}</span>
+                      <StatusPill status={described.status} failed={described.failed} />
+                    </div>
                   </div>
-                  <p className="activity-log-row__meta">
-                    {described.employee}
-                    {' · '}
-                    {described.where || described.moduleLabel}
-                    {' · '}
-                    {formatDateTime(row.at)}
-                  </p>
+                  <div className="activity-log-row__meta">
+                    <span>{described.employee}</span>
+                    <span className="activity-log-row__meta-dot">·</span>
+                    <span>{described.where || described.moduleLabel}</span>
+                    <span className="activity-log-row__meta-dot">·</span>
+                    <span className="activity-log-row__time">{formatDateTime(row.at)}</span>
+                  </div>
                 </button>
               );
             })}
             {loading && !rows.length ? (
-              <p className="muted activity-log-empty">Loading activity…</p>
+              <div className="activity-log-empty activity-log-empty--hero">
+                <span className="activity-log-empty-icon" aria-hidden="true">⏳</span>
+                <p>Loading activity stream…</p>
+              </div>
             ) : null}
             {!rows.length && !loading ? (
-              <p className="muted activity-log-empty">No activity for this filter.</p>
+              <div className="activity-log-empty activity-log-empty--hero">
+                <span className="activity-log-empty-icon" aria-hidden="true">🔍</span>
+                <p>No activity records found matching the selected filter criteria.</p>
+              </div>
             ) : null}
           </div>
           {selected && selectedDescribed ? (

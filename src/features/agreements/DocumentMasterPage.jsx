@@ -12,6 +12,9 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
+
+const ZOOM_STEPS = [0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.3];
 
 const DOCUMENT_TYPES = [
   { value: 'LEASE', label: 'Lease' },
@@ -144,7 +147,6 @@ function TemplatePreviewModal({ template, onClose }) {
   const [printPdfEngine, setPrintPdfEngine] = useState('');
   const [printPdfError, setPrintPdfError] = useState('');
 
-  const ZOOM_STEPS = [0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.3];
 
   useEffect(() => {
     setPageIndex(0);
@@ -538,11 +540,18 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
   }, []);
 
   const selected = rows.find((t) => t._id === selectedId) || null;
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const deleteTemplate = async (id, templateName) => {
+  const deleteTemplate = (id, templateName) => {
     if (!canDelete) return;
-    const label = templateName || 'this template';
-    if (!window.confirm(`Delete “${label}”? It will be removed from Document Templates.`)) return;
+    setDeleteConfirmTarget({ id, name: templateName || 'this template' });
+  };
+
+  const handleConfirmDeleteTemplate = async () => {
+    if (!deleteConfirmTarget || !canDelete) return;
+    const { id } = deleteConfirmTarget;
+    setDeleteBusy(true);
     setError('');
     try {
       // POST /delete — DELETE is blocked or missing on some deployed hosts.
@@ -551,9 +560,12 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
         setSelectedId(null);
         setPreviewOpen(false);
       }
+      setDeleteConfirmTarget(null);
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -1015,9 +1027,9 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
               <p className="muted">
                 {uploadPdfUrl
                   ? uploadPdfEngine === 'msword'
-                    ? 'Microsoft Word PDF — same layout as Save as PDF in Word.'
+                    ? 'Microsoft Word PDF: same layout as Save as PDF in Word.'
                     : uploadPdfEngine === 'libreoffice'
-                      ? 'LibreOffice PDF — converted directly from your Word file.'
+                      ? 'LibreOffice PDF: converted directly from your Word file.'
                       : 'PDF converted directly from your Word file.'
                   : uploadPdfBusy
                     ? 'Creating Word-faithful PDF preview…'
@@ -1052,6 +1064,17 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
       {previewOpen && selected && (
         <TemplatePreviewModal template={selected} onClose={() => setPreviewOpen(false)} />
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteConfirmTarget)}
+        title="Delete Document Template"
+        message={`Delete "${deleteConfirmTarget?.name}"? It will be removed from Document Templates.`}
+        confirmLabel={deleteBusy ? 'Deleting…' : 'Delete template'}
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={handleConfirmDeleteTemplate}
+        onCancel={() => setDeleteConfirmTarget(null)}
+      />
     </div>
   );
 }

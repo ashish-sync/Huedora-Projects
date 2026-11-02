@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../shared/api.js';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import './accessControl.css';
 
 function getInitials(fullName = '', email = '') {
   const parts = String(fullName || '')

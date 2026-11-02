@@ -4,12 +4,17 @@ import { LEGACY_THEME_STORAGE_KEY } from './legacyMigration.js';
 const STORAGE_KEY = 'tylo-one-theme';
 const LEGACY_STORAGE_KEY = LEGACY_THEME_STORAGE_KEY;
 const THEME_META_COLORS = {
-  light: '#0A5AC2',
-  dark: '#111827',
+  light: '#2457C5',
+  dark: '#090D16',
 };
 
 export function applyThemeToDocument(theme) {
   document.documentElement.setAttribute('data-theme', theme);
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
     meta.setAttribute('content', THEME_META_COLORS[theme] || THEME_META_COLORS.light);

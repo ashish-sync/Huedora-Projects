@@ -30,6 +30,65 @@ function canvasToBlob(canvas, type, quality) {
   });
 }
 
+export function imageExtensionForMime(type) {
+  const t = String(type || '').toLowerCase();
+  if (t.includes('webp')) return '.webp';
+  if (t.includes('png')) return '.png';
+  if (t.includes('gif')) return '.gif';
+  return '.jpg';
+}
+
+export function gpsSelfieFileName(baseName, mimeType) {
+  const base = String(baseName || 'gps-selfie').replace(/\.[^.]+$/, '');
+  return `${base}${imageExtensionForMime(mimeType)}`;
+}
+
+async function blobHasJpegMagic(blob) {
+  if (!blob || blob.size < 3) return false;
+  try {
+    const buf = new Uint8Array(await blob.slice(0, 3).arrayBuffer());
+    return buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  } catch {
+    return false;
+  }
+}
+
+function mimeLooksLikeJpeg(type) {
+  const t = String(type || '').toLowerCase();
+  return t === 'image/jpeg' || t === 'image/jpg';
+}
+
+/**
+ * Encode canvas as a real JPEG. Some browsers ignore toBlob('image/jpeg') and
+ * return PNG/WebP bytes — naming those `.jpg` trips "JPEG signature mismatch".
+ */
+export async function encodeCanvasAsJpegBlob(canvas) {
+  const fromToBlob = await canvasToBlob(canvas, 'image/jpeg', GPS_JPEG_QUALITY);
+  if (fromToBlob && fromToBlob.size > 0 && await blobHasJpegMagic(fromToBlob)) {
+    return mimeLooksLikeJpeg(fromToBlob.type)
+      ? fromToBlob
+      : new Blob([fromToBlob], { type: 'image/jpeg' });
+  }
+
+  try {
+    const dataUrl = canvas.toDataURL('image/jpeg', GPS_JPEG_QUALITY);
+    if (dataUrl.startsWith('data:image/jpeg')) {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      if (blob && blob.size > 0 && await blobHasJpegMagic(blob)) {
+        return mimeLooksLikeJpeg(blob.type)
+          ? blob
+          : new Blob([blob], { type: 'image/jpeg' });
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+
+  if (fromToBlob && fromToBlob.size > 0) return fromToBlob;
+  return canvasToBlob(canvas, 'image/png');
+}
+
 function formatCoord(value, digits = 6) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '—';
@@ -142,19 +201,17 @@ export async function prepareGpsSelfieForUpload(file, options = {}) {
       drawGpsSelfieWatermark(ctx, width, height, watermarkLines);
     }
 
-    let blob = await canvasToBlob(canvas, 'image/webp', GPS_JPEG_QUALITY);
-    if (!blob || blob.size <= 0) {
-      blob = await canvasToBlob(canvas, 'image/jpeg', GPS_JPEG_QUALITY);
-    }
+    const blob = await encodeCanvasAsJpegBlob(canvas);
     if (!blob || blob.size <= 0) return file;
 
     // Without watermark, keep original if compression did not help.
     if (!needsWatermark && blob.size >= file.size && maxDim <= GPS_LONG_EDGE) return file;
 
-    const ext = blob.type === 'image/webp' ? '.webp' : '.jpg';
-    const base = String(file.name || 'gps-selfie').replace(/\.[^.]+$/, '');
-    return new File([blob], `${base}${ext}`, {
-      type: blob.type,
+    const mime = String(blob.type || '').toLowerCase().startsWith('image/')
+      ? blob.type
+      : 'image/jpeg';
+    return new File([blob], gpsSelfieFileName(file.name || 'gps-selfie', mime), {
+      type: mime,
       lastModified: Date.now(),
     });
   } catch {

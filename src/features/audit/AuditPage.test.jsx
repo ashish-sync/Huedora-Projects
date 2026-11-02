@@ -55,13 +55,21 @@ describe('AuditPage Activity Log', () => {
     );
 
     expect(await screen.findByRole('heading', { name: 'Activity Log' })).toBeTruthy();
+    expect(screen.getByText('Total Records')).toBeTruthy();
+    expect(screen.getByText('Current View')).toBeTruthy();
+    expect(screen.getByText('Date Window')).toBeTruthy();
     expect(screen.getByText('Approved a camp')).toBeTruthy();
+    expect(screen.getByText('Camp One')).toBeTruthy();
     expect(screen.queryByText('camp_ops.approve')).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Technical log' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: /Approved a camp/i }));
     expect(await screen.findByText(/priya@tylo.test approved a camp/i)).toBeTruthy();
     expect(screen.getAllByText('26-10-0042').length).toBeGreaterThan(0);
+
+    const closeBtn = screen.getByRole('button', { name: /Close activity detail/i });
+    await user.click(closeBtn);
+    expect(screen.queryByRole('region', { name: 'Activity details' })).toBeNull();
   });
 
   it('keeps the raw technical log behind admin access', async () => {
@@ -77,5 +85,20 @@ describe('AuditPage Activity Log', () => {
     await waitFor(() => {
       expect(screen.getByText('camp_ops.approve')).toBeTruthy();
     });
+  });
+
+  it('shows an explicit empty state when no activity matches', async () => {
+    api.mockResolvedValueOnce({
+      data: [],
+      meta: { page: 1, limit: 25, total: 0, pages: 0 },
+    });
+
+    render(
+      <MemoryRouter>
+        <AuditPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/No activity records found matching the selected filter criteria/i)).toBeTruthy();
   });
 });

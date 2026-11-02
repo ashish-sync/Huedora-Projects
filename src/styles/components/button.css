@@ -1,5 +1,6 @@
 /**
- * Buttons — token-driven primary / secondary / danger
+ * Buttons — token-driven primary / secondary / danger / ghost
+ * Implements Approved Final Global Colour System
  */
 
 .btn {
@@ -7,8 +8,8 @@
   padding: 0 var(--space-4);
   border: 0;
   border-radius: var(--control-radius, var(--radius-button));
-  background: var(--color-brand-primary);
-  color: var(--color-brand-on-primary);
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
   font-size: var(--text-body-sm-size);
   font-weight: 600;
   line-height: 1.2;
@@ -27,59 +28,94 @@
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--color-brand-primary-hover);
+  background: var(--brand-primary-hover);
+}
+
+.btn:active:not(:disabled) {
+  background: var(--brand-primary-pressed);
+  transform: translateY(1px);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
+  background: var(--control-disabled-bg);
+  color: var(--control-disabled-text);
+  border: 1px solid var(--control-disabled-border);
 }
 
 .btn.secondary {
-  background: var(--color-bg-elevated);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-default);
+  background: var(--bg-tier-2);
+  color: var(--text-main);
+  border: 1px solid var(--border-strong);
 }
 
 .btn.secondary:hover:not(:disabled) {
-  background: var(--color-bg-hover);
-  border-color: var(--color-border-strong);
-  color: var(--color-text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+  color: var(--text-main);
+}
+
+.btn.secondary:active:not(:disabled) {
+  background: var(--bg-muted);
 }
 
 .btn.danger {
-  background: var(--color-danger);
-  color: var(--color-text-on-primary);
+  background: var(--status-danger-dot);
+  color: var(--text-on-brand);
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-danger) 88%, rgb(0 0 0));
+  background: var(--status-danger-text);
+}
+
+.btn.success {
+  background: var(--status-success-dot);
+  color: var(--text-on-brand);
+}
+
+.btn.success:hover:not(:disabled) {
+  background: var(--status-success-text);
 }
 
 .app-header .btn.secondary {
-  color: var(--color-text-on-primary);
-  background: color-mix(in srgb, var(--color-text-on-primary) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-text-on-primary) 28%, transparent);
+  color: var(--text-main);
+  background: var(--bg-tier-2);
+  border-color: var(--border-strong);
 }
 
 .app-header .btn.secondary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-text-on-primary) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-text-on-primary) 36%, transparent);
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.btn.btn-compact,
+.btn-compact {
+  min-height: var(--control-h-sm);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-body-sm-size);
+  gap: var(--space-1);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-tier-1), 0 0 0 4px var(--focus-ring);
 }
 
 .btn.ghost,
 .btn.btn-ghost {
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   border: 1px solid transparent;
   box-shadow: none;
 }
 
 .btn.ghost:hover:not(:disabled),
 .btn.btn-ghost:hover:not(:disabled) {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-default);
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--border-default);
 }
 
 .btn.is-loading {

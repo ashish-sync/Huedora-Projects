@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canAuthorisedUserSaveCancelledOtherPayouts,
   canEditLifecycleStage,
   canVisitLifecycleStage,
   computeLifecycleDerived,
@@ -56,6 +57,44 @@ describe('camp lifecycle finance transition', () => {
         consumablesUsed: [{ productId: 'p1', quantityUsed: '', wastage: '' }],
       }, mapped),
     ).toEqual(['Enter Usage and Wastage for Test Strip (use 0 if none)']);
+  });
+
+  it('lets authorised non-admin users save Other Payouts on cancelled-by camps', () => {
+    const cancelledByClient = {
+      executionStatus: 'Cancelled by Client',
+      financePaymentStatus: '',
+    };
+    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      cancelledByClient,
+    )).toBe(true);
+    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'execution',
+      { executionStatus: 'Cancelled by Tylo' },
+    )).toBe(true);
+    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      cancelledByClient,
+      { isAdmin: true },
+    )).toBe(false);
+    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+      'executed',
+      'financial',
+      'financial',
+      { executionStatus: EXECUTION_STATUS.CAMP_COMPLETED },
+    )).toBe(false);
+    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+      'cancelled',
+      'execution',
+      'financial',
+      cancelledByClient,
+    )).toBe(false);
   });
 
   it('treats Cancelled by Tylo the same as Cancelled by Client for finance cancellation', () => {

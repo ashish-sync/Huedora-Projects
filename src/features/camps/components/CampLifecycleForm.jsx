@@ -293,6 +293,8 @@ export function CampLifecycleForm({
     form.campRevenue,
     form.travelRevenue,
     form.overtimeRevenue,
+    form.durationHours,
+    form.clientMasterCampDuration,
     form.otherRevenue,
     form.totalRevenue,
     form.chargeableStatus,

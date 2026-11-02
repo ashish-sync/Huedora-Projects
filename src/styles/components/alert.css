@@ -1,6 +1,6 @@
 /**
  * Inline feedback banners — unified styling for errors, success, info, and warnings.
- * Legacy classes (.error-banner, .success-banner, .am-banner) alias to these tokens.
+ * Uses centralized Semantic Status Tokens across Light and Dark Mode.
  */
 
 .feedback-banner,
@@ -18,31 +18,31 @@
 .feedback-banner.is-error,
 .error-banner,
 .am-banner.is-error {
-  background: var(--color-danger-subtle);
-  color: var(--color-danger);
-  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  border-color: var(--status-danger-border);
 }
 
 .feedback-banner.is-success,
 .success-banner {
-  background: var(--color-success-subtle);
-  color: var(--color-success);
-  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
+  border-color: var(--status-success-border);
 }
 
 .feedback-banner.is-info,
 .info-banner,
 .am-banner.is-info {
-  background: var(--color-info-subtle);
-  color: var(--color-info);
-  border-color: color-mix(in srgb, var(--color-info) 24%, transparent);
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
+  border-color: var(--status-info-border);
 }
 
 .feedback-banner.is-warning,
 .warning-banner {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning);
-  border-color: color-mix(in srgb, var(--color-warning) 28%, transparent);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border-color: var(--status-warning-border);
 }
 
 .am-banner {
@@ -50,17 +50,17 @@
   border-radius: var(--radius-md);
   font-size: var(--text-body-sm-size);
   line-height: var(--text-body-sm-leading);
-  border: 1px solid var(--color-border-default);
-  background: var(--color-bg-elevated);
-  color: var(--color-text-primary);
+  border: 1px solid var(--border-default);
+  background: var(--bg-tier-2);
+  color: var(--text-main);
 }
 
 .rp-toast {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--color-success-subtle);
-  color: var(--color-success);
-  border: 1px solid color-mix(in srgb, var(--color-success) 24%, transparent);
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
+  border: 1px solid var(--status-success-border);
   font-size: var(--text-body-sm-size);
 }
 
@@ -72,26 +72,4 @@
 
 .page-alerts > * {
   margin: 0;
-}
-
-html[data-theme='dark'] .feedback-banner.is-error,
-html[data-theme='dark'] .error-banner,
-html[data-theme='dark'] .am-banner.is-error {
-  color: color-mix(in srgb, var(--color-danger) 88%, var(--color-text-on-primary));
-}
-
-html[data-theme='dark'] .feedback-banner.is-success,
-html[data-theme='dark'] .success-banner {
-  color: color-mix(in srgb, var(--color-success) 88%, var(--color-text-on-primary));
-}
-
-html[data-theme='dark'] .feedback-banner.is-info,
-html[data-theme='dark'] .info-banner,
-html[data-theme='dark'] .am-banner.is-info {
-  color: color-mix(in srgb, var(--color-info) 88%, var(--color-text-on-primary));
-}
-
-html[data-theme='dark'] .feedback-banner.is-warning,
-html[data-theme='dark'] .warning-banner {
-  color: color-mix(in srgb, var(--color-warning) 90%, var(--color-text-on-primary));
 }

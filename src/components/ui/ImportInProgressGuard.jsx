@@ -36,7 +36,7 @@ export function useImportInProgressLock(active) {
 export default function ImportInProgressGuard({
   active = false,
   message = 'Import in Progress',
-  detail = 'Please wait — do not leave or skip this step until the import finishes.',
+  detail = 'Please wait. Do not leave or navigate away until the import finishes.',
 }) {
   useImportInProgressLock(active);
 

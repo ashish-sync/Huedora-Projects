@@ -72,6 +72,11 @@ export function CampHcwAssignPicker({
     () => findAssignableHealthcareWorker(hcwContacts, selectedContactId),
     [hcwContacts, selectedContactId],
   );
+  const selectedContactExists = Boolean(selectedContact);
+  const selectedContactResourceType = assignmentResourceTypeForContact(selectedContact);
+  const selectedContactState = selectedContact?.state || '';
+  const selectedContactCity = selectedContact?.city || '';
+  const selectedContactProviderId = String(selectedContact?.serviceProviderContactId || '').trim();
 
   const professions = useMemo(
     () => normalizeHealthcareWorkers(
@@ -273,12 +278,18 @@ export function CampHcwAssignPicker({
   ]);
 
   useEffect(() => {
-    if (!selectedContact) return;
-    setResourceType(assignmentResourceTypeForContact(selectedContact));
-    setState(selectedContact.state || '');
-    setCity(selectedContact.city || '');
-    setProviderId(String(selectedContact.serviceProviderContactId || '').trim());
-  }, [selectedContact?._id]);
+    if (!selectedContactExists) return;
+    setResourceType(selectedContactResourceType);
+    setState(selectedContactState);
+    setCity(selectedContactCity);
+    setProviderId(selectedContactProviderId);
+  }, [
+    selectedContactExists,
+    selectedContactResourceType,
+    selectedContactState,
+    selectedContactCity,
+    selectedContactProviderId,
+  ]);
 
   useEffect(() => {
     if (prevProfessionKeyRef.current === professionKey) return;

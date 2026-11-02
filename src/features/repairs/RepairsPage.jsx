@@ -76,11 +76,11 @@ export default function RepairsPage() {
               }
             }}
           >
-            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Open repair</h3>
+            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem', fontWeight: 700 }}>Open repair</h3>
             <div className="field">
-              <label>Asset</label>
+              <label>Asset *</label>
               <AdaptiveSelect required value={fault.assetId} onChange={(e) => setFault({ ...fault, assetId: e.target.value })}>
-                <option value="">Select</option>
+                <option value="">Select asset…</option>
                 {assets.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.assetTag} ({a.status})
@@ -89,12 +89,19 @@ export default function RepairsPage() {
               </AdaptiveSelect>
             </div>
             <div className="field">
-              <label>Fault</label>
-              <textarea required value={fault.faultDescription} onChange={(e) => setFault({ ...fault, faultDescription: e.target.value })} />
+              <label>Fault description *</label>
+              <textarea
+                required
+                placeholder="Describe the issue or defect…"
+                value={fault.faultDescription}
+                onChange={(e) => setFault({ ...fault, faultDescription: e.target.value })}
+              />
             </div>
-            <button className="btn" type="submit">
-              Open ticket
-            </button>
+            <div className="form-actions">
+              <button className="btn" type="submit">
+                Open ticket
+              </button>
+            </div>
           </form>
         )}
 
@@ -111,11 +118,11 @@ export default function RepairsPage() {
               }
             }}
           >
-            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Start maintenance</h3>
+            <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem', fontWeight: 700 }}>Start maintenance</h3>
             <div className="field">
-              <label>Asset</label>
+              <label>Asset *</label>
               <AdaptiveSelect required value={mnt.assetId} onChange={(e) => setMnt({ ...mnt, assetId: e.target.value })}>
-                <option value="">Select</option>
+                <option value="">Select asset…</option>
                 {assets.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.assetTag} ({a.status})
@@ -124,12 +131,19 @@ export default function RepairsPage() {
               </AdaptiveSelect>
             </div>
             <div className="field">
-              <label>Description</label>
-              <input value={mnt.description} onChange={(e) => setMnt({ ...mnt, description: e.target.value })} />
+              <label>Maintenance notes *</label>
+              <input
+                required
+                placeholder="Scheduled service or maintenance summary"
+                value={mnt.description}
+                onChange={(e) => setMnt({ ...mnt, description: e.target.value })}
+              />
             </div>
-            <button className="btn" type="submit">
-              Start
-            </button>
+            <div className="form-actions">
+              <button className="btn" type="submit">
+                Start
+              </button>
+            </div>
           </form>
         )}
       </div>

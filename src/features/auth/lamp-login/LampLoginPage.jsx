@@ -108,7 +108,7 @@ export default function LampLoginPage() {
             <div className="ll-brand-copy">
               <h1 className="ll-headline">Unified Healthcare Operations</h1>
               <p className="ll-sub">
-                One secure workspace for camps, finance, logistics, documents, and field teams —
+                One secure workspace for camps, finance, logistics, documents, and field teams,
                 built for healthcare at scale.
               </p>
             </div>

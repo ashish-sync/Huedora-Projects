@@ -6,6 +6,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 
@@ -22,6 +23,8 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [rejectingId, setRejectingId] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [meta, setMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
@@ -57,19 +60,43 @@ export default function PicklistApprovalsPage({ embedded = false } = {}) {
   const labelFor = (key) => registry.find((r) => r.key === key)?.label || key;
 
   const act = async (id, action) => {
+    if (action === 'reject') {
+      setRejectingId(id);
+      setRejectReason('');
+      return;
+    }
     setBusyId(id);
     setError('');
     setMsg('');
     try {
-      let reason = '';
-      if (action === 'reject') {
-        reason = window.prompt('Rejection reason (optional)') || '';
-      }
       await api(`/picklists/suggestions/${id}/${action}`, {
         method: 'POST',
-        body: action === 'reject' ? { reason } : {},
+        body: {},
       });
-      setMsg(action === 'approve' ? 'Value approved and added to dropdown.' : 'Suggestion rejected.');
+      setMsg('Value approved and added to dropdown.');
+      load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusyId('');
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectingId) return;
+    const id = rejectingId;
+    const reason = rejectReason;
+    setRejectingId('');
+    setRejectReason('');
+    setBusyId(id);
+    setError('');
+    setMsg('');
+    try {
+      await api(`/picklists/suggestions/${id}/reject`, {
+        method: 'POST',
+        body: { reason },
+      });
+      setMsg('Suggestion rejected.');
       load();
     } catch (e) {
       setError(e.message);

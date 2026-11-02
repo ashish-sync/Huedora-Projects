@@ -34,6 +34,8 @@ import {
 import { LineDeviceNameCombobox, LineSerialCombobox } from './LineAssetCombobox.jsx';
 import { agreementTitleToFileBase, buildAgreementDocumentTitle, downloadBlobWithName } from './documentFileName.js';
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 function isHiddenPlaceholderField(placeholder) {
   return (
     isTodayDatePlaceholder(placeholder) ||
@@ -204,7 +206,7 @@ export default function AgreementCreatePage() {
     [templates, selectedTemplateId]
   );
 
-  const placeholders = selectedTemplate?.placeholders || [];
+  const placeholders = selectedTemplate?.placeholders || EMPTY_ARRAY;
   const visiblePlaceholders = useMemo(
     () => placeholders.filter((p) => !isHiddenPlaceholderField(p)),
     [placeholders]

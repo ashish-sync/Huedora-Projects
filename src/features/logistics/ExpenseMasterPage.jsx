@@ -3,6 +3,7 @@ import { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api } from '../../shared/api.js';
@@ -35,6 +36,7 @@ export default function ExpenseMasterPage() {
   const [subForm, setSubForm] = useState(emptySubForm);
   const [editingCategoryId, setEditingCategoryId] = useState('');
   const [editingSubId, setEditingSubId] = useState('');
+  const [removeRowTarget, setRemoveRowTarget] = useState(null);
 
   const subCountByCategory = useMemo(() => {
     const map = new Map();
@@ -144,11 +146,18 @@ export default function ExpenseMasterPage() {
     }
   };
 
-  const removeRow = async (path, id, label) => {
-    if (!canWrite || !window.confirm(`Delete “${label}”?`)) return;
+  const removeRow = (pathName, id, label) => {
+    if (!canWrite) return;
+    setRemoveRowTarget({ path: pathName, id, label });
+  };
+
+  const handleConfirmRemoveRow = async () => {
+    if (!removeRowTarget || !canWrite) return;
+    const { path: pathName, id } = removeRowTarget;
+    setRemoveRowTarget(null);
     setError('');
     try {
-      await api(`${path}/${id}`, { method: 'DELETE' });
+      await api(`${pathName}/${id}`, { method: 'DELETE' });
       setMsg('Deleted.');
       if (editingCategoryId === id || editingSubId === id) resetForms();
       loadAll();

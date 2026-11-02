@@ -8,6 +8,7 @@ import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
@@ -84,6 +85,7 @@ export default function ProductMasterPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selected, setSelected] = useState(() => new Set());
+  const [bulkConfirmAction, setBulkConfirmAction] = useState(null);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -102,7 +104,7 @@ export default function ProductMasterPage() {
 
   const uomLabel = useMemo(() => {
     const map = Object.fromEntries(uoms.map((u) => [u._id, `${u.name} (${u.code})`]));
-    return (id) => map[id] || '—';
+    return (id) => map[id] || '-';
   }, [uoms]);
 
   const assocCandidates = useMemo(() => {
@@ -312,10 +314,16 @@ export default function ProductMasterPage() {
     }
   };
 
-  const runBulk = async (action) => {
+  const runBulk = (action) => {
     if (!canWrite || !selected.size) return;
+    setBulkConfirmAction(action);
+  };
+
+  const handleConfirmBulk = async () => {
+    if (!canWrite || !selected.size || !bulkConfirmAction) return;
+    const action = bulkConfirmAction;
     const label = action === 'delete' ? 'delete' : action;
-    if (!window.confirm(`${label} ${selected.size} selected product(s)?`)) return;
+    setBulkConfirmAction(null);
     setBusy(true);
     setError('');
     try {
@@ -496,15 +504,15 @@ export default function ProductMasterPage() {
                         .categoryKind
                     }
                   </td>
-                  <td>{row.productCategory || '—'}</td>
-                  <td className="mono-sm">{row.code || '—'}</td>
+                  <td>{row.productCategory || '-'}</td>
+                  <td className="mono-sm">{row.code || '-'}</td>
                   <td>
-                    <strong>{row.name || '—'}</strong>
+                    <strong>{row.name || '-'}</strong>
                     {row.model ? (
                       <div className="muted pm-cell-sub">{row.model}</div>
                     ) : null}
                   </td>
-                  <td>{row.brand || row.manufacturer || '—'}</td>
+                  <td>{row.brand || row.manufacturer || '-'}</td>
                   <td>{uomLabel(row.uomId)}</td>
                   <td>{inventoryTrackingLabel(row.trackingKind)}</td>
                   <td>
@@ -648,7 +656,7 @@ export default function ProductMasterPage() {
                 value={form.uomId}
                 onChange={(e) => setField('uomId', e.target.value)}
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 {uoms.map((u) => (
                   <option key={u._id} value={u._id}>
                     {u.name} ({u.code})
@@ -706,7 +714,7 @@ export default function ProductMasterPage() {
                       readOnly={!canWrite}
                       value={form.name}
                       onChange={(e) => setField('name', e.target.value)}
-                      placeholder="Brand — Model"
+                      placeholder="Brand / Model"
                       aria-label="Display Name"
                     />
                   </div>
@@ -728,7 +736,7 @@ export default function ProductMasterPage() {
                     hint={
                       mode === 'edit'
                         ? 'Upload photos for asset identification.'
-                        : 'Optional — selected images upload when you create the product.'
+                        : 'Optional: selected images upload when you create the product.'
                     }
                   />
                 </div>
@@ -774,7 +782,7 @@ export default function ProductMasterPage() {
                                     {p.code ? (
                                       <span className="pm-assoc-code mono-sm">{p.code}</span>
                                     ) : null}
-                                    <span className="pm-assoc-name">{name || '—'}</span>
+                                    <span className="pm-assoc-name">{name || '-'}</span>
                                   </span>
                                   <span className="pm-assoc-meta">
                                     {typeLabel}

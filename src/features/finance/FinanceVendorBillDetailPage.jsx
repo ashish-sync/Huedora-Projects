@@ -39,6 +39,8 @@ const EMPTY_FORM = {
   paymentMode: 'Bank transfer',
 };
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -138,8 +140,8 @@ export default function FinanceVendorBillDetailPage() {
   const isVerifierSelf =
     bill?.verifiedById && String(bill.verifiedById) === String(user?.id || user?._id);
 
-  const expenseCategories = expenseMaster.expenseCategories || [];
-  const expenseSubCategories = expenseMaster.expenseSubCategories || [];
+  const expenseCategories = expenseMaster.expenseCategories || EMPTY_ARRAY;
+  const expenseSubCategories = expenseMaster.expenseSubCategories || EMPTY_ARRAY;
 
   const expenseSubCategoryNames = useMemo(() => {
     const names = expenseSubCategories

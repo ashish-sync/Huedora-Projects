@@ -4,7 +4,7 @@
  * Spacing: --space-0…10 (4px grid). Prefer --space-* in new CSS.
  *   --pad / --stack / --stack-sm / --stack-lg are aliases only.
  *
- * Controls: --control-h 44px · --control-h-sm 36px (WCAG touch target).
+ * Controls: --control-h 44px · --control-h-sm 36px.
  * Filter toolbar: --filter-toolbar-gap / --filter-control-* come from here —
  * do not redefine in component CSS.
  *
@@ -15,15 +15,17 @@
 
 :root {
   /* Shell */
-  --header-height: 64px;
+  --header-height: 56px;
   --header-h: var(--header-height);
-  --sidebar-width: 280px;
-  --sidebar-width-collapsed: 72px;
-  --content-max-width: 1320px;
+  --sidebar-width: 240px;
+  --sidebar-width-collapsed: 64px;
+  --sidebar-w: var(--sidebar-width);
+  --sidebar-collapsed-w: var(--sidebar-width-collapsed);
+  --content-max-width: 1440px;
   --content-max: var(--content-max-width);
 
   /* Shared horizontal inset for header + main (Asset/Camp/Movement/Finance rhythm). */
-  --page-gutter-inline: clamp(1.25rem, 3vw, 2rem);
+  --page-gutter-inline: clamp(1rem, 2.5vw, 2rem);
 
   /* 8-point spacing scale */
   --space-0: 0;
@@ -31,22 +33,22 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 40px;
-  --space-8: 48px;
-  --space-9: 56px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
   --space-10: 64px;
 
   /* Spacing aliases (legacy) */
-  --pad: var(--space-5);
+  --pad: var(--space-4);
   --stack: var(--space-3);
   --stack-sm: var(--space-2);
   --stack-lg: var(--space-4);
 
-  /* Controls — WCAG touch target */
-  --control-height: 44px;
-  --control-height-sm: 36px;
+  /* Controls — High-utility enterprise standard */
+  --control-height: 38px;
+  --control-height-sm: 32px;
   --control-h: var(--control-height);
   --control-h-sm: var(--control-height-sm);
   --touch-target-min: 44px;
@@ -56,10 +58,16 @@
   --dropdown-radius: var(--control-radius);
 
   --control-w: 11.25rem;
-  --control-w-min: 180px;
+  --control-w-min: 160px;
   --control-w-date: 9.5rem;
   --control-w-btn: 5.25rem;
-  --filter-toolbar-gap: var(--space-3);
+
+  /* Shared dialog widths; viewport height is constrained in modal.css. */
+  --modal-width-sm: 28rem;
+  --modal-width-md: 40rem;
+  --modal-width-cancel: 32rem;
+  --modal-width-lg: 56rem;
+  --filter-toolbar-gap: var(--space-2);
   --filter-control-min-w: var(--control-w-min);
   --filter-control-h: var(--control-h);
   --control-pad-inline-start: var(--space-3);
@@ -84,12 +92,12 @@
     color var(--duration, 140ms) var(--ease, ease);
 
   --kpi-min: 5.5rem;
-  --kpi-pad-y: var(--space-3);
-  --kpi-pad-x: var(--space-4);
-  --toolbar-pad-y: var(--space-3);
-  --toolbar-pad-x: var(--space-4);
-  --table-cell-y: var(--space-3);
-  --table-cell-x: var(--space-4);
+  --kpi-pad-y: var(--space-2);
+  --kpi-pad-x: var(--space-3);
+  --toolbar-pad-y: var(--space-2);
+  --toolbar-pad-x: var(--space-3);
+  --table-cell-y: var(--space-2);
+  --table-cell-x: var(--space-3);
 
   /* Breakpoint tokens (reference only — use matching literals in @media) */
   --bp-xs: 560px;

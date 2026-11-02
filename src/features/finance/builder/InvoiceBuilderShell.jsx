@@ -128,6 +128,7 @@ export default function InvoiceBuilderShell({
   const [correctBusy, setCorrectBusy] = useState(false);
   const [correctError, setCorrectError] = useState('');
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [actionError, setActionError] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const approvalSubject =
@@ -161,7 +162,7 @@ export default function InvoiceBuilderShell({
       });
     } catch (err) {
       console.error('Save & export failed', err);
-      window.alert(err?.message || 'PDF download failed');
+      setActionError(err?.message || 'PDF download failed');
     } finally {
       setExporting(false);
     }
@@ -189,7 +190,7 @@ export default function InvoiceBuilderShell({
       }
     } catch (err) {
       console.error('Print failed', err);
-      window.alert(err?.message || 'Print failed');
+      setActionError(err?.message || 'Print failed');
     } finally {
       setPrinting(false);
     }
@@ -488,6 +489,29 @@ export default function InvoiceBuilderShell({
         </ModalShell>
       ) : null}
       <ShortcutsModal open={shortcutsOpen} onClose={onShortcutsClose} newDocLabel={newDocShortcutLabel} />
+      {actionError ? (
+        <ModalShell
+          open={Boolean(actionError)}
+          onClose={() => setActionError('')}
+          title="Operation Failed"
+          overlayClassName="modal-overlay"
+          panelClassName="modal-card--sm"
+        >
+          <div className="modal-body" style={{ padding: '16px 0' }}>
+            <p className="modal-message">{actionError}</p>
+          </div>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setActionError('')}
+            >
+              OK
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
+
       <CorrectDocumentNumberModal
         open={correctOpen}
         row={{

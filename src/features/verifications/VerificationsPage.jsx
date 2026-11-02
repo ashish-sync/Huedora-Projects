@@ -12,6 +12,8 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import ModalShell from '../../components/ui/ModalShell.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import '../notifications/notifications.css';
 
@@ -145,11 +147,11 @@ export default function VerificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [appliedFrom, appliedTo, filter, boardEpoch]);
+  }, [appliedFrom, appliedTo, filter]);
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, boardEpoch]);
 
   const submitDates = (e) => {
     e?.preventDefault?.();
@@ -967,17 +969,17 @@ export default function VerificationsPage() {
           </label>
 
           <div className="vf-toolbar-actions master-filter-actions">
-            <button className="btn" type="submit" disabled={loading}>
+            <Button type="submit" loading={loading}>
               {loading ? 'Loading…' : 'Submit'}
-            </button>
-            <button
-              className="btn secondary"
+            </Button>
+            <Button
+              variant="secondary"
               type="button"
               disabled={loading}
               onClick={clearBoard}
             >
               Clear
-            </button>
+            </Button>
           </div>
         </div>
       </form>
@@ -998,7 +1000,21 @@ export default function VerificationsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {loading && !rows.length ? (
+                Array.from({ length: 5 }).map((_, r) => (
+                  <tr key={`skeleton-${r}`}>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="60px" height="22px" borderRadius="999px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="80%" height="15px" /><Skeleton width="45%" height="12px" style={{ marginTop: '4px' }} /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="70%" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="75%" height="14px" /><Skeleton width="50%" height="12px" style={{ marginTop: '4px' }} /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="50px" height="20px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="80px" height="14px" /></td>
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="90%" height="14px" /></td>
+                    {canWrite && <td style={{ padding: '12px 14px' }}><Skeleton width="60px" height="28px" /></td>}
+                  </tr>
+                ))
+              ) : (
+                rows.map((row) => (
                 <tr key={row.asset._id}>
                   <td>
                     <span className={`badge tone-${toneFor(row.condition.condition)}`}>
@@ -1036,16 +1052,15 @@ export default function VerificationsPage() {
                   {canWrite && (
                     <td>
                       {row.condition.nextRound ? (
-                        <button type="button" className="btn btn-compact" onClick={() => openVerify(row)}>
-                          Verify
-                        </button>
+                        <Button size="compact" type="button" onClick={() => openVerify(row)}>Verify</Button>
                       ) : (
                         <span className="badge tone-ok">Done</span>
                       )}
                     </td>
                   )}
                 </tr>
-              ))}
+              ))
+              )}
               {!loading && !rows.length && (
                 <tr>
                   <td colSpan={canWrite ? 8 : 7}>

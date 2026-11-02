@@ -9,6 +9,8 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -115,18 +117,17 @@ export default function AgreementsPage() {
       title={MODULE.DOCUMENT_HUB}
       actions={
         <>
-          <button
-            className="btn secondary"
-            type="button"
-            disabled={exportBusy}
+          <Button
+            variant="secondary"
+            loading={exportBusy}
             onClick={downloadMaster}
           >
             {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
-          </button>
+          </Button>
           {can('agreements:write') ? (
-            <button className="btn" type="button" onClick={() => navigate('/document-one/new')}>
+            <Button variant="primary" onClick={() => navigate('/document-one/new')}>
               New agreement
-            </button>
+            </Button>
           ) : null}
         </>
       }
@@ -143,13 +144,13 @@ export default function AgreementsPage() {
       <MasterFilterShell
         actions={
           <>
-            <button className="btn secondary btn-compact" type="button" onClick={load}>
+            <Button variant="secondary" size="compact" onClick={load}>
               Refresh
-            </button>
+            </Button>
             {status ? (
-              <button type="button" className="btn btn-ghost btn-compact" onClick={() => setFilter('')}>
+              <Button variant="ghost" size="compact" onClick={() => setFilter('')}>
                 Clear filter
-              </button>
+              </Button>
             ) : null}
           </>
         }
@@ -190,7 +191,19 @@ export default function AgreementsPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((a) => {
+            {listLoading && !rows.length ? (
+              Array.from({ length: 5 }).map((_, r) => (
+                <tr key={`skeleton-${r}`}>
+                  <td style={{ padding: '12px 14px' }}><Skeleton width="80%" height="16px" /><Skeleton width="50%" height="12px" style={{ marginTop: '4px' }} /></td>
+                  <td style={{ padding: '12px 14px' }}><Skeleton width="70%" height="14px" /></td>
+                  <td style={{ padding: '12px 14px' }}><Skeleton width="65%" height="14px" /><Skeleton width="45%" height="12px" style={{ marginTop: '4px' }} /></td>
+                  <td style={{ padding: '12px 14px' }}><Skeleton width="40px" height="14px" /></td>
+                  <td style={{ padding: '12px 14px' }}><Skeleton width="70px" height="22px" borderRadius="999px" /></td>
+                  <td style={{ padding: '12px 14px' }}><Skeleton width="90px" height="14px" /></td>
+                </tr>
+              ))
+            ) : (
+              rows.map((a) => {
               const meta = STATUS_META[a.status] || { label: a.status, tone: 'neutral' };
               const done = (a.signers || []).filter(
                 (s) => s.status === 'SIGNED' || s.status === 'ACKNOWLEDGED'
@@ -214,7 +227,8 @@ export default function AgreementsPage() {
                   <td className="muted">{a.updatedAt ? formatDateTime(a.updatedAt) : '-'}</td>
                 </tr>
               );
-            })}
+              })
+            )}
           </tbody>
         </table>
         <PaginationBar
@@ -231,6 +245,7 @@ export default function AgreementsPage() {
         />
         {!rows.length && (
           <EmptyState
+            variant="inline"
             title={filteredEmpty ? 'No matching documents' : 'No documents yet'}
             description={
               filteredEmpty

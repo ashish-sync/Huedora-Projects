@@ -37,10 +37,10 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--border-strong);
   border-radius: var(--control-radius);
-  background: var(--color-bg-elevated);
-  color: var(--color-text-primary);
+  background: var(--bg-input);
+  color: var(--text-main);
   font-size: var(--text-body-sm-size);
   font-weight: 400;
   transition:
@@ -85,7 +85,7 @@
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: var(--color-text-tertiary, var(--muted));
+  color: var(--text-muted);
   font-weight: 400;
   opacity: 1;
 }
@@ -93,8 +93,8 @@
 .field input:hover:not(:disabled):not(:read-only),
 .field select:hover:not(:disabled),
 .field textarea:hover:not(:disabled):not(:read-only) {
-  border-color: var(--color-border-strong);
-  background: var(--color-bg-elevated);
+  border-color: var(--border-strong);
+  background: var(--bg-input);
 }
 
 .field input:focus,
@@ -104,9 +104,9 @@
 .field select:focus-visible,
 .field textarea:focus-visible {
   outline: none;
-  border-color: color-mix(in srgb, var(--color-brand-primary) 35%, var(--color-border-default));
-  box-shadow: var(--dropdown-focus-ring);
-  background: var(--color-bg-elevated);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring), 0 0 0 3px color-mix(in srgb, var(--focus-ring) 20%, transparent);
+  background: var(--bg-input);
 }
 
 /* Disabled + readonly — same sunken surface (specificity must match base :not() chain) */
@@ -116,9 +116,9 @@
 .field textarea:read-only {
   opacity: 1;
   cursor: not-allowed;
-  background: var(--color-bg-sunken);
-  color: var(--color-text-secondary);
-  border-color: var(--color-border-default);
+  background: var(--control-disabled-bg);
+  color: var(--control-disabled-text);
+  border-color: var(--control-disabled-border);
   box-shadow: none;
 }
 
@@ -155,27 +155,572 @@ label.required-field::after {
   min-width: 0;
 }
 
-/* Form grids — consistent gap on 8px scale (columns stay page-defined) */
+/* Form grids — standardized on enterprise 8px / 16px scale */
 .form-grid,
-.logistics-form-grid,
+.form-grid-2,
+.doc-form-grid,
 .am-form-section-grid,
-.vf-form-grid,
-.asset-form-row,
-.arq-grid,
-.arq-service-top-row,
-.arq-asset-reason-row {
-  gap: var(--space-3) var(--space-4);
+.vf-verify-grid,
+.vf-photo-pair,
+.cd-form-grid,
+.pin-master-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3, 12px) var(--space-4, 16px);
   align-items: start;
 }
 
+.form-grid-3,
+.am-form-grid,
+.arq-grid,
+.logistics-form-grid,
+.pm-section-grid,
+.asset-form-row-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3, 12px) var(--space-4, 16px);
+  align-items: start;
+}
+
+.form-grid-4,
+.arq-service-top-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3, 12px) var(--space-4, 16px);
+  align-items: start;
+}
+
+.asset-form-row,
+.asset-form-row-1 {
+  display: grid;
+  gap: var(--space-3, 12px) var(--space-4, 16px);
+  align-items: start;
+}
+
+/* Span modifiers across all modules */
+.form-span-2,
+.doc-span-2,
+.am-form-span-2,
+.cd-span-2,
+.pm-span-2 {
+  grid-column: span 2;
+}
+
+.form-span-3,
+.pm-span-3 {
+  grid-column: span 3;
+}
+
+.form-span-full,
+.form-span-all,
+.doc-span-full,
+.am-form-span,
+.arq-span,
+.logistics-form-field--full,
+.vf-span-2,
+.pm-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Eliminate field bottom margins inside grid containers */
 .form-grid .field,
+.form-grid-2 .field,
+.form-grid-3 .field,
+.form-grid-4 .field,
+.doc-form-grid .field,
+.doc-form-grid .doc-field,
 .logistics-form-grid .field,
 .am-form-section-grid .field,
+.am-form-grid .field,
 .vf-form-grid .field,
+.vf-verify-grid .field,
 .logistics-prepare-grid .field,
 .asset-form-row .field,
 .arq-grid .field,
 .arq-service-top-row .field,
-.arq-asset-reason-row .field {
+.arq-asset-reason-row .field,
+.pm-section-grid .pm-field,
+.cd-form-grid .field {
   margin-bottom: 0;
+}
+
+/* Responsive grid wrapping for tablet & mobile */
+@media (max-width: 960px) {
+  .form-grid-4,
+  .arq-service-top-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid-3,
+  .am-form-grid,
+  .arq-grid,
+  .logistics-form-grid,
+  .pm-section-grid,
+  .asset-form-row-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .form-grid,
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4,
+  .doc-form-grid,
+  .am-form-section-grid,
+  .am-form-grid,
+  .vf-verify-grid,
+  .vf-photo-pair,
+  .cd-form-grid,
+  .arq-grid,
+  .arq-service-top-row,
+  .logistics-form-grid,
+  .pm-section-grid,
+  .asset-form-row-3,
+  .asset-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-span-2,
+  .form-span-3,
+  .doc-span-2,
+  .am-form-span-2,
+  .cd-span-2,
+  .pm-span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── Standard Form Sections & Headings ──────────────────────── */
+.form-section,
+.am-form-section,
+.asset-form-section,
+.vf-form-section,
+.logistics-form-section,
+.pm-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--color-border-default);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.form-section:last-child,
+.form-section--last,
+.am-form-section:last-child,
+.am-form-section--last,
+.asset-form-section:last-child,
+.vf-form-section:last-child,
+.logistics-form-section:last-child,
+.pm-section:last-child,
+.pm-section--last {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.form-section-title,
+.am-form-section-title,
+.asset-form-section-title,
+.cd-section-title,
+.pm-section-title,
+.logistics-form-section {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Finance Document Generator (formUi.jsx) ────────────────── */
+.doc-master-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-sunken);
+  line-height: 1.4;
+}
+
+.doc-master-hint a {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.doc-section {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card, 10px);
+  background: var(--color-bg-elevated);
+  margin-bottom: var(--space-3, 12px);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.doc-section:hover {
+  border-color: var(--color-border-strong);
+}
+
+.doc-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.doc-section-head:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.doc-section-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-brand-primary-subtle);
+  color: var(--color-brand-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.doc-section-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.doc-section-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.doc-section-desc {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.doc-section-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+
+.doc-section-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-fast) ease;
+}
+
+.doc-section.is-open .doc-section-chevron {
+  transform: rotate(0deg);
+}
+
+.doc-section-body {
+  padding: 16px;
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.doc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 6px);
+  min-width: 0;
+}
+
+.doc-field-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.doc-field-req {
+  color: var(--color-danger, #ef4444);
+  font-weight: 700;
+}
+
+.doc-field-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin: 4px 0 0;
+  line-height: 1.35;
+}
+
+.doc-field-input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--control-h);
+  min-height: var(--control-h);
+  padding: 0 var(--control-pad-inline-end) 0 var(--control-pad-inline-start);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--control-radius);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--text-body-sm-size);
+  font-weight: 400;
+  line-height: calc(var(--control-h) - 2px);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+textarea.doc-field-input {
+  height: auto;
+  min-height: 80px;
+  max-height: none;
+  padding: var(--space-3, 10px 12px);
+  line-height: var(--text-body-leading, 1.45);
+  resize: vertical;
+}
+
+.doc-field-input:hover:not(:disabled):not(:read-only) {
+  border-color: var(--color-border-strong);
+  background: var(--color-bg-elevated);
+}
+
+.doc-field-input:focus,
+.doc-field-input:focus-visible {
+  outline: none;
+  border-color: var(--color-focus-ring);
+  box-shadow: 0 0 0 1px var(--color-focus-ring), 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 20%, transparent);
+  background: var(--color-bg-elevated);
+}
+
+.doc-field-input:disabled,
+.doc-field-input:read-only {
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-default);
+  cursor: not-allowed;
+}
+
+.doc-line-card {
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-sunken);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.doc-line-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.doc-line-remove {
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--color-danger, #ef4444);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.doc-line-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-danger, #ef4444);
+}
+
+.doc-line-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border-default);
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.doc-line-card-foot strong {
+  color: var(--color-text-primary);
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.doc-totals-strip {
+  padding: 16px 20px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card, 10px);
+  background: var(--color-bg-sunken);
+  margin-top: 14px;
+}
+
+.doc-totals-strip-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 10px;
+}
+
+.doc-totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.06));
+}
+
+.doc-totals-grand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 6px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.doc-file-drop {
+  border: 2px dashed var(--color-border-default);
+  border-radius: var(--radius-md, 8px);
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease;
+  background: var(--color-bg-sunken);
+}
+
+.doc-file-drop:hover {
+  border-color: var(--color-brand-primary);
+}
+
+/* ── Standard Form Actions Bar ──────────────────────────────── */
+.form-actions,
+.am-form-actions,
+.logistics-form-actions,
+.arq-actions,
+.doc-form-actions,
+.vf-verify-actions,
+.pm-form-actions,
+.pin-master-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+.form-actions--between {
+  justify-content: space-between;
+}
+
+.form-actions--inline,
+.logistics-form-actions--inline {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  align-self: flex-end;
+}
+
+@media (max-width: 640px) {
+  .form-actions,
+  .am-form-actions,
+  .logistics-form-actions,
+  .arq-actions,
+  .doc-form-actions,
+  .vf-verify-actions,
+  .pm-form-actions,
+  .pin-master-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .form-actions > .btn,
+  .am-form-actions > .btn,
+  .logistics-form-actions > .btn,
+  .arq-actions > .btn,
+  .doc-form-actions > .btn,
+  .vf-verify-actions > .btn,
+  .pm-form-actions > .btn,
+  .pin-master-actions > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ── Form validation & hint typography ──────────────────────── */
+
+.field-required {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.field-error-text {
+  font-size: var(--text-caption-size);
+  color: var(--color-danger);
+  margin-top: var(--space-1);
+}
+
+.field-hint-text {
+  font-size: var(--text-caption-size);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-1);
+}
+
+.field input.input-invalid,
+.field select.input-invalid,
+.field textarea.input-invalid,
+input.input-invalid {
+  border-color: var(--color-danger) !important;
+}
+
+.field input.input-invalid:focus,
+input.input-invalid:focus {
+  box-shadow: 0 0 0 2px var(--color-bg-canvas), 0 0 0 4px color-mix(in srgb, var(--color-danger) 30%, transparent) !important;
 }

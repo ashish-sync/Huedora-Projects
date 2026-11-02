@@ -38,22 +38,32 @@ export default function HcwsPage() {
 
       {can('hcws:write') && (
         <form className="card" onSubmit={create}>
-          <h3 style={{ margin: '0 0 10px', fontSize: '1rem' }}>Add custodian</h3>
-          <div className="row">
-            {['hcwId', 'name', 'city', 'contact', 'hcwType', 'hcwCategory'].map((k) => (
-              <div className="field" key={k}>
-                <label>{k}</label>
+          <h3 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 700 }}>Add custodian</h3>
+          <div className="form-grid form-grid-3">
+            {[
+              { key: 'hcwId', label: `${FIELD.CUSTODIAN_ID} *`, placeholder: 'e.g. HCW-001', required: true },
+              { key: 'name', label: 'Full Name *', placeholder: 'e.g. Rahul Sharma', required: true },
+              { key: 'city', label: 'City', placeholder: 'e.g. Mumbai' },
+              { key: 'contact', label: 'Contact Number', placeholder: '+91 9876543210' },
+              { key: 'hcwType', label: 'Custodian Type', placeholder: 'e.g. Coordinator' },
+              { key: 'hcwCategory', label: 'Category', placeholder: 'e.g. Healthcare Staff' },
+            ].map(({ key, label, placeholder, required }) => (
+              <div className="field" key={key}>
+                <label>{label}</label>
                 <input
-                  required={k === 'hcwId' || k === 'name'}
-                  value={form[k]}
-                  onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                  required={required}
+                  placeholder={placeholder}
+                  value={form[key]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                 />
               </div>
             ))}
           </div>
-          <button className="btn" type="submit">
-            Add custodian
-          </button>
+          <div className="form-actions">
+            <button className="btn" type="submit">
+              Add custodian
+            </button>
+          </div>
         </form>
       )}
 

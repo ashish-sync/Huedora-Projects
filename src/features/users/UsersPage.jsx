@@ -10,6 +10,15 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import { personRoleLabel, personStatusLabel } from '../dashboards/opsReviewCatalog.js';
 import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import '../audit/activityLog.css';
+import './accessControl.css';
+
+function getInitials(fullName = '', email = '') {
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  const local = String(email || '').split('@')[0] || '?';
+  return local.slice(0, 2).toUpperCase();
+}
 
 export default function UsersPage({ embedded = false } = {}) {
   const { can } = useAuth();
@@ -67,7 +76,7 @@ export default function UsersPage({ embedded = false } = {}) {
       description={
         embedded
           ? ''
-          : 'Who is on Tylo One, whether they can sign in, and what they look after.'
+          : 'Directory of colleagues across TYLO ONE: departments, designations, reporting lines, and access status.'
       }
       actions={
         canManage ? (
@@ -87,47 +96,47 @@ export default function UsersPage({ embedded = false } = {}) {
       }
       toolbar={
         embedded ? null : (
-        <form className="date-range-filter" aria-label="Team filters" onSubmit={(e) => e.preventDefault()}>
-          <div className="date-range-filter-fields">
-            <label className="date-range-filter-field ops-filter-field--grow">
-              <span>Search</span>
-              <input
-                className="ops-filter-input"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Name, email, or role"
-                aria-label="Search team"
-              />
-            </label>
-            <label className="date-range-filter-field ops-filter-field--md">
-              <span>Status</span>
-              <AdaptiveSelect
-                aria-label="Status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">Everyone</option>
-                <option value="active">Active</option>
-                <option value="inactive">Not signing in</option>
-              </AdaptiveSelect>
-            </label>
-            {query || status ? (
-              <div className="date-range-filter-actions">
-                <button
-                  className="btn secondary"
-                  type="button"
-                  onClick={() => {
-                    setQuery('');
-                    setStatus('');
-                    setSelectedId('');
-                  }}
+          <form className="date-range-filter" aria-label="Team filters" onSubmit={(e) => e.preventDefault()}>
+            <div className="date-range-filter-fields">
+              <label className="date-range-filter-field ops-filter-field--grow">
+                <span>Search</span>
+                <input
+                  className="ops-filter-input"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Name, email, or role"
+                  aria-label="Search team"
+                />
+              </label>
+              <label className="date-range-filter-field ops-filter-field--md">
+                <span>Status</span>
+                <AdaptiveSelect
+                  aria-label="Status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
                 >
-                  Clear
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </form>
+                  <option value="">Everyone</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Not signing in</option>
+                </AdaptiveSelect>
+              </label>
+              {query || status ? (
+                <div className="date-range-filter-actions">
+                  <button
+                    className="btn secondary"
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      setStatus('');
+                      setSelectedId('');
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </form>
         )
       }
     >
@@ -173,12 +182,17 @@ export default function UsersPage({ embedded = false } = {}) {
                 aria-expanded={open}
               >
                 <div className="activity-log-row__top">
-                  <p className="activity-log-row__title">{person.fullName || person.email}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="org-avatar org-avatar--sm" aria-hidden="true">
+                      {getInitials(person.fullName, person.email)}
+                    </span>
+                    <p className="activity-log-row__title">{person.fullName || person.email}</p>
+                  </div>
                   <span className={`activity-log-status${inactive ? ' activity-log-status--bad' : ' activity-log-status--ok'}`}>
                     {personStatusLabel(person)}
                   </span>
                 </div>
-                <p className="activity-log-row__meta">
+                <p className="activity-log-row__meta" style={{ paddingLeft: '38px' }}>
                   {personRoleLabel(person)}
                   {person.email ? ` · ${person.email}` : ''}
                 </p>
@@ -186,19 +200,25 @@ export default function UsersPage({ embedded = false } = {}) {
             );
           })}
           {loading && !filtered.length ? (
-            <p className="muted activity-log-empty">Loading the team…</p>
+            <div className="activity-log-empty activity-log-empty--hero">
+              <span className="activity-log-empty-icon" aria-hidden="true">⏳</span>
+              <p>Loading team members…</p>
+            </div>
           ) : null}
           {!filtered.length && !loading ? (
-            <p className="muted activity-log-empty">No people match this filter.</p>
+            <div className="activity-log-empty activity-log-empty--hero">
+              <span className="activity-log-empty-icon" aria-hidden="true">🔍</span>
+              <p>No teammates match this filter.</p>
+            </div>
           ) : null}
         </div>
         {selected ? (
           <section className="card activity-log-detail" aria-label="Teammate details">
-            <div className="activity-log-row__top">
+            <div className="activity-log-detail__header">
               <span className={`activity-log-status${selected.isActive === false ? ' activity-log-status--bad' : ' activity-log-status--ok'}`}>
                 {personStatusLabel(selected)}
               </span>
-              <button type="button" className="btn ghost btn-compact" onClick={() => setSelectedId('')}>
+              <button type="button" className="btn ghost btn-compact" onClick={() => setSelectedId('')} aria-label="Close teammate details">
                 Close
               </button>
             </div>
@@ -212,7 +232,7 @@ export default function UsersPage({ embedded = false } = {}) {
             <dl className="activity-log-facts">
               <div>
                 <dt>Email</dt>
-                <dd>{selected.email || '—'}</dd>
+                <dd>{selected.email || '-'}</dd>
               </div>
               <div>
                 <dt>Role</dt>

@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -21,22 +20,6 @@ export default function MasterDataPage() {
     can('camps:approve') ||
     can('*');
 
-  const description = useMemo(() => {
-    if (scope === 'inventory') {
-      return 'Products — shared catalog for assets, inventory, and movements.';
-    }
-    if (scope === 'movement' || scope === 'logistics') {
-      return 'Vendor Master and Expense Master for Finance One documents and requests.';
-    }
-    if (scope === 'document') {
-      return 'Contact Directory, Document Templates, Signatures, and Picklist approvals.';
-    }
-    if (scope === 'camp') {
-      return 'Client Master and PIN Geography for Camp One.';
-    }
-    return 'Shared enterprise reference data for Asset One, Movement One, Document One, Finance One, and Camp One.';
-  }, [scope]);
-
   if (!allowed) {
     return (
       <PageShell
@@ -52,7 +35,6 @@ export default function MasterDataPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.MASTER_DATA }]}
       title={MODULE.MASTER_DATA}
-      description={description}
       className="master-one-page"
     >
       <LogisticsMasterPage

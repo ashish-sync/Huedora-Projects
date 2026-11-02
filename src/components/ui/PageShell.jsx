@@ -64,9 +64,9 @@ export function QuickActions({ items = [] }) {
   );
 }
 
-export function EmptyState({ title, description, action }) {
+export function EmptyState({ title, description, action, variant = 'card' }) {
   return (
-    <div className="empty-state card">
+    <div className={`empty-state ${variant === 'inline' ? 'empty-state--inline' : 'card'}`}>
       <h3 className="empty-state-title">{title}</h3>
       {description && <p className="muted empty-state-desc">{description}</p>}
       {action ? <div className="empty-state-action">{action}</div> : null}
@@ -84,6 +84,7 @@ export default function PageShell({
   kpis,
   quickActions,
   toolbar,
+  stackMetrics = false,
   children,
   className = '',
   hideChrome = false,
@@ -108,7 +109,15 @@ export default function PageShell({
 
       {quickActions?.length > 0 && <QuickActions items={quickActions} />}
       {(kpis?.length > 0 || toolbar) && (
-        <div className={`page-metrics${kpis?.length && toolbar ? ' page-metrics--split' : ''}`}>
+        <div
+          className={`page-metrics${
+            kpis?.length && toolbar
+              ? stackMetrics
+                ? ' page-metrics--stacked'
+                : ' page-metrics--split'
+              : ''
+          }`}
+        >
           {kpis?.length > 0 && <KpiGrid items={kpis} />}
           {toolbar && <div className="toolbar toolbar--page page-metrics-toolbar">{toolbar}</div>}
         </div>

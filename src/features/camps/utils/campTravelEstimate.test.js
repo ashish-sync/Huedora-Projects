@@ -22,6 +22,7 @@ describe('campTravelEstimate', () => {
     expect(hasValidCampCoords({ latitude: '19.12', longitude: '72.84' })).toBe(true);
     expect(hasValidCampCoords({ latitude: '', longitude: '72.84' })).toBe(false);
     expect(hasValidCampCoords({ latitude: 0, longitude: 0 })).toBe(false);
+    expect(hasValidCampCoords({ latitude: '' })).toBe(false);
   });
 
   it('never treats 0 as a usable auto-estimate', () => {
@@ -43,8 +44,11 @@ describe('campTravelEstimate', () => {
   it('builds a stable cache key and status copy', () => {
     expect(travelEstimateKey({ pin: '400058', destLat: 19.11971, destLng: 72.84683 }))
       .toBe('400058|19.1197|72.8468');
+    expect(travelEstimateKey({ pin: '400058', destPin: '560001' }))
+      .toBe('400058|pin:560001');
+    expect(travelEstimateKey({ pin: '400058', destLat: '', destLng: '' })).toBe('');
     expect(estimatedTravelStatus('400058')).toMatch(/400058/);
     expect(TRAVEL_STATUS.PIN_MISSING).toMatch(/PIN code is missing/);
-    expect(TRAVEL_STATUS.COORDS_MISSING).toMatch(/coordinates are missing/);
+    expect(TRAVEL_STATUS.COORDS_MISSING).toMatch(/coordinates and PIN are missing/);
   });
 });

@@ -40,7 +40,7 @@ export function useCampOpsAuth() {
     can('*')
     || roleNames.some((n) => ADMIN_ROLE_NAMES.has(n));
 
-  const hasPermission = (permission) => {
+  const hasPermission = useCallback((permission) => {
     if (!permission) return false;
     if (isAdmin || can('*') || can(permission)) return true;
 
@@ -72,15 +72,15 @@ export function useCampOpsAuth() {
     };
 
     return (aliases[permission] || []).some((p) => can(p));
-  };
+  }, [can, isAdmin]);
 
   const canApproveCamps = useCallback(
     () => hasPermission('camps:approve') || isAdmin,
-    [isAdmin, can],
+    [isAdmin, hasPermission],
   );
   const canRejectCamps = useCallback(
     () => hasPermission('camps:approve') || isAdmin,
-    [isAdmin, can],
+    [isAdmin, hasPermission],
   );
   const canEditCampRecord = useCallback((camp) => {
     const canUpdate = isAdmin || can('*') || can('camps:update') || can('camps:request') || can('camps:approve');

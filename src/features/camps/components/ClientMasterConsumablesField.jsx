@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { campApi } from '../campOpsApi.js';
 
-export function ClientMasterConsumablesField({ value = [], onChange, disabled = false }) {
+const EMPTY_ARRAY = Object.freeze([]);
+
+export function ClientMasterConsumablesField({ value = EMPTY_ARRAY, onChange, disabled = false }) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,12 +26,15 @@ export function ClientMasterConsumablesField({ value = [], onChange, disabled = 
     };
   }, []);
 
-  const selectedIds = new Set((value || []).map((item) => String(item.productId)));
-
   const availableOptions = useMemo(
-    () => options.filter((product) => !selectedIds.has(String(product.id))),
-    [options, selectedIds],
+    () => {
+      const selectedIds = new Set((value || EMPTY_ARRAY).map((item) => String(item.productId)));
+      return options.filter((product) => !selectedIds.has(String(product.id)));
+    },
+    [options, value],
   );
+
+  const selectedIds = new Set((value || EMPTY_ARRAY).map((item) => String(item.productId)));
 
   function addProduct(productId) {
     const product = options.find((item) => String(item.id) === String(productId));

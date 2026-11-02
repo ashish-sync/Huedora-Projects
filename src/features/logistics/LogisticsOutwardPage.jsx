@@ -12,6 +12,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import {
   FALLBACK_CAT_DEFAULTS,
   FALLBACK_DELIVERY,
@@ -467,6 +468,8 @@ function isDispatchOpen(row) {
 
 const POD_TRACK_URL = 'https://www.dtdc.com/trackshipment';
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 export default function LogisticsOutwardPage() {
   const { can, user, isAdmin } = useAuth();
   const canWrite = can('logistics:write') || can('*');
@@ -506,6 +509,9 @@ export default function LogisticsOutwardPage() {
   /** Selected POD row ids for bulk Delivered / Delete / Excel */
   const [podSelectedIds, setPodSelectedIds] = useState(() => new Set());
   const [podBulkBusy, setPodBulkBusy] = useState(false);
+  const [bulkPodsOutcomeConfirm, setBulkPodsOutcomeConfirm] = useState(null);
+  const [bulkPodsDeleteConfirm, setBulkPodsDeleteConfirm] = useState(false);
+  const [deliveryConfirmTarget, setDeliveryConfirmTarget] = useState(null);
   /** Available inward lots keyed by productId → [{ batchNumber, expiryDate, serialNumber, qty }] */
   const [stockLotsByProductId, setStockLotsByProductId] = useState({});
 
@@ -524,9 +530,9 @@ export default function LogisticsOutwardPage() {
     issueKind === 'Inter Transfer' ||
     prepareFixedDestination;
   const categoryDefaults = cfg.categoryDefaults || FALLBACK_CAT_DEFAULTS;
-  const warehouses = meta?.warehouses || [];
-  const products = meta?.products || [];
-  const uoms = meta?.uoms || [];
+  const warehouses = meta?.warehouses || EMPTY_ARRAY;
+  const products = meta?.products || EMPTY_ARRAY;
+  const uoms = meta?.uoms || EMPTY_ARRAY;
   const defaultWarehouseName = cfg.defaultWarehouseName || 'Mumbai';
 
   const uomLabel = useCallback(
@@ -737,16 +743,16 @@ export default function LogisticsOutwardPage() {
     }
   };
 
-  const markPodsBulk = async (outcome) => {
+  const markPodsBulk = (outcome) => {
     if (!canWrite || !podOpenSelected.length) return;
     const label = outcome === 'RTO' ? 'RTO' : 'Delivered';
-    if (
-      !window.confirm(
-        `Mark ${podOpenSelected.length} selected POD${podOpenSelected.length === 1 ? '' : 's'} as ${label}? They will close automatically.`
-      )
-    ) {
-      return;
-    }
+    setBulkPodsOutcomeConfirm({ outcome, label, count: podOpenSelected.length });
+  };
+
+  const executeMarkPodsBulk = async () => {
+    if (!bulkPodsOutcomeConfirm) return;
+    const { outcome, label } = bulkPodsOutcomeConfirm;
+    setBulkPodsOutcomeConfirm(null);
     setPodBulkBusy(true);
     setError('');
     setMsg('');
@@ -779,17 +785,17 @@ export default function LogisticsOutwardPage() {
     }
   };
 
-  const deletePodsBulk = async () => {
+  const deletePodsBulk = () => {
     if (!adminUser || !podSelectedIds.size) return;
     const selected = podRows.filter((r) => podSelectedIds.has(String(r._id)));
     if (!selected.length) return;
-    if (
-      !window.confirm(
-        `Permanently delete ${selected.length} selected POD${selected.length === 1 ? '' : 's'}? This cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    setBulkPodsDeleteConfirm({ count: selected.length, rows: selected });
+  };
+
+  const executeDeletePodsBulk = async () => {
+    if (!bulkPodsDeleteConfirm) return;
+    const { rows: selected } = bulkPodsDeleteConfirm;
+    setBulkPodsDeleteConfirm(false);
     setPodBulkBusy(true);
     setError('');
     setMsg('');
@@ -835,27 +841,25 @@ export default function LogisticsOutwardPage() {
         serviceType: resolvedService,
         courierType: resolvedCourierType,
         remark: selected
-          ? `${selected.name} · ${selected.categoryLabel || selected.zoneLabel || ''} · est. ₹${selected.estimate ?? '—'}${note ? ` · ${note}` : ''}`
+          ? `${selected.name} · ${selected.categoryLabel || selected.zoneLabel || ''} · est. ₹${selected.estimate ?? '-'}${note ? ` · ${note}` : ''}`
           : note || '',
       },
     });
     return selected;
   };
 
-  const markDelivery = async (row, outcome) => {
+  const markDelivery = (row, outcome) => {
     if (!canWrite || !row?._id) return;
     if (outcome === 'Closed') return;
     const label = outcome === 'RTO' ? 'RTO' : outcome === 'POD Booked' ? 'POD Booked' : 'Delivered';
     const leavesOpen = outcome === 'POD Booked';
-    if (
-      !window.confirm(
-        leavesOpen
-          ? `Mark this goods issue as ${label}?`
-          : `Mark this goods issue as ${label}? It will close automatically.`
-      )
-    ) {
-      return;
-    }
+    setDeliveryConfirmTarget({ row, outcome, label, leavesOpen });
+  };
+
+  const executeMarkDelivery = async () => {
+    if (!deliveryConfirmTarget) return;
+    const { row, outcome, label, leavesOpen } = deliveryConfirmTarget;
+    setDeliveryConfirmTarget(null);
     setDeliveryBusyId(row._id);
     setError('');
     setMsg('');
@@ -1107,7 +1111,7 @@ export default function LogisticsOutwardPage() {
         .filter(Boolean);
       const reason = String(req.reason || '').trim();
       const clientLabel = clientBits.length ? `Client: ${clientBits.join(' · ')}` : '';
-      return [clientLabel, reason].filter(Boolean).join(' — ');
+      return [clientLabel, reason].filter(Boolean).join(' · ');
     })();
     base.remark = String(req.reason || '').trim();
     base.assetRequestId = req._id;
@@ -1721,7 +1725,7 @@ export default function LogisticsOutwardPage() {
     <div className="logistics-inout ilog-flow">
       <p className="muted" style={{ marginTop: 0 }}>
         Prepare package (Courier: pick courier + AWB in the same step). Mark Delivered or
-        RTO when the shipment completes — it closes automatically. Use Track for AWB status.
+        RTO when the shipment completes; it closes automatically. Use Track for AWB status.
       </p>
 
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
@@ -2215,7 +2219,7 @@ export default function LogisticsOutwardPage() {
                         <input
                           readOnly
                           className="is-readonly"
-                          value={uomLabel(form.uomId) || '—'}
+                          value={uomLabel(form.uomId) || '-'}
                         />
                       </Field>
                       <Field
@@ -2709,10 +2713,10 @@ export default function LogisticsOutwardPage() {
                                       </span>
                                     ) : null}
                                   </td>
-                                  <td>{opt.serviceType || '—'}</td>
-                                  <td>{opt.categoryLabel || opt.zoneLabel || '—'}</td>
+                                  <td>{opt.serviceType || '-'}</td>
+                                  <td>{opt.categoryLabel || opt.zoneLabel || '-'}</td>
                                   <td className="num">
-                                    {opt.estimate != null ? opt.estimate.toFixed(2) : '—'}
+                                    {opt.estimate != null ? opt.estimate.toFixed(2) : '-'}
                                   </td>
                                 </tr>
                               );
@@ -3066,7 +3070,7 @@ export default function LogisticsOutwardPage() {
                       <td className="mono-sm">
                         {r.applicableWeight || r.packageWeight
                           ? `${r.applicableWeight || r.packageWeight} kg`
-                          : '—'}
+                          : '-'}
                       </td>
                       <td>
                         <span
@@ -3271,6 +3275,40 @@ export default function LogisticsOutwardPage() {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={Boolean(bulkPodsOutcomeConfirm)}
+        title="Update Selected PODs"
+        message={`Mark ${bulkPodsOutcomeConfirm?.count} selected POD${bulkPodsOutcomeConfirm?.count === 1 ? '' : 's'} as ${bulkPodsOutcomeConfirm?.label}? They will close automatically.`}
+        confirmLabel={podBulkBusy ? 'Updating…' : `Mark ${bulkPodsOutcomeConfirm?.label || ''}`}
+        confirmVariant="primary"
+        busy={podBulkBusy}
+        onConfirm={executeMarkPodsBulk}
+        onCancel={() => setBulkPodsOutcomeConfirm(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(bulkPodsDeleteConfirm)}
+        title="Delete Selected PODs"
+        message={`Permanently delete ${bulkPodsDeleteConfirm?.count} selected POD${bulkPodsDeleteConfirm?.count === 1 ? '' : 's'}? This action cannot be undone.`}
+        confirmLabel={podBulkBusy ? 'Deleting…' : 'Delete PODs'}
+        confirmVariant="danger"
+        busy={podBulkBusy}
+        onConfirm={executeDeletePodsBulk}
+        onCancel={() => setBulkPodsDeleteConfirm(false)}
+      />
+      <ConfirmDialog
+        open={Boolean(deliveryConfirmTarget)}
+        title="Confirm Status Update"
+        message={
+          deliveryConfirmTarget?.leavesOpen
+            ? `Mark this goods issue as ${deliveryConfirmTarget?.label}?`
+            : `Mark this goods issue as ${deliveryConfirmTarget?.label}? It will close automatically.`
+        }
+        confirmLabel={deliveryBusyId ? 'Updating…' : `Confirm ${deliveryConfirmTarget?.label || ''}`}
+        confirmVariant="primary"
+        busy={Boolean(deliveryBusyId)}
+        onConfirm={executeMarkDelivery}
+        onCancel={() => setDeliveryConfirmTarget(null)}
+      />
     </div>
   );
 }

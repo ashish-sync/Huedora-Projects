@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api } from '../../shared/api.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
@@ -250,6 +251,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [error, setError] = useState('');
   const [listLoading, setListLoading] = useState(false);
   const [deleteBusyId, setDeleteBusyId] = useState('');
+  const [deleteConfirmDoc, setDeleteConfirmDoc] = useState(null);
   const [duplicateBusyId, setDuplicateBusyId] = useState('');
   const [statusBusyId, setStatusBusyId] = useState('');
 
@@ -397,19 +399,20 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     }
   }
 
-  async function handleDelete(row) {
+  function handleDelete(row) {
     if (!admin || !row?._id) return;
-    const label = displayDocumentNumber(row);
-    const confirmMsg =
-      label && label !== '—'
-        ? `Delete ${label}? Its invoice number will be released for reuse.`
-        : 'Delete this billing document?';
-    if (!window.confirm(confirmMsg)) return;
+    setDeleteConfirmDoc(row);
+  }
+
+  async function handleConfirmDeleteDoc() {
+    if (!deleteConfirmDoc || !admin) return;
+    const row = deleteConfirmDoc;
     setDeleteBusyId(row._id);
     setError('');
     try {
       await deleteCommercialDocument(row._id);
       setPayMsg('Document deleted.');
+      setDeleteConfirmDoc(null);
       await load();
     } catch (e) {
       setError(e.message || 'Failed to delete document');

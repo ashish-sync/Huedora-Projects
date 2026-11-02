@@ -1,19 +1,71 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ['class', '[data-theme="dark"]'],
   content: [
     './src/features/auth/lamp-login/**/*.{js,jsx}',
     './src/features/auth/LoginPage.jsx',
     './src/features/finance/invoiceGenerator/**/*.{js,jsx}',
     './src/features/finance/proformaGenerator/**/*.{js,jsx}',
     './src/features/finance/documentGenerator/**/*.{js,jsx}',
+    './src/**/*.{js,jsx}',
     './index.html',
   ],
   theme: {
     extend: {
       colors: {
+        /* ── Approved Global Colour Tokens ── */
+        'bg-tier-1': 'var(--bg-tier-1)',
+        'bg-tier-2': 'var(--bg-tier-2)',
+        'bg-tier-3': 'var(--bg-tier-3)',
+        'bg-input': 'var(--bg-input)',
+        'bg-hover': 'var(--bg-hover)',
+        'bg-muted': 'var(--bg-muted)',
+        'border-default': 'var(--border-default)',
+        'border-strong': 'var(--border-strong)',
+        'brand-primary': 'var(--brand-primary)',
+        'brand-primary-hover': 'var(--brand-primary-hover)',
+        'brand-primary-pressed': 'var(--brand-primary-pressed)',
+        'brand-accent': 'var(--brand-accent)',
+        'brand-selected-bg': 'var(--brand-selected-bg)',
+        'text-main': 'var(--text-main)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-muted': 'var(--text-muted)',
+        'text-on-brand': 'var(--text-on-brand)',
+        status: {
+          success: {
+            text: 'var(--status-success-text)',
+            bg: 'var(--status-success-bg)',
+            border: 'var(--status-success-border)',
+            dot: 'var(--status-success-dot)',
+          },
+          warning: {
+            text: 'var(--status-warning-text)',
+            bg: 'var(--status-warning-bg)',
+            border: 'var(--status-warning-border)',
+            dot: 'var(--status-warning-dot)',
+          },
+          danger: {
+            text: 'var(--status-danger-text)',
+            bg: 'var(--status-danger-bg)',
+            border: 'var(--status-danger-border)',
+            dot: 'var(--status-danger-dot)',
+          },
+          info: {
+            text: 'var(--status-info-text)',
+            bg: 'var(--status-info-bg)',
+            border: 'var(--status-info-border)',
+            dot: 'var(--status-info-dot)',
+          },
+          neutral: {
+            text: 'var(--status-neutral-text)',
+            bg: 'var(--status-neutral-bg)',
+            border: 'var(--status-neutral-border)',
+            dot: 'var(--status-neutral-dot)',
+          },
+        },
         huedora: {
-          blue: '#0005B2',
-          'blue-hover': '#00048f',
+          blue: 'var(--brand-primary)',
+          'blue-hover': 'var(--brand-primary-hover)',
         },
         invoice: {
           navy: '#0f3b6d',

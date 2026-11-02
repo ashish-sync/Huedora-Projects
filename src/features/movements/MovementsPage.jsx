@@ -96,12 +96,12 @@ export default function MovementsPage() {
             }
           }}
         >
-          <h3 style={{ margin: '0 0 var(--space-3)', fontSize: '1rem' }}>Request movement</h3>
-          <div className="row">
+          <h3 style={{ margin: '0 0 14px', fontSize: '1rem', fontWeight: 700 }}>Request movement</h3>
+          <div className="form-grid form-grid-2">
             <div className="field">
-              <label>Asset</label>
+              <label>Asset *</label>
               <AdaptiveSelect required value={form.assetId} onChange={(e) => setForm({ ...form, assetId: e.target.value })}>
-                <option value="">Select</option>
+                <option value="">Select asset…</option>
                 {assets.map((a) => (
                   <option key={a._id} value={a._id}>
                     {a.assetTag}
@@ -112,7 +112,7 @@ export default function MovementsPage() {
             <div className="field">
               <label>To {FIELD.CUSTODIAN}</label>
               <AdaptiveSelect value={form.toContactId} onChange={(e) => setForm({ ...form, toContactId: e.target.value })}>
-                <option value="">-</option>
+                <option value="">Select recipient custodian…</option>
                 {contacts.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -123,16 +123,18 @@ export default function MovementsPage() {
             </div>
             <div className="field">
               <label>To city</label>
-              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+              <input value={form.city} placeholder="Destination city" onChange={(e) => setForm({ ...form, city: e.target.value })} />
             </div>
             <div className="field">
-              <label>Reason</label>
-              <input required value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+              <label>Reason *</label>
+              <input required value={form.reason} placeholder="Operational reason for transfer" onChange={(e) => setForm({ ...form, reason: e.target.value })} />
             </div>
           </div>
-          <button className="btn" type="submit">
-            Submit request
-          </button>
+          <div className="form-actions">
+            <button className="btn" type="submit">
+              Submit request
+            </button>
+          </div>
         </form>
       )}
 

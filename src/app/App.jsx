@@ -156,7 +156,14 @@ export default function App() {
             <Layout>
               <Routes>
                 <Route path="/" element={<ModulesHomePage />} />
-                <Route path={MODULE_PATH.DASHBOARD} element={<TrackingDashboardPage />} />
+                <Route
+                  path={MODULE_PATH.DASHBOARD}
+                  element={
+                    <RequirePermission anyOf={['dashboards:read']}>
+                      <TrackingDashboardPage />
+                    </RequirePermission>
+                  }
+                />
                 <Route path={MODULE_PATH.ACCESS_CONTROL} element={
                   <RequirePermission anyOf={['users:read', 'users:write']}>
                     <RolePermissionMasterPage />

@@ -35,7 +35,10 @@ export async function fetchAssignContactFacets({
     const params = new URLSearchParams({ resourceType: rt });
     if (roleKey) params.set('profession', roleKey);
     if (st) params.set('state', st);
-    const res = await api(`/contacts/assign-facets?${params}`, signal ? { signal } : {});
+    const res = await api(`/contacts/assign-facets?${params}`, {
+      cache: 'no-store',
+      ...(signal ? { signal } : {}),
+    });
     return {
       states: Array.isArray(res?.data?.states) ? res.data.states : [],
       cities: Array.isArray(res?.data?.cities) ? res.data.cities : [],
@@ -77,10 +80,11 @@ export async function fetchHealthcareWorkerContactsPage({
     .filter(Boolean);
   const roleKey = [...new Set(roleList)].sort().join(',');
   const linked = hasServiceProvider ? '1' : '0';
-  const hardCap = fullDirectory ? 2000 : Math.min(200, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT);
-  const capped = Math.min(Math.max(1, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT), hardCap);
-  const pageBudget = fullDirectory ? Math.max(1, maxPages || 1) : 1;
-  const cacheKey = `hcw-contacts:v5:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
+  const requestedSize = Math.max(1, Number(pageSize) || ASSIGN_HCW_INITIAL_LIMIT);
+  const pageBudget = Math.max(1, Number(maxPages) || 1);
+  const hardCap = fullDirectory ? 2000 : Math.min(200, requestedSize * pageBudget);
+  const capped = Math.min(requestedSize, hardCap);
+  const cacheKey = `hcw-contacts:v6:ps=${capped}:mp=${pageBudget}:q=${qTrim}:rt=${rt}:st=${st}:ct=${ct}:pr=${roleKey}:sp=${linked}:fd=${fullDirectory ? 1 : 0}:assign=1`;
 
   const loader = async () => {
     const all = [];
@@ -101,7 +105,10 @@ export async function fetchHealthcareWorkerContactsPage({
 
     do {
       params.set('page', String(page));
-      const res = await api(`/contacts?${params}`, signal ? { signal } : {});
+      const res = await api(`/contacts?${params}`, {
+        cache: 'no-store',
+        ...(signal ? { signal } : {}),
+      });
       const batch = Array.isArray(res?.data) ? res.data : [];
       all.push(...batch);
       pages = Math.max(1, Number(res?.meta?.pages) || 1);

@@ -11,6 +11,8 @@ import {
   utilizationTone,
 } from './poUtilization.js';
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 function toQuery(params = {}) {
   const cleaned = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -112,7 +114,7 @@ export default function ClientMasterPoTracker({
     setBilledOpen(false);
   }, [selectedPoId]);
 
-  const orders = Array.isArray(data?.purchaseOrders) ? data.purchaseOrders : [];
+  const orders = Array.isArray(data?.purchaseOrders) ? data.purchaseOrders : EMPTY_ARRAY;
   const selectableOrders = useMemo(
     () =>
       orders.filter((po) =>
@@ -208,8 +210,8 @@ export default function ClientMasterPoTracker({
             label="PO / WO No."
             title={
               data?.campTerms && data.campTerms !== 'po_based'
-                ? 'This Client Master is not PO Based — enter manually if needed'
-                : 'No POs on Client Master — add under Camp Terms → PO Based'
+                ? 'This Client Master is not PO Based. Enter manually if needed.'
+                : 'No POs on Client Master. Add under Camp Terms → PO Based.'
             }
           >
             <input
@@ -222,7 +224,7 @@ export default function ClientMasterPoTracker({
                   ? 'Loading…'
                   : data?.campTerms && data.campTerms !== 'po_based'
                     ? 'Enter PO / WO No. (optional)'
-                    : 'No Client Master POs — enter manually'
+                    : 'No Client Master POs: enter manually'
               }
             />
           </Field>
@@ -262,7 +264,7 @@ export default function ClientMasterPoTracker({
 
           {!selected && !hasSelectablePos ? (
             <p className="ib-po-tracker-empty">
-              All Client Master POs have less than {minRemainingLabel} remaining — none are available
+              All Client Master POs have less than {minRemainingLabel} remaining. None are available
               to bill.
             </p>
           ) : null}

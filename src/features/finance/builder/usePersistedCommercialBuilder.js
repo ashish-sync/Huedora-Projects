@@ -325,7 +325,7 @@ export function usePersistedCommercialBuilder({
     const fileName = `${String(name || 'document').replace(/[^\w.-]+/g, '_')}.pdf`;
     const blob = await fetchServerPdfBlob(documentType, id);
     return { blob, fileName, row };
-  }, [docMeta, documentType, slug]);
+  }, [admin, docMeta, documentType, slug]);
 
   const exportServerPdf = useCallback(async () => {
     const { blob, fileName, row } = await resolveServerPdf();

@@ -133,7 +133,7 @@ export const MASTER_ENTITIES = [
         label: 'Contact Category',
         required: true,
         type: 'select',
-        options: ['Resource', 'Client', 'Vendor', 'Healthcare Worker'],
+        options: ['Resource', 'Client', 'Healthcare Worker'],
       },
       {
         name: 'resourceType',
@@ -176,25 +176,6 @@ export const MASTER_ENTITIES = [
         ],
       },
       { name: 'organization', label: 'Organization Name' },
-      {
-        name: 'supplyCategory',
-        label: 'Supply Category',
-        type: 'select',
-        options: [
-          'Medical Devices',
-          'Medical Consumables',
-          'Printing & Branding',
-          'Office Supplies & Stationery',
-          'Courier & Logistics',
-          'IT Hardware & Software',
-          'Biomedical Service & AMC',
-          'Facility & Housekeeping',
-          'Recruitment & Staffing',
-          'Travel & Transport',
-          'Catering',
-          'Other',
-        ],
-      },
       { name: 'city', label: 'City' },
       { name: 'state', label: 'State' },
       { name: 'address', label: 'Address', type: 'textarea' },
@@ -327,9 +308,6 @@ export function validateMasterPayload(entityId, payload = {}) {
     }
     if (category === 'Client' && !String(payload.organization || '').trim()) {
       return 'Organization Name is required for Client';
-    }
-    if (category === 'Vendor' && !String(payload.supplyCategory || '').trim()) {
-      return 'Supply Category is required for Vendor';
     }
     if (email) {
       const err = emailError(email);

@@ -16,6 +16,7 @@ import {
 } from '../../shared/importErrors.js';
 import { IMPORT_ACCEPT_ATTR } from '../../shared/importFilePolicy.js';
 import ImportActionButton from '../../components/ui/ImportActionButton.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import {
   OWNERSHIP_TYPE_OPTIONS,
   ASSET_STATUS_OPTIONS,
@@ -78,6 +79,7 @@ export default function DevicesPage() {
   const [deletingId, setDeletingId] = useState('');
   const [statusBusyId, setStatusBusyId] = useState('');
   const [exportBusy, setExportBusy] = useState(false);
+  const [deleteTargetRow, setDeleteTargetRow] = useState(null);
   const formRef = useRef(null);
 
   const load = () => {
@@ -208,9 +210,14 @@ export default function DevicesPage() {
     }
   };
 
-  const remove = async (row) => {
+  const remove = (row) => {
     if (!canDelete) return;
-    if (!window.confirm(`Delete “${row.name}” (${row.serialNumber || 'no serial'})?`)) return;
+    setDeleteTargetRow(row);
+  };
+
+  const executeRemove = async () => {
+    const row = deleteTargetRow;
+    if (!row) return;
     setError('');
     setMsg('');
     setDeletingId(row._id);
@@ -218,6 +225,7 @@ export default function DevicesPage() {
       await api(`/devices/${row._id}`, { method: 'DELETE' });
       if (editingId === row._id) closeForm();
       setMsg(`Deleted ${row.name}`);
+      setDeleteTargetRow(null);
       load();
     } catch (err) {
       setError(err.message);
@@ -683,6 +691,16 @@ export default function DevicesPage() {
             Showing {filtered.length} of {rows.length}
           </p>
         )}
+        <ConfirmDialog
+          open={Boolean(deleteTargetRow)}
+          title="Delete Asset"
+          message={`Delete “${deleteTargetRow?.name || 'this asset'}” (${deleteTargetRow?.serialNumber || 'no serial'})? This action cannot be undone.`}
+          confirmLabel={deletingId ? 'Deleting…' : 'Delete'}
+          confirmVariant="danger"
+          busy={Boolean(deletingId)}
+          onConfirm={executeRemove}
+          onCancel={() => setDeleteTargetRow(null)}
+        />
       </section>
     </PageShell>
   );

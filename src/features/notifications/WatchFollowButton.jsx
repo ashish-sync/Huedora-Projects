@@ -3,7 +3,7 @@ import { api } from '../../shared/api.js';
 
 /**
  * Opt-in Watch / Follow for module records.
- * Does not change workflows — only subscription for notification fan-out.
+ * Does not change workflows: only subscription for notification fan-out.
  */
 export default function WatchFollowButton({ entityType, entityId, className = '' }) {
   const [watching, setWatching] = useState(false);
@@ -18,7 +18,7 @@ export default function WatchFollowButton({ entityType, entityId, className = ''
       );
       setWatching(Boolean(res.data?.watching));
     } catch {
-      /* ignore — user may lack access */
+      /* ignore: user may lack access */
     }
   }, [entityType, entityId]);
 

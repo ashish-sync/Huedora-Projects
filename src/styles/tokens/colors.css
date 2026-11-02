@@ -1,95 +1,221 @@
 /**
- * TYLO One — semantic color tokens (light / dark)
- * Source: TYLO Brand Identity & Design System
+ * TYLO One — Final Global Light & Dark Mode Colour System
+ * Single centralized design tokens for Light and Dark mode.
  */
 
 :root,
+[data-theme='light'],
 html[data-theme='light'] {
   color-scheme: light;
 
-  /* Brand */
-  --color-brand-primary: #0a5ac2;
-  --color-brand-primary-hover: #084eaa;
-  --color-brand-primary-subtle: #e8f1fb;
-  --color-brand-on-primary: #ffffff;
+  /* ── 1. Approved Base Tokens (Light Mode) ── */
+  --bg-tier-1: #F3F5F8;
+  --bg-tier-2: #FFFFFF;
+  --bg-tier-3: #FFFFFF;
+  --bg-input: #FFFFFF;
+  --bg-hover: #F8FAFC;
+  --bg-muted: #F1F5F9;
+  --border-default: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --brand-primary: #2457C5;
+  --brand-primary-hover: #1D46A3;
+  --brand-primary-pressed: #173882;
+  --brand-accent: #2457C5;
+  --brand-selected-bg: #EFF6FF;
+  --text-main: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #5B6575;
+  --text-on-brand: #FFFFFF;
 
-  /* Medical — critical alerts & medical icon only */
-  --color-medical: #d92d20;
-  --color-medical-subtle: #fef2f1;
+  /* ── 2. Semantic Status Tokens (Light Mode) ── */
+  /* Success */
+  --status-success-text: #15803D;
+  --status-success-bg: #F0FDF4;
+  --status-success-border: #BBF7D0;
+  --status-success-dot: #16A34A;
 
-  /* Status */
-  --color-success: #16a34a;
-  --color-success-subtle: #ecfdf3;
-  --color-warning: #d97706;
-  --color-warning-subtle: #fffbeb;
-  --color-danger: #dc2626;
-  --color-danger-subtle: #fef2f2;
-  --color-info: #0284c7;
-  --color-info-subtle: #e0f2fe;
+  /* Warning */
+  --status-warning-text: #B45309;
+  --status-warning-bg: #FFFBEB;
+  --status-warning-border: #FDE68A;
+  --status-warning-dot: #D97706;
 
-  /* Surfaces — clear app → canvas → elevated hierarchy */
-  --color-bg-app: #ffffff;
-  --color-bg-canvas: #f4f6f8;
-  --color-bg-sidebar: #eef1f5;
-  --color-bg-elevated: #ffffff;
-  --color-bg-sunken: #f1f5f9;
-  --color-bg-hover: #eef2f7;
-  --color-bg-surface: #ffffff;
+  /* Danger */
+  --status-danger-text: #B91C1C;
+  --status-danger-bg: #FEF2F2;
+  --status-danger-border: #FECACA;
+  --status-danger-dot: #DC2626;
+
+  /* Information */
+  --status-info-text: #1D46A3;
+  --status-info-bg: #EFF6FF;
+  --status-info-border: #BFDBFE;
+  --status-info-dot: #2457C5;
+
+  /* Neutral */
+  --status-neutral-text: #475569;
+  --status-neutral-bg: #F1F5F9;
+  --status-neutral-border: #CBD5E1;
+  --status-neutral-dot: #5B6575;
+
+  /* Disabled Controls */
+  --control-disabled-bg: #F1F5F9;
+  --control-disabled-text: #94A3B8;
+  --control-disabled-border: #E2E8F0;
+
+  /* Focus Ring */
+  --focus-ring: var(--brand-primary);
+
+  /* Medical Alert Accent */
+  --color-medical: #D92D20;
+  --color-medical-subtle: #FEF2F1;
+
+  /* ── 3. Canonical Semantic Aliases (--color-*) ── */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-primary-subtle: var(--brand-selected-bg);
+  --color-brand-on-primary: var(--text-on-brand);
+
+  --color-bg-app: var(--bg-tier-1);
+  --color-bg-canvas: var(--bg-tier-1);
+  --color-bg-sidebar: var(--bg-tier-2);
+  --color-bg-elevated: var(--bg-tier-2);
+  --color-bg-surface: var(--bg-tier-2);
+  --color-header-bg: var(--bg-tier-2);
+  --color-bg-floating: var(--bg-tier-3);
+  --color-bg-sunken: var(--bg-muted);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-muted: var(--bg-muted);
+  --color-bg-input: var(--bg-input);
   --color-bg-overlay: rgb(15 23 42 / 0.48);
-  --color-header-bg: #0a5ac2;
 
-  /* Text */
-  --color-text-primary: #111827;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #64748b;
-  --color-text-disabled: #94a3b8;
-  --color-text-on-primary: #ffffff;
+  --color-text-primary: var(--text-main);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-muted);
+  --color-text-disabled: var(--control-disabled-text);
+  --color-text-on-primary: var(--text-on-brand);
   --color-text-on-primary-muted: rgb(255 255 255 / 0.82);
 
-  /* Borders & focus */
-  --color-border-default: #e5e7eb;
-  --color-border-strong: #cbd5e1;
-  --color-focus-ring: #0a5ac2;
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--bg-muted);
+  --color-border-strong: var(--border-strong);
+  --color-focus-ring: var(--focus-ring);
+
+  --color-success: var(--status-success-dot);
+  --color-success-subtle: var(--status-success-bg);
+  --color-warning: var(--status-warning-dot);
+  --color-warning-subtle: var(--status-warning-bg);
+  --color-danger: var(--status-danger-dot);
+  --color-danger-subtle: var(--status-danger-bg);
+  --color-info: var(--status-info-dot);
+  --color-info-subtle: var(--status-info-bg);
 }
 
-html[data-theme='dark'] {
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
   color-scheme: dark;
 
-  --color-brand-primary: #60a5fa;
-  --color-brand-primary-hover: #93c5fd;
-  --color-brand-primary-subtle: rgb(96 165 250 / 0.14);
-  --color-brand-on-primary: #0d1117;
+  /* ── 1. Approved Base Tokens (Dark Mode) ── */
+  --bg-tier-1: #090D16;
+  --bg-tier-2: #111827;
+  --bg-tier-3: #1E293B;
+  --bg-input: #0B1220;
+  --bg-hover: #1E293B;
+  --bg-muted: #0F172A;
+  --border-default: #1E293B;
+  --border-strong: #334155;
+  --brand-primary: #2457C5;
+  --brand-primary-hover: #2D63D8;
+  --brand-primary-pressed: #1D46A3;
+  --brand-accent: #60A5FA;
+  --brand-selected-bg: rgba(96, 165, 250, 0.12);
+  --text-main: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-on-brand: #FFFFFF;
 
-  --color-medical: #f97066;
-  --color-medical-subtle: rgb(249 112 102 / 0.14);
+  /* ── 2. Semantic Status Tokens (Dark Mode) ── */
+  /* Success */
+  --status-success-text: #4ADE80;
+  --status-success-bg: rgba(34, 197, 94, 0.12);
+  --status-success-border: rgba(74, 222, 128, 0.28);
+  --status-success-dot: #22C55E;
 
-  --color-success: #22c55e;
-  --color-success-subtle: rgb(34 197 94 / 0.14);
-  --color-warning: #f59e0b;
-  --color-warning-subtle: rgb(245 158 11 / 0.14);
-  --color-danger: #ef4444;
-  --color-danger-subtle: rgb(239 68 68 / 0.14);
-  --color-info: #38bdf8;
-  --color-info-subtle: rgb(56 189 248 / 0.14);
+  /* Warning */
+  --status-warning-text: #FBBF24;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-warning-border: rgba(251, 191, 36, 0.28);
+  --status-warning-dot: #F59E0B;
 
-  --color-bg-app: #0d1117;
-  --color-bg-canvas: #12171f;
-  --color-bg-sidebar: #0f141c;
-  --color-bg-elevated: #1a2330;
-  --color-bg-sunken: #141a22;
-  --color-bg-hover: #243041;
-  --color-bg-surface: #0d1117;
-  --color-bg-overlay: rgb(0 0 0 / 0.58);
-  --color-header-bg: #0f141c;
+  /* Danger */
+  --status-danger-text: #F87171;
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  --status-danger-border: rgba(248, 113, 113, 0.28);
+  --status-danger-dot: #EF4444;
 
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  --color-text-disabled: #64748b;
-  --color-text-on-primary: #f8fafc;
+  /* Information */
+  --status-info-text: #60A5FA;
+  --status-info-bg: rgba(96, 165, 250, 0.12);
+  --status-info-border: rgba(96, 165, 250, 0.28);
+  --status-info-dot: #60A5FA;
+
+  /* Neutral */
+  --status-neutral-text: #CBD5E1;
+  --status-neutral-bg: #1E293B;
+  --status-neutral-border: #334155;
+  --status-neutral-dot: #94A3B8;
+
+  /* Disabled Controls */
+  --control-disabled-bg: #0F172A;
+  --control-disabled-text: #475569;
+  --control-disabled-border: #1E293B;
+
+  /* Focus Ring */
+  --focus-ring: var(--brand-accent);
+
+  /* Medical Alert Accent */
+  --color-medical: #F97066;
+  --color-medical-subtle: rgba(249, 112, 102, 0.14);
+
+  /* ── 3. Canonical Semantic Aliases (--color-*) ── */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-primary-subtle: var(--brand-selected-bg);
+  --color-brand-on-primary: var(--text-on-brand);
+
+  --color-bg-app: var(--bg-tier-1);
+  --color-bg-canvas: var(--bg-tier-1);
+  --color-bg-sidebar: var(--bg-tier-2);
+  --color-bg-elevated: var(--bg-tier-2);
+  --color-bg-surface: var(--bg-tier-2);
+  --color-header-bg: var(--bg-tier-2);
+  --color-bg-floating: var(--bg-tier-3);
+  --color-bg-sunken: var(--bg-muted);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-muted: var(--bg-muted);
+  --color-bg-input: var(--bg-input);
+  --color-bg-overlay: rgba(0, 0, 0, 0.65);
+
+  --color-text-primary: var(--text-main);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-muted);
+  --color-text-disabled: var(--control-disabled-text);
+  --color-text-on-primary: var(--text-on-brand);
   --color-text-on-primary-muted: rgb(248 250 252 / 0.78);
 
-  --color-border-default: #2a3340;
-  --color-border-strong: #3a4556;
-  --color-focus-ring: #60a5fa;
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--bg-muted);
+  --color-border-strong: var(--border-strong);
+  --color-focus-ring: var(--focus-ring);
+
+  --color-success: var(--status-success-dot);
+  --color-success-subtle: var(--status-success-bg);
+  --color-warning: var(--status-warning-dot);
+  --color-warning-subtle: var(--status-warning-bg);
+  --color-danger: var(--status-danger-dot);
+  --color-danger-subtle: var(--status-danger-bg);
+  --color-info: var(--status-info-dot);
+  --color-info-subtle: var(--status-info-bg);
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, X } from 'lucide-react';
+import { encodeCanvasAsJpegBlob, gpsSelfieFileName } from '../utils/prepareGpsSelfieForUpload.js';
 
 async function openCameraStream() {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -40,14 +41,15 @@ async function snapshotToFile(video) {
   const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) throw new Error('Could not capture from camera');
   ctx.drawImage(video, 0, 0, width, height);
-  const blob = await new Promise((resolve) => {
-    canvas.toBlob(resolve, 'image/jpeg', 0.92);
-  });
+  const blob = await encodeCanvasAsJpegBlob(canvas);
   if (!blob || blob.size <= 0) {
     throw new Error('Could not capture photo from camera');
   }
-  return new File([blob], `gps-selfie-${Date.now()}.jpg`, {
-    type: 'image/jpeg',
+  const mime = String(blob.type || '').toLowerCase().startsWith('image/')
+    ? blob.type
+    : 'image/jpeg';
+  return new File([blob], gpsSelfieFileName(`gps-selfie-${Date.now()}`, mime), {
+    type: mime,
     lastModified: Date.now(),
   });
 }
@@ -65,6 +67,7 @@ export function GpsSelfieCapture({ open, busy = false, onCapture, onCancel }) {
   useEffect(() => {
     if (!open) return undefined;
     let cancelled = false;
+    const videoElement = videoRef.current;
 
     async function start() {
       setCamError('');
@@ -78,10 +81,9 @@ export function GpsSelfieCapture({ open, busy = false, onCapture, onCancel }) {
           return;
         }
         streamRef.current = stream;
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          await video.play().catch(() => {});
+        if (videoElement) {
+          videoElement.srcObject = stream;
+          await videoElement.play().catch(() => {});
         }
       } catch (err) {
         if (!cancelled) {
@@ -100,7 +102,7 @@ export function GpsSelfieCapture({ open, busy = false, onCapture, onCancel }) {
       cancelled = true;
       stopStream(streamRef.current);
       streamRef.current = null;
-      if (videoRef.current) videoRef.current.srcObject = null;
+      if (videoElement) videoElement.srcObject = null;
     };
   }, [open]);
 

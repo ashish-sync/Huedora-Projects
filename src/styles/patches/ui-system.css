@@ -73,6 +73,15 @@ td.muted:only-child {
   line-height: var(--text-body-sm-leading);
 }
 
+.empty-state--inline {
+  padding: var(--space-5) var(--space-4);
+  border: 0;
+  border-top: 1px solid var(--color-border-default);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 /* Empty table: keep message centered in the visible area */
 tbody tr:only-child td[colspan] {
   padding: var(--space-6) var(--space-4);
@@ -259,4 +268,75 @@ html[data-theme='light'] .logistics-prepare-section {
   .camp-ops-root .ops-board-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Dark mode: webkit autofill override ────────────────────── */
+
+html[data-theme='dark'] input:-webkit-autofill,
+html[data-theme='dark'] input:-webkit-autofill:hover,
+html[data-theme='dark'] input:-webkit-autofill:focus,
+html[data-theme='dark'] input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-bg-elevated) inset !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  caret-color: var(--color-text-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ── Dark mode: native select & date pickers ────────────────── */
+
+html[data-theme='dark'] select:not(.adaptive-select__input),
+html[data-theme='dark'] .field select,
+html[data-theme='dark'] .filter-select,
+html[data-theme='dark'] .toolbar select {
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] input[type='date'],
+html[data-theme='dark'] input[type='datetime-local'],
+html[data-theme='dark'] input[type='month'],
+html[data-theme='dark'] input[type='time'],
+html[data-theme='dark'] .date-input-native {
+  color-scheme: dark;
+}
+
+/* ── Dark mode: header bottom border — stronger visibility ──── */
+
+html[data-theme='dark'] .app-header {
+  border-bottom-color: var(--color-border-default);
+}
+
+/* ── Dark mode: table scrollbar contrast ────────────────────── */
+
+html[data-theme='dark'] .table-wrap {
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+/* ── Dark mode: floating menus / dropdowns elevation ────────── */
+
+html[data-theme='dark'] .adaptive-select__menu,
+html[data-theme='dark'] .header-profile-menu,
+html[data-theme='dark'] .import-action__menu {
+  background: var(--bg-tier-3);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Scrollbar theming (WebKit) ─────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
 }

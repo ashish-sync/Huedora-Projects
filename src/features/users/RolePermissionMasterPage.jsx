@@ -8,9 +8,11 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
 import { personRoleLabel, personStatusLabel } from '../dashboards/opsReviewCatalog.js';
 import '../audit/activityLog.css';
+import './accessControl.css';
 import {
   DESIGNATION_ACCESS_TEMPLATES,
   getDesignationAccessTemplate,
@@ -56,6 +58,19 @@ const EMPTY_USER = {
   moduleAccess: {},
   isActive: true,
 };
+
+function getInitials(fullName = '', email = '') {
+  const parts = String(fullName || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  const local = String(email || '').split('@')[0] || '?';
+  return local.slice(0, 2).toUpperCase();
+}
 
 function roleIdOf(r) {
   return String(r?._id || r?.id || r || '');
@@ -138,6 +153,7 @@ export default function RolePermissionMasterPage() {
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const usersLoadSeq = useRef(0);
   const skipDraftSyncRef = useRef(false);
@@ -391,9 +407,9 @@ export default function RolePermissionMasterPage() {
           pwd
             ? 'Password and access saved. Use the new password on next sign-in.'
             : blocked
-              ? 'Person blocked — they cannot sign in.'
+              ? 'Person blocked: they cannot sign in.'
               : unblocked
-                ? 'Person unblocked — they can sign in again.'
+                ? 'Person unblocked: they can sign in again.'
               : 'Changes saved.'
         );
       }
@@ -404,12 +420,14 @@ export default function RolePermissionMasterPage() {
     }
   };
 
-  const removeUser = async () => {
+  const removeUser = () => {
     if (!editingUserId || !canDelete) return;
     if (String(editingUserId) === String(me?.id || me?._id)) return;
-    if (!window.confirm(`Delete “${editingUser?.fullName || editingUser?.email}”? This cannot be undone.`)) {
-      return;
-    }
+    setDeleteUserConfirm(true);
+  };
+
+  const executeRemoveUser = async () => {
+    setDeleteUserConfirm(false);
     setBusy(true);
     setError('');
     setMsg('');
@@ -440,6 +458,8 @@ export default function RolePermissionMasterPage() {
   };
 
   const passwordChangedLabel = formatWhen(editingUser?.passwordChangedAt);
+  const activeCount = users.filter((u) => u.isActive !== false).length;
+  const adminCount = users.filter((u) => u.roles?.some((r) => r.permissions?.includes('*'))).length;
 
   const renderUserAccessGrid = () => {
     const adminRole = roles.find((r) => r.permissions?.includes('*'));
@@ -454,21 +474,21 @@ export default function RolePermissionMasterPage() {
       <section className="rp-section rp-section--modules">
         <h4>Control Center</h4>
         <p className="muted rp-hint">
-          Choose View, Edit, Request, Approve, and related access per application. Options on one app
-          do not affect another. Use All for every option on that app only.
+          Configure application-level privilege tiers. Options configured on one application do not cascade to another.
+          Select <strong>All</strong> to grant every available action for a single application.
         </p>
         {designationTemplate && (
-          <p className="muted rp-hint rp-hint--template">
-            Suggested bundle for <strong>{userDraft.designation}</strong>:{' '}
+          <div className="rp-hint--template">
+            Suggested access bundle for <strong>{userDraft.designation}</strong>:{' '}
             {designationTemplate.summary}
-          </p>
+          </div>
         )}
         <div className="rp-module-grid">
           {adminRole && (
             <div className="rp-module-row rp-module-row--admin">
               <div className="rp-module-card-copy">
                 <strong>Admin all Access</strong>
-                <span className="muted">Full access to every application</span>
+                <span className="muted">Full, unrestricted administrative privilege across all 8 modules</span>
               </div>
               <div className="rp-module-toggles">
                 <label className={`access-toggle ${hasAdmin ? 'is-on' : ''}`}>
@@ -533,7 +553,7 @@ export default function RolePermissionMasterPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ROLES_PERMISSIONS }]}
       title={MODULE.ROLES_PERMISSIONS}
-      description="Who can sign in, and what each person can do in each application."
+      description="Manage user credentials, organization designations, application access tiers, and reporting lines."
       actions={
         <>
           <button
@@ -552,7 +572,7 @@ export default function RolePermissionMasterPage() {
         </>
       }
     >
-      <div className="rp-tabs" role="tablist">
+      <div className="rp-tabs" role="tablist" aria-label="Access Control sections">
         <button
           type="button"
           role="tab"
@@ -582,7 +602,12 @@ export default function RolePermissionMasterPage() {
         <div className="rp-layout">
           <aside className="card rp-panel rp-panel--list">
             <div className="rp-panel-head">
-              <h3>People</h3>
+              <div className="rp-panel-head-top">
+                <h3>People Directory</h3>
+                <span className="rp-panel-user-count">
+                  {filteredUsers.length} of {users.length}
+                </span>
+              </div>
               {canViewUsers ? (
                 <MasterFilterShell>
                   <MasterSearchField
@@ -598,41 +623,49 @@ export default function RolePermissionMasterPage() {
               <p className="muted">You do not have permission to see the people list.</p>
             )}
             <div className="role-list">
-              {filteredUsers.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  className={`role-list-item ${
-                    !creatingUser && String(editingUserId) === String(u.id) ? 'is-selected' : ''
-                  }`}
-                  onClick={() => {
-                    setCreatingUser(false);
-                    syncedUserIdRef.current = '';
-                    setEditingUserId(u.id);
-                    setMsg('');
-                    setError('');
-                  }}
-                >
-                  <div className="activity-log-row__top">
-                    <strong>
-                      {u.fullName || u.email}
-                      {String(u.id) === String(me?.id) ? ' (you)' : ''}
-                    </strong>
-                    <span
-                      className={`activity-log-status${
-                        u.isActive === false ? ' activity-log-status--bad' : ' activity-log-status--ok'
-                      }`}
-                    >
-                      {personStatusLabel(u)}
-                    </span>
-                  </div>
-                  <span className="muted activity-log-row__meta">
-                    {personRoleLabel(u)}
-                  </span>
-                </button>
-              ))}
+              {filteredUsers.map((u) => {
+                const isSelected = !creatingUser && String(editingUserId) === String(u.id);
+                const isSelf = String(u.id) === String(me?.id);
+                const isInactive = u.isActive === false;
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    className={`role-list-item ${isSelected ? 'is-selected' : ''}`}
+                    onClick={() => {
+                      setCreatingUser(false);
+                      syncedUserIdRef.current = '';
+                      setEditingUserId(u.id);
+                      setMsg('');
+                      setError('');
+                    }}
+                  >
+                    <div className="role-list-item-avatar" aria-hidden="true">
+                      {getInitials(u.fullName, u.email)}
+                    </div>
+                    <div className="role-list-item-body">
+                      <div className="activity-log-row__top">
+                        <strong>
+                          {u.fullName || u.email}
+                          {isSelf ? ' (you)' : ''}
+                        </strong>
+                        <span
+                          className={`activity-log-status${
+                            isInactive ? ' activity-log-status--bad' : ' activity-log-status--ok'
+                          }`}
+                        >
+                          {personStatusLabel(u)}
+                        </span>
+                      </div>
+                      <span className="muted activity-log-row__meta">
+                        {personRoleLabel(u)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
               {canViewUsers && !filteredUsers.length && (
-                <p className="muted rp-empty">{users.length ? 'No matches.' : 'No people yet.'}</p>
+                <p className="muted rp-empty">{users.length ? 'No matches found.' : 'No people registered yet.'}</p>
               )}
             </div>
           </aside>
@@ -641,7 +674,7 @@ export default function RolePermissionMasterPage() {
             {!creatingUser && !editingUser ? (
               <div className="rp-empty-state">
                 <h3>Person details</h3>
-                <p className="muted">Select someone on the left, or create a new person.</p>
+                <p className="muted">Select someone from the left directory, or click "New person" above.</p>
               </div>
             ) : (
               <>
@@ -651,7 +684,7 @@ export default function RolePermissionMasterPage() {
                 )}
 
                 <section className="rp-section">
-                  <h4>Profile</h4>
+                  <h4>Profile & Identity</h4>
                   <div className="rp-form-grid">
                     <div className="field">
                       <label>Full name *</label>
@@ -661,6 +694,7 @@ export default function RolePermissionMasterPage() {
                         disabled={!canWrite}
                         autoComplete="off"
                         onChange={(e) => setUserDraft({ ...userDraft, fullName: e.target.value })}
+                        placeholder="e.g. Priya Sharma"
                       />
                     </div>
                     <div className="field">
@@ -672,6 +706,7 @@ export default function RolePermissionMasterPage() {
                         disabled={!canWrite || !creatingUser}
                         autoComplete="off"
                         onChange={(e) => setUserDraft({ ...userDraft, email: e.target.value })}
+                        placeholder="name@tylo.com"
                       />
                     </div>
                     <div className="field">
@@ -682,6 +717,7 @@ export default function RolePermissionMasterPage() {
                         disabled={!canWrite || !creatingUser}
                         autoComplete="off"
                         onChange={(e) => setUserDraft({ ...userDraft, username: e.target.value })}
+                        placeholder="username"
                       />
                     </div>
                     <div className="field">
@@ -691,6 +727,7 @@ export default function RolePermissionMasterPage() {
                         disabled={!canWrite}
                         autoComplete="off"
                         onChange={(e) => setUserDraft({ ...userDraft, phone: e.target.value })}
+                        placeholder="+91 9876543210"
                       />
                     </div>
                     <div className="field">
@@ -720,12 +757,12 @@ export default function RolePermissionMasterPage() {
                         aria-label="Reporting manager"
                         value={userDraft.reportingManagerId}
                         disabled={!canWrite}
-                        placeholder="None — top of the line"
+                        placeholder="None (top of line)"
                         onChange={(e) =>
                           setUserDraft({ ...userDraft, reportingManagerId: e.target.value })
                         }
                       >
-                        <option value="">None — top of the line</option>
+                        <option value="">None (top of line)</option>
                         {managerOptions.map((person) => (
                           <option key={person.id} value={person.id}>
                             {person.fullName || person.email}
@@ -738,13 +775,13 @@ export default function RolePermissionMasterPage() {
                 </section>
 
                 <section className="rp-section">
-                  <h4>Password</h4>
+                  <h4>Authentication & Credentials</h4>
                   <p className="muted rp-hint">
                     {creatingUser
-                      ? 'At least 12 characters.'
+                      ? 'Password must contain at least 12 characters.'
                       : passwordChangedLabel
-                        ? `Last changed ${passwordChangedLabel}. Leave blank to keep the current password.`
-                        : 'Leave blank to keep the current password (at least 12 characters if resetting).'}
+                        ? `Password last changed on ${passwordChangedLabel}. Leave fields blank to keep the current password.`
+                        : 'Leave blank to preserve current password (minimum 12 characters when resetting).'}
                   </p>
                   <div className="rp-form-grid">
                     <div className="field">
@@ -755,7 +792,7 @@ export default function RolePermissionMasterPage() {
                         minLength={12}
                         value={userDraft.password}
                         disabled={!canWrite}
-                        placeholder="Min 12 characters"
+                        placeholder="Minimum 12 characters"
                         autoComplete="new-password"
                         onChange={(e) => setUserDraft({ ...userDraft, password: e.target.value })}
                       />
@@ -782,7 +819,7 @@ export default function RolePermissionMasterPage() {
 
                 {!creatingUser && (
                   <section className="rp-section">
-                    <h4>Status</h4>
+                    <h4>Account Status & Governance</h4>
                     <label
                       className={`perm-check ${userDraft.isActive ? 'is-on' : 'is-blocked'}`}
                     >
@@ -798,11 +835,11 @@ export default function RolePermissionMasterPage() {
                         }
                       />
                       <span>
-                        <strong>{userDraft.isActive ? 'Can sign in' : 'Cannot sign in'}</strong>
+                        <strong>{userDraft.isActive ? 'Can sign in (Active)' : 'Cannot sign in (Blocked)'}</strong>
                         <em>
                           {userDraft.isActive
-                            ? 'Uncheck and save to stop this person signing in'
-                            : 'Check and save to let this person sign in again'}
+                            ? 'Active account permitted to authenticate and access authorized TYLO ONE features.'
+                            : 'Deactivated account. User is prohibited from signing in until re-enabled.'}
                         </em>
                       </span>
                     </label>
@@ -852,6 +889,16 @@ export default function RolePermissionMasterPage() {
       {tab === 'hierarchy' && canViewUsers && (
         <OrgHierarchyPanel canWrite={canWrite} onEditPerson={openPersonFromHierarchy} />
       )}
+      <ConfirmDialog
+        open={deleteUserConfirm}
+        title="Delete User"
+        message={`Delete “${editingUser?.fullName || editingUser?.email}”? This action cannot be undone.`}
+        confirmLabel={busy ? 'Deleting…' : 'Delete Person'}
+        confirmVariant="danger"
+        busy={busy}
+        onConfirm={executeRemoveUser}
+        onCancel={() => setDeleteUserConfirm(false)}
+      />
     </PageShell>
   );
 }

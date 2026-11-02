@@ -76,7 +76,7 @@ export const MODULE_BLURB = {
   ASSET_INVENTORY: 'Register and track Medical and Non-Medical Devices.',
   DOCUMENT_HUB: 'Create, send, and track contracts.',
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
-  CAMP_MANAGEMENT: 'Camp operations — camps, lifecycle stages, and connectors.',
+  CAMP_MANAGEMENT: 'Camp operations across all lifecycle stages.',
   ASSET_REQUESTS:
     'Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests.',
   LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',

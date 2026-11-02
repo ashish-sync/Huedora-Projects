@@ -141,6 +141,7 @@ export default function AgreementDetailPage() {
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
   const canvasRef = useRef(null);
   const dockCanvasRef = useRef(null);
   const drawing = useRef(false);
@@ -310,7 +311,8 @@ export default function AgreementDetailPage() {
     try {
       await navigator.clipboard.writeText(recipientLink);
       setError('');
-      alert('Receiver signing link copied');
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
     } catch {
       setError('Could not copy link');
     }
@@ -380,7 +382,7 @@ export default function AgreementDetailPage() {
           )}
           {canWrite && sentAwaitingReceiver && recipientLink && (
             <button className="btn secondary" type="button" onClick={copyRecipientLink}>
-              Copy receiver signing link
+              {linkCopied ? 'Link copied!' : 'Copy receiver signing link'}
             </button>
           )}
           {canWrite && doc.status === 'COMPLETED' && (
@@ -651,7 +653,7 @@ export default function AgreementDetailPage() {
               <code className="mono-sm">{recipientLink}</code>
               <div style={{ marginTop: 'var(--space-2)' }}>
                 <button className="btn secondary" type="button" onClick={copyRecipientLink}>
-                  Copy link
+                  {linkCopied ? 'Copied!' : 'Copy link'}
                 </button>
               </div>
             </div>

@@ -119,7 +119,7 @@ export default function CampLocationFields({
     return () => {
       cancelled = true;
     };
-  }, [v.stateId]);
+  }, [v.stateId, loadCities]);
 
   useEffect(() => {
     if (!cities.length || v.cityId || !v.city) return;

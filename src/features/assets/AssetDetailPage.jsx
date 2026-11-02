@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../shared/api.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
+import Skeleton from '../../components/ui/Skeleton.jsx';
 
 function assetStatusTone(status) {
   const s = String(status || '');
@@ -54,21 +55,21 @@ function eventWhen(ev) {
 }
 
 function eventChange(ev) {
-  if (isCreateEvent(ev)) return '—';
+  if (isCreateEvent(ev)) return '-';
   const kind = String(ev.eventType || ev.type || '');
   if (kind === 'CUSTODY_CHANGE' && (ev.fromCustody || ev.toCustody)) {
-    return `${ev.fromCustody || '—'} → ${ev.toCustody || '—'}`;
+    return `${ev.fromCustody || '-'} → ${ev.toCustody || '-'}`;
   }
   const from = ev.fromStatus || '';
   const to = ev.toStatus || '';
-  if (from || to) return `${from || '—'} → ${to || '—'}`;
+  if (from || to) return `${from || '-'} → ${to || '-'}`;
   if (ev.message && ev.message !== ev.reason) return ev.message;
-  return '—';
+  return '-';
 }
 
 function eventDetail(ev) {
   if (isCreateEvent(ev)) return 'Asset registered';
-  return ev.reason || ev.message || '—';
+  return ev.reason || ev.message || '-';
 }
 
 function personName(person) {
@@ -85,16 +86,16 @@ function eventActor(ev, asset) {
     '';
   if (direct) return direct;
   if (isCreateEvent(ev)) {
-    return personName(asset?.createdBy) || personName(asset?.updatedBy) || '—';
+    return personName(asset?.createdBy) || personName(asset?.updatedBy) || '-';
   }
-  return '—';
+  return '-';
 }
 
 function locationLabel(asset) {
   return (
     [asset.location?.city, asset.location?.zone, asset.location?.currentLocation]
       .filter(Boolean)
-      .join(' · ') || '—'
+      .join(' · ') || '-'
   );
 }
 
@@ -113,17 +114,46 @@ export default function AssetDetailPage() {
       .catch((e) => setError(e.message));
   }, [id]);
 
-  if (!asset) return <p className="muted">{error || 'Loading…'}</p>;
+  if (error) {
+    return (
+      <div className="asset-detail-page">
+        <p className="error">{error}</p>
+        <Link className="btn secondary btn-compact" to="/asset-one">
+          Back to register
+        </Link>
+      </div>
+    );
+  }
 
-  const custodian = asset.contactId?.name || asset.custodianName || '—';
+  if (!asset) {
+    return (
+      <div className="asset-detail-page" aria-busy="true">
+        <div className="asset-detail-topbar">
+          <div className="asset-detail-heading">
+            <Skeleton width="180px" height="16px" />
+            <Skeleton width="280px" height="28px" style={{ marginTop: '8px' }} />
+          </div>
+          <Link className="btn secondary btn-compact" to="/asset-one">
+            Back to register
+          </Link>
+        </div>
+        <div className="asset-detail-grid">
+          <Skeleton.Card height="240px" />
+          <Skeleton.Card height="240px" />
+        </div>
+      </div>
+    );
+  }
+
+  const custodian = asset.contactId?.name || asset.custodianName || '-';
   const displayStatus = asset.agreementStatus || 'Not Initiated';
   const rows = [
-    { label: 'QR', value: asset.qrCode || '—', mono: Boolean(asset.qrCode) },
-    { label: 'Serial', value: asset.serialNumber || '—' },
-    { label: FIELD.ASSET_CUSTODY, value: asset.custody || '—' },
+    { label: 'QR', value: asset.qrCode || '-', mono: Boolean(asset.qrCode) },
+    { label: 'Serial', value: asset.serialNumber || '-' },
+    { label: FIELD.ASSET_CUSTODY, value: asset.custody || '-' },
     { label: FIELD.CUSTODIAN, value: custodian },
     { label: 'Location', value: locationLabel(asset) },
-    { label: 'Added', value: asset.addedMonth || '—' },
+    { label: 'Added', value: asset.addedMonth || '-' },
   ];
   if (asset.remarks) rows.push({ label: 'Remarks', value: asset.remarks });
 
@@ -166,7 +196,7 @@ export default function AssetDetailPage() {
         <section className="card asset-detail-card asset-detail-audit">
           <h3 className="asset-detail-card-title">Audit trail</h3>
           <p className="muted asset-detail-hint">
-            Who changed this asset — edits, custody, agreements, repairs, and transfers.
+            Who changed this asset: edits, custody, agreements, repairs, and transfers.
           </p>
           <div className="asset-detail-audit-wrap">
             <table className="asset-detail-audit-table">
@@ -189,7 +219,7 @@ export default function AssetDetailPage() {
                 ) : (
                   timeline.map((ev) => (
                     <tr key={ev._id}>
-                      <td>{eventWhen(ev) ? formatDateTime(eventWhen(ev)) : '—'}</td>
+                      <td>{eventWhen(ev) ? formatDateTime(eventWhen(ev)) : '-'}</td>
                       <td>{eventActor(ev, asset)}</td>
                       <td>{eventLabel(ev)}</td>
                       <td>{eventChange(ev)}</td>

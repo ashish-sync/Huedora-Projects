@@ -153,6 +153,10 @@
   .nc-inbox-header .nc-inbox-filter--search,
   .nc-inbox-header .nc-inbox-filter--wide {
     flex-basis: 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    align-self: stretch;
   }
 }
 
@@ -188,8 +192,9 @@
 }
 
 .nc-category--approval {
-  background: color-mix(in srgb, #b45309 14%, transparent);
-  color: #b45309;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border: 1px solid var(--status-warning-border);
 }
 
 .nc-card {
@@ -206,11 +211,11 @@
 }
 
 .nc-card.is-unread {
-  background: color-mix(in srgb, var(--brand) 5%, transparent);
+  background: var(--brand-selected-bg);
 }
 
 .nc-card--approval.is-unread {
-  background: color-mix(in srgb, #b45309 6%, transparent);
+  background: color-mix(in srgb, var(--status-warning-dot) 8%, transparent);
 }
 
 .nc-card__main {
@@ -333,18 +338,21 @@
 }
 
 .nc-priority--informational {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
+  border: 1px solid var(--status-info-border);
 }
 
 .nc-priority--important {
-  background: #fef3c7;
-  color: #a16207;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border: 1px solid var(--status-warning-border);
 }
 
 .nc-priority--critical {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  border: 1px solid var(--status-danger-border);
 }
 
 .nc-changes {
@@ -398,7 +406,7 @@
   }
 }
 
-/* Header bell dropdown — two choices: Approvals | FYI */
+/* Header bell dropdown: two choices: Approvals | FYI */
 .header-bell-wrap {
   position: relative;
 }
@@ -409,10 +417,10 @@
   right: 0;
   width: min(320px, calc(100vw - 24px));
   overflow: hidden;
-  background: var(--surface);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  background: var(--color-bg-elevated, var(--surface));
+  color: var(--color-text-primary, var(--ink));
+  border: 1px solid var(--color-border-default, var(--line));
+  border-radius: var(--radius-card, var(--radius));
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(15, 23, 42, 0.18));
   z-index: 80;
   padding: 0.35rem 0 0.45rem;
@@ -444,7 +452,7 @@
 }
 
 .header-notif-choice:hover {
-  background: var(--bg-sunken);
+  background: var(--color-bg-hover, var(--bg-sunken));
 }
 
 .header-notif-choice-copy {
@@ -480,8 +488,8 @@
 }
 
 .header-notif-choice-count.is-active {
-  background: var(--brand);
-  color: #fff;
+  background: var(--color-brand-primary, var(--brand));
+  color: var(--color-text-on-primary, #fff);
 }
 
 .header-notif-choice.has-count .header-notif-choice-copy strong {

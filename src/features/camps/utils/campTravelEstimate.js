@@ -1,7 +1,7 @@
 export const TRAVEL_STATUS = {
   NO_HCW: 'Assign an HCW before travel distance can be estimated — enter distance manually.',
   PIN_MISSING: 'HCW PIN code is missing in Contact Directory — enter distance manually.',
-  COORDS_MISSING: 'Camp coordinates are missing — enter distance manually or pick the venue address.',
+  COORDS_MISSING: 'Camp coordinates and PIN are missing — enter distance manually or pick the venue address.',
   UNAVAILABLE: 'Travel estimate unavailable — enter distance manually.',
   ESTIMATING: 'Estimating travel distance…',
 };
@@ -26,12 +26,16 @@ export function hasValidCampCoords(form = {}) {
   return !(lat === 0 && lng === 0);
 }
 
-export function travelEstimateKey({ pin, destLat, destLng } = {}) {
+export function travelEstimateKey({ pin, destLat, destLng, destPin } = {}) {
   const pinKey = extractIndiaPin(pin);
-  const lat = Number(destLat);
-  const lng = Number(destLng);
-  if (!pinKey || !Number.isFinite(lat) || !Number.isFinite(lng)) return '';
-  return `${pinKey}|${lat.toFixed(4)}|${lng.toFixed(4)}`;
+  if (!pinKey) return '';
+  if (hasValidCampCoords({ latitude: destLat, longitude: destLng })) {
+    const lat = Number(destLat);
+    const lng = Number(destLng);
+    return `${pinKey}|${lat.toFixed(4)}|${lng.toFixed(4)}`;
+  }
+  const dest = extractIndiaPin(destPin);
+  return dest ? `${pinKey}|pin:${dest}` : '';
 }
 
 export function resolveHcwTravelPin(contact, contacts = []) {

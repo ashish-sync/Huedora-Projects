@@ -9,6 +9,7 @@ import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import { PRODUCT_TYPES } from '../../shared/productTypes.js';
@@ -21,6 +22,8 @@ import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { SUPPLY_CATEGORIES } from '../agreements/contactPicklists.js';
 import VendorMasterFormGrid from './VendorMasterFormGrid.jsx';
+import MasterNavHeader from '../masters/MasterNavHeader.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 
 const ProductMasterPage = lazy(() => import('./ProductMasterPage.jsx'));
 const ExpenseMasterPage = lazy(() => import('./ExpenseMasterPage.jsx'));
@@ -297,6 +300,9 @@ export default function LogisticsMasterPage({
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
+  const [deleteConfirmRow, setDeleteConfirmRow] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [partyWarningPending, setPartyWarningPending] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfPickerKey, setPdfPickerKey] = useState(0);
   const editingRow = useMemo(
@@ -340,7 +346,7 @@ export default function LogisticsMasterPage({
     } finally {
       setListLoading(false);
     }
-  }, [entity?.path, entity?.id, entity?.dedicated, entity?.embedded, debouncedQ, page, limit]);
+  }, [entity, debouncedQ, page, limit]);
 
   useEffect(() => {
     if (!entity) return;
@@ -443,7 +449,7 @@ export default function LogisticsMasterPage({
     }));
   };
 
-  const addFromContact = async () => {
+  const addFromContact = async (bypassWarning = false) => {
     if (!canWrite || !contactPick || !entity.fromContacts) return;
     const c = contacts.find((x) => x._id === contactPick);
     if (!c) {
@@ -454,12 +460,11 @@ export default function LogisticsMasterPage({
     const partyIsVendor = activePartyType === 'Vendor' || activePartyType === 'Supplier';
     const contactIsVendor =
       cat === 'Vendor' || c.resourceType === 'Vendor' || c.resourceType === 'Supplier';
-    if (partyIsVendor && cat && !contactIsVendor) {
-      const ok = window.confirm(
-        `This contact is Category “${cat}”, but you are adding a ${activePartyType}. Continue?`
-      );
-      if (!ok) return;
+    if (!bypassWarning && partyIsVendor && cat && !contactIsVendor) {
+      setPartyWarningPending({ c, cat, activePartyType });
+      return;
     }
+    setPartyWarningPending(null);
     setBusy(true);
     setError('');
     setMsg('');
@@ -548,61 +553,43 @@ export default function LogisticsMasterPage({
     }
   };
 
-  const remove = async (row) => {
+  const remove = (row) => {
     if (!canDelete || row.isSystem) return;
-    if (!window.confirm(`Delete “${row.name || row.code}”?`)) return;
+    setDeleteConfirmRow(row);
+  };
+
+  const executeRemove = async () => {
+    const row = deleteConfirmRow;
+    if (!row) return;
     setError('');
+    setDeleteBusy(true);
     try {
       await api(`${entity.path}/${row._id}`, { method: 'DELETE' });
       setMsg('Deleted.');
       if (editingId === row._id) cancelEdit();
+      setDeleteConfirmRow(null);
       load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
   return (
-    <div className="logistics-master">
-      {description ? (
-        <p className="muted" style={{ marginTop: 0 }}>
-          {description}
-        </p>
-      ) : null}
-
+    <div className="logistics-master master-one-workspace">
       {!entity ? (
         <p className="muted">No masters available in this module.</p>
       ) : (
-      <div className="logistics-master-layout">
-        <nav className="logistics-master-tree" aria-label={title}>
-          <div className="logistics-master-tree-title">{title}</div>
-          {visibleGroups.map((group) => (
-            <div key={group.id} className="logistics-master-group">
-              <div className="logistics-master-group-label">{group.label}</div>
-              <ul className="logistics-master-group-list">
-                {group.entities.map((e) => (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      className={`logistics-master-item${entityId === e.id ? ' is-active' : ''}`}
-                      aria-current={entityId === e.id ? 'page' : undefined}
-                      onClick={() => selectEntity(e.id)}
-                    >
-                      {e.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
+        <div className="logistics-master-layout">
+          <MasterNavHeader
+            groups={visibleGroups}
+            activeGroup={activeGroup}
+            activeEntity={entity}
+            onSelectEntity={selectEntity}
+          />
 
-        <div className="logistics-master-content">
-          <div className="logistics-master-crumb muted">
-            {activeGroup?.label}
-            <span aria-hidden="true"> / </span>
-            <span className="logistics-master-crumb-current">{entity.label}</span>
-          </div>
+          <div className="logistics-master-content">
 
           {entity.dedicated === 'expense-master' ? (
             <MasterPane>
@@ -964,6 +951,13 @@ export default function LogisticsMasterPage({
         </form>
       )}
 
+      {entity.id === 'vendors' && !editingId && (
+        <MasterListHeader
+          title="Vendor Master"
+          subtitle="Vendor profiles, billing addresses, GSTIN, and bank details."
+        />
+      )}
+
       <MasterFilterShell
         actions={
           <>
@@ -1076,6 +1070,25 @@ export default function LogisticsMasterPage({
         </div>
       </div>
       )}
+      <ConfirmDialog
+        open={Boolean(deleteConfirmRow)}
+        title="Delete Record"
+        message={`Delete “${deleteConfirmRow?.name || deleteConfirmRow?.code || 'this record'}”? This action cannot be undone.`}
+        confirmLabel={deleteBusy ? 'Deleting…' : 'Delete'}
+        confirmVariant="danger"
+        busy={deleteBusy}
+        onConfirm={executeRemove}
+        onCancel={() => setDeleteConfirmRow(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(partyWarningPending)}
+        title="Category Mismatch"
+        message={`This contact is Category “${partyWarningPending?.cat}”, but you are adding a ${partyWarningPending?.activePartyType}. Do you want to continue?`}
+        confirmLabel="Continue"
+        confirmVariant="primary"
+        onConfirm={() => addFromContact(true)}
+        onCancel={() => setPartyWarningPending(null)}
+      />
     </div>
   );
 }

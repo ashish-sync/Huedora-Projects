@@ -7,20 +7,20 @@
  */
 
 :root {
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 
-  --radius: var(--radius-lg);
-  --radius-button: var(--radius-md);
-  --radius-card: var(--radius-lg);
+  --radius: var(--radius-md);
+  --radius-button: var(--radius-sm);
+  --radius-card: var(--radius-md);
 
-  --shadow-xs: 0 1px 1px rgb(15 23 42 / 0.04);
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
-  --shadow-md: 0 2px 8px rgb(15 23 42 / 0.06);
-  --shadow-lg: 0 4px 16px rgb(15 23 42 / 0.08);
+  --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 3px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.07), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.04);
 
   --z-dropdown: 40;
   --z-sticky: 50;
@@ -32,7 +32,7 @@
 
 html[data-theme='dark'] {
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.35);
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.45);
-  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.5);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.45);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 12px 28px rgb(0 0 0 / 0.6);
 }

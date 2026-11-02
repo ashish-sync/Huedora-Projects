@@ -23,6 +23,6 @@ export const TYLO_ORG_SEED = {
 export const TYLO_INVOICE_FORMAT = {
   id: 'tylo_gst_grid',
   label: 'Tylo GST Grid',
-  description: 'Standard Tylo Care tax invoice layout — click the document to edit fields.',
+  description: 'Standard Tylo Care tax invoice layout. Click the document to edit fields.',
   slug: 'tylo-gst',
 };

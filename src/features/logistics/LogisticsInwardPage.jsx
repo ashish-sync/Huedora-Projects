@@ -48,6 +48,8 @@ const SOURCES = [
   },
 ];
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 export default function LogisticsInwardPage() {
   const { can, user } = useAuth();
   const canWrite = can('logistics:write') || can('*');
@@ -74,9 +76,9 @@ export default function LogisticsInwardPage() {
   const cfg = meta?.inOut || {};
   const productTypes = cfg.productTypes || FALLBACK_PRODUCT;
   const categoryDefaults = cfg.categoryDefaults || FALLBACK_CAT_DEFAULTS;
-  const warehouses = meta?.warehouses || [];
-  const products = meta?.products || [];
-  const uoms = meta?.uoms || [];
+  const warehouses = meta?.warehouses || EMPTY_ARRAY;
+  const products = meta?.products || EMPTY_ARRAY;
+  const uoms = meta?.uoms || EMPTY_ARRAY;
   const parties = useMemo(() => {
     const list = [...(meta?.suppliers || []), ...(meta?.vendors || [])];
     const seen = new Set();
@@ -93,7 +95,7 @@ export default function LogisticsInwardPage() {
   const partyLabel = (p) => {
     if (!p) return '';
     const type = p.partyType === 'Vendor' ? 'Vendor' : 'Supplier';
-    return `${p.name || p.code || '—'}${p.code ? ` (${p.code})` : ''} · ${type}`;
+    return `${p.name || p.code || '-'}${p.code ? ` (${p.code})` : ''} · ${type}`;
   };
 
   const uomLabel = useCallback(
@@ -522,7 +524,7 @@ export default function LogisticsInwardPage() {
             <Field label="UOM">
               <input
                 readOnly
-                value={uomLabel(form.uomId) || '—'}
+                value={uomLabel(form.uomId) || '-'}
                 title="From Product Master"
               />
             </Field>

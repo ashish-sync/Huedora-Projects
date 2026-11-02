@@ -1,6 +1,6 @@
 /**
  * Turn stored audit rows into a manager-readable Activity Log.
- * Does not change how events are written — presentation only.
+ * Does not change how events are written: presentation only.
  */
 
 export const ACTIVITY_MODULES = [
@@ -224,7 +224,7 @@ function humanField(field) {
 }
 
 function stringifyValue(value) {
-  if (value == null || value === '') return '—';
+  if (value == null || value === '') return '-';
   if (typeof value === 'object') {
     try {
       const text = JSON.stringify(value);

@@ -5,6 +5,7 @@ import { formatDateTime } from '../../shared/dateFormat.js';
 import { MODULE } from '../../shared/labels.js';
 import PageShell, { EmptyState } from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import { emitNotificationsChanged } from '../../shared/notificationSound.js';
 import {
   categoryLabel,
@@ -54,6 +55,8 @@ export default function NotificationsPage({ embedded = false } = {}) {
   const [q, setQ] = useState('');
   const [expandedId, setExpandedId] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [pendingDecision, setPendingDecision] = useState(null);
+  const [decisionReason, setDecisionReason] = useState('');
 
   const activeTab = INBOX_TABS.find((t) => t.id === inboxTab) || INBOX_TABS[0];
 
@@ -147,18 +150,61 @@ export default function NotificationsPage({ embedded = false } = {}) {
   const decide = async (n, decision) => {
     const action = inboxDecisionFor(n);
     if (!action) return;
-    const path = decision === 'approve' ? action.approvePath : action.rejectPath;
+    if (decision !== 'approve') {
+      setPendingDecision({ notification: n, decision, action });
+      setDecisionReason('');
+      return;
+    }
+    const path = action.approvePath;
     if (!path) return;
     setBusyId(`${n._id}:${decision}`);
     setError('');
     try {
-      let reason = '';
-      if (decision !== 'approve') {
-        reason = window.prompt(`${action.rejectLabel || 'Refuse'} reason (optional)`) || '';
-      }
       await api(path, {
         method: 'POST',
-        body: decision === 'approve' ? {} : { reason, rejectionReason: reason, remarks: reason },
+        body: {},
+      });
+      try {
+        await api(`/notifications/${n._id}/actioned`, {
+          method: 'POST',
+          body: { decision },
+        });
+      } catch {
+        /* Domain action already succeeded; inbox stamp is best-effort. */
+      }
+      setRows((prev) =>
+        prev.map((row) => (
+          row._id === n._id
+            ? {
+                ...row,
+                readAt: row.readAt || new Date().toISOString(),
+                meta: { ...(row.meta || {}), decision },
+              }
+            : row
+        ))
+      );
+      emitNotificationsChanged();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusyId('');
+    }
+  };
+
+  const handleConfirmDecision = async () => {
+    if (!pendingDecision) return;
+    const { notification: n, decision, action } = pendingDecision;
+    const reason = decisionReason;
+    const path = action.rejectPath;
+    setPendingDecision(null);
+    setDecisionReason('');
+    if (!path) return;
+    setBusyId(`${n._id}:${decision}`);
+    setError('');
+    try {
+      await api(path, {
+        method: 'POST',
+        body: { reason, rejectionReason: reason, remarks: reason },
       });
       try {
         await api(`/notifications/${n._id}/actioned`, {
@@ -433,9 +479,9 @@ export default function NotificationsPage({ embedded = false } = {}) {
                       <li key={`${c.field}-${c.to}`}>
                         <span className="nc-change-label">{c.label || c.field}</span>
                         <span className="nc-change-values">
-                          <span className="nc-from">{c.from == null || c.from === '' ? '—' : c.from}</span>
+                          <span className="nc-from">{c.from == null || c.from === '' ? '-' : c.from}</span>
                           <span aria-hidden="true"> → </span>
-                          <span className="nc-to">{c.to == null || c.to === '' ? '—' : c.to}</span>
+                          <span className="nc-to">{c.to == null || c.to === '' ? '-' : c.to}</span>
                         </span>
                       </li>
                     ))}
@@ -519,6 +565,32 @@ export default function NotificationsPage({ embedded = false } = {}) {
           </button>
         </div>
       ) : null}
+          <ConfirmDialog
+        open={Boolean(pendingDecision)}
+        title={`${pendingDecision?.action?.rejectLabel || 'Refuse'} Action`}
+        confirmLabel={pendingDecision?.action?.rejectLabel || 'Refuse'}
+        confirmVariant="danger"
+        loading={Boolean(busyId)}
+        onConfirm={handleConfirmDecision}
+        onCancel={() => {
+          setPendingDecision(null);
+          setDecisionReason('');
+        }}
+      >
+        <p className="modal-message">
+          Provide an optional reason for {pendingDecision?.action?.rejectLabel?.toLowerCase() || 'refusing'}:
+        </p>
+        <div style={{ marginTop: '12px' }}>
+          <input
+            type="text"
+            className="input"
+            placeholder="Reason (optional)"
+            value={decisionReason}
+            onChange={(e) => setDecisionReason(e.target.value)}
+            autoFocus
+          />
+        </div>
+      </ConfirmDialog>
     </PageShell>
   );
 }

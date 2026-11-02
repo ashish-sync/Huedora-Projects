@@ -116,7 +116,7 @@ export default function OtherAwareSelect({
     setSuggestError('');
     try {
       await submitPicklistSuggestion(picklistKey, trimmed, source);
-      setHint('Submitted for approval — will appear in the dropdown after approval');
+      setHint('Submitted for approval. It will appear in the dropdown once approved.');
     } catch (err) {
       const msg = err?.message || 'Could not submit for approval';
       // Duplicate is OK if already pending/approved — still keep the value on the form

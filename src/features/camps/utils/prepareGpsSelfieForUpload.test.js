@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildGpsSelfieWatermarkLines } from './prepareGpsSelfieForUpload.js';
+import {
+  buildGpsSelfieWatermarkLines,
+  gpsSelfieFileName,
+  imageExtensionForMime,
+} from './prepareGpsSelfieForUpload.js';
 
 describe('buildGpsSelfieWatermarkLines', () => {
   it('includes camp id, lat/lng, and a date line', () => {
@@ -14,6 +18,14 @@ describe('buildGpsSelfieWatermarkLines', () => {
     expect(lines[1]).toContain('Lat: 19.076090');
     expect(lines[1]).toContain('Lng: 72.877655');
     expect(lines[2]).toMatch(/2026/);
+  });
+
+  it('names the upload from the actual image MIME, never a lying .jpg', () => {
+    expect(imageExtensionForMime('image/jpeg')).toBe('.jpg');
+    expect(imageExtensionForMime('image/png')).toBe('.png');
+    expect(imageExtensionForMime('image/webp')).toBe('.webp');
+    expect(gpsSelfieFileName('gps-selfie.jpg', 'image/png')).toBe('gps-selfie.png');
+    expect(gpsSelfieFileName('snap.webp', 'image/jpeg')).toBe('snap.jpg');
   });
 
   it('falls back when camp id or coords are missing', () => {

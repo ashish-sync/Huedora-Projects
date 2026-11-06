@@ -378,11 +378,16 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
               >
                 ←
               </button>
-              <span className="tylo-chat-avatar tylo-chat-avatar--lg" aria-hidden="true">
+              <span
+                className="tylo-chat-avatar tylo-chat-avatar--lg"
+                aria-hidden="true"
+                title={peerFirst}
+              >
                 {initialsFromName(activeConversation.peer?.fullName)}
               </span>
               <div className="tylo-chat-thread-identity">
-                <strong>{peerFirst}</strong>
+                <strong title={peerFirst}>{peerFirst}</strong>
+                <small>Direct message</small>
               </div>
             </header>
 

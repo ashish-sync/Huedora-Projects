@@ -631,20 +631,32 @@ export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, c
 }
 
 /**
- * Authorised (non-admin) users may save Other Payouts on Cancelled by Tylo / Client.
- * Camp / Travel / OT payouts stay locked on the server.
+ * Any Tylo One user may save Other Payouts on Cancelled by Tylo / Client (Financial).
+ * Not gated by admin role or Payment Done. Camp / Travel / OT stay locked on the server.
  */
+export function canSaveCancelledOtherPayouts(
+  campStatus,
+  stage,
+  reachedStage = stage,
+  campContext = {},
+) {
+  if (String(campStatus || '') !== 'cancelled') return false;
+  if (normalizeLifecycleStage(stage, '') !== 'financial') return false;
+  const context = { status: campStatus, ...campContext };
+  if (!isExecutionCancellationForFinance(context)) return false;
+  const reached = normalizeLifecycleStage(reachedStage, 'request');
+  return reached === 'financial' || hasReachedLifecycleStage(reached, 'execution');
+}
+
+/** @deprecated Prefer canSaveCancelledOtherPayouts — kept for existing imports. */
 export function canAuthorisedUserSaveCancelledOtherPayouts(
   campStatus,
   stage,
   reachedStage = stage,
   campContext = {},
-  { isAdmin = false } = {},
+  _opts = {},
 ) {
-  if (isAdmin) return false;
-  if (String(campStatus || '') !== 'cancelled') return false;
-  if (normalizeLifecycleStage(stage, '') !== 'financial') return false;
-  return canEditLifecycleStage(campStatus, 'financial', reachedStage, campContext, { isAdmin: false });
+  return canSaveCancelledOtherPayouts(campStatus, stage, reachedStage, campContext);
 }
 
 export function todayIsoDate() {

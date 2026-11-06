@@ -31,7 +31,7 @@ import {
   parseClientMasterListResponse,
 } from './utils/clientMasterCascade';
 import {
-  canAuthorisedUserSaveCancelledOtherPayouts,
+  canSaveCancelledOtherPayouts,
   canEditLifecycleStage,
   campToForm,
   emptyLifecycleForm,
@@ -72,7 +72,8 @@ import {
   readTravelEstimateCache,
   resolveHcwOriginCoords,
   resolveHcwTravelPin,
-  shouldKeepManualTravel,
+  resolveTravelContact,
+  shouldPreserveTravelKm,
   travelEstimateKey,
   usableEstimatedKm,
   writeTravelEstimateCache,
@@ -181,7 +182,10 @@ export default function CampFormPage() {
 
     const financialEditable = cancelledClosure
       && camp.status === 'cancelled'
-      && canEditLifecycleStage(camp.status, 'financial', effectiveReached, camp, { isAdmin: isCampAdmin });
+      && (
+        canEditLifecycleStage(camp.status, 'financial', effectiveReached, camp, { isAdmin: isCampAdmin })
+        || canSaveCancelledOtherPayouts(camp.status, 'financial', effectiveReached, camp)
+      );
 
     if (!canEditCampRecord(camp) && !assignmentEditable && !financialEditable) {
       setReadOnly(true);
@@ -1140,14 +1144,14 @@ export default function CampFormPage() {
 
   async function handleSubmit(e, { acknowledgeGapOverride = false } = {}) {
     if (e?.preventDefault) e.preventDefault();
-    const cancelledOtherPayoutsSave = canAuthorisedUserSaveCancelledOtherPayouts(
+    const cancelledOtherPayoutsSave = canSaveCancelledOtherPayouts(
       campStatus,
       activeStage,
       reachedLifecycleStage,
       campLifecycleContext,
-      lifecycleEditOpts,
     );
     if (readOnly && campStatus === 'cancelled' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
+    // Non-admins may only save Financial via Other Payouts on Cancelled by Tylo/Client.
     if (activeStage === 'financial' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
     if (!acknowledgeGapOverride) setHcwGapConflict(null);
 
@@ -1301,9 +1305,21 @@ export default function CampFormPage() {
 
     // Untouched finance zeros from the form must not overwrite persisted amounts.
     // Camp Payout is auto-picked only for Executed camps on Financial — never on assignment.
+    // Cancelled Other Payouts (all users): only mutate otherExpenses; server locks
+    // Camp/Travel/OT and recomputes totalPayout from existing parts + new Other.
+    // Admins with full financial edit keep the complete finance payload.
     if (activeStage !== 'financial') {
       FINANCE_KEYS.forEach((key) => {
         delete payload[key];
+      });
+    } else if (cancelledOtherPayoutsSave && !isCampAdmin) {
+      FINANCE_KEYS.forEach((key) => {
+        if (key !== 'otherExpenses') delete payload[key];
+      });
+    } else if (cancelledOtherPayoutsSave && isCampAdmin
+      && !canEditLifecycleStage(campStatus, 'financial', reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)) {
+      FINANCE_KEYS.forEach((key) => {
+        if (key !== 'otherExpenses') delete payload[key];
       });
     }
 
@@ -1397,10 +1413,11 @@ export default function CampFormPage() {
     if (!isEdit || normalizeLifecycleStage(activeStage, 'request') !== 'execution') return undefined;
     if (stageReadOnly.execution) return undefined;
 
-    const contact = findAssignableHealthcareWorker(hcwContacts, form.hcwContactId)
-      || (assignedHcwContact && String(assignedHcwContact._id) === String(form.hcwContactId)
-        ? assignedHcwContact
-        : null);
+    const contact = resolveTravelContact({
+      assignedHcwContact,
+      listContact: findAssignableHealthcareWorker(hcwContacts, form.hcwContactId),
+      hcwContactId: form.hcwContactId,
+    });
     const pin = resolveHcwTravelPin(contact, hcwContacts);
     const destLat = form.latitude;
     const destLng = form.longitude;
@@ -1409,7 +1426,8 @@ export default function CampFormPage() {
     const key = travelEstimateKey({ pin, destLat, destLng, destPin });
     const origin = resolveHcwOriginCoords(contact);
 
-    if (shouldKeepManualTravel(form.kmRoundTripSource)) return undefined;
+    // Manual overrides and legacy camps (km set, source empty) must never be auto-overwritten.
+    if (shouldPreserveTravelKm(form.kmRoundTripSource, form.kmRoundTrip)) return undefined;
 
     let status = '';
     if (!form.hcwContactId) status = TRAVEL_STATUS.NO_HCW;
@@ -1435,11 +1453,6 @@ export default function CampFormPage() {
       if (form.kmRoundTripSource === 'auto' && form.kmRoundTripEstimateStatus !== nextStatus) {
         updateFields({ kmRoundTripEstimateStatus: nextStatus });
       }
-      return undefined;
-    }
-
-    if (!form.kmRoundTripSource && hasExistingTravelKm(form.kmRoundTrip) && !form.kmRoundTripEstimateKey) {
-      updateFields({ kmRoundTripEstimateKey: key });
       return undefined;
     }
 
@@ -1561,26 +1574,25 @@ export default function CampFormPage() {
     && !assignedHcwLoading
     && !payoutPayeeLoading
     && !submitFinanceBusy;
-  const cancelledOtherPayoutsSave = canAuthorisedUserSaveCancelledOtherPayouts(
+  const cancelledOtherPayoutsSave = canSaveCancelledOtherPayouts(
     campStatus,
     activeStage,
     reachedLifecycleStage,
     campLifecycleContext,
-    lifecycleEditOpts,
   );
   const canSubmit = (
-    isCampAdmin
-      ? canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
-      : (
-        cancelledOtherPayoutsSave
-        || (
+    cancelledOtherPayoutsSave
+    || (
+      isCampAdmin
+        ? canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
+        : (
           campStatus !== 'cancelled'
           && campStatus !== 'rejected'
           && activeStage !== 'financial'
           && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
           && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus))
         )
-      )
+    )
   )
     && (!hasNoDivisions || activeStage !== 'request')
     && (!hasNoMethods || activeStage !== 'request');

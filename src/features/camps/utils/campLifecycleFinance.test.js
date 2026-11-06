@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canAuthorisedUserSaveCancelledOtherPayouts,
+  campToForm,
   canEditLifecycleStage,
+  canSaveCancelledOtherPayouts,
   canVisitLifecycleStage,
   computeLifecycleDerived,
   EXECUTION_STATUS,
@@ -59,37 +60,44 @@ describe('camp lifecycle finance transition', () => {
     ).toEqual(['Enter Usage and Wastage for Test Strip (use 0 if none)']);
   });
 
-  it('lets authorised non-admin users save Other Payouts on cancelled-by camps', () => {
+  it('lets every user save Other Payouts on cancelled-by camps, including after Payment Done', () => {
     const cancelledByClient = {
       executionStatus: 'Cancelled by Client',
       financePaymentStatus: '',
     };
-    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+    expect(canSaveCancelledOtherPayouts(
       'cancelled',
       'financial',
       'financial',
       cancelledByClient,
     )).toBe(true);
-    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+    expect(canSaveCancelledOtherPayouts(
       'cancelled',
       'financial',
       'execution',
       { executionStatus: 'Cancelled by Tylo' },
     )).toBe(true);
-    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+    // Payment Done still blocks full financial edit for non-admins, but Other Payouts stays open
+    expect(canEditLifecycleStage(
       'cancelled',
       'financial',
       'financial',
-      cancelledByClient,
-      { isAdmin: true },
+      { ...cancelledByClient, financePaymentStatus: 'paid' },
+      { isAdmin: false },
     )).toBe(false);
-    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+    expect(canSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      { ...cancelledByClient, financePaymentStatus: 'paid' },
+    )).toBe(true);
+    expect(canSaveCancelledOtherPayouts(
       'executed',
       'financial',
       'financial',
       { executionStatus: EXECUTION_STATUS.CAMP_COMPLETED },
     )).toBe(false);
-    expect(canAuthorisedUserSaveCancelledOtherPayouts(
+    expect(canSaveCancelledOtherPayouts(
       'cancelled',
       'execution',
       'financial',
@@ -137,6 +145,63 @@ describe('camp lifecycle finance transition', () => {
     };
     expect(isExecutionCancellationForFinance(legacy)).toBe(true);
     expect(getExecutionFinanceBlockers(legacy)).toEqual([]);
+  });
+
+  it('hydrates sparse legacy camp documents without inventing travel or finance amounts', () => {
+    const form = campToForm({
+      _id: 'legacy1',
+      campId: '26-01-legacy',
+      status: 'executed',
+      lifecycleStage: 'execution',
+      kmRoundTrip: 22,
+      // pre-kmRoundTripSource records omit these meta fields
+    });
+    expect(form.kmRoundTrip).toBe(22);
+    expect(form.kmRoundTripSource).toBe('');
+    expect(form.kmRoundTripEstimateKey).toBe('');
+    expect(form.otherExpenses).toBe(0);
+    expect(form.latitude).toBe('');
+    expect(form.pincode).toBe('');
+  });
+
+  it('lets every user save Other Payouts on legacy cancelledBy markers and new executionStatus cancels', () => {
+    const legacyBrandCancel = {
+      cancelledBy: 'brand',
+      financePaymentStatus: '',
+    };
+    const legacyKhwCancel = {
+      cancelledBy: 'khw',
+      financePaymentStatus: '',
+    };
+    const newStatusCancel = {
+      executionStatus: 'Cancelled by Client',
+      financePaymentStatus: '',
+    };
+    expect(canSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      legacyBrandCancel,
+    )).toBe(true);
+    expect(canSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'execution',
+      legacyKhwCancel,
+    )).toBe(true);
+    expect(canSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      newStatusCancel,
+    )).toBe(true);
+    // Generic cancel without Tylo/Client markers must not open Other Payouts
+    expect(canSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      { executionStatus: 'Camp Ongoing', financePaymentStatus: '' },
+    )).toBe(false);
   });
 
   it('replaces stale overtime $ that still matches scheduled-slot Extra hours', () => {

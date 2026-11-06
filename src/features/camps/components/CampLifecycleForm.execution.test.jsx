@@ -191,6 +191,38 @@ describe('CampLifecycleForm execution stage', () => {
     expect(screen.getByLabelText('Other Payouts').disabled).toBe(false);
   });
 
+  it('keeps Other Payouts editable for all users even when Financial stage is read-only', () => {
+    render(
+      <CampLifecycleForm
+        form={{
+          ...emptyLifecycleForm(),
+          campDate: '2099-08-01',
+          startTime: '09:00',
+          endTime: '12:00',
+          lifecycleStage: 'financial',
+          executionStatus: 'Cancelled by Tylo',
+          financePaymentStatus: 'paid',
+          campAmount: 0,
+          travelling: 0,
+          overtimeExpense: 0,
+          otherExpenses: 25,
+        }}
+        updateField={vi.fn()}
+        updateFields={vi.fn()}
+        activeStage="financial"
+        onStageChange={vi.fn()}
+        campStatus="cancelled"
+        reachedLifecycleStage="financial"
+        stageReadOnly={{ financial: true }}
+        campId="camp-1"
+      />,
+    );
+    expect(screen.getByLabelText('Camp Payout').disabled).toBe(true);
+    expect(screen.getByLabelText('Camp Revenue').disabled).toBe(true);
+    expect(screen.getByLabelText('Other Payouts').disabled).toBe(false);
+    expect(screen.getByText(/Other Payouts stays editable for all users/i)).toBeTruthy();
+  });
+
   it('keeps all payout fields editable for executed camps', () => {
     render(
       <CampLifecycleForm

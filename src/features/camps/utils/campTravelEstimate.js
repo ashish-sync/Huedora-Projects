@@ -70,6 +70,34 @@ export function shouldKeepManualTravel(source) {
   return String(source || '') === 'manual';
 }
 
+/**
+ * Legacy camps stored Travelled Kms before kmRoundTripSource existed (empty source).
+ * Preserve that distance until the user explicitly edits it (manual) or an auto
+ * estimate already owns the field. Never silently overwrite existing km when the
+ * estimate key changes (PIN / venue / destPin format).
+ */
+export function shouldPreserveTravelKm(source, km) {
+  if (shouldKeepManualTravel(source)) return true;
+  const normalized = String(source || '').trim();
+  if (!normalized && hasExistingTravelKm(km)) return true;
+  return false;
+}
+
+/**
+ * Prefer the full Contact Directory document (assignedHcwContact) over the
+ * assign=1 list row, which omits latitude/longitude and may omit address fields.
+ */
+export function resolveTravelContact({ assignedHcwContact = null, listContact = null, hcwContactId = '' } = {}) {
+  const id = String(hcwContactId || '').trim();
+  if (
+    assignedHcwContact
+    && String(assignedHcwContact._id || '') === id
+  ) {
+    return assignedHcwContact;
+  }
+  return listContact || null;
+}
+
 const travelEstimateClientCache = new Map();
 
 export function readTravelEstimateCache(key) {

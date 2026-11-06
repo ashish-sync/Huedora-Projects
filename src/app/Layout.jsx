@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BrandLogo from '../components/BrandLogo.jsx';
 import AppSidebar from './AppSidebar.jsx';
 import { Link, useLocation } from 'react-router-dom';
@@ -45,6 +45,24 @@ export default function Layout({ children }) {
     }
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const headerDateDisplay = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+      }).format(new Date());
+    } catch {
+      return 'Monday, November 02, 2026';
+    }
+  }, []);
+
+  const greetingFirstName = useMemo(() => {
+    const full = user?.fullName || user?.name || user?.email || 'Ashish';
+    return String(full).trim().split(/\s+/)[0] || 'Ashish';
+  }, [user]);
 
   const toggleSidebarCollapse = useCallback(() => {
     if (mobileNavOpen) {

@@ -5,8 +5,11 @@ import {
   extractIndiaPin,
   hasExistingTravelKm,
   hasValidCampCoords,
+  resolveHcwOriginCoords,
   resolveHcwTravelPin,
+  resolveTravelContact,
   shouldKeepManualTravel,
+  shouldPreserveTravelKm,
   travelEstimateKey,
   usableEstimatedKm,
 } from './campTravelEstimate.js';
@@ -39,6 +42,47 @@ describe('campTravelEstimate', () => {
       { pinCode: '', serviceProviderContactId: 'sp1' },
       [{ _id: 'sp1', pinCode: '411001' }],
     )).toBe('411001');
+  });
+
+  it('preserves legacy Travelled Kms when source is empty, and still auto-fills new empty camps', () => {
+    // Existing record created before kmRoundTripSource existed
+    expect(shouldPreserveTravelKm('', 42)).toBe(true);
+    expect(shouldPreserveTravelKm(undefined, '18.5')).toBe(true);
+    expect(shouldPreserveTravelKm('manual', 12)).toBe(true);
+    // New / auto-owned records may re-estimate when the key changes
+    expect(shouldPreserveTravelKm('auto', 42)).toBe(false);
+    // New camps with no distance yet must still auto-estimate
+    expect(shouldPreserveTravelKm('', '')).toBe(false);
+    expect(shouldPreserveTravelKm('', 0)).toBe(false);
+  });
+
+  it('prefers the full assigned contact over the assign-list row for travel origin', () => {
+    const listContact = { _id: 'hcw1', pinCode: '400001' };
+    const assigned = {
+      _id: 'hcw1',
+      pinCode: '400058',
+      latitude: '19.12',
+      longitude: '72.84',
+    };
+    const preferred = resolveTravelContact({
+      assignedHcwContact: assigned,
+      listContact,
+      hcwContactId: 'hcw1',
+    });
+    expect(preferred).toBe(assigned);
+    expect(resolveHcwTravelPin(preferred)).toBe('400058');
+    expect(resolveHcwOriginCoords(preferred)).toEqual({
+      originLat: '19.12',
+      originLng: '72.84',
+    });
+    // Legacy contacts without home-address coords still resolve PIN only
+    expect(resolveHcwOriginCoords({ _id: 'hcw2', pinCode: '411001' }))
+      .toEqual({ originLat: '', originLng: '' });
+    expect(resolveTravelContact({
+      assignedHcwContact: null,
+      listContact,
+      hcwContactId: 'hcw1',
+    })).toBe(listContact);
   });
 
   it('builds a stable cache key and status copy', () => {

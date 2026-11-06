@@ -1130,12 +1130,12 @@ export function CampLifecycleForm({
               label="Other Payouts"
               value={form.otherExpenses}
               onChange={(v) => updateFinanceAmount('otherExpenses', v)}
-              disabled={disabled}
+              disabled={lockStandardPayouts ? false : disabled}
             />
           </div>
-          {lockStandardPayouts && !disabled ? (
+          {lockStandardPayouts ? (
             <p className="meta-text">
-              Camp, Travel, and Overtime payouts are locked when execution is Cancelled by Tylo or Cancelled by Client. Other Payouts stays editable.
+              Camp, Travel, and Overtime payouts are locked when execution is Cancelled by Tylo or Cancelled by Client. Other Payouts stays editable for all users.
             </p>
           ) : null}
         </div>

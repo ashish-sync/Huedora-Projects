@@ -3,11 +3,15 @@ import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import './internalChat.css';
 
-function initials(name = '') {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+function firstName(name = '') {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return parts[0] || 'Colleague';
+}
+
+function initialsFromName(name = '') {
+  const first = firstName(name);
+  if (!first || first === 'Colleague') return '?';
+  return first.slice(0, 2).toUpperCase();
 }
 
 function formatTime(value) {
@@ -52,12 +56,14 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [search, setSearch] = useState('');
+  const [composeOpen, setComposeOpen] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingThread, setLoadingThread] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [mobileShowThread, setMobileShowThread] = useState(false);
   const threadEndRef = useRef(null);
+  const composerRef = useRef(null);
   const pollRef = useRef(null);
 
   const activeConversation = useMemo(
@@ -65,27 +71,28 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
     [conversations, activeId],
   );
 
+  const searchQuery = search.trim().toLowerCase();
+  const showPeople = composeOpen || Boolean(searchQuery);
+
   const filteredDirectory = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const openPeerIds = new Set(
       conversations.map((row) => row.peer?.id).filter(Boolean),
     );
     return directory
       .filter((person) => !openPeerIds.has(person.id))
       .filter((person) => {
-        if (!q) return true;
-        return `${person.fullName} ${person.designation} ${person.email}`.toLowerCase().includes(q);
+        if (!searchQuery) return true;
+        return `${person.fullName} ${person.designation} ${person.email}`.toLowerCase().includes(searchQuery);
       });
-  }, [directory, conversations, search]);
+  }, [directory, conversations, searchQuery]);
 
   const filteredConversations = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return conversations;
+    if (!searchQuery) return conversations;
     return conversations.filter((row) => {
       const hay = `${row.peer?.fullName || ''} ${row.lastMessagePreview || ''}`.toLowerCase();
-      return hay.includes(q);
+      return hay.includes(searchQuery);
     });
-  }, [conversations, search]);
+  }, [conversations, searchQuery]);
 
   const unreadTotal = useMemo(
     () => conversations.reduce((sum, row) => sum + (Number(row.unreadCount) || 0), 0),
@@ -153,9 +160,17 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
     threadEndRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
   }, [messages, activeId]);
 
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = '0px';
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+  }, [draft]);
+
   const openConversation = async (conversation) => {
     setActiveId(conversation.id);
     setMobileShowThread(true);
+    setComposeOpen(false);
   };
 
   const startChatWith = async (person) => {
@@ -174,6 +189,7 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
       setActiveId(conversation.id);
       setMobileShowThread(true);
       setSearch('');
+      setComposeOpen(false);
     } catch (err) {
       setError(err?.message || 'Unable to start chat');
     }
@@ -217,8 +233,14 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
     }
   };
 
-  const peerName = activeConversation?.peer?.fullName || 'Colleague';
-  const peerDesignation = activeConversation?.peer?.designation || '';
+  const handleComposerKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend(event);
+    }
+  };
+
+  const peerFirst = firstName(activeConversation?.peer?.fullName);
 
   return (
     <div
@@ -226,27 +248,34 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
       data-unread={unreadTotal}
     >
       <aside className="tylo-chat-sidebar" aria-label="Conversations">
-        <div className="tylo-chat-sidebar-head">
-          <div>
-            <h3 className="tylo-chat-title">Messages</h3>
-            <p className="tylo-chat-subtitle">Chat with TYLO ONE colleagues</p>
-          </div>
-          {unreadTotal > 0 ? <span className="tylo-chat-unread-pill">{unreadTotal}</span> : null}
+        <div className="tylo-chat-toolbar">
+          <label className="tylo-chat-search">
+            <span className="sr-only">Search people or chats</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search people"
+              autoComplete="off"
+            />
+          </label>
+          <button
+            type="button"
+            className={'tylo-chat-new' + (composeOpen ? ' is-active' : '')}
+            aria-pressed={composeOpen}
+            aria-label="New message"
+            title="New message"
+            onClick={() => setComposeOpen((open) => !open)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
         </div>
-
-        <label className="tylo-chat-search">
-          <span className="sr-only">Search colleagues or chats</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search people or chats…"
-          />
-        </label>
 
         {error ? (
           <div className="tylo-chat-error" role="alert">
-            {error}
+            <span>{error}</span>
             <button type="button" onClick={refreshLists}>
               Retry
             </button>
@@ -255,64 +284,83 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
 
         <div className="tylo-chat-lists">
           {loadingList ? (
-            <div className="tylo-chat-empty">Loading conversations…</div>
+            <div className="tylo-chat-empty">Loading…</div>
           ) : (
             <>
               <section className="tylo-chat-section" aria-label="Recent chats">
-                <h4>Chats</h4>
+                <div className="tylo-chat-section-head">
+                  <h4>Chats</h4>
+                  {unreadTotal > 0 ? <span className="tylo-chat-unread-pill">{unreadTotal}</span> : null}
+                </div>
                 {filteredConversations.length ? (
                   <ul className="tylo-chat-people">
-                    {filteredConversations.map((row) => (
-                      <li key={row.id}>
-                        <button
-                          type="button"
-                          className={
-                            'tylo-chat-person' + (row.id === activeId ? ' is-active' : '') + (row.unreadCount ? ' has-unread' : '')
-                          }
-                          onClick={() => openConversation(row)}
-                        >
-                          <span className="tylo-chat-avatar" aria-hidden="true">
-                            {initials(row.peer?.fullName)}
-                          </span>
-                          <span className="tylo-chat-person-copy">
-                            <strong>{row.peer?.fullName || 'Colleague'}</strong>
-                            <small>{row.lastMessagePreview || 'No messages yet'}</small>
-                          </span>
-                          <span className="tylo-chat-person-meta">
-                            <time>{formatTime(row.lastMessageAt)}</time>
-                            {row.unreadCount > 0 ? <span className="tylo-chat-badge">{row.unreadCount}</span> : null}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
+                    {filteredConversations.map((row) => {
+                      const name = firstName(row.peer?.fullName);
+                      const unread = Number(row.unreadCount) || 0;
+                      return (
+                        <li key={row.id}>
+                          <button
+                            type="button"
+                            className={
+                              'tylo-chat-person'
+                              + (row.id === activeId ? ' is-active' : '')
+                              + (unread ? ' has-unread' : '')
+                            }
+                            onClick={() => openConversation(row)}
+                          >
+                            <span className="tylo-chat-avatar" aria-hidden="true">
+                              {initialsFromName(row.peer?.fullName)}
+                            </span>
+                            <span className="tylo-chat-person-copy">
+                              <strong>{name}</strong>
+                              <small>{row.lastMessagePreview || 'No messages yet'}</small>
+                            </span>
+                            <span className="tylo-chat-person-meta">
+                              <time dateTime={row.lastMessageAt || undefined}>{formatTime(row.lastMessageAt)}</time>
+                              {unread > 0 ? <span className="tylo-chat-badge">{unread > 99 ? '99+' : unread}</span> : null}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
-                  <div className="tylo-chat-empty">No chats yet. Start one below.</div>
+                  <div className="tylo-chat-empty">
+                    {searchQuery ? 'No matching chats.' : 'No chats yet. Start a new message.'}
+                  </div>
                 )}
               </section>
 
-              <section className="tylo-chat-section" aria-label="Directory">
-                <h4>People</h4>
-                {filteredDirectory.length ? (
-                  <ul className="tylo-chat-people">
-                    {filteredDirectory.map((person) => (
-                      <li key={person.id}>
-                        <button type="button" className="tylo-chat-person" onClick={() => startChatWith(person)}>
-                          <span className="tylo-chat-avatar" aria-hidden="true">
-                            {initials(person.fullName)}
-                          </span>
-                          <span className="tylo-chat-person-copy">
-                            <strong>{person.fullName}</strong>
-                            <small>{person.designation || person.email || 'Colleague'}</small>
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="tylo-chat-empty">No matching colleagues.</div>
-                )}
-              </section>
+              {showPeople ? (
+                <section className="tylo-chat-section" aria-label="People">
+                  <div className="tylo-chat-section-head">
+                    <h4>People</h4>
+                  </div>
+                  {filteredDirectory.length ? (
+                    <ul className="tylo-chat-people">
+                      {filteredDirectory.map((person) => (
+                        <li key={person.id}>
+                          <button
+                            type="button"
+                            className="tylo-chat-person"
+                            onClick={() => startChatWith(person)}
+                          >
+                            <span className="tylo-chat-avatar" aria-hidden="true">
+                              {initialsFromName(person.fullName)}
+                            </span>
+                            <span className="tylo-chat-person-copy">
+                              <strong>{firstName(person.fullName)}</strong>
+                              <small>Start chat</small>
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="tylo-chat-empty">No matching colleagues.</div>
+                  )}
+                </section>
+              ) : null}
             </>
           )}
         </div>
@@ -331,18 +379,23 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
                 ←
               </button>
               <span className="tylo-chat-avatar tylo-chat-avatar--lg" aria-hidden="true">
-                {initials(peerName)}
+                {initialsFromName(activeConversation.peer?.fullName)}
               </span>
               <div className="tylo-chat-thread-identity">
-                <strong>{peerName}</strong>
-                <small>{peerDesignation || 'TYLO ONE'}</small>
+                <strong>{peerFirst}</strong>
               </div>
             </header>
 
             <div className="tylo-chat-thread-body" role="log" aria-live="polite">
               {loadingThread ? <div className="tylo-chat-empty">Loading messages…</div> : null}
               {!loadingThread && !messages.length ? (
-                <div className="tylo-chat-empty">Say hello — start the conversation.</div>
+                <div className="tylo-chat-thread-prompt">
+                  <span className="tylo-chat-avatar tylo-chat-avatar--lg" aria-hidden="true">
+                    {initialsFromName(activeConversation.peer?.fullName)}
+                  </span>
+                  <strong>Message {peerFirst}</strong>
+                  <span>Say hello to start the conversation.</span>
+                </div>
               ) : null}
               {messages.map((message, index) => {
                 const mine = String(message.senderId) === selfId;
@@ -365,24 +418,49 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
             </div>
 
             <form className="tylo-chat-composer" onSubmit={handleSend}>
-              <input
-                type="text"
+              <textarea
+                ref={composerRef}
+                rows={1}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={handleComposerKeyDown}
                 placeholder="Type a message"
                 maxLength={4000}
                 aria-label="Type a message"
                 disabled={sending}
               />
-              <button type="submit" className="tylo-chat-send" disabled={!draft.trim() || sending}>
-                Send
+              <button
+                type="submit"
+                className="tylo-chat-send"
+                disabled={!draft.trim() || sending}
+                aria-label="Send"
+                title="Send"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M3.4 20.4 21 12 3.4 3.6 3 10.2 15 12 3 13.8z" />
+                </svg>
               </button>
             </form>
           </>
         ) : (
           <div className="tylo-chat-thread-empty">
-            <strong>Select a colleague to start chatting</strong>
-            <span>Messages stay inside TYLO ONE — private to your team.</span>
+            <div className="tylo-chat-thread-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H7l-4 2.2.9-4.1A8.5 8.5 0 1 1 21 12z" />
+              </svg>
+            </div>
+            <strong>Select a chat</strong>
+            <span>Choose a conversation or start a new message.</span>
+            <button
+              type="button"
+              className="tylo-chat-empty-cta"
+              onClick={() => {
+                setComposeOpen(true);
+                setMobileShowThread(false);
+              }}
+            >
+              New message
+            </button>
           </div>
         )}
       </section>

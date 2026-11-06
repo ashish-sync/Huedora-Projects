@@ -75,10 +75,12 @@ describe('InternalChat', () => {
     const user = userEvent.setup();
     render(<InternalChat />);
 
-    const peerButton = await screen.findByRole('button', { name: /Bob Ops/i }, { timeout: 10000 });
+    await user.click(document.querySelector('.tylo-chat-new'));
+    const peerButton = await screen.findByRole('button', { name: /Bob/i }, { timeout: 10000 });
     await user.click(peerButton);
 
-    expect(await screen.findByText('Say hello — start the conversation.', {}, { timeout: 10000 })).toBeTruthy();
+    expect(await screen.findByText(/Say hello to start the conversation/i, {}, { timeout: 10000 })).toBeTruthy();
+    expect(screen.getByText('Message Bob')).toBeTruthy();
     expect(screen.getByLabelText('Type a message')).toBeTruthy();
 
     const input = screen.getByLabelText('Type a message');

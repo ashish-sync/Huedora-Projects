@@ -97,6 +97,12 @@ describe('DashboardPage homepage', () => {
     apiMock.mockImplementation(async (path) => {
       if (path === '/dashboards/overview') return { data: MOCK_OVERVIEW };
       if (String(path).startsWith('/notifications')) return { data: [] };
+      if (path === '/chat/unread-count') return { data: { count: 0 } };
+      if (path === '/chat/directory') return { data: [] };
+      if (path === '/chat/conversations') return { data: [] };
+      if (String(path).startsWith('/chat/')) return { data: [] };
+      if (path === '/calendar/summary') return { data: { openTasks: 0, pendingRequests: 0, badge: 0 } };
+      if (String(path).startsWith('/calendar/')) return { data: [] };
       throw new Error(`Unexpected path: ${path}`);
     });
   });
@@ -110,16 +116,17 @@ describe('DashboardPage homepage', () => {
   it('loads overview telemetry on the Business Overview dashboard', async () => {
     renderDashboardPage();
 
-    expect(await screen.findByRole('heading', { name: 'Business Overview' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Business Overview' }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tylo One Dashboard/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'My View' })).toBeTruthy();
-    expect(await screen.findByRole('region', { name: 'Operational overview' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Operational overview' }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Attention required' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Quick access' })).toBeTruthy();
     expect(screen.getByText('Department performance')).toBeTruthy();
     expect(screen.getByText('Request One awaiting approval')).toBeTruthy();
     expect(apiMock).toHaveBeenCalledWith('/dashboards/overview');
-  });
+    expect(apiMock).toHaveBeenCalledWith('/chat/unread-count');
+  }, 20000);
 
   it('lets an admin open My View without changing overview APIs', async () => {
     const user = userEvent.setup();

@@ -1,0 +1,445 @@
+/* TYLO ONE — Internal employee chat (Messages workspace) */
+
+.tylo-chat {
+  --chat-surface: var(--bg-tier-2);
+  --chat-pane: var(--bg-tier-3);
+  --chat-muted: var(--bg-muted);
+  --chat-border: var(--border-default);
+  --chat-text: var(--text-main);
+  --chat-secondary: var(--text-secondary);
+  --chat-mine: var(--brand-primary);
+  --chat-mine-text: var(--text-on-brand, #fff);
+  --chat-theirs: var(--bg-muted);
+  --chat-accent: var(--brand-primary);
+
+  display: grid;
+  grid-template-columns: minmax(140px, 0.95fr) minmax(0, 1.25fr);
+  gap: 0;
+  min-height: 0;
+  height: 100%;
+  flex: 1 1 auto;
+  border: 1px solid var(--chat-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--chat-surface);
+  color: var(--chat-text);
+}
+
+.tylo-chat--compact {
+  min-height: 0;
+}
+
+.tylo-chat-sidebar,
+.tylo-chat-thread {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tylo-chat-sidebar {
+  border-right: 1px solid var(--chat-border);
+  background: var(--chat-pane);
+}
+
+.tylo-chat-sidebar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 6px;
+  flex: 0 0 auto;
+}
+
+.tylo-chat-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--chat-text);
+}
+
+.tylo-chat-subtitle {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: var(--chat-secondary);
+}
+
+.tylo-chat-unread-pill {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--status-danger-dot);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.tylo-chat-search {
+  display: block;
+  padding: 0 10px 8px;
+  flex: 0 0 auto;
+}
+
+.tylo-chat-search input {
+  width: 100%;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--chat-border);
+  background: var(--bg-input, var(--chat-surface));
+  color: var(--chat-text);
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.tylo-chat-error {
+  margin: 0 10px 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tylo-chat-error button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tylo-chat-lists {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 6px 8px;
+}
+
+.tylo-chat-section h4 {
+  margin: 8px 6px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chat-secondary);
+}
+
+.tylo-chat-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tylo-chat-person {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 7px 6px;
+  cursor: pointer;
+}
+
+.tylo-chat-person:hover,
+.tylo-chat-person.is-active {
+  background: var(--bg-hover, var(--chat-muted));
+}
+
+.tylo-chat-person.has-unread strong {
+  font-weight: 800;
+}
+
+.tylo-chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--chat-accent) 18%, var(--chat-muted));
+  color: var(--chat-accent);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tylo-chat-avatar--lg {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+}
+
+.tylo-chat-person-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tylo-chat-person-copy strong {
+  font-size: 12px;
+  color: var(--chat-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tylo-chat-person-copy small {
+  font-size: 10px;
+  color: var(--chat-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tylo-chat-person-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tylo-chat-person-meta time {
+  font-size: 9px;
+  color: var(--chat-secondary);
+}
+
+.tylo-chat-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--status-success-dot);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.tylo-chat-empty {
+  padding: 12px 8px;
+  font-size: 11px;
+  color: var(--chat-secondary);
+  text-align: center;
+}
+
+.tylo-chat-thread {
+  background: var(--chat-surface);
+}
+
+.tylo-chat-thread-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--chat-border);
+  flex: 0 0 auto;
+  background: var(--chat-pane);
+}
+
+.tylo-chat-back {
+  display: none;
+  border: none;
+  background: transparent;
+  color: var(--chat-text);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.tylo-chat-thread-identity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tylo-chat-thread-identity strong {
+  font-size: 13px;
+  color: var(--chat-text);
+}
+
+.tylo-chat-thread-identity small {
+  font-size: 10px;
+  color: var(--chat-secondary);
+}
+
+.tylo-chat-thread-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background:
+    radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--chat-accent) 6%, transparent), transparent 40%),
+    var(--chat-surface);
+}
+
+.tylo-chat-day-chip {
+  align-self: center;
+  margin: 4px 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--chat-muted);
+  color: var(--chat-secondary);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tylo-chat-bubble-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.tylo-chat-bubble-row.is-mine {
+  justify-content: flex-end;
+}
+
+.tylo-chat-bubble {
+  max-width: min(78%, 320px);
+  padding: 7px 10px 5px;
+  border-radius: 12px 12px 12px 4px;
+  background: var(--chat-theirs);
+  color: var(--chat-text);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--chat-border) 70%, transparent);
+}
+
+.tylo-chat-bubble.is-mine {
+  border-radius: 12px 12px 4px 12px;
+  background: var(--chat-mine);
+  color: var(--chat-mine-text);
+}
+
+.tylo-chat-bubble p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tylo-chat-bubble time {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  opacity: 0.75;
+  text-align: right;
+}
+
+.tylo-chat-composer {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--chat-border);
+  background: var(--chat-pane);
+  flex: 0 0 auto;
+}
+
+.tylo-chat-composer input {
+  flex: 1 1 auto;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--chat-border);
+  background: var(--bg-input, var(--chat-surface));
+  color: var(--chat-text);
+  padding: 0 14px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.tylo-chat-send {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--chat-accent);
+  color: var(--text-on-brand, #fff);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.tylo-chat-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tylo-chat-thread-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 16px;
+  color: var(--chat-secondary);
+}
+
+.tylo-chat-thread-empty strong {
+  color: var(--chat-text);
+  font-size: 13px;
+}
+
+.tylo-chat-thread-empty span {
+  font-size: 11px;
+  max-width: 220px;
+}
+
+/* Ops workspace card: fill remaining height, no outer scroll */
+.tylo-home-ops-grid .tylo-home-workspace-content .tylo-chat,
+.tylo-home-workspace-content .tylo-chat,
+.tylo-home-sticky-notes .tylo-chat {
+  height: 100%;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.tylo-home-ops-grid .tylo-home-workspace-content:has(.tylo-chat),
+.tylo-home-sticky-notes:has(.tylo-chat) {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 900px) {
+  .tylo-chat {
+    grid-template-columns: 1fr;
+  }
+
+  .tylo-chat .tylo-chat-thread {
+    display: none;
+  }
+
+  .tylo-chat.is-thread-open .tylo-chat-sidebar {
+    display: none;
+  }
+
+  .tylo-chat.is-thread-open .tylo-chat-thread {
+    display: flex;
+  }
+
+  .tylo-chat-back {
+    display: inline-flex;
+  }
+}

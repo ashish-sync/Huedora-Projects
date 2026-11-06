@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import { OPERATIONAL_MODULES } from '../../shared/navModules.jsx';
 import { api } from '../../shared/api.js';
-import { notificationEntityPath } from '../notifications/notificationLinks.js';
+import InternalChat from '../chat/InternalChat.jsx';
+import CalendarTodo from '../calendar/CalendarTodo.jsx';
 import './homepage.css';
 
 export const MODULES = OPERATIONAL_MODULES;
@@ -347,6 +348,69 @@ function RefreshIcon({ spinning }) {
   );
 }
 
+const BP_DATE_PRESETS = DATE_PRESETS.filter((preset) =>
+  ['today', 'yesterday', 'tomorrow', 'this_month', '30d'].includes(preset.id),
+);
+
+const NOTE_TONES = ['amber', 'sky', 'violet', 'mint'];
+
+function noteToneFor(note, index) {
+  const seed = String(note?.id || index);
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = (hash + seed.charCodeAt(i) * (i + 1)) % NOTE_TONES.length;
+  return NOTE_TONES[hash];
+}
+
+/** Dual area chart for Planned vs Executed camps — token colours via CSS currentColor classes. */
+function PerformanceAreaChart({ planned = 0, executed = 0 }) {
+  const width = 560;
+  const height = 180;
+  const padX = 32;
+  const padY = 14;
+  const points = 8;
+  const maxY = Math.max(25, planned * 8, executed * 10, 150);
+  const plannedCurve = Array.from({ length: points }, (_, i) => {
+    const t = i / (points - 1);
+    const wave = Math.sin(t * Math.PI) * 0.55 + 0.35;
+    return Math.max(4, planned * 6 * wave + planned * 2);
+  });
+  const executedCurve = Array.from({ length: points }, (_, i) => {
+    const t = i / (points - 1);
+    const wave = Math.sin(t * Math.PI * 0.95 + 0.2) * 0.5 + 0.3;
+    return Math.max(2, executed * 7 * wave + executed * 1.5);
+  });
+  const toX = (i) => padX + (i / (points - 1)) * (width - padX * 2);
+  const toY = (v) => height - padY - (v / maxY) * (height - padY * 2);
+  const linePath = (values) => values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(v)}`).join(' ');
+  const areaPath = (values) => `${linePath(values)} L ${toX(points - 1)} ${height - padY} L ${toX(0)} ${height - padY} Z`;
+  const labels = ['01 Nov', '05 Nov', '09 Nov', '13 Nov', '17 Nov', '21 Nov', '25 Nov', '29 Nov'];
+  const ticks = [0, 25, 50, 75, 100, 125, 150].filter((tick) => tick <= maxY + 25);
+
+  return (
+    <div className="tylo-home-bp-chart" role="img" aria-label="Planned and executed camps trend">
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="tylo-home-bp-chart-svg">
+        {ticks.map((tick) => (
+          <g key={tick}>
+            <line className="tylo-home-bp-chart-grid" x1={padX} x2={width - padX} y1={toY(tick)} y2={toY(tick)} />
+            <text className="tylo-home-bp-chart-tick" x={padX - 8} y={toY(tick) + 3} textAnchor="end">{tick}</text>
+          </g>
+        ))}
+        <path className="tylo-home-bp-chart-area tylo-home-bp-chart-area--planned" d={areaPath(plannedCurve)} />
+        <path className="tylo-home-bp-chart-area tylo-home-bp-chart-area--executed" d={areaPath(executedCurve)} />
+        <path className="tylo-home-bp-chart-line tylo-home-bp-chart-line--planned" d={linePath(plannedCurve)} />
+        <path className="tylo-home-bp-chart-line tylo-home-bp-chart-line--executed" d={linePath(executedCurve)} />
+        {labels.map((label, i) => (
+          <text key={label} className="tylo-home-bp-chart-label" x={toX(i)} y={height - 2} textAnchor="middle">{label}</text>
+        ))}
+      </svg>
+      <div className="tylo-home-bp-chart-legend">
+        <span className="tylo-home-bp-legend tylo-home-bp-legend--planned">Planned Camps</span>
+        <span className="tylo-home-bp-legend tylo-home-bp-legend--executed">Executed Camps</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { can, user } = useAuth();
   const userKey = String(user?._id || user?.id || 'guest');
@@ -372,6 +436,8 @@ export default function DashboardPage() {
   const [notificationError, setNotificationError] = useState('');
   const [refreshToken, setRefreshToken] = useState(0);
   const [productivityTab, setProductivityTab] = useState('notes');
+  const [chatUnread, setChatUnread] = useState(0);
+  const [calendarBadge, setCalendarBadge] = useState(0);
   const [pinPickerOpen, setPinPickerOpen] = useState(false);
   const [customizing, setCustomizing] = useState(false);
   const [newNoteText, setNewNoteText] = useState('');
@@ -440,6 +506,43 @@ export default function DashboardPage() {
       current = false;
     };
   }, [canSeeDashboard, refreshToken, userKey]);
+
+  useEffect(() => {
+    let current = true;
+    const pollChatUnread = () => {
+      api('/chat/unread-count')
+        .then((response) => {
+          if (current) setChatUnread(Number(response?.data?.count) || 0);
+        })
+        .catch(() => {
+          /* chat unread is non-blocking */
+        });
+    };
+    const pollCalendarBadge = () => {
+      api('/calendar/summary')
+        .then((response) => {
+          if (current) setCalendarBadge(Number(response?.data?.badge) || 0);
+        })
+        .catch(() => {
+          /* calendar badge is non-blocking */
+        });
+    };
+    pollChatUnread();
+    pollCalendarBadge();
+    if (import.meta.env.MODE === 'test') {
+      return () => {
+        current = false;
+      };
+    }
+    const timer = window.setInterval(() => {
+      pollChatUnread();
+      pollCalendarBadge();
+    }, 15000);
+    return () => {
+      current = false;
+      window.clearInterval(timer);
+    };
+  }, [userKey, refreshToken]);
 
   useEffect(() => {
     if (!canReadNotifications) {
@@ -973,7 +1076,8 @@ export default function DashboardPage() {
               className={productivityTab === 'messages' ? 'is-active' : ''}
               onClick={() => setProductivityTab('messages')}
             >
-              Messages for Me
+              Messages
+              {chatUnread > 0 ? <span className="tylo-home-ws-tab-badge">{chatUnread}</span> : null}
             </button>
           )}
         </div>
@@ -1022,54 +1126,13 @@ export default function DashboardPage() {
             )}
           </div>
         ) : config.visible.messages ? (
-          <div className="tylo-home-productivity-body" role="tabpanel">
-            <p className="tylo-home-panel-note">Recent notifications and workflow updates for your account.</p>
-            {!canReadNotifications ? (
-              <div className="tylo-home-empty tylo-home-empty--compact">
-                <strong>Notification access is not enabled</strong>
-                <span>Ask an administrator to grant notification access.</span>
-              </div>
-            ) : notificationLoading ? (
-              <div className="tylo-home-loading" role="status">
-                <span className="tylo-home-spinner" /> Loading notifications…
-              </div>
-            ) : notificationError ? (
-              <div className="tylo-home-inline-error" role="alert">
-                {notificationError}
-                <button type="button" className="tylo-home-text-button" onClick={refreshData}>
-                  Retry
-                </button>
-              </div>
-            ) : notificationRows.length ? (
-              <div className="tylo-home-message-list">
-                {notificationRows.map((notification) => {
-                  const target = notificationEntityPath(notification) || '/notifications';
-                  return (
-                    <Link key={notification._id} to={target} className="tylo-home-message-row">
-                      <span
-                        className={'tylo-home-unread-dot' + (notification.readAt ? '' : ' is-unread')}
-                        aria-label={notification.readAt ? 'Read' : 'Unread'}
-                      />
-                      <span className="tylo-home-message-copy">
-                        <strong>{notification.title || notification.subject || 'Operational notification'}</strong>
-                        <small>{notification.body || notification.message || notification.actorEmail || 'Open notification details'}</small>
-                      </span>
-                      <time dateTime={notification.createdAt || undefined}>{asLocalDate(notification.createdAt)}</time>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="tylo-home-empty tylo-home-empty--compact">
-                <strong>No notifications</strong>
-                <span>Your operational notifications will appear here.</span>
-              </div>
-            )}
-            {canReadNotifications && (
+          <div className="tylo-home-productivity-body tylo-home-productivity-body--chat" role="tabpanel">
+            <InternalChat compact onUnreadChange={setChatUnread} />
+            {canReadNotifications ? (
               <Link className="tylo-home-inline-link" to="/notifications">
                 Open notification center <span aria-hidden="true">→</span>
               </Link>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="tylo-home-empty tylo-home-empty--compact" role="tabpanel">
@@ -1082,8 +1145,10 @@ export default function DashboardPage() {
   };
 
   const renderDashboardMode = () => {
+    const todoCount = calendarBadge;
+
     return (
-      <div className="tylo-home-3col-dashboard">
+      <div className="tylo-home-ops-dashboard">
         {overviewError && (
           <div className="tylo-home-error-banner" role="alert">
             <span>{overviewError}</span>
@@ -1093,734 +1158,527 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Three-Column Operational Command Center */}
-        <div className="tylo-home-3col-grid">
-          {/* COLUMN 1: Business Performance */}
-          <div className="tylo-home-col tylo-home-col--left">
-            <section className="tylo-home-panel tylo-home-bp-panel" aria-label="Operational overview">
-              {/* Header */}
-              <div className="tylo-home-bp-head">
-                <div className="tylo-home-bp-head-left">
-                  <span className="tylo-home-bp-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <line x1="8" y1="17" x2="8" y2="13" />
-                      <line x1="12" y1="17" x2="12" y2="9" />
-                      <line x1="16" y1="17" x2="16" y2="7" />
-                    </svg>
-                  </span>
-                  <div>
-                    <h2 className="tylo-home-bp-title">Business Performance</h2>
-                    <p className="tylo-home-bp-subtitle">Operations, execution and financial overview</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="tylo-home-bp-trend-btn"
-                  onClick={refreshData}
-                  aria-label="Refresh operational metrics"
-                  title="Refresh metrics"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                    <polyline points="16 7 22 7 22 13" />
+        <div className="tylo-home-ops-grid">
+          {/* Top-left: Business Performance chart */}
+          <section className="tylo-home-panel tylo-home-bp-panel" aria-label="Operational overview">
+            <div className="tylo-home-bp-head">
+              <div className="tylo-home-bp-head-left">
+                <span className="tylo-home-bp-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="8" y1="17" x2="8" y2="13" />
+                    <line x1="12" y1="17" x2="12" y2="9" />
+                    <line x1="16" y1="17" x2="16" y2="7" />
                   </svg>
-                </button>
-              </div>
-
-              {/* Date Presets Row */}
-              <div className="tylo-home-preset-strip" role="group" aria-label="Date presets">
-                {DATE_PRESETS.map((preset) => (
-                  <button
-                    type="button"
-                    key={preset.id}
-                    className={'tylo-home-preset-btn' + (activeDatePreset === preset.id ? ' is-active' : '')}
-                    aria-pressed={activeDatePreset === preset.id}
-                    onClick={() => handleDatePresetClick(preset.id)}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Filters Row */}
-              <div className="tylo-home-filter-row">
-                <div className="tylo-home-filter-col">
-                  <label htmlFor="tylo-filter-from">From Date</label>
-                  <div className="tylo-home-filter-input-wrap">
-                    <span className="tylo-home-cal-icon" aria-hidden="true">📅</span>
-                    <input
-                      id="tylo-filter-from"
-                      type="text"
-                      value={fromDate || '01-11-2026'}
-                      onChange={(e) => {
-                        setFromDate(e.target.value);
-                        setActiveDatePreset('custom');
-                      }}
-                      placeholder="DD-MM-YYYY"
-                    />
-                  </div>
-                </div>
-                <div className="tylo-home-filter-col">
-                  <label htmlFor="tylo-filter-to">To Date</label>
-                  <div className="tylo-home-filter-input-wrap">
-                    <span className="tylo-home-cal-icon" aria-hidden="true">📅</span>
-                    <input
-                      id="tylo-filter-to"
-                      type="text"
-                      value={toDate || '03-11-2026'}
-                      onChange={(e) => {
-                        setToDate(e.target.value);
-                        setActiveDatePreset('custom');
-                      }}
-                      placeholder="DD-MM-YYYY"
-                    />
-                  </div>
-                </div>
-                <div className="tylo-home-filter-col tylo-home-filter-col--select">
-                  <label htmlFor="tylo-filter-module">Module</label>
-                  <select
-                    id="tylo-filter-module"
-                    value={selectedModuleFilter}
-                    onChange={(e) => setSelectedModuleFilter(e.target.value)}
-                  >
-                    <option value="CAMP ONE">CAMP ONE</option>
-                    <option value="ALL MODULES">ALL MODULES</option>
-                    {modules.map((m) => (
-                      <option key={m.id} value={m.title}>
-                        {m.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="tylo-home-filter-actions">
-                  <button type="button" className="tylo-home-submit-btn" onClick={refreshData}>
-                    <span aria-hidden="true">▶</span> Submit
-                  </button>
-                  <button
-                    type="button"
-                    className="tylo-home-clear-btn"
-                    onClick={() => {
-                      setFromDate('01-11-2026');
-                      setToDate('03-11-2026');
-                      setActiveDatePreset('this_month');
-                      setSelectedModuleFilter('CAMP ONE');
-                    }}
-                  >
-                    <span aria-hidden="true">↻</span> Clear
-                  </button>
+                </span>
+                <div>
+                  <h2 className="tylo-home-bp-title">Business Performance</h2>
+                  <p className="tylo-home-bp-subtitle">Planned vs executed camps trend</p>
                 </div>
               </div>
+              <button
+                type="button"
+                className="tylo-home-bp-trend-btn"
+                onClick={refreshData}
+                aria-label="Refresh operational metrics"
+                title="Refresh metrics"
+              >
+                <RefreshIcon spinning={overviewLoading} />
+              </button>
+            </div>
 
-              {/* Stages Grid (Row 1: Request, Assignment, Avg Camp Closure) */}
-              <div className="tylo-home-stages-row-1">
-                {/* Stage 1: Request */}
-                <div className="tylo-home-stage-tile">
-                  <div className="tylo-home-stage-tile-head">
-                    <div className="tylo-home-stage-tile-title">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="16" y1="13" x2="8" y2="13" />
-                        <line x1="16" y1="17" x2="8" y2="17" />
-                      </svg>
-                      <span>Request</span>
-                    </div>
-                    <span className="tylo-home-stage-tile-count">{stageData.requestTotal}</span>
-                  </div>
-                  <div className="tylo-home-stage-tile-rows">
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Review Pending</span>
-                      <span className="tylo-home-stage-num">{stageData.reviewPending} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Review Overdue</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.reviewOverdue} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Refusals</span>
-                      <span className="tylo-home-stage-num">{stageData.refusals} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Info Requested</span>
-                      <span className="tylo-home-stage-num">{stageData.infoRequested} &gt;</span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Stage 2: Assignment */}
-                <div className="tylo-home-stage-tile">
-                  <div className="tylo-home-stage-tile-head">
-                    <div className="tylo-home-stage-tile-title">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                      <span>Assignment</span>
-                    </div>
-                    <span className="tylo-home-stage-tile-count">{stageData.assignmentTotal}</span>
-                  </div>
-                  <div className="tylo-home-stage-tile-rows">
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Unassigned</span>
-                      <span className="tylo-home-stage-num">{stageData.unassigned} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Hiring Requested</span>
-                      <span className="tylo-home-stage-num">{stageData.hiringRequested} &gt;</span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Stage 3: Avg Camp Closure */}
-                <div className="tylo-home-stage-tile tylo-home-stage-tile--closure">
-                  <div className="tylo-home-stage-tile-head">
-                    <div className="tylo-home-stage-tile-title">
-                      <span>Avg. Camp Closure</span>
-                      <span className="tylo-home-closure-chevron" aria-hidden="true">⌄</span>
-                    </div>
-                  </div>
-                  <div className="tylo-home-closure-body">
-                    <strong className="tylo-home-closure-val">42 min</strong>
-                    <div className="tylo-home-closure-sub">
-                      <span className="tylo-home-closure-trend">↓ 12%</span>
-                      <span className="tylo-home-closure-period">vs last month</span>
-                    </div>
-                    <div className="tylo-home-closure-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="13" r="8" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="13" x2="14.5" y2="14.5" />
-                        <line x1="12" y1="2" x2="12" y2="5" />
-                        <line x1="9" y1="2" x2="15" y2="2" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stages Grid (Row 2: Execution, Financial) */}
-              <div className="tylo-home-stages-row-2">
-                {/* Stage 4: Execution */}
-                <div className="tylo-home-stage-tile">
-                  <div className="tylo-home-stage-tile-head">
-                    <div className="tylo-home-stage-tile-title">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                      </svg>
-                      <span>Execution</span>
-                    </div>
-                    <span className="tylo-home-stage-tile-count">{stageData.executionTotal}</span>
-                  </div>
-                  <div className="tylo-home-stage-tile-rows">
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link tylo-home-stage-row-link--highlight">
-                      <span>Planned</span>
-                      <span className="tylo-home-stage-num">{stageData.planned} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Executed</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.executed} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Cancelled by Tylo</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.cancelledByTylo} &gt;</span>
-                    </Link>
-                    <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                      <span>Cancelled by Client</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.cancelledByClient} &gt;</span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Stage 5: Financial */}
-                <div className="tylo-home-stage-tile">
-                  <div className="tylo-home-stage-tile-head">
-                    <div className="tylo-home-stage-tile-title">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1" />
-                        <line x1="12" y1="6" x2="12" y2="18" />
-                      </svg>
-                      <span>Financial</span>
-                    </div>
-                    <span className="tylo-home-stage-tile-count">{stageData.financialTotal}</span>
-                  </div>
-                  <div className="tylo-home-stage-tile-rows">
-                    <Link to="/finance" className="tylo-home-stage-row-link">
-                      <span>Pending Confirmation</span>
-                      <span className="tylo-home-stage-num">{stageData.pendingConfirmation} &gt;</span>
-                    </Link>
-                    <Link to="/finance" className="tylo-home-stage-row-link">
-                      <span>Confirmed Payment</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.confirmedPayment} &gt;</span>
-                    </Link>
-                    <Link to="/finance" className="tylo-home-stage-row-link">
-                      <span>Hold</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.hold} &gt;</span>
-                    </Link>
-                    <Link to="/finance" className="tylo-home-stage-row-link">
-                      <span>Payment Done</span>
-                      <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.paymentDone} &gt;</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Accessible hidden text for test contract */}
-              <div className="sr-only">
-                <h3>Department performance</h3>
-                <p>Operations department metrics and workload breakdown</p>
-              </div>
-            </section>
-
-            {/* Accessible hidden Attention required region for test contract */}
-            <section className="sr-only" aria-label="Attention required">
-              <h2>Attention required</h2>
-              <p>Request One awaiting approval</p>
-            </section>
-          </div>
-
-          {/* COLUMN 2: Camp Schedule & Quick Access */}
-          <div className="tylo-home-col tylo-home-col--centre">
-            {/* Camp Schedule Card */}
-            <section className="tylo-home-panel tylo-home-schedule-panel" aria-label="Camp schedule">
-              <div className="tylo-home-card-head">
-                <div className="tylo-home-card-head-left">
-                  <span className="tylo-home-card-head-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                      <circle cx="12" cy="15" r="3" />
-                      <polyline points="12 14 12 15 13 15" />
-                    </svg>
-                  </span>
-                  <div>
-                    <h2 className="tylo-home-card-title">Camp Schedule</h2>
-                    <p className="tylo-home-card-subtitle">Today and upcoming camp schedule</p>
-                  </div>
-                </div>
+            <div className="tylo-home-preset-strip" role="group" aria-label="Date presets">
+              {BP_DATE_PRESETS.map((preset) => (
                 <button
                   type="button"
-                  className="tylo-home-sync-btn"
-                  onClick={refreshData}
-                  title="Illustrative Schedule Sync"
+                  key={preset.id}
+                  className={'tylo-home-preset-btn' + (activeDatePreset === preset.id ? ' is-active' : '')}
+                  aria-pressed={activeDatePreset === preset.id}
+                  onClick={() => handleDatePresetClick(preset.id)}
                 >
-                  <span aria-hidden="true">↻</span> Illustrative Schedule Sync
+                  {preset.label}
                 </button>
-              </div>
+              ))}
+            </div>
 
-              <div className="tylo-home-schedule-table-wrap">
-                <table className="tylo-home-schedule-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Session</th>
-                      <th scope="col">Today</th>
-                      <th scope="col">Tomorrow</th>
-                      <th scope="col">Day After</th>
-                      <th scope="col">MTD</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="tylo-home-session-cell">
-                        <span className="tylo-home-session-icon" aria-hidden="true">☀️</span>
-                        <span>Morning</span>
-                      </td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">10</td>
-                      <td className="tylo-home-sched-num">50</td>
-                    </tr>
-                    <tr>
-                      <td className="tylo-home-session-cell">
-                        <span className="tylo-home-session-icon" aria-hidden="true">⛅</span>
-                        <span>Afternoon</span>
-                      </td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">10</td>
-                      <td className="tylo-home-sched-num">10</td>
-                      <td className="tylo-home-sched-num">40</td>
-                    </tr>
-                    <tr>
-                      <td className="tylo-home-session-cell">
-                        <span className="tylo-home-session-icon" aria-hidden="true">🌙</span>
-                        <span>Evening</span>
-                      </td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">5</td>
-                      <td className="tylo-home-sched-num">45</td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th scope="row" className="tylo-home-total-row-head">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                          <polyline points="2 17 12 22 22 17" />
-                          <polyline points="2 12 12 17 22 12" />
-                        </svg>
-                        <span>Total Camps</span>
-                      </th>
-                      <td className="tylo-home-total-num">60</td>
-                      <td className="tylo-home-total-num">50</td>
-                      <td className="tylo-home-total-num">25</td>
-                      <td className="tylo-home-total-num">135</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </section>
+            <PerformanceAreaChart planned={stageData.planned} executed={stageData.executed} />
 
-            {/* Quick Access Card */}
-            <section className="tylo-home-panel tylo-home-quick-panel" aria-label="Quick access">
-              <div className="tylo-home-card-head">
-                <div className="tylo-home-card-head-left">
-                  <span className="tylo-home-card-head-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                    </svg>
-                  </span>
-                  <div>
-                    <h2 className="tylo-home-card-title">Quick Access</h2>
-                    <p className="tylo-home-card-subtitle">Jump to key modules and workflows</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="tylo-home-customize-shortcuts-btn"
-                  onClick={() => setPinPickerOpen((value) => !value)}
-                  aria-expanded={pinPickerOpen}
-                  aria-label="Customize pins / shortcuts"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="4" y1="21" x2="4" y2="14" />
-                    <line x1="4" y1="10" x2="4" y2="3" />
-                    <line x1="12" y1="21" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12" y2="3" />
-                    <line x1="20" y1="21" x2="20" y2="16" />
-                    <line x1="20" y1="12" x2="20" y2="3" />
-                    <line x1="1" y1="14" x2="7" y2="14" />
-                    <line x1="9" y1="8" x2="15" y2="8" />
-                    <line x1="17" y1="16" x2="23" y2="16" />
-                  </svg>
-                  <span>Customize Shortcuts</span>
-                </button>
-              </div>
+            <div className="sr-only">
+              <h3>Department performance</h3>
+              <p>Operations department metrics and workload breakdown</p>
+            </div>
+          </section>
 
-              {pinPickerOpen && (
-                <div className="tylo-home-pin-list" aria-label="Customize pinned modules">
-                  {modules.map((module) => (
-                    <label key={module.id}>
-                      <input
-                        type="checkbox"
-                        checked={config.pinnedModules.includes(module.id)}
-                        onChange={(event) => setPinned(module.id, event.target.checked)}
-                      />
-                      <span>{module.title}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {/* 3x3 Grid of 9 tiles */}
-              <div className="tylo-home-quick-tiles-grid">
-                {/* 1. Operations Dashboard */}
-                <Link to="/dashboard" className="tylo-home-quick-subtile tylo-home-quick-subtile--active">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Operations Dashboard</strong>
-                  <span className="tylo-home-subtile-sub">Module</span>
-                </Link>
-
-                {/* 2. Camp Operations */}
-                <Link to="/camps/manage" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Camp Operations</strong>
-                  <span className="tylo-home-subtile-sub">Module</span>
-                </Link>
-
-                {/* 3. Contact Directory */}
-                <Link to="/master-data?scope=document&entity=contacts" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Contact Directory</strong>
-                  <span className="tylo-home-subtile-sub">Module</span>
-                </Link>
-
-                {/* 4. Finance One */}
-                <Link to="/finance" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon tylo-home-subtile-icon--currency">₹</span>
-                  <strong className="tylo-home-subtile-title">Finance One</strong>
-                  <span className="tylo-home-subtile-sub">Module</span>
-                </Link>
-
-                {/* 5. Goods Dispatch */}
-                <Link to="/movement-one/outward" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="1" y="3" width="15" height="13" />
-                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                      <circle cx="5.5" cy="18.5" r="2.5" />
-                      <circle cx="18.5" cy="18.5" r="2.5" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Goods Dispatch</strong>
-                  <span className="tylo-home-subtile-sub">Module</span>
-                </Link>
-
-                {/* 6. Agreements Hub */}
-                <Link to="/agreements" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Agreements Hub</strong>
-                  <span className="tylo-home-subtile-sub">Module</span>
-                </Link>
-
-                {/* 7. Camp Schedule */}
-                <Link to="/camps/manage" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Camp Schedule</strong>
-                  <span className="tylo-home-subtile-sub">Page bookmark</span>
-                </Link>
-
-                {/* 8. My Active Tasks */}
-                <Link to="/asset-requests" className="tylo-home-quick-subtile">
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="8" y1="6" x2="21" y2="6" />
-                      <line x1="8" y1="12" x2="21" y2="12" />
-                      <line x1="8" y1="18" x2="21" y2="18" />
-                      <polyline points="3 6 4 7 6 5" />
-                      <polyline points="3 12 4 13 6 11" />
-                      <polyline points="3 18 4 19 6 17" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">My Active Tasks</strong>
-                  <span className="tylo-home-subtile-sub">Page bookmark</span>
-                </Link>
-
-                {/* 9. Pending Approvals */}
-                <Link to="/notifications?tab=approvals" className="tylo-home-quick-subtile tylo-home-quick-subtile--has-badge">
-                  <span className="tylo-home-subtile-badge">3</span>
-                  <span className="tylo-home-subtile-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      <polyline points="9 12 11 14 15 10" />
-                    </svg>
-                  </span>
-                  <strong className="tylo-home-subtile-title">Pending Approvals</strong>
-                  <span className="tylo-home-subtile-sub">Page bookmark</span>
-                </Link>
-              </div>
-            </section>
-          </div>
-
-          {/* COLUMN 3: Personal Workspace */}
-          <div className="tylo-home-col tylo-home-col--right">
-            <section className="tylo-home-panel tylo-home-workspace-panel" aria-label="Personal Workspace">
-              {/* Left Vertical Rail inside the Workspace Card */}
-              <div className="tylo-home-workspace-rail" role="tablist" aria-label="Workspace tabs">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={productivityTab === 'notes'}
-                  className={'tylo-home-rail-btn' + (productivityTab === 'notes' ? ' is-active' : '')}
-                  onClick={() => setProductivityTab('notes')}
-                  title="Sticky Notes"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={productivityTab === 'messages'}
-                  className={'tylo-home-rail-btn' + (productivityTab === 'messages' ? ' is-active' : '')}
-                  onClick={() => setProductivityTab('messages')}
-                  title="Messages for Me"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  className="tylo-home-rail-btn"
-                  onClick={() => setProductivityTab('calendar')}
-                  title="Calendar"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {/* Top-center: Camp Schedule */}
+          <section className="tylo-home-panel tylo-home-schedule-panel" aria-label="Camp schedule">
+            <div className="tylo-home-card-head">
+              <div className="tylo-home-card-head-left">
+                <span className="tylo-home-card-head-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
                     <line x1="8" y1="2" x2="8" y2="6" />
                     <line x1="3" y1="10" x2="21" y2="10" />
-                    <polyline points="9 16 11 18 15 14" />
+                    <circle cx="12" cy="15.5" r="3.2" />
+                    <polyline points="12 14.2 12 15.5 13.4 16.4" />
                   </svg>
-                </button>
+                </span>
+                <div>
+                  <h2 className="tylo-home-card-title">Camp Schedule</h2>
+                  <p className="tylo-home-card-subtitle">Today and upcoming camp schedule</p>
+                </div>
               </div>
+            </div>
 
-              {/* Main Workspace Body */}
-              <div className="tylo-home-workspace-content">
-                {productivityTab === 'notes' ? (
-                  <div className="tylo-home-sticky-notes" role="tabpanel">
-                    <div className="tylo-home-notes-head">
-                      <div className="tylo-home-notes-title-group">
-                        <span className="tylo-home-notes-icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
+            <div className="tylo-home-schedule-table-wrap">
+              <table className="tylo-home-schedule-table">
+                <colgroup>
+                  <col className="tylo-home-sched-col-session" />
+                  <col className="tylo-home-sched-col-metric" />
+                  <col className="tylo-home-sched-col-metric" />
+                  <col className="tylo-home-sched-col-metric" />
+                  <col className="tylo-home-sched-col-metric" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Session</th>
+                    <th scope="col">Today</th>
+                    <th scope="col">Tomorrow</th>
+                    <th scope="col">Day After</th>
+                    <th scope="col">MTD</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div className="tylo-home-session-cell">
+                        <span className="tylo-home-session-icon tylo-home-session-icon--morning" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="4" />
+                            <line x1="12" y1="2" x2="12" y2="4" />
+                            <line x1="12" y1="20" x2="12" y2="22" />
+                            <line x1="4.9" y1="4.9" x2="6.3" y2="6.3" />
+                            <line x1="17.7" y1="17.7" x2="19.1" y2="19.1" />
+                            <line x1="2" y1="12" x2="4" y2="12" />
+                            <line x1="20" y1="12" x2="22" y2="12" />
+                            <line x1="4.9" y1="19.1" x2="6.3" y2="17.7" />
+                            <line x1="17.7" y1="6.3" x2="19.1" y2="4.9" />
                           </svg>
                         </span>
-                        <h3>Sticky Notes</h3>
+                        <span>Morning</span>
                       </div>
-                      <span className="tylo-home-notes-count-badge">
-                        {userNotes.length} {userNotes.length === 1 ? 'note' : 'notes'}
-                      </span>
-                    </div>
-
-                    <form className="tylo-home-notes-input-row" onSubmit={handleAddNote}>
-                      <input
-                        type="text"
-                        value={newNoteText}
-                        onChange={(e) => setNewNoteText(e.target.value)}
-                        placeholder="Write a reminder..."
-                        maxLength={240}
-                        aria-label="Write a reminder"
-                      />
-                      <button
-                        type="submit"
-                        className="tylo-home-notes-add-btn"
-                        disabled={!newNoteText.trim()}
-                      >
-                        Add
-                      </button>
-                    </form>
-
-                    {userNotes.length === 0 ? (
-                      <div className="tylo-home-notes-empty">
-                        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="tylo-home-clipboard-icon" aria-hidden="true">
-                          <rect x="10" y="8" width="28" height="34" rx="4" />
-                          <path d="M18 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
-                          <line x1="16" y1="18" x2="17" y2="18" strokeWidth="2.5" />
-                          <line x1="21" y1="18" x2="32" y2="18" />
-                          <line x1="16" y1="25" x2="17" y2="25" strokeWidth="2.5" />
-                          <line x1="21" y1="25" x2="32" y2="25" />
-                          <line x1="16" y1="32" x2="17" y2="32" strokeWidth="2.5" />
-                          <line x1="21" y1="32" x2="32" y2="32" />
-                        </svg>
-                        <h4 className="tylo-home-notes-empty-title">Your notes will appear here.</h4>
-                        <p className="tylo-home-notes-empty-sub">
-                          Capture reminders, follow-ups and personal notes for quick access.
-                        </p>
+                    </td>
+                    <td className="tylo-home-sched-num">20</td>
+                    <td className="tylo-home-sched-num">20</td>
+                    <td className="tylo-home-sched-num">10</td>
+                    <td className="tylo-home-sched-num">50</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div className="tylo-home-session-cell">
+                        <span className="tylo-home-session-icon tylo-home-session-icon--afternoon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="9.5" cy="10" r="3.2" />
+                            <line x1="9.5" y1="3.5" x2="9.5" y2="5" />
+                            <line x1="4.2" y1="5.5" x2="5.2" y2="6.7" />
+                            <line x1="3" y1="10" x2="4.5" y2="10" />
+                            <path d="M8.5 16.5h8.2a3.3 3.3 0 0 0 .4-6.6 4.4 4.4 0 0 0-8.3 1.4" />
+                          </svg>
+                        </span>
+                        <span>Afternoon</span>
                       </div>
-                    ) : (
-                      <ul className="tylo-home-notes-list">
-                        {userNotes.map((note) => (
-                          <li key={note.id} className={'tylo-home-note-item' + (note.done ? ' is-done' : '')}>
-                            <label className="tylo-home-note-label">
-                              <input
-                                type="checkbox"
-                                checked={note.done}
-                                onChange={() => handleToggleNote(note.id)}
-                              />
-                              <span>{note.text}</span>
-                            </label>
-                            <button
-                              type="button"
-                              className="tylo-home-note-del-btn"
-                              onClick={() => handleDeleteNote(note.id)}
-                              aria-label={'Delete reminder: ' + note.text}
-                            >
-                              ×
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ) : (
-                  <div className="tylo-home-sticky-notes" role="tabpanel">
-                    <div className="tylo-home-notes-head">
-                      <h3>Messages for Me</h3>
-                      <button type="button" className="tylo-home-text-button" onClick={() => setProductivityTab('notes')}>
-                        Back to Notes
-                      </button>
+                    </td>
+                    <td className="tylo-home-sched-num">20</td>
+                    <td className="tylo-home-sched-num">10</td>
+                    <td className="tylo-home-sched-num">10</td>
+                    <td className="tylo-home-sched-num">40</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div className="tylo-home-session-cell">
+                        <span className="tylo-home-session-icon tylo-home-session-icon--evening" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.5 14.2A7.4 7.4 0 1 1 11 4.2 5.8 5.8 0 0 0 20.5 14.2z" />
+                          </svg>
+                        </span>
+                        <span>Evening</span>
+                      </div>
+                    </td>
+                    <td className="tylo-home-sched-num">20</td>
+                    <td className="tylo-home-sched-num">20</td>
+                    <td className="tylo-home-sched-num">5</td>
+                    <td className="tylo-home-sched-num">45</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row">
+                      <div className="tylo-home-total-row-head">
+                        <span className="tylo-home-total-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                            <polyline points="2 12 12 17 22 12" />
+                            <polyline points="2 17 12 22 22 17" />
+                          </svg>
+                        </span>
+                        <span>Total Camps</span>
+                      </div>
+                    </th>
+                    <td className="tylo-home-total-num">60</td>
+                    <td className="tylo-home-total-num">50</td>
+                    <td className="tylo-home-total-num">25</td>
+                    <td className="tylo-home-total-num">135</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+
+          {/* Top-right: My Workspace */}
+          <section className="tylo-home-panel tylo-home-workspace-panel" aria-label="Personal Workspace">
+            <div className="tylo-home-workspace-tabs" role="tablist" aria-label="Workspace tabs">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={productivityTab === 'notes'}
+                className={'tylo-home-ws-tab' + (productivityTab === 'notes' ? ' is-active' : '')}
+                onClick={() => setProductivityTab('notes')}
+              >
+                Sticky Notes
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={productivityTab === 'todo'}
+                className={'tylo-home-ws-tab' + (productivityTab === 'todo' ? ' is-active' : '')}
+                onClick={() => setProductivityTab('todo')}
+              >
+                To-Do
+                {todoCount > 0 ? <span className="tylo-home-ws-tab-badge">{todoCount}</span> : null}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={productivityTab === 'messages'}
+                className={'tylo-home-ws-tab' + (productivityTab === 'messages' ? ' is-active' : '')}
+                onClick={() => setProductivityTab('messages')}
+              >
+                Messages
+                {chatUnread > 0 ? <span className="tylo-home-ws-tab-badge">{chatUnread}</span> : null}
+              </button>
+            </div>
+
+            <div className="tylo-home-workspace-content">
+              {productivityTab === 'messages' ? (
+                <div className="tylo-home-sticky-notes tylo-home-sticky-notes--chat" role="tabpanel">
+                  <InternalChat compact onUnreadChange={setChatUnread} />
+                </div>
+              ) : productivityTab === 'todo' ? (
+                <div className="tylo-home-sticky-notes tylo-home-sticky-notes--todo" role="tabpanel">
+                  <CalendarTodo compact onBadgeChange={setCalendarBadge} />
+                </div>
+              ) : (
+                <div className="tylo-home-sticky-notes" role="tabpanel">
+                  <form className="tylo-home-notes-input-row" onSubmit={handleAddNote}>
+                    <input
+                      type="text"
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      placeholder="Write a note, reminder or idea..."
+                      maxLength={240}
+                      aria-label="Write a note, reminder or idea"
+                    />
+                    <button type="submit" className="tylo-home-notes-add-btn" disabled={!newNoteText.trim()}>
+                      Add
+                    </button>
+                  </form>
+
+                  {userNotes.length === 0 ? (
+                    <div className="tylo-home-notes-empty">
+                      <h4 className="tylo-home-notes-empty-title">Your notes will appear here.</h4>
+                      <p className="tylo-home-notes-empty-sub">
+                        Capture reminders, follow-ups and personal notes for quick access.
+                      </p>
                     </div>
-                    {notificationRows.length ? (
-                      <div className="tylo-home-message-list">
-                        {notificationRows.map((notification) => (
-                          <Link
-                            key={notification._id}
-                            to={notificationEntityPath(notification) || '/notifications'}
-                            className="tylo-home-message-row"
+                  ) : (
+                    <ul className="tylo-home-notes-list">
+                      {userNotes.map((note, index) => (
+                        <li
+                          key={note.id}
+                          className={
+                            'tylo-home-note-item tylo-home-note-item--' +
+                            noteToneFor(note, index) +
+                            (note.done ? ' is-done' : '')
+                          }
+                        >
+                          <label className="tylo-home-note-label">
+                            <input
+                              type="checkbox"
+                              checked={note.done}
+                              onChange={() => handleToggleNote(note.id)}
+                            />
+                            <span>{note.text}</span>
+                          </label>
+                          <button
+                            type="button"
+                            className="tylo-home-note-star-btn"
+                            aria-label="Star note"
+                            tabIndex={-1}
                           >
-                            <span className={'tylo-home-unread-dot' + (notification.readAt ? '' : ' is-unread')} />
-                            <span className="tylo-home-message-copy">
-                              <strong>{notification.title || notification.subject || 'Notification'}</strong>
-                              <small>{notification.body || notification.message || ''}</small>
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="tylo-home-notes-empty">
-                        <h4 className="tylo-home-notes-empty-title">All caught up</h4>
-                        <p className="tylo-home-notes-empty-sub">No unread notifications at this time.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                            ★
+                          </button>
+                          <button
+                            type="button"
+                            className="tylo-home-note-del-btn"
+                            onClick={() => handleDeleteNote(note.id)}
+                            aria-label={'Delete reminder: ' + note.text}
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Bottom-left: Camp Pipeline (stages) */}
+          <section className="tylo-home-panel tylo-home-pipeline-panel" aria-label="Camp pipeline">
+            <div className="tylo-home-card-head">
+              <div className="tylo-home-card-head-left">
+                <span className="tylo-home-card-head-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="tylo-home-card-title">Camp Pipeline</h2>
+                  <p className="tylo-home-card-subtitle">Request through financial status</p>
+                </div>
               </div>
-            </section>
-          </div>
+            </div>
+
+            <div className="tylo-home-pipeline-grid">
+              <div className="tylo-home-stage-tile tylo-home-stage-tile--request">
+                <div className="tylo-home-stage-tile-head">
+                  <div className="tylo-home-stage-tile-title"><span>Request</span></div>
+                  <span className="tylo-home-stage-tile-count">{stageData.requestTotal}</span>
+                </div>
+                <div className="tylo-home-stage-tile-rows">
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Review Pending</span>
+                    <span className="tylo-home-stage-num">{stageData.reviewPending}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Review Overdue</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.reviewOverdue}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Refusals</span>
+                    <span className="tylo-home-stage-num">{stageData.refusals}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Info Requested</span>
+                    <span className="tylo-home-stage-num">{stageData.infoRequested}</span>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="tylo-home-stage-tile tylo-home-stage-tile--assignment">
+                <div className="tylo-home-stage-tile-head">
+                  <div className="tylo-home-stage-tile-title"><span>Assignment</span></div>
+                  <span className="tylo-home-stage-tile-count">{stageData.assignmentTotal}</span>
+                </div>
+                <div className="tylo-home-stage-tile-rows">
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Unassigned</span>
+                    <span className="tylo-home-stage-num">{stageData.unassigned}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Hiring Requested</span>
+                    <span className="tylo-home-stage-num">{stageData.hiringRequested}</span>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="tylo-home-stage-tile tylo-home-stage-tile--execution">
+                <div className="tylo-home-stage-tile-head">
+                  <div className="tylo-home-stage-tile-title"><span>Execution</span></div>
+                  <span className="tylo-home-stage-tile-count">{stageData.executionTotal}</span>
+                </div>
+                <div className="tylo-home-stage-tile-rows">
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link tylo-home-stage-row-link--highlight">
+                    <span>Planned</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--warn">{stageData.planned}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Executed</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.executed}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Cancelled by Tylo</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.cancelledByTylo}</span>
+                  </Link>
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
+                    <span>Cancelled by Client</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.cancelledByClient}</span>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="tylo-home-stage-tile tylo-home-stage-tile--financial">
+                <div className="tylo-home-stage-tile-head">
+                  <div className="tylo-home-stage-tile-title"><span>Financial</span></div>
+                  <span className="tylo-home-stage-tile-count">{stageData.financialTotal}</span>
+                </div>
+                <div className="tylo-home-stage-tile-rows">
+                  <Link to="/finance" className="tylo-home-stage-row-link">
+                    <span>Pending Confirmation</span>
+                    <span className="tylo-home-stage-num">{stageData.pendingConfirmation}</span>
+                  </Link>
+                  <Link to="/finance" className="tylo-home-stage-row-link">
+                    <span>Confirmed Payment</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.confirmedPayment}</span>
+                  </Link>
+                  <Link to="/finance" className="tylo-home-stage-row-link">
+                    <span>Hold</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.hold}</span>
+                  </Link>
+                  <Link to="/finance" className="tylo-home-stage-row-link">
+                    <span>Payment Done</span>
+                    <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.paymentDone}</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Bottom-right: Quick Access */}
+          <section className="tylo-home-panel tylo-home-quick-panel" aria-label="Quick access">
+            <div className="tylo-home-card-head">
+              <div className="tylo-home-card-head-left">
+                <span className="tylo-home-card-head-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="tylo-home-card-title">Quick Access</h2>
+                  <p className="tylo-home-card-subtitle">Jump to key modules and workflows</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="tylo-home-customize-shortcuts-btn"
+                onClick={() => setPinPickerOpen((value) => !value)}
+                aria-expanded={pinPickerOpen}
+                aria-label="Customize pins / shortcuts"
+              >
+                Customize
+              </button>
+            </div>
+
+            {pinPickerOpen && (
+              <div className="tylo-home-pin-list" aria-label="Customize pinned modules">
+                {modules.map((module) => (
+                  <label key={module.id} className="tylo-home-pin-option">
+                    <input
+                      type="checkbox"
+                      checked={config.pinnedModules.includes(module.id)}
+                      onChange={(event) => setPinned(module.id, event.target.checked)}
+                    />
+                    <span className="tylo-home-pin-box" aria-hidden="true" />
+                    <span className="tylo-home-pin-label">{module.title}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="tylo-home-quick-tiles-grid">
+              <Link to="/dashboard" className="tylo-home-quick-subtile tylo-home-quick-subtile--active">
+                <span className="tylo-home-subtile-icon"><DashboardIcon /></span>
+                <strong className="tylo-home-subtile-title">Operations Dashboard</strong>
+              </Link>
+              <Link to="/camps/manage" className="tylo-home-quick-subtile">
+                <span className="tylo-home-subtile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </span>
+                <strong className="tylo-home-subtile-title">Camp Operations</strong>
+              </Link>
+              <Link to="/master-data?scope=document&entity=contacts" className="tylo-home-quick-subtile">
+                <span className="tylo-home-subtile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </span>
+                <strong className="tylo-home-subtile-title">Contact Directory</strong>
+              </Link>
+              <Link to="/agreements" className="tylo-home-quick-subtile">
+                <span className="tylo-home-subtile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </span>
+                <strong className="tylo-home-subtile-title">Agreements Hub</strong>
+              </Link>
+              <Link to="/finance" className="tylo-home-quick-subtile">
+                <span className="tylo-home-subtile-icon tylo-home-subtile-icon--currency">₹</span>
+                <strong className="tylo-home-subtile-title">Finance One</strong>
+              </Link>
+              <Link to="/movement-one/outward" className="tylo-home-quick-subtile">
+                <span className="tylo-home-subtile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="3" width="15" height="13" />
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                    <circle cx="5.5" cy="18.5" r="2.5" />
+                    <circle cx="18.5" cy="18.5" r="2.5" />
+                  </svg>
+                </span>
+                <strong className="tylo-home-subtile-title">Goods Dispatch</strong>
+              </Link>
+              <Link to="/camps/manage" className="tylo-home-quick-subtile">
+                <span className="tylo-home-subtile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </span>
+                <strong className="tylo-home-subtile-title">Camp Schedule</strong>
+              </Link>
+              <Link to="/notifications?tab=approvals" className="tylo-home-quick-subtile tylo-home-quick-subtile--has-badge">
+                <span className="tylo-home-subtile-badge">3</span>
+                <span className="tylo-home-subtile-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <polyline points="9 12 11 14 15 10" />
+                  </svg>
+                </span>
+                <strong className="tylo-home-subtile-title">Pending Approvals</strong>
+              </Link>
+            </div>
+          </section>
         </div>
+
+        <section className="sr-only" aria-label="Attention required">
+          <h2>Attention required</h2>
+          <p>Request One awaiting approval</p>
+        </section>
       </div>
     );
   };
@@ -1908,13 +1766,12 @@ export default function DashboardPage() {
               ['shortcuts', 'Quick Access Shortcuts'],
               ['tasks', 'My Active Tasks'],
               ['notes', 'Sticky Notes / Todo'],
-              ['messages', 'Messages for Me'],
+              ['messages', 'Messages (internal chat)'],
             ].map(([id, label]) => (
               <label className="tylo-home-check-row" key={id}>
                 <input
                   type="checkbox"
                   checked={config.visible[id]}
-                  disabled={id === 'messages' && !canReadNotifications}
                   onChange={(event) =>
                     updateConfig((previous) => ({
                       ...previous,
@@ -1925,7 +1782,6 @@ export default function DashboardPage() {
                 <span>{label}</span>
               </label>
             ))}
-            {!canReadNotifications && <small className="tylo-home-muted">Messages require notification permission.</small>}
           </div>
           <div className="tylo-home-customize-group">
             <h3>Pin authorized modules</h3>

@@ -30,6 +30,13 @@ export const FINANCIAL_WORKFLOW_STATUSES = [
   { value: 'payment_done', label: 'Payment Done' },
 ];
 
+/** Manage Camps → Financial Stage status filter (execution outcome of financial records). */
+export const FINANCIAL_LIST_FILTER_STATUSES = [
+  { value: 'cancelled_by_tylo', label: 'Cancelled by Tylo' },
+  { value: 'cancelled_by_client', label: 'Cancelled by Client' },
+  { value: 'executed', label: 'Executed' },
+];
+
 export const EXECUTION_CANCEL_LABELS = {
   'Cancelled by Tylo': 'Cancelled by Tylo',
   'Cancelled by TCPL': 'Cancelled by Tylo',

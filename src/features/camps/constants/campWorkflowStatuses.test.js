@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSIGNMENT_WORKFLOW_STATUSES,
   EXECUTION_WORKFLOW_STATUSES,
+  FINANCIAL_LIST_FILTER_STATUSES,
   FINANCIAL_WORKFLOW_STATUSES,
   REQUEST_WORKFLOW_STATUSES,
   financialWorkflowStatus,
 } from '../constants/campWorkflowStatuses.js';
 import { executionStatusLabel } from '../constants/campLifecycle.js';
-import { REQUEST_STATUS_OPTIONS } from '../components/CampsFilters.jsx';
+import { FINANCIAL_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from '../components/CampsFilters.jsx';
 
 describe('Camp One Stage/Status vocabulary', () => {
   it('exposes only the allowed Request statuses', () => {
@@ -45,7 +46,7 @@ describe('Camp One Stage/Status vocabulary', () => {
     expect(executionStatusLabel('Cancelled by Client')).toBe('Cancelled by Client');
   });
 
-  it('exposes only the four Financial statuses and maps Payment Done from Finance', () => {
+  it('exposes only the four Financial payment statuses and maps Payment Done from Finance', () => {
     expect(FINANCIAL_WORKFLOW_STATUSES.map((r) => r.label)).toEqual([
       'Pending Confirmation',
       'Confirmed Payment',
@@ -56,5 +57,18 @@ describe('Camp One Stage/Status vocabulary', () => {
     expect(financialWorkflowStatus({ paymentSubmitStatus: 'payment_confirmed' }).label).toBe('Confirmed Payment');
     expect(financialWorkflowStatus({ paymentSubmitStatus: 'payment_hold' }).label).toBe('Hold');
     expect(financialWorkflowStatus({ financePaymentStatus: 'paid' }).label).toBe('Payment Done');
+  });
+
+  it('exposes Cancelled by Tylo/Client and Executed for Financial Stage list filter', () => {
+    expect(FINANCIAL_LIST_FILTER_STATUSES.map((r) => r.label)).toEqual([
+      'Cancelled by Tylo',
+      'Cancelled by Client',
+      'Executed',
+    ]);
+    expect(FINANCIAL_STATUS_OPTIONS.map((r) => r.value)).toEqual([
+      'cancelled_by_tylo',
+      'cancelled_by_client',
+      'executed',
+    ]);
   });
 });

@@ -1,0 +1,542 @@
+.tylo-cal {
+  --cal-surface: var(--bg-tier-2);
+  --cal-pane: var(--bg-tier-3);
+  --cal-muted: var(--bg-muted);
+  --cal-border: var(--border-default);
+  --cal-text: var(--text-main);
+  --cal-secondary: var(--text-secondary);
+  --cal-accent: var(--brand-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--cal-text);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.tylo-cal *,
+.tylo-cal *::before,
+.tylo-cal *::after {
+  box-sizing: border-box;
+}
+
+.tylo-cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 100%;
+  overflow: visible;
+}
+
+.tylo-cal-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.tylo-cal-month {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tylo-cal-toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+.tylo-cal-icon-btn,
+.tylo-cal-text-btn,
+.tylo-cal-primary-btn {
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.tylo-cal-icon-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--cal-border);
+  background: var(--cal-muted);
+  color: var(--cal-text);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tylo-cal-text-btn {
+  border: 1px solid var(--cal-border);
+  background: transparent;
+  color: var(--cal-text);
+  padding: 5px 10px;
+  height: 28px;
+}
+
+.tylo-cal-primary-btn {
+  border: none;
+  background: var(--cal-accent);
+  color: var(--text-on-brand, #fff);
+  padding: 5px 10px;
+  height: 28px;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.tylo-cal-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tylo-cal-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  font-size: 11px;
+  line-height: 1.35;
+  flex: 0 0 auto;
+}
+
+.tylo-cal-error button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tylo-cal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(140px, 0.9fr);
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.tylo-cal-grid-wrap,
+.tylo-cal-day-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--cal-border);
+  border-radius: 10px;
+  background: var(--cal-pane);
+  display: flex;
+  flex-direction: column;
+}
+
+.tylo-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 6px 6px 2px;
+  flex: 0 0 auto;
+}
+
+.tylo-cal-weekdays span {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cal-secondary);
+}
+
+.tylo-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: minmax(28px, 1fr);
+  gap: 3px;
+  padding: 4px 6px 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
+}
+
+.tylo-cal-cell {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cal-text);
+  min-width: 0;
+  min-height: 26px;
+  max-height: 100%;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  cursor: pointer;
+  text-align: center;
+  overflow: hidden;
+}
+
+.tylo-cal-cell.is-empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+.tylo-cal-cell.is-today .tylo-cal-day-num {
+  background: var(--cal-accent);
+  color: var(--text-on-brand, #fff);
+}
+
+.tylo-cal-cell.is-selected {
+  border-color: var(--cal-accent);
+  background: var(--brand-selected-bg, color-mix(in srgb, var(--cal-accent) 12%, var(--cal-pane)));
+}
+
+.tylo-cal-day-num {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  flex: 0 0 18px;
+  background: transparent;
+}
+
+.tylo-cal-dots {
+  display: flex;
+  gap: 2px;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  min-height: 4px;
+  max-width: 100%;
+  height: 4px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.tylo-cal-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cal-accent);
+  flex: 0 0 auto;
+}
+
+.tylo-cal-dot--task { background: var(--brand-primary); }
+.tylo-cal-dot--block { background: var(--status-warning-dot); }
+.tylo-cal-dot--availability_request { background: var(--status-success-dot); }
+
+.tylo-cal-day-panel {
+  padding: 8px;
+}
+
+.tylo-cal-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-bottom: 6px;
+}
+
+.tylo-cal-day-head h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tylo-cal-day-head p {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: var(--cal-secondary);
+}
+
+.tylo-cal-day-head .tylo-cal-text-btn {
+  font-size: 11px;
+  font-weight: 600;
+  height: 28px;
+  padding: 4px 10px;
+}
+
+.tylo-cal-empty {
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--cal-secondary);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tylo-cal-empty strong {
+  color: var(--cal-text);
+}
+
+.tylo-cal-event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tylo-cal-event {
+  border: 1px solid var(--cal-border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: var(--cal-surface);
+}
+
+.tylo-cal-event.is-done {
+  opacity: 0.55;
+}
+
+.tylo-cal-event-main {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.tylo-cal-check input {
+  margin-top: 2px;
+}
+
+.tylo-cal-kind-chip {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--cal-muted);
+  color: var(--cal-secondary);
+  white-space: nowrap;
+}
+
+.tylo-cal-kind-chip--task { color: var(--brand-primary); }
+.tylo-cal-kind-chip--block { color: var(--status-warning-text); }
+.tylo-cal-kind-chip--availability_request { color: var(--status-success-text); }
+
+.tylo-cal-event-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.tylo-cal-event-copy strong {
+  display: block;
+  font-size: 12px;
+}
+
+.tylo-cal-event-copy small,
+.tylo-cal-event-copy p,
+.tylo-cal-status {
+  display: block;
+  font-size: 10px;
+  color: var(--cal-secondary);
+  margin: 2px 0 0;
+  font-style: normal;
+}
+
+.tylo-cal-event-copy p {
+  color: var(--cal-text);
+}
+
+.tylo-cal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tylo-cal-accept,
+.tylo-cal-decline,
+.tylo-cal-suggest {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.tylo-cal-accept {
+  border: none;
+  background: var(--status-success-dot);
+  color: #fff;
+}
+
+.tylo-cal-decline {
+  border: 1px solid var(--status-danger-border);
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+}
+
+.tylo-cal-suggest {
+  border: 1px solid var(--cal-border);
+  background: transparent;
+  color: var(--cal-text);
+}
+
+.tylo-cal-hint {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: var(--cal-secondary);
+}
+
+.tylo-cal-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg-tier-1) 55%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.tylo-cal-modal-card {
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  background: var(--cal-surface);
+  border: 1px solid var(--border-strong, var(--cal-border));
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 12px 40px color-mix(in srgb, #000 25%, transparent);
+}
+
+.tylo-cal-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tylo-cal-modal-head h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.tylo-cal-kind-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tylo-cal-kind-tabs button {
+  border: 1px solid var(--cal-border);
+  background: transparent;
+  color: var(--cal-secondary);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tylo-cal-kind-tabs button.is-active {
+  background: var(--cal-accent);
+  border-color: var(--cal-accent);
+  color: var(--text-on-brand, #fff);
+}
+
+.tylo-cal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--cal-secondary);
+  min-width: 0;
+}
+
+.tylo-cal-field input,
+.tylo-cal-field textarea,
+.tylo-cal-field select {
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--cal-border);
+  background: var(--bg-input, var(--cal-pane));
+  color: var(--cal-text);
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.tylo-cal-field textarea {
+  height: auto;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.tylo-cal-field-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 6px;
+}
+
+.tylo-cal-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tylo-home-ops-grid .tylo-home-sticky-notes--todo,
+.tylo-home-sticky-notes--todo {
+  padding: 4px !important;
+  overflow: hidden !important;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .tylo-cal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tylo-cal-grid {
+    min-height: 180px;
+  }
+}

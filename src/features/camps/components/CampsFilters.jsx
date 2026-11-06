@@ -5,7 +5,7 @@ import MasterSearchField from '../../../components/masters/MasterSearchField.jsx
 import {
   ASSIGNMENT_WORKFLOW_STATUSES,
   EXECUTION_WORKFLOW_STATUSES,
-  FINANCIAL_WORKFLOW_STATUSES,
+  FINANCIAL_LIST_FILTER_STATUSES,
   REQUEST_WORKFLOW_STATUSES,
 } from '../constants/campWorkflowStatuses.js';
 
@@ -35,8 +35,8 @@ export { ASSIGNMENT_STATUS_OPTIONS };
 
 const EXECUTION_STATUS_OPTIONS = [...EXECUTION_WORKFLOW_STATUSES];
 
-/** Payment Done is filterable (Finance One outcome) but not a Camp One manual select. */
-const FINANCIAL_STATUS_OPTIONS = [...FINANCIAL_WORKFLOW_STATUSES];
+/** Financial Stage list filter — Cancelled by Tylo/Client or Executed. */
+export const FINANCIAL_STATUS_OPTIONS = [...FINANCIAL_LIST_FILTER_STATUSES];
 
 function statusOptionsForStage(stage) {
   if (stage === 'assignment') return ASSIGNMENT_STATUS_OPTIONS;

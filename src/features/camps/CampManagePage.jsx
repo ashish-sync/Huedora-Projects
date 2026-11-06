@@ -6,13 +6,21 @@ import {
   CampsFilters,
   REQUEST_STATUS_OPTIONS,
   ASSIGNMENT_STATUS_OPTIONS,
+  FINANCIAL_STATUS_OPTIONS,
 } from './components/CampsFilters';
+import { EXECUTION_WORKFLOW_STATUSES } from './constants/campWorkflowStatuses.js';
 
 const REQUEST_STATUS_LABELS = Object.fromEntries(
   REQUEST_STATUS_OPTIONS.map((option) => [option.value, option.label])
 );
 const ASSIGNMENT_STATUS_LABELS = Object.fromEntries(
   ASSIGNMENT_STATUS_OPTIONS.map((option) => [option.value, option.label])
+);
+const EXECUTION_STATUS_LABELS = Object.fromEntries(
+  EXECUTION_WORKFLOW_STATUSES.map((option) => [option.value, option.label])
+);
+const FINANCIAL_STATUS_LABELS = Object.fromEntries(
+  FINANCIAL_STATUS_OPTIONS.map((option) => [option.value, option.label])
 );
 
 /** Map legacy Request Stage status query values to review-status filters. */
@@ -720,6 +728,8 @@ export default function CampsPage() {
       label:
         (workingStage === 'request' && REQUEST_STATUS_LABELS[status])
         || (workingStage === 'assignment' && ASSIGNMENT_STATUS_LABELS[status])
+        || (workingStage === 'execution' && EXECUTION_STATUS_LABELS[status])
+        || (workingStage === 'financial' && FINANCIAL_STATUS_LABELS[status])
         || status.replaceAll('_', ' '),
       onRemove: () => handleFilterChange(''),
     });

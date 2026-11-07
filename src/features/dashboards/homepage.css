@@ -1804,7 +1804,8 @@
 
 .tylo-home-ops-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.32fr) minmax(0, 1.08fr) minmax(0, 0.92fr);
+  /* Camp Schedule takes width from Business Performance so metric headers stay fully visible. */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.38fr) minmax(0, 0.9fr);
   grid-template-rows: minmax(0, 1.08fr) minmax(0, 1fr);
   gap: 10px;
   flex: 1 1 auto;
@@ -1813,8 +1814,259 @@
   overflow: hidden;
 }
 
-.tylo-home-ops-grid > .tylo-home-bp-panel { grid-column: 1; grid-row: 1; }
+.tylo-home-ops-grid > .tylo-home-bp-panel,
+.tylo-home-ops-grid > .tylo-home-greeting-panel { grid-column: 1; grid-row: 1; }
 .tylo-home-ops-grid > .tylo-home-schedule-panel { grid-column: 2; grid-row: 1; }
+
+/* Welcome greeting + camp quality metrics — top-left */
+.tylo-home-ops-grid .tylo-home-greeting-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tylo-home-ops-grid .tylo-home-greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 0 auto;
+  padding: 2px 0 0;
+}
+
+.tylo-home-ops-grid .tylo-home-greeting-title {
+  margin: 0;
+  font-size: clamp(18px, 1.9vw, 26px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--home-text);
+  overflow-wrap: anywhere;
+}
+
+.tylo-home-ops-grid .tylo-home-greeting-date {
+  margin: 0;
+  font-size: clamp(12px, 1.05vw, 14px);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--home-secondary);
+}
+
+.tylo-home-welcome-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.tylo-home-welcome-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.tylo-home-welcome-range {
+  position: relative;
+  min-width: 0;
+}
+
+.tylo-home-welcome-control {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--home-border);
+  background: var(--bg-input, var(--home-muted));
+  color: var(--home-text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.tylo-home-welcome-control:hover,
+.tylo-home-welcome-control:focus-visible {
+  border-color: var(--home-border-strong, var(--home-border));
+  outline: none;
+}
+
+.tylo-home-welcome-control-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--home-secondary);
+}
+
+.tylo-home-welcome-control-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tylo-home-welcome-control-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.tylo-home-welcome-control-chevron {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--home-secondary);
+}
+
+.tylo-home-welcome-control-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.tylo-home-welcome-metric {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.tylo-home-welcome-metric-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.tylo-home-welcome-metric-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.tylo-home-welcome-range-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  width: min(280px, 78vw);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong, var(--home-border));
+  background: var(--bg-tier-3, var(--home-surface));
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 22%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tylo-home-welcome-range-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tylo-home-welcome-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--home-secondary);
+  min-width: 0;
+}
+
+.tylo-home-welcome-range-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.tylo-home-welcome-metric-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tylo-home-welcome-metric-status {
+  margin: 0;
+  font-size: 11px;
+  color: var(--home-secondary);
+}
+
+.tylo-home-welcome-metric-status--error {
+  color: var(--home-red, var(--status-danger-text));
+}
+
+.tylo-home-welcome-buckets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
+}
+
+.tylo-home-welcome-bucket {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--home-border);
+  background: var(--home-surface-subtle, var(--home-muted));
+  text-align: center;
+}
+
+.tylo-home-welcome-bucket-value {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--home-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tylo-home-welcome-bucket-label {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--home-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tylo-home-welcome-bucket-hint {
+  font-size: 9px;
+  color: var(--home-muted-text, var(--home-secondary));
+}
+
+@media (max-width: 1100px) {
+  .tylo-home-welcome-controls {
+    grid-template-columns: 1fr;
+  }
+}
 .tylo-home-ops-grid > .tylo-home-workspace-panel { grid-column: 3; grid-row: 1; }
 .tylo-home-ops-grid > .tylo-home-pipeline-panel { grid-column: 1 / span 2; grid-row: 2; }
 .tylo-home-ops-grid > .tylo-home-quick-panel { grid-column: 3; grid-row: 2; }
@@ -1822,7 +2074,7 @@
 @media (min-width: 1600px) {
   .tylo-home-ops-grid {
     gap: 12px;
-    grid-template-columns: minmax(0, 1.28fr) minmax(0, 1.1fr) minmax(0, 0.95fr);
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.4fr) minmax(0, 0.92fr);
   }
 }
 
@@ -1834,6 +2086,7 @@
     overflow: visible;
   }
   .tylo-home-ops-grid > .tylo-home-bp-panel,
+  .tylo-home-ops-grid > .tylo-home-greeting-panel,
   .tylo-home-ops-grid > .tylo-home-schedule-panel,
   .tylo-home-ops-grid > .tylo-home-workspace-panel,
   .tylo-home-ops-grid > .tylo-home-pipeline-panel,
@@ -1855,6 +2108,7 @@
 /* Shared panel chrome — tokenised, compact, no internal scroll */
 .tylo-home-ops-grid > .tylo-home-panel,
 .tylo-home-ops-grid > .tylo-home-bp-panel,
+.tylo-home-ops-grid > .tylo-home-greeting-panel,
 .tylo-home-ops-grid > .tylo-home-schedule-panel,
 .tylo-home-ops-grid > .tylo-home-workspace-panel,
 .tylo-home-ops-grid > .tylo-home-pipeline-panel,
@@ -2082,7 +2336,7 @@
 .tylo-home-ops-grid .tylo-home-bp-legend--planned::before { background: var(--home-blue); }
 .tylo-home-ops-grid .tylo-home-bp-legend--executed::before { background: var(--home-green); }
 
-/* Schedule — mockup: uppercase headers, session icons, cyan metrics, white totals */
+/* Schedule — mockup alignment: Session left, metric cols equal + centered */
 .tylo-home-ops-grid .tylo-home-schedule-panel .tylo-home-card-subtitle {
   display: block !important;
 }
@@ -2093,18 +2347,19 @@
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
+  align-items: stretch;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table {
   width: 100%;
-  height: auto;
+  height: 100%;
   border-collapse: collapse;
   border-spacing: 0;
   table-layout: fixed;
 }
 
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 28%; }
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 18%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 30%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 17.5%; }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead tr,
 .tylo-home-ops-grid .tylo-home-schedule-table tbody tr,
@@ -2116,9 +2371,9 @@
 .tylo-home-ops-grid .tylo-home-schedule-table th,
 .tylo-home-ops-grid .tylo-home-schedule-table td {
   display: table-cell;
-  padding: 8px 6px;
-  text-align: right;
-  font-size: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 13px;
   border: none;
   border-bottom: 1px solid var(--home-border);
   background: transparent;
@@ -2127,26 +2382,26 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead th {
   color: var(--home-muted-text);
   font-weight: 600;
-  font-size: 8px;
-  letter-spacing: 0.03em;
+  font-size: 11px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   background: transparent;
   border-bottom: 1px solid var(--home-border);
-  padding-top: 2px;
-  padding-bottom: 8px;
+  padding-top: 4px;
+  padding-bottom: 10px;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table th:first-child,
 .tylo-home-ops-grid .tylo-home-schedule-table td:first-child {
   text-align: left;
-  padding-left: 2px;
-  padding-right: 8px;
+  padding-left: 4px;
+  padding-right: 10px;
 }
 
 .tylo-home-ops-grid .tylo-home-session-cell {
@@ -2155,7 +2410,7 @@
   gap: 8px;
   color: var(--home-text) !important;
   font-weight: 500;
-  font-size: 12px;
+  font-size: 13px;
   max-width: 100%;
   line-height: 1.2;
   vertical-align: middle;
@@ -2190,7 +2445,9 @@
 .tylo-home-ops-grid .tylo-home-sched-num {
   color: var(--home-cyan) !important;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot tr {
@@ -2201,8 +2458,8 @@
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot th {
   border-bottom: none;
   background: transparent;
-  padding-top: 10px;
-  padding-bottom: 4px;
+  padding-top: 12px;
+  padding-bottom: 6px;
 }
 
 .tylo-home-ops-grid .tylo-home-total-row-head {
@@ -2210,7 +2467,7 @@
   align-items: center;
   gap: 8px;
   color: var(--home-cyan) !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
@@ -2232,7 +2489,9 @@
 .tylo-home-ops-grid .tylo-home-total-num {
   color: var(--home-text) !important;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 /* Workspace */
@@ -2449,14 +2708,23 @@
   flex: 0 0 auto;
 }
 
-/* Pipeline */
+/* Pipeline — fill tile height, larger type, aligned label/value columns */
+.tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-card-title {
+  font-size: 14px;
+}
+
+.tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-card-subtitle {
+  font-size: 11px;
+}
+
 .tylo-home-ops-grid .tylo-home-pipeline-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
@@ -2468,11 +2736,11 @@
 .tylo-home-ops-grid .tylo-home-stage-tile {
   background: var(--home-surface-subtle) !important;
   border: 1px solid var(--home-border) !important;
-  border-radius: 9px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 10px 10px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -2494,22 +2762,29 @@
 
 .tylo-home-ops-grid .tylo-home-stage-tile-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   flex: 0 0 auto;
+  padding: 0 2px;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
   color: var(--home-text) !important;
+  min-width: 0;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-count {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--home-text) !important;
+  flex-shrink: 0;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile--request .tylo-home-stage-tile-count { color: var(--home-blue) !important; }
@@ -2518,28 +2793,38 @@
 .tylo-home-ops-grid .tylo-home-stage-tile--financial .tylo-home-stage-tile-count { color: var(--home-gold) !important; }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  /* Fixed 4-row track so Assignment (2 items) matches Request/Execution/Financial row height. */
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 4px;
   flex: 1 1 auto;
   min-height: 0;
-  justify-content: flex-start;
-  align-content: flex-start;
+  align-content: stretch;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-row-link {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.5rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  column-gap: 8px;
   text-decoration: none;
   color: var(--home-secondary) !important;
-  font-size: 10px;
-  padding: 4px 6px;
-  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 8px;
+  border-radius: 6px;
   line-height: 1.25;
-  min-height: 22px;
+  min-height: 0;
+  height: 100%;
   box-sizing: border-box;
+  border: 1px solid transparent;
+}
+
+.tylo-home-ops-grid .tylo-home-stage-row-link > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-row-link:hover {
@@ -2561,7 +2846,11 @@
 .tylo-home-ops-grid .tylo-home-stage-num {
   font-weight: 700;
   color: var(--home-text) !important;
-  font-size: 11px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  justify-self: end;
+  line-height: 1;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-num--danger { color: var(--home-red) !important; }
@@ -2763,6 +3052,7 @@
 
   .tylo-home-ops-grid > .tylo-home-panel,
   .tylo-home-ops-grid > .tylo-home-bp-panel,
+  .tylo-home-ops-grid > .tylo-home-greeting-panel,
   .tylo-home-ops-grid > .tylo-home-schedule-panel,
   .tylo-home-ops-grid > .tylo-home-workspace-panel,
   .tylo-home-ops-grid > .tylo-home-pipeline-panel,

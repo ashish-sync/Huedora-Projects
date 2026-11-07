@@ -5,6 +5,7 @@ import { OPERATIONAL_MODULES } from '../../shared/navModules.jsx';
 import { api } from '../../shared/api.js';
 import InternalChat from '../chat/InternalChat.jsx';
 import CalendarTodo from '../calendar/CalendarTodo.jsx';
+import WelcomeMetrics from './WelcomeMetrics.jsx';
 import './homepage.css';
 
 export const MODULES = OPERATIONAL_MODULES;
@@ -38,16 +39,6 @@ export function detectStakeholderRole(user, can) {
 
 const MY_VIEW_STORAGE_KEY = 'tylo_one_my_view_config';
 const NOTE_STORAGE_PREFIX = 'tylo:user-notes-';
-
-const DATE_PRESETS = [
-  { id: 'today', label: 'Today' },
-  { id: 'yesterday', label: 'Yesterday' },
-  { id: 'tomorrow', label: 'Tomorrow' },
-  { id: 'all', label: 'All Time' },
-  { id: 'this_month', label: 'This Month' },
-  { id: '30d', label: 'Last 30 Days' },
-  { id: 'custom', label: 'Custom' },
-];
 
 const OVERVIEW_MODULE_KEY_MAP = {
   assets: 'asset-one',
@@ -339,19 +330,6 @@ function SearchIcon() {
   );
 }
 
-function RefreshIcon({ spinning }) {
-  return (
-    <svg className={spinning ? 'is-spinning' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 7v5h-5M4 17v-5h5" />
-      <path d="M5.7 9a7 7 0 0 1 11.7-2L20 12M4 12l2.6 5a7 7 0 0 0 11.7-2" />
-    </svg>
-  );
-}
-
-const BP_DATE_PRESETS = DATE_PRESETS.filter((preset) =>
-  ['today', 'yesterday', 'tomorrow', 'this_month', '30d'].includes(preset.id),
-);
-
 const NOTE_TONES = ['amber', 'sky', 'violet', 'mint'];
 
 function noteToneFor(note, index) {
@@ -359,56 +337,6 @@ function noteToneFor(note, index) {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) hash = (hash + seed.charCodeAt(i) * (i + 1)) % NOTE_TONES.length;
   return NOTE_TONES[hash];
-}
-
-/** Dual area chart for Planned vs Executed camps — token colours via CSS currentColor classes. */
-function PerformanceAreaChart({ planned = 0, executed = 0 }) {
-  const width = 560;
-  const height = 180;
-  const padX = 32;
-  const padY = 14;
-  const points = 8;
-  const maxY = Math.max(25, planned * 8, executed * 10, 150);
-  const plannedCurve = Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const wave = Math.sin(t * Math.PI) * 0.55 + 0.35;
-    return Math.max(4, planned * 6 * wave + planned * 2);
-  });
-  const executedCurve = Array.from({ length: points }, (_, i) => {
-    const t = i / (points - 1);
-    const wave = Math.sin(t * Math.PI * 0.95 + 0.2) * 0.5 + 0.3;
-    return Math.max(2, executed * 7 * wave + executed * 1.5);
-  });
-  const toX = (i) => padX + (i / (points - 1)) * (width - padX * 2);
-  const toY = (v) => height - padY - (v / maxY) * (height - padY * 2);
-  const linePath = (values) => values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(v)}`).join(' ');
-  const areaPath = (values) => `${linePath(values)} L ${toX(points - 1)} ${height - padY} L ${toX(0)} ${height - padY} Z`;
-  const labels = ['01 Nov', '05 Nov', '09 Nov', '13 Nov', '17 Nov', '21 Nov', '25 Nov', '29 Nov'];
-  const ticks = [0, 25, 50, 75, 100, 125, 150].filter((tick) => tick <= maxY + 25);
-
-  return (
-    <div className="tylo-home-bp-chart" role="img" aria-label="Planned and executed camps trend">
-      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="tylo-home-bp-chart-svg">
-        {ticks.map((tick) => (
-          <g key={tick}>
-            <line className="tylo-home-bp-chart-grid" x1={padX} x2={width - padX} y1={toY(tick)} y2={toY(tick)} />
-            <text className="tylo-home-bp-chart-tick" x={padX - 8} y={toY(tick) + 3} textAnchor="end">{tick}</text>
-          </g>
-        ))}
-        <path className="tylo-home-bp-chart-area tylo-home-bp-chart-area--planned" d={areaPath(plannedCurve)} />
-        <path className="tylo-home-bp-chart-area tylo-home-bp-chart-area--executed" d={areaPath(executedCurve)} />
-        <path className="tylo-home-bp-chart-line tylo-home-bp-chart-line--planned" d={linePath(plannedCurve)} />
-        <path className="tylo-home-bp-chart-line tylo-home-bp-chart-line--executed" d={linePath(executedCurve)} />
-        {labels.map((label, i) => (
-          <text key={label} className="tylo-home-bp-chart-label" x={toX(i)} y={height - 2} textAnchor="middle">{label}</text>
-        ))}
-      </svg>
-      <div className="tylo-home-bp-chart-legend">
-        <span className="tylo-home-bp-legend tylo-home-bp-legend--planned">Planned Camps</span>
-        <span className="tylo-home-bp-legend tylo-home-bp-legend--executed">Executed Camps</span>
-      </div>
-    </div>
-  );
 }
 
 export default function DashboardPage() {
@@ -423,9 +351,6 @@ export default function DashboardPage() {
   const canSeeModule = useCallback((id) => isTopManager || authorizedModuleIds.has(id), [isTopManager, authorizedModuleIds]);
 
   const [activeMode, setActiveMode] = useState(() => (canSeeDashboard ? 'dashboard' : 'my_view'));
-  const [activeDatePreset, setActiveDatePreset] = useState('this_month');
-  const [fromDate, setFromDate] = useState('01-11-2026');
-  const [toDate, setToDate] = useState('03-11-2026');
   const [selectedModuleFilter, setSelectedModuleFilter] = useState('CAMP ONE');
   const [searchQuery, setSearchQuery] = useState('');
   const [overview, setOverview] = useState(null);
@@ -831,29 +756,6 @@ export default function DashboardPage() {
   );
   const isSearching = Boolean(query);
 
-  const handleDatePresetClick = (presetId) => {
-    setActiveDatePreset(presetId);
-    if (presetId === 'today') {
-      setFromDate('03-11-2026');
-      setToDate('03-11-2026');
-    } else if (presetId === 'yesterday') {
-      setFromDate('02-11-2026');
-      setToDate('02-11-2026');
-    } else if (presetId === 'tomorrow') {
-      setFromDate('04-11-2026');
-      setToDate('04-11-2026');
-    } else if (presetId === 'this_month') {
-      setFromDate('01-11-2026');
-      setToDate('03-11-2026');
-    } else if (presetId === '30d') {
-      setFromDate('04-10-2026');
-      setToDate('03-11-2026');
-    } else if (presetId === 'all') {
-      setFromDate('01-01-2026');
-      setToDate('03-11-2026');
-    }
-  };
-
   const saveNotes = (nextNotes) => {
     setNotesState({ owner: userKey, value: nextNotes });
     try {
@@ -1159,50 +1061,28 @@ export default function DashboardPage() {
         )}
 
         <div className="tylo-home-ops-grid">
-          {/* Top-left: Business Performance chart */}
-          <section className="tylo-home-panel tylo-home-bp-panel" aria-label="Operational overview">
-            <div className="tylo-home-bp-head">
-              <div className="tylo-home-bp-head-left">
-                <span className="tylo-home-bp-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <line x1="8" y1="17" x2="8" y2="13" />
-                    <line x1="12" y1="17" x2="12" y2="9" />
-                    <line x1="16" y1="17" x2="16" y2="7" />
-                  </svg>
-                </span>
-                <div>
-                  <h2 className="tylo-home-bp-title">Business Performance</h2>
-                  <p className="tylo-home-bp-subtitle">Planned vs executed camps trend</p>
+          {/* Top-left: Welcome greeting + camp quality metrics */}
+          <section className="tylo-home-panel tylo-home-greeting-panel" aria-label="Welcome">
+            {(() => {
+              const welcomeFirst = String(user?.fullName || user?.name || user?.displayName || '')
+                .trim()
+                .split(/\s+/)[0];
+              const welcomeDate = new Intl.DateTimeFormat('en-GB', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              }).format(new Date());
+              return (
+                <div className="tylo-home-greeting">
+                  <h2 className="tylo-home-greeting-title">
+                    {welcomeFirst ? `Welcome back, ${welcomeFirst}!` : 'Welcome back!'}
+                  </h2>
+                  <p className="tylo-home-greeting-date">{welcomeDate}.</p>
                 </div>
-              </div>
-              <button
-                type="button"
-                className="tylo-home-bp-trend-btn"
-                onClick={refreshData}
-                aria-label="Refresh operational metrics"
-                title="Refresh metrics"
-              >
-                <RefreshIcon spinning={overviewLoading} />
-              </button>
-            </div>
-
-            <div className="tylo-home-preset-strip" role="group" aria-label="Date presets">
-              {BP_DATE_PRESETS.map((preset) => (
-                <button
-                  type="button"
-                  key={preset.id}
-                  className={'tylo-home-preset-btn' + (activeDatePreset === preset.id ? ' is-active' : '')}
-                  aria-pressed={activeDatePreset === preset.id}
-                  onClick={() => handleDatePresetClick(preset.id)}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-
-            <PerformanceAreaChart planned={stageData.planned} executed={stageData.executed} />
-
+              );
+            })()}
+            <WelcomeMetrics enabled={canSeeDashboard} />
             <div className="sr-only">
               <h3>Department performance</h3>
               <p>Operations department metrics and workload breakdown</p>

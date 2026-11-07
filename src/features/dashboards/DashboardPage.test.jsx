@@ -96,6 +96,22 @@ describe('DashboardPage homepage', () => {
     apiMock.mockReset();
     apiMock.mockImplementation(async (path) => {
       if (path === '/dashboards/overview') return { data: MOCK_OVERVIEW };
+      if (String(path).startsWith('/dashboards/camp-quality')) {
+        return {
+          data: {
+            metric: 'punctuality',
+            label: 'Punctuality',
+            buckets: [
+              { key: 'Yet to Update', count: 2 },
+              { key: 'Cancelled', count: 0 },
+              { key: 'Good', count: 5 },
+              { key: 'Average', count: 1 },
+              { key: 'Poor', count: 0 },
+            ],
+            summary: {},
+          },
+        };
+      }
       if (String(path).startsWith('/notifications')) return { data: [] };
       if (path === '/chat/unread-count') return { data: { count: 0 } };
       if (path === '/chat/directory') return { data: [] };
@@ -119,7 +135,14 @@ describe('DashboardPage homepage', () => {
     expect(await screen.findByRole('heading', { name: 'Business Overview' }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Tylo One Dashboard/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'My View' })).toBeTruthy();
-    expect(await screen.findByRole('region', { name: 'Operational overview' }, { timeout: 10000 })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Welcome' }, { timeout: 10000 })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Welcome back, Local!/i })).toBeTruthy();
+    expect(screen.getByLabelText(/Date range/i)).toBeTruthy();
+    expect(screen.getByLabelText('Camp quality metric')).toBeTruthy();
+    await waitFor(() => {
+      expect(apiMock.mock.calls.some(([path]) => String(path).startsWith('/dashboards/camp-quality'))).toBe(true);
+    });
+    expect(await screen.findByText('Yet to Update')).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Attention required' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Quick access' })).toBeTruthy();
     expect(screen.getByText('Department performance')).toBeTruthy();

@@ -214,11 +214,6 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
     <section className="tylo-home-panel tylo-home-pipeline-panel" aria-label="Camp pipeline">
       <div className="tylo-home-card-head tylo-home-pipeline-head">
         <div className="tylo-home-card-head-left">
-          <span className="tylo-home-card-head-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
-          </span>
           <div>
             <h2 className="tylo-home-card-title">Camp Pipeline</h2>
             <p className="tylo-home-card-subtitle">Request through financial status</p>
@@ -329,7 +324,9 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
       <div className="tylo-home-pipeline-grid" aria-busy={loading || undefined}>
         <div className="tylo-home-stage-tile tylo-home-stage-tile--request">
           <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title"><span>Request</span></div>
+            <div className="tylo-home-stage-tile-title">
+              <span>Request</span>
+            </div>
             <span className="tylo-home-stage-tile-count">{display.requestTotal}</span>
           </div>
           <div className="tylo-home-stage-tile-rows">
@@ -354,7 +351,9 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
 
         <div className="tylo-home-stage-tile tylo-home-stage-tile--assignment">
           <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title"><span>Assignment</span></div>
+            <div className="tylo-home-stage-tile-title">
+              <span>Assignment</span>
+            </div>
             <span className="tylo-home-stage-tile-count">{display.assignmentTotal}</span>
           </div>
           <div className="tylo-home-stage-tile-rows">
@@ -371,7 +370,9 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
 
         <div className="tylo-home-stage-tile tylo-home-stage-tile--execution">
           <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title"><span>Execution</span></div>
+            <div className="tylo-home-stage-tile-title">
+              <span>Execution</span>
+            </div>
             <span className="tylo-home-stage-tile-count">{display.executionTotal}</span>
           </div>
           <div className="tylo-home-stage-tile-rows">
@@ -396,7 +397,9 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
 
         <div className="tylo-home-stage-tile tylo-home-stage-tile--financial">
           <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title"><span>Financial</span></div>
+            <div className="tylo-home-stage-tile-title">
+              <span>Financial</span>
+            </div>
             <span className="tylo-home-stage-tile-count">{display.financialTotal}</span>
           </div>
           <div className="tylo-home-stage-tile-rows">

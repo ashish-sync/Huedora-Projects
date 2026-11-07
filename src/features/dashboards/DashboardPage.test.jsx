@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import DashboardPage from './DashboardPage.jsx';
+import DashboardPage, { parseQuickAccessUrlInput } from './DashboardPage.jsx';
 
 const { apiMock, permissions, testUser } = vi.hoisted(() => ({
   apiMock: vi.fn(),
@@ -225,19 +225,51 @@ describe('DashboardPage homepage', () => {
     expect(screen.queryByLabelText('Asset One')).toBeNull();
   });
 
-  it('pins modules from Customize pins and stores them per user', async () => {
+  it('removes Quick Access pins from Customize tile controls and stores them per user', async () => {
     const user = userEvent.setup();
     renderDashboardPage();
 
     const customize = await screen.findByRole('button', { name: /Customize pins/i });
     await user.click(customize);
 
-    const assetPin = screen.getByLabelText('Asset One');
-    expect(assetPin.checked).toBe(true);
-    await user.click(assetPin);
+    const removeAsset = screen.getByRole('button', { name: /Remove Asset One/i });
+    await user.click(removeAsset);
 
     const saved = JSON.parse(localStorage.getItem('tylo_one_my_view_config') || '{}');
     expect(saved.users?.['admin-1']?.pinnedModules || []).not.toContain('asset-one');
+    expect(screen.getAllByRole('button', { name: 'Add shortcut' }).length).toBeGreaterThan(0);
+  });
+
+  it('parses internal page URLs for Quick Access shortcuts', () => {
+    expect(parseQuickAccessUrlInput('/camps/manage')).toEqual({
+      title: 'Manage',
+      to: '/camps/manage',
+    });
+    expect(parseQuickAccessUrlInput('Ops Board | /camps/ops-board')).toEqual({
+      title: 'Ops Board',
+      to: '/camps/ops-board',
+    });
+    expect(parseQuickAccessUrlInput('javascript:alert(1)')).toBeNull();
+    expect(parseQuickAccessUrlInput('https://evil.example/camps')).toBeNull();
+  });
+
+  it('adds a page URL widget under Quick Access Customize', async () => {
+    const user = userEvent.setup();
+    renderDashboardPage();
+
+    await user.click(await screen.findByRole('button', { name: /Customize pins/i }));
+    await user.click(screen.getAllByRole('button', { name: 'Add shortcut' })[0]);
+
+    const input = screen.getByPlaceholderText(/Module name or page URL/i);
+    await user.type(input, 'Camp Ops | /camps/ops-board');
+    await user.click(screen.getByRole('option', { name: /Add page · Camp Ops/i }));
+
+    const saved = JSON.parse(localStorage.getItem('tylo_one_my_view_config') || '{}');
+    const items = saved.users?.['admin-1']?.quickAccessItems || [];
+    expect(items.some((item) => item.type === 'url' && item.to === '/camps/ops-board' && item.title === 'Camp Ops')).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: /Customize pins/i }));
+    expect(screen.getByRole('link', { name: /Camp Ops/i })).toBeTruthy();
   });
 
   it('filters modules and workflows and can clear the search', async () => {

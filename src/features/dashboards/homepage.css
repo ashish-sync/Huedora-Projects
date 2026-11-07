@@ -1805,8 +1805,8 @@
 
 .tylo-home-ops-grid {
   display: grid;
-  /* Camp Schedule takes width from Business Performance so metric headers stay fully visible. */
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.38fr) minmax(0, 0.9fr);
+  /* Camp Schedule trimmed ~5% to give To-Do calendar more room. */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.31fr) minmax(0, 0.97fr);
   grid-template-rows: minmax(0, 1.08fr) minmax(0, 1fr);
   gap: 10px;
   flex: 1 1 auto;
@@ -2297,7 +2297,7 @@
 @media (min-width: 1600px) {
   .tylo-home-ops-grid {
     gap: 12px;
-    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.4fr) minmax(0, 0.92fr);
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.33fr) minmax(0, 0.99fr);
   }
 }
 
@@ -2581,8 +2581,8 @@
   table-layout: fixed;
 }
 
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 30%; }
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 17.5%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 24%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 19%; }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead tr,
 .tylo-home-ops-grid .tylo-home-schedule-table tbody tr,
@@ -2594,7 +2594,7 @@
 .tylo-home-ops-grid .tylo-home-schedule-table th,
 .tylo-home-ops-grid .tylo-home-schedule-table td {
   display: table-cell;
-  padding: 10px 6px;
+  padding: 10px 4px;
   text-align: center;
   font-size: 13px;
   border: none;
@@ -2618,12 +2618,13 @@
   color: var(--home-muted-text);
   font-weight: 600;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   background: transparent;
   border-bottom: 1px solid var(--home-border);
-  padding-top: 4px;
-  padding-bottom: 10px;
+  padding: 4px 2px 10px;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table th:first-child,
@@ -3111,7 +3112,7 @@
 
 .tylo-home-ops-grid .tylo-home-stage-tile-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   flex: 0 0 auto;
@@ -3119,6 +3120,8 @@
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-title {
+  display: flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -3293,6 +3296,224 @@
   line-height: 14px;
   text-align: center;
   padding: 0 3px;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-tile-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--status-danger-dot, #e11d48);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--home-surface) 70%, transparent);
+}
+
+.tylo-home-ops-grid .tylo-home-quick-tile-remove:hover {
+  filter: brightness(1.08);
+}
+
+.tylo-home-ops-grid .tylo-home-quick-subtile.is-editing {
+  cursor: default;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-subtile--empty {
+  border-style: dashed !important;
+  border-color: color-mix(in srgb, var(--home-border-strong) 70%, var(--home-border)) !important;
+  background: transparent !important;
+  color: var(--home-secondary) !important;
+  cursor: pointer;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-subtile--empty:hover:not(:disabled) {
+  border-color: var(--home-blue) !important;
+  color: var(--home-blue) !important;
+  background: color-mix(in srgb, var(--home-blue) 8%, var(--home-surface-subtle)) !important;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-subtile--empty:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-tile-add {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  color: inherit;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-empty-hint {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--home-secondary);
+  font-size: 11px;
+  padding: 12px;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-empty-hint strong {
+  color: var(--home-text);
+  font-size: 12px;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-panel.is-adding .tylo-home-quick-add-search {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search {
+  flex: 0 0 auto;
+  margin: 0 0 4px;
+  min-width: 0;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-field input {
+  display: block;
+  width: 100%;
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border-radius: 7px;
+  border: 1px solid var(--home-border);
+  background: var(--bg-input, var(--home-surface));
+  color: var(--home-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  box-sizing: border-box;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-field input::placeholder {
+  color: var(--home-secondary);
+  font-weight: 500;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-field input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--home-blue) 45%, var(--home-border));
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--home-secondary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-clear:hover {
+  color: var(--home-text);
+  background: var(--home-hover);
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--home-border);
+  border-radius: 8px;
+  background: var(--home-surface);
+  scrollbar-width: thin;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-option {
+  width: 100%;
+  display: block;
+  padding: 9px 12px;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--home-border) 70%, transparent);
+  background: transparent;
+  color: var(--home-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-option--url {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  white-space: normal;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-option--url small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--home-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-results li:last-child .tylo-home-quick-add-search-option {
+  border-bottom: none;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-option:hover,
+.tylo-home-ops-grid .tylo-home-quick-add-search-option:focus-visible {
+  background: color-mix(in srgb, var(--home-blue) 10%, var(--home-surface));
+  color: var(--home-blue);
+  outline: none;
+}
+
+.tylo-home-ops-grid .tylo-home-quick-add-search-empty {
+  margin: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border: 1px dashed var(--home-border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--home-secondary);
+  line-height: 1.35;
+  text-align: center;
 }
 
 .tylo-home-ops-grid .tylo-home-pin-list {

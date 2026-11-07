@@ -135,11 +135,125 @@ const WIDGETS = [
 ];
 
 const DEFAULT_PINNED_MODULES = ['camp-one', 'asset-one', 'finance-one', 'request-one'];
+const QUICK_ACCESS_SLOTS = 9;
+
+function makeModuleQuickItem(moduleId) {
+  return { type: 'module', id: String(moduleId) };
+}
+
+function makeUrlQuickItem({ title, to }) {
+  return {
+    type: 'url',
+    id: `url-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+    title: String(title || 'Page').trim() || 'Page',
+    to: String(to || '').trim(),
+  };
+}
+
+function titleFromPath(pathname = '/') {
+  const parts = String(pathname || '/')
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return 'Home';
+  const last = decodeURIComponent(parts[parts.length - 1]).replace(/[-_]+/g, ' ');
+  return last.replace(/\b\w/g, (char) => char.toUpperCase()) || 'Page';
+}
+
+/** Accept internal paths or absolute same-app URLs; reject unsafe schemes. */
+export function parseQuickAccessUrlInput(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+
+  let label = '';
+  let urlPart = text;
+  const labeled = text.match(/^(.+?)\s*\|\s*(.+)$/);
+  if (labeled) {
+    label = labeled[1].trim();
+    urlPart = labeled[2].trim();
+  }
+
+  if (/^(javascript|data|vbscript):/i.test(urlPart)) return null;
+
+  let pathname = '';
+  let search = '';
+  let hash = '';
+
+  try {
+    if (/^https?:\/\//i.test(urlPart)) {
+      const parsed = new URL(urlPart);
+      if (typeof window !== 'undefined' && window.location?.origin && parsed.origin !== window.location.origin) {
+        return null;
+      }
+      pathname = parsed.pathname || '/';
+      search = parsed.search || '';
+      hash = parsed.hash || '';
+    } else if (urlPart.startsWith('/')) {
+      const parsed = new URL(urlPart, 'https://tylo.local');
+      pathname = parsed.pathname || '/';
+      search = parsed.search || '';
+      hash = parsed.hash || '';
+    } else if (/^[\w.-]+(?:\/[\w.?&=%#-]*)*$/i.test(urlPart)) {
+      const parsed = new URL(`/${urlPart}`, 'https://tylo.local');
+      pathname = parsed.pathname || '/';
+      search = parsed.search || '';
+      hash = parsed.hash || '';
+    } else {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  const to = `${pathname}${search}${hash}` || '/';
+  return {
+    title: label || titleFromPath(pathname),
+    to,
+  };
+}
+
+function normalizeQuickAccessItems(value) {
+  if (Array.isArray(value?.quickAccessItems)) {
+    const items = [];
+    const seenModules = new Set();
+    for (const raw of value.quickAccessItems) {
+      if (!raw || typeof raw !== 'object') continue;
+      if (raw.type === 'url') {
+        const parsed = parseQuickAccessUrlInput(raw.to);
+        if (!parsed) continue;
+        items.push({
+          type: 'url',
+          id: typeof raw.id === 'string' && raw.id ? raw.id : makeUrlQuickItem(parsed).id,
+          title: String(raw.title || parsed.title).trim() || parsed.title,
+          to: parsed.to,
+        });
+      } else if (raw.type === 'module' || raw.id) {
+        const id = String(raw.id || '').trim();
+        if (!id || seenModules.has(id)) continue;
+        seenModules.add(id);
+        items.push(makeModuleQuickItem(id));
+      }
+      if (items.length >= QUICK_ACCESS_SLOTS) break;
+    }
+    if (items.length) return items;
+  }
+
+  const moduleIds = Array.isArray(value?.pinnedModules)
+    ? [...new Set(value.pinnedModules.filter((id) => typeof id === 'string' && id.trim()))]
+    : DEFAULT_PINNED_MODULES;
+  return moduleIds.slice(0, QUICK_ACCESS_SLOTS).map(makeModuleQuickItem);
+}
+
+function moduleIdsFromQuickAccess(items = []) {
+  return items.filter((item) => item?.type === 'module').map((item) => item.id);
+}
 
 function defaultConfig() {
+  const quickAccessItems = DEFAULT_PINNED_MODULES.map(makeModuleQuickItem);
   return {
     visible: { kpis: true, shortcuts: true, tasks: true, notes: true, messages: true },
     pinnedModules: DEFAULT_PINNED_MODULES,
+    quickAccessItems,
     widths: { kpis: 'full', shortcuts: 'full', tasks: 'half', productivity: 'half' },
     order: WIDGETS.map((widget) => widget.id),
   };
@@ -155,6 +269,7 @@ function normalizeConfig(value) {
     : [];
   const order = [...new Set(suppliedOrder)];
   WIDGETS.forEach(({ id }) => { if (!order.includes(id)) order.push(id); });
+  const quickAccessItems = normalizeQuickAccessItems(value);
   return {
     visible: {
       kpis: typeof visible.kpis === 'boolean' ? visible.kpis : defaults.visible.kpis,
@@ -163,9 +278,8 @@ function normalizeConfig(value) {
       notes: typeof visible.notes === 'boolean' ? visible.notes : defaults.visible.notes,
       messages: typeof visible.messages === 'boolean' ? visible.messages : defaults.visible.messages,
     },
-    pinnedModules: Array.isArray(value.pinnedModules)
-      ? [...new Set(value.pinnedModules.filter((id) => typeof id === 'string'))]
-      : defaults.pinnedModules,
+    pinnedModules: moduleIdsFromQuickAccess(quickAccessItems),
+    quickAccessItems,
     widths: {
       kpis: widths.kpis === 'half' ? 'half' : 'full',
       shortcuts: widths.shortcuts === 'half' ? 'half' : 'full',
@@ -331,6 +445,15 @@ function SearchIcon() {
   );
 }
 
+function LinkShortcutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 const NOTE_TONES = ['amber', 'sky', 'violet', 'mint'];
 
 function noteToneFor(note, index) {
@@ -365,12 +488,15 @@ export default function DashboardPage() {
   const [chatUnread, setChatUnread] = useState(0);
   const [calendarBadge, setCalendarBadge] = useState(0);
   const [pinPickerOpen, setPinPickerOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddQuery, setQuickAddQuery] = useState('');
   const [customizing, setCustomizing] = useState(false);
   const [newNoteText, setNewNoteText] = useState('');
   const [configState, setConfigState] = useState(() => ({ owner: userKey, value: readUserConfig(userKey) }));
   const [notesState, setNotesState] = useState(() => ({ owner: userKey, value: readUserNotes(userKey) }));
 
   const searchInputRef = useRef(null);
+  const quickAddInputRef = useRef(null);
 
   const config = configState.owner === userKey ? configState.value : defaultConfig();
   const userNotes = notesState.owner === userKey ? notesState.value : [];
@@ -506,12 +632,38 @@ export default function DashboardPage() {
   const refreshData = () => setRefreshToken((value) => value + 1);
 
   const setPinned = (moduleId, checked) =>
+    updateConfig((previous) => {
+      const items = Array.isArray(previous.quickAccessItems) ? [...previous.quickAccessItems] : [];
+      if (checked) {
+        if (items.some((item) => item.type === 'module' && item.id === moduleId)) return previous;
+        if (items.length >= QUICK_ACCESS_SLOTS) return previous;
+        return { ...previous, quickAccessItems: [...items, makeModuleQuickItem(moduleId)] };
+      }
+      return {
+        ...previous,
+        quickAccessItems: items.filter((item) => !(item.type === 'module' && item.id === moduleId)),
+      };
+    });
+
+  const removeQuickAccessItem = (itemId) =>
     updateConfig((previous) => ({
       ...previous,
-      pinnedModules: checked
-        ? [...new Set([...previous.pinnedModules, moduleId])]
-        : previous.pinnedModules.filter((id) => id !== moduleId),
+      quickAccessItems: (previous.quickAccessItems || []).filter((item) => item.id !== itemId),
     }));
+
+  const addQuickAccessUrl = (rawInput) => {
+    const parsed = parseQuickAccessUrlInput(rawInput);
+    if (!parsed) return false;
+    let added = false;
+    updateConfig((previous) => {
+      const items = Array.isArray(previous.quickAccessItems) ? [...previous.quickAccessItems] : [];
+      if (items.length >= QUICK_ACCESS_SLOTS) return previous;
+      if (items.some((item) => item.type === 'url' && item.to === parsed.to)) return previous;
+      added = true;
+      return { ...previous, quickAccessItems: [...items, makeUrlQuickItem(parsed)] };
+    });
+    return added;
+  };
 
   const moveWidget = (widgetId, direction) =>
     updateConfig((previous) => {
@@ -535,9 +687,85 @@ export default function DashboardPage() {
       config.pinnedModules
         .filter((id) => authorizedModuleIds.has(id))
         .map((id) => moduleById.get(id))
-        .filter(Boolean),
+        .filter(Boolean)
+        .slice(0, QUICK_ACCESS_SLOTS),
     [config.pinnedModules, authorizedModuleIds, moduleById],
   );
+
+  const quickAccessTiles = useMemo(() => {
+    const items = Array.isArray(config.quickAccessItems) ? config.quickAccessItems : [];
+    return items
+      .map((item) => {
+        if (item.type === 'url') {
+          return {
+            key: item.id,
+            kind: 'url',
+            id: item.id,
+            title: item.title,
+            to: item.to,
+            icon: <LinkShortcutIcon />,
+          };
+        }
+        if (!authorizedModuleIds.has(item.id)) return null;
+        const module = moduleById.get(item.id);
+        if (!module) return null;
+        return {
+          key: item.id,
+          kind: 'module',
+          id: item.id,
+          title: module.title,
+          to: module.to,
+          icon: module.icon,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, QUICK_ACCESS_SLOTS);
+  }, [config.quickAccessItems, authorizedModuleIds, moduleById]);
+
+  const availableQuickPins = useMemo(
+    () => modules.filter((module) => !config.pinnedModules.includes(module.id)),
+    [modules, config.pinnedModules],
+  );
+
+  const quickAddMatches = useMemo(() => {
+    const q = quickAddQuery.trim().toLowerCase();
+    if (!q) return availableQuickPins;
+    return availableQuickPins.filter((module) => {
+      const hay = `${module.title} ${module.blurb || ''} ${(module.keywords || []).join(' ')}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [availableQuickPins, quickAddQuery]);
+
+  const quickAddUrlCandidate = useMemo(
+    () => parseQuickAccessUrlInput(quickAddQuery),
+    [quickAddQuery],
+  );
+
+  const emptyQuickSlots = Math.max(0, QUICK_ACCESS_SLOTS - quickAccessTiles.length);
+
+  const openQuickAddSearch = () => {
+    if (emptyQuickSlots <= 0) return;
+    setQuickAddQuery('');
+    setQuickAddOpen(true);
+    window.setTimeout(() => quickAddInputRef.current?.focus(), 0);
+  };
+
+  const closeQuickAddSearch = () => {
+    setQuickAddOpen(false);
+    setQuickAddQuery('');
+  };
+
+  const addQuickPin = (moduleId) => {
+    setPinned(moduleId, true);
+    closeQuickAddSearch();
+  };
+
+  const tryAddQuickUrl = () => {
+    if (!quickAddUrlCandidate) return false;
+    const ok = addQuickAccessUrl(quickAddQuery);
+    if (ok) closeQuickAddSearch();
+    return ok;
+  };
 
   const authorizedActions = useMemo(
     () =>
@@ -826,14 +1054,14 @@ export default function DashboardPage() {
               </button>
             }
           />
-          {pinnedModules.length ? (
+          {quickAccessTiles.length ? (
             <div className="tylo-home-module-grid">
-              {pinnedModules.map((module) => (
-                <Link key={module.id} to={module.to} className="tylo-home-module-tile">
-                  <span className="tylo-home-module-icon">{module.icon}</span>
+              {quickAccessTiles.map((tile) => (
+                <Link key={tile.key} to={tile.to} className="tylo-home-module-tile">
+                  <span className="tylo-home-module-icon">{tile.icon}</span>
                   <span className="tylo-home-module-copy">
-                    <strong>{module.title}</strong>
-                    <small>{module.blurb}</small>
+                    <strong>{tile.title}</strong>
+                    <small>{tile.kind === 'url' ? tile.to : moduleById.get(tile.id)?.blurb || 'Open module'}</small>
                   </span>
                   <span className="tylo-home-arrow" aria-hidden="true">
                     ↗
@@ -843,8 +1071,8 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="tylo-home-empty">
-              <strong>No modules pinned</strong>
-              <span>Choose an authorized module in Customize View.</span>
+              <strong>No shortcuts yet</strong>
+              <span>Pin modules or add a page URL in Customize View.</span>
             </div>
           )}
         </section>
@@ -1032,39 +1260,39 @@ export default function DashboardPage() {
                     {welcomeFirst ? `Welcome ${welcomeFirst}` : 'Welcome'}
                   </h2>
                   <p className="tylo-home-greeting-date">{welcomeDate}</p>
-                </div>
+                  </div>
               );
             })()}
             <WelcomeMetrics enabled={canSeeDashboard} />
-            <div className="sr-only">
-              <h3>Department performance</h3>
-              <p>Operations department metrics and workload breakdown</p>
-            </div>
-          </section>
+              <div className="sr-only">
+                <h3>Department performance</h3>
+                <p>Operations department metrics and workload breakdown</p>
+              </div>
+            </section>
 
           {/* Top-center: Camp Schedule */}
-          <section className="tylo-home-panel tylo-home-schedule-panel" aria-label="Camp schedule">
-            <div className="tylo-home-card-head">
-              <div className="tylo-home-card-head-left">
-                <span className="tylo-home-card-head-icon" aria-hidden="true">
+            <section className="tylo-home-panel tylo-home-schedule-panel" aria-label="Camp schedule">
+              <div className="tylo-home-card-head">
+                <div className="tylo-home-card-head-left">
+                  <span className="tylo-home-card-head-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
                     <circle cx="12" cy="15.5" r="3.2" />
                     <polyline points="12 14.2 12 15.5 13.4 16.4" />
-                  </svg>
-                </span>
-                <div>
-                  <h2 className="tylo-home-card-title">Camp Schedule</h2>
-                  <p className="tylo-home-card-subtitle">Today and upcoming camp schedule</p>
+                    </svg>
+                  </span>
+                  <div>
+                    <h2 className="tylo-home-card-title">Camp Schedule</h2>
+                    <p className="tylo-home-card-subtitle">Today and upcoming camp schedule</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="tylo-home-schedule-table-wrap">
-              <table className="tylo-home-schedule-table">
+              <div className="tylo-home-schedule-table-wrap">
+                <table className="tylo-home-schedule-table">
                 <colgroup>
                   <col className="tylo-home-sched-col-session" />
                   <col className="tylo-home-sched-col-metric" />
@@ -1072,17 +1300,17 @@ export default function DashboardPage() {
                   <col className="tylo-home-sched-col-metric" />
                   <col className="tylo-home-sched-col-metric" />
                 </colgroup>
-                <thead>
-                  <tr>
-                    <th scope="col">Session</th>
-                    <th scope="col">Today</th>
-                    <th scope="col">Tomorrow</th>
-                    <th scope="col">Day After</th>
-                    <th scope="col">MTD</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
+                  <thead>
+                    <tr>
+                      <th scope="col">Session</th>
+                      <th scope="col">Today</th>
+                      <th scope="col">Tomorrow</th>
+                      <th scope="col">Day After</th>
+                      <th scope="col">MTD</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
                     <td>
                       <div className="tylo-home-session-cell">
                         <span className="tylo-home-session-icon tylo-home-session-icon--morning" aria-hidden="true">
@@ -1100,13 +1328,13 @@ export default function DashboardPage() {
                         </span>
                         <span>Morning</span>
                       </div>
-                    </td>
-                    <td className="tylo-home-sched-num">20</td>
-                    <td className="tylo-home-sched-num">20</td>
-                    <td className="tylo-home-sched-num">10</td>
-                    <td className="tylo-home-sched-num">50</td>
-                  </tr>
-                  <tr>
+                      </td>
+                      <td className="tylo-home-sched-num">20</td>
+                      <td className="tylo-home-sched-num">20</td>
+                      <td className="tylo-home-sched-num">10</td>
+                      <td className="tylo-home-sched-num">50</td>
+                    </tr>
+                    <tr>
                     <td>
                       <div className="tylo-home-session-cell">
                         <span className="tylo-home-session-icon tylo-home-session-icon--afternoon" aria-hidden="true">
@@ -1120,13 +1348,13 @@ export default function DashboardPage() {
                         </span>
                         <span>Afternoon</span>
                       </div>
-                    </td>
-                    <td className="tylo-home-sched-num">20</td>
-                    <td className="tylo-home-sched-num">10</td>
-                    <td className="tylo-home-sched-num">10</td>
-                    <td className="tylo-home-sched-num">40</td>
-                  </tr>
-                  <tr>
+                      </td>
+                      <td className="tylo-home-sched-num">20</td>
+                      <td className="tylo-home-sched-num">10</td>
+                      <td className="tylo-home-sched-num">10</td>
+                      <td className="tylo-home-sched-num">40</td>
+                    </tr>
+                    <tr>
                     <td>
                       <div className="tylo-home-session-cell">
                         <span className="tylo-home-session-icon tylo-home-session-icon--evening" aria-hidden="true">
@@ -1136,105 +1364,105 @@ export default function DashboardPage() {
                         </span>
                         <span>Evening</span>
                       </div>
-                    </td>
-                    <td className="tylo-home-sched-num">20</td>
-                    <td className="tylo-home-sched-num">20</td>
-                    <td className="tylo-home-sched-num">5</td>
-                    <td className="tylo-home-sched-num">45</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
+                      </td>
+                      <td className="tylo-home-sched-num">20</td>
+                      <td className="tylo-home-sched-num">20</td>
+                      <td className="tylo-home-sched-num">5</td>
+                      <td className="tylo-home-sched-num">45</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
                     <th scope="row">
                       <div className="tylo-home-total-row-head">
                         <span className="tylo-home-total-icon" aria-hidden="true">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                            <polyline points="2 12 12 17 22 12" />
+                          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                          <polyline points="2 12 12 17 22 12" />
                             <polyline points="2 17 12 22 22 17" />
-                          </svg>
+                        </svg>
                         </span>
                         <span>Total Camps</span>
                       </div>
-                    </th>
-                    <td className="tylo-home-total-num">60</td>
-                    <td className="tylo-home-total-num">50</td>
-                    <td className="tylo-home-total-num">25</td>
-                    <td className="tylo-home-total-num">135</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </section>
+                      </th>
+                      <td className="tylo-home-total-num">60</td>
+                      <td className="tylo-home-total-num">50</td>
+                      <td className="tylo-home-total-num">25</td>
+                      <td className="tylo-home-total-num">135</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
 
           {/* Top-right: My Workspace */}
-          <section className="tylo-home-panel tylo-home-workspace-panel" aria-label="Personal Workspace">
+            <section className="tylo-home-panel tylo-home-workspace-panel" aria-label="Personal Workspace">
             <div className="tylo-home-workspace-tabs" role="tablist" aria-label="Workspace tabs">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={productivityTab === 'notes'}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={productivityTab === 'notes'}
                 className={'tylo-home-ws-tab' + (productivityTab === 'notes' ? ' is-active' : '')}
-                onClick={() => setProductivityTab('notes')}
+                  onClick={() => setProductivityTab('notes')}
               >
                 Sticky Notes
-              </button>
-              <button
-                type="button"
-                role="tab"
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                 aria-selected={productivityTab === 'todo'}
                 className={'tylo-home-ws-tab' + (productivityTab === 'todo' ? ' is-active' : '')}
                 onClick={() => setProductivityTab('todo')}
               >
                 To-Do
                 {todoCount > 0 ? <span className="tylo-home-ws-tab-badge">{todoCount}</span> : null}
-              </button>
-              <button
-                type="button"
-                role="tab"
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                 aria-selected={productivityTab === 'messages'}
                 className={'tylo-home-ws-tab' + (productivityTab === 'messages' ? ' is-active' : '')}
                 onClick={() => setProductivityTab('messages')}
               >
                 Messages
                 {chatUnread > 0 ? <span className="tylo-home-ws-tab-badge">{chatUnread}</span> : null}
-              </button>
-            </div>
+                </button>
+              </div>
 
-            <div className="tylo-home-workspace-content">
+              <div className="tylo-home-workspace-content">
               {productivityTab === 'messages' ? (
                 <div className="tylo-home-sticky-notes tylo-home-sticky-notes--chat" role="tabpanel">
                   <InternalChat compact onUnreadChange={setChatUnread} />
-                </div>
+                      </div>
               ) : productivityTab === 'todo' ? (
                 <div className="tylo-home-sticky-notes tylo-home-sticky-notes--todo" role="tabpanel">
                   <CalendarTodo compact onBadgeChange={setCalendarBadge} />
-                </div>
+                    </div>
               ) : (
                 <div className="tylo-home-sticky-notes" role="tabpanel">
-                  <form className="tylo-home-notes-input-row" onSubmit={handleAddNote}>
-                    <input
-                      type="text"
-                      value={newNoteText}
-                      onChange={(e) => setNewNoteText(e.target.value)}
+                    <form className="tylo-home-notes-input-row" onSubmit={handleAddNote}>
+                      <input
+                        type="text"
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
                       placeholder="Write a note, reminder or idea..."
-                      maxLength={240}
+                        maxLength={240}
                       aria-label="Write a note, reminder or idea"
                     />
                     <button type="submit" className="tylo-home-notes-add-btn" disabled={!newNoteText.trim()}>
-                      Add
-                    </button>
-                  </form>
+                        Add
+                      </button>
+                    </form>
 
-                  {userNotes.length === 0 ? (
-                    <div className="tylo-home-notes-empty">
-                      <h4 className="tylo-home-notes-empty-title">Your notes will appear here.</h4>
-                      <p className="tylo-home-notes-empty-sub">
-                        Capture reminders, follow-ups and personal notes for quick access.
-                      </p>
-                    </div>
-                  ) : (
-                    <ul className="tylo-home-notes-list">
+                    {userNotes.length === 0 ? (
+                      <div className="tylo-home-notes-empty">
+                        <h4 className="tylo-home-notes-empty-title">Your notes will appear here.</h4>
+                        <p className="tylo-home-notes-empty-sub">
+                          Capture reminders, follow-ups and personal notes for quick access.
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="tylo-home-notes-list">
                       {userNotes.map((note, index) => (
                         <li
                           key={note.id}
@@ -1244,14 +1472,14 @@ export default function DashboardPage() {
                             (note.done ? ' is-done' : '')
                           }
                         >
-                          <label className="tylo-home-note-label">
-                            <input
-                              type="checkbox"
-                              checked={note.done}
-                              onChange={() => handleToggleNote(note.id)}
-                            />
-                            <span>{note.text}</span>
-                          </label>
+                            <label className="tylo-home-note-label">
+                              <input
+                                type="checkbox"
+                                checked={note.done}
+                                onChange={() => handleToggleNote(note.id)}
+                              />
+                              <span>{note.text}</span>
+                            </label>
                           <button
                             type="button"
                             className="tylo-home-note-star-btn"
@@ -1260,28 +1488,35 @@ export default function DashboardPage() {
                           >
                             ★
                           </button>
-                          <button
-                            type="button"
-                            className="tylo-home-note-del-btn"
-                            onClick={() => handleDeleteNote(note.id)}
-                            aria-label={'Delete reminder: ' + note.text}
-                          >
-                            ×
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                            <button
+                              type="button"
+                              className="tylo-home-note-del-btn"
+                              onClick={() => handleDeleteNote(note.id)}
+                              aria-label={'Delete reminder: ' + note.text}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
               )}
-            </div>
+                    </div>
           </section>
 
           {/* Bottom-left: Camp Pipeline (stages) */}
           <CampPipelinePanel enabled={canSeeDashboard} user={user} />
 
           {/* Bottom-right: Quick Access */}
-          <section className="tylo-home-panel tylo-home-quick-panel" aria-label="Quick access">
+          <section
+            className={
+              'tylo-home-panel tylo-home-quick-panel'
+              + (pinPickerOpen ? ' is-customizing' : '')
+              + (quickAddOpen ? ' is-adding' : '')
+            }
+            aria-label="Quick access"
+          >
             <div className="tylo-home-card-head">
               <div className="tylo-home-card-head-left">
                 <span className="tylo-home-card-head-icon" aria-hidden="true">
@@ -1291,112 +1526,155 @@ export default function DashboardPage() {
                     <rect x="14" y="14" width="7" height="7" rx="1.5" />
                     <rect x="3" y="14" width="7" height="7" rx="1.5" />
                   </svg>
-                </span>
+                            </span>
                 <div>
                   <h2 className="tylo-home-card-title">Quick Access</h2>
-                  <p className="tylo-home-card-subtitle">Jump to key modules and workflows</p>
-                </div>
-              </div>
+                  <p className="tylo-home-card-subtitle">Jump to modules, workflows, or page links</p>
+                      </div>
+                      </div>
               <button
                 type="button"
                 className="tylo-home-customize-shortcuts-btn"
-                onClick={() => setPinPickerOpen((value) => !value)}
+                onClick={() => {
+                  setPinPickerOpen((value) => !value);
+                  closeQuickAddSearch();
+                }}
                 aria-expanded={pinPickerOpen}
                 aria-label="Customize pins / shortcuts"
               >
-                Customize
+                {pinPickerOpen ? 'Done' : 'Customize'}
               </button>
-            </div>
+                  </div>
 
-            {pinPickerOpen && (
-              <div className="tylo-home-pin-list" aria-label="Customize pinned modules">
-                {modules.map((module) => (
-                  <label key={module.id} className="tylo-home-pin-option">
-                    <input
-                      type="checkbox"
-                      checked={config.pinnedModules.includes(module.id)}
-                      onChange={(event) => setPinned(module.id, event.target.checked)}
-                    />
-                    <span className="tylo-home-pin-box" aria-hidden="true" />
-                    <span className="tylo-home-pin-label">{module.title}</span>
-                  </label>
-                ))}
+            {pinPickerOpen && quickAddOpen ? (
+              <div className="tylo-home-quick-add-search" aria-label="Add shortcut">
+                <label className="tylo-home-quick-add-search-field">
+                  <span className="sr-only">Search modules or paste a page URL</span>
+                  <input
+                    ref={quickAddInputRef}
+                    type="search"
+                    value={quickAddQuery}
+                    onChange={(event) => setQuickAddQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        closeQuickAddSearch();
+                        return;
+                      }
+                      if (event.key !== 'Enter') return;
+                      event.preventDefault();
+                      if (quickAddMatches[0]) {
+                        addQuickPin(quickAddMatches[0].id);
+                        return;
+                      }
+                      tryAddQuickUrl();
+                    }}
+                    placeholder="Module name or page URL…"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className="tylo-home-quick-add-search-clear"
+                    onClick={closeQuickAddSearch}
+                    aria-label="Close add shortcut"
+                    title="Close"
+                  >
+                    ×
+                  </button>
+                </label>
+                {quickAddMatches.length || quickAddUrlCandidate ? (
+                  <ul className="tylo-home-quick-add-search-results" role="listbox" aria-label="Matching shortcuts">
+                    {quickAddMatches.map((module) => (
+                      <li key={module.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          className="tylo-home-quick-add-search-option"
+                          onClick={() => addQuickPin(module.id)}
+                        >
+                          {module.title}
+                        </button>
+                      </li>
+                    ))}
+                    {quickAddUrlCandidate ? (
+                      <li key={`url-${quickAddUrlCandidate.to}`}>
+                        <button
+                          type="button"
+                          role="option"
+                          className="tylo-home-quick-add-search-option tylo-home-quick-add-search-option--url"
+                          onClick={tryAddQuickUrl}
+                        >
+                          Add page · {quickAddUrlCandidate.title}
+                          <small>{quickAddUrlCandidate.to}</small>
+                        </button>
+                      </li>
+                    ) : null}
+                  </ul>
+                ) : (
+                  <p className="tylo-home-quick-add-search-empty">
+                    {quickAddQuery.trim()
+                      ? 'No matching modules. Try a path like /camps or Label | /path.'
+                      : availableQuickPins.length
+                        ? 'Search a module, or paste a page URL.'
+                        : 'Paste a page URL (e.g. /camps or Label | /path).'}
+                  </p>
+                )}
               </div>
-            )}
+            ) : null}
 
-            <div className="tylo-home-quick-tiles-grid">
-              <Link to="/dashboard" className="tylo-home-quick-subtile tylo-home-quick-subtile--active">
-                <span className="tylo-home-subtile-icon"><DashboardIcon /></span>
-                <strong className="tylo-home-subtile-title">Operations Dashboard</strong>
-              </Link>
-              <Link to="/camps/manage" className="tylo-home-quick-subtile">
-                <span className="tylo-home-subtile-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                </span>
-                <strong className="tylo-home-subtile-title">Camp Operations</strong>
-              </Link>
-              <Link to="/master-data?scope=document&entity=contacts" className="tylo-home-quick-subtile">
-                <span className="tylo-home-subtile-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </span>
-                <strong className="tylo-home-subtile-title">Contact Directory</strong>
-              </Link>
-              <Link to="/agreements" className="tylo-home-quick-subtile">
-                <span className="tylo-home-subtile-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                </span>
-                <strong className="tylo-home-subtile-title">Agreements Hub</strong>
-              </Link>
-              <Link to="/finance" className="tylo-home-quick-subtile">
-                <span className="tylo-home-subtile-icon tylo-home-subtile-icon--currency">₹</span>
-                <strong className="tylo-home-subtile-title">Finance One</strong>
-              </Link>
-              <Link to="/movement-one/outward" className="tylo-home-quick-subtile">
-                <span className="tylo-home-subtile-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="1" y="3" width="15" height="13" />
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                    <circle cx="5.5" cy="18.5" r="2.5" />
-                    <circle cx="18.5" cy="18.5" r="2.5" />
-                  </svg>
-                </span>
-                <strong className="tylo-home-subtile-title">Goods Dispatch</strong>
-              </Link>
-              <Link to="/camps/manage" className="tylo-home-quick-subtile">
-                <span className="tylo-home-subtile-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                </span>
-                <strong className="tylo-home-subtile-title">Camp Schedule</strong>
-              </Link>
-              <Link to="/notifications?tab=approvals" className="tylo-home-quick-subtile tylo-home-quick-subtile--has-badge">
-                <span className="tylo-home-subtile-badge">3</span>
-                <span className="tylo-home-subtile-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <polyline points="9 12 11 14 15 10" />
-                  </svg>
-                </span>
-                <strong className="tylo-home-subtile-title">Pending Approvals</strong>
-              </Link>
-            </div>
+            {!quickAddOpen ? (
+              <div className="tylo-home-quick-tiles-grid">
+                {quickAccessTiles.map((tile) => {
+                  const tileBody = (
+                    <>
+                      <span className="tylo-home-subtile-icon" aria-hidden="true">{tile.icon}</span>
+                      <strong className="tylo-home-subtile-title">{tile.title}</strong>
+                    </>
+                  );
+                  if (pinPickerOpen) {
+                    return (
+                      <div key={tile.key} className="tylo-home-quick-subtile is-editing">
+                        <button
+                          type="button"
+                          className="tylo-home-quick-tile-remove"
+                          aria-label={`Remove ${tile.title}`}
+                          title={`Remove ${tile.title}`}
+                          onClick={() => removeQuickAccessItem(tile.id)}
+                        >
+                          ×
+                        </button>
+                        {tileBody}
+          </div>
+                    );
+                  }
+                  return (
+                    <Link key={tile.key} to={tile.to} className="tylo-home-quick-subtile">
+                      {tileBody}
+                    </Link>
+                  );
+                })}
+                {pinPickerOpen
+                  ? Array.from({ length: emptyQuickSlots }, (_, index) => (
+                      <button
+                        key={`empty-slot-${index}`}
+                        type="button"
+                        className="tylo-home-quick-subtile tylo-home-quick-subtile--empty"
+                        aria-label="Add shortcut"
+                        title="Add shortcut"
+                        onClick={openQuickAddSearch}
+                      >
+                        <span className="tylo-home-quick-tile-add" aria-hidden="true">+</span>
+                      </button>
+                    ))
+                  : null}
+                {!pinPickerOpen && !quickAccessTiles.length ? (
+                  <div className="tylo-home-quick-empty-hint">
+                    <strong>No shortcuts yet</strong>
+                    <span>Use Customize to pin modules or add a page URL.</span>
+        </div>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         </div>
 

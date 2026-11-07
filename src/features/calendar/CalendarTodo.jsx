@@ -4,6 +4,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import './calendarTodo.css';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS_COMPACT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const KINDS = [
   { id: 'task', label: 'Task' },
   { id: 'block', label: 'Block calendar' },
@@ -260,8 +261,8 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
       <div className="tylo-cal-layout">
         <div className="tylo-cal-grid-wrap">
           <div className="tylo-cal-weekdays">
-            {WEEKDAYS.map((day) => (
-              <span key={day}>{day}</span>
+            {(compact ? WEEKDAYS_COMPACT : WEEKDAYS).map((day, index) => (
+              <span key={`${WEEKDAYS[index]}-${index}`} title={WEEKDAYS[index]}>{day}</span>
             ))}
           </div>
           <div className="tylo-cal-grid" role="grid" aria-label={formatMonthTitle(cursor)}>
@@ -283,6 +284,11 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
                   }
                   onClick={() => setSelectedDate(day)}
                   onDoubleClick={() => openCreate(day)}
+                  aria-label={
+                    dayItems.length
+                      ? `${day.getDate()}, ${dayItems.length} item${dayItems.length === 1 ? '' : 's'}`
+                      : String(day.getDate())
+                  }
                 >
                   <span className="tylo-cal-day-num">{day.getDate()}</span>
                   <span className="tylo-cal-dots" aria-hidden="true">
@@ -296,7 +302,7 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
           </div>
         </div>
 
-        <div className="tylo-cal-day-panel">
+        <div className={'tylo-cal-day-panel' + (compact ? ' tylo-cal-day-panel--dock' : '')}>
           <div className="tylo-cal-day-head">
             <div>
               <h4>

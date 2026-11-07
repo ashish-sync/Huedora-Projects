@@ -1943,11 +1943,11 @@
 
 .tylo-home-welcome-range-to {
   flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--home-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--home-text);
   line-height: 1;
-  padding: 0 2px;
+  padding: 0 4px;
 }
 
 .tylo-home-welcome-range-date {
@@ -2952,6 +2952,118 @@
 
 .tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-card-subtitle {
   font-size: 11px;
+}
+
+.tylo-home-ops-grid .tylo-home-pipeline-panel {
+  --welcome-control-height: 32px;
+  --welcome-control-pad-x: 8px;
+  --welcome-control-radius: 8px;
+}
+
+.tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-pipeline-head {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px 12px;
+  min-width: 0;
+}
+
+.tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-pipeline-head .tylo-home-card-head-left {
+  flex: 0 0 auto;
+}
+
+.tylo-home-pipeline-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.tylo-home-pipeline-filter {
+  flex: 0 1 132px;
+  min-width: 100px;
+  max-width: 160px;
+  display: flex;
+  align-items: stretch;
+}
+
+.tylo-home-pipeline-filter--users {
+  flex: 0 1 168px;
+  max-width: 200px;
+}
+
+.tylo-home-pipeline-select {
+  width: 100%;
+  font-size: 11px;
+  padding-inline: 8px;
+}
+
+.tylo-home-pipeline-range {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.tylo-home-pipeline-range-date {
+  width: 128px;
+  flex: 0 0 128px;
+  min-width: 118px;
+}
+
+.tylo-home-pipeline-range-date .date-input-control {
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  border-radius: var(--welcome-control-radius);
+  border: 1px solid var(--home-border);
+  background: var(--bg-input, var(--home-muted));
+}
+
+.tylo-home-pipeline-range-date .date-input-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--home-text);
+  padding: 0 28px 0 10px;
+}
+
+.tylo-home-pipeline-range-date .date-input-picker-btn {
+  right: 8px;
+  color: var(--home-text);
+}
+
+.tylo-home-pipeline-range .tylo-home-welcome-range-apply {
+  flex: 0 0 auto;
+  padding: 0 14px;
+}
+
+.tylo-home-pipeline-range .tylo-home-welcome-range-clear {
+  flex: 0 0 auto;
+}
+
+.tylo-home-pipeline-status {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--home-secondary);
+}
+
+.tylo-home-pipeline-status--error {
+  color: var(--color-danger, #b42318);
+}
+
+@media (max-width: 900px) {
+  .tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-pipeline-head {
+    flex-wrap: wrap;
+  }
+
+  .tylo-home-pipeline-controls {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
 }
 
 .tylo-home-ops-grid .tylo-home-pipeline-grid {

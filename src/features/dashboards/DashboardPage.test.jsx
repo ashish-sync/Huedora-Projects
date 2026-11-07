@@ -93,9 +93,26 @@ describe('DashboardPage homepage', () => {
     testUser.id = 'admin-1';
     testUser.fullName = 'Local Admin';
     testUser.role = 'admin';
+    testUser.systemRole = 'Super Admin';
     apiMock.mockReset();
     apiMock.mockImplementation(async (path) => {
       if (path === '/dashboards/overview') return { data: MOCK_OVERVIEW };
+      if (String(path).startsWith('/dashboards/camp-pipeline')) {
+        return {
+          data: {
+            total: 0,
+            stages: [
+              { id: 'request', total: 0, byStatus: {}, statuses: [] },
+              { id: 'assignment', total: 0, byStatus: {}, statuses: [] },
+              { id: 'execution', total: 0, byStatus: {}, statuses: [] },
+              { id: 'financial', total: 0, byStatus: {}, statuses: [] },
+            ],
+          },
+        };
+      }
+      if (String(path).startsWith('/camp-ops/client-masters/ops-board-filters')) {
+        return { data: { methods: [], assignedUsers: [] } };
+      }
       if (String(path).startsWith('/dashboards/camp-quality')) {
         return {
           data: {

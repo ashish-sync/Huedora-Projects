@@ -150,7 +150,7 @@ export default function WelcomeMetrics({ enabled = true }) {
               onChange={setDraftFrom}
               className="tylo-home-welcome-range-date"
             />
-            <span className="tylo-home-welcome-range-to">to</span>
+            <span className="tylo-home-welcome-range-to">To</span>
             <DateInput
               hideLabel
               aria-label="To date"

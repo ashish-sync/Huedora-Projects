@@ -6,6 +6,7 @@ import { api } from '../../shared/api.js';
 import InternalChat from '../chat/InternalChat.jsx';
 import CalendarTodo from '../calendar/CalendarTodo.jsx';
 import WelcomeMetrics from './WelcomeMetrics.jsx';
+import CampPipelinePanel from './CampPipelinePanel.jsx';
 import './homepage.css';
 
 export const MODULES = OPERATIONAL_MODULES;
@@ -240,15 +241,6 @@ function getStatusCount(map, keys) {
     if (valExact !== null) return valExact;
   }
   return null;
-}
-
-function stageNumClass(count, tone) {
-  const base = 'tylo-home-stage-num';
-  if (!count) return `${base} is-zero`;
-  if (tone === 'danger') return `${base} tylo-home-stage-num--danger`;
-  if (tone === 'success') return `${base} tylo-home-stage-num--success`;
-  if (tone === 'warn') return `${base} tylo-home-stage-num--warn`;
-  return base;
 }
 
 function sumKnown(...values) {
@@ -644,54 +636,6 @@ export default function DashboardPage() {
       campsByStatus,
     };
   }, [overview, canSeeModule, filteredAlerts, filteredPending]);
-
-  // Operational 4-Stage Status Breakdown
-  const stageData = useMemo(() => {
-    const cMap = metrics?.campsByStatus || {};
-    const reviewPending = getStatusCount(cMap, ['review_pending', 'REQUESTED']) ?? 0;
-    const reviewOverdue = getStatusCount(cMap, ['review_overdue']) ?? 0;
-    const refusals = getStatusCount(cMap, ['request_rejected', 'refused', 'REFUSED']) ?? 0;
-    const infoRequested = getStatusCount(cMap, ['information_requested']) ?? 0;
-
-    const unassigned = getStatusCount(cMap, ['unassigned', 'UNASSIGNED']) ?? 0;
-    const hiringRequested = getStatusCount(cMap, ['hiring_requested', 'HIRING_REQUESTED']) ?? 0;
-
-    const planned = getStatusCount(cMap, ['planned', 'SCHEDULED', 'UPCOMING', 'PLANNED']) ?? 0;
-    const executed = getStatusCount(cMap, ['executed', 'COMPLETED', 'EXECUTED']) ?? 0;
-    const cancelledByTylo = getStatusCount(cMap, ['cancelled_by_tylo']) ?? 0;
-    const cancelledByClient = getStatusCount(cMap, ['cancelled_by_client']) ?? 0;
-
-    const pendingConfirmation = getStatusCount(cMap, ['payment_not_checked']) ?? 0;
-    const confirmedPayment = getStatusCount(cMap, ['payment_confirmed']) ?? 0;
-    const hold = getStatusCount(cMap, ['payment_hold']) ?? 0;
-    const paymentDone = getStatusCount(cMap, ['payment_done']) ?? 0;
-
-    const requestTotal = reviewPending + reviewOverdue + refusals + infoRequested;
-    const assignmentTotal = unassigned + hiringRequested;
-    const executionTotal = planned + executed + cancelledByTylo + cancelledByClient;
-    const financialTotal = pendingConfirmation + confirmedPayment + hold + paymentDone;
-
-    return {
-      reviewPending,
-      reviewOverdue,
-      refusals,
-      infoRequested,
-      unassigned,
-      hiringRequested,
-      planned,
-      executed,
-      cancelledByTylo,
-      cancelledByClient,
-      pendingConfirmation,
-      confirmedPayment,
-      hold,
-      paymentDone,
-      requestTotal,
-      assignmentTotal,
-      executionTotal,
-      financialTotal,
-    };
-  }, [metrics]);
 
   // Camp Schedule Calculation (Morning, Afternoon, Evening x Today, Tomorrow, Day After, MTD + Totals)
   const scheduleData = useMemo(() => {
@@ -1334,115 +1278,7 @@ export default function DashboardPage() {
           </section>
 
           {/* Bottom-left: Camp Pipeline (stages) */}
-          <section className="tylo-home-panel tylo-home-pipeline-panel" aria-label="Camp pipeline">
-            <div className="tylo-home-card-head">
-              <div className="tylo-home-card-head-left">
-                <span className="tylo-home-card-head-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </svg>
-                </span>
-                <div>
-                  <h2 className="tylo-home-card-title">Camp Pipeline</h2>
-                  <p className="tylo-home-card-subtitle">Request through financial status</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="tylo-home-pipeline-grid">
-              <div className="tylo-home-stage-tile tylo-home-stage-tile--request">
-                <div className="tylo-home-stage-tile-head">
-                  <div className="tylo-home-stage-tile-title"><span>Request</span></div>
-                  <span className="tylo-home-stage-tile-count">{stageData.requestTotal}</span>
-                </div>
-                <div className="tylo-home-stage-tile-rows">
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Review Pending</span>
-                    <span className={stageNumClass(stageData.reviewPending)}>{stageData.reviewPending}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Review Overdue</span>
-                    <span className={stageNumClass(stageData.reviewOverdue, 'danger')}>{stageData.reviewOverdue}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Refusals</span>
-                    <span className={stageNumClass(stageData.refusals)}>{stageData.refusals}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Info Requested</span>
-                    <span className={stageNumClass(stageData.infoRequested)}>{stageData.infoRequested}</span>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="tylo-home-stage-tile tylo-home-stage-tile--assignment">
-                <div className="tylo-home-stage-tile-head">
-                  <div className="tylo-home-stage-tile-title"><span>Assignment</span></div>
-                  <span className="tylo-home-stage-tile-count">{stageData.assignmentTotal}</span>
-                </div>
-                <div className="tylo-home-stage-tile-rows">
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Unassigned</span>
-                    <span className={stageNumClass(stageData.unassigned)}>{stageData.unassigned}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Hiring Requested</span>
-                    <span className={stageNumClass(stageData.hiringRequested)}>{stageData.hiringRequested}</span>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="tylo-home-stage-tile tylo-home-stage-tile--execution">
-                <div className="tylo-home-stage-tile-head">
-                  <div className="tylo-home-stage-tile-title"><span>Execution</span></div>
-                  <span className="tylo-home-stage-tile-count">{stageData.executionTotal}</span>
-                </div>
-                <div className="tylo-home-stage-tile-rows">
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Planned</span>
-                    <span className={stageNumClass(stageData.planned, 'warn')}>{stageData.planned}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Executed</span>
-                    <span className={stageNumClass(stageData.executed, 'success')}>{stageData.executed}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Cancelled by Tylo</span>
-                    <span className={stageNumClass(stageData.cancelledByTylo, 'danger')}>{stageData.cancelledByTylo}</span>
-                  </Link>
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
-                    <span>Cancelled by Client</span>
-                    <span className={stageNumClass(stageData.cancelledByClient, 'danger')}>{stageData.cancelledByClient}</span>
-                  </Link>
-                </div>
-              </div>
-
-              <div className="tylo-home-stage-tile tylo-home-stage-tile--financial">
-                <div className="tylo-home-stage-tile-head">
-                  <div className="tylo-home-stage-tile-title"><span>Financial</span></div>
-                  <span className="tylo-home-stage-tile-count">{stageData.financialTotal}</span>
-                </div>
-                <div className="tylo-home-stage-tile-rows">
-                  <Link to="/finance" className="tylo-home-stage-row-link">
-                    <span>Pending Confirmation</span>
-                    <span className={stageNumClass(stageData.pendingConfirmation)}>{stageData.pendingConfirmation}</span>
-                  </Link>
-                  <Link to="/finance" className="tylo-home-stage-row-link">
-                    <span>Confirmed Payment</span>
-                    <span className={stageNumClass(stageData.confirmedPayment, 'success')}>{stageData.confirmedPayment}</span>
-                  </Link>
-                  <Link to="/finance" className="tylo-home-stage-row-link">
-                    <span>Hold</span>
-                    <span className={stageNumClass(stageData.hold, 'danger')}>{stageData.hold}</span>
-                  </Link>
-                  <Link to="/finance" className="tylo-home-stage-row-link">
-                    <span>Payment Done</span>
-                    <span className={stageNumClass(stageData.paymentDone, 'success')}>{stageData.paymentDone}</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
+          <CampPipelinePanel enabled={canSeeDashboard} user={user} />
 
           {/* Bottom-right: Quick Access */}
           <section className="tylo-home-panel tylo-home-quick-panel" aria-label="Quick access">

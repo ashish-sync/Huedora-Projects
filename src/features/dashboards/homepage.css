@@ -1825,7 +1825,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
   overflow: hidden;
 }
@@ -1838,6 +1838,7 @@
   max-width: 100%;
   flex: 0 0 auto;
   padding: 0;
+  margin-bottom: 2px;
 }
 
 .tylo-home-ops-grid .tylo-home-greeting-title {
@@ -1863,12 +1864,12 @@
 }
 
 .tylo-home-welcome-metrics {
-  --welcome-control-height: 34px;
+  --welcome-control-height: 36px;
   --welcome-control-pad-x: 10px;
   --welcome-control-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
@@ -1878,7 +1879,7 @@
 .tylo-home-welcome-controls {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 8px;
   flex: 0 0 auto;
   min-width: 0;
   align-items: stretch;
@@ -1894,13 +1895,10 @@
 }
 
 .tylo-home-welcome-range {
-  --welcome-range-height: 44px;
-  position: relative;
   min-width: 0;
   display: flex;
-  align-items: stretch;
-  height: var(--welcome-range-height);
-  min-height: var(--welcome-range-height);
+  flex-direction: column;
+  gap: 4px;
 }
 
 .tylo-home-welcome-control {
@@ -1934,80 +1932,166 @@
   outline: none;
 }
 
-.tylo-home-welcome-range-trigger {
-  height: var(--welcome-range-height);
-  min-height: var(--welcome-range-height);
-  max-height: var(--welcome-range-height);
-  gap: 10px;
-  padding: 6px 12px;
-  background: color-mix(in srgb, var(--home-blue) 8%, var(--bg-input, var(--home-muted)));
-  border-color: color-mix(in srgb, var(--home-blue) 28%, var(--home-border));
-}
-
-.tylo-home-welcome-range-trigger:hover,
-.tylo-home-welcome-range-trigger:focus-visible {
-  border-color: var(--home-blue);
-  background: color-mix(in srgb, var(--home-blue) 12%, var(--bg-input, var(--home-muted)));
-}
-
-.tylo-home-welcome-range-trigger .tylo-home-welcome-control-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--home-blue) 16%, transparent);
-  color: var(--home-blue);
-}
-
-.tylo-home-welcome-range-parts {
-  flex: 1 1 auto;
-  min-width: 0;
+.tylo-home-welcome-range-inline {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto auto;
   align-items: center;
-  column-gap: 8px;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 
-.tylo-home-welcome-range-part {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
+.tylo-home-welcome-range-to {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--home-secondary);
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.tylo-home-welcome-range-date {
+  min-width: 0;
+  width: 100%;
+}
+
+.tylo-home-welcome-range-date .date-input-field,
+.tylo-home-welcome-range-date .date-input-control {
+  width: 100%;
   min-width: 0;
 }
 
-.tylo-home-welcome-range-part:last-child {
-  align-items: flex-end;
-  text-align: right;
+.tylo-home-welcome-range-date .date-input-control {
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  border-radius: var(--welcome-control-radius);
+  border: 1px solid var(--home-border);
+  background: var(--bg-input, var(--home-muted));
+  box-sizing: border-box;
 }
 
-.tylo-home-welcome-range-eyebrow {
-  font-size: 9px;
+.tylo-home-welcome-range-date .date-input-display {
+  height: 100%;
+  min-height: 0;
+  padding: 0 28px 0 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--home-muted-text, var(--home-secondary));
-  line-height: 1.2;
-}
-
-.tylo-home-welcome-range-value {
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
   color: var(--home-text);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  background: transparent;
+  border: 0;
 }
 
-.tylo-home-welcome-range-sep {
-  flex-shrink: 0;
+.tylo-home-welcome-range-date .date-input-display::placeholder {
+  color: var(--home-muted-text, var(--home-secondary));
+  font-weight: 500;
+}
+
+.tylo-home-welcome-range-date .date-input-picker-btn {
+  right: 8px;
   color: var(--home-secondary);
-  font-size: 13px;
+}
+
+.tylo-home-welcome-range-apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
+  padding: 0 12px;
+  margin: 0;
+  border-radius: var(--welcome-control-radius);
+  border: 1px solid var(--home-blue);
+  background: var(--home-blue);
+  color: var(--text-on-brand, #fff);
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
-  padding-top: 10px;
+  letter-spacing: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tylo-home-welcome-range-apply:hover:not(:disabled) {
+  background: var(--home-blue-hover);
+  border-color: var(--home-blue-hover);
+}
+
+.tylo-home-welcome-range-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tylo-home-welcome-range-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: var(--welcome-control-height);
+  height: var(--welcome-control-height);
+  min-width: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
+  padding: 0;
+  margin: 0;
+  border-radius: var(--welcome-control-radius);
+  border: 1px solid var(--home-border);
+  background: var(--bg-input, var(--home-muted));
+  color: var(--home-secondary);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.tylo-home-welcome-range-clear:hover {
+  border-color: var(--home-border-strong, var(--home-border));
+  color: var(--home-text);
+  background: var(--home-hover);
+}
+
+.tylo-home-welcome-range-clear svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.tylo-home-welcome-range-hint {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--home-secondary);
+  line-height: 1.3;
+}
+
+@media (max-width: 420px) {
+  .tylo-home-welcome-range-inline {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas:
+      'from sep to'
+      'apply apply clear';
+  }
+
+  .tylo-home-welcome-range-inline > .tylo-home-welcome-range-date:first-of-type {
+    grid-area: from;
+  }
+
+  .tylo-home-welcome-range-to {
+    grid-area: sep;
+  }
+
+  .tylo-home-welcome-range-inline > .tylo-home-welcome-range-date:last-of-type {
+    grid-area: to;
+  }
+
+  .tylo-home-welcome-range-apply {
+    grid-area: apply;
+  }
+
+  .tylo-home-welcome-range-clear {
+    grid-area: clear;
+    justify-self: end;
+  }
 }
 
 .tylo-home-welcome-control-icon {
@@ -2024,11 +2108,6 @@
   width: 14px;
   height: 14px;
   display: block;
-}
-
-.tylo-home-welcome-range-trigger .tylo-home-welcome-control-icon svg {
-  width: 15px;
-  height: 15px;
 }
 
 .tylo-home-welcome-control-label {
@@ -2092,51 +2171,14 @@
   outline: none;
 }
 
-.tylo-home-welcome-range-popover {
-  position: absolute;
-  z-index: 30;
-  top: calc(100% + 4px);
-  left: 0;
-  width: min(280px, 78vw);
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border-strong, var(--home-border));
-  background: var(--bg-tier-3, var(--home-surface));
-  box-shadow: 0 10px 28px color-mix(in srgb, #000 22%, transparent);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tylo-home-welcome-range-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.tylo-home-welcome-range-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--home-secondary);
-  min-width: 0;
-}
-
-.tylo-home-welcome-range-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
 .tylo-home-welcome-metric-body {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .tylo-home-welcome-metric-status {
@@ -2152,10 +2194,12 @@
 .tylo-home-welcome-buckets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 5px;
-  flex: 0 0 auto;
+  gap: 6px;
+  flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
-  align-content: start;
+  align-content: stretch;
+  align-items: stretch;
 }
 
 .tylo-home-welcome-bucket {
@@ -2163,10 +2207,11 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  min-height: 64px;
-  padding: 10px 4px 8px;
+  min-height: 72px;
+  height: 100%;
+  padding: 12px 5px 10px;
   border-radius: 8px;
   border: 0;
   background: var(--home-muted);
@@ -2210,7 +2255,8 @@
 }
 
 .tylo-home-welcome-bucket--neutral {
-  background: var(--home-muted);
+  background: var(--home-surface-subtle, var(--home-muted));
+  box-shadow: inset 0 0 0 1px var(--home-border);
 }
 
 .tylo-home-welcome-bucket--ok {

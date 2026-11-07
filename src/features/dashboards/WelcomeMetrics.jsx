@@ -1,8 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { api } from '../../shared/api.js';
-import { parseToDate } from '../../shared/dateFormat.js';
-import { getDefaultMonthDateRange, toDateInputValue } from '../camps/utils/dateRange.js';
+import { getWelcomeDefaultDateRange, toDateInputValue } from '../camps/utils/dateRange.js';
 
 export const WELCOME_METRIC_OPTIONS = [
   { id: 'punctuality', label: 'Punctuality' },
@@ -11,25 +10,6 @@ export const WELCOME_METRIC_OPTIONS = [
   { id: 'campCycle', label: 'Avg. Camp Cycle' },
   { id: 'avgPayout', label: 'Avg. Payout' },
 ];
-
-function formatRangePart(value) {
-  const date = parseToDate(value);
-  if (!date) return '—';
-  const currentYear = new Date().getFullYear();
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    ...(date.getFullYear() === currentYear ? {} : { year: 'numeric' }),
-  }).format(date);
-}
-
-function formatCompactRangeLabel(from, to) {
-  const fromLabel = formatRangePart(from);
-  const toLabel = formatRangePart(to);
-  if (fromLabel === '—' || toLabel === '—') return 'Select dates';
-  if (fromLabel === toLabel) return fromLabel;
-  return `${fromLabel} – ${toLabel}`;
-}
 
 export function welcomeBucketTone(key) {
   switch (String(key || '').trim()) {
@@ -57,30 +37,25 @@ function formatAmount(value) {
   return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
-function CalendarGlyph() {
+function ClearGlyph() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" />
     </svg>
   );
 }
 
 export default function WelcomeMetrics({ enabled = true }) {
-  const defaultRange = useMemo(() => getDefaultMonthDateRange(), []);
+  const defaultRange = useMemo(() => getWelcomeDefaultDateRange(), []);
   const [draftFrom, setDraftFrom] = useState(defaultRange.dateFrom);
   const [draftTo, setDraftTo] = useState(defaultRange.dateTo);
   const [appliedFrom, setAppliedFrom] = useState(defaultRange.dateFrom);
   const [appliedTo, setAppliedTo] = useState(defaultRange.dateTo);
   const [metric, setMetric] = useState('punctuality');
-  const [rangeOpen, setRangeOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [payload, setPayload] = useState(null);
-  const popoverRef = useRef(null);
-  const triggerRef = useRef(null);
   const metricSelectId = useId();
 
   useEffect(() => {
@@ -122,29 +97,8 @@ export default function WelcomeMetrics({ enabled = true }) {
     };
   }, [enabled, metric, appliedFrom, appliedTo]);
 
-  useEffect(() => {
-    if (!rangeOpen) return undefined;
-
-    function handlePointerDown(event) {
-      const target = event.target;
-      if (popoverRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
-      setRangeOpen(false);
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') setRangeOpen(false);
-    }
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [rangeOpen]);
-
-  const rangeLabel = formatCompactRangeLabel(appliedFrom, appliedTo);
   const metricLabel = WELCOME_METRIC_OPTIONS.find((option) => option.id === metric)?.label || 'Metric';
+  const draftDirty = draftFrom !== appliedFrom || draftTo !== appliedTo;
 
   function applyRange() {
     const from = draftFrom || toDateInputValue(new Date());
@@ -155,20 +109,15 @@ export default function WelcomeMetrics({ enabled = true }) {
     setDraftTo(orderedTo);
     setAppliedFrom(orderedFrom);
     setAppliedTo(orderedTo);
-    setRangeOpen(false);
   }
 
   function clearRange() {
-    const next = getDefaultMonthDateRange();
+    const next = getWelcomeDefaultDateRange();
     setDraftFrom(next.dateFrom);
     setDraftTo(next.dateTo);
     setAppliedFrom(next.dateFrom);
     setAppliedTo(next.dateTo);
-    setRangeOpen(false);
   }
-
-  const fromPart = formatRangePart(appliedFrom);
-  const toPart = formatRangePart(appliedTo);
 
   return (
     <div className="tylo-home-welcome-metrics">
@@ -191,76 +140,47 @@ export default function WelcomeMetrics({ enabled = true }) {
           </select>
         </label>
 
-        <div className="tylo-home-welcome-range">
-          <button
-            ref={triggerRef}
-            type="button"
-            className="tylo-home-welcome-control tylo-home-welcome-range-trigger"
-            aria-haspopup="dialog"
-            aria-expanded={rangeOpen}
-            aria-label={`Date range ${rangeLabel}`}
-            title={rangeLabel}
-            onClick={() => {
-              setDraftFrom(appliedFrom);
-              setDraftTo(appliedTo);
-              setRangeOpen((open) => !open);
-            }}
-          >
-            <span className="tylo-home-welcome-control-icon" aria-hidden="true">
-              <CalendarGlyph />
-            </span>
-            <span className="tylo-home-welcome-range-parts">
-              <span className="tylo-home-welcome-range-part">
-                <span className="tylo-home-welcome-range-eyebrow">From</span>
-                <span className="tylo-home-welcome-range-value">{fromPart}</span>
-              </span>
-              <span className="tylo-home-welcome-range-sep" aria-hidden="true">–</span>
-              <span className="tylo-home-welcome-range-part">
-                <span className="tylo-home-welcome-range-eyebrow">To</span>
-                <span className="tylo-home-welcome-range-value">{toPart}</span>
-              </span>
-            </span>
-            <span className="tylo-dropdown-chevron tylo-home-welcome-control-chevron" aria-hidden="true" />
-          </button>
-
-          {rangeOpen ? (
-            <div
-              ref={popoverRef}
-              className="tylo-home-welcome-range-popover"
-              role="dialog"
-              aria-label="Choose date range"
+        <div className="tylo-home-welcome-range" role="group" aria-label="Date range">
+          <div className="tylo-home-welcome-range-inline">
+            <DateInput
+              hideLabel
+              aria-label="From date"
+              value={draftFrom}
+              max={draftTo || undefined}
+              onChange={setDraftFrom}
+              className="tylo-home-welcome-range-date"
+            />
+            <span className="tylo-home-welcome-range-to">to</span>
+            <DateInput
+              hideLabel
+              aria-label="To date"
+              value={draftTo}
+              min={draftFrom || undefined}
+              onChange={setDraftTo}
+              className="tylo-home-welcome-range-date"
+            />
+            <button
+              type="button"
+              className="tylo-home-welcome-range-apply"
+              onClick={applyRange}
+              disabled={!draftFrom || !draftTo}
+              aria-label="Apply date range"
+              title="Apply"
             >
-              <div className="tylo-home-welcome-range-fields">
-                <label className="tylo-home-welcome-range-field">
-                  <span>From</span>
-                  <DateInput
-                    hideLabel
-                    aria-label="From date"
-                    value={draftFrom}
-                    max={draftTo || undefined}
-                    onChange={setDraftFrom}
-                  />
-                </label>
-                <label className="tylo-home-welcome-range-field">
-                  <span>To</span>
-                  <DateInput
-                    hideLabel
-                    aria-label="To date"
-                    value={draftTo}
-                    min={draftFrom || undefined}
-                    onChange={setDraftTo}
-                  />
-                </label>
-              </div>
-              <div className="tylo-home-welcome-range-actions">
-                <button type="button" className="btn btn-compact" onClick={applyRange}>
-                  Apply
-                </button>
-                <button type="button" className="btn secondary btn-compact" onClick={clearRange}>
-                  Reset
-                </button>
-              </div>
-            </div>
+              Apply
+            </button>
+            <button
+              type="button"
+              className="tylo-home-welcome-range-clear"
+              onClick={clearRange}
+              aria-label="Reset date range"
+              title="Reset to today through month end"
+            >
+              <ClearGlyph />
+            </button>
+          </div>
+          {draftDirty ? (
+            <p className="tylo-home-welcome-range-hint">Press Apply to update metrics.</p>
           ) : null}
         </div>
       </div>

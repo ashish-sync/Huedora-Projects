@@ -137,7 +137,11 @@ describe('DashboardPage homepage', () => {
     expect(screen.getByRole('button', { name: 'My View' })).toBeTruthy();
     expect(await screen.findByRole('region', { name: 'Welcome' }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole('heading', { name: /^Welcome Local$/i })).toBeTruthy();
-    expect(screen.getByLabelText(/Date range/i)).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Date range' })).toBeTruthy();
+    expect(screen.getByLabelText('From date')).toBeTruthy();
+    expect(screen.getByLabelText('To date')).toBeTruthy();
+    expect(screen.getByLabelText('Apply date range')).toBeTruthy();
+    expect(screen.getByLabelText('Reset date range')).toBeTruthy();
     expect(screen.getByLabelText('Camp quality metric')).toBeTruthy();
     await waitFor(() => {
       expect(apiMock.mock.calls.some(([path]) => String(path).startsWith('/dashboards/camp-quality'))).toBe(true);

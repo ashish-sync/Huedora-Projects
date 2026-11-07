@@ -54,3 +54,13 @@ export function getDefaultMonthDateRange() {
     dateTo: toDateInputValue(to),
   };
 }
+
+/** Welcome card default: today through the last day of the current month. */
+export function getWelcomeDefaultDateRange() {
+  const from = getTodayDate();
+  const to = new Date(from.getFullYear(), from.getMonth() + 1, 0);
+  return {
+    dateFrom: toDateInputValue(from),
+    dateTo: toDateInputValue(to),
+  };
+}

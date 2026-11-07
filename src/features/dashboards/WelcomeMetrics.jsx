@@ -13,15 +13,35 @@ export const WELCOME_METRIC_OPTIONS = [
 ];
 
 function formatCompactRangeLabel(from, to) {
-  const formatter = new Intl.DateTimeFormat('en-GB', {
+  const fromDate = parseToDate(from);
+  const toDate = parseToDate(to);
+  if (!fromDate || !toDate) return 'Select dates';
+
+  const day = new Intl.DateTimeFormat('en-GB', { day: '2-digit' });
+  const dayMonth = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' });
+  const full = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
-  const fromDate = parseToDate(from);
-  const toDate = parseToDate(to);
-  if (!fromDate || !toDate) return 'Select dates';
-  return `${formatter.format(fromDate)} – ${formatter.format(toDate)}`;
+
+  if (fromDate.getTime() === toDate.getTime()) {
+    return full.format(fromDate);
+  }
+
+  const sameMonth =
+    fromDate.getFullYear() === toDate.getFullYear()
+    && fromDate.getMonth() === toDate.getMonth();
+  if (sameMonth) {
+    return `${day.format(fromDate)} – ${full.format(toDate)}`;
+  }
+
+  const sameYear = fromDate.getFullYear() === toDate.getFullYear();
+  if (sameYear) {
+    return `${dayMonth.format(fromDate)} – ${full.format(toDate)}`;
+  }
+
+  return `${full.format(fromDate)} – ${full.format(toDate)}`;
 }
 
 function formatAmount(value) {

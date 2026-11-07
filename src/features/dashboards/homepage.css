@@ -1869,7 +1869,7 @@
 
 .tylo-home-welcome-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 6px;
   flex: 0 0 auto;
   min-width: 0;
@@ -1883,7 +1883,7 @@
 .tylo-home-welcome-control {
   width: 100%;
   min-width: 0;
-  height: 34px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1892,7 +1892,7 @@
   border: 1px solid var(--home-border);
   background: var(--bg-input, var(--home-muted));
   color: var(--home-text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
@@ -1923,7 +1923,7 @@
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   text-align: left;
 }
 
@@ -1949,7 +1949,7 @@
 .tylo-home-welcome-metric-select {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 28px;
+  padding-right: 30px;
   cursor: pointer;
 }
 
@@ -2019,20 +2019,22 @@
 
 .tylo-home-welcome-buckets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   gap: 6px;
   flex: 1 1 auto;
   min-height: 0;
-  align-content: stretch;
+  align-content: start;
 }
 
 .tylo-home-welcome-bucket {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
+  align-items: center;
+  gap: 3px;
   min-width: 0;
-  padding: 8px 6px;
+  min-height: 56px;
+  padding: 8px 5px;
   border-radius: 8px;
   border: 1px solid var(--home-border);
   background: var(--home-surface-subtle, var(--home-muted));
@@ -2040,7 +2042,7 @@
 }
 
 .tylo-home-welcome-bucket-value {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.1;
   color: var(--home-text);
@@ -2048,13 +2050,15 @@
 }
 
 .tylo-home-welcome-bucket-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--home-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .tylo-home-welcome-bucket-hint {
@@ -2062,9 +2066,9 @@
   color: var(--home-muted-text, var(--home-secondary));
 }
 
-@media (max-width: 1100px) {
-  .tylo-home-welcome-controls {
-    grid-template-columns: 1fr;
+@media (min-width: 1201px) {
+  .tylo-home-welcome-buckets {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   }
 }
 .tylo-home-ops-grid > .tylo-home-workspace-panel { grid-column: 3; grid-row: 1; }

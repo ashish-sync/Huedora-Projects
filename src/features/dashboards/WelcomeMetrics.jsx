@@ -174,7 +174,7 @@ export default function WelcomeMetrics({ enabled = true }) {
               className="tylo-home-welcome-range-clear"
               onClick={clearRange}
               aria-label="Reset date range"
-              title="Reset to today through month end"
+              title="Reset to current month"
             >
               <ClearGlyph />
             </button>

@@ -136,7 +136,7 @@ describe('DashboardPage homepage', () => {
     expect(screen.getByRole('button', { name: /Tylo One Dashboard/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'My View' })).toBeTruthy();
     expect(await screen.findByRole('region', { name: 'Welcome' }, { timeout: 10000 })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: /Welcome back, Local!/i })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /^Welcome Local$/i })).toBeTruthy();
     expect(screen.getByLabelText(/Date range/i)).toBeTruthy();
     expect(screen.getByLabelText('Camp quality metric')).toBeTruthy();
     await waitFor(() => {

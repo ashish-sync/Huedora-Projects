@@ -242,6 +242,15 @@ function getStatusCount(map, keys) {
   return null;
 }
 
+function stageNumClass(count, tone) {
+  const base = 'tylo-home-stage-num';
+  if (!count) return `${base} is-zero`;
+  if (tone === 'danger') return `${base} tylo-home-stage-num--danger`;
+  if (tone === 'success') return `${base} tylo-home-stage-num--success`;
+  if (tone === 'warn') return `${base} tylo-home-stage-num--warn`;
+  return base;
+}
+
 function sumKnown(...values) {
   const available = values.filter((value) => value !== null && value !== undefined);
   return available.length ? available.reduce((sum, value) => sum + value, 0) : null;
@@ -647,15 +656,15 @@ export default function DashboardPage() {
     const unassigned = getStatusCount(cMap, ['unassigned', 'UNASSIGNED']) ?? 0;
     const hiringRequested = getStatusCount(cMap, ['hiring_requested', 'HIRING_REQUESTED']) ?? 0;
 
-    const planned = 1;
-    const executed = 1;
+    const planned = getStatusCount(cMap, ['planned', 'SCHEDULED', 'UPCOMING', 'PLANNED']) ?? 0;
+    const executed = getStatusCount(cMap, ['executed', 'COMPLETED', 'EXECUTED']) ?? 0;
     const cancelledByTylo = getStatusCount(cMap, ['cancelled_by_tylo']) ?? 0;
     const cancelledByClient = getStatusCount(cMap, ['cancelled_by_client']) ?? 0;
 
-    const pendingConfirmation = 0;
-    const confirmedPayment = 1;
-    const hold = 0;
-    const paymentDone = 1;
+    const pendingConfirmation = getStatusCount(cMap, ['payment_not_checked']) ?? 0;
+    const confirmedPayment = getStatusCount(cMap, ['payment_confirmed']) ?? 0;
+    const hold = getStatusCount(cMap, ['payment_hold']) ?? 0;
+    const paymentDone = getStatusCount(cMap, ['payment_done']) ?? 0;
 
     const requestTotal = reviewPending + reviewOverdue + refusals + infoRequested;
     const assignmentTotal = unassigned + hiringRequested;
@@ -1076,9 +1085,9 @@ export default function DashboardPage() {
               return (
                 <div className="tylo-home-greeting">
                   <h2 className="tylo-home-greeting-title">
-                    {welcomeFirst ? `Welcome back, ${welcomeFirst}!` : 'Welcome back!'}
+                    {welcomeFirst ? `Welcome ${welcomeFirst}` : 'Welcome'}
                   </h2>
-                  <p className="tylo-home-greeting-date">{welcomeDate}.</p>
+                  <p className="tylo-home-greeting-date">{welcomeDate}</p>
                 </div>
               );
             })()}
@@ -1349,19 +1358,19 @@ export default function DashboardPage() {
                 <div className="tylo-home-stage-tile-rows">
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Review Pending</span>
-                    <span className="tylo-home-stage-num">{stageData.reviewPending}</span>
+                    <span className={stageNumClass(stageData.reviewPending)}>{stageData.reviewPending}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Review Overdue</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.reviewOverdue}</span>
+                    <span className={stageNumClass(stageData.reviewOverdue, 'danger')}>{stageData.reviewOverdue}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Refusals</span>
-                    <span className="tylo-home-stage-num">{stageData.refusals}</span>
+                    <span className={stageNumClass(stageData.refusals)}>{stageData.refusals}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Info Requested</span>
-                    <span className="tylo-home-stage-num">{stageData.infoRequested}</span>
+                    <span className={stageNumClass(stageData.infoRequested)}>{stageData.infoRequested}</span>
                   </Link>
                 </div>
               </div>
@@ -1374,11 +1383,11 @@ export default function DashboardPage() {
                 <div className="tylo-home-stage-tile-rows">
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Unassigned</span>
-                    <span className="tylo-home-stage-num">{stageData.unassigned}</span>
+                    <span className={stageNumClass(stageData.unassigned)}>{stageData.unassigned}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Hiring Requested</span>
-                    <span className="tylo-home-stage-num">{stageData.hiringRequested}</span>
+                    <span className={stageNumClass(stageData.hiringRequested)}>{stageData.hiringRequested}</span>
                   </Link>
                 </div>
               </div>
@@ -1389,21 +1398,21 @@ export default function DashboardPage() {
                   <span className="tylo-home-stage-tile-count">{stageData.executionTotal}</span>
                 </div>
                 <div className="tylo-home-stage-tile-rows">
-                  <Link to="/camps/manage" className="tylo-home-stage-row-link tylo-home-stage-row-link--highlight">
+                  <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Planned</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--warn">{stageData.planned}</span>
+                    <span className={stageNumClass(stageData.planned, 'warn')}>{stageData.planned}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Executed</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.executed}</span>
+                    <span className={stageNumClass(stageData.executed, 'success')}>{stageData.executed}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Cancelled by Tylo</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.cancelledByTylo}</span>
+                    <span className={stageNumClass(stageData.cancelledByTylo, 'danger')}>{stageData.cancelledByTylo}</span>
                   </Link>
                   <Link to="/camps/manage" className="tylo-home-stage-row-link">
                     <span>Cancelled by Client</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.cancelledByClient}</span>
+                    <span className={stageNumClass(stageData.cancelledByClient, 'danger')}>{stageData.cancelledByClient}</span>
                   </Link>
                 </div>
               </div>
@@ -1416,19 +1425,19 @@ export default function DashboardPage() {
                 <div className="tylo-home-stage-tile-rows">
                   <Link to="/finance" className="tylo-home-stage-row-link">
                     <span>Pending Confirmation</span>
-                    <span className="tylo-home-stage-num">{stageData.pendingConfirmation}</span>
+                    <span className={stageNumClass(stageData.pendingConfirmation)}>{stageData.pendingConfirmation}</span>
                   </Link>
                   <Link to="/finance" className="tylo-home-stage-row-link">
                     <span>Confirmed Payment</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.confirmedPayment}</span>
+                    <span className={stageNumClass(stageData.confirmedPayment, 'success')}>{stageData.confirmedPayment}</span>
                   </Link>
                   <Link to="/finance" className="tylo-home-stage-row-link">
                     <span>Hold</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--danger">{stageData.hold}</span>
+                    <span className={stageNumClass(stageData.hold, 'danger')}>{stageData.hold}</span>
                   </Link>
                   <Link to="/finance" className="tylo-home-stage-row-link">
                     <span>Payment Done</span>
-                    <span className="tylo-home-stage-num tylo-home-stage-num--success">{stageData.paymentDone}</span>
+                    <span className={stageNumClass(stageData.paymentDone, 'success')}>{stageData.paymentDone}</span>
                   </Link>
                 </div>
               </div>

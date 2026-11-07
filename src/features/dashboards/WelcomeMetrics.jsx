@@ -178,6 +178,7 @@ export default function WelcomeMetrics({ enabled = true }) {
             aria-haspopup="dialog"
             aria-expanded={rangeOpen}
             aria-label={`Date range ${rangeLabel}`}
+            title={rangeLabel}
             onClick={() => {
               setDraftFrom(appliedFrom);
               setDraftTo(appliedTo);
@@ -240,6 +241,7 @@ export default function WelcomeMetrics({ enabled = true }) {
             id={metricSelectId}
             className="tylo-home-welcome-control tylo-home-welcome-metric-select"
             value={metric}
+            title={metricLabel}
             aria-label="Camp quality metric"
             onChange={(event) => setMetric(event.target.value)}
           >

@@ -1013,7 +1013,8 @@
 }
 
 .tylo-home-quick-subtile--active {
-  border: 1px solid #2563EB !important;
+  border: 1px solid var(--home-blue) !important;
+  background: var(--brand-selected-bg) !important;
 }
 
 .tylo-home-quick-subtile--has-badge {
@@ -1122,8 +1123,8 @@
 }
 
 .tylo-home-rail-btn.is-active {
-  background: #2563EB !important;
-  color: #FFFFFF !important;
+  background: var(--home-blue) !important;
+  color: var(--text-on-brand, #fff) !important;
 }
 
 .tylo-home-workspace-content {
@@ -1196,26 +1197,26 @@
 
 .tylo-home-notes-input-row input {
   flex: 1;
-  background: #111A2E;
-  border: 1px solid #1E2D4E;
+  background: var(--bg-input, var(--home-muted));
+  border: 1px solid var(--home-border);
   border-radius: 6px;
   padding: 6px 10px;
-  color: #F8FAFC;
+  color: var(--home-text);
   font-size: 11px;
   outline: none;
 }
 
 .tylo-home-notes-input-row input::placeholder {
-  color: #64748B;
+  color: var(--home-muted-text);
 }
 
 .tylo-home-notes-input-row input:focus {
-  border-color: #2563EB;
+  border-color: var(--home-blue);
 }
 
 .tylo-home-notes-add-btn {
-  background: #2563EB;
-  color: #FFFFFF;
+  background: var(--home-blue);
+  color: var(--text-on-brand, #fff);
   border: 0;
   border-radius: 6px;
   padding: 6px 14px;
@@ -1230,7 +1231,7 @@
 }
 
 .tylo-home-notes-add-btn:hover:not(:disabled) {
-  background: #1D4ED8;
+  background: var(--home-blue-hover);
 }
 
 .tylo-home-notes-empty {
@@ -1824,7 +1825,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  gap: 10px;
+  gap: 12px;
   min-height: 0;
   overflow: hidden;
 }
@@ -1832,18 +1833,18 @@
 .tylo-home-ops-grid .tylo-home-greeting {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   max-width: 100%;
   flex: 0 0 auto;
-  padding: 2px 0 0;
+  padding: 0;
 }
 
 .tylo-home-ops-grid .tylo-home-greeting-title {
   margin: 0;
-  font-size: clamp(18px, 1.9vw, 26px);
+  font-size: clamp(18px, 1.85vw, 24px);
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.2;
   letter-spacing: -0.02em;
   color: var(--home-text);
   overflow-wrap: anywhere;
@@ -1851,13 +1852,20 @@
 
 .tylo-home-ops-grid .tylo-home-greeting-date {
   margin: 0;
-  font-size: clamp(12px, 1.05vw, 14px);
+  font-size: 13px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
   color: var(--home-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tylo-home-welcome-metrics {
+  --welcome-control-height: 36px;
+  --welcome-control-pad-x: 10px;
+  --welcome-control-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1869,34 +1877,52 @@
 
 .tylo-home-welcome-controls {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
   flex: 0 0 auto;
   min-width: 0;
+  align-items: stretch;
 }
 
-.tylo-home-welcome-range {
+@media (max-width: 1360px) {
+  .tylo-home-welcome-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tylo-home-welcome-range,
+.tylo-home-welcome-metric {
   position: relative;
   min-width: 0;
+  display: flex;
+  align-items: stretch;
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
 }
 
 .tylo-home-welcome-control {
   width: 100%;
   min-width: 0;
-  height: 32px;
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
-  border-radius: 8px;
+  padding: 0 var(--welcome-control-pad-x);
+  margin: 0;
+  border-radius: var(--welcome-control-radius);
   border: 1px solid var(--home-border);
   background: var(--bg-input, var(--home-muted));
   color: var(--home-text);
+  font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
+  letter-spacing: 0;
   cursor: pointer;
   box-sizing: border-box;
+  vertical-align: middle;
 }
 
 .tylo-home-welcome-control:hover,
@@ -1910,12 +1936,15 @@
   height: 14px;
   display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   color: var(--home-secondary);
 }
 
 .tylo-home-welcome-control-icon svg {
   width: 14px;
   height: 14px;
+  display: block;
 }
 
 .tylo-home-welcome-control-label {
@@ -1923,7 +1952,7 @@
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   text-align: left;
 }
 
@@ -1932,33 +1961,40 @@
   height: 12px;
   display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   color: var(--home-secondary);
 }
 
 .tylo-home-welcome-control-chevron svg {
   width: 12px;
   height: 12px;
-}
-
-.tylo-home-welcome-metric {
-  position: relative;
   display: block;
-  min-width: 0;
 }
 
 .tylo-home-welcome-metric-select {
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 30px;
+  -moz-appearance: none;
+  background-image: none;
+  padding-right: 28px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
+}
+
+.tylo-home-welcome-metric-select::-ms-expand {
+  display: none;
 }
 
 .tylo-home-welcome-metric-chevron {
   position: absolute;
-  right: 10px;
+  right: var(--welcome-control-pad-x);
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
+  z-index: 1;
 }
 
 .tylo-home-welcome-range-popover {
@@ -2019,11 +2055,11 @@
 
 .tylo-home-welcome-buckets {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 6px;
   flex: 1 1 auto;
   min-height: 0;
-  align-content: start;
+  align-content: stretch;
 }
 
 .tylo-home-welcome-bucket {
@@ -2031,18 +2067,19 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  min-height: 56px;
-  padding: 8px 5px;
+  min-height: 58px;
+  height: 100%;
+  padding: 8px 4px;
   border-radius: 8px;
   border: 1px solid var(--home-border);
-  background: var(--home-surface-subtle, var(--home-muted));
+  background: var(--home-muted);
   text-align: center;
 }
 
 .tylo-home-welcome-bucket-value {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.1;
   color: var(--home-text);
@@ -2064,12 +2101,6 @@
 .tylo-home-welcome-bucket-hint {
   font-size: 9px;
   color: var(--home-muted-text, var(--home-secondary));
-}
-
-@media (min-width: 1201px) {
-  .tylo-home-welcome-buckets {
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  }
 }
 .tylo-home-ops-grid > .tylo-home-workspace-panel { grid-column: 3; grid-row: 1; }
 .tylo-home-ops-grid > .tylo-home-pipeline-panel { grid-column: 1 / span 2; grid-row: 2; }
@@ -2375,7 +2406,7 @@
 .tylo-home-ops-grid .tylo-home-schedule-table th,
 .tylo-home-ops-grid .tylo-home-schedule-table td {
   display: table-cell;
-  padding: 10px 8px;
+  padding: 10px 6px;
   text-align: center;
   font-size: 13px;
   border: none;
@@ -2387,6 +2418,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.25;
+}
+
+.tylo-home-ops-grid .tylo-home-schedule-table thead th:not(:first-child),
+.tylo-home-ops-grid .tylo-home-schedule-table tbody td:not(:first-child),
+.tylo-home-ops-grid .tylo-home-schedule-table tfoot td:not(:first-child) {
+  text-align: center;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead th {
@@ -2447,6 +2484,8 @@
 }
 
 .tylo-home-ops-grid .tylo-home-sched-num {
+  display: inline-block;
+  width: 100%;
   color: var(--home-cyan) !important;
   font-weight: 600;
   font-size: 14px;
@@ -2461,9 +2500,9 @@
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot td,
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot th {
   border-bottom: none;
-  background: transparent;
-  padding-top: 12px;
-  padding-bottom: 6px;
+  background: var(--home-muted);
+  padding-top: 10px;
+  padding-bottom: 8px;
 }
 
 .tylo-home-ops-grid .tylo-home-total-row-head {
@@ -2491,6 +2530,8 @@
 }
 
 .tylo-home-ops-grid .tylo-home-total-num {
+  display: inline-block;
+  width: 100%;
   color: var(--home-text) !important;
   font-weight: 700;
   font-size: 14px;
@@ -2598,6 +2639,10 @@
   font-size: 11px;
   cursor: pointer;
   flex: 0 0 auto;
+}
+
+.tylo-home-ops-grid .tylo-home-notes-add-btn:hover:not(:disabled) {
+  background: var(--home-blue-hover);
 }
 
 .tylo-home-ops-grid .tylo-home-notes-add-btn:disabled {
@@ -2741,7 +2786,7 @@
   background: var(--home-surface-subtle) !important;
   border: 1px solid var(--home-border) !important;
   border-radius: 10px;
-  padding: 10px 10px 8px;
+  padding: 10px 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2836,17 +2881,6 @@
   color: var(--home-text) !important;
 }
 
-.tylo-home-ops-grid .tylo-home-stage-row-link--highlight {
-  background: color-mix(in srgb, var(--status-warning-dot) 14%, var(--bg-tier-2)) !important;
-  border: 1px solid color-mix(in srgb, var(--status-warning-dot) 32%, transparent) !important;
-  color: var(--status-warning-dot) !important;
-}
-
-.tylo-home-ops-grid .tylo-home-stage-row-link--highlight span,
-.tylo-home-ops-grid .tylo-home-stage-row-link--highlight .tylo-home-stage-num {
-  color: var(--status-warning-dot) !important;
-}
-
 .tylo-home-ops-grid .tylo-home-stage-num {
   font-weight: 700;
   color: var(--home-text) !important;
@@ -2855,6 +2889,11 @@
   text-align: right;
   justify-self: end;
   line-height: 1;
+}
+
+.tylo-home-ops-grid .tylo-home-stage-num.is-zero {
+  color: var(--home-muted-text) !important;
+  font-weight: 600;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-num--danger { color: var(--home-red) !important; }

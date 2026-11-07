@@ -119,7 +119,7 @@ describe('DashboardPage homepage', () => {
             metric: 'punctuality',
             label: 'Punctuality',
             buckets: [
-              { key: 'Yet to Update', count: 2 },
+              { key: 'Pending', count: 2 },
               { key: 'Cancelled', count: 0 },
               { key: 'Good', count: 5 },
               { key: 'Average', count: 1 },
@@ -163,7 +163,7 @@ describe('DashboardPage homepage', () => {
     await waitFor(() => {
       expect(apiMock.mock.calls.some(([path]) => String(path).startsWith('/dashboards/camp-quality'))).toBe(true);
     });
-    expect(await screen.findByText('Yet to Update')).toBeTruthy();
+    expect(await screen.findByText('Pending')).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Attention required' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Quick access' })).toBeTruthy();
     expect(screen.getByText('Department performance')).toBeTruthy();

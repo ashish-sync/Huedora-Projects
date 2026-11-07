@@ -75,7 +75,6 @@ describe('InternalChat', () => {
     const user = userEvent.setup();
     render(<InternalChat />);
 
-    await user.click(document.querySelector('.tylo-chat-new'));
     const peerButton = await screen.findByRole('button', { name: /Bob/i }, { timeout: 10000 });
     await user.click(peerButton);
 

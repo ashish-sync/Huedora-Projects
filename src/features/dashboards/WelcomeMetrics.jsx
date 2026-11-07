@@ -26,7 +26,7 @@ export function welcomeBucketTone(key) {
       return 'danger';
     case 'Amount':
       return 'info';
-    case 'Yet to Update':
+    case 'Pending':
     default:
       return 'neutral';
   }

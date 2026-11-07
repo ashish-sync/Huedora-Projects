@@ -12,45 +12,23 @@ export const WELCOME_METRIC_OPTIONS = [
   { id: 'avgPayout', label: 'Avg. Payout' },
 ];
 
-function formatCompactRangeLabel(from, to) {
-  const fromDate = parseToDate(from);
-  const toDate = parseToDate(to);
-  if (!fromDate || !toDate) return 'Select dates';
-
-  const day = new Intl.DateTimeFormat('en-GB', { day: '2-digit' });
-  const dayMonth = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' });
-  const full = new Intl.DateTimeFormat('en-GB', {
+function formatRangePart(value) {
+  const date = parseToDate(value);
+  if (!date) return '—';
+  const currentYear = new Date().getFullYear();
+  return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
-    year: 'numeric',
-  });
-  const currentYear = new Date().getFullYear();
+    ...(date.getFullYear() === currentYear ? {} : { year: 'numeric' }),
+  }).format(date);
+}
 
-  if (fromDate.getTime() === toDate.getTime()) {
-    return fromDate.getFullYear() === currentYear
-      ? dayMonth.format(fromDate)
-      : full.format(fromDate);
-  }
-
-  const sameMonth =
-    fromDate.getFullYear() === toDate.getFullYear()
-    && fromDate.getMonth() === toDate.getMonth();
-  if (sameMonth) {
-    if (toDate.getFullYear() === currentYear) {
-      return `${day.format(fromDate)}–${dayMonth.format(toDate)}`;
-    }
-    return `${day.format(fromDate)}–${full.format(toDate)}`;
-  }
-
-  const sameYear = fromDate.getFullYear() === toDate.getFullYear();
-  if (sameYear) {
-    if (toDate.getFullYear() === currentYear) {
-      return `${dayMonth.format(fromDate)}–${dayMonth.format(toDate)}`;
-    }
-    return `${dayMonth.format(fromDate)}–${full.format(toDate)}`;
-  }
-
-  return `${full.format(fromDate)}–${full.format(toDate)}`;
+function formatCompactRangeLabel(from, to) {
+  const fromLabel = formatRangePart(from);
+  const toLabel = formatRangePart(to);
+  if (fromLabel === '—' || toLabel === '—') return 'Select dates';
+  if (fromLabel === toLabel) return fromLabel;
+  return `${fromLabel} – ${toLabel}`;
 }
 
 export function welcomeBucketTone(key) {
@@ -189,14 +167,35 @@ export default function WelcomeMetrics({ enabled = true }) {
     setRangeOpen(false);
   }
 
+  const fromPart = formatRangePart(appliedFrom);
+  const toPart = formatRangePart(appliedTo);
+
   return (
     <div className="tylo-home-welcome-metrics">
       <div className="tylo-home-welcome-controls">
+        <label className="tylo-home-welcome-metric" htmlFor={metricSelectId}>
+          <span className="sr-only">Metric</span>
+          <select
+            id={metricSelectId}
+            className="tylo-home-welcome-control tylo-home-welcome-metric-select"
+            value={metric}
+            title={metricLabel}
+            aria-label="Camp quality metric"
+            onChange={(event) => setMetric(event.target.value)}
+          >
+            {WELCOME_METRIC_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <div className="tylo-home-welcome-range">
           <button
             ref={triggerRef}
             type="button"
-            className="tylo-home-welcome-control"
+            className="tylo-home-welcome-control tylo-home-welcome-range-trigger"
             aria-haspopup="dialog"
             aria-expanded={rangeOpen}
             aria-label={`Date range ${rangeLabel}`}
@@ -210,7 +209,17 @@ export default function WelcomeMetrics({ enabled = true }) {
             <span className="tylo-home-welcome-control-icon" aria-hidden="true">
               <CalendarGlyph />
             </span>
-            <span className="tylo-home-welcome-control-label">{rangeLabel}</span>
+            <span className="tylo-home-welcome-range-parts">
+              <span className="tylo-home-welcome-range-part">
+                <span className="tylo-home-welcome-range-eyebrow">From</span>
+                <span className="tylo-home-welcome-range-value">{fromPart}</span>
+              </span>
+              <span className="tylo-home-welcome-range-sep" aria-hidden="true">–</span>
+              <span className="tylo-home-welcome-range-part">
+                <span className="tylo-home-welcome-range-eyebrow">To</span>
+                <span className="tylo-home-welcome-range-value">{toPart}</span>
+              </span>
+            </span>
             <span className="tylo-dropdown-chevron tylo-home-welcome-control-chevron" aria-hidden="true" />
           </button>
 
@@ -254,24 +263,6 @@ export default function WelcomeMetrics({ enabled = true }) {
             </div>
           ) : null}
         </div>
-
-        <label className="tylo-home-welcome-metric" htmlFor={metricSelectId}>
-          <span className="sr-only">Metric</span>
-          <select
-            id={metricSelectId}
-            className="tylo-home-welcome-control tylo-home-welcome-metric-select"
-            value={metric}
-            title={metricLabel}
-            aria-label="Camp quality metric"
-            onChange={(event) => setMetric(event.target.value)}
-          >
-            {WELCOME_METRIC_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
       <div className="tylo-home-welcome-metric-body" aria-live="polite">

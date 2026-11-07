@@ -24,24 +24,54 @@ function formatCompactRangeLabel(from, to) {
     month: 'short',
     year: 'numeric',
   });
+  const currentYear = new Date().getFullYear();
 
   if (fromDate.getTime() === toDate.getTime()) {
-    return full.format(fromDate);
+    return fromDate.getFullYear() === currentYear
+      ? dayMonth.format(fromDate)
+      : full.format(fromDate);
   }
 
   const sameMonth =
     fromDate.getFullYear() === toDate.getFullYear()
     && fromDate.getMonth() === toDate.getMonth();
   if (sameMonth) {
-    return `${day.format(fromDate)} – ${full.format(toDate)}`;
+    if (toDate.getFullYear() === currentYear) {
+      return `${day.format(fromDate)}–${dayMonth.format(toDate)}`;
+    }
+    return `${day.format(fromDate)}–${full.format(toDate)}`;
   }
 
   const sameYear = fromDate.getFullYear() === toDate.getFullYear();
   if (sameYear) {
-    return `${dayMonth.format(fromDate)} – ${full.format(toDate)}`;
+    if (toDate.getFullYear() === currentYear) {
+      return `${dayMonth.format(fromDate)}–${dayMonth.format(toDate)}`;
+    }
+    return `${dayMonth.format(fromDate)}–${full.format(toDate)}`;
   }
 
-  return `${full.format(fromDate)} – ${full.format(toDate)}`;
+  return `${full.format(fromDate)}–${full.format(toDate)}`;
+}
+
+export function welcomeBucketTone(key) {
+  switch (String(key || '').trim()) {
+    case 'Good':
+    case 'No Issue':
+    case 'Chargeable':
+      return 'ok';
+    case 'Average':
+    case 'Non-Chargeable':
+      return 'warn';
+    case 'Poor':
+    case 'Issue':
+    case 'Cancelled':
+      return 'danger';
+    case 'Amount':
+      return 'info';
+    case 'Yet to Update':
+    default:
+      return 'neutral';
+  }
 }
 
 function formatAmount(value) {
@@ -56,14 +86,6 @@ function CalendarGlyph() {
       <line x1="16" y1="2" x2="16" y2="6" />
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function ChevronGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
     </svg>
   );
 }
@@ -189,9 +211,7 @@ export default function WelcomeMetrics({ enabled = true }) {
               <CalendarGlyph />
             </span>
             <span className="tylo-home-welcome-control-label">{rangeLabel}</span>
-            <span className="tylo-home-welcome-control-chevron" aria-hidden="true">
-              <ChevronGlyph />
-            </span>
+            <span className="tylo-dropdown-chevron tylo-home-welcome-control-chevron" aria-hidden="true" />
           </button>
 
           {rangeOpen ? (
@@ -251,9 +271,6 @@ export default function WelcomeMetrics({ enabled = true }) {
               </option>
             ))}
           </select>
-          <span className="tylo-home-welcome-control-chevron tylo-home-welcome-metric-chevron" aria-hidden="true">
-            <ChevronGlyph />
-          </span>
         </label>
       </div>
 
@@ -276,8 +293,13 @@ export default function WelcomeMetrics({ enabled = true }) {
               const hint = isAmount
                 ? `${bucket.count || 0} camp${bucket.count === 1 ? '' : 's'}`
                 : null;
+              const tone = welcomeBucketTone(bucket.key);
               return (
-                <div key={bucket.key} className="tylo-home-welcome-bucket" role="listitem">
+                <div
+                  key={bucket.key}
+                  className={`tylo-home-welcome-bucket tylo-home-welcome-bucket--${tone}`}
+                  role="listitem"
+                >
                   <span className="tylo-home-welcome-bucket-value">{value}</span>
                   <span className="tylo-home-welcome-bucket-label">{bucket.key}</span>
                   {hint ? <span className="tylo-home-welcome-bucket-hint">{hint}</span> : null}

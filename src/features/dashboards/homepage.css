@@ -1825,7 +1825,7 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
   overflow: hidden;
 }
@@ -1833,7 +1833,7 @@
 .tylo-home-ops-grid .tylo-home-greeting {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   max-width: 100%;
   flex: 0 0 auto;
@@ -1863,12 +1863,12 @@
 }
 
 .tylo-home-welcome-metrics {
-  --welcome-control-height: 36px;
+  --welcome-control-height: 34px;
   --welcome-control-pad-x: 10px;
   --welcome-control-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
@@ -1877,8 +1877,9 @@
 
 .tylo-home-welcome-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
+  /* Prefer date range width so labels like 01–07 Nov stay fully visible */
+  grid-template-columns: minmax(10.75rem, 1.35fr) minmax(7.5rem, 1fr);
+  gap: 6px;
   flex: 0 0 auto;
   min-width: 0;
   align-items: stretch;
@@ -1951,50 +1952,61 @@
   flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   text-align: left;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
 
 .tylo-home-welcome-control-chevron {
-  width: 12px;
-  height: 12px;
-  display: inline-flex;
+  width: 10px;
+  height: 6px;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  color: var(--home-secondary);
+  margin-left: auto;
 }
 
-.tylo-home-welcome-control-chevron svg {
-  width: 12px;
-  height: 12px;
-  display: block;
-}
-
-.tylo-home-welcome-metric-select {
+/* One design-system chevron only — hide native arrow; keep --tylo-select-chevron bg */
+.tylo-home-welcome-metrics select.tylo-home-welcome-metric-select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: none;
-  padding-right: 28px;
+  display: block;
+  width: 100%;
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
+  background-color: var(--bg-input, var(--home-muted));
+  background-image: var(--tylo-select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 10px 6px;
+  padding: 0 32px 0 var(--welcome-control-pad-x);
+  border: 1px solid var(--home-border);
+  border-radius: var(--welcome-control-radius);
+  box-shadow: none;
+  color: var(--home-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: calc(var(--welcome-control-height) - 2px);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
   cursor: pointer;
 }
 
-.tylo-home-welcome-metric-select::-ms-expand {
+.tylo-home-welcome-metrics select.tylo-home-welcome-metric-select::-ms-expand {
   display: none;
 }
 
-.tylo-home-welcome-metric-chevron {
-  position: absolute;
-  right: var(--welcome-control-pad-x);
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  z-index: 1;
+.tylo-home-welcome-metrics select.tylo-home-welcome-metric-select:hover,
+.tylo-home-welcome-metrics select.tylo-home-welcome-metric-select:focus,
+.tylo-home-welcome-metrics select.tylo-home-welcome-metric-select:focus-visible {
+  background-image: var(--tylo-select-chevron);
+  background-color: var(--bg-input, var(--home-muted));
+  border-color: var(--home-border-strong, var(--home-border));
+  box-shadow: none;
+  outline: none;
 }
 
 .tylo-home-welcome-range-popover {
@@ -2036,11 +2048,12 @@
 }
 
 .tylo-home-welcome-metric-body {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .tylo-home-welcome-metric-status {
@@ -2056,10 +2069,10 @@
 .tylo-home-welcome-buckets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 6px;
-  flex: 1 1 auto;
+  gap: 5px;
+  flex: 0 0 auto;
   min-height: 0;
-  align-content: stretch;
+  align-content: start;
 }
 
 .tylo-home-welcome-bucket {
@@ -2067,40 +2080,86 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
-  min-height: 58px;
-  height: 100%;
-  padding: 8px 4px;
+  min-height: 48px;
+  padding: 6px 4px 5px;
   border-radius: 8px;
-  border: 1px solid var(--home-border);
+  border: 0;
   background: var(--home-muted);
   text-align: center;
+  box-sizing: border-box;
 }
 
 .tylo-home-welcome-bucket-value {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   color: var(--home-text);
   font-variant-numeric: tabular-nums;
 }
 
 .tylo-home-welcome-bucket-label {
-  font-size: 10px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 9px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
+  min-height: calc(1.2em * 2);
   color: var(--home-secondary);
   white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
+  overflow: hidden;
+  text-overflow: ellipsis;
   overflow-wrap: break-word;
+  word-break: normal;
   max-width: 100%;
+  text-align: center;
+  align-self: stretch;
 }
 
 .tylo-home-welcome-bucket-hint {
   font-size: 9px;
+  line-height: 1.2;
   color: var(--home-muted-text, var(--home-secondary));
+}
+
+.tylo-home-welcome-bucket--neutral {
+  background: var(--home-muted);
+}
+
+.tylo-home-welcome-bucket--ok {
+  background: color-mix(in srgb, var(--home-green) 14%, var(--home-muted));
+}
+
+.tylo-home-welcome-bucket--ok .tylo-home-welcome-bucket-value {
+  color: var(--home-green);
+}
+
+.tylo-home-welcome-bucket--warn {
+  background: color-mix(in srgb, var(--home-amber) 14%, var(--home-muted));
+}
+
+.tylo-home-welcome-bucket--warn .tylo-home-welcome-bucket-value {
+  color: var(--home-amber);
+}
+
+.tylo-home-welcome-bucket--danger {
+  background: color-mix(in srgb, var(--home-red) 12%, var(--home-muted));
+}
+
+.tylo-home-welcome-bucket--danger .tylo-home-welcome-bucket-value {
+  color: var(--home-red);
+}
+
+.tylo-home-welcome-bucket--info {
+  background: color-mix(in srgb, var(--home-blue) 12%, var(--home-muted));
+}
+
+.tylo-home-welcome-bucket--info .tylo-home-welcome-bucket-value {
+  color: var(--home-blue);
 }
 .tylo-home-ops-grid > .tylo-home-workspace-panel { grid-column: 3; grid-row: 1; }
 .tylo-home-ops-grid > .tylo-home-pipeline-panel { grid-column: 1 / span 2; grid-row: 2; }

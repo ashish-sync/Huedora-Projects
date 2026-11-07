@@ -140,17 +140,31 @@ describe('Operations Dashboard runtime states and access', () => {
     ['User without dashboard access', ['assets:read'], false],
   ])('%s sees only the dashboard permitted by their fixture', async (_role, rolePermissions, allowed) => {
     permissions.splice(0, permissions.length, ...rolePermissions);
+    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <DashboardPage />
       </MemoryRouter>,
     );
 
+    const dashboardToggle = await screen.findByRole('button', { name: /Tylo One Dashboard/i });
+
     if (allowed) {
-      expect(await screen.findByRole('link', { name: /Operations Dashboard|Review any module by date range/i })).toBeTruthy();
+      // Authorised roles land on Business Overview and can open Operations Dashboard via search.
+      expect(screen.getByRole('heading', { name: 'Business Overview' })).toBeTruthy();
+      expect(dashboardToggle.disabled).toBe(false);
+      expect(dashboardToggle.getAttribute('aria-pressed')).toBe('true');
+
+      await user.type(screen.getByPlaceholderText(/Filter modules or workflows/i), 'Operations');
+      expect(await screen.findByRole('link', { name: /Operations Dashboard/i })).toBeTruthy();
     } else {
+      // Unauthorised roles stay on My View; dashboard toggle and ops shortcut stay unavailable.
+      expect(screen.getByRole('heading', { name: 'My View' })).toBeTruthy();
+      expect(dashboardToggle.disabled).toBe(true);
+
+      await user.type(screen.getByPlaceholderText(/Filter modules or workflows/i), 'Operations');
       await waitFor(() => {
-        expect(screen.queryByRole('link', { name: /Operations Dashboard|Review any module by date range/i })).toBeNull();
+        expect(screen.queryByRole('link', { name: /Operations Dashboard/i })).toBeNull();
       });
     }
   });

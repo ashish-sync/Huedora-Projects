@@ -31,6 +31,7 @@ const DEFAULT_DESIGNATIONS = [
   'Healthcare Camp Coordinator',
   'Individual Contributor',
   'Team Lead',
+  'Team Leader',
   'Senior Team Lead',
   'Manager',
   'Senior Manager',
@@ -41,16 +42,22 @@ const DEFAULT_DESIGNATIONS = [
   'Training Manager',
   'Director',
   'Business Head',
+  'Lead – Process & Tech',
+  'System Analyst',
+  'Data Analyst',
+  'Logistics Associate',
   'Head of Department',
   'Vice President',
 ];
 
+const SYSTEM_ROLES = ['Super Admin', 'Admin', 'User'];
+
 const EMPTY_USER = {
   email: '',
-  username: '',
   fullName: '',
   phone: '',
   designation: '',
+  systemRole: 'User',
   reportingManagerId: '',
   password: '',
   passwordConfirm: '',
@@ -81,10 +88,10 @@ function buildUserDraftFromRecord(user, modules, roles) {
   const access = buildUserAccessDraft(user, modules, roles, roleIdOf);
   return {
     email: user.email || '',
-    username: user.username || '',
     fullName: user.fullName || '',
     phone: user.phone || '',
     designation: user.designation || '',
+    systemRole: user.systemRole || 'User',
     reportingManagerId: user.reportingManagerId ? String(user.reportingManagerId) : '',
     password: '',
     passwordConfirm: '',
@@ -171,7 +178,7 @@ export default function RolePermissionMasterPage() {
       const hay = [
         u.fullName,
         u.email,
-        u.username,
+        u.systemRole,
         u.designation,
         u.reportingManager?.fullName,
         ...(u.roles || []).map((r) => r.name),
@@ -365,10 +372,10 @@ export default function RolePermissionMasterPage() {
           method: 'POST',
           body: {
             email: userDraft.email,
-            username: userDraft.username,
             fullName: userDraft.fullName,
             phone: userDraft.phone,
             designation: userDraft.designation,
+            systemRole: userDraft.systemRole,
             reportingManagerId: userDraft.reportingManagerId || null,
             password: pwd,
             roleIds: access.roleIds,
@@ -389,6 +396,7 @@ export default function RolePermissionMasterPage() {
           fullName: userDraft.fullName,
           phone: userDraft.phone,
           designation: userDraft.designation,
+          systemRole: userDraft.systemRole,
           reportingManagerId: userDraft.reportingManagerId || null,
           roleIds: access.roleIds,
           grantedPermissions: access.grantedPermissions,
@@ -658,7 +666,7 @@ export default function RolePermissionMasterPage() {
                         </span>
                       </div>
                       <span className="muted activity-log-row__meta">
-                        {personRoleLabel(u)}
+                        {u.systemRole || personRoleLabel(u)}
                       </span>
                     </div>
                   </button>
@@ -710,15 +718,24 @@ export default function RolePermissionMasterPage() {
                       />
                     </div>
                     <div className="field">
-                      <label>Sign-in name *</label>
-                      <input
+                      <label htmlFor="user-system-role">System role *</label>
+                      <AdaptiveSelect
+                        id="user-system-role"
+                        aria-label="System role"
                         required
-                        value={userDraft.username}
-                        disabled={!canWrite || !creatingUser}
-                        autoComplete="off"
-                        onChange={(e) => setUserDraft({ ...userDraft, username: e.target.value })}
-                        placeholder="username"
-                      />
+                        value={userDraft.systemRole}
+                        disabled={!canWrite}
+                        placeholder="Select system role"
+                        onChange={(e) =>
+                          setUserDraft((prev) => ({ ...prev, systemRole: e.target.value }))
+                        }
+                      >
+                        {SYSTEM_ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
                     </div>
                     <div className="field">
                       <label>Phone</label>

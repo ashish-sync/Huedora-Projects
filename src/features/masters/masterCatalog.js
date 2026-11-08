@@ -216,6 +216,25 @@ export const MASTER_ENTITIES = [
     ],
   },
   {
+    id: 'forms',
+    label: 'Form Master',
+    module: 'document',
+    apiPath: '/forms',
+    embedded: 'forms',
+    fields: [
+      { name: 'name', label: 'Form name', required: true },
+      { name: 'code', label: 'Code', required: true },
+      {
+        name: 'category',
+        label: 'Category',
+        required: true,
+        type: 'select',
+        options: ['PUBLIC_CAMP_REQUEST', 'INTERNAL', 'OTHER'],
+      },
+      { name: 'description', label: 'Description', type: 'textarea' },
+    ],
+  },
+  {
     id: 'pin-codes',
     label: 'PIN Geography',
     module: 'camp',
@@ -256,7 +275,7 @@ export const MASTER_HUB_GROUPS = [
     id: 'document-masters',
     label: 'Document One',
     scope: 'document',
-    entityIds: ['contacts', 'templates', 'signatures', 'picklist-approvals'],
+    entityIds: ['contacts', 'templates', 'signatures', 'forms', 'picklist-approvals'],
   },
   {
     id: 'camp-masters',

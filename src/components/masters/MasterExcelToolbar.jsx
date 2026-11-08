@@ -25,6 +25,7 @@ export default function MasterExcelToolbar({
   className = '',
   toolbarClassName = '',
   compact = false,
+  secondary = false,
   downloadLabel = ACTION.DOWNLOAD,
   importHint = IMPORT_ACCEPT_HINT,
 }) {
@@ -34,7 +35,8 @@ export default function MasterExcelToolbar({
   const [msg, setMsg] = useState('');
 
   const compactClass = compact ? ' btn-compact' : '';
-  const downloadBtnClass = `btn${compactClass}`;
+  const secondaryClass = secondary || compact ? ' secondary' : '';
+  const downloadBtnClass = `btn${secondaryClass}${compactClass}`;
   const acceptHint = importHint || IMPORT_ACCEPT_HINT;
 
   const reportError = (err) => {

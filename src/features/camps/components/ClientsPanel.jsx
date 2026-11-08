@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
+import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import { clientApi } from '../campOpsApi.js';
 import { trimFormStrings, trimString } from '../utils/trimInput';
 import { Pagination } from './Pagination';
@@ -151,39 +152,42 @@ export function ClientsPanel({
       {error && <FeedbackBanner variant="error">{error}</FeedbackBanner>}
 
       {editingId && (
-        <form className="form-card" onSubmit={handleSave} style={{ marginBottom: '1rem' }}>
-          <h3>{editingId === 'new' ? 'New Client' : 'Edit Client'}</h3>
-          <div className="form-grid">
-            <label>
-              Client Name
+        <form className="card form-card" onSubmit={handleSave} style={{ marginBottom: 'var(--space-3)' }}>
+          <h3 style={{ marginTop: 0 }}>{editingId === 'new' ? 'New Client' : 'Edit Client'}</h3>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+            <div className="field">
+              <label htmlFor="client-form-name">Client Name *</label>
               <input
+                id="client-form-name"
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                 required
               />
-            </label>
-            <label>
-              Client Code
+            </div>
+            <div className="field">
+              <label htmlFor="client-form-code">Client Code</label>
               <input
+                id="client-form-code"
                 value={form.code}
                 onChange={(e) => setForm((prev) => ({ ...prev, code: e.target.value }))}
                 placeholder="Auto-generated if empty"
               />
-            </label>
-            <label>
-              Status
-              <select
+            </div>
+            <div className="field">
+              <label htmlFor="client-form-status">Status</label>
+              <AdaptiveSelect
+                id="client-form-status"
                 value={form.isActive ? 'active' : 'inactive'}
                 onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.value === 'active' }))}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-              </select>
-            </label>
+              </AdaptiveSelect>
+            </div>
           </div>
-          <div className="form-actions">
-            <button type="button" className="btn secondary" onClick={cancelEdit}>Cancel</button>
-            <button type="submit" className="btn" disabled={saving}>
+          <div className="form-actions" style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>
+            <button type="button" className="btn secondary btn-compact" onClick={cancelEdit}>Cancel</button>
+            <button type="submit" className="btn btn-compact" disabled={saving}>
               {saving ? 'Saving...' : 'Save Client'}
             </button>
           </div>
@@ -209,18 +213,22 @@ export function ClientsPanel({
                   <th>Client Name</th>
                   <th>Code</th>
                   <th>Status</th>
-                  {(canUpdate || canDelete) && <th>Actions</th>}
+                  {(canUpdate || canDelete) && <th className="inv-col-actions">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {clients.map((client) => (
                   <tr key={client._id}>
-                    <td>{client.name}</td>
-                    <td>{client.code}</td>
-                    <td>{client.isActive ? 'Active' : 'Inactive'}</td>
+                    <td><strong>{client.name}</strong></td>
+                    <td className="mono-sm">{client.code || '—'}</td>
+                    <td>
+                      <span className={`badge ${client.isActive ? 'tone-ok' : 'tone-neutral'}`}>
+                        {client.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
                     {(canUpdate || canDelete) && (
-                      <td>
-                        <div className="actions">
+                      <td className="inv-col-actions">
+                        <div className="actions" style={{ display: 'inline-flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
                           {canUpdate && (
                             <>
                               <button type="button" className="btn secondary btn-compact" onClick={() => startEdit(client)}>

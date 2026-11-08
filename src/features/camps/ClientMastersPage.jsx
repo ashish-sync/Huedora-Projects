@@ -143,7 +143,7 @@ export default function ClientMastersPage({ embedded = false } = {}) {
         title="Client Master"
         subtitle="Program configuration and client records for Camp One."
       />
-      <div className="page-tabs" role="tablist" aria-label="Client Master views">
+      <div className="page-tabs" style={{ marginBottom: 'var(--space-3)' }} role="tablist" aria-label="Client Master views">
         <button
           type="button"
           role="tab"
@@ -180,18 +180,11 @@ export default function ClientMastersPage({ embedded = false } = {}) {
             showCreateLink={hasPermission('client-masters:create')}
             activeChips={programFilterChips}
             onClearAll={clearProgramFilters}
+            excelConfig={excelConfig}
+            canImport={hasPermission('client-masters:create')}
+            onImportComplete={() => loadRecords(page)}
+            onError={(message) => setError(message)}
           />
-
-          {excelConfig ? (
-            <div style={{ marginBottom: 12 }}>
-              <MasterExcelToolbar
-                {...excelConfig}
-                canImport={hasPermission('client-masters:create')}
-                onImportComplete={() => loadRecords(page)}
-                onError={(message) => setError(message)}
-              />
-            </div>
-          ) : null}
 
           {error && (
             <div className="page-alerts">
@@ -238,7 +231,11 @@ export default function ClientMastersPage({ embedded = false } = {}) {
                         <td title={record.spocName || undefined}>{record.spocName || '—'}</td>
                         <td title={record.spocNumber || undefined}>{record.spocNumber || '—'}</td>
                         <td title={listPoBalanceTitle(record)}>{listPoBalanceLabel(record)}</td>
-                        <td>{record.isActive ? 'Active' : 'Inactive'}</td>
+                        <td>
+                          <span className={`badge ${record.isActive ? 'tone-ok' : 'tone-neutral'}`}>
+                            {record.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
                         <td>
                           <div className="actions">
                             {hasPermission('client-masters:update') && (

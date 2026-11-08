@@ -57,13 +57,14 @@ describe('CalendarTodo', () => {
             id: 'e-2',
             kind: options.body?.kind || 'task',
             title: options.body?.title,
+            body: options.body?.body,
             startAt: options.body?.startAt,
             endAt: options.body?.endAt,
             status: 'open',
             canEdit: true,
             canRespond: false,
             ownerId: 'u-alice',
-            participants: [],
+            participants: options.body?.peerUserId ? [{ id: options.body.peerUserId, fullName: 'Bob Ops' }] : [],
           },
         };
       }
@@ -86,8 +87,13 @@ describe('CalendarTodo', () => {
 
     await user.click(screen.getByRole('button', { name: '+ Add' }));
     expect(await screen.findByRole('dialog', { name: 'Create calendar item' })).toBeTruthy();
+    expect(screen.getByText('Title')).toBeTruthy();
+    expect(screen.getByText('Note')).toBeTruthy();
+    expect(screen.getByText('Time')).toBeTruthy();
+    expect(screen.getByText('Colleague')).toBeTruthy();
 
     await user.type(screen.getByPlaceholderText('What needs to happen?'), 'Call vendor');
+    await user.selectOptions(screen.getByLabelText('Colleague'), 'u-bob');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
@@ -98,9 +104,25 @@ describe('CalendarTodo', () => {
           body: expect.objectContaining({
             kind: 'task',
             title: 'Call vendor',
+            peerUserId: 'u-bob',
           }),
         }),
       );
     });
   }, 20000);
+
+  it('opens the add-entry form when a compact calendar date is clicked', async () => {
+    const user = userEvent.setup();
+    render(<CalendarTodo compact />);
+
+    expect(await screen.findByRole('grid')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: /15 Nov/i }));
+
+    expect(await screen.findByRole('dialog', { name: 'Create calendar item' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Add entry' })).toBeTruthy();
+    expect(screen.getByLabelText('Title')).toBeTruthy();
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    expect(screen.getByLabelText('Time')).toBeTruthy();
+    expect(screen.getByLabelText('Colleague')).toBeTruthy();
+  }, 15000);
 });

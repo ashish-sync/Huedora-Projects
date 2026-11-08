@@ -162,8 +162,11 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
   useEffect(() => {
     const el = composerRef.current;
     if (!el) return;
-    el.style.height = '0px';
-    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+    el.style.height = 'auto';
+    const raw = el.scrollHeight;
+    const next = Math.min(Math.max(raw, 32), 72);
+    el.style.height = `${next}px`;
+    el.style.overflowY = raw > 72 ? 'auto' : 'hidden';
   }, [draft]);
 
   const openConversation = async (conversation) => {
@@ -430,7 +433,7 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
               className="tylo-chat-empty-cta"
               onClick={focusPeopleSearch}
             >
-              Search people
+              Find people
             </button>
           </div>
         )}

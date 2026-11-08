@@ -96,9 +96,15 @@
 
 .master-filter-actions .btn.btn-compact,
 .pm-filter-actions .btn.btn-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: var(--control-h);
   min-height: var(--control-h);
   max-height: var(--control-h);
+  box-sizing: border-box;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .master-filter-actions .master-excel-toolbar,

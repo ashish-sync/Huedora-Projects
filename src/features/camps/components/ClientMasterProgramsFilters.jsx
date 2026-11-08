@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CLIENT_MASTER_NEW_PATH } from '../clientMasterPaths.js';
 import MasterFilterShell from '../../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../../components/masters/MasterSearchField.jsx';
+import MasterExcelToolbar from '../../../components/masters/MasterExcelToolbar.jsx';
 
 export function ClientMasterProgramsFilters({
   search,
@@ -11,12 +12,25 @@ export function ClientMasterProgramsFilters({
   showCreateLink,
   activeChips,
   onClearAll,
+  excelConfig,
+  canImport,
+  onImportComplete,
+  onError,
 }) {
   return (
     <>
       <MasterFilterShell
         actions={
           <>
+            {excelConfig ? (
+              <MasterExcelToolbar
+                {...excelConfig}
+                canImport={canImport}
+                onImportComplete={onImportComplete}
+                onError={onError}
+                compact
+              />
+            ) : null}
             <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
               Search
             </button>

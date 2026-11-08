@@ -10,6 +10,7 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 
 const emptyForm = {
@@ -147,6 +148,12 @@ export default function LocationMasterPage({ embedded = false } = {}) {
         )
       }
     >
+      {embedded && (
+        <MasterListHeader
+          title="PIN Geography"
+          subtitle="Postal codes, states, zones, and district logistics data."
+        />
+      )}
       {error ? <p className="error-text">{error}</p> : null}
       {msg ? <p className="muted">{msg}</p> : null}
 

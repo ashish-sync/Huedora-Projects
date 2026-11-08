@@ -728,8 +728,6 @@ export default function CampsPage() {
       label:
         (workingStage === 'request' && REQUEST_STATUS_LABELS[status])
         || (workingStage === 'assignment' && ASSIGNMENT_STATUS_LABELS[status])
-        || (workingStage === 'execution' && EXECUTION_STATUS_LABELS[status])
-        || (workingStage === 'financial' && FINANCIAL_STATUS_LABELS[status])
         || status.replaceAll('_', ' '),
       onRemove: () => handleFilterChange(''),
     });

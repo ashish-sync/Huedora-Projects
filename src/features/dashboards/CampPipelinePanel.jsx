@@ -325,6 +325,14 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
         <div className="tylo-home-stage-tile tylo-home-stage-tile--request">
           <div className="tylo-home-stage-tile-head">
             <div className="tylo-home-stage-tile-title">
+              <span className="tylo-home-stage-icon tylo-home-stage-icon--request" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+              </span>
               <span>Request</span>
             </div>
             <span className="tylo-home-stage-tile-count">{display.requestTotal}</span>
@@ -332,7 +340,7 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
           <div className="tylo-home-stage-tile-rows">
             <Link to="/camps/manage" className="tylo-home-stage-row-link">
               <span>Review Pending</span>
-              <span className={stageNumClass(display.reviewPending)}>{display.reviewPending}</span>
+              <span className={stageNumClass(display.reviewPending, 'warn')}>{display.reviewPending}</span>
             </Link>
             <Link to="/camps/manage" className="tylo-home-stage-row-link">
               <span>Review Overdue</span>
@@ -340,7 +348,7 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
             </Link>
             <Link to="/camps/manage" className="tylo-home-stage-row-link">
               <span>Refusals</span>
-              <span className={stageNumClass(display.refusals)}>{display.refusals}</span>
+              <span className={stageNumClass(display.refusals, 'danger')}>{display.refusals}</span>
             </Link>
             <Link to="/camps/manage" className="tylo-home-stage-row-link">
               <span>Info Requested</span>
@@ -352,6 +360,14 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
         <div className="tylo-home-stage-tile tylo-home-stage-tile--assignment">
           <div className="tylo-home-stage-tile-head">
             <div className="tylo-home-stage-tile-title">
+              <span className="tylo-home-stage-icon tylo-home-stage-icon--assignment" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </span>
               <span>Assignment</span>
             </div>
             <span className="tylo-home-stage-tile-count">{display.assignmentTotal}</span>
@@ -359,11 +375,11 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
           <div className="tylo-home-stage-tile-rows">
             <Link to="/camps/manage" className="tylo-home-stage-row-link">
               <span>Unassigned</span>
-              <span className={stageNumClass(display.unassigned)}>{display.unassigned}</span>
+              <span className={stageNumClass(display.unassigned, 'warn')}>{display.unassigned}</span>
             </Link>
             <Link to="/camps/manage" className="tylo-home-stage-row-link">
               <span>Hiring Requested</span>
-              <span className={stageNumClass(display.hiringRequested)}>{display.hiringRequested}</span>
+              <span className={stageNumClass(display.hiringRequested, 'warn')}>{display.hiringRequested}</span>
             </Link>
           </div>
         </div>
@@ -371,6 +387,11 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
         <div className="tylo-home-stage-tile tylo-home-stage-tile--execution">
           <div className="tylo-home-stage-tile-head">
             <div className="tylo-home-stage-tile-title">
+              <span className="tylo-home-stage-icon tylo-home-stage-icon--execution" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </span>
               <span>Execution</span>
             </div>
             <span className="tylo-home-stage-tile-count">{display.executionTotal}</span>
@@ -398,6 +419,13 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
         <div className="tylo-home-stage-tile tylo-home-stage-tile--financial">
           <div className="tylo-home-stage-tile-head">
             <div className="tylo-home-stage-tile-title">
+              <span className="tylo-home-stage-icon tylo-home-stage-icon--financial" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3" />
+                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                </svg>
+              </span>
               <span>Financial</span>
             </div>
             <span className="tylo-home-stage-tile-count">{display.financialTotal}</span>
@@ -405,7 +433,7 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
           <div className="tylo-home-stage-tile-rows">
             <Link to="/finance" className="tylo-home-stage-row-link">
               <span>Pending Confirmation</span>
-              <span className={stageNumClass(display.pendingConfirmation)}>{display.pendingConfirmation}</span>
+              <span className={stageNumClass(display.pendingConfirmation, 'warn')}>{display.pendingConfirmation}</span>
             </Link>
             <Link to="/finance" className="tylo-home-stage-row-link">
               <span>Confirmed Payment</span>

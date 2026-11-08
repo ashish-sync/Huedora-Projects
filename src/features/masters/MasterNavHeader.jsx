@@ -31,6 +31,11 @@ export const MASTER_ENTITY_META = {
     badge: 'E-Sign',
     keywords: ['approvers', 'delegates', 'hr', 'cfo', 'ceo', 'legal'],
   },
+  forms: {
+    description: 'Reusable formats for Public Camp Request forms and other TYLO forms',
+    badge: 'Forms',
+    keywords: ['camp request', 'public form', 'fields', 'templates', 'formats'],
+  },
   'picklist-approvals': {
     description: 'Review and approve user-suggested custom dropdown picklist entries',
     badge: 'Governance',

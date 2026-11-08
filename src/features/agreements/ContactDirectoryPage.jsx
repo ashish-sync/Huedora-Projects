@@ -10,6 +10,7 @@ import { useAuth } from '../../shared/auth.jsx';
 import MasterExcelToolbar from '../../components/masters/MasterExcelToolbar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import MasterListHeader from '../../components/masters/MasterListHeader.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import { masterExcelFor } from '../masters/masterExcelConfig.js';
 import PageShell from '../../components/ui/PageShell.jsx';
@@ -625,6 +626,12 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       kpis={embedded ? [] : [{ label: 'Total Contacts', value: listMeta.total || rows.length }]}
     >
+      {embedded && (
+        <MasterListHeader
+          title="Contact Directory"
+          subtitle="Directory of healthcare workers, service providers, clients, and operational resources."
+        />
+      )}
       {error && (
         <FeedbackBanner variant="error">{error}</FeedbackBanner>
       )}

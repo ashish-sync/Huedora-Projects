@@ -88,10 +88,10 @@ function buildUserDraftFromRecord(user, modules, roles) {
   const access = buildUserAccessDraft(user, modules, roles, roleIdOf);
   return {
     email: user.email || '',
+    username: user.username || '',
     fullName: user.fullName || '',
     phone: user.phone || '',
     designation: user.designation || '',
-    systemRole: user.systemRole || 'User',
     reportingManagerId: user.reportingManagerId ? String(user.reportingManagerId) : '',
     password: '',
     passwordConfirm: '',

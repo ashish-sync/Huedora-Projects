@@ -30,6 +30,7 @@ const ExpenseMasterPage = lazy(() => import('./ExpenseMasterPage.jsx'));
 const ContactDirectoryPage = lazy(() => import('../agreements/ContactDirectoryPage.jsx'));
 const DocumentMasterPage = lazy(() => import('../agreements/DocumentMasterPage.jsx'));
 const SignatureMasterPage = lazy(() => import('../agreements/SignatureMasterPage.jsx'));
+const FormMasterPage = lazy(() => import('../masters/FormMasterPage.jsx'));
 const PicklistApprovalsPage = lazy(() => import('../masters/PicklistApprovalsPage.jsx'));
 const LocationMasterPage = lazy(() => import('../locations/LocationMasterPage.jsx'));
 const ClientMasterEmbeddedPage = lazy(() => import('../camps/ClientMasterEmbeddedPage.jsx'));
@@ -96,6 +97,7 @@ const MASTER_GROUPS = [
       { id: 'contacts', label: 'Contact Directory', embedded: 'contacts', fields: [] },
       { id: 'templates', label: 'Document Templates', embedded: 'templates', fields: [] },
       { id: 'signatures', label: 'Signatures', embedded: 'signatures', fields: [] },
+      { id: 'forms', label: 'Form Master', embedded: 'forms', fields: [] },
       {
         id: 'picklist-approvals',
         label: 'Picklist approvals',
@@ -124,6 +126,7 @@ function EmbeddedMaster({ kind }) {
   if (kind === 'contacts') return <ContactDirectoryPage embedded />;
   if (kind === 'templates') return <DocumentMasterPage embedded />;
   if (kind === 'signatures') return <SignatureMasterPage embedded />;
+  if (kind === 'forms') return <FormMasterPage embedded />;
   if (kind === 'pin-codes') return <LocationMasterPage embedded />;
   if (kind === 'picklist-approvals') return <PicklistApprovalsPage embedded />;
   if (kind === 'client-masters') return <ClientMasterEmbeddedPage />;
@@ -144,6 +147,7 @@ function entitySingular(label) {
     'Contact Directory': 'Contact',
     'Document Templates': 'Document Template',
     Signatures: 'Signature',
+    'Form Master': 'Form format',
   };
   return map[label] || label;
 }

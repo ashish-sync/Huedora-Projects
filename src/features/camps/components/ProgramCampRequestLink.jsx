@@ -60,8 +60,8 @@ export function ProgramCampRequestLink({
               : !programActive
                 ? 'Activate this program before sharing the camp request form.'
                 : formMasterName || formMasterId
-                  ? `Uses Form Master “${formMasterName || 'linked format'}”. This program keeps one final form link. Copy always returns the same URL unless you replace it.`
-                  : 'Tip: link a Form Master format above for a configurable layout. This program keeps one final form link. Copy always returns the same URL unless you replace it.'}
+                  ? `Uses Form Master “${formMasterName || 'linked format'}”. Copy always returns this program’s final form link. Use Replace link only if you need a new URL.`
+                  : 'Tip: link a Form Master format above for a configurable layout. Copy always returns this program’s final form link. Use Replace link only if you need a new URL.'}
           </p>
         </div>
         <div className="program-camp-request-link__actions">

@@ -100,4 +100,27 @@ describe('InternalChat', () => {
       expect.objectContaining({ method: 'POST', body: { body: 'Hello Bob' } }),
     );
   }, 20000);
+
+  it('homepage compact composer is a full one-liner without send arrow', async () => {
+    const user = userEvent.setup();
+    render(<InternalChat compact />);
+
+    const peerButton = await screen.findByRole('button', { name: /Bob/i }, { timeout: 10000 });
+    await user.click(peerButton);
+
+    const input = await screen.findByLabelText('Type a message', {}, { timeout: 10000 });
+    expect(input.tagName).toBe('INPUT');
+    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
+    expect(document.querySelector('.tylo-chat-composer--oneline')).toBeTruthy();
+
+    await user.clear(input);
+    await user.type(input, 'Hello homepage{Enter}');
+
+    await waitFor(() => {
+      expect(apiMock).toHaveBeenCalledWith(
+        '/chat/conversations/c-1/messages',
+        expect.objectContaining({ method: 'POST', body: { body: 'Hello homepage' } }),
+      );
+    }, { timeout: 10000 });
+  }, 20000);
 });

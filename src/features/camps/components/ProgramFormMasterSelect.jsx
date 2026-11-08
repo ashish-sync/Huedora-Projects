@@ -3,17 +3,39 @@ import AdaptiveSelect from '../../../components/ui/AdaptiveSelect.jsx';
 import FieldError from '../../../components/ui/FieldError.jsx';
 import { api } from '../../../shared/api.js';
 
+const PURPOSE = {
+  request: {
+    label: 'Request Form (Form Master) for Client',
+    ariaLabel: 'Request form from Form Master for Client',
+    preferredCategory: 'PUBLIC_CAMP_REQUEST',
+    categorySuffix: ' · Public Camp Request',
+    emptyHint: 'Connect a Form Master format for the Client camp request link.',
+    linkedHint: (name) => `Linked to “${name}” for Client request. Edit formats in Master One → Document One → Form Master.`,
+  },
+  activity: {
+    label: 'Activity Form (Form Master) for HCW',
+    ariaLabel: 'Activity form from Form Master for HCW',
+    preferredCategory: 'HCW_ACTIVITY',
+    categorySuffix: ' · HCW Activity Form',
+    emptyHint: 'Connect a Form Master format for the HCW Activity Form.',
+    linkedHint: (name) => `Linked to “${name}” for HCW Activity. Edit formats in Master One → Document One → Form Master.`,
+  },
+};
+
 /**
  * Attach a Form Master format to a Client Master program.
- * Prefer Public Camp Request formats for shareable camp request links.
+ * purpose=request → Client camp request form
+ * purpose=activity → HCW Activity Form
  */
 export function ProgramFormMasterSelect({
+  purpose = 'request',
   value = '',
   formName = '',
   disabled = false,
   error = '',
   onChange,
 }) {
+  const config = PURPOSE[purpose] || PURPOSE.request;
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -39,7 +61,11 @@ export function ProgramFormMasterSelect({
       })
       .catch((err) => {
         if (cancelled) return;
-        setLoadError(err?.message || 'Could not load form formats');
+        const raw = String(err?.message || '');
+        const friendly = raw.includes('Route GET') || raw.includes('404')
+          ? 'Could not load form formats'
+          : (raw || 'Could not load form formats');
+        setLoadError(friendly);
         setRows([]);
       })
       .finally(() => {
@@ -54,18 +80,21 @@ export function ProgramFormMasterSelect({
 
   const options = useMemo(() => {
     const active = rows.filter((row) => row.isActive !== false);
+    const preferred = active.filter((row) => row.category === config.preferredCategory);
+    const rest = active.filter((row) => row.category !== config.preferredCategory);
+    const ordered = [...preferred, ...rest];
     const selected = rows.find((row) => String(row._id) === String(value));
-    if (selected && selected.isActive === false && !active.some((row) => String(row._id) === String(value))) {
-      return [...active, selected];
+    if (selected && selected.isActive === false && !ordered.some((row) => String(row._id) === String(value))) {
+      return [...ordered, selected];
     }
-    return active;
-  }, [rows, value]);
+    return ordered;
+  }, [rows, value, config.preferredCategory]);
 
   const selected = options.find((row) => String(row._id) === String(value));
 
   return (
     <label className="client-master-section-span-2">
-      Request Form (Form Master)
+      {config.label}
       <AdaptiveSelect
         value={value || ''}
         disabled={disabled || loading}
@@ -78,14 +107,16 @@ export function ProgramFormMasterSelect({
             formMasterName: match?.name || '',
           });
         }}
-        aria-label="Request form from Form Master"
+        aria-label={config.ariaLabel}
       >
         <option value="">{loading ? 'Loading forms…' : 'Select a Form Master format…'}</option>
         {options.map((row) => (
           <option key={row._id} value={row._id}>
             {row.name}
             {row.code ? ` (${row.code})` : ''}
-            {row.category === 'PUBLIC_CAMP_REQUEST' ? ' · Public Camp Request' : ''}
+            {row.category === config.preferredCategory ? config.categorySuffix : ''}
+            {row.category === 'PUBLIC_CAMP_REQUEST' && purpose !== 'request' ? ' · Public Camp Request' : ''}
+            {row.category === 'HCW_ACTIVITY' && purpose !== 'activity' ? ' · HCW Activity Form' : ''}
             {row.isActive === false ? ' · Inactive' : ''}
           </option>
         ))}
@@ -94,8 +125,8 @@ export function ProgramFormMasterSelect({
         {selected
           ? `${selected.fields?.length || 0} fields · Create or edit formats in Master One → Document One → Form Master.`
           : formName
-            ? `Linked to “${formName}”. Create or edit formats in Master One → Document One → Form Master.`
-            : 'Connect a Form Master format so this program’s camp request link uses that layout.'}
+            ? config.linkedHint(formName)
+            : config.emptyHint}
       </p>
       <FieldError message={error || loadError} />
     </label>

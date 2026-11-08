@@ -20,5 +20,8 @@ Thumbs.db
 .idea/
 *.swp
 
+# Preview HTML files
+tylo-one-*-preview*.html
+
 .cache/
 *.tgz

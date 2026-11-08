@@ -2428,7 +2428,7 @@
 
 .camp-ops-root .client-master-section-head-text {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   min-width: 0;
 }
@@ -2443,6 +2443,7 @@
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
+  margin-top: 1px;
   color: var(--muted);
   background: var(--surface-muted);
   border: 1px solid var(--line);
@@ -2535,7 +2536,7 @@
 .camp-ops-root .client-master-section-extra {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--line-soft, #e2e8f0);
+  border-top: 1px solid var(--line);
 }
 
 .camp-ops-root .program-camp-request-link__row {
@@ -2561,12 +2562,18 @@
 
 .camp-ops-root .program-camp-request-link__hint {
   margin: 0;
-  max-width: 42rem;
+  max-width: 56rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
 }
 
 .camp-ops-root .program-form-master-select__hint {
-  margin: 6px 0 0;
-  max-width: 42rem;
+  margin: 5px 0 0;
+  max-width: 56rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
 }
 
 .camp-ops-root .program-camp-request-link .error-text {

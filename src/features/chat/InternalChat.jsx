@@ -160,14 +160,15 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
   }, [messages, activeId]);
 
   useEffect(() => {
+    if (compact) return;
     const el = composerRef.current;
-    if (!el) return;
+    if (!el || el.tagName !== 'TEXTAREA') return;
     el.style.height = 'auto';
     const raw = el.scrollHeight;
     const next = Math.min(Math.max(raw, 32), 72);
     el.style.height = `${next}px`;
     el.style.overflowY = raw > 72 ? 'auto' : 'hidden';
-  }, [draft]);
+  }, [draft, compact]);
 
   const openConversation = async (conversation) => {
     setActiveId(conversation.id);
@@ -394,29 +395,49 @@ export default function InternalChat({ compact = false, onUnreadChange }) {
               <div ref={threadEndRef} />
             </div>
 
-            <form className="tylo-chat-composer" onSubmit={handleSend}>
-              <textarea
-                ref={composerRef}
-                rows={1}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={handleComposerKeyDown}
-                placeholder="Type a message"
-                maxLength={4000}
-                aria-label="Type a message"
-                disabled={sending}
-              />
-              <button
-                type="submit"
-                className="tylo-chat-send"
-                disabled={!draft.trim() || sending}
-                aria-label="Send"
-                title="Send"
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M3.4 20.4 21 12 3.4 3.6 3 10.2 15 12 3 13.8z" />
-                </svg>
-              </button>
+            <form
+              className={'tylo-chat-composer' + (compact ? ' tylo-chat-composer--oneline' : '')}
+              onSubmit={handleSend}
+            >
+              {compact ? (
+                <input
+                  ref={composerRef}
+                  type="text"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={handleComposerKeyDown}
+                  placeholder="Type a message"
+                  maxLength={4000}
+                  aria-label="Type a message"
+                  disabled={sending}
+                  autoComplete="off"
+                />
+              ) : (
+                <>
+                  <textarea
+                    ref={composerRef}
+                    rows={1}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={handleComposerKeyDown}
+                    placeholder="Type a message"
+                    maxLength={4000}
+                    aria-label="Type a message"
+                    disabled={sending}
+                  />
+                  <button
+                    type="submit"
+                    className="tylo-chat-send"
+                    disabled={!draft.trim() || sending}
+                    aria-label="Send"
+                    title="Send"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M3.4 20.4 21 12 3.4 3.6 3 10.2 15 12 3 13.8z" />
+                    </svg>
+                  </button>
+                </>
+              )}
             </form>
           </>
         ) : (

@@ -427,24 +427,38 @@
   background: var(--chat-pane);
   flex: 0 0 auto;
   min-width: 0;
+  width: 100%;
 }
 
-.tylo-chat-composer textarea {
+.tylo-chat-composer--oneline {
+  align-items: center;
+  gap: 0;
+  padding: 8px var(--chat-pad-x) 10px;
+}
+
+.tylo-chat-composer textarea,
+.tylo-chat-composer--oneline input[type='text'] {
   flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
   min-height: var(--chat-control-h);
-  max-height: 72px;
   height: var(--chat-control-h);
-  resize: none;
-  overflow-y: hidden;
   border-radius: 8px;
   border: 1px solid var(--chat-border);
   background: var(--bg-input, var(--chat-surface));
   color: var(--chat-text);
-  padding: 7px 10px;
+  padding: 0 12px;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: var(--chat-control-h);
   font-family: inherit;
+}
+
+.tylo-chat-composer textarea {
+  max-height: 72px;
+  resize: none;
+  overflow-y: hidden;
+  padding: 7px 10px;
+  line-height: 1.35;
   scrollbar-width: none;
 }
 
@@ -452,14 +466,21 @@
   display: none;
 }
 
-.tylo-chat-composer textarea::placeholder {
+.tylo-chat-composer textarea::placeholder,
+.tylo-chat-composer--oneline input[type='text']::placeholder {
   color: var(--chat-secondary);
   opacity: 0.9;
+  line-height: inherit;
 }
 
-.tylo-chat-composer textarea:focus {
+.tylo-chat-composer textarea:focus,
+.tylo-chat-composer--oneline input[type='text']:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--chat-accent) 45%, var(--chat-border));
+}
+
+.tylo-chat-composer--oneline .tylo-chat-send {
+  display: none;
 }
 
 .tylo-chat-send {

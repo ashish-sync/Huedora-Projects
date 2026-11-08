@@ -197,7 +197,17 @@ export function ClientMasterFormSectionFields({
               error={fieldErrors.campType}
             />
           </label>
-          <div className={`client-master-hcw-field${fieldErrors.healthcareWorker ? ' is-invalid' : ''}`}>
+          <label>
+            Camp Duration
+            <input
+              value={form.campDuration}
+              onChange={(e) => updateField('campDuration', e.target.value)}
+              placeholder="4:00"
+              className={fieldErrors.campDuration ? 'input-invalid' : ''}
+            />
+            <FieldError message={fieldErrors.campDuration} />
+          </label>
+          <div className={`client-master-hcw-field client-master-section-span-full${fieldErrors.healthcareWorker ? ' is-invalid' : ''}`}>
             <span className="client-master-field-label" id="client-master-hcw-label">
               Healthcare Worker
             </span>
@@ -221,17 +231,8 @@ export function ClientMasterFormSectionFields({
             </div>
             <FieldError message={fieldErrors.healthcareWorker} />
           </div>
-          <label>
-            Camp Duration
-            <input
-              value={form.campDuration}
-              onChange={(e) => updateField('campDuration', e.target.value)}
-              placeholder="4:00"
-              className={fieldErrors.campDuration ? 'input-invalid' : ''}
-            />
-            <FieldError message={fieldErrors.campDuration} />
-          </label>
           <ProgramFormMasterSelect
+            purpose="request"
             value={form.formMasterId || ''}
             formName={form.formMasterName || ''}
             disabled={loading}
@@ -239,6 +240,17 @@ export function ClientMasterFormSectionFields({
             onChange={({ formMasterId, formMasterName }) => {
               updateField('formMasterId', formMasterId);
               updateField('formMasterName', formMasterName);
+            }}
+          />
+          <ProgramFormMasterSelect
+            purpose="activity"
+            value={form.activityFormMasterId || ''}
+            formName={form.activityFormMasterName || ''}
+            disabled={loading}
+            error={fieldErrors.activityFormMasterId}
+            onChange={({ formMasterId, formMasterName }) => {
+              updateField('activityFormMasterId', formMasterId);
+              updateField('activityFormMasterName', formMasterName);
             }}
           />
         </div>

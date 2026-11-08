@@ -33,7 +33,7 @@ export const CLIENT_MASTER_SECTIONS = [
   {
     id: 'program',
     title: 'Program Configuration',
-    description: 'Division, method, service model, camp timing, and camp request form',
+    description: 'Division, method, service model, camp timing, Client request form, and HCW activity form',
     fields: [
       'programName',
       'campName',
@@ -41,6 +41,7 @@ export const CLIENT_MASTER_SECTIONS = [
       'healthcareWorker',
       'campDuration',
       'formMasterId',
+      'activityFormMasterId',
     ],
   },
   {
@@ -198,6 +199,7 @@ export function buildSectionPayload(sectionId, form, { forCreate = false } = {})
       healthcareWorker: normalizeHealthcareWorkers(form.healthcareWorker),
       coordinatorName: '',
       formMasterId: String(form.formMasterId || '').trim() || null,
+      activityFormMasterId: String(form.activityFormMasterId || '').trim() || null,
     });
   }
 
@@ -271,11 +273,16 @@ export function buildSectionSummary(sectionId, form) {
         { label: 'Division / Therapy', value: form.programName || '—' },
         { label: 'Method', value: form.campName || '—' },
         { label: 'Service Model', value: form.campType || '—' },
-        { label: 'Healthcare Worker', value: fmtList(normalizeHealthcareWorkers(form.healthcareWorker)) },
         { label: 'Camp Duration', value: form.campDuration || '—' },
+        { label: 'Healthcare Worker', value: fmtList(normalizeHealthcareWorkers(form.healthcareWorker)), span: 4 },
         {
-          label: 'Request Form',
+          label: 'Request Form (Client)',
           value: form.formMasterName || (form.formMasterId ? 'Linked form' : 'Not linked'),
+          span: 2,
+        },
+        {
+          label: 'Activity Form (HCW)',
+          value: form.activityFormMasterName || (form.activityFormMasterId ? 'Linked form' : 'Not linked'),
           span: 2,
         },
       ];

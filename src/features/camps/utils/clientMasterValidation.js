@@ -192,6 +192,8 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     campDuration: record.campDuration || '4:00',
     formMasterId: record.formMasterId ? String(record.formMasterId) : '',
     formMasterName: record.formMasterName || record.form?.name || '',
+    activityFormMasterId: record.activityFormMasterId ? String(record.activityFormMasterId) : '',
+    activityFormMasterName: record.activityFormMasterName || record.activityForm?.name || '',
     spocName: record.spocName || '',
     spocNumber: record.spocNumber || '',
     spocEmail: record.spocEmail || '',

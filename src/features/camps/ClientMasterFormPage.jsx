@@ -58,6 +58,8 @@ const emptyForm = {
   campDuration: '4:00',
   formMasterId: '',
   formMasterName: '',
+  activityFormMasterId: '',
+  activityFormMasterName: '',
   spocName: '',
   spocNumber: '',
   spocEmail: '',

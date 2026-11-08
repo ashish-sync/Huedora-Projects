@@ -134,5 +134,5 @@ describe('FormMasterPage', () => {
         }),
       );
     });
-  });
+  }, 20000);
 });

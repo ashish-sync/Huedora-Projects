@@ -3,7 +3,16 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { CampLifecycleForm } from './CampLifecycleForm.jsx';
 import { emptyLifecycleForm } from '../constants/campLifecycle.js';
 
-vi.mock('./CampLocationFields.jsx', () => ({ default: () => <div data-testid="location-fields" /> }));
+vi.mock('./CampLocationFields.jsx', () => ({
+  default: ({ pinAndCityOnly }) => (
+    <div data-testid="location-fields" data-pin-city-only={String(Boolean(pinAndCityOnly))}>
+      <div className="camp-request-pair-row full">
+        <label>PIN Code<input placeholder="6-digit PIN" /></label>
+        <label>City<input placeholder="Select city" /></label>
+      </div>
+    </div>
+  ),
+}));
 vi.mock('./CampAddressField.jsx', () => ({ default: () => <div data-testid="address-field" /> }));
 vi.mock('./CampNameSelect', () => ({
   CampNameSelect: ({ value, disabled }) => (
@@ -72,7 +81,9 @@ describe('CampLifecycleForm program request mode', () => {
     expect(screen.getByText('End Time')).toBeTruthy();
     expect(screen.queryByText('Camp Start Time')).toBeNull();
     expect(screen.queryByText('Camp End Time')).toBeNull();
-    expect(screen.queryByTestId('location-fields')).toBeNull();
+    const locationFields = screen.getByTestId('location-fields');
+    expect(locationFields).toBeTruthy();
+    expect(locationFields.getAttribute('data-pin-city-only')).toBe('true');
 
     const order = [
       'Doctor Name',
@@ -82,6 +93,8 @@ describe('CampLifecycleForm program request mode', () => {
       'Start Time',
       'End Time',
       'Camp / Clinic Address',
+      'PIN Code',
+      'City',
       'Contact Person Level',
       'Contact Person Name',
       'Contact Person Number',
@@ -104,6 +117,7 @@ describe('CampLifecycleForm program request mode', () => {
     pairLabels('Doctor Name', 'Doctor Code');
     pairLabels('Specialty', 'Camp Date');
     pairLabels('Start Time', 'End Time');
+    pairLabels('PIN Code', 'City');
     pairLabels('Contact Person Level', 'Contact Person Name');
     pairLabels('Contact Person Number', 'HQ (Headquarter)');
     pairLabels('Expected Patients', 'Remarks');

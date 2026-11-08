@@ -8,6 +8,7 @@ import ModalShell from '../../../components/ui/ModalShell.jsx';
 import WatchFollowButton from '../../notifications/WatchFollowButton.jsx';
 import CorrectDocumentNumberModal from './CorrectDocumentNumberModal.jsx';
 import { displayCommercialStage, isDraftingStage, isIssuedStage, normalizeCommercialStage } from '../commercialPaymentStatus.js';
+import { formatDateTime, formatTime } from '../../../shared/dateFormat.js';
 import './export-invoice.css';
 import './builder.css';
 import '../../notifications/notifications.css';
@@ -20,8 +21,8 @@ function SaveIndicator({ state, savedAt, status, docId }) {
   }
   if (state === 'saved' && savedAt) {
     return (
-      <span className="ib-save ib-save--saved" title={savedAt.toLocaleString()}>
-        Saved {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      <span className="ib-save ib-save--saved" title={formatDateTime(savedAt)}>
+        Saved {formatTime(savedAt)}
       </span>
     );
   }

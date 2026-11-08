@@ -35,7 +35,7 @@ export function ClientMasterSectionCard({
         {!isEditing ? (
           <button
             type="button"
-            className="btn secondary btn-sm client-master-section-edit-btn"
+            className="btn secondary btn-compact client-master-section-edit-btn"
             disabled={editLocked || saving}
             onClick={onEdit}
           >
@@ -45,7 +45,7 @@ export function ClientMasterSectionCard({
           <div className="client-master-section-actions">
             <button
               type="button"
-              className="btn secondary btn-sm"
+              className="btn secondary btn-compact"
               disabled={saving}
               onClick={onCancel}
             >
@@ -53,7 +53,7 @@ export function ClientMasterSectionCard({
             </button>
             <button
               type="button"
-              className="btn btn-sm"
+              className="btn btn-compact"
               disabled={saving}
               onClick={onSave}
             >

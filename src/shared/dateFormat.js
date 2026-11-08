@@ -1,8 +1,31 @@
 /**
- * TYLO One display dates: DD-MM-YYYY, times: 24-hour HH:mm.
- * API / form date values stay YYYY-MM-DD; clock times store/display as HH:mm.
- * Accept AM/PM on input, always normalize to 24-hour for display/export/storage.
+ * TYLO One standard date/time utilities.
+ * Mandatory standards:
+ * - Date: DD-MM-YYYY (e.g. 08-11-2026)
+ * - Time: hh:mm AM/PM (e.g. 09:30 AM)
+ * - Timezone: Asia/Kolkata (IST, UTC+05:30)
+ *
+ * Internal APIs / DOM input types:
+ * - <input type="date"> uses YYYY-MM-DD
+ * - <input type="time"> uses HH:mm (24-hour)
+ * - normalizeTimeOfDay returns 24-hour HH:mm for internal data / comparisons
  */
+
+export const TIME_ZONE = 'Asia/Kolkata';
+
+const DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+});
 
 function expandYear(yearPart) {
   const y = String(yearPart || '').trim();
@@ -34,9 +57,11 @@ export function parseToDate(value) {
   const text = String(value).trim();
   if (!text) return null;
 
-  const isoDateTime = /^(\d{4})-(\d{2})-(\d{2})[T\s]/.exec(text);
+  const isoDateTime = /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/.exec(text);
   if (isoDateTime) {
-    const parsed = new Date(text);
+    const hasTz = /[Zz]|[+-]\d{2}(?::?\d{2})?$/.test(text);
+    const normalizedIso = hasTz ? text : `${text.replace(' ', 'T')}+05:30`;
+    const parsed = new Date(normalizedIso);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
@@ -46,7 +71,7 @@ export function parseToDate(value) {
   }
 
   const compact = text.replace(/\s+/g, '');
-  const delimited = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})$/.exec(compact);
+  const delimited = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/.exec(compact);
   if (delimited) {
     const a = Number(delimited[1]);
     const b = Number(delimited[2]);
@@ -66,16 +91,53 @@ export function parseToDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-/** Display date as DD-MM-YYYY */
+function formatInstantDate(date) {
+  const parts = DATE_FORMATTER.formatToParts(date);
+  let day = '';
+  let month = '';
+  let year = '';
+  for (const p of parts) {
+    if (p.type === 'day') day = p.value;
+    else if (p.type === 'month') month = p.value;
+    else if (p.type === 'year') year = p.value;
+  }
+  return `${day}-${month}-${year}`;
+}
+
+/** Display date as DD-MM-YYYY in Asia/Kolkata */
 export function formatDate(value) {
   if (!value) return '';
-  const date = parseToDate(value);
-  if (!date) return String(value).trim();
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : formatInstantDate(value);
+  }
 
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear());
-  return `${day}-${month}-${year}`;
+  const text = String(value).trim();
+  if (!text) return '';
+
+  // Pure date YYYY-MM-DD
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (isoMatch) {
+    return `${isoMatch[3]}-${isoMatch[2]}-${isoMatch[1]}`;
+  }
+
+  // Delimited DD-MM-YYYY or DD/MM/YYYY or MM/DD/YYYY
+  const delimitedMatch = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/.exec(text);
+  if (delimitedMatch) {
+    const a = Number(delimitedMatch[1]);
+    const b = Number(delimitedMatch[2]);
+    const year = expandYear(delimitedMatch[3]);
+    if (!Number.isNaN(year)) {
+      if (a <= 12 && b > 12) {
+        // Recover leftover US MM-DD-YYYY
+        return `${String(b).padStart(2, '0')}-${String(a).padStart(2, '0')}-${year}`;
+      }
+      return `${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}-${year}`;
+    }
+  }
+
+  const date = parseToDate(text);
+  if (!date) return text;
+  return formatInstantDate(date);
 }
 
 /** Alias for explicit 4-digit year display */
@@ -84,6 +146,7 @@ export const formatDateDDMMYYYY = formatDate;
 /**
  * Normalize a clock time (09:00, 9:00 am, 930pm, 6.00 PM) to HH:mm (24-hour).
  * Returns '' when the value cannot be parsed as a time of day.
+ * Used internally for <input type="time"> values and 24-hr comparisons.
  */
 export function normalizeTimeOfDay(value) {
   const raw = String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -113,28 +176,70 @@ export function normalizeTimeOfDay(value) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-/** Display time as HH:mm (24-hour). Accepts Date, ISO datetime, or clock strings. */
+function format24HourTo12Hour(hhmm) {
+  if (!hhmm || typeof hhmm !== 'string') return '';
+  const [hStr, mStr] = hhmm.split(':');
+  const h = Number(hStr);
+  const m = Number(mStr);
+  if (Number.isNaN(h) || Number.isNaN(m)) return '';
+  const meridiem = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${meridiem}`;
+}
+
+function formatInstantTime(date) {
+  const parts = TIME_FORMATTER.formatToParts(date);
+  let hour = '';
+  let minute = '';
+  let dayPeriod = '';
+  for (const p of parts) {
+    if (p.type === 'hour') hour = p.value;
+    else if (p.type === 'minute') minute = p.value;
+    else if (p.type === 'dayPeriod') dayPeriod = p.value;
+  }
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${dayPeriod.toUpperCase()}`;
+}
+
+/**
+ * Display time as hh:mm AM/PM (12-hour) in Asia/Kolkata timezone.
+ * Accepts Date, ISO datetime, or clock strings (09:00, 14:30, 2:30 pm).
+ */
 export function formatTime(value) {
-  if (!value) return '';
-  const clock = normalizeTimeOfDay(value);
-  if (clock) return clock;
-  const date = parseToDate(value);
+  if (value == null || value === '') return '';
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : formatInstantTime(value);
+  }
+
+  const text = String(value).trim();
+  if (!text) return '';
+
+  // If clock string like "09:30" or "14:30" or "9:00 am" (not full ISO datetime)
+  const clock = normalizeTimeOfDay(text);
+  if (clock && !/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    return format24HourTo12Hour(clock);
+  }
+
+  // Datetime string
+  const date = parseToDate(text);
   if (!date) return '';
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
+  return formatInstantTime(date);
 }
 
 /** Alias — prefer this name when formatting camp start/end columns. */
 export const formatTimeOfDay = formatTime;
 
-/** Display as DD-MM-YYYY HH:mm */
+/** Display as DD-MM-YYYY hh:mm AM/PM in Asia/Kolkata timezone */
 export function formatDateTime(value) {
   if (!value) return '-';
   const date = parseToDate(value);
   if (!date) return '-';
-  return `${formatDate(date)} ${formatTime(date)}`;
+  const dateStr = formatDate(date);
+  const timeStr = formatTime(date);
+  if (!dateStr || !timeStr) return '-';
+  return `${dateStr} ${timeStr}`;
 }
+
+export const formatDateTimeDDMMYYYY = formatDateTime;
 
 export function formatDateRangeLabel(dateFrom, dateTo) {
   const from = dateFrom ? formatDate(dateFrom) : '...';
@@ -144,21 +249,45 @@ export function formatDateRangeLabel(dateFrom, dateTo) {
 
 /** Parse display or ISO date to YYYY-MM-DD for API / date inputs */
 export function toApiDateValue(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    const parts = DATE_FORMATTER.formatToParts(value);
+    let day = '';
+    let month = '';
+    let year = '';
+    for (const p of parts) {
+      if (p.type === 'day') day = p.value;
+      else if (p.type === 'month') month = p.value;
+      else if (p.type === 'year') year = p.value;
+    }
+    return `${year}-${month}-${day}`;
+  }
+
   const text = String(value || '').trim();
   if (!text) return '';
 
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (isoMatch) return text;
+
   const date = parseToDate(text);
   if (date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const parts = DATE_FORMATTER.formatToParts(date);
+    let day = '';
+    let month = '';
+    let year = '';
+    for (const p of parts) {
+      if (p.type === 'day') day = p.value;
+      else if (p.type === 'month') month = p.value;
+      else if (p.type === 'year') year = p.value;
+    }
     return `${year}-${month}-${day}`;
   }
 
   return text;
 }
 
-/** Today as YYYY-MM-DD (form defaults) */
+/** Today as YYYY-MM-DD in Asia/Kolkata timezone (form defaults) */
 export function todayIso() {
   return toApiDateValue(new Date());
 }

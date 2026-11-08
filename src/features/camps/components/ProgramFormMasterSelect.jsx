@@ -128,7 +128,12 @@ export function ProgramFormMasterSelect({
             ? config.linkedHint(formName)
             : config.emptyHint}
       </p>
-      <FieldError message={error || loadError} />
+      {error ? <FieldError message={error} /> : null}
+      {!error && loadError && !rows.length ? (
+        <span className="meta-text" style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>
+          {loadError}
+        </span>
+      ) : null}
     </label>
   );
 }

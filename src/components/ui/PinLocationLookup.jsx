@@ -26,6 +26,7 @@ export default function PinLocationLookup({
   required = false,
   disabled = false,
   labels = {},
+  pinOnly = false,
 }) {
   const v = { ...empty, ...value };
   const geoLookup = useGeoLookup();
@@ -132,6 +133,39 @@ export default function PinLocationLookup({
       emit({ pinCode });
     }
   };
+
+  if (pinOnly) {
+    return (
+      <label className="field pin-location-lookup-field">
+        {labels.pinCode || 'PIN Code'}
+        {required ? ' *' : ''}
+        <input
+          required={required}
+          disabled={disabled}
+          inputMode="numeric"
+          maxLength={6}
+          placeholder="6-digit PIN"
+          value={v.pinCode}
+          onChange={(e) => onPinChange(e.target.value)}
+        />
+        {lookupState === 'loading' ? (
+          <p className="muted" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-body-size)' }}>
+            Looking up PIN…
+          </p>
+        ) : null}
+        {lookupState === 'not-found' ? (
+          <p className="error-text" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-body-size)' }}>
+            PIN not found in master. Ask an admin to add this PIN in PIN Geography.
+          </p>
+        ) : null}
+        {lookupError ? (
+          <p className="error-text" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-body-size)' }}>
+            {lookupError}
+          </p>
+        ) : null}
+      </label>
+    );
+  }
 
   return (
     <div className="pin-location-lookup location-cascade">

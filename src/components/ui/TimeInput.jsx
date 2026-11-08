@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { normalizeTimeOfDay } from '../../shared/dateFormat.js';
+import { formatTime, normalizeTimeOfDay } from '../../shared/dateFormat.js';
 import { bindAutofillBlock } from '../../shared/suppressBrowserAutofill.js';
 
 function ClockIcon() {
@@ -14,11 +14,7 @@ function ClockIcon() {
 }
 
 export function formatTimeDisplay(value) {
-  const api = normalizeTimeOfDay(value);
-  if (!api) return '';
-  const [hours, minutes] = api.split(':').map(Number);
-  const date = new Date(1970, 0, 1, hours, minutes);
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return formatTime(value);
 }
 
 /**
@@ -47,7 +43,7 @@ export function TimeInput({
   const control = (
     <div className={`date-input-control time-input-control${disabled ? ' is-disabled' : ''}`}>
       <span className={`date-input-display${display ? '' : ' is-placeholder'}`} aria-hidden="true">
-        {display || 'hh : mm'}
+        {display || 'hh:mm AM/PM'}
       </span>
       <span className="date-input-picker-btn" aria-hidden="true">
         <ClockIcon />

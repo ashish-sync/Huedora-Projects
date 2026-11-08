@@ -1,4 +1,4 @@
-import { toApiDateValue } from './dateFormat';
+import { normalizeTimeOfDay, toApiDateValue } from './dateFormat';
 import { computeDurationHours } from './campSchedule';
 import { resolveCampSlot } from '../constants/campLifecycle';
 import { resolveZoneForState } from '../../../constants/geoZones.js';
@@ -27,8 +27,8 @@ export function validateRequestStageForm(form = {}, options = {}) {
   const campDate = toApiDateValue(form.campDate);
   if (!campDate) errors.push('Camp date is required');
 
-  const startTime = String(form.startTime || '').trim();
-  const endTime = String(form.endTime || '').trim();
+  const startTime = normalizeTimeOfDay(form.startTime) || String(form.startTime || '').trim();
+  const endTime = normalizeTimeOfDay(form.endTime) || String(form.endTime || '').trim();
   if (!/^\d{1,2}:\d{2}$/.test(startTime)) errors.push('Camp start time is required');
   if (!/^\d{1,2}:\d{2}$/.test(endTime)) errors.push('Camp end time is required');
   if (startTime && endTime) {

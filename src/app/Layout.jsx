@@ -17,6 +17,7 @@ import {
 } from '../shared/notificationSound.js';
 import AppErrorBoundary from '../components/AppErrorBoundary.jsx';
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
+import { TIME_ZONE } from '../shared/dateFormat.js';
 import '../features/notifications/notifications.css';
 
 function initials(name = '') {
@@ -49,6 +50,7 @@ export default function Layout({ children }) {
   const headerDateDisplay = useMemo(() => {
     try {
       return new Intl.DateTimeFormat('en-US', {
+        timeZone: TIME_ZONE,
         weekday: 'long',
         month: 'long',
         day: '2-digit',

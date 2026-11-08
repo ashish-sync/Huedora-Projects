@@ -67,7 +67,7 @@ export function ProgramCampRequestLink({
         <div className="program-camp-request-link__actions">
           <button
             type="button"
-            className="btn secondary btn-sm"
+            className="btn secondary btn-compact"
             disabled={disabled}
             onClick={() => copyLink({ replace: false })}
           >
@@ -76,7 +76,7 @@ export function ProgramCampRequestLink({
           {persisted && programActive ? (
             <button
               type="button"
-              className="btn secondary btn-sm"
+              className="btn secondary btn-compact"
               disabled={disabled}
               onClick={() => setReplaceOpen(true)}
             >

@@ -1,7 +1,10 @@
 export {
+  TIME_ZONE,
   formatDate,
   formatDateTime,
   formatTime,
+  formatTimeOfDay,
+  normalizeTimeOfDay,
   formatDateRangeLabel,
   toApiDateValue,
   todayIso,

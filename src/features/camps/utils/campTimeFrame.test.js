@@ -8,7 +8,7 @@ describe('getCampTimeFrameDisplay', () => {
       camp: { startTime: '10:00', endTime: '14:00', durationHours: 4, campSlot: '' },
     });
     expect(data.slot).toBe('Morning');
-    expect(data.timeRange).toBe('10:00 – 14:00');
+    expect(data.timeRange).toBe('10:00 AM – 02:00 PM');
   });
 
   it('derives Morning for 10:30 even when stored campSlot is dash junk', () => {

@@ -7,6 +7,7 @@ import InternalChat from '../chat/InternalChat.jsx';
 import CalendarTodo from '../calendar/CalendarTodo.jsx';
 import WelcomeMetrics from './WelcomeMetrics.jsx';
 import CampPipelinePanel from './CampPipelinePanel.jsx';
+import { formatDateTime, TIME_ZONE } from '../../shared/dateFormat.js';
 import './homepage.css';
 
 export const MODULES = OPERATIONAL_MODULES;
@@ -371,14 +372,7 @@ function getGreeting(name) {
 
 function asLocalDate(value) {
   if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
+  return formatDateTime(value);
 }
 
 function PanelTitle({ eyebrow, title, action }) {
@@ -1249,6 +1243,7 @@ export default function DashboardPage() {
                 .trim()
                 .split(/\s+/)[0];
               const welcomeDate = new Intl.DateTimeFormat('en-GB', {
+                timeZone: TIME_ZONE,
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
@@ -1862,6 +1857,7 @@ export default function DashboardPage() {
   const dateText = useMemo(
     () =>
       new Intl.DateTimeFormat('en-IN', {
+        timeZone: TIME_ZONE,
         weekday: 'short',
         day: 'numeric',
         month: 'short',

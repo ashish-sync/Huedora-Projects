@@ -150,7 +150,7 @@ export default function CampProgramRequestPage() {
   async function handleSubmit(e) {
     e?.preventDefault?.();
     if (busy || uploading || submitted) return;
-    const requestErrors = validateRequestStageForm(form, { skipLocation: true });
+    const requestErrors = validateRequestStageForm(form);
     if (requestErrors.length) {
       setError(requestErrors[0]);
       return;

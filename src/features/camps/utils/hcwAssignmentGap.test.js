@@ -38,13 +38,13 @@ describe('findHcwAssignmentGapConflict', () => {
       campId: 'CAMP-A',
       pincode: '641045',
       earliestStartTime: '14:30',
-      earliestStartLabel: '14:30',
-      timeRangeLabel: '08:00 – 14:00',
-      endsAtLabel: '14:00',
+      earliestStartLabel: '02:30 PM',
+      timeRangeLabel: '08:00 AM – 02:00 PM',
+      endsAtLabel: '02:00 PM',
       gapMinutes: 30,
     });
     expect(conflict.message).toMatch(
-      /HCW Schedule Conflict: This HCW has another camp scheduled until 14:00\. A 30m gap is recommended, so the earliest available start time is 14:30\./,
+      /HCW Schedule Conflict: This HCW has another camp scheduled until 02:00 PM\. A 30m gap is recommended, so the earliest available start time is 02:30 PM\./,
     );
     expect(conflict.approvalMessage).toMatch(/Reporting Manager/);
   });
@@ -64,8 +64,8 @@ describe('findHcwAssignmentGapConflict', () => {
     }, [overnight]);
     expect(conflict).toMatchObject({
       campId: 'CAMP-A',
-      timeRangeLabel: '11:50 – 05:00 (next day)',
-      earliestStartLabel: '05:30 (next day)',
+      timeRangeLabel: '11:50 AM – 05:00 AM (next day)',
+      earliestStartLabel: '05:30 AM (next day)',
     });
   });
 });
@@ -79,6 +79,6 @@ describe('getHcwAssignmentGapError', () => {
       startTime: '14:15',
       endTime: '18:00',
     }, [existing]);
-    expect(error).toMatch(/earliest available start time is 14:30/);
+    expect(error).toMatch(/earliest available start time is 02:30 PM/);
   });
 });

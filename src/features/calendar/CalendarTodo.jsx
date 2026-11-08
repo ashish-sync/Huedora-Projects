@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatTime, TIME_ZONE } from '../../shared/dateFormat.js';
 import './calendarTodo.css';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -44,24 +45,16 @@ function addOneHour(timeStr) {
 }
 
 function formatMonthTitle(date) {
-  return new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat('en-IN', { timeZone: TIME_ZONE, month: 'long', year: 'numeric' }).format(date);
 }
 
 function formatDayHeading(date) {
   return new Intl.DateTimeFormat('en-IN', {
+    timeZone: TIME_ZONE,
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   }).format(date);
-}
-
-function formatTime(value) {
-  if (!value) return '';
-  try {
-    return new Intl.DateTimeFormat('en-IN', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
-  } catch {
-    return '';
-  }
 }
 
 function personLabel(person) {

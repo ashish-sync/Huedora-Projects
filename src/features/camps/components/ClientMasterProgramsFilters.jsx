@@ -20,8 +20,9 @@ export function ClientMasterProgramsFilters({
   return (
     <>
       <MasterFilterShell
+        className="client-master-filter-shell"
         actions={
-          <>
+          <div className="client-master-toolbar-actions">
             {excelConfig ? (
               <MasterExcelToolbar
                 {...excelConfig}
@@ -29,6 +30,7 @@ export function ClientMasterProgramsFilters({
                 onImportComplete={onImportComplete}
                 onError={onError}
                 compact
+                secondary
               />
             ) : null}
             <button type="button" className="btn secondary btn-compact" onClick={onSearchSubmit}>
@@ -39,7 +41,7 @@ export function ClientMasterProgramsFilters({
                 New Program Config
               </Link>
             ) : null}
-          </>
+          </div>
         }
       >
         <MasterSearchField

@@ -2596,8 +2596,27 @@
 }
 
 .camp-ops-root .form-grid.client-master-section-grid {
+  display: grid;
   grid-template-columns: repeat(var(--client-master-cols), minmax(0, 1fr));
-  gap: var(--client-master-field-gap-y) var(--client-master-field-gap-x);
+  gap: var(--client-master-field-gap-y, 14px) var(--client-master-field-gap-x, 18px);
+  align-items: start;
+}
+
+.camp-ops-root .client-master-section-grid > label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, var(--ink-soft));
+}
+
+.camp-ops-root .client-master-section-grid > label input:not([type='checkbox']):not([type='radio']),
+.camp-ops-root .client-master-section-grid > label select,
+.camp-ops-root .client-master-section-grid > label .adaptive-select {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .camp-ops-root .client-master-section-span-2 {
@@ -2606,6 +2625,69 @@
 
 .camp-ops-root .client-master-section-span-full {
   grid-column: 1 / -1;
+}
+
+.camp-ops-root .client-master-filter-shell,
+.client-masters-page .master-filter-shell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: var(--filter-toolbar-gap, 10px) !important;
+  flex-wrap: nowrap !important;
+  padding: 8px 12px !important;
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius-sm, 6px) !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
+}
+
+.camp-ops-root .client-master-toolbar-actions,
+.client-masters-page .master-filter-actions {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: var(--space-2, 8px) !important;
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+}
+
+.camp-ops-root .client-master-toolbar-actions .master-excel-toolbar,
+.client-masters-page .master-filter-actions .master-excel-toolbar {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: var(--space-2, 8px) !important;
+}
+
+.camp-ops-root .client-master-toolbar-actions .btn,
+.client-masters-page .master-filter-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: var(--control-h, 32px) !important;
+  min-height: var(--control-h, 32px) !important;
+  max-height: var(--control-h, 32px) !important;
+  padding: 0 12px !important;
+  font-size: 0.8125rem !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 960px) {
+  .camp-ops-root .client-master-filter-shell,
+  .client-masters-page .master-filter-shell {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .client-masters-page .master-filter-main {
+    flex: 1 1 100% !important;
+  }
+  .camp-ops-root .client-master-toolbar-actions,
+  .client-masters-page .master-filter-actions {
+    flex: 1 1 100% !important;
+    justify-content: flex-end !important;
+  }
 }
 
 .camp-ops-root .client-master-camp-terms-box.is-embedded {
@@ -4202,9 +4284,9 @@
   height: 2rem;
   min-height: 2rem;
   max-height: 2rem;
-  padding: 0 0.7rem 0 0.55rem;
+  padding: 0 10px 0 8px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm, 6px);
   background: var(--bg-elevated);
   box-shadow: none;
   cursor: pointer;

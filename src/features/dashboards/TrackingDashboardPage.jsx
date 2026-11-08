@@ -5,7 +5,7 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import OpsReviewHeader, { OpsReviewSlotProvider } from './OpsReviewHeader.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
-import { formatDateRangeLabel } from '../../shared/dateFormat.js';
+import { formatDateRangeLabel, formatDateTime } from '../../shared/dateFormat.js';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { getQuickDateRange } from '../camps/utils/dateRange.js';
 import { buildOpsReviewReturnTo, withOpsReviewReturnTo } from './opsReviewReturn.js';
@@ -177,7 +177,7 @@ function relativeUpdated(iso) {
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  return new Date(iso).toLocaleString();
+  return formatDateTime(iso);
 }
 
 function HealthRing({ score = 0, tone = 'ok' }) {
@@ -654,7 +654,7 @@ export default function TrackingDashboardPage() {
                       <span className={`ops-tone-pill ops-tone-pill--${health?.tone || 'ok'}`}>
                         {health?.label || 'Project health'}
                       </span>
-                      <span className="ops-hero-updated" title={new Date(overview.generatedAt).toLocaleString()}>
+                      <span className="ops-hero-updated" title={formatDateTime(overview.generatedAt)}>
                         Updated {relativeUpdated(overview.generatedAt)}
                       </span>
                     </div>

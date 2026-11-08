@@ -1,23 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
+import { formatDate, formatTime } from '../../shared/dateFormat.js';
 import './internalChat.css';
 
 function firstName(name = '') {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   return parts[0] || 'Colleague';
-}
-
-function formatTime(value) {
-  if (!value) return '';
-  try {
-    return new Intl.DateTimeFormat('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value));
-  } catch {
-    return '';
-  }
 }
 
 function formatDayLabel(value) {
@@ -31,11 +20,7 @@ function formatDayLabel(value) {
       a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
     if (sameDay(date, today)) return 'Today';
     if (sameDay(date, yesterday)) return 'Yesterday';
-    return new Intl.DateTimeFormat('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(date);
+    return formatDate(date);
   } catch {
     return '';
   }

@@ -3,10 +3,10 @@ import { buildHcwSameDayCampRows, formatCampTimeLabel } from './hcwSameDayCamps.
 
 describe('formatCampTimeLabel', () => {
   it('formats morning and afternoon times', () => {
-    expect(formatCampTimeLabel('08:00')).toBe('08:00');
-    expect(formatCampTimeLabel('14:00')).toBe('14:00');
-    expect(formatCampTimeLabel('15:30')).toBe('15:30');
-    expect(formatCampTimeLabel('6:00 PM')).toBe('18:00');
+    expect(formatCampTimeLabel('08:00')).toBe('08:00 AM');
+    expect(formatCampTimeLabel('14:00')).toBe('02:00 PM');
+    expect(formatCampTimeLabel('15:30')).toBe('03:30 PM');
+    expect(formatCampTimeLabel('6:00 PM')).toBe('06:00 PM');
   });
 });
 
@@ -62,14 +62,14 @@ describe('buildHcwSameDayCampRows', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
       campId: 'CAMP-B',
-      startLabel: '08:00',
-      endLabel: '14:00',
+      startLabel: '08:00 AM',
+      endLabel: '02:00 PM',
       pincode: '641045',
     });
     expect(rows[1]).toMatchObject({
       campId: 'CAMP-A',
-      startLabel: '14:00',
-      endLabel: '17:00',
+      startLabel: '02:00 PM',
+      endLabel: '05:00 PM',
       pincode: '560001',
     });
   });

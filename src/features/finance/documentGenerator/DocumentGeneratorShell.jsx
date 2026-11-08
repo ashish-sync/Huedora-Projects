@@ -11,6 +11,7 @@ import {
   IconZoomOut,
 } from './icons.jsx';
 import { usePreviewScale } from './usePreviewScale.js';
+import { formatTime } from '../../../shared/dateFormat.js';
 
 /**
  * Premium document studio shell — preview-first canvas with collapsible edit panel.
@@ -133,9 +134,9 @@ export default function DocumentGeneratorShell({
               </div>
               <span className="doc-studio-float-id">{docNumber || 'Draft'}</span>
               {savedAt ? (
-                <span className="doc-studio-float-saved" title={`Saved ${savedAt.toLocaleTimeString()}`}>
+                <span className="doc-studio-float-saved" title={`Saved ${formatTime(savedAt)}`}>
                   <span className="doc-studio-saved-dot" />
-                  {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatTime(savedAt)}
                 </span>
               ) : null}
             </div>

@@ -7,6 +7,7 @@ import { DateInput } from './DateInput';
 import { TimeInput } from '../../../components/ui/TimeInput.jsx';
 import OtherAwareSelect from '../../../components/ui/OtherAwareSelect.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
+import { formatDateTime } from '../../../shared/dateFormat.js';
 import { CampFormInput } from './CampFormInput.jsx';
 import CampTravelKmField from './CampTravelKmField.jsx';
 import { CampClientTypeahead } from './CampClientTypeahead.jsx';
@@ -589,12 +590,42 @@ export function CampLifecycleForm({
                   googlePlaceId: loc.googlePlaceId ?? '',
                   latitude: loc.latitude ?? '',
                   longitude: loc.longitude ?? '',
+                  ...(loc.pinCode ? { pincode: loc.pinCode } : {}),
                   ...(form.hqManuallyEdited ? {} : { hq: loc.city ?? form.city ?? '' }),
                 });
               }}
             />
           </div>
-          {lockProgramFields ? null : (
+          {lockProgramFields ? (
+            <CampLocationFields
+              pinAndCityOnly
+              disabled={disabled}
+              required
+              value={{
+                city: form.city || '',
+                cityId: form.cityId || '',
+                state: form.state || '',
+                district: form.district || '',
+                pincode: form.pincode || '',
+                zone: form.zone || '',
+                stateId: form.stateId || '',
+                districtId: form.districtId || '',
+              }}
+              onChange={(loc) => {
+                updateFields?.({
+                  city: loc.city || '',
+                  cityId: loc.cityId || '',
+                  state: loc.state || '',
+                  district: loc.district || '',
+                  pincode: loc.pincode || '',
+                  zone: loc.zone || '',
+                  stateId: loc.stateId || '',
+                  districtId: loc.districtId || '',
+                  ...(form.hqManuallyEdited ? {} : { hq: loc.city || '' }),
+                });
+              }}
+            />
+          ) : (
             <div className="camp-request-location-row full">
               <CampLocationFields
                 disabled={disabled}
@@ -1260,7 +1291,7 @@ export function CampLifecycleForm({
           <div className="camp-finance-submitted full">
             <p className="meta-text">
               Submitted to Finance One
-              {form.submittedToFinanceAt ? ` on ${new Date(form.submittedToFinanceAt).toLocaleString()}` : ''}.
+              {form.submittedToFinanceAt ? ` on ${formatDateTime(form.submittedToFinanceAt)}` : ''}.
               {' '}
               Payment Check: <strong>{financialWorkflowStatus(form).label}</strong>
             </p>

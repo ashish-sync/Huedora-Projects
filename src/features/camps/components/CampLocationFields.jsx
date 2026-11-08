@@ -32,6 +32,7 @@ export default function CampLocationFields({
   onChange,
   disabled = false,
   required = false,
+  pinAndCityOnly = false,
 }) {
   const v = {
     city: '',
@@ -137,6 +138,65 @@ export default function CampLocationFields({
       city: city?.name || '',
     });
   };
+
+  if (pinAndCityOnly) {
+    return (
+      <div className="camp-request-pair-row camp-request-location-pair full">
+        <PinLocationLookup
+          pinOnly
+          required={required}
+          disabled={disabled}
+          value={{
+            pinCode: v.pincode,
+            state: v.state,
+            zone: v.zone,
+            district: v.district,
+            stateId: v.stateId,
+            districtId: v.districtId,
+          }}
+          onChange={(loc) => {
+            const nextLoc = {
+              pincode: loc.pinCode,
+              state: loc.state,
+              zone: loc.zone,
+              district: loc.district,
+              stateId: loc.stateId,
+              districtId: loc.districtId,
+            };
+            const clearCity = shouldClearCityOnLocationChange(v, nextLoc);
+            emit({
+              ...nextLoc,
+              ...(clearCity ? { city: '', cityId: '' } : {}),
+            });
+          }}
+          labels={{
+            pinCode: 'PIN Code',
+          }}
+        />
+        <label className="field">
+          City{required ? ' *' : ''}
+          <AdaptiveSelect
+            className="tylo-select"
+            threshold={8}
+            required={required}
+            disabled={disabled || !v.stateId}
+            value={v.cityId}
+            onChange={(e) => onCity(e.target.value)}
+            aria-label="City"
+            placeholder={v.stateId ? 'Select city' : 'Enter PIN first'}
+          >
+            <option value="">{v.stateId ? 'Select city' : 'Enter PIN first'}</option>
+            {cities.map((city) => (
+              <option key={city._id} value={city._id}>
+                {city.name}
+              </option>
+            ))}
+          </AdaptiveSelect>
+          {cityError ? <p className="error-text">{cityError}</p> : null}
+        </label>
+      </div>
+    );
+  }
 
   return (
     <div className="camp-location-fields location-cascade">

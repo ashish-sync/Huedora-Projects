@@ -36,7 +36,12 @@ vi.mock('../components/CampLifecycleForm.jsx', () => ({
           doctorName: 'Anita Sharma',
           doctorCode: 'D001',
           campDate: '2026-11-20',
-          hq: 'Mumbai',
+          hq: 'Devanahalli',
+          pincode: '560300',
+          state: 'Karnataka',
+          district: 'Bengaluru Rural',
+          zone: 'South Zone',
+          city: 'Devanahalli',
           fieldPersonName: 'Ravi Kumar',
           fieldPersonPhone: '9876543210',
           contactPersonLevel: 'Territory Manager',
@@ -151,6 +156,8 @@ describe('CampProgramRequestPage', () => {
     expect(payload.addressManualEntry).toBe(false);
     expect(payload.latitude).toBe('13.05158');
     expect(payload.longitude).toBe('77.61194');
+    expect(payload.pincode).toBe('560300');
+    expect(payload.city).toBe('Devanahalli');
     expect(payload.source).toBe('program_form');
     expect(await screen.findByText(/Request submitted for Camp One review as C-100/i)).toBeTruthy();
   });

@@ -34,6 +34,19 @@ describe('FormMasterPage', () => {
             fieldTypes: [
               { id: 'text', label: 'Text' },
               { id: 'date', label: 'Date' },
+              { id: 'number', label: 'Number' },
+            ],
+            fieldWidths: [
+              { id: 'half', label: 'Half width' },
+              { id: 'full', label: 'Full width' },
+            ],
+            fieldFormats: [
+              { id: '', label: 'None' },
+              { id: 'uppercase', label: 'Uppercase' },
+            ],
+            showOperators: [
+              { id: 'eq', label: 'Equals' },
+              { id: 'notEmpty', label: 'Is not empty' },
             ],
             templates: [
               {
@@ -42,8 +55,22 @@ describe('FormMasterPage', () => {
                 category: 'PUBLIC_CAMP_REQUEST',
                 description: 'Default public camp request fields',
                 fields: [
-                  { key: 'doctorName', label: 'Doctor Name', type: 'text', required: true },
-                  { key: 'campDate', label: 'Camp Date', type: 'date', required: true },
+                  {
+                    key: 'doctorName',
+                    label: 'Doctor Name',
+                    type: 'text',
+                    required: true,
+                    section: 'Doctor',
+                    width: 'half',
+                  },
+                  {
+                    key: 'campDate',
+                    label: 'Camp Date',
+                    type: 'date',
+                    required: true,
+                    section: 'Schedule',
+                    width: 'half',
+                  },
                 ],
               },
             ],
@@ -76,12 +103,14 @@ describe('FormMasterPage', () => {
     const user = userEvent.setup();
     render(<FormMasterPage embedded />);
 
-    expect(await screen.findByText(/Create reusable formats for Public Camp Request/i)).toBeTruthy();
+    expect(await screen.findByText(/Build a form format, then attach it under Client Master/i)).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: /Use Public Camp Request template/i }));
 
     expect(screen.getByPlaceholderText('e.g. Public Camp Request').value).toBe('Public Camp Request');
     expect(screen.getByDisplayValue('Doctor Name')).toBeTruthy();
     expect(screen.getByDisplayValue('PUBLIC_CAMP_REQUEST')).toBeTruthy();
+    expect(screen.getByDisplayValue('Doctor')).toBeTruthy();
+    expect(screen.getByLabelText(/Live form preview/i)).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: /Save format/i }));
 
@@ -94,6 +123,13 @@ describe('FormMasterPage', () => {
             name: 'Public Camp Request',
             code: 'PUBLIC_CAMP_REQUEST',
             category: 'PUBLIC_CAMP_REQUEST',
+            fields: expect.arrayContaining([
+              expect.objectContaining({
+                key: 'doctorName',
+                label: 'Doctor Name',
+                section: 'Doctor',
+              }),
+            ]),
           }),
         }),
       );

@@ -40,6 +40,7 @@ export const CLIENT_MASTER_SECTIONS = [
       'campType',
       'healthcareWorker',
       'campDuration',
+      'formMasterId',
     ],
   },
   {
@@ -196,6 +197,7 @@ export function buildSectionPayload(sectionId, form, { forCreate = false } = {})
       campDuration: trimmed.campDuration,
       healthcareWorker: normalizeHealthcareWorkers(form.healthcareWorker),
       coordinatorName: '',
+      formMasterId: String(form.formMasterId || '').trim() || null,
     });
   }
 
@@ -271,6 +273,11 @@ export function buildSectionSummary(sectionId, form) {
         { label: 'Service Model', value: form.campType || '—' },
         { label: 'Healthcare Worker', value: fmtList(normalizeHealthcareWorkers(form.healthcareWorker)) },
         { label: 'Camp Duration', value: form.campDuration || '—' },
+        {
+          label: 'Request Form',
+          value: form.formMasterName || (form.formMasterId ? 'Linked form' : 'Not linked'),
+          span: 2,
+        },
       ];
     case 'spoc':
       return [

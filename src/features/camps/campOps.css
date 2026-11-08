@@ -2545,6 +2545,14 @@
   gap: 12px;
 }
 
+.camp-ops-root .program-camp-request-link__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .camp-ops-root .program-camp-request-link__title {
   margin: 0 0 4px;
   font-size: 0.84rem;
@@ -2553,6 +2561,11 @@
 
 .camp-ops-root .program-camp-request-link__hint {
   margin: 0;
+  max-width: 42rem;
+}
+
+.camp-ops-root .program-form-master-select__hint {
+  margin: 6px 0 0;
   max-width: 42rem;
 }
 
@@ -2565,8 +2578,13 @@
     flex-direction: column;
   }
 
+  .camp-ops-root .program-camp-request-link__actions,
   .camp-ops-root .program-camp-request-link__row .btn {
     width: 100%;
+  }
+
+  .camp-ops-root .program-camp-request-link__actions .btn {
+    flex: 1 1 auto;
   }
 }
 

@@ -1,21 +1,25 @@
 import { useState } from 'react';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
 import { clientMasterApi } from '../campOpsApi.js';
 
 export function ProgramCampRequestLink({
   recordId = '',
   persisted = false,
   programActive = true,
+  formMasterId = '',
+  formMasterName = '',
 }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [replaceOpen, setReplaceOpen] = useState(false);
 
-  async function handleCopy() {
+  async function copyLink({ replace = false } = {}) {
     if (!persisted || !recordId || busy) return;
     setBusy(true);
     setError('');
     try {
-      const res = await clientMasterApi.mintRequestFormLink(recordId);
+      const res = await clientMasterApi.mintRequestFormLink(recordId, { replace });
       const data = res?.data?.data || res?.data || {};
       const url = data.url
         || (data.path ? `${window.location.origin}${data.path}` : '')
@@ -38,6 +42,11 @@ export function ProgramCampRequestLink({
     }
   }
 
+  async function handleConfirmReplace() {
+    setReplaceOpen(false);
+    await copyLink({ replace: true });
+  }
+
   const disabled = !persisted || !programActive || busy;
 
   return (
@@ -50,19 +59,43 @@ export function ProgramCampRequestLink({
               ? 'Save Program Configuration to copy a shareable New Camp request form. Client, Division / Therapy, and Method stay locked to this program.'
               : !programActive
                 ? 'Activate this program before sharing the camp request form.'
-                : 'Share this link so someone can submit a New Camp request for this program. Client, Division / Therapy, and Method stay locked. Copying a new link replaces the previous one.'}
+                : formMasterName || formMasterId
+                  ? `Uses Form Master “${formMasterName || 'linked format'}”. This program keeps one final form link. Copy always returns the same URL unless you replace it.`
+                  : 'Tip: link a Form Master format above for a configurable layout. This program keeps one final form link. Copy always returns the same URL unless you replace it.'}
           </p>
         </div>
-        <button
-          type="button"
-          className="btn secondary btn-sm"
-          disabled={disabled}
-          onClick={handleCopy}
-        >
-          {busy ? 'Creating link…' : copied ? 'Link copied' : 'Copy camp request form link'}
-        </button>
+        <div className="program-camp-request-link__actions">
+          <button
+            type="button"
+            className="btn secondary btn-sm"
+            disabled={disabled}
+            onClick={() => copyLink({ replace: false })}
+          >
+            {busy ? 'Working…' : copied ? 'Link copied' : 'Copy camp request form link'}
+          </button>
+          {persisted && programActive ? (
+            <button
+              type="button"
+              className="btn secondary btn-sm"
+              disabled={disabled}
+              onClick={() => setReplaceOpen(true)}
+            >
+              Replace link
+            </button>
+          ) : null}
+        </div>
       </div>
       {error ? <p className="error-text">{error}</p> : null}
+
+      <ConfirmDialog
+        open={replaceOpen}
+        title="Replace form link?"
+        message="This creates a new final link for the program. The previous link will stop working."
+        confirmLabel="Replace link"
+        danger
+        onCancel={() => setReplaceOpen(false)}
+        onConfirm={handleConfirmReplace}
+      />
     </div>
   );
 }

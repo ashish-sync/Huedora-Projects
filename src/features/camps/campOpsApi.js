@@ -260,7 +260,8 @@ export const clientMasterApi = {
     });
     return postForm(`${BASE}/client-masters/${id}/camp-terms-files`, formData);
   },
-  mintRequestFormLink: (id) => post(`${BASE}/client-masters/${id}/request-form-link`),
+  mintRequestFormLink: (id, { replace = false } = {}) =>
+    post(`${BASE}/client-masters/${id}/request-form-link`, replace ? { replace: true } : {}),
   downloadCampTermsFile: async (id, fileId) => ({
     data: await getBlob(
       `${BASE}/client-masters/${id}/camp-terms-files/${encodeURIComponent(fileId)}`

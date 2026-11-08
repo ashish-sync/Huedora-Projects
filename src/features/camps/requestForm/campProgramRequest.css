@@ -1,4 +1,6 @@
 .camp-program-request {
+  /* Shared public forms stay light regardless of app theme. */
+  color-scheme: light !important;
   --ink: var(--ce-ink);
   --muted: var(--ce-muted);
   --line: var(--ce-line);
@@ -7,6 +9,8 @@
   --camp-form-col-gap: 12px;
   --camp-form-field-gap: 4px;
   --camp-form-row-gap: 12px;
+  background: var(--ce-bg);
+  color: var(--ce-ink);
 }
 
 .camp-program-request__body {

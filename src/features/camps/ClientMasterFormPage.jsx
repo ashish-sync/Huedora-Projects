@@ -56,6 +56,8 @@ const emptyForm = {
   campType: '',
   healthcareWorker: [],
   campDuration: '4:00',
+  formMasterId: '',
+  formMasterName: '',
   spocName: '',
   spocNumber: '',
   spocEmail: '',
@@ -663,6 +665,8 @@ export default function ClientMasterFormPage() {
                 recordId={recordId}
                 persisted={isPersisted}
                 programActive={form.isActive !== false}
+                formMasterId={form.formMasterId}
+                formMasterName={form.formMasterName}
               />
             ) : null}
           >

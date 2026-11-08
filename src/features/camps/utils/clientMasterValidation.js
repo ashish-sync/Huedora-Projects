@@ -190,6 +190,8 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     campType: record.campType || '',
     healthcareWorker: normalizeHealthcareWorkers(record.healthcareWorker),
     campDuration: record.campDuration || '4:00',
+    formMasterId: record.formMasterId ? String(record.formMasterId) : '',
+    formMasterName: record.formMasterName || record.form?.name || '',
     spocName: record.spocName || '',
     spocNumber: record.spocNumber || '',
     spocEmail: record.spocEmail || '',

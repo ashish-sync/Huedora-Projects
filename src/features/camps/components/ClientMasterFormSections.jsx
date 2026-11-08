@@ -6,6 +6,7 @@ import { AssignedSystemUserPicker } from './AssignedSystemUserPicker.jsx';
 import { SearchableOptionsInput } from './SearchableOptionsInput';
 import { ClientMasterConsumablesField } from './ClientMasterConsumablesField.jsx';
 import { ClientMasterStateSelect } from './ClientMasterStateSelect.jsx';
+import { ProgramFormMasterSelect } from './ProgramFormMasterSelect.jsx';
 import { normalizeHealthcareWorkers } from '../utils/healthcareWorkers.js';
 
 const SERVICE_MODEL_OPTIONS = [
@@ -230,6 +231,16 @@ export function ClientMasterFormSectionFields({
             />
             <FieldError message={fieldErrors.campDuration} />
           </label>
+          <ProgramFormMasterSelect
+            value={form.formMasterId || ''}
+            formName={form.formMasterName || ''}
+            disabled={loading}
+            error={fieldErrors.formMasterId}
+            onChange={({ formMasterId, formMasterName }) => {
+              updateField('formMasterId', formMasterId);
+              updateField('formMasterName', formMasterName);
+            }}
+          />
         </div>
       );
 

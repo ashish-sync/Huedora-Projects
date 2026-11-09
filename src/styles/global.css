@@ -991,7 +991,7 @@ textarea {
 }
 
 .main.main--home {
-  padding: 8px var(--page-gutter-inline);
+  padding: 12px var(--page-gutter-inline) 14px;
   overflow: hidden;
   display: flex;
   flex-direction: column;

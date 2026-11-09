@@ -85,7 +85,8 @@ describe('CalendarTodo', () => {
     expect(await screen.findByRole('grid', {}, { timeout: 10000 })).toBeTruthy();
     await waitFor(() => expect(onBadgeChange).toHaveBeenCalledWith(1));
 
-    await user.click(screen.getByRole('button', { name: '+ Add' }));
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByRole('dialog', { name: 'Create calendar item' })).toBeTruthy();
     expect(screen.getByText('Title')).toBeTruthy();
     expect(screen.getByText('Note')).toBeTruthy();

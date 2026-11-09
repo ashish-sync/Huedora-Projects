@@ -99,6 +99,34 @@ function ChevronRight() {
   );
 }
 
+function RefreshIcon({ spinning }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="13"
+      height="13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={spinning ? 'tylo-cal-spin' : ''}
+      aria-hidden="true"
+    >
+      <path d="M13.5 8A5.5 5.5 0 1 1 12 4.1L13.5 2.5" />
+      <path d="M13.5 6V2.5H10" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <path d="M8 3v10M3 8h10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function CalendarTodo({ compact = false, onBadgeChange }) {
   const { user } = useAuth();
   const selfId = String(user?._id || user?.id || '');
@@ -269,11 +297,24 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
           </button>
         </div>
         <div className="tylo-cal-toolbar-actions">
-          <button type="button" className="tylo-cal-text-btn" onClick={goToday}>
-            Today
+          <button
+            type="button"
+            className="tylo-cal-icon-btn tylo-cal-refresh-btn"
+            onClick={refresh}
+            disabled={loading}
+            title="Refresh"
+            aria-label="Refresh"
+          >
+            <RefreshIcon spinning={loading} />
           </button>
-          <button type="button" className="tylo-cal-primary-btn" onClick={() => openCreate(selectedDate)}>
-            + Add
+          <button
+            type="button"
+            className="tylo-cal-primary-btn tylo-cal-add-btn"
+            onClick={() => openCreate(selectedDate)}
+            title="Add item"
+            aria-label="Add"
+          >
+            <PlusIcon />
           </button>
         </div>
       </div>

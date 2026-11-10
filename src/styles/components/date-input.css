@@ -18,9 +18,9 @@
   min-height: var(--control-h);
   max-height: var(--control-h);
   padding: 0 42px 0 var(--control-pad-inline-start);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--border-major, #C5D0DE);
   border-radius: var(--control-radius);
-  background: var(--color-bg-elevated);
+  background: var(--bg-input, #F5F7FA);
   color: var(--color-text-primary);
   font-size: var(--text-body-sm-size);
   line-height: calc(var(--control-h) - 2px);
@@ -151,4 +151,9 @@ span.date-input-display {
 
 .communications-filter-dates .date-input-field {
   min-width: 160px;
+}
+
+[data-theme='dark'] .date-input-display {
+  background: var(--bg-input, #0B1220);
+  border-color: var(--border-default, #1E293B);
 }

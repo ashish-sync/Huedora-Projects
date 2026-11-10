@@ -32,8 +32,7 @@
   --home-note-sky-bg: color-mix(in srgb, var(--brand-primary) 14%, var(--bg-tier-2));
   --home-note-violet-bg: color-mix(in srgb, #7C3AED 14%, var(--bg-tier-2));
   --home-note-mint-bg: color-mix(in srgb, var(--status-success-dot) 14%, var(--bg-tier-2));
-  --home-panel-shadow: 0 1px 2px color-mix(in srgb, #0F172A 6%, transparent),
-    0 4px 12px color-mix(in srgb, #0F172A 4%, transparent);
+  --home-panel-shadow: none;
   --home-motion: 160ms ease;
   --home-focus-ring: 0 0 0 2px var(--home-surface), 0 0 0 4px color-mix(in srgb, var(--home-blue) 55%, transparent);
 
@@ -667,19 +666,19 @@
 }
 
 .tylo-home-stage-tile--request {
-  border-top-color: var(--home-blue);
+  border-top-color: #3B82F6 !important;
 }
 
 .tylo-home-stage-tile--assignment {
-  border-top-color: var(--home-violet);
+  border-top-color: #8B5CF6 !important;
 }
 
 .tylo-home-stage-tile--execution {
-  border-top-color: var(--home-green);
+  border-top-color: #10B981 !important;
 }
 
 .tylo-home-stage-tile--financial {
-  border-top-color: var(--home-gold);
+  border-top-color: #F59E0B !important;
 }
 
 .tylo-home-stage-tile-head {
@@ -1230,8 +1229,8 @@
 
 .tylo-home-notes-input-row input {
   flex: 1;
-  background: var(--bg-input, var(--home-muted));
-  border: 1px solid var(--home-border);
+  background: var(--bg-input, #F5F7FA);
+  border: 1px solid var(--border-major, #C5D0DE);
   border-radius: 6px;
   padding: 6px 10px;
   color: var(--home-text);
@@ -1337,6 +1336,42 @@
   cursor: pointer;
   flex: 1;
   min-width: 0;
+}
+
+.tylo-home-note-label input[type='checkbox'],
+.tylo-home-note-list input[type='checkbox'],
+.tylo-home-notes-list input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin: 0;
+  border-radius: 4px;
+  background: #F5F7FA;
+  border: 1px solid #94A3B8;
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition: all 120ms ease;
+}
+
+.tylo-home-note-label input[type='checkbox']:checked,
+.tylo-home-note-list input[type='checkbox']:checked,
+.tylo-home-notes-list input[type='checkbox']:checked {
+  background: var(--accent-primary, #2563EB);
+  border-color: var(--accent-primary, #2563EB);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+  background-size: 11px 11px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+[data-theme='dark'] .tylo-home-note-label input[type='checkbox'],
+[data-theme='dark'] .tylo-home-note-list input[type='checkbox'],
+[data-theme='dark'] .tylo-home-notes-list input[type='checkbox'] {
+  background: var(--bg-input, #0B1220);
+  border-color: var(--border-strong, #334155);
 }
 
 .tylo-home-note-del-btn {
@@ -1957,8 +1992,8 @@
   padding: 0 var(--welcome-control-pad-x);
   margin: 0;
   border-radius: var(--welcome-control-radius);
-  border: 1px solid var(--home-border);
-  background: var(--bg-input, var(--home-muted));
+  border: 1px solid var(--border-major, #C5D0DE);
+  background: var(--bg-input, #F5F7FA);
   color: var(--home-text);
   font-family: inherit;
   font-size: 12px;
@@ -2009,8 +2044,8 @@
   height: var(--welcome-control-height);
   min-height: var(--welcome-control-height);
   border-radius: var(--welcome-control-radius);
-  border: 1px solid var(--home-border);
-  background: var(--bg-input, var(--home-muted));
+  border: 1px solid var(--border-major, #C5D0DE);
+  background: var(--bg-input, #F5F7FA);
   box-sizing: border-box;
 }
 
@@ -2089,8 +2124,8 @@
   padding: 0;
   margin: 0;
   border-radius: var(--welcome-control-radius);
-  border: 1px solid var(--home-border);
-  background: var(--bg-input, var(--home-muted));
+  border: 1px solid var(--border-major, #C5D0DE);
+  background: var(--bg-input, #F5F7FA);
   color: var(--home-secondary);
   box-sizing: border-box;
   cursor: pointer;
@@ -2399,9 +2434,9 @@
 .tylo-home-ops-grid > .tylo-home-pipeline-panel,
 .tylo-home-ops-grid > .tylo-home-quick-panel {
   background: var(--home-surface) !important;
-  border: 1px solid var(--home-border) !important;
+  border: 1px solid var(--border-board, #D4DDE8) !important;
   border-radius: var(--ops-panel-radius);
-  box-shadow: var(--home-panel-shadow);
+  box-shadow: none !important;
   color: var(--home-text);
   min-width: 0;
   min-height: 0 !important;
@@ -2781,11 +2816,12 @@
   color: var(--home-violet);
 }
 
-.tylo-home-ops-grid .tylo-home-sched-num {
+.tylo-home-ops-grid .tylo-home-sched-num,
+.tylo-home-sched-num {
   display: block;
   width: 100%;
   margin: 0 auto;
-  color: var(--home-cyan) !important;
+  color: var(--accent-primary, #2563EB) !important;
   font-weight: 600;
   font-size: 15px;
   line-height: 1.2;
@@ -2794,6 +2830,16 @@
   text-align: center;
   text-shadow: none;
   letter-spacing: 0;
+}
+
+.tylo-home-ops-grid .tylo-home-sched-num.is-zero,
+.tylo-home-sched-num.is-zero {
+  color: var(--text-muted, #64748B) !important;
+}
+
+.tylo-home-ops-grid .tylo-home-sched-num.is-nonzero,
+.tylo-home-sched-num.is-nonzero {
+  color: var(--accent-primary, #2563EB) !important;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot tr {
@@ -2817,11 +2863,12 @@
   white-space: nowrap;
 }
 
-.tylo-home-ops-grid .tylo-home-total-row-head {
+.tylo-home-ops-grid .tylo-home-total-row-head,
+.tylo-home-total-row-head {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--home-cyan) !important;
+  color: var(--text-primary, #263445) !important;
   font-size: 13px !important;
   font-weight: 700;
   line-height: 1.2 !important;
@@ -2832,28 +2879,32 @@
   max-width: none;
 }
 
-.tylo-home-ops-grid .tylo-home-total-icon {
+.tylo-home-ops-grid .tylo-home-total-icon,
+.tylo-home-total-icon {
   width: 16px;
   height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--home-cyan);
+  color: var(--text-primary, #263445) !important;
 }
 
-.tylo-home-ops-grid .tylo-home-total-icon svg {
+.tylo-home-ops-grid .tylo-home-total-icon svg,
+.tylo-home-total-row-head svg {
   width: 16px;
   height: 16px;
   display: block;
   overflow: visible;
+  stroke: var(--text-primary, #263445) !important;
 }
 
-.tylo-home-ops-grid .tylo-home-total-num {
+.tylo-home-ops-grid .tylo-home-total-num,
+.tylo-home-total-num {
   display: block;
   width: 100%;
   margin: 0 auto;
-  color: var(--home-text) !important;
+  color: var(--accent-primary, #2563EB) !important;
   font-weight: 700;
   font-size: 15px;
   line-height: 1.2;
@@ -2862,6 +2913,16 @@
   text-align: center;
   overflow: visible;
   letter-spacing: 0;
+}
+
+.tylo-home-ops-grid .tylo-home-total-num.is-zero,
+.tylo-home-total-num.is-zero {
+  color: var(--text-muted, #64748B) !important;
+}
+
+.tylo-home-ops-grid .tylo-home-total-num.is-nonzero,
+.tylo-home-total-num.is-nonzero {
+  color: var(--accent-primary, #2563EB) !important;
 }
 
 /* Workspace — segmented control + content pane */
@@ -2916,9 +2977,17 @@
 }
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active {
-  background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--home-blue) 35%, transparent);
+  background: var(--bg-card, #F5F7FA) !important;
+  color: var(--text-primary, #263445) !important;
+  border: 1px solid var(--border-board, #D4DDE8) !important;
+  box-shadow: none !important;
+}
+
+.tylo-home-tabs button.is-active {
+  background: var(--bg-card, #F5F7FA) !important;
+  color: var(--text-primary, #263445) !important;
+  border: 1px solid var(--border-board, #D4DDE8) !important;
+  box-shadow: none !important;
 }
 
 .tylo-home-ops-grid .tylo-home-ws-tab-badge {
@@ -2935,7 +3004,7 @@
 }
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active .tylo-home-ws-tab-badge {
-  background: color-mix(in srgb, #fff 24%, transparent);
+  background: var(--accent-primary, #2563EB);
   color: #fff;
 }
 
@@ -3197,9 +3266,9 @@
   max-height: var(--welcome-control-height);
   margin: 0;
   padding: 0 28px 0 8px;
-  border: 1px solid var(--home-border);
+  border: 1px solid var(--border-major, #C5D0DE);
   border-radius: var(--welcome-control-radius);
-  background-color: var(--bg-input, var(--home-muted));
+  background-color: var(--bg-input, #F5F7FA);
   background-image: var(--tylo-select-chevron);
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -3253,8 +3322,8 @@
 
 .tylo-home-pipeline-range-date .date-input-control {
   border-radius: var(--welcome-control-radius);
-  border: 1px solid var(--home-border);
-  background: var(--bg-input, var(--home-muted));
+  border: 1px solid var(--border-major, #C5D0DE);
+  background: var(--bg-input, #F5F7FA);
   box-sizing: border-box;
 }
 
@@ -3344,16 +3413,16 @@
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile--request {
-  border-top-color: var(--home-blue) !important;
+  border-top-color: #3B82F6 !important;
 }
 .tylo-home-ops-grid .tylo-home-stage-tile--assignment {
-  border-top-color: var(--home-violet) !important;
+  border-top-color: #8B5CF6 !important;
 }
 .tylo-home-ops-grid .tylo-home-stage-tile--execution {
-  border-top-color: var(--home-green) !important;
+  border-top-color: #10B981 !important;
 }
 .tylo-home-ops-grid .tylo-home-stage-tile--financial {
-  border-top-color: var(--home-gold) !important;
+  border-top-color: #F59E0B !important;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-head {

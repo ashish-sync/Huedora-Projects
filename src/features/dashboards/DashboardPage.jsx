@@ -1369,10 +1369,10 @@ export default function DashboardPage() {
                             <span>{row.campSlot}</span>
                           </div>
                         </td>
-                        <td className="tylo-home-sched-num">{row.today}</td>
-                        <td className="tylo-home-sched-num">{row.tomorrow}</td>
-                        <td className="tylo-home-sched-num">{row.dayAfter}</td>
-                        <td className="tylo-home-sched-num">{row.restOfMonth}</td>
+                        <td className={`tylo-home-sched-num ${row.today === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.today}</td>
+                        <td className={`tylo-home-sched-num ${row.tomorrow === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.tomorrow}</td>
+                        <td className={`tylo-home-sched-num ${row.dayAfter === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.dayAfter}</td>
+                        <td className={`tylo-home-sched-num ${row.restOfMonth === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.restOfMonth}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1390,10 +1390,10 @@ export default function DashboardPage() {
                         <span>Total Camps</span>
                       </div>
                       </th>
-                      <td className="tylo-home-total-num">{scheduleTotals.today}</td>
-                      <td className="tylo-home-total-num">{scheduleTotals.tomorrow}</td>
-                      <td className="tylo-home-total-num">{scheduleTotals.dayAfter}</td>
-                      <td className="tylo-home-total-num">{scheduleTotals.restOfMonth}</td>
+                      <td className={`tylo-home-total-num ${scheduleTotals.today === 0 ? 'is-zero' : 'is-nonzero'}`}>{scheduleTotals.today}</td>
+                      <td className={`tylo-home-total-num ${scheduleTotals.tomorrow === 0 ? 'is-zero' : 'is-nonzero'}`}>{scheduleTotals.tomorrow}</td>
+                      <td className={`tylo-home-total-num ${scheduleTotals.dayAfter === 0 ? 'is-zero' : 'is-nonzero'}`}>{scheduleTotals.dayAfter}</td>
+                      <td className={`tylo-home-total-num ${scheduleTotals.restOfMonth === 0 ? 'is-zero' : 'is-nonzero'}`}>{scheduleTotals.restOfMonth}</td>
                     </tr>
                   </tfoot>
                 </table>

@@ -37,7 +37,7 @@ select:not([multiple]):not([size]) {
   height: var(--control-h);
   min-height: var(--control-h);
   max-height: var(--control-h);
-  background-color: var(--color-bg-elevated);
+  background-color: var(--bg-input, #F5F7FA);
   background-image: var(--tylo-select-chevron);
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -51,7 +51,7 @@ select:not([multiple]):not([size]) {
   line-height: calc(var(--control-h) - 2px);
   text-indent: 0;
   cursor: pointer;
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--border-major, #C5D0DE);
   border-radius: var(--control-radius);
   color: var(--color-text-primary);
   transition: var(--dropdown-transition);
@@ -122,9 +122,9 @@ select:not([multiple]):not([size]) option {
   height: var(--control-h) !important;
   max-height: var(--control-h) !important;
   overflow: hidden !important;
-  border: 1px solid var(--color-border-default) !important;
+  border: 1px solid var(--border-major, #C5D0DE) !important;
   border-radius: var(--control-radius) !important;
-  background: var(--color-bg-elevated) !important;
+  background: var(--bg-input, #F5F7FA) !important;
   color: var(--color-text-primary) !important;
   box-shadow: none !important;
   transition: var(--dropdown-transition) !important;

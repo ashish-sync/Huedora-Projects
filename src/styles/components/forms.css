@@ -37,9 +37,9 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--border-board, var(--border-strong));
+  border: 1px solid var(--border-major, #C5D0DE);
   border-radius: var(--control-radius);
-  background: var(--bg-input);
+  background: var(--bg-input, #F5F7FA);
   color: var(--text-main);
   font-size: var(--text-body-sm-size);
   font-weight: 400;
@@ -93,8 +93,8 @@
 .field input:hover:not(:disabled):not(:read-only),
 .field select:hover:not(:disabled),
 .field textarea:hover:not(:disabled):not(:read-only) {
-  border-color: var(--border-strong);
-  background: var(--bg-input);
+  border-color: var(--border-major, #C5D0DE);
+  background: var(--bg-input, #F5F7FA);
 }
 
 .field input:focus,

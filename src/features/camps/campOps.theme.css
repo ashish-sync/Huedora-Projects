@@ -14,10 +14,14 @@
   --accent: var(--brand-bright);
   --border: var(--line);
   --border-subtle: var(--line);
-  --success: var(--ok);
-  --warning: var(--warn);
-  --danger: var(--color-danger);
-  --danger-soft: var(--color-danger-subtle);
+  --success: var(--status-success-text);
+  --success-soft: var(--status-success-bg);
+  --warning: var(--status-warning-text);
+  --warning-soft: var(--status-warning-bg);
+  --danger: var(--status-danger-text);
+  --danger-soft: var(--status-danger-bg);
+  --info: var(--status-info-text);
+  --info-soft: var(--status-info-bg);
   --shadow: none;
 
   font-family: var(--font) !important;

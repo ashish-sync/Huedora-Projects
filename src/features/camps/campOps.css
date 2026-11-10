@@ -2100,7 +2100,7 @@
   border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.08);
-  color: var(--color-text-primary);
+  color: var(--text-on-brand);
   font-size: 0.9rem;
   font-weight: 600;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -2149,7 +2149,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.18);
-  color: var(--color-text-primary);
+  color: var(--text-on-brand);
   font-size: 0.78rem;
   font-weight: 700;
   flex-shrink: 0;
@@ -2173,7 +2173,7 @@
 
 .camp-ops-root .camp-ops-sidebar-user-name {
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--text-on-brand);
   line-height: 1.25;
   font-size: 0.86rem;
   word-break: break-word;
@@ -3514,7 +3514,7 @@
   right: 0;
   padding: 6px 10px;
   border-radius: var(--radius-sm);
-  background: #0f172a;
+  background: var(--color-bg-tooltip);
   color: var(--color-text-on-primary);
   font-size: 0.78rem;
   white-space: nowrap;
@@ -5917,7 +5917,7 @@
 }
 
 .camp-ops-root .camp-info-modal-overlay {
-  background: rgba(15, 23, 42, 0.28);
+  background: var(--color-bg-overlay-soft);
 }
 
 .camp-info-portal-root {
@@ -6883,7 +6883,7 @@
   border-radius: var(--radius-lg);
   background: var(--bg-elevated);
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-xs);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -6955,7 +6955,7 @@
 }
 
 .camp-ops-root .users-status-btn:hover {
-  border-color: #99f6e4;
+  border-color: var(--color-teal);
   color: var(--text);
   background: var(--color-teal-subtle);
 }
@@ -8551,7 +8551,7 @@
 .camp-ops-root .camp-download-mode-tab.is-active {
   background: var(--bg-elevated);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .camp-ops-root .camp-download-toolbar {
@@ -8915,7 +8915,7 @@
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
   backdrop-filter: blur(6px);
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
 }
 
 .camp-ops-root .camp-export-sticky-meta {
@@ -8960,7 +8960,7 @@
 
 .camp-ops-root .camp-working-stage-field.is-pending .camp-working-stage-select {
   border-color: var(--status-warning-dot);
-  box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-warning-dot) 25%, transparent);
 }
 
 .camp-ops-root .camp-working-stage-label {

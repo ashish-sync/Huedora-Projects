@@ -2631,13 +2631,22 @@
 .tylo-home-ops-grid .tylo-home-bp-legend--planned::before { background: var(--home-blue); }
 .tylo-home-ops-grid .tylo-home-bp-legend--executed::before { background: var(--home-green); }
 
-/* Schedule — mockup alignment: Session left, metric cols equal + centered */
+/* Schedule — Session left; metric cols equal + centered; numbers +1px */
 .tylo-home-ops-grid .tylo-home-schedule-panel {
   overflow: hidden;
+  gap: 10px;
+}
+
+.tylo-home-ops-grid .tylo-home-schedule-panel > .tylo-home-card-head {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 0 2px;
+  align-items: center;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-panel .tylo-home-card-subtitle {
   display: block !important;
+  margin-top: 2px;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table-wrap {
@@ -2657,8 +2666,8 @@
   table-layout: fixed;
 }
 
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 28%; }
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 18%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 32%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 17%; }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead tr,
 .tylo-home-ops-grid .tylo-home-schedule-table tbody tr,
@@ -2670,7 +2679,7 @@
 .tylo-home-ops-grid .tylo-home-schedule-table th,
 .tylo-home-ops-grid .tylo-home-schedule-table td {
   display: table-cell;
-  padding: 10px 4px;
+  padding: 11px 6px;
   text-align: center;
   font-size: 13px;
   border: none;
@@ -2681,46 +2690,67 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: 1.25;
+  box-sizing: border-box;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead th:not(:first-child),
 .tylo-home-ops-grid .tylo-home-schedule-table tbody td:not(:first-child),
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot td:not(:first-child) {
   text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead th {
   color: var(--home-muted-text);
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background: transparent;
   border-bottom: 1px solid var(--home-border);
-  padding: 4px 2px 10px;
+  padding: 2px 4px 10px;
   overflow: visible;
   text-overflow: clip;
-  line-height: 1.3;
+  line-height: 1.2;
+  height: auto;
+}
+
+.tylo-home-ops-grid .tylo-home-schedule-table thead th:not(:first-child) {
+  width: 17%;
+  min-width: 0;
+  text-align: center;
+  padding-left: 2px;
+  padding-right: 2px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table th:first-child,
 .tylo-home-ops-grid .tylo-home-schedule-table td:first-child {
   text-align: left;
-  padding-left: 4px;
-  padding-right: 10px;
+  padding-left: 2px;
+  padding-right: 12px;
 }
 
 .tylo-home-ops-grid .tylo-home-session-cell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
   color: var(--home-text) !important;
   font-weight: 500;
   font-size: 13px;
-  max-width: 100%;
   line-height: 1.2;
   vertical-align: middle;
+}
+
+.tylo-home-ops-grid .tylo-home-session-cell > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tylo-home-ops-grid .tylo-home-session-icon {
@@ -2735,13 +2765,15 @@
 .tylo-home-ops-grid .tylo-home-session-icon svg {
   width: 16px;
   height: 16px;
+  display: block;
 }
 
 .tylo-home-ops-grid .tylo-home-session-icon--morning {
   color: var(--status-warning-dot);
 }
 
-.tylo-home-ops-grid .tylo-home-session-icon--afternoon {
+.tylo-home-ops-grid .tylo-home-session-icon--afternoon,
+.tylo-home-ops-grid .tylo-home-session-icon--noon {
   color: var(--home-blue);
 }
 
@@ -2750,14 +2782,18 @@
 }
 
 .tylo-home-ops-grid .tylo-home-sched-num {
-  display: inline-block;
+  display: block;
   width: 100%;
+  margin: 0 auto;
   color: var(--home-cyan) !important;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   text-align: center;
   text-shadow: none;
+  letter-spacing: 0;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot tr {
@@ -2771,7 +2807,7 @@
   padding-top: 12px;
   padding-bottom: 12px;
   overflow: visible;
-  line-height: 1.35;
+  line-height: 1.25;
   vertical-align: middle;
 }
 
@@ -2788,7 +2824,7 @@
   color: var(--home-cyan) !important;
   font-size: 13px !important;
   font-weight: 700;
-  line-height: 1.35 !important;
+  line-height: 1.2 !important;
   text-transform: none;
   letter-spacing: 0;
   white-space: nowrap;
@@ -2800,6 +2836,8 @@
   width: 16px;
   height: 16px;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   color: var(--home-cyan);
 }
@@ -2807,19 +2845,23 @@
 .tylo-home-ops-grid .tylo-home-total-icon svg {
   width: 16px;
   height: 16px;
+  display: block;
   overflow: visible;
 }
 
 .tylo-home-ops-grid .tylo-home-total-num {
-  display: inline-block;
+  display: block;
   width: 100%;
+  margin: 0 auto;
   color: var(--home-text) !important;
   font-weight: 700;
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   text-align: center;
   overflow: visible;
+  letter-spacing: 0;
 }
 
 /* Workspace — segmented control + content pane */
@@ -3130,8 +3172,11 @@
   flex: 0 1 132px;
   min-width: 100px;
   max-width: 160px;
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
   display: flex;
-  align-items: stretch;
+  align-items: center;
 }
 
 .tylo-home-pipeline-filter--users {
@@ -3139,10 +3184,46 @@
   max-width: 200px;
 }
 
+/* Lock native selects to the same height as DateInput / Apply (ops control). */
+.tylo-home-pipeline-select.tylo-home-welcome-control,
 .tylo-home-pipeline-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  display: block;
   width: 100%;
-  font-size: 11px;
-  padding-inline: 8px;
+  height: var(--welcome-control-height);
+  min-height: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
+  margin: 0;
+  padding: 0 28px 0 8px;
+  border: 1px solid var(--home-border);
+  border-radius: var(--welcome-control-radius);
+  background-color: var(--bg-input, var(--home-muted));
+  background-image: var(--tylo-select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  box-shadow: none;
+  box-sizing: border-box;
+  color: var(--home-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: calc(var(--welcome-control-height) - 2px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.tylo-home-pipeline-select::-ms-expand {
+  display: none;
+}
+
+.tylo-home-pipeline-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .tylo-home-pipeline-range {
@@ -3152,27 +3233,40 @@
   gap: 6px;
   flex: 0 1 auto;
   min-width: 0;
+  height: var(--welcome-control-height);
 }
 
 .tylo-home-pipeline-range-date {
   width: 128px;
   flex: 0 0 128px;
   min-width: 118px;
+  height: var(--welcome-control-height);
+  align-self: center;
 }
 
+.tylo-home-pipeline-range-date .date-input-field,
 .tylo-home-pipeline-range-date .date-input-control {
   height: var(--welcome-control-height);
   min-height: var(--welcome-control-height);
+  max-height: var(--welcome-control-height);
+}
+
+.tylo-home-pipeline-range-date .date-input-control {
   border-radius: var(--welcome-control-radius);
   border: 1px solid var(--home-border);
   background: var(--bg-input, var(--home-muted));
+  box-sizing: border-box;
 }
 
 .tylo-home-pipeline-range-date .date-input-display {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
   font-size: 12px;
   font-weight: 600;
   color: var(--home-text);
   padding: 0 28px 0 10px;
+  line-height: calc(var(--welcome-control-height) - 2px);
 }
 
 .tylo-home-pipeline-range-date .date-input-picker-btn {
@@ -3231,7 +3325,7 @@
   border: 1px solid var(--home-border) !important;
   border-top: 3px solid var(--home-border-strong) !important;
   border-radius: 10px;
-  padding: 12px;
+  padding: 12px 8px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3240,6 +3334,13 @@
   overflow: hidden;
   height: 100%;
   box-shadow: none !important;
+}
+
+/* Give Financial status labels (Pending Confirmation) maximum single-line width. */
+.tylo-home-ops-grid .tylo-home-stage-tile--financial .tylo-home-stage-row-link {
+  column-gap: 3px;
+  padding-left: 2px;
+  padding-right: 1px;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile--request {
@@ -3265,7 +3366,7 @@
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-title {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
@@ -3274,13 +3375,26 @@
   line-height: 1.2;
   color: var(--home-text) !important;
   min-width: 0;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.tylo-home-ops-grid a.tylo-home-stage-tile-title:hover {
+  color: var(--home-text) !important;
+  opacity: 0.92;
+}
+
+.tylo-home-ops-grid a.tylo-home-stage-tile-title:focus-visible {
+  outline: none;
+  box-shadow: var(--home-focus-ring);
 }
 
 .tylo-home-ops-grid .tylo-home-stage-tile-count {
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   color: var(--home-text) !important;
   flex-shrink: 0;
 }
@@ -3297,14 +3411,14 @@
 
 .tylo-home-ops-grid .tylo-home-stage-row-link {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 2.5rem;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
-  column-gap: 8px;
+  column-gap: 4px;
   text-decoration: none;
   color: var(--home-secondary) !important;
   font-size: 13.5px;
   font-weight: 500;
-  padding: 0 8px;
+  padding: 0 2px 0 4px;
   border-radius: 6px;
   line-height: 1.25;
   min-height: 0;
@@ -3316,9 +3430,11 @@
 
 .tylo-home-ops-grid .tylo-home-stage-row-link > span:first-child {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
+  line-height: 1.25;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-row-link:hover {
@@ -3334,13 +3450,16 @@
 .tylo-home-ops-grid .tylo-home-stage-num {
   font-weight: 700;
   color: var(--home-text) !important;
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   text-align: right;
   justify-self: end;
   line-height: 1;
   display: inline-flex;
   align-items: center;
+  min-width: 1.75rem;
+  justify-content: flex-end;
 }
 
 .tylo-home-ops-grid .tylo-home-stage-num::after {
@@ -3810,8 +3929,13 @@
 
   .tylo-home-ops-grid .tylo-home-schedule-table th,
   .tylo-home-ops-grid .tylo-home-schedule-table td {
-    padding: 5px 4px;
-    font-size: 11px;
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .tylo-home-ops-grid .tylo-home-sched-num,
+  .tylo-home-ops-grid .tylo-home-total-num {
+    font-size: 14px;
   }
 
   .tylo-home-ops-grid .tylo-home-pin-list {
@@ -3824,12 +3948,19 @@
   }
 
   .tylo-home-ops-grid .tylo-home-stage-row-link {
-    padding: 2px 4px;
-    font-size: 11px;
+    padding: 0 2px 0 4px;
+    /* Keep status labels readable — do not shrink (e.g. Pending Confirmation). */
+    font-size: 13.5px;
+  }
+
+  .tylo-home-ops-grid .tylo-home-stage-row-link > span:first-child {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .tylo-home-ops-grid .tylo-home-stage-num {
-    font-size: 11px;
+    font-size: 14px;
   }
 
   .tylo-home-ops-grid .tylo-home-quick-subtile {
@@ -3906,12 +4037,16 @@ html[data-theme='dark'] .tylo-home-ops-grid > .tylo-home-quick-panel,
 /* Keep schedule metric headers fully readable on compact widths */
 @media (max-width: 1360px) {
   .tylo-home-ops-grid .tylo-home-schedule-table thead th {
-    font-size: 9px;
-    letter-spacing: 0;
-    padding-left: 0;
-    padding-right: 0;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    padding-left: 2px;
+    padding-right: 2px;
   }
 
-  .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 20%; }
-  .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 20%; }
+  .tylo-home-ops-grid .tylo-home-schedule-table thead th:not(:first-child) {
+    width: 18%;
+  }
+
+  .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 28%; }
+  .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 18%; }
 }

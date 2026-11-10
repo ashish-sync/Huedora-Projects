@@ -5,12 +5,93 @@ import { api } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { clientMasterApi } from '../camps/campOpsApi.js';
 import { parseOpsBoardFilterCatalog } from '../camps/utils/clientMasterCascade.js';
+import { buildOperationsBoardManagePath } from '../camps/utils/campOperationsBoardQuery.js';
 import { getWelcomeDefaultDateRange, toDateInputValue } from '../camps/utils/dateRange.js';
+import {
+  ASSIGNMENT_WORKFLOW_STATUSES,
+  EXECUTION_WORKFLOW_STATUSES,
+  FINANCIAL_WORKFLOW_STATUSES,
+  REQUEST_WORKFLOW_STATUSES,
+} from '../camps/constants/campWorkflowStatuses.js';
 
 export function canUsePipelineAdminFilters(user) {
   const role = String(user?.systemRole || '').trim();
   return role === 'Admin' || role === 'Super Admin';
 }
+
+/** Canonical Camp One stages — same vocabulary as Operations Board. */
+export const PIPELINE_STAGE_DEFINITIONS = [
+  { id: 'request', label: 'Request', statuses: REQUEST_WORKFLOW_STATUSES },
+  { id: 'assignment', label: 'Assignment', statuses: ASSIGNMENT_WORKFLOW_STATUSES },
+  { id: 'execution', label: 'Execution', statuses: EXECUTION_WORKFLOW_STATUSES },
+  { id: 'financial', label: 'Financial', statuses: FINANCIAL_WORKFLOW_STATUSES },
+];
+
+/** Homepage display labels (aligned to Camp One; short forms where requested). */
+const PIPELINE_STATUS_LABELS = {
+  review_pending: 'Review Pending',
+  review_overdue: 'Review Overdue',
+  request_rejected: 'Refusal',
+  information_requested: 'Info Requested',
+  unassigned: 'Unassigned',
+  hiring_requested: 'Hiring Request',
+  planned: 'Planned',
+  executed: 'Executed',
+  cancelled_by_tylo: 'Cancelled by Tylo',
+  cancelled_by_client: 'Cancelled by Client',
+  payment_not_checked: 'Pending Confirmation',
+  payment_confirmed: 'Confirmed Payment',
+  payment_hold: 'Hold',
+  payment_done: 'Payment Done',
+};
+
+const STATUS_TONE = {
+  review_pending: 'warn',
+  review_overdue: 'danger',
+  request_rejected: 'danger',
+  information_requested: '',
+  unassigned: 'warn',
+  hiring_requested: 'warn',
+  planned: 'warn',
+  executed: 'success',
+  cancelled_by_tylo: 'danger',
+  cancelled_by_client: 'danger',
+  payment_not_checked: 'warn',
+  payment_confirmed: 'success',
+  payment_hold: 'danger',
+  payment_done: 'success',
+};
+
+const STAGE_ICONS = {
+  request: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  ),
+  assignment: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  execution: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  ),
+  financial: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3" />
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+    </svg>
+  ),
+};
 
 function ClearGlyph() {
   return (
@@ -86,7 +167,27 @@ export function stageDataFromBoard(board) {
   };
 }
 
-const EMPTY_STAGE_DATA = stageDataFromBoard(null);
+/** Build the four tiles from the live operations-board payload (same stage/status keys). */
+export function pipelineTilesFromBoard(board) {
+  const stages = Array.isArray(board?.stages) ? board.stages : [];
+  const byId = Object.fromEntries(stages.map((stage) => [stage.id, stage]));
+
+  return PIPELINE_STAGE_DEFINITIONS.map((definition) => {
+    const stage = byId[definition.id];
+    const statuses = definition.statuses.map((status) => ({
+      value: status.value,
+      label: PIPELINE_STATUS_LABELS[status.value] || status.label,
+      count: countFromStage(stage, status.value),
+      tone: STATUS_TONE[status.value] || '',
+    }));
+    return {
+      id: definition.id,
+      label: definition.label,
+      total: Number(stage?.total) || statuses.reduce((sum, row) => sum + row.count, 0),
+      statuses,
+    };
+  });
+}
 
 export default function CampPipelinePanel({ enabled = true, user = null }) {
   const showAdminFilters = canUsePipelineAdminFilters(user);
@@ -178,7 +279,7 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
     };
   }, [enabled, appliedFrom, appliedTo, method, assignedUser, showAdminFilters]);
 
-  const stageData = useMemo(() => stageDataFromBoard(board), [board]);
+  const tiles = useMemo(() => pipelineTilesFromBoard(board), [board]);
   const methodOptions = filterCatalog.methods || [];
   const assignedUserOptions = useMemo(
     () =>
@@ -186,7 +287,17 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
         email: person.email,
         label: person.name ? `${person.name} · ${person.email}` : person.email,
       })),
-    [filterCatalog]
+    [filterCatalog],
+  );
+
+  const manageQuery = useMemo(
+    () => ({
+      dateFrom: appliedFrom,
+      dateTo: appliedTo,
+      ...(showAdminFilters && method ? { campaign: method } : {}),
+      ...(showAdminFilters && assignedUser ? { assignedUser } : {}),
+    }),
+    [appliedFrom, appliedTo, method, assignedUser, showAdminFilters],
   );
 
   function applyRange() {
@@ -207,8 +318,6 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
     setAppliedFrom(next.dateFrom);
     setAppliedTo(next.dateTo);
   }
-
-  const display = board ? stageData : EMPTY_STAGE_DATA;
 
   return (
     <section className="tylo-home-panel tylo-home-pipeline-panel" aria-label="Camp pipeline">
@@ -322,133 +431,40 @@ export default function CampPipelinePanel({ enabled = true, user = null }) {
       ) : null}
 
       <div className="tylo-home-pipeline-grid" aria-busy={loading || undefined}>
-        <div className="tylo-home-stage-tile tylo-home-stage-tile--request">
-          <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title">
-              <span className="tylo-home-stage-icon tylo-home-stage-icon--request" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-              </span>
-              <span>Request</span>
+        {tiles.map((tile) => (
+          <div key={tile.id} className={`tylo-home-stage-tile tylo-home-stage-tile--${tile.id}`}>
+            <div className="tylo-home-stage-tile-head">
+              <Link
+                to={buildOperationsBoardManagePath({ stageId: tile.id, ...manageQuery })}
+                className="tylo-home-stage-tile-title"
+                title={`Open ${tile.label} camps in Manage`}
+              >
+                <span className={`tylo-home-stage-icon tylo-home-stage-icon--${tile.id}`} aria-hidden="true">
+                  {STAGE_ICONS[tile.id]}
+                </span>
+                <span>{tile.label}</span>
+              </Link>
+              <span className="tylo-home-stage-tile-count">{tile.total}</span>
             </div>
-            <span className="tylo-home-stage-tile-count">{display.requestTotal}</span>
-          </div>
-          <div className="tylo-home-stage-tile-rows">
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Review Pending</span>
-              <span className={stageNumClass(display.reviewPending, 'warn')}>{display.reviewPending}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Review Overdue</span>
-              <span className={stageNumClass(display.reviewOverdue, 'danger')}>{display.reviewOverdue}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Refusals</span>
-              <span className={stageNumClass(display.refusals, 'danger')}>{display.refusals}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Info Requested</span>
-              <span className={stageNumClass(display.infoRequested)}>{display.infoRequested}</span>
-            </Link>
-          </div>
-        </div>
-
-        <div className="tylo-home-stage-tile tylo-home-stage-tile--assignment">
-          <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title">
-              <span className="tylo-home-stage-icon tylo-home-stage-icon--assignment" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </span>
-              <span>Assignment</span>
+            <div className="tylo-home-stage-tile-rows">
+              {tile.statuses.map((status) => (
+                <Link
+                  key={status.value}
+                  to={buildOperationsBoardManagePath({
+                    stageId: tile.id,
+                    statusValue: status.value,
+                    ...manageQuery,
+                  })}
+                  className="tylo-home-stage-row-link"
+                  title={`Open ${status.label} camps in Manage`}
+                >
+                  <span>{status.label}</span>
+                  <span className={stageNumClass(status.count, status.tone)}>{status.count}</span>
+                </Link>
+              ))}
             </div>
-            <span className="tylo-home-stage-tile-count">{display.assignmentTotal}</span>
           </div>
-          <div className="tylo-home-stage-tile-rows">
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Unassigned</span>
-              <span className={stageNumClass(display.unassigned, 'warn')}>{display.unassigned}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Hiring Requested</span>
-              <span className={stageNumClass(display.hiringRequested, 'warn')}>{display.hiringRequested}</span>
-            </Link>
-          </div>
-        </div>
-
-        <div className="tylo-home-stage-tile tylo-home-stage-tile--execution">
-          <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title">
-              <span className="tylo-home-stage-icon tylo-home-stage-icon--execution" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-              </span>
-              <span>Execution</span>
-            </div>
-            <span className="tylo-home-stage-tile-count">{display.executionTotal}</span>
-          </div>
-          <div className="tylo-home-stage-tile-rows">
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Planned</span>
-              <span className={stageNumClass(display.planned, 'warn')}>{display.planned}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Executed</span>
-              <span className={stageNumClass(display.executed, 'success')}>{display.executed}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Cancelled by Tylo</span>
-              <span className={stageNumClass(display.cancelledByTylo, 'danger')}>{display.cancelledByTylo}</span>
-            </Link>
-            <Link to="/camps/manage" className="tylo-home-stage-row-link">
-              <span>Cancelled by Client</span>
-              <span className={stageNumClass(display.cancelledByClient, 'danger')}>{display.cancelledByClient}</span>
-            </Link>
-          </div>
-        </div>
-
-        <div className="tylo-home-stage-tile tylo-home-stage-tile--financial">
-          <div className="tylo-home-stage-tile-head">
-            <div className="tylo-home-stage-tile-title">
-              <span className="tylo-home-stage-icon tylo-home-stage-icon--financial" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <ellipse cx="12" cy="5" rx="9" ry="3" />
-                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-                </svg>
-              </span>
-              <span>Financial</span>
-            </div>
-            <span className="tylo-home-stage-tile-count">{display.financialTotal}</span>
-          </div>
-          <div className="tylo-home-stage-tile-rows">
-            <Link to="/finance" className="tylo-home-stage-row-link">
-              <span>Pending Confirmation</span>
-              <span className={stageNumClass(display.pendingConfirmation, 'warn')}>{display.pendingConfirmation}</span>
-            </Link>
-            <Link to="/finance" className="tylo-home-stage-row-link">
-              <span>Confirmed Payment</span>
-              <span className={stageNumClass(display.confirmedPayment, 'success')}>{display.confirmedPayment}</span>
-            </Link>
-            <Link to="/finance" className="tylo-home-stage-row-link">
-              <span>Hold</span>
-              <span className={stageNumClass(display.hold, 'danger')}>{display.hold}</span>
-            </Link>
-            <Link to="/finance" className="tylo-home-stage-row-link">
-              <span>Payment Done</span>
-              <span className={stageNumClass(display.paymentDone, 'success')}>{display.paymentDone}</span>
-            </Link>
-          </div>
-        </div>
+        ))}
       </div>
     </section>
   );

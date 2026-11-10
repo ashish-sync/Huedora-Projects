@@ -9,6 +9,7 @@ import {
   FINANCIAL_STATUS_OPTIONS,
 } from './components/CampsFilters';
 import { EXECUTION_WORKFLOW_STATUSES } from './constants/campWorkflowStatuses.js';
+import { buildOperationsBoardListParams } from './utils/campOperationsBoardQuery.js';
 
 const REQUEST_STATUS_LABELS = Object.fromEntries(
   REQUEST_STATUS_OPTIONS.map((option) => [option.value, option.label])
@@ -486,37 +487,22 @@ export default function CampsPage() {
     const trimmedSearch = trimString(searchOverride ?? q.search);
     setSearch(trimmedSearch);
     try {
-      const params = { search: trimmedSearch, page: pageToLoad, limit: limitToLoad };
-      if (q.dateFrom) params.dateFrom = q.dateFrom;
-      if (q.dateTo) params.dateTo = q.dateTo;
-      if (q.clientFilter) params.client = q.clientFilter;
-      if (q.campaignFilter) params.campaign = q.campaignFilter;
-      if (q.campTypeFilter) params.campaignType = q.campTypeFilter;
-      if (q.assignedUserFilter) params.assignedUser = q.assignedUserFilter;
-      if (
-        q.workingStage === 'request' ||
-        q.workingStage === 'assignment' ||
-        q.workingStage === 'execution' ||
-        q.workingStage === 'financial'
-      ) {
-        params.lifecycleStage = q.workingStage;
-      } else if (q.workingStage) {
-        params.lifecycleStage = q.workingStage;
-      }
-      if (q.status) {
-        if (q.workingStage === 'assignment') {
-          params.assignmentFilter = q.status;
-        } else if (q.workingStage === 'execution') {
-          params.executionFilter = q.status;
-        } else if (q.workingStage === 'financial') {
-          params.financialFilter = q.status;
-        } else if (q.workingStage === 'request') {
-          params.requestReviewStatus = q.status;
-        } else {
-          params.status = q.status;
-        }
-      }
-      const { data } = await campApi.list(params);
+      // Same stage/status → API params as Operations Board clicks/exports so counts match rows.
+      const boardParams = buildOperationsBoardListParams({
+        stageId: q.workingStage,
+        statusValue: q.status || '',
+        dateFrom: q.dateFrom || '',
+        dateTo: q.dateTo || '',
+        search: trimmedSearch,
+        client: q.clientFilter || '',
+        campaignType: q.campTypeFilter || '',
+        campaign: q.campaignFilter || '',
+        assignedUser: q.assignedUserFilter || '',
+        page: pageToLoad,
+        includePaging: true,
+      });
+      boardParams.limit = limitToLoad;
+      const { data } = await campApi.list(boardParams);
       setCamps(Array.isArray(data?.data) ? data.data : []);
       setPagination(data?.pagination || null);
       setPage(pageToLoad);

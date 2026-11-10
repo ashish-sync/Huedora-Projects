@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CampPipelinePanel, {
   canUsePipelineAdminFilters,
+  pipelineTilesFromBoard,
   stageDataFromBoard,
 } from './CampPipelinePanel.jsx';
 
@@ -80,6 +81,20 @@ describe('CampPipelinePanel helpers', () => {
     expect(data.executed).toBe(2);
     expect(data.pendingConfirmation).toBe(1);
   });
+
+  it('builds four Camp One stage tiles with Manage deep-links vocabulary', () => {
+    const tiles = pipelineTilesFromBoard(MOCK_BOARD);
+    expect(tiles.map((tile) => tile.id)).toEqual(['request', 'assignment', 'execution', 'financial']);
+    expect(tiles[0].statuses.map((row) => row.label)).toEqual([
+      'Review Pending',
+      'Review Overdue',
+      'Refusal',
+      'Info Requested',
+    ]);
+    expect(tiles[1].statuses.map((row) => row.label)).toEqual(['Unassigned', 'Hiring Request']);
+    expect(tiles[0].statuses[0].count).toBe(2);
+    expect(tiles[2].statuses.find((row) => row.value === 'executed')?.count).toBe(2);
+  });
 });
 
 describe('CampPipelinePanel', () => {
@@ -113,6 +128,11 @@ describe('CampPipelinePanel', () => {
     });
     expect(listOpsBoardFilters).toHaveBeenCalled();
     expect(await screen.findByText('Review Pending')).toBeTruthy();
+    expect(screen.getByText('Refusal')).toBeTruthy();
+    expect(screen.getByText('Hiring Request')).toBeTruthy();
+    const pendingLink = screen.getByRole('link', { name: /Review Pending/i });
+    expect(pendingLink.getAttribute('href')).toContain('stage=request');
+    expect(pendingLink.getAttribute('href')).toContain('status=review_pending');
   });
 
   it('hides Method and Assigned Users for User system role', async () => {

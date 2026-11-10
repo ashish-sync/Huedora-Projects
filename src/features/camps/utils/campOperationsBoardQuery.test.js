@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildOperationsBoardListParams,
+  buildOperationsBoardManagePath,
   operationsBoardExportFilename,
   operationsBoardExportPath,
 } from './campOperationsBoardQuery.js';
@@ -129,5 +130,35 @@ describe('campOperationsBoardQuery', () => {
       stageLabel: 'Request',
       statusLabel: 'Review Pending',
     })).toBe('Camp_One_Request_Review_Pending.xlsx');
+  });
+
+  it('builds Manage deep-links with stage, status, and board filters', () => {
+    const path = buildOperationsBoardManagePath({
+      stageId: 'assignment',
+      statusValue: 'hiring_requested',
+      dateFrom: '2026-11-01',
+      dateTo: '2026-11-30',
+      campaign: 'BMD',
+      assignedUser: 'ops@tylo.test',
+    });
+    const url = new URL(path, 'http://local.test');
+    expect(url.pathname).toMatch(/\/manage$/);
+    expect(url.searchParams.get('stage')).toBe('assignment');
+    expect(url.searchParams.get('status')).toBe('hiring_requested');
+    expect(url.searchParams.get('dateFrom')).toBe('2026-11-01');
+    expect(url.searchParams.get('dateTo')).toBe('2026-11-30');
+    expect(url.searchParams.get('campaign')).toBe('BMD');
+    expect(url.searchParams.get('assignedUser')).toBe('ops@tylo.test');
+  });
+
+  it('maps Execution stage totals to boardStage and Financial totals exclude cancelled', () => {
+    expect(buildOperationsBoardListParams({
+      stageId: 'execution',
+      includePaging: false,
+    })).toEqual({ boardStage: 'execution' });
+    expect(buildOperationsBoardListParams({
+      stageId: 'financial',
+      includePaging: false,
+    })).toEqual({ lifecycleStage: 'financial', excludeBoardCancelled: '1' });
   });
 });

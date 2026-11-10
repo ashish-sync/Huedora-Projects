@@ -53,6 +53,50 @@ const OVERVIEW_MODULE_KEY_MAP = {
   contacts: 'master-one',
 };
 
+const EMPTY_SCHEDULE_COUNTS = { today: 0, tomorrow: 0, dayAfter: 0, restOfMonth: 0 };
+
+const CAMP_SCHEDULE_SLOT_UI = [
+  {
+    campSlot: 'Morning',
+    iconClass: 'tylo-home-session-icon--morning',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="4" />
+        <line x1="12" y1="2" x2="12" y2="4" />
+        <line x1="12" y1="20" x2="12" y2="22" />
+        <line x1="4.9" y1="4.9" x2="6.3" y2="6.3" />
+        <line x1="17.7" y1="17.7" x2="19.1" y2="19.1" />
+        <line x1="2" y1="12" x2="4" y2="12" />
+        <line x1="20" y1="12" x2="22" y2="12" />
+        <line x1="4.9" y1="19.1" x2="6.3" y2="17.7" />
+        <line x1="17.7" y1="6.3" x2="19.1" y2="4.9" />
+      </svg>
+    ),
+  },
+  {
+    campSlot: 'Noon',
+    iconClass: 'tylo-home-session-icon--noon',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9.5" cy="10" r="3.2" />
+        <line x1="9.5" y1="3.5" x2="9.5" y2="5" />
+        <line x1="4.2" y1="5.5" x2="5.2" y2="6.7" />
+        <line x1="3" y1="10" x2="4.5" y2="10" />
+        <path d="M8.5 16.5h8.2a3.3 3.3 0 0 0 .4-6.6 4.4 4.4 0 0 0-8.3 1.4" />
+      </svg>
+    ),
+  },
+  {
+    campSlot: 'Evening',
+    iconClass: 'tylo-home-session-icon--evening',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.5 14.2A7.4 7.4 0 1 1 11 4.2 5.8 5.8 0 0 0 20.5 14.2z" />
+      </svg>
+    ),
+  },
+];
+
 export const QUICK_ACTIONS = [
   {
     id: 'manage-camps',
@@ -484,6 +528,9 @@ export default function DashboardPage() {
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState('');
+  const [campSchedule, setCampSchedule] = useState(null);
+  const [campScheduleLoading, setCampScheduleLoading] = useState(false);
+  const [campScheduleError, setCampScheduleError] = useState('');
   const [notificationRows, setNotificationRows] = useState([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [notificationError, setNotificationError] = useState('');
@@ -557,6 +604,38 @@ export default function DashboardPage() {
       })
       .finally(() => {
         if (current) setOverviewLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [canSeeDashboard, refreshToken, userKey]);
+
+  useEffect(() => {
+    if (!canSeeDashboard) {
+      setCampSchedule(null);
+      setCampScheduleLoading(false);
+      setCampScheduleError('');
+      return undefined;
+    }
+    let current = true;
+    setCampScheduleLoading(true);
+    setCampScheduleError('');
+    api('/dashboards/camp-schedule')
+      .then((response) => {
+        if (!current) return;
+        if (!response?.data || typeof response.data !== 'object' || !Array.isArray(response.data.rows)) {
+          throw new Error('The camp schedule returned an invalid response.');
+        }
+        setCampSchedule(response.data);
+      })
+      .catch((error) => {
+        if (current) {
+          setCampSchedule(null);
+          setCampScheduleError(error?.message || 'Unable to load camp schedule.');
+        }
+      })
+      .finally(() => {
+        if (current) setCampScheduleLoading(false);
       });
     return () => {
       current = false;
@@ -869,68 +948,29 @@ export default function DashboardPage() {
     };
   }, [overview, canSeeModule, filteredAlerts, filteredPending]);
 
-  // Camp Schedule Calculation (Morning, Afternoon, Evening x Today, Tomorrow, Day After, MTD + Totals)
-  const scheduleData = useMemo(() => {
-    const scheduled = metrics?.scheduled ?? 6;
-    const ongoing = metrics?.ongoing ?? 2;
-    const completed = metrics?.completed ?? 10;
+  const scheduleRows = useMemo(() => {
+    const bySlot = new Map((campSchedule?.rows || []).map((row) => [row.campSlot, row]));
+    return CAMP_SCHEDULE_SLOT_UI.map((meta) => {
+      const counts = bySlot.get(meta.campSlot) || EMPTY_SCHEDULE_COUNTS;
+      return {
+        ...meta,
+        today: Number(counts.today) || 0,
+        tomorrow: Number(counts.tomorrow) || 0,
+        dayAfter: Number(counts.dayAfter) || 0,
+        restOfMonth: Number(counts.restOfMonth ?? counts.mtd) || 0,
+      };
+    });
+  }, [campSchedule]);
 
-    const todayM = Math.max(1, Math.round(ongoing * 0.5));
-    const todayA = Math.max(1, ongoing - todayM);
-    const todayE = 0;
-
-    const tomM = Math.max(1, Math.round(scheduled * 0.5));
-    const tomA = Math.max(1, Math.round(scheduled * 0.35));
-    const tomE = Math.max(0, scheduled - tomM - tomA);
-
-    const daM = Math.max(1, Math.round(scheduled * 0.35));
-    const daA = Math.max(1, Math.round(scheduled * 0.3));
-    const daE = Math.max(0, scheduled - daM - daA);
-
-    const mtdM = Math.max(2, Math.round(completed * 0.5));
-    const mtdA = Math.max(2, Math.round(completed * 0.35));
-    const mtdE = Math.max(1, completed - mtdM - mtdA);
-
-    const rows = [
-      {
-        shift: 'Morning',
-        time: '08:00 – 12:00',
-        today: todayM,
-        tomorrow: tomM,
-        dayAfter: daM,
-        mtd: mtdM,
-        total: todayM + tomM + daM + mtdM,
-      },
-      {
-        shift: 'Afternoon',
-        time: '12:00 – 16:00',
-        today: todayA,
-        tomorrow: tomA,
-        dayAfter: daA,
-        mtd: mtdA,
-        total: todayA + tomA + daA + mtdA,
-      },
-      {
-        shift: 'Evening',
-        time: '16:00 – 20:00',
-        today: todayE,
-        tomorrow: tomE,
-        dayAfter: daE,
-        mtd: mtdE,
-        total: todayE + tomE + daE + mtdE,
-      },
-    ];
-
-    const colTotals = {
-      today: rows.reduce((s, r) => s + r.today, 0),
-      tomorrow: rows.reduce((s, r) => s + r.tomorrow, 0),
-      dayAfter: rows.reduce((s, r) => s + r.dayAfter, 0),
-      mtd: rows.reduce((s, r) => s + r.mtd, 0),
-      total: rows.reduce((s, r) => s + r.total, 0),
+  const scheduleTotals = useMemo(() => {
+    const totals = campSchedule?.totals || EMPTY_SCHEDULE_COUNTS;
+    return {
+      today: Number(totals.today) || 0,
+      tomorrow: Number(totals.tomorrow) || 0,
+      dayAfter: Number(totals.dayAfter) || 0,
+      restOfMonth: Number(totals.restOfMonth ?? totals.mtd) || 0,
     };
-
-    return { rows, colTotals };
-  }, [metrics]);
+  }, [campSchedule]);
 
   const query = searchQuery.trim().toLowerCase();
   const searchActions = authorizedActions.filter((action) =>
@@ -1289,7 +1329,13 @@ export default function DashboardPage() {
                   </span>
                   <div>
                     <h2 className="tylo-home-card-title">Camp Schedule</h2>
-                    <p className="tylo-home-card-subtitle">Today and upcoming camp schedule</p>
+                    <p className="tylo-home-card-subtitle">
+                      {campScheduleError
+                        ? campScheduleError
+                        : campScheduleLoading
+                          ? 'Loading Camp One schedule…'
+                          : 'Today and upcoming camp schedule'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1306,73 +1352,29 @@ export default function DashboardPage() {
                   <thead>
                     <tr>
                       <th scope="col">Session</th>
-                      <th scope="col">Today</th>
-                      <th scope="col">Tomorrow</th>
-                      <th scope="col">Day After</th>
-                      <th scope="col">MTD</th>
+                      <th scope="col" title="Today">Day 0</th>
+                      <th scope="col" title="Tomorrow">Day 1</th>
+                      <th scope="col" title="Day after tomorrow">Day 2</th>
+                      <th scope="col" title="Day 3 through the last day of the current month">EOM</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                    <td>
-                      <div className="tylo-home-session-cell">
-                        <span className="tylo-home-session-icon tylo-home-session-icon--morning" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="4" />
-                            <line x1="12" y1="2" x2="12" y2="4" />
-                            <line x1="12" y1="20" x2="12" y2="22" />
-                            <line x1="4.9" y1="4.9" x2="6.3" y2="6.3" />
-                            <line x1="17.7" y1="17.7" x2="19.1" y2="19.1" />
-                            <line x1="2" y1="12" x2="4" y2="12" />
-                            <line x1="20" y1="12" x2="22" y2="12" />
-                            <line x1="4.9" y1="19.1" x2="6.3" y2="17.7" />
-                            <line x1="17.7" y1="6.3" x2="19.1" y2="4.9" />
-                          </svg>
-                        </span>
-                        <span>Morning</span>
-                      </div>
-                      </td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">10</td>
-                      <td className="tylo-home-sched-num">50</td>
-                    </tr>
-                    <tr>
-                    <td>
-                      <div className="tylo-home-session-cell">
-                        <span className="tylo-home-session-icon tylo-home-session-icon--afternoon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="9.5" cy="10" r="3.2" />
-                            <line x1="9.5" y1="3.5" x2="9.5" y2="5" />
-                            <line x1="4.2" y1="5.5" x2="5.2" y2="6.7" />
-                            <line x1="3" y1="10" x2="4.5" y2="10" />
-                            <path d="M8.5 16.5h8.2a3.3 3.3 0 0 0 .4-6.6 4.4 4.4 0 0 0-8.3 1.4" />
-                          </svg>
-                        </span>
-                        <span>Afternoon</span>
-                      </div>
-                      </td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">10</td>
-                      <td className="tylo-home-sched-num">10</td>
-                      <td className="tylo-home-sched-num">40</td>
-                    </tr>
-                    <tr>
-                    <td>
-                      <div className="tylo-home-session-cell">
-                        <span className="tylo-home-session-icon tylo-home-session-icon--evening" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.5 14.2A7.4 7.4 0 1 1 11 4.2 5.8 5.8 0 0 0 20.5 14.2z" />
-                          </svg>
-                        </span>
-                        <span>Evening</span>
-                      </div>
-                      </td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">20</td>
-                      <td className="tylo-home-sched-num">5</td>
-                      <td className="tylo-home-sched-num">45</td>
-                    </tr>
+                    {scheduleRows.map((row) => (
+                      <tr key={row.campSlot}>
+                        <td>
+                          <div className="tylo-home-session-cell">
+                            <span className={`tylo-home-session-icon ${row.iconClass}`} aria-hidden="true">
+                              {row.icon}
+                            </span>
+                            <span>{row.campSlot}</span>
+                          </div>
+                        </td>
+                        <td className="tylo-home-sched-num">{row.today}</td>
+                        <td className="tylo-home-sched-num">{row.tomorrow}</td>
+                        <td className="tylo-home-sched-num">{row.dayAfter}</td>
+                        <td className="tylo-home-sched-num">{row.restOfMonth}</td>
+                      </tr>
+                    ))}
                   </tbody>
                   <tfoot>
                     <tr>
@@ -1388,10 +1390,10 @@ export default function DashboardPage() {
                         <span>Total Camps</span>
                       </div>
                       </th>
-                      <td className="tylo-home-total-num">60</td>
-                      <td className="tylo-home-total-num">50</td>
-                      <td className="tylo-home-total-num">25</td>
-                      <td className="tylo-home-total-num">135</td>
+                      <td className="tylo-home-total-num">{scheduleTotals.today}</td>
+                      <td className="tylo-home-total-num">{scheduleTotals.tomorrow}</td>
+                      <td className="tylo-home-total-num">{scheduleTotals.dayAfter}</td>
+                      <td className="tylo-home-total-num">{scheduleTotals.restOfMonth}</td>
                     </tr>
                   </tfoot>
                 </table>

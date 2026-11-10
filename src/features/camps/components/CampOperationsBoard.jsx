@@ -4,8 +4,8 @@ import { Download } from 'lucide-react';
 import FeedbackBanner from '../../../components/ui/FeedbackBanner.jsx';
 import { DateRangeFilters } from './DateRangeFilters';
 import { dashboardApi, campApi, clientMasterApi } from '../campOpsApi.js';
-import { CAMP_PATH, MODULE_PATH } from '../../../shared/moduleRoutes.js';
-import { buildOpsReviewReturnTo, withOpsReviewReturnTo } from '../../dashboards/opsReviewReturn.js';
+import { MODULE_PATH } from '../../../shared/moduleRoutes.js';
+import { buildOpsReviewReturnTo } from '../../dashboards/opsReviewReturn.js';
 import { ACTION, MODULE } from '../../../shared/labels.js';
 import {
   clientsForOpsBoardScope,
@@ -13,6 +13,7 @@ import {
   parseOpsBoardFilterCatalog,
 } from '../utils/clientMasterCascade.js';
 import {
+  buildOperationsBoardManagePath,
   operationsBoardExportFilename,
   operationsBoardExportPath,
 } from '../utils/campOperationsBoardQuery.js';
@@ -22,38 +23,13 @@ import '../campOps.theme.css';
 
 const EMPTY_RANGE = { dateFrom: '', dateTo: '' };
 
-function buildManagePath({
-  stageId,
-  statusValue = '',
-  dateFrom = '',
-  dateTo = '',
-  client = '',
-  campaignType = '',
-  campaign = '',
-  assignedUser = '',
-  returnTo = '',
-} = {}) {
-  const params = new URLSearchParams();
-  if (stageId) params.set('stage', stageId);
-  if (statusValue) params.set('status', statusValue);
-  if (dateFrom) params.set('dateFrom', dateFrom);
-  if (dateTo) params.set('dateTo', dateTo);
-  if (client) params.set('client', client);
-  if (campaignType) params.set('campaignType', campaignType);
-  if (campaign) params.set('campaign', campaign);
-  if (assignedUser) params.set('assignedUser', assignedUser);
-  withOpsReviewReturnTo(params, returnTo);
-  const query = params.toString();
-  return `${CAMP_PATH.MANAGE}${query ? `?${query}` : ''}`;
-}
-
 async function downloadOperationsSlice(slice, extra = {}) {
   const path = operationsBoardExportPath({ ...slice, ...extra });
   const filename = operationsBoardExportFilename(slice);
   await campApi.downloadListExport(path, filename);
 }
 
-/** Camp One lifecycle operations board (Module Review â†’ Camp One). */
+/** Camp One lifecycle operations board (Module Review ? Camp One). */
 export default function CampOperationsBoard({
   embedded = false,
   initialFrom = '',
@@ -106,7 +82,7 @@ export default function CampOperationsBoard({
   const assignedUserOptions = useMemo(
     () => (filterCatalog.assignedUsers || []).map((user) => ({
       email: user.email,
-      label: user.name ? `${user.name} Â· ${user.email}` : user.email,
+      label: user.name ? `${user.name} · ${user.email}` : user.email,
     })),
     [filterCatalog],
   );
@@ -215,7 +191,7 @@ export default function CampOperationsBoard({
     return (
       <>
         {useSharedHeader ? <OpsReviewSlot totalLabel="Total Camps" totalValue={0} /> : null}
-        <div className="empty-state">Loading operations boardâ€¦</div>
+        <div className="empty-state">Loading operations board…</div>
       </>
     );
   }
@@ -272,7 +248,7 @@ export default function CampOperationsBoard({
           onChange={(e) => onMethodChange(e.target.value)}
         >
           <option value="">
-            {catalogLoading ? 'Loadingâ€¦' : 'All'}
+            {catalogLoading ? 'Loading…' : 'All'}
           </option>
           {methodOptions.map((method) => (
             <option key={method} value={method}>{method}</option>
@@ -290,7 +266,7 @@ export default function CampOperationsBoard({
           onChange={(e) => onDivisionChange(e.target.value)}
         >
           <option value="">
-            {catalogLoading ? 'Loadingâ€¦' : 'All'}
+            {catalogLoading ? 'Loading…' : 'All'}
           </option>
           {divisionOptions.map((division) => (
             <option key={division} value={division}>{division}</option>
@@ -308,7 +284,7 @@ export default function CampOperationsBoard({
           onChange={(e) => onClientChange(e.target.value)}
         >
           <option value="">
-            {catalogLoading ? 'Loadingâ€¦' : 'All'}
+            {catalogLoading ? 'Loading…' : 'All'}
           </option>
           {clientOptions.map((client) => (
             <option key={client._id} value={client._id}>{client.name}</option>
@@ -326,7 +302,7 @@ export default function CampOperationsBoard({
           onChange={(e) => setAssignedUserEmail(e.target.value)}
         >
           <option value="">
-            {catalogLoading ? 'Loadingâ€¦' : 'All'}
+            {catalogLoading ? 'Loading…' : 'All'}
           </option>
           {assignedUserOptions.map((user) => (
             <option key={user.email} value={user.email}>{user.label}</option>
@@ -349,7 +325,7 @@ export default function CampOperationsBoard({
             <OpsReviewSlot
               totalLabel="Total Camps"
               totalValue={board.total ?? 0}
-              totalHref={buildManagePath(manageQuery)}
+              totalHref={buildOperationsBoardManagePath(manageQuery)}
             >
               {filterFields}
             </OpsReviewSlot>
@@ -357,7 +333,7 @@ export default function CampOperationsBoard({
           <section className="ops-board-hero" aria-label="Total camps">
             <Link
               className="ops-board-hero__total"
-              to={buildManagePath(manageQuery)}
+              to={buildOperationsBoardManagePath(manageQuery)}
               state={manageLinkState}
               title="Open all camps in Manage"
             >
@@ -391,7 +367,7 @@ export default function CampOperationsBoard({
                 <header className="ops-board-card__header">
                   <Link
                     className="ops-board-card__stage"
-                    to={buildManagePath({ stageId: stage.id, ...manageQuery })}
+                    to={buildOperationsBoardManagePath({ stageId: stage.id, ...manageQuery })}
                     state={manageLinkState}
                     title={`Open ${stage.label} camps in Manage`}
                   >
@@ -417,7 +393,7 @@ export default function CampOperationsBoard({
                             `ops-board-status--${row.value}`,
                             row.attention ? 'is-attention' : '',
                           ].filter(Boolean).join(' ')}
-                          to={buildManagePath({
+                          to={buildOperationsBoardManagePath({
                             stageId: stage.id,
                             statusValue: row.value,
                             ...manageQuery,
@@ -452,13 +428,13 @@ export default function CampOperationsBoard({
                 <footer className="ops-board-card__footer">
                   <Link
                     className="meta-text"
-                    to={buildManagePath({
+                    to={buildOperationsBoardManagePath({
                       stageId: stage.id,
                       ...manageQuery,
                     })}
                     state={manageLinkState}
                   >
-                    Open in Manage â†’
+                    Open in Manage ?
                   </Link>
                 </footer>
               </article>

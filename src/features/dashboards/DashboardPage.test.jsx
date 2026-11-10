@@ -110,6 +110,27 @@ describe('DashboardPage homepage', () => {
           },
         };
       }
+      if (String(path).startsWith('/dashboards/camp-schedule')) {
+        return {
+          data: {
+            asOfDate: '2026-11-10',
+            dates: {
+              today: '2026-11-10',
+              tomorrow: '2026-11-11',
+              dayAfter: '2026-11-12',
+              restOfMonthFrom: '2026-11-13',
+              restOfMonthTo: '2026-11-30',
+            },
+            slots: ['Morning', 'Noon', 'Evening'],
+            rows: [
+              { campSlot: 'Morning', today: 1, tomorrow: 0, dayAfter: 1, restOfMonth: 1 },
+              { campSlot: 'Noon', today: 1, tomorrow: 0, dayAfter: 0, restOfMonth: 0 },
+              { campSlot: 'Evening', today: 0, tomorrow: 1, dayAfter: 0, restOfMonth: 0 },
+            ],
+            totals: { today: 2, tomorrow: 1, dayAfter: 1, restOfMonth: 1 },
+          },
+        };
+      }
       if (String(path).startsWith('/camp-ops/client-masters/ops-board-filters')) {
         return { data: { methods: [], assignedUsers: [] } };
       }
@@ -169,7 +190,11 @@ describe('DashboardPage homepage', () => {
     expect(screen.getByText('Department performance')).toBeTruthy();
     expect(screen.getByText('Request One awaiting approval')).toBeTruthy();
     expect(apiMock).toHaveBeenCalledWith('/dashboards/overview');
+    expect(apiMock).toHaveBeenCalledWith('/dashboards/camp-schedule');
     expect(apiMock).toHaveBeenCalledWith('/chat/unread-count');
+    expect(await screen.findByRole('region', { name: 'Camp schedule' })).toBeTruthy();
+    expect(screen.getByText('Noon')).toBeTruthy();
+    expect(screen.queryByText('Afternoon')).toBeNull();
   }, 20000);
 
   it('lets an admin open My View without changing overview APIs', async () => {

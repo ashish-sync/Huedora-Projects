@@ -284,3 +284,48 @@ html.dark {
   --color-white: #FFFFFF;
   --color-black: #000000;
 }
+
+
+/* ── 6. Semantic accents and module identity colours ── */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --color-bg-subtle: var(--bg-muted);
+  --color-interactive-overlay: rgb(15 23 42 / 0.05);
+  --color-violet: #7C3AED;
+  --color-violet-strong: #5B21B6;
+  --color-violet-subtle: #F5F3FF;
+  --color-gold: #B45309;
+  --color-gold-subtle: #FFFBEB;
+
+  --module-tone-asset: #0284C7;
+  --module-tone-document: #2563EB;
+  --module-tone-verify: #059669;
+  --module-tone-camp: #D97706;
+  --module-tone-request: #0E7490;
+  --module-tone-master: #4F46E5;
+  --module-tone-movement: #0891B2;
+  --module-tone-finance: #16A34A;
+}
+
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --color-bg-subtle: var(--bg-muted);
+  --color-interactive-overlay: rgb(255 255 255 / 0.08);
+  --color-violet: #A78BFA;
+  --color-violet-strong: #C4B5FD;
+  --color-violet-subtle: rgb(167 139 250 / 0.14);
+  --color-gold: #FBBF24;
+  --color-gold-subtle: rgb(251 191 36 / 0.14);
+
+  --module-tone-asset: #38BDF8;
+  --module-tone-document: #60A5FA;
+  --module-tone-verify: #34D399;
+  --module-tone-camp: #FBBF24;
+  --module-tone-request: #22D3EE;
+  --module-tone-master: #A5B4FC;
+  --module-tone-movement: #67E8F9;
+  --module-tone-finance: #4ADE80;
+}

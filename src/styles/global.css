@@ -7343,6 +7343,20 @@ body:has(.login-page),
 /* ── Recipient signing (Tylo Care) ──────────────────────────── */
 
 .rs-page {
+  /* Public signing is a guest-facing flow with no theme control. Keep its own stable light palette. */
+  color-scheme: light;
+  --bg-elevated: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-muted: #F8FAFC;
+  --text-main: #1A2332;
+  --ink: #1A2332;
+  --muted: #64748B;
+  --line: #D8DEE6;
+  --border-default: #D8DEE6;
+  --info: #0369A1;
+  --ok: #15803D;
+  --danger: #B91C1C;
+  --brand-hover: #1D46A3;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -11526,8 +11540,8 @@ button.vf-summary-card.is-clickable:hover,
 .vf-chip {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #8a5200;
-  background: #ffe8c4;
+  color: var(--status-warning-text);
+  background: var(--status-warning-bg);
   border-radius: var(--radius-full);
   padding: 3px 10px;
 }
@@ -11619,20 +11633,20 @@ button.vf-summary-card.is-clickable:hover,
 
 .vf-kpi.tone-ok.is-active,
 .vf-kpi.tone-ok:hover {
-  border-color: #7bc4a6;
-  background: #eefaf4;
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
 }
 
-.vf-kpi.tone-warn.is-active,
+ .vf-kpi.tone-warn.is-active,
 .vf-kpi.tone-warn:hover {
-  border-color: #e0b34d;
-  background: #fff8e8;
+  border-color: var(--status-warning-border);
+  background: var(--status-warning-bg);
 }
 
 .vf-kpi.tone-danger.is-active,
 .vf-kpi.tone-danger:hover {
-  border-color: #e0a19a;
-  background: #fff5f4;
+  border-color: var(--status-danger-border);
+  background: var(--status-danger-bg);
 }
 
 .vf-kpi.tone-neutral {
@@ -14284,27 +14298,27 @@ button.vf-summary-card.is-clickable:hover,
   line-height: 1.25;
 }
 
-.ilog-dash-kpi--in { border-top-color: #2f6fed; }
-.ilog-dash-kpi--out { border-top-color: #7c5cbf; }
+.ilog-dash-kpi--in { border-top-color: var(--module-tone-document); }
+.ilog-dash-kpi--out { border-top-color: var(--color-violet); }
 .ilog-dash-kpi--balance { border-top-color: var(--brand); }
 .ilog-dash-kpi--used { border-top-color: var(--color-success); }
-.ilog-dash-kpi--waste { border-top-color: #b45309; }
-.ilog-dash-kpi--field { border-top-color: #0369a1; }
-.ilog-dash-kpi--safe {
-  border-top-color: #15803d;
-  background: color-mix(in srgb, #15803d 6%, var(--ilog-card));
+.ilog-dash-kpi--waste { border-top-color: var(--status-warning-text); }
+.ilog-dash-kpi--field { border-top-color: var(--module-tone-asset); }
+ .ilog-dash-kpi--safe {
+  border-top-color: var(--status-success-dot);
+  background: color-mix(in srgb, var(--status-success-dot) 6%, var(--ilog-card));
 }
 .ilog-dash-kpi--caution {
-  border-top-color: #ca8a04;
-  background: color-mix(in srgb, #ca8a04 7%, var(--ilog-card));
+  border-top-color: var(--status-warning-dot);
+  background: color-mix(in srgb, var(--status-warning-dot) 7%, var(--ilog-card));
 }
 .ilog-dash-kpi--critical {
-  border-top-color: #ea580c;
-  background: color-mix(in srgb, #ea580c 7%, var(--ilog-card));
+  border-top-color: var(--color-orange);
+  background: color-mix(in srgb, var(--color-orange) 7%, var(--ilog-card));
 }
 .ilog-dash-kpi--expired {
-  border-top-color: #dc2626;
-  background: color-mix(in srgb, #dc2626 8%, var(--ilog-card));
+  border-top-color: var(--status-danger-dot);
+  background: color-mix(in srgb, var(--status-danger-dot) 8%, var(--ilog-card));
 }
 
 .ilog-dash-viz {

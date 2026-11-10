@@ -219,7 +219,7 @@
 
 .tylo-home-mode-toggle button.is-active {
   background: var(--home-button-bg);
-  color: #ffffff;
+  color: var(--text-on-brand);
 }
 
 .tylo-home-mode-toggle button:disabled {
@@ -538,7 +538,7 @@
 .tylo-home-preset-btn.is-active {
   background: var(--home-button-bg);
   border-color: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   font-weight: 600;
 }
 
@@ -606,7 +606,7 @@
 
 .tylo-home-submit-btn {
   background: var(--home-button-bg);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   border: 0;
   border-radius: 6px;
   padding: 5px 12px;
@@ -1061,7 +1061,7 @@
   width: 16px;
   height: 16px;
   background: var(--status-danger-dot);
-  color: #FFFFFF;
+  color: var(--text-on-brand);
   border-radius: 50%;
   font-size: 10px;
   font-weight: 700;
@@ -1158,7 +1158,7 @@
 
 .tylo-home-rail-btn.is-active {
   background: var(--home-button-bg) !important;
-  color: var(--text-on-brand, #fff) !important;
+  color: var(--text-on-brand) !important;
 }
 
 .tylo-home-workspace-content {
@@ -1250,7 +1250,7 @@
 
 .tylo-home-notes-add-btn {
   background: var(--home-button-bg);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   border: 0;
   border-radius: 6px;
   padding: 6px 14px;
@@ -2048,7 +2048,7 @@
   border-radius: var(--welcome-control-radius);
   border: 1px solid var(--home-blue);
   background: var(--home-button-bg);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -2542,7 +2542,7 @@
 .tylo-home-ops-grid .tylo-home-preset-btn.is-active {
   background: var(--home-button-bg) !important;
   border-color: var(--home-blue) !important;
-  color: var(--text-on-brand, #fff) !important;
+  color: var(--text-on-brand) !important;
   font-weight: 600;
 }
 
@@ -2840,7 +2840,7 @@
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active {
   background: var(--home-button-bg);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--home-blue) 35%, transparent);
 }
 
@@ -2850,7 +2850,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background: var(--status-danger-dot);
-  color: #fff;
+  color: var(--text-on-brand);
   font-size: 10px;
   line-height: 16px;
   text-align: center;
@@ -2859,7 +2859,7 @@
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active .tylo-home-ws-tab-badge {
   background: color-mix(in srgb, #fff 24%, transparent);
-  color: #fff;
+  color: var(--text-on-brand);
 }
 
 .tylo-home-ops-grid .tylo-home-workspace-content,
@@ -2914,7 +2914,7 @@
   border-radius: 8px;
   border: none;
   background: var(--home-button-bg);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   font-weight: 600;
   font-size: 12px;
   cursor: pointer;
@@ -3152,7 +3152,7 @@
 }
 
 .tylo-home-pipeline-status--error {
-  color: var(--color-danger, #b42318);
+  color: var(--status-danger-text);
 }
 
 @media (max-width: 900px) {
@@ -3421,7 +3421,7 @@
   height: 14px;
   border-radius: 999px;
   background: var(--status-danger-dot);
-  color: #fff;
+  color: var(--text-on-brand);
   font-size: 9px;
   line-height: 14px;
   text-align: center;
@@ -3439,8 +3439,8 @@
   margin: 0;
   border: none;
   border-radius: 999px;
-  background: var(--status-danger-dot, #e11d48);
-  color: #fff;
+  background: var(--status-danger-action-bg);
+  color: var(--text-on-brand);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -3703,8 +3703,8 @@
   content: '';
   width: 7px;
   height: 4px;
-  border-left: 1.5px solid var(--text-on-brand, #fff);
-  border-bottom: 1.5px solid var(--text-on-brand, #fff);
+  border-left: 1.5px solid var(--text-on-brand);
+  border-bottom: 1.5px solid var(--text-on-brand);
   transform: translateY(-1px) rotate(-45deg);
 }
 

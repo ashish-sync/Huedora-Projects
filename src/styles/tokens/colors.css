@@ -350,3 +350,20 @@ html.dark {
   --status-danger-action-bg: #991B1B;
   --status-danger-action-hover: #7F1D1D;
 }
+
+
+/* Overlays and floating chrome use paired theme values rather than fixed scrims. */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --color-bg-tooltip: #0F172A;
+  --color-bg-overlay-soft: rgb(15 23 42 / 0.28);
+}
+
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --color-bg-tooltip: #334155;
+  --color-bg-overlay-soft: rgb(0 0 0 / 0.42);
+}

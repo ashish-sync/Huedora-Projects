@@ -116,9 +116,15 @@
 .camp-ops-root .btn-danger,
 .camp-ops-root .btn.btn-danger,
 .camp-ops-root .btn.danger {
-  background: var(--danger) !important;
-  color: var(--color-brand-on-primary) !important;
+  background: var(--status-danger-action-bg) !important;
+  color: var(--text-on-brand) !important;
   border: 0 !important;
+}
+
+.camp-ops-root .btn-danger:hover:not(:disabled),
+.camp-ops-root .btn.btn-danger:hover:not(:disabled),
+.camp-ops-root .btn.danger:hover:not(:disabled) {
+  background: var(--status-danger-action-hover) !important;
 }
 
 .camp-ops-root .panel,

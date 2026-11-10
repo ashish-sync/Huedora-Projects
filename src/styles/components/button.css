@@ -61,21 +61,21 @@
 }
 
 .btn.danger {
-  background: var(--status-danger-dot);
+  background: var(--status-danger-action-bg);
   color: var(--text-on-brand);
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: var(--status-danger-text);
+  background: var(--status-danger-action-hover);
 }
 
 .btn.success {
-  background: var(--status-success-dot);
+  background: var(--status-success-action-bg);
   color: var(--text-on-brand);
 }
 
 .btn.success:hover:not(:disabled) {
-  background: var(--status-success-text);
+  background: var(--status-success-action-hover);
 }
 
 .app-header .btn.secondary {

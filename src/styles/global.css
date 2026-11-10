@@ -2265,7 +2265,7 @@ textarea {
   background: var(--color-bg-elevated);
   color: var(--color-brand-primary);
   font-weight: 650;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-xs);
 }
 
 .tylo-dashboard-title {
@@ -8629,8 +8629,8 @@ body:has(.login-page),
   display: inline-block;
   padding: 3px 8px;
   border-radius: var(--radius-sm, 4px);
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
   font-weight: 600;
   font-size: 0.8rem;
   font-family: var(--font-mono, monospace);
@@ -8638,8 +8638,8 @@ body:has(.login-page),
 }
 
 [data-theme="dark"] .cd-rate-tag {
-  background: rgba(16, 185, 129, 0.18);
-  color: #34d399;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
 }
 
 /* Loading & Empty states */
@@ -8677,7 +8677,7 @@ body:has(.login-page),
 }
 
 [data-theme="dark"] .cd-empty-title {
-  color: #f1f5f9;
+  color: var(--color-text-primary);
 }
 
 .cd-empty-sub {
@@ -8693,14 +8693,14 @@ body:has(.login-page),
 .cd-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--color-bg-overlay);
   backdrop-filter: blur(2px);
   z-index: 900;
   animation: cdFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme="dark"] .cd-drawer-backdrop {
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--color-bg-overlay);
 }
 
 .cd-drawer {
@@ -8711,7 +8711,7 @@ body:has(.login-page),
   width: min(580px, 96vw);
   background: var(--bg-tier-3);
   z-index: 1050;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   animation: cdSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -8724,7 +8724,7 @@ body:has(.login-page),
 [data-theme="dark"] .cd-drawer {
   background: var(--bg-tier-3);
   border-color: var(--border-strong);
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
 }
 
 .cd-drawer--editing {
@@ -8839,16 +8839,16 @@ body:has(.login-page),
 
 .cd-drawer-error {
   padding: 10px 14px;
-  background: var(--color-danger-subtle, rgba(239, 68, 68, 0.1));
-  border: 1px solid var(--color-danger, #ef4444);
+  background: var(--status-danger-bg);
+  border: 1px solid var(--status-danger-border);
   border-radius: var(--radius-md, 8px);
-  color: var(--color-danger, #ef4444);
+  color: var(--status-danger-text);
   font-size: 0.82rem;
 }
 
 [data-theme="dark"] .cd-drawer-error {
-  background: rgba(239, 68, 68, 0.18);
-  color: #f87171;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
 }
 
 .cd-drawer-footer {
@@ -8860,14 +8860,14 @@ body:has(.login-page),
   border-top: 1px solid var(--border-strong);
   background: var(--bg-tier-3);
   flex-shrink: 0;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
   z-index: 10;
 }
 
 [data-theme="dark"] .cd-drawer-footer {
   background: var(--bg-tier-3);
   border-color: var(--border-strong);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-md);
 }
 
 /* Structured Form Sections inside Drawer */
@@ -9089,8 +9089,8 @@ body:has(.login-page),
 }
 
 [data-theme="dark"] .cd-upload-row {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-default);
 }
 
 .cd-upload-preview {
@@ -10420,7 +10420,7 @@ body:has(.login-page),
 }
 
 .am-table tr.is-editing {
-  background: rgba(13, 71, 161, 0.07);
+  background: var(--color-brand-primary-subtle);
 }
 
 .am-device-cell {
@@ -10722,7 +10722,7 @@ body:has(.login-page),
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
@@ -14954,7 +14954,7 @@ button.vf-summary-card.is-clickable:hover,
 .expense-master-tab.is-active {
   background: var(--bg-elevated);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-xs);
 }
 
 .expense-master-form {

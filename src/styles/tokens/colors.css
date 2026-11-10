@@ -329,3 +329,24 @@ html.dark {
   --module-tone-movement: #67E8F9;
   --module-tone-finance: #4ADE80;
 }
+
+
+/* High-contrast action fills for buttons and compact badges with white labels. */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --status-success-action-bg: #15803D;
+  --status-success-action-hover: #166534;
+  --status-danger-action-bg: #B91C1C;
+  --status-danger-action-hover: #991B1B;
+}
+
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --status-success-action-bg: #14532D;
+  --status-success-action-hover: #166534;
+  --status-danger-action-bg: #991B1B;
+  --status-danger-action-hover: #7F1D1D;
+}

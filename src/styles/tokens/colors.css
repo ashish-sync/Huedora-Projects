@@ -21,6 +21,11 @@ html[data-theme='light'] {
   --brand-primary-hover: #1D46A3;
   --brand-primary-pressed: #173882;
   --brand-accent: #2457C5;
+  --brand-primary-rgb: 36 87 197;
+  --brand-secondary: #475569;
+  --brand-secondary-hover: #334155;
+  --brand-tertiary: #64748B;
+  --brand-tertiary-hover: #475569;
   --brand-selected-bg: #EFF6FF;
   --text-main: #0F172A;
   --text-secondary: #475569;
@@ -126,10 +131,15 @@ html.dark {
   --bg-muted: #0F172A;
   --border-default: #1E293B;
   --border-strong: #334155;
-  --brand-primary: #2457C5;
-  --brand-primary-hover: #2D63D8;
-  --brand-primary-pressed: #1D46A3;
+  --brand-primary: #3B82F6;
+  --brand-primary-hover: #60A5FA;
+  --brand-primary-pressed: #2563EB;
   --brand-accent: #60A5FA;
+  --brand-primary-rgb: 96 165 250;
+  --brand-secondary: #CBD5E1;
+  --brand-secondary-hover: #E2E8F0;
+  --brand-tertiary: #94A3B8;
+  --brand-tertiary-hover: #CBD5E1;
   --brand-selected-bg: rgba(96, 165, 250, 0.12);
   --text-main: #F1F5F9;
   --text-secondary: #CBD5E1;
@@ -218,4 +228,59 @@ html.dark {
   --color-danger-subtle: var(--status-danger-bg);
   --color-info: var(--status-info-dot);
   --color-info-subtle: var(--status-info-bg);
+}
+
+/* ── 4. Theme-aware auxiliary palette (Light Mode) ── */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --color-amber: #D97706;
+  --color-amber-strong: #B45309;
+  --color-amber-subtle: #FFFBEB;
+  --color-purple: #7C3AED;
+  --color-purple-strong: #6D28D9;
+  --color-purple-subtle: #F5F3FF;
+  --color-teal: #0F766E;
+  --color-teal-strong: #115E59;
+  --color-teal-subtle: #F0FDFA;
+  --color-cyan: #0E7490;
+  --color-cyan-subtle: #ECFEFF;
+  --color-pink: #BE185D;
+  --color-pink-subtle: #FDF2F8;
+  --color-orange: #C2410C;
+  --color-orange-subtle: #FFF7ED;
+  --color-medical: #B42318;
+  --color-medical-subtle: #FEF2F1;
+  --color-overlay: rgb(15 23 42 / 0.48);
+  --color-scrim: rgb(15 23 42 / 0.32);
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+}
+
+/* ── 5. Theme-aware auxiliary palette (Dark Mode) ── */
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --color-amber: #FBBF24;
+  --color-amber-strong: #FCD34D;
+  --color-amber-subtle: rgb(245 158 11 / 0.14);
+  --color-purple: #A78BFA;
+  --color-purple-strong: #C4B5FD;
+  --color-purple-subtle: rgb(167 139 250 / 0.14);
+  --color-teal: #5EEAD4;
+  --color-teal-strong: #99F6E4;
+  --color-teal-subtle: rgb(45 212 191 / 0.14);
+  --color-cyan: #67E8F9;
+  --color-cyan-subtle: rgb(34 211 238 / 0.14);
+  --color-pink: #F9A8D4;
+  --color-pink-subtle: rgb(236 72 153 / 0.14);
+  --color-orange: #FDBA74;
+  --color-orange-subtle: rgb(249 115 22 / 0.14);
+  --color-medical: #F97066;
+  --color-medical-subtle: rgb(249 112 102 / 0.14);
+  --color-overlay: rgb(0 0 0 / 0.65);
+  --color-scrim: rgb(0 0 0 / 0.48);
+  --color-white: #FFFFFF;
+  --color-black: #000000;
 }

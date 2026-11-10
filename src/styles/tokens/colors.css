@@ -22,6 +22,7 @@ html[data-theme='light'] {
   --brand-primary-pressed: #173882;
   --brand-accent: #2457C5;
   --brand-primary-rgb: 36 87 197;
+  --brand-accent-rgb: 36 87 197;
   --brand-secondary: #475569;
   --brand-secondary-hover: #334155;
   --brand-tertiary: #64748B;
@@ -135,7 +136,8 @@ html.dark {
   --brand-primary-hover: #2D63D8;
   --brand-primary-pressed: #1D46A3;
   --brand-accent: #60A5FA;
-  --brand-primary-rgb: 96 165 250;
+  --brand-primary-rgb: 37 99 235;
+  --brand-accent-rgb: 96 165 250;
   --brand-secondary: #CBD5E1;
   --brand-secondary-hover: #E2E8F0;
   --brand-tertiary: #94A3B8;

@@ -24,20 +24,20 @@
 }
 
 .camp-travel-km-field__badge--auto {
-  background: #e8f4ee;
-  color: #146c43;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
 }
 
 .camp-travel-km-field__badge--manual {
-  background: #eef2f7;
-  color: #334155;
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
 }
 
 .camp-travel-km-field__status {
   margin: 0;
   font-size: 0.78rem;
   line-height: 1.4;
-  color: var(--muted, #5b6472);
+  color: var(--text-muted);
 }
 
 .camp-travel-km-field__reason {
@@ -48,7 +48,7 @@
 
 .camp-travel-km-field__reason span {
   font-size: 0.78rem;
-  color: var(--muted, #5b6472);
+  color: var(--text-muted);
 }
 
 .camp-travel-km-field__reason textarea {

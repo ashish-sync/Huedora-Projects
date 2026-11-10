@@ -304,7 +304,7 @@ export function ClientMasterFormSectionFields({
             />
             {programScopeLabel ? (
               <small className="meta-text">
-                Mapped to {programScopeLabel}. Users only see camps for this client, division, and method.
+                Mapped to {programScopeLabel}. System role User (and Camp Coordinators) only see camps for this client, division, and method.
               </small>
             ) : (
               <small className="meta-text">

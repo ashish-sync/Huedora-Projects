@@ -229,7 +229,7 @@ export function AssignedSystemUserPicker({
           aria-expanded={open}
           aria-autocomplete="list"
           aria-label="Search system users"
-          title="Search by full name or login email. Selected users only see camps for this Client."
+          title="Search by full name or login email. System role User assignees only see camps for this client, division, and method."
           className={error ? 'input-invalid' : ''}
         />
         <span className="tylo-dropdown-chevron tylo-combobox-chevron" aria-hidden="true" />

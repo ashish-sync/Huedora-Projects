@@ -994,7 +994,7 @@
 
 .camp-ops-root .email-extraction-dl-row.is-mandatory-missing dt,
 .camp-ops-root .email-extraction-dl-row.is-mandatory-missing dd {
-  color: #b42318;
+  color: var(--status-danger-text);
   font-weight: 600;
 }
 
@@ -4985,7 +4985,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .camp-ops-root .camp-request-form .form-grid > label,
@@ -5160,7 +5160,7 @@
   display: block;
   margin-top: 2px;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .camp-ops-root .camp-address-field {
@@ -5211,7 +5211,7 @@
 .camp-ops-root .camp-address-verified {
   margin: 0;
   font-size: 0.8rem;
-  color: #15803d;
+  color: var(--status-success-text);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -5222,7 +5222,7 @@
 }
 
 .camp-ops-root .camp-address-autocomplete-warn {
-  color: #b45309;
+  color: var(--status-warning-text);
 }
 
 .camp-ops-root .camp-address-map-wrap {
@@ -5275,17 +5275,17 @@
 
 .camp-ops-root .paste-column-mapper-table th,
 .camp-ops-root .paste-column-mapper-table td {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-default);
   padding: 8px 10px;
   text-align: left;
 }
 
 .camp-ops-root .paste-map-status--mapped {
-  color: #15803d;
+  color: var(--status-success-text);
 }
 
 .camp-ops-root .paste-map-status--unmapped {
-  color: #b45309;
+  color: var(--status-warning-text);
 }
 
 .camp-ops-root .form-actions {
@@ -5436,69 +5436,69 @@
 }
 
 .camp-ops-root .camp-row-icon-btn--approve {
-  color: #047857;
-  border-color: #a7f3d0;
-  background: #ecfdf5;
+  color: var(--status-success-text);
+  border-color: var(--status-success-border);
+  background: var(--status-success-bg);
 }
 
 .camp-ops-root .camp-row-icon-btn--approve:hover:not(:disabled):not(.is-disabled) {
-  background: #d1fae5;
-  border-color: #6ee7b7;
+  background: color-mix(in srgb, var(--status-success-dot) 12%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--status-success-dot) 45%, var(--border-default));
 }
 
 .camp-ops-root .camp-row-icon-btn--issues {
-  color: #b45309;
-  border-color: #fcd34d;
+  color: var(--status-warning-text);
+  border-color: var(--status-warning-border);
   background: var(--warn-soft);
 }
 
 .camp-ops-root .camp-row-icon-btn--issues:hover:not(:disabled):not(.is-disabled) {
-  background: #fef3c7;
-  border-color: #fbbf24;
+  background: var(--status-warning-bg);
+  border-color: var(--status-warning-border);
 }
 
 .camp-ops-root .camp-row-icon-btn--refuse {
-  color: #b91c1c;
-  border-color: #fca5a5;
+  color: var(--status-danger-text);
+  border-color: var(--status-danger-border);
   background: var(--bg-elevated);
 }
 
 .camp-ops-root .camp-row-icon-btn--refuse:hover:not(:disabled):not(.is-disabled) {
-  background: #fef2f2;
-  border-color: #f87171;
+  background: var(--status-danger-bg);
+  border-color: color-mix(in srgb, var(--status-danger-dot) 45%, var(--border-default));
 }
 
 .camp-ops-root .camp-row-icon-btn--edit {
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: var(--status-info-text);
+  border-color: var(--status-info-border);
+  background: var(--status-info-bg);
 }
 
 .camp-ops-root .camp-row-icon-btn--edit:hover {
   background: var(--info-soft);
-  border-color: #93c5fd;
+  border-color: color-mix(in srgb, var(--status-info-dot) 45%, var(--border-default));
 }
 
 .camp-ops-root .camp-row-icon-btn--assign {
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: var(--status-info-text);
+  border-color: var(--status-info-border);
+  background: var(--status-info-bg);
 }
 
 .camp-ops-root .camp-row-icon-btn--assign:hover:not(:disabled):not(.is-disabled) {
   background: var(--info-soft);
-  border-color: #93c5fd;
+  border-color: color-mix(in srgb, var(--status-info-dot) 45%, var(--border-default));
 }
 
 .camp-ops-root .camp-row-icon-btn--hire {
-  color: #a16207;
-  border-color: #fde68a;
-  background: #fffbeb;
+  color: var(--status-warning-text);
+  border-color: var(--status-warning-border);
+  background: var(--status-warning-bg);
 }
 
 .camp-ops-root .camp-row-icon-btn--hire:hover:not(:disabled):not(.is-disabled) {
-  background: #fef3c7;
-  border-color: #fcd34d;
+  background: var(--status-warning-bg);
+  border-color: var(--status-warning-border);
 }
 
 .camp-ops-root .camp-approval-issues-modal,
@@ -5830,7 +5830,7 @@
 
 .camp-ops-root .form-back-btn {
   flex-shrink: 0;
-  background: #ecfdf5;
+  background: var(--status-success-bg);
   color: var(--primary-dark);
   border: 1.5px solid var(--primary);
   box-shadow: 0 2px 10px rgba(15, 118, 110, 0.18);
@@ -5894,8 +5894,8 @@
 }
 
 .camp-ops-root .camp-info-btn:hover, .camp-ops-root .camp-info-btn[aria-expanded='true'] {
-  background: #e0f2fe;
-  border-color: #7dd3fc;
+  background: var(--status-info-bg);
+  border-color: var(--status-info-border);
 }
 
 .camp-ops-root .camp-info-popover {
@@ -6037,7 +6037,7 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  background: #fef2f2;
+  background: var(--status-danger-bg);
   border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
   color: var(--danger);
   font-size: 0.88rem;
@@ -6049,7 +6049,7 @@
   height: 1.15rem;
   border-radius: var(--radius-full);
   background: var(--danger-soft);
-  color: #b91c1c;
+  color: var(--status-danger-text);
   font-size: 0.72rem;
   font-weight: 800;
   display: inline-flex;
@@ -6173,7 +6173,7 @@
 }
 
 .camp-ops-root .camp-info-action-outline:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--status-danger-bg);
   color: var(--danger);
 }
 
@@ -6377,7 +6377,7 @@
 }
 
 .camp-ops-root .cancel-source-option:hover {
-  border-color: #fca5a5;
+  border-color: var(--status-danger-border);
   background: var(--danger-soft);
 }
 
@@ -6687,7 +6687,7 @@
 .camp-ops-root .field-error {
   display: block;
   margin-top: 6px;
-  color: #b91c1c;
+  color: var(--status-danger-text);
   font-size: 0.82rem;
 }
 
@@ -6776,7 +6776,7 @@
 
 .camp-ops-root .camps-filter-actions .btn.is-active, .camp-ops-root .users-filter-actions .btn.is-active, .camp-ops-root .toolbar .btn.is-active {
   border-color: var(--brand);
-  background: #ecfdf5;
+  background: var(--status-success-bg);
   color: var(--color-brand-primary);
 }
 
@@ -6962,7 +6962,7 @@
 
 .camp-ops-root .users-status-btn.is-active {
   border-color: var(--brand);
-  background: #ecfdf5;
+  background: var(--status-success-bg);
   color: var(--color-brand-primary);
 }
 
@@ -7148,7 +7148,7 @@
 }
 
 .camp-ops-root .camp-created-banner {
-  background: #ecfdf5;
+  background: var(--status-success-bg);
   color: #14532d;
   border: 1px solid #86efac;
   border-radius: var(--radius-md);
@@ -7276,7 +7276,7 @@
 }
 
 .camp-ops-root .info-banner {
-  background: #e0f2fe;
+  background: var(--status-info-bg);
   color: #075985;
   border-radius: var(--radius-md);
   padding: 12px 14px;
@@ -7443,22 +7443,22 @@
 
 .camp-ops-root .validation-row-error, .camp-ops-root .camp-row-overdue {
   background: var(--warn-soft);
-  box-shadow: inset 4px 0 0 #ea580c;
+  box-shadow: inset 4px 0 0 var(--color-orange);
 }
 
 .camp-ops-root .camp-row-reaction {
-  background: #fef2f2;
-  box-shadow: inset 4px 0 0 #dc2626;
+  background: var(--status-danger-bg);
+  box-shadow: inset 4px 0 0 var(--status-danger-dot);
 }
 
 .camp-ops-root .camp-row-weekend {
-  background: #faf5ff;
-  box-shadow: inset 4px 0 0 #9333ea;
+  background: var(--color-violet-subtle);
+  box-shadow: inset 4px 0 0 var(--color-violet);
 }
 
 .camp-ops-root .camp-row-off-hours {
   background: var(--warn-soft);
-  box-shadow: inset 4px 0 0 #d97706;
+  box-shadow: inset 4px 0 0 var(--color-amber);
 }
 
 .camp-ops-root .alert-pill {
@@ -7486,12 +7486,12 @@
 }
 
 .camp-ops-root .alert-weekend_attention {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--color-violet-subtle);
+  color: var(--color-violet-strong);
 }
 
 .camp-ops-root .alert-off_hours {
-  background: #fef3c7;
+  background: var(--status-warning-bg);
   color: var(--warn);
 }
 
@@ -7537,12 +7537,12 @@
 }
 
 .camp-ops-root .alert-legend-weekend {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--color-violet-subtle);
+  color: var(--color-violet-strong);
 }
 
 .camp-ops-root .alert-legend-off-hours {
-  background: #fef3c7;
+  background: var(--status-warning-bg);
   color: var(--warn);
 }
 
@@ -7568,7 +7568,7 @@
 }
 
 .camp-ops-root .alert-card-reaction {
-  border-color: #fca5a5;
+  border-color: var(--status-danger-border);
   background: linear-gradient(180deg, #fff 0%, #fef2f2 100%);
 }
 
@@ -9666,9 +9666,9 @@
   font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
   background: var(--bg-sunken);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-default);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -9751,14 +9751,14 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
   line-height: 1.2;
 }
 
 .camp-ops-root .camp-time-frame-card {
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  background: #fffbeb;
+  background: var(--status-warning-bg);
   border: 1px solid #fde68a;
 }
 
@@ -10051,7 +10051,7 @@
 }
 
 .camp-ops-root .camp-assignment-callout--wait svg {
-  color: #b45309;
+  color: var(--status-warning-text);
 }
 
 .camp-ops-root .camp-assignment-toolbar {
@@ -10121,7 +10121,7 @@
 
 .camp-ops-root .camp-assignment-decision-btn.is-active {
   border-color: var(--color-brand-primary);
-  background: #ecfdf5;
+  background: var(--status-success-bg);
   color: var(--color-brand-primary);
 }
 

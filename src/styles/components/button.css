@@ -47,12 +47,12 @@
 .btn.secondary {
   background: var(--bg-tier-2);
   color: var(--text-main);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-board, var(--border-strong));
 }
 
 .btn.secondary:hover:not(:disabled) {
   background: var(--bg-hover);
-  border-color: var(--border-strong);
+  border-color: var(--border-board, var(--border-strong));
   color: var(--text-main);
 }
 
@@ -80,13 +80,13 @@
 
 .app-header .btn.secondary {
   color: var(--text-main);
-  background: var(--bg-tier-2);
-  border-color: var(--border-strong);
+  background: var(--bg-card, var(--bg-tier-2));
+  border-color: var(--border-board, var(--border-strong));
 }
 
 .app-header .btn.secondary:hover:not(:disabled) {
   background: var(--bg-hover);
-  border-color: var(--border-strong);
+  border-color: var(--border-board, var(--border-strong));
 }
 
 .btn.btn-compact,

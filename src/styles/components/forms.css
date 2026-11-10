@@ -37,7 +37,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-board, var(--border-strong));
   border-radius: var(--control-radius);
   background: var(--bg-input);
   color: var(--text-main);

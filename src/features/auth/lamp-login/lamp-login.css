@@ -22,9 +22,9 @@ body:has(.lamp-login),
   --ll-ink: #0f172a;
   --ll-muted: #64748b;
   --ll-label: #475569;
-  --ll-border: #d0dceb;
-  --ll-input-bg: #ffffff;
-  --ll-card: #ffffff;
+  --ll-border: var(--border-board, #d0dceb);
+  --ll-input-bg: var(--bg-input, #F5F7FA);
+  --ll-card: var(--bg-card, #F5F7FA);
   --ll-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ll-radius: 16px;
   --ll-shadow: 0 20px 48px rgba(15, 58, 130, 0.1);
@@ -82,7 +82,7 @@ body:has(.lamp-login),
   min-height: min(640px, calc(100dvh - 96px));
   border-radius: 24px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--bg-card, #F5F7FA);
   border: 1px solid rgba(208, 220, 235, 0.95);
   box-shadow: var(--ll-shadow);
   animation: ll-fade-up 480ms var(--ll-ease) both;
@@ -179,7 +179,7 @@ body:has(.lamp-login),
   align-items: center;
   justify-content: center;
   padding: clamp(28px, 4vw, 48px) clamp(24px, 3.5vw, 44px);
-  background: #ffffff;
+  background: var(--bg-card, #F5F7FA);
 }
 
 .ll-card-shell {
@@ -309,7 +309,7 @@ html[data-theme='dark'] .lamp-login .ll-card input:hover {
 html[data-theme='dark'] .lamp-login .ll-card input:focus,
 html[data-theme='dark'] .lamp-login .ll-card input:focus-visible {
   border-color: var(--ll-blue) !important;
-  background: #ffffff !important;
+  background: var(--bg-input, #F5F7FA) !important;
   box-shadow: 0 0 0 3px rgba(10, 90, 194, 0.14) !important;
 }
 
@@ -325,7 +325,7 @@ html[data-theme='dark'] .lamp-login .ll-card input:-webkit-autofill:active {
   caret-color: var(--ll-blue);
   border-color: var(--ll-border) !important;
   /* Force light fill over dark-scheme autofill paint */
-  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px var(--bg-input, #F5F7FA) inset !important;
   transition: background-color 99999s ease-out 0s;
 }
 

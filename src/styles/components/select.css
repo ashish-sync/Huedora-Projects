@@ -363,9 +363,9 @@ select:not([multiple]):not([size]) option {
   margin-top: 4px !important;
   padding: var(--dropdown-menu-pad) !important;
   overflow: hidden;
-  border: 1px solid var(--border-strong) !important;
+  border: 1px solid var(--border-board, var(--border-strong)) !important;
   border-radius: var(--dropdown-radius) !important;
-  background: var(--bg-tier-3) !important;
+  background: var(--bg-card, var(--bg-tier-2)) !important;
   color: var(--ink) !important;
   box-shadow: var(--dropdown-menu-shadow) !important;
 }

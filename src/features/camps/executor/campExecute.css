@@ -14,11 +14,11 @@
   --ce-ink: #0f172a;
   --ce-ink-soft: #334155;
   --ce-muted: #475569;
-  --ce-line: #cbd5e1;
-  --ce-line-soft: #e2e8f0;
-  --ce-bg: #eef2f7;
-  --ce-card: #ffffff;
-  --ce-input-bg: #ffffff;
+  --ce-line: var(--border-board, #D4DDE8);
+  --ce-line-soft: var(--border-divider, #D8E0EA);
+  --ce-bg: var(--bg-workspace, #E9EEF5);
+  --ce-card: var(--bg-card, #F5F7FA);
+  --ce-input-bg: var(--bg-input, #F5F7FA);
   --ce-ok: #15803d;
   --ce-ok-soft: #dcfce7;
   --ce-danger: #dc2626;
@@ -185,7 +185,7 @@
   height: 26px;
   border-radius: 999px;
   border: 2px solid var(--ce-line);
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   color: var(--ce-ink-soft);
   display: grid;
   place-items: center;
@@ -587,7 +587,7 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   border: 1px solid var(--ce-line-soft);
   border-radius: 12px;
   padding: 0.65rem;
@@ -902,13 +902,13 @@
 }
 
 .camp-execute__btn.secondary {
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   color: var(--ce-brand);
   border: 1.5px solid var(--ce-brand);
 }
 
 .camp-execute__btn.ghost {
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   color: var(--ce-ink);
   border: 1px solid var(--ce-line);
   flex: 0 0 auto;
@@ -1056,7 +1056,7 @@
   width: 100%;
   border-radius: 12px;
   border: 1.5px solid var(--ce-brand);
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   color: var(--ce-brand);
   font-weight: 800;
   cursor: pointer;

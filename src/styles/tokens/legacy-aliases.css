@@ -50,7 +50,7 @@
   --surface-muted: var(--bg-hover);
   /* Raised cards / panels — must track theme (never fall back to #fff) */
   --surface-raised: var(--bg-tier-2);
-  --border-subtle: var(--border-default);
+  --border-subtle: var(--border-divider, var(--border-default));
   --text-muted: var(--text-muted);
 
   --brand: var(--brand-primary);
@@ -58,7 +58,7 @@
   --brand-bright: var(--brand-primary-hover);
   --brand-soft: var(--brand-selected-bg);
   --brand-ink: var(--text-on-brand);
-  --header-bg: var(--bg-tier-2);
+  --header-bg: var(--color-header-bg, var(--bg-header));
   --accent: var(--brand-accent);
   --accent-soft: var(--brand-selected-bg);
   --glow: color-mix(in srgb, var(--brand-primary) 18%, transparent);
@@ -72,8 +72,8 @@
   --danger: var(--status-danger-dot);
   --danger-soft: var(--status-danger-bg);
 
-  --line: var(--border-default);
-  --line-strong: var(--border-strong);
+  --line: var(--border-board, var(--border-default));
+  --line-strong: var(--border-major, var(--border-strong));
   --focus: var(--focus-ring);
 
   /* Generic shadow alias → sm step (does not redefine --shadow-sm/--shadow-lg) */

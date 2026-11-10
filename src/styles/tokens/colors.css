@@ -8,28 +8,49 @@
 html[data-theme='light'] {
   color-scheme: light;
 
-  /* ── 1. Approved Base Tokens (Light Mode) ── */
-  --bg-tier-1: #F3F5F8;
-  --bg-tier-2: #FFFFFF;
-  --bg-tier-3: #FFFFFF;
-  --bg-input: #FFFFFF;
-  --bg-hover: #F8FAFC;
-  --bg-muted: #F1F5F9;
-  --border-default: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --brand-primary: #2457C5;
-  --brand-primary-hover: #1D46A3;
-  --brand-primary-pressed: #173882;
-  --brand-accent: #2457C5;
-  --brand-primary-rgb: 36 87 197;
-  --brand-secondary: #475569;
+  /* ── 0. Light Mode Master Design Tokens (Zero Pure White) ── */
+  --bg-workspace: #E9EEF5;        /* Main application canvas / viewport background */
+  --bg-header: #DCE5F0;           /* Top navigation header bar */
+  --bg-sidebar: #0F172A;          /* Left navigation rail (deep slate navy) */
+  --bg-card: #F5F7FA;             /* Primary boards, widget cards, tables, modals */
+  --bg-nested: #EDF2F7;           /* Nested panels, inner status tiles, tab tracks, table headers/footers, empty dropzones */
+  --bg-input: #F5F7FA;            /* Interactive inputs, selects, date pickers, search bars */
+  --bg-hover: #E6EDF5;            /* Interactive row, button, and list item hover states */
+
+  /* 3-Level Separation Hierarchy */
+  --border-board: #D4DDE8;        /* Level 1: Outer card boundaries, nested panels, form input borders */
+  --border-divider: #D8E0EA;      /* Level 2: Internal table rows, chat list splits */
+  --border-major: #C5D0DE;        /* Level 3: Header bottom border, table header/footer splits, modal header/footer dividers */
+
+  /* Typography Hierarchy */
+  --text-primary: #263445;        /* Charcoal for headings, primary metrics, active labels, input values */
+  --text-secondary: #475569;      /* Secondary labels, table column headers, subheadings, standard body text */
+  --text-muted: #64748B;          /* Muted timestamps, helper text, empty state descriptions, zero (0) counts */
+
+  /* Interactive Accents */
+  --accent-primary: #2563EB;      /* TYLO Blue for primary CTAs, active tabs, and active states */
+  --accent-primary-hover: #1D4ED8;
+
+  /* ── 1. Approved Base Tokens (Light Mode Mapped to Master Design Tokens) ── */
+  --bg-tier-1: var(--bg-workspace);
+  --bg-tier-2: var(--bg-card);
+  --bg-tier-3: var(--bg-nested);
+  --bg-input: var(--bg-input);
+  --bg-hover: var(--bg-hover);
+  --bg-muted: var(--bg-nested);
+  --border-default: var(--border-board);
+  --border-strong: var(--border-major);
+  --brand-primary: var(--accent-primary);
+  --brand-primary-hover: var(--accent-primary-hover);
+  --brand-primary-pressed: #1E40AF;
+  --brand-accent: var(--accent-primary);
+  --brand-primary-rgb: 37 99 235;
+  --brand-secondary: var(--text-secondary);
   --brand-secondary-hover: #334155;
-  --brand-tertiary: #64748B;
+  --brand-tertiary: var(--text-muted);
   --brand-tertiary-hover: #475569;
-  --brand-selected-bg: #EFF6FF;
-  --text-main: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #5B6575;
+  --brand-selected-bg: #DBEAFE;
+  --text-main: var(--text-primary);
   --text-on-brand: #FFFFFF;
 
   /* ── 2. Semantic Status Tokens (Light Mode) ── */
@@ -59,51 +80,51 @@ html[data-theme='light'] {
 
   /* Neutral */
   --status-neutral-text: #475569;
-  --status-neutral-bg: #F1F5F9;
-  --status-neutral-border: #CBD5E1;
-  --status-neutral-dot: #5B6575;
+  --status-neutral-bg: var(--bg-nested);
+  --status-neutral-border: var(--border-board);
+  --status-neutral-dot: #64748B;
 
   /* Disabled Controls */
-  --control-disabled-bg: #F1F5F9;
+  --control-disabled-bg: var(--bg-nested);
   --control-disabled-text: #94A3B8;
-  --control-disabled-border: #E2E8F0;
+  --control-disabled-border: var(--border-board);
 
   /* Focus Ring */
-  --focus-ring: var(--brand-primary);
+  --focus-ring: var(--accent-primary);
 
   /* Medical Alert Accent */
   --color-medical: #D92D20;
   --color-medical-subtle: #FEF2F1;
 
   /* ── 3. Canonical Semantic Aliases (--color-*) ── */
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-primary-hover: var(--brand-primary-hover);
-  --color-brand-primary-subtle: var(--brand-selected-bg);
+  --color-brand-primary: var(--accent-primary);
+  --color-brand-primary-hover: var(--accent-primary-hover);
+  --color-brand-primary-subtle: #DBEAFE;
   --color-brand-on-primary: var(--text-on-brand);
 
-  --color-bg-app: var(--bg-tier-1);
-  --color-bg-canvas: var(--bg-tier-1);
-  --color-bg-sidebar: var(--bg-tier-2);
-  --color-bg-elevated: var(--bg-tier-2);
-  --color-bg-surface: var(--bg-tier-2);
-  --color-header-bg: var(--bg-tier-2);
-  --color-bg-floating: var(--bg-tier-3);
-  --color-bg-sunken: var(--bg-muted);
+  --color-bg-app: var(--bg-workspace);
+  --color-bg-canvas: var(--bg-workspace);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-bg-elevated: var(--bg-card);
+  --color-bg-surface: var(--bg-card);
+  --color-header-bg: var(--bg-header);
+  --color-bg-floating: var(--bg-card);
+  --color-bg-sunken: var(--bg-nested);
   --color-bg-hover: var(--bg-hover);
-  --color-bg-muted: var(--bg-muted);
+  --color-bg-muted: var(--bg-nested);
   --color-bg-input: var(--bg-input);
   --color-bg-overlay: rgb(15 23 42 / 0.48);
 
-  --color-text-primary: var(--text-main);
+  --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-muted);
   --color-text-disabled: var(--control-disabled-text);
   --color-text-on-primary: var(--text-on-brand);
   --color-text-on-primary-muted: rgb(255 255 255 / 0.82);
 
-  --color-border-default: var(--border-default);
-  --color-border-subtle: var(--bg-muted);
-  --color-border-strong: var(--border-strong);
+  --color-border-default: var(--border-board);
+  --color-border-subtle: var(--border-divider);
+  --color-border-strong: var(--border-major);
   --color-focus-ring: var(--focus-ring);
 
   --color-success: var(--status-success-dot);
@@ -121,6 +142,23 @@ html[data-theme='dark'],
 .dark,
 html.dark {
   color-scheme: dark;
+
+  /* ── 0. Master Design Tokens Fallbacks (Dark Mode - 100% Independent) ── */
+  --bg-workspace: #090D16;
+  --bg-header: #111827;
+  --bg-sidebar: #111827;
+  --bg-card: #111827;
+  --bg-nested: #1E293B;
+  --bg-input: #0B1220;
+  --bg-hover: #1E293B;
+  --border-board: #1E293B;
+  --border-divider: #0F172A;
+  --border-major: #334155;
+  --text-primary: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --accent-primary: #3B82F6;
+  --accent-primary-hover: #60A5FA;
 
   /* ── 1. Approved Base Tokens (Dark Mode) ── */
   --bg-tier-1: #090D16;

@@ -187,22 +187,22 @@
 }
 
 .form-master-preview {
-  /* Public/runtime forms are light-only — preview matches that surface. */
-  --bg-tier-2: #ffffff;
-  --bg-muted: #f3f5f8;
-  --bg-input: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --color-text-secondary: #64748b;
-  --border-default: #e2e8f0;
-  --border-strong: #cbd5e1;
+  /* Low-glare Light Mode token integration */
+  --bg-tier-2: var(--bg-card, #F5F7FA);
+  --bg-muted: var(--bg-nested, #EDF2F7);
+  --bg-input: var(--bg-input, #F5F7FA);
+  --text-main: var(--text-primary, #263445);
+  --text-muted: var(--text-muted, #64748B);
+  --color-text-secondary: var(--text-secondary, #475569);
+  --border-default: var(--border-board, #D4DDE8);
+  --border-strong: var(--border-major, #C5D0DE);
   --color-danger: #dc2626;
   color-scheme: light;
-  color: #0f172a;
+  color: var(--text-primary, #263445);
   position: sticky;
   top: 12px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-card, #F5F7FA);
+  border: 1px solid var(--border-board, #D4DDE8);
   border-radius: var(--radius-lg, 12px);
   padding: 14px;
   box-shadow: var(--shadow-sm, none);
@@ -214,9 +214,9 @@
 .form-master-preview .tylo-select,
 .form-master-preview .adaptive-select__control {
   color-scheme: light;
-  background: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  background: var(--bg-input, #F5F7FA) !important;
+  color: var(--text-primary, #263445) !important;
+  border-color: var(--border-board, #D4DDE8) !important;
 }
 
 .form-master-preview__title {

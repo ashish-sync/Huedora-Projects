@@ -77,7 +77,7 @@
   padding: 0.3rem 0.75rem;
   border-radius: 10px;
   border: 1.5px solid var(--ce-brand);
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   color: var(--ce-brand);
   font-size: 0.78rem;
   font-weight: 700;
@@ -103,7 +103,7 @@
   z-index: 20;
   min-width: 13.75rem;
   padding: 0.28rem;
-  background: #fff;
+  background: var(--bg-card, #F5F7FA);
   border: 1px solid var(--ce-line);
   border-radius: 12px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);

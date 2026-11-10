@@ -132,9 +132,9 @@ textarea {
   justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--page-gutter-inline);
-  background: var(--color-header-bg, var(--bg-elevated));
+  background: var(--color-header-bg, var(--bg-header));
   color: var(--color-text-primary);
-  border-bottom: 1px solid var(--color-border-subtle, var(--line));
+  border-bottom: 1px solid var(--border-major, var(--color-border-subtle, var(--line)));
   position: relative;
   z-index: 30;
   box-shadow: none;
@@ -660,12 +660,28 @@ textarea {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-elevated);
+  background: var(--color-bg-sidebar, var(--bg-sidebar));
   border-right: 1px solid var(--color-border-subtle, var(--line));
   box-sizing: border-box;
   flex-shrink: 0;
   transition: width 200ms cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
+}
+
+:root .app-sidebar,
+[data-theme='light'] .app-sidebar,
+html[data-theme='light'] .app-sidebar {
+  background: var(--bg-sidebar, #0F172A);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  --color-bg-elevated: var(--bg-sidebar, #0F172A);
+  --color-bg-sidebar: var(--bg-sidebar, #0F172A);
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary: #64748B;
+  --color-bg-hover: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+  --color-brand-primary-subtle: rgba(37, 99, 235, 0.22);
+  --color-brand-primary: #60A5FA;
 }
 
 .app-sidebar--collapsed {
@@ -1031,7 +1047,7 @@ textarea {
 
 .app-shell--home .app-header {
   box-shadow: none;
-  border-bottom: 1px solid var(--color-border-subtle, var(--line));
+  border-bottom: 1px solid var(--border-major, var(--color-border-subtle, var(--line)));
 }
 
 /* ── Type ───────────────────────────────────────────────────── */

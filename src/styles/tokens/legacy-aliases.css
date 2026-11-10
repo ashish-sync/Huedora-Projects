@@ -18,6 +18,12 @@
   --tylo-cool-gray: var(--text-muted);
   --tylo-accent: var(--brand-accent);
   --tylo-accent-soft: var(--brand-selected-bg);
+  --tylo-amber: var(--color-amber);
+  --tylo-amber-strong: var(--color-amber-strong);
+  --tylo-violet: var(--color-violet);
+  --tylo-violet-soft: var(--color-violet-subtle);
+  --tylo-gold: var(--color-gold);
+  --tylo-gold-soft: var(--color-gold-subtle);
 
   --tylo-ok: var(--status-success-dot);
   --tylo-ok-soft: var(--status-success-bg);

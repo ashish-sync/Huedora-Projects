@@ -23,7 +23,7 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg, 12px);
   background: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+  box-shadow: var(--shadow-sm);
 }
 
 .entity-master-topbar-left {
@@ -110,7 +110,7 @@
 
 .entity-master-add-btn:hover {
   background: var(--color-brand-primary) !important;
-  color: var(--color-text-on-primary, #ffffff) !important;
+  color: var(--text-on-brand) !important;
 }
 
 /* ── Two-Column Architecture ─────────────────────────────────────────────── */
@@ -134,7 +134,7 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg, 12px);
   background: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+  box-shadow: var(--shadow-sm);
   max-height: calc(100vh - 120px);
 }
 
@@ -243,7 +243,7 @@
   background: var(--color-bg-hover) !important;
   border-color: var(--color-brand-primary) !important;
   border-left: 3px solid var(--color-brand-primary) !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .entity-selector-item.is-creating {
@@ -271,7 +271,7 @@
 
 .entity-avatar.is-creating {
   background: var(--color-brand-primary);
-  color: var(--color-text-on-primary, #ffffff);
+  color: var(--text-on-brand);
   font-size: 1.1rem;
 }
 
@@ -396,7 +396,7 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg, 12px);
   background: var(--color-bg-elevated);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -631,12 +631,12 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md, 8px);
   background: var(--bg-surface, #ffffff); /* Always crisp surface backing for transparency check */
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
 }
 
 [data-theme="dark"] .entity-upload-preview-frame {
   background: var(--bg-tier-3, #1e293b);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border-default);
 }
 
 .entity-upload-img {
@@ -657,7 +657,7 @@
 }
 
 .entity-upload-btn-remove {
-  color: var(--color-danger, #ef4444) !important;
+  color: var(--status-danger-text) !important;
 }
 
 /* ── Section 02: Header Display Picker & Letterhead Simulation ───────────── */
@@ -799,7 +799,7 @@
 
 .entity-table-mock thead th {
   background: var(--org-primary, #0a5ac2);
-  color: #ffffff;
+  color: var(--text-on-brand);
   padding: 8px 12px;
   font-size: 0.72rem;
   font-weight: 750;
@@ -818,7 +818,7 @@
 
 .entity-table-mock tbody tr.is-total td {
   background: var(--org-primary, #0a5ac2);
-  color: #ffffff;
+  color: var(--text-on-brand);
   font-weight: 750;
   border-top: none;
 }
@@ -879,14 +879,14 @@
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg, 12px);
   background: var(--color-bg-elevated);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 -4px 20px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
   z-index: 50;
   backdrop-filter: blur(8px);
 }
 
 [data-theme="dark"] .entity-workspace-footer {
   background: color-mix(in srgb, var(--color-bg-elevated) 92%, transparent);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 -4px 24px color-mix(in srgb, var(--color-text-primary) 50%, transparent);
 }
 
 .entity-footer-status {
@@ -900,12 +900,12 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--color-success, #16a34a);
+  background: var(--status-success-dot);
   flex-shrink: 0;
 }
 
 .entity-footer-dot.is-creating {
-  background: var(--color-warning, #d97706);
+  background: var(--status-warning-dot);
 }
 
 .entity-footer-meta {

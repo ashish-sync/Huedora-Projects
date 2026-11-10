@@ -15,6 +15,8 @@
   --home-muted-text: var(--text-muted);
   --home-blue: var(--brand-primary);
   --home-blue-hover: var(--brand-primary-hover);
+  --home-button-bg: var(--brand-primary);
+  --home-button-hover: var(--brand-primary-hover);
   --home-green: var(--status-success-dot);
   --home-green-bg: var(--status-success-bg);
   --home-amber: var(--status-warning-dot);
@@ -24,16 +26,15 @@
   --home-info-text: var(--status-info-text);
   --home-info-bg: var(--status-info-bg);
   --home-cyan: var(--status-info-dot);
-  --home-violet: #7C3AED;
-  --home-violet-bg: color-mix(in srgb, #7C3AED 12%, transparent);
-  --home-gold: #B45309;
-  --home-gold-bg: var(--status-warning-bg);
+  --home-violet: var(--color-violet);
+  --home-violet-bg: var(--color-violet-subtle);
+  --home-gold: var(--color-gold);
+  --home-gold-bg: var(--color-gold-subtle);
   --home-note-amber-bg: color-mix(in srgb, var(--status-warning-dot) 16%, var(--bg-tier-2));
   --home-note-sky-bg: color-mix(in srgb, var(--brand-primary) 14%, var(--bg-tier-2));
-  --home-note-violet-bg: color-mix(in srgb, #7C3AED 14%, var(--bg-tier-2));
+  --home-note-violet-bg: color-mix(in srgb, var(--color-violet) 14%, var(--bg-tier-2));
   --home-note-mint-bg: color-mix(in srgb, var(--status-success-dot) 14%, var(--bg-tier-2));
-  --home-panel-shadow: 0 1px 2px color-mix(in srgb, #0F172A 6%, transparent),
-    0 4px 12px color-mix(in srgb, #0F172A 4%, transparent);
+  --home-panel-shadow: var(--shadow-xs), var(--shadow-md);
   --home-motion: 160ms ease;
   --home-focus-ring: 0 0 0 2px var(--home-surface), 0 0 0 4px color-mix(in srgb, var(--home-blue) 55%, transparent);
 
@@ -217,8 +218,8 @@
 }
 
 .tylo-home-mode-toggle button.is-active {
-  background: var(--home-blue);
-  color: #ffffff;
+  background: var(--home-button-bg);
+  color: var(--text-on-brand);
 }
 
 .tylo-home-mode-toggle button:disabled {
@@ -535,9 +536,9 @@
 }
 
 .tylo-home-preset-btn.is-active {
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   border-color: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   font-weight: 600;
 }
 
@@ -604,8 +605,8 @@
 }
 
 .tylo-home-submit-btn {
-  background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  background: var(--home-button-bg);
+  color: var(--text-on-brand);
   border: 0;
   border-radius: 6px;
   padding: 5px 12px;
@@ -619,7 +620,7 @@
 }
 
 .tylo-home-submit-btn:hover {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
 }
 
 .tylo-home-clear-btn {
@@ -1060,7 +1061,7 @@
   width: 16px;
   height: 16px;
   background: var(--status-danger-dot);
-  color: #FFFFFF;
+  color: var(--text-on-brand);
   border-radius: 50%;
   font-size: 10px;
   font-weight: 700;
@@ -1156,8 +1157,8 @@
 }
 
 .tylo-home-rail-btn.is-active {
-  background: var(--home-blue) !important;
-  color: var(--text-on-brand, #fff) !important;
+  background: var(--home-button-bg) !important;
+  color: var(--text-on-brand) !important;
 }
 
 .tylo-home-workspace-content {
@@ -1248,8 +1249,8 @@
 }
 
 .tylo-home-notes-add-btn {
-  background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  background: var(--home-button-bg);
+  color: var(--text-on-brand);
   border: 0;
   border-radius: 6px;
   padding: 6px 14px;
@@ -1264,7 +1265,7 @@
 }
 
 .tylo-home-notes-add-btn:hover:not(:disabled) {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
 }
 
 .tylo-home-notes-empty {
@@ -1497,7 +1498,7 @@
   padding: 8px 10px;
   border-radius: 4px;
   background: var(--home-red-bg);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid color-mix(in srgb, var(--status-danger-dot) 20%, transparent);
   color: var(--home-red);
   font-size: 11px;
   display: flex;
@@ -2046,8 +2047,8 @@
   margin: 0;
   border-radius: var(--welcome-control-radius);
   border: 1px solid var(--home-blue);
-  background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  background: var(--home-button-bg);
+  color: var(--text-on-brand);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -2060,7 +2061,7 @@
 }
 
 .tylo-home-welcome-range-apply:hover:not(:disabled) {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
   border-color: var(--home-blue-hover);
 }
 
@@ -2539,9 +2540,9 @@
 }
 
 .tylo-home-ops-grid .tylo-home-preset-btn.is-active {
-  background: var(--home-blue) !important;
+  background: var(--home-button-bg) !important;
   border-color: var(--home-blue) !important;
-  color: var(--text-on-brand, #fff) !important;
+  color: var(--text-on-brand) !important;
   font-weight: 600;
 }
 
@@ -2838,8 +2839,8 @@
 }
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active {
-  background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  background: var(--home-button-bg);
+  color: var(--text-on-brand);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--home-blue) 35%, transparent);
 }
 
@@ -2849,7 +2850,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background: var(--status-danger-dot);
-  color: #fff;
+  color: var(--text-on-brand);
   font-size: 10px;
   line-height: 16px;
   text-align: center;
@@ -2858,7 +2859,7 @@
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active .tylo-home-ws-tab-badge {
   background: color-mix(in srgb, #fff 24%, transparent);
-  color: #fff;
+  color: var(--text-on-brand);
 }
 
 .tylo-home-ops-grid .tylo-home-workspace-content,
@@ -2912,8 +2913,8 @@
   padding: 0 14px;
   border-radius: 8px;
   border: none;
-  background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  background: var(--home-button-bg);
+  color: var(--text-on-brand);
   font-weight: 600;
   font-size: 12px;
   cursor: pointer;
@@ -2922,7 +2923,7 @@
 }
 
 .tylo-home-ops-grid .tylo-home-notes-add-btn:hover:not(:disabled) {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
 }
 
 .tylo-home-ops-grid .tylo-home-notes-add-btn:focus-visible {
@@ -3151,7 +3152,7 @@
 }
 
 .tylo-home-pipeline-status--error {
-  color: var(--color-danger, #b42318);
+  color: var(--status-danger-text);
 }
 
 @media (max-width: 900px) {
@@ -3420,7 +3421,7 @@
   height: 14px;
   border-radius: 999px;
   background: var(--status-danger-dot);
-  color: #fff;
+  color: var(--text-on-brand);
   font-size: 9px;
   line-height: 14px;
   text-align: center;
@@ -3438,8 +3439,8 @@
   margin: 0;
   border: none;
   border-radius: 999px;
-  background: var(--status-danger-dot, #e11d48);
-  color: #fff;
+  background: var(--status-danger-action-bg);
+  color: var(--text-on-brand);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -3695,15 +3696,15 @@
 
 .tylo-home-ops-grid .tylo-home-pin-option input:checked + .tylo-home-pin-box {
   border-color: var(--home-blue);
-  background: var(--home-blue);
+  background: var(--home-button-bg);
 }
 
 .tylo-home-ops-grid .tylo-home-pin-option input:checked + .tylo-home-pin-box::after {
   content: '';
   width: 7px;
   height: 4px;
-  border-left: 1.5px solid var(--text-on-brand, #fff);
-  border-bottom: 1.5px solid var(--text-on-brand, #fff);
+  border-left: 1.5px solid var(--text-on-brand);
+  border-bottom: 1.5px solid var(--text-on-brand);
   transform: translateY(-1px) rotate(-45deg);
 }
 
@@ -3796,14 +3797,13 @@ html[data-theme='dark'] .tylo-home,
 .dark .tylo-home,
 html.dark .tylo-home {
   --home-blue: var(--brand-accent);
-  --home-blue-hover: #93C5FD;
-  --home-violet: #A78BFA;
-  --home-violet-bg: color-mix(in srgb, #A78BFA 16%, transparent);
-  --home-gold: #FBBF24;
-  --home-gold-bg: color-mix(in srgb, #FBBF24 14%, transparent);
-  --home-note-violet-bg: color-mix(in srgb, #A78BFA 16%, var(--bg-tier-2));
-  --home-panel-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent),
-    0 8px 20px color-mix(in srgb, #000 22%, transparent);
+  --home-blue-hover: var(--brand-primary-hover);
+  --home-violet: var(--color-violet);
+  --home-violet-bg: var(--color-violet-subtle);
+  --home-gold: var(--color-gold);
+  --home-gold-bg: var(--color-gold-subtle);
+  --home-note-violet-bg: color-mix(in srgb, var(--color-violet) 14%, var(--bg-tier-2));
+  --home-panel-shadow: var(--shadow-xs), var(--shadow-md);
 }
 
 [data-theme='dark'] .tylo-home-ops-grid > .tylo-home-panel,

@@ -115,7 +115,7 @@
 .tylo-cal-primary-btn {
   border: none;
   background: var(--cal-accent);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   padding: 5px 12px;
   height: 28px;
   white-space: nowrap;
@@ -260,7 +260,7 @@
 
 .tylo-cal-cell.is-today .tylo-cal-day-num {
   background: var(--cal-accent);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
 }
 
 .tylo-cal-day-num {
@@ -440,7 +440,7 @@
 .tylo-cal-accept {
   border: none;
   background: var(--status-success-dot);
-  color: #fff;
+  color: var(--text-on-brand);
 }
 
 .tylo-cal-decline {
@@ -483,7 +483,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 12px 40px color-mix(in srgb, #000 25%, transparent);
+  box-shadow: var(--shadow-lg);
 }
 
 .tylo-cal-modal-head {

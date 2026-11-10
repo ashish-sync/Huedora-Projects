@@ -22,6 +22,7 @@ html[data-theme='light'] {
   --brand-primary-pressed: #173882;
   --brand-accent: #2457C5;
   --brand-primary-rgb: 36 87 197;
+  --brand-accent-rgb: 36 87 197;
   --brand-secondary: #475569;
   --brand-secondary-hover: #334155;
   --brand-tertiary: #64748B;
@@ -131,11 +132,12 @@ html.dark {
   --bg-muted: #0F172A;
   --border-default: #1E293B;
   --border-strong: #334155;
-  --brand-primary: #3B82F6;
-  --brand-primary-hover: #60A5FA;
-  --brand-primary-pressed: #2563EB;
+  --brand-primary: #2563EB;
+  --brand-primary-hover: #2D63D8;
+  --brand-primary-pressed: #1D46A3;
   --brand-accent: #60A5FA;
-  --brand-primary-rgb: 96 165 250;
+  --brand-primary-rgb: 37 99 235;
+  --brand-accent-rgb: 96 165 250;
   --brand-secondary: #CBD5E1;
   --brand-secondary-hover: #E2E8F0;
   --brand-tertiary: #94A3B8;
@@ -249,8 +251,6 @@ html[data-theme='light'] {
   --color-pink-subtle: #FDF2F8;
   --color-orange: #C2410C;
   --color-orange-subtle: #FFF7ED;
-  --color-medical: #B42318;
-  --color-medical-subtle: #FEF2F1;
   --color-overlay: rgb(15 23 42 / 0.48);
   --color-scrim: rgb(15 23 42 / 0.32);
   --color-white: #FFFFFF;
@@ -277,10 +277,91 @@ html.dark {
   --color-pink-subtle: rgb(236 72 153 / 0.14);
   --color-orange: #FDBA74;
   --color-orange-subtle: rgb(249 115 22 / 0.14);
-  --color-medical: #F97066;
-  --color-medical-subtle: rgb(249 112 102 / 0.14);
   --color-overlay: rgb(0 0 0 / 0.65);
   --color-scrim: rgb(0 0 0 / 0.48);
   --color-white: #FFFFFF;
   --color-black: #000000;
+}
+
+
+/* ── 6. Semantic accents and module identity colours ── */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --color-bg-subtle: var(--bg-muted);
+  --color-interactive-overlay: rgb(15 23 42 / 0.05);
+  --color-violet: #7C3AED;
+  --color-violet-strong: #5B21B6;
+  --color-violet-subtle: #F5F3FF;
+  --color-gold: #B45309;
+  --color-gold-subtle: #FFFBEB;
+
+  --module-tone-asset: #0369A1;
+  --module-tone-document: #1D4ED8;
+  --module-tone-verify: #047857;
+  --module-tone-camp: #B45309;
+  --module-tone-request: #0E7490;
+  --module-tone-master: #4F46E5;
+  --module-tone-movement: #0E7490;
+  --module-tone-finance: #15803D;
+}
+
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --color-bg-subtle: var(--bg-muted);
+  --color-interactive-overlay: rgb(255 255 255 / 0.08);
+  --color-violet: #A78BFA;
+  --color-violet-strong: #C4B5FD;
+  --color-violet-subtle: rgb(167 139 250 / 0.14);
+  --color-gold: #FBBF24;
+  --color-gold-subtle: rgb(251 191 36 / 0.14);
+
+  --module-tone-asset: #38BDF8;
+  --module-tone-document: #60A5FA;
+  --module-tone-verify: #34D399;
+  --module-tone-camp: #FBBF24;
+  --module-tone-request: #22D3EE;
+  --module-tone-master: #A5B4FC;
+  --module-tone-movement: #67E8F9;
+  --module-tone-finance: #4ADE80;
+}
+
+
+/* High-contrast action fills for buttons and compact badges with white labels. */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --status-success-action-bg: #15803D;
+  --status-success-action-hover: #166534;
+  --status-danger-action-bg: #B91C1C;
+  --status-danger-action-hover: #991B1B;
+}
+
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --status-success-action-bg: #14532D;
+  --status-success-action-hover: #166534;
+  --status-danger-action-bg: #991B1B;
+  --status-danger-action-hover: #7F1D1D;
+}
+
+
+/* Overlays and floating chrome use paired theme values rather than fixed scrims. */
+:root,
+[data-theme='light'],
+html[data-theme='light'] {
+  --color-bg-tooltip: #0F172A;
+  --color-bg-overlay-soft: rgb(15 23 42 / 0.28);
+}
+
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  --color-bg-tooltip: #334155;
+  --color-bg-overlay-soft: rgb(0 0 0 / 0.42);
 }

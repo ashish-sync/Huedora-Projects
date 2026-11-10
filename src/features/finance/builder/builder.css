@@ -264,7 +264,7 @@
 .ib-client-master-typeahead-item:hover,
 .ib-client-master-typeahead-item:focus-visible,
 .ib-client-master-typeahead-item.is-active {
-  background: color-mix(in srgb, var(--ib-accent, #635bff) 12%, transparent);
+  background: color-mix(in srgb, var(--ib-accent) 12%, transparent);
   outline: none;
 }
 
@@ -743,12 +743,12 @@
 }
 
 .ib-text-btn--danger {
-  color: var(--color-danger, #b91c1c);
+  color: var(--status-danger-text);
 }
 
 .ib-text-btn--danger:hover {
-  background: var(--color-danger-subtle, #fee2e2);
-  color: var(--color-danger, #b91c1c);
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
 }
 
 .ib-primary-btn {
@@ -1004,7 +1004,7 @@
 .ib-input:focus {
   outline: none;
   border-color: var(--ib-accent);
-  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ib-accent) 15%, transparent);
 }
 
 .ib-input--mono {

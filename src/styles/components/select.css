@@ -10,6 +10,14 @@
   --tylo-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23475569' d='M1.2 1.1h7.6L5 4.9z'/%3E%3C/svg%3E");
 }
 
+[data-theme='dark'],
+html[data-theme='dark'],
+.dark,
+html.dark {
+  /* CSS variables cannot be interpolated into a data-URI SVG fill. */
+  --tylo-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23CBD5E1' d='M1.2 1.1h7.6L5 4.9z'/%3E%3C/svg%3E");
+}
+
 /* Shared downward triangle for native selects, react-select, and custom menus */
 .tylo-dropdown-chevron {
   display: inline-block;

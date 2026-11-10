@@ -345,14 +345,14 @@
 
 .master-nav-trigger:hover {
   border-color: var(--line-strong, var(--border-hover));
-  background: color-mix(in srgb, var(--brand, #2563eb) 4%, var(--surface, var(--bg-elevated)));
+  background: color-mix(in srgb, var(--brand-primary) 4%, var(--surface, var(--bg-elevated)));
 }
 
 .master-nav-trigger:focus-visible,
 .master-nav-trigger.is-active {
   outline: none;
-  border-color: var(--brand, #2563eb);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand, #2563eb) 18%, transparent);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
 }
 
 .master-nav-trigger__prefix {
@@ -412,7 +412,7 @@
   border: 1px solid var(--line-strong, var(--line));
   border-radius: var(--radius-card, 8px);
   background: var(--bg-elevated);
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -459,8 +459,8 @@
 }
 
 .master-nav-popover__input:focus {
-  border-color: var(--brand, #2563eb);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand, #2563eb) 18%, transparent);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary) 18%, transparent);
 }
 
 .master-nav-popover__clear {
@@ -534,11 +534,11 @@
 
 .master-nav-popover__item:hover,
 .master-nav-popover__item.is-highlighted {
-  background: color-mix(in srgb, var(--brand, #2563eb) 7%, transparent);
+  background: color-mix(in srgb, var(--brand-primary) 7%, transparent);
 }
 
 .master-nav-popover__item.is-selected {
-  background: color-mix(in srgb, var(--brand, #2563eb) 12%, var(--bg-elevated));
+  background: color-mix(in srgb, var(--brand-primary) 12%, var(--bg-elevated));
 }
 
 .master-nav-popover__item-main {
@@ -579,7 +579,7 @@
 .master-nav-popover__check {
   font-size: 0.875rem;
   font-weight: 700;
-  color: var(--brand, #2563eb);
+  color: var(--brand-primary);
   flex-shrink: 0;
 }
 
@@ -636,12 +636,12 @@
 .master-nav-pill:hover {
   border-color: var(--line-strong, var(--border-hover));
   color: var(--ink);
-  background: color-mix(in srgb, var(--brand, #2563eb) 4%, transparent);
+  background: color-mix(in srgb, var(--brand-primary) 4%, transparent);
 }
 
 .master-nav-pill.is-active {
-  border-color: color-mix(in srgb, var(--brand, #2563eb) 40%, transparent);
-  background: color-mix(in srgb, var(--brand, #2563eb) 12%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--brand-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--brand-primary) 12%, var(--bg-elevated));
   color: var(--ink);
   font-weight: 650;
 }

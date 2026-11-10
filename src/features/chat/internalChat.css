@@ -8,7 +8,7 @@
   --chat-text: var(--text-main);
   --chat-secondary: var(--text-secondary);
   --chat-mine: var(--brand-primary);
-  --chat-mine-text: var(--text-on-brand, #fff);
+  --chat-mine-text: var(--text-on-brand);
   --chat-theirs: var(--bg-muted);
   --chat-accent: var(--brand-primary);
   --chat-hover: var(--bg-hover, var(--bg-muted));
@@ -101,8 +101,8 @@
   height: 16px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--status-danger-dot);
-  color: #fff;
+  background: var(--status-danger-action-bg);
+  color: var(--text-on-brand);
   font-size: 9px;
   font-weight: 700;
   line-height: 16px;
@@ -272,8 +272,8 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--status-success-dot);
-  color: #fff;
+  background: var(--status-success-action-bg);
+  color: var(--text-on-brand);
   font-size: 9px;
   font-weight: 700;
   line-height: 16px;
@@ -490,7 +490,7 @@
   border: none;
   border-radius: 999px;
   background: var(--chat-accent);
-  color: var(--text-on-brand, #fff);
+  color: var(--text-on-brand);
   cursor: pointer;
   flex: 0 0 auto;
   display: inline-flex;

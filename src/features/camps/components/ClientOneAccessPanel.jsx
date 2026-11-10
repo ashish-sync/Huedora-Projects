@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
 import { clientMasterApi } from '../campOpsApi.js';
+import './programConfigPanels.css';
 
 const FEATURE_LABELS = [
   ['dashboard', 'Dashboard'],
   ['campTracker', 'Camp Tracker'],
-  ['hcw', 'HCW Details'],
-  ['calendar', 'Calendar'],
   ['invoices', 'Bills & Invoices'],
-  ['annexures', 'Annexures'],
   ['mis', 'MIS Reports'],
   ['campRequestLink', 'Camp Request Link'],
   ['poUpload', 'Purchase Order Upload'],
 ];
 
 const DEFAULT_FEATURES = Object.fromEntries(FEATURE_LABELS.map(([k]) => [k, true]));
+
+/** campOpsApi wraps TYLO `{ data }` as axios-style `{ data: body }`. */
+function unwrap(res) {
+  return res?.data?.data !== undefined ? res.data.data : (res?.data ?? null);
+}
 
 export function ClientOneAccessPanel({
   recordId = '',
@@ -29,6 +32,7 @@ export function ClientOneAccessPanel({
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [copied, setCopied] = useState('');
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
+  const [customPin, setCustomPin] = useState('');
 
   async function refresh() {
     if (!persisted || !recordId) {
@@ -36,8 +40,7 @@ export function ClientOneAccessPanel({
       return;
     }
     try {
-      const res = await clientMasterApi.getClientOneAccess(recordId);
-      const data = res?.data ?? null;
+      const data = unwrap(await clientMasterApi.getClientOneAccess(recordId));
       setAccess(data);
       setFeatures({ ...DEFAULT_FEATURES, ...(data?.features || {}) });
     } catch (err) {
@@ -52,11 +55,18 @@ export function ClientOneAccessPanel({
 
   async function mint({ rotate = false } = {}) {
     if (!persisted || !recordId || busy) return;
+    const trimmedCustom = customPin.replace(/\D+/g, '').slice(0, 6);
+    if (trimmedCustom && trimmedCustom.length !== 6) {
+      setError('Custom PIN must be exactly 6 digits, or leave blank to auto-generate.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      const res = await clientMasterApi.mintClientOneAccess(recordId, { rotate });
-      const data = res?.data || {};
+      const data = unwrap(await clientMasterApi.mintClientOneAccess(recordId, {
+        rotate,
+        pin: trimmedCustom || undefined,
+      })) || {};
       setAccess({
         accessId: data.accessId,
         path: data.path,
@@ -67,12 +77,21 @@ export function ClientOneAccessPanel({
         features: data.features || features,
       });
       setFeatures({ ...DEFAULT_FEATURES, ...(data.features || features) });
-      if (data.pin) setRevealedPin(data.pin);
+      if (data.pin) {
+        setRevealedPin(String(data.pin));
+        setCustomPin('');
+        setRotateOpen(false);
+      } else if (rotate) {
+        setError('PIN was rotated but not returned. Try Rotate PIN again.');
+        setRotateOpen(false);
+      } else {
+        setError('Access already exists. Use Rotate PIN to issue a new PIN (shown once).');
+      }
     } catch (err) {
       setError(err?.message || 'Could not create Client One access');
+      setRotateOpen(false);
     } finally {
       setBusy(false);
-      setRotateOpen(false);
     }
   }
 
@@ -98,8 +117,7 @@ export function ClientOneAccessPanel({
     setBusy(true);
     setError('');
     try {
-      const res = await clientMasterApi.updateClientOneAccess(recordId, { features: nextFeatures });
-      const data = res?.data || {};
+      const data = unwrap(await clientMasterApi.updateClientOneAccess(recordId, { features: nextFeatures })) || {};
       setAccess((prev) => ({ ...prev, ...data }));
       setFeatures({ ...DEFAULT_FEATURES, ...(data.features || nextFeatures) });
     } catch (err) {
@@ -129,28 +147,28 @@ export function ClientOneAccessPanel({
       ? `${window.location.origin}/o/${access.accessId}`
       : '');
 
+  const hint = !persisted
+    ? 'Save Program Configuration to issue a Client One PIN for this programme.'
+    : !programActive
+      ? 'Activate this program before sharing Client One access.'
+      : 'Clients sign in with a 6-digit PIN. Leave blank to auto-generate, or enter your own. Shown once after Generate or Rotate.';
+
   return (
-    <div className="program-camp-request-link" style={{ marginTop: 14 }}>
-      <div className="program-camp-request-link__row">
+    <div className="program-config-panel" aria-label="Client One access">
+      <div className="program-config-panel__head">
         <div>
-          <p className="program-camp-request-link__title">Client One access</p>
-          <p className="meta-text program-camp-request-link__hint">
-            {!persisted
-              ? 'Save Program Configuration to issue a Client One PIN for this programme.'
-              : !programActive
-                ? 'Activate this program before sharing Client One access.'
-                : 'Clients open the shared URL and enter the unique PIN. Configure which portal areas they can use below.'}
-          </p>
+          <p className="program-config-panel__title">Client One access</p>
+          <p className="program-config-panel__hint">{hint}</p>
         </div>
-        <div className="program-camp-request-link__actions">
-          {!access ? (
+        <div className="program-config-panel__actions">
+          {!access?.accessId ? (
             <button
               type="button"
               className="btn secondary btn-compact"
               disabled={disabled}
               onClick={() => mint({ rotate: false })}
             >
-              {busy ? 'Working…' : 'Generate PIN'}
+              {busy ? 'Working…' : (customPin.length === 6 ? 'Set PIN' : 'Generate PIN')}
             </button>
           ) : (
             <>
@@ -193,54 +211,87 @@ export function ClientOneAccessPanel({
         </div>
       </div>
 
-      {revealedPin ? (
-        <p className="meta-text" style={{ marginTop: 10 }}>
-          New PIN (shown once):
-          {' '}
-          <strong style={{ letterSpacing: '0.12em' }}>{revealedPin}</strong>
-          {' '}
-          <button
-            type="button"
-            className="btn ghost btn-compact"
-            onClick={() => copyText('PIN', revealedPin)}
-          >
-            {copied === 'PIN' ? 'PIN copied' : 'Copy PIN'}
-          </button>
-        </p>
-      ) : null}
-
-      {access?.accessId ? (
-        <p className="meta-text" style={{ marginTop: 8 }}>
-          Access ID: <code className="mono-sm">{access.accessId}</code>
-        </p>
-      ) : null}
-
-      {access ? (
-        <div style={{ marginTop: 14 }}>
-          <p className="program-camp-request-link__title" style={{ marginBottom: 8 }}>Portal permissions</p>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 8,
-            }}
-          >
-            {FEATURE_LABELS.map(([key, label]) => (
-              <label key={key} className="meta-text" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={features[key] !== false}
-                  disabled={disabled}
-                  onChange={(e) => {
-                    const next = { ...features, [key]: e.target.checked };
-                    setFeatures(next);
-                    saveFeatures(next);
-                  }}
-                />
-                <span>{label}</span>
-              </label>
-            ))}
+      {persisted && programActive ? (
+        <div className="program-config-panel__body">
+          <div className="program-config-panel__grid">
+            <label className="program-config-field">
+              <span>Set 6-digit PIN (optional)</span>
+              <input
+                className="field-input"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                value={customPin}
+                disabled={disabled}
+                placeholder="Auto"
+                aria-label="Optional 6-digit Client One PIN"
+                onChange={(e) => setCustomPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+              />
+            </label>
+            <div className="program-config-meta">
+              {access?.accessId ? (
+                <p>
+                  Access ID: <code className="mono-sm">{access.accessId}</code>
+                </p>
+              ) : (
+                <p>No access issued yet. Generate a PIN to create the portal link.</p>
+              )}
+              {access?.accessId && !revealedPin ? (
+                <p>
+                  PIN is hashed at rest. Use <strong>Rotate PIN</strong> to issue a new one (shown once).
+                </p>
+              ) : null}
+            </div>
           </div>
+
+          {revealedPin ? (
+            <div className="program-config-pin-reveal" role="status">
+              <p className="program-config-pin-reveal__label">New PIN — shown once</p>
+              <p className="program-config-pin-reveal__value">{revealedPin}</p>
+              <div className="program-config-pin-reveal__actions">
+                <button
+                  type="button"
+                  className="btn primary btn-compact"
+                  onClick={() => copyText('PIN', revealedPin)}
+                >
+                  {copied === 'PIN' ? 'PIN copied' : 'Copy PIN'}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost btn-compact"
+                  onClick={() => setRevealedPin('')}
+                >
+                  Hide
+                </button>
+              </div>
+              <p className="program-config-pin-reveal__note">
+                There is no default PIN and it cannot be retrieved later. Use Rotate PIN if this one is lost.
+              </p>
+            </div>
+          ) : null}
+
+          {access?.accessId ? (
+            <div className="program-config-permissions">
+              <p className="program-config-permissions__title">Portal permissions</p>
+              <div className="program-config-permissions__grid">
+                {FEATURE_LABELS.map(([key, label]) => (
+                  <label key={key} className="program-config-check">
+                    <input
+                      type="checkbox"
+                      checked={features[key] !== false}
+                      disabled={disabled}
+                      onChange={(e) => {
+                        const next = { ...features, [key]: e.target.checked };
+                        setFeatures(next);
+                        saveFeatures(next);
+                      }}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -249,8 +300,12 @@ export function ClientOneAccessPanel({
       <ConfirmDialog
         open={rotateOpen}
         title="Rotate Client One PIN?"
-        message="This issues a new PIN and deep link. The previous PIN stops working immediately."
-        confirmLabel="Rotate PIN"
+        message={
+          customPin.length === 6
+            ? `This sets the PIN to ${customPin} and updates the deep link. The previous PIN stops working immediately.`
+            : 'This issues a new auto-generated 6-digit PIN and deep link. The previous PIN stops working immediately. The new PIN is shown only once on this screen.'
+        }
+        confirmLabel={customPin.length === 6 ? 'Set new PIN' : 'Rotate PIN'}
         danger
         onCancel={() => setRotateOpen(false)}
         onConfirm={() => mint({ rotate: true })}

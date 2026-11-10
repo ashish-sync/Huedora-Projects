@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog.jsx';
 import { clientMasterApi } from '../campOpsApi.js';
+import './programConfigPanels.css';
 
 export function ProgramCampRequestLink({
   recordId = '',
@@ -49,29 +50,29 @@ export function ProgramCampRequestLink({
 
   const disabled = !persisted || !programActive || busy;
 
+  const hint = !persisted
+    ? 'Save Program Configuration to copy a shareable New Camp request form. Client, Division / Therapy, and Method stay locked to this program.'
+    : !programActive
+      ? 'Activate this program before sharing the camp request form.'
+      : formMasterName || formMasterId
+        ? `Uses Form Master “${formMasterName || 'linked format'}”. Copy returns this program’s final form link. Replace only if you need a new URL.`
+        : 'Link a Form Master above for a configurable layout. Copy returns this program’s final form link. Replace only if you need a new URL.';
+
   return (
-    <div className="program-camp-request-link">
-      <div className="program-camp-request-link__row">
+    <div className="program-config-panel" aria-label="Camp request form">
+      <div className="program-config-panel__head">
         <div>
-          <p className="program-camp-request-link__title">Camp Request Form</p>
-          <p className="meta-text program-camp-request-link__hint">
-            {!persisted
-              ? 'Save Program Configuration to copy a shareable New Camp request form. Client, Division / Therapy, and Method stay locked to this program.'
-              : !programActive
-                ? 'Activate this program before sharing the camp request form.'
-                : formMasterName || formMasterId
-                  ? `Uses Form Master “${formMasterName || 'linked format'}”. Copy always returns this program’s final form link. Use Replace link only if you need a new URL.`
-                  : 'Tip: link a Form Master format above for a configurable layout. Copy always returns this program’s final form link. Use Replace link only if you need a new URL.'}
-          </p>
+          <p className="program-config-panel__title">Camp request form</p>
+          <p className="program-config-panel__hint">{hint}</p>
         </div>
-        <div className="program-camp-request-link__actions">
+        <div className="program-config-panel__actions">
           <button
             type="button"
             className="btn secondary btn-compact"
             disabled={disabled}
             onClick={() => copyLink({ replace: false })}
           >
-            {busy ? 'Working…' : copied ? 'Link copied' : 'Copy camp request form link'}
+            {busy ? 'Working…' : copied ? 'Link copied' : 'Copy form link'}
           </button>
           {persisted && programActive ? (
             <button

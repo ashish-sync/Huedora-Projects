@@ -3,6 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import { clientOneApi, setClientOneApiMode } from './clientOneApi.js';
+import {
+  ClientOneDashboardCharts,
+  ClientOneHeroKpis,
+} from './ClientOneDashboardCharts.jsx';
 import { DEFAULT_FEATURES, visibleNav } from './clientOneNav.js';
 import { clearClientOneSession, readClientOneSession } from './clientOneSession.js';
 import './clientOne.css';
@@ -71,32 +75,36 @@ function PinGate({ accessId, onSuccess }) {
   return (
     <div className="client-one">
       <div className="client-one-shell">
-        <header className="client-one-brand">
-          <div>
+        <header className="client-one-topbar page-header">
+          <div className="client-one-identity">
+            <p className="section-label">Client portal</p>
             <h1>Client One</h1>
-            <p>Secure operational visibility for your authorised programmes.</p>
+            <p className="page-desc">Sign in with your 6-digit PIN to view authorised programme data.</p>
           </div>
         </header>
         <form className="client-one-card client-one-pin-card" onSubmit={submit} aria-label="Client One sign-in">
-          <label>
+          <h2 className="client-one-section-title">Sign in</h2>
+          <p className="meta-text">Enter the PIN issued for this access link.</p>
+          <label className="client-one-pin-field">
             <span>PIN</span>
             <input
               inputMode="numeric"
               autoComplete="one-time-code"
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D+/g, '').slice(0, 12))}
-              placeholder="••••••••"
+              onChange={(e) => setPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+              placeholder="••••••"
               aria-label="PIN"
+              maxLength={6}
             />
           </label>
           {accessId ? (
-            <p className="meta-text" style={{ marginTop: 10 }}>
+            <p className="meta-text client-one-pin-message">
               Access link: <code className="mono-sm">{accessId}</code>
             </p>
           ) : null}
-          {error ? <p className="error-text" style={{ marginTop: 10 }}>{error}</p> : null}
+          {error ? <p className="error-text client-one-pin-message">{error}</p> : null}
           <div className="client-one-pin-actions">
-            <Button type="submit" disabled={busy || pin.length < 6}>
+            <Button type="submit" disabled={busy || pin.length !== 6}>
               {busy ? 'Checking…' : 'Continue'}
             </Button>
           </div>
@@ -136,7 +144,14 @@ export default function ClientOneApp({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [rotateOpen, setRotateOpen] = useState(false);
+  const [pinEditorOpen, setPinEditorOpen] = useState(false);
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinMessage, setPinMessage] = useState('');
   const [copied, setCopied] = useState('');
+  const [dashFocus, setDashFocus] = useState('camps');
 
   const features = session?.features || session?.client?.features || DEFAULT_FEATURES;
   const navItems = useMemo(() => visibleNav(features), [features]);
@@ -323,6 +338,41 @@ export default function ClientOneApp({
     }
   }
 
+  function sharePortalLink() {
+    const accessId = client.accessId || session?.client?.accessId || '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = accessId ? `${origin}/o/${accessId}` : `${origin}/client-one`;
+    copyText('link', url);
+  }
+
+  async function submitPinUpdate(e) {
+    e?.preventDefault?.();
+    const currentPin = currentPinInput.replace(/\D+/g, '').slice(0, 6);
+    const pin = newPinInput.replace(/\D+/g, '').slice(0, 6);
+    const confirm = confirmPinInput.replace(/\D+/g, '').slice(0, 6);
+    if (currentPin.length !== 6 || pin.length !== 6) {
+      setPinMessage('Enter current and new 6-digit PINs.');
+      return;
+    }
+    if (pin !== confirm) {
+      setPinMessage('New PIN and confirmation do not match.');
+      return;
+    }
+    setPinBusy(true);
+    setPinMessage('');
+    try {
+      const data = await clientOneApi.updatePin({ currentPin, pin });
+      setPinMessage(`PIN updated. New PIN: ${data.pin}`);
+      setCurrentPinInput('');
+      setNewPinInput('');
+      setConfirmPinInput('');
+    } catch (err) {
+      setPinMessage(err?.message || 'Could not update PIN');
+    } finally {
+      setPinBusy(false);
+    }
+  }
+
   function shiftMonth(delta) {
     const base = calMonth.anchor || new Date(`${calMonth.from}T12:00:00`);
     const next = new Date(base.getFullYear(), base.getMonth() + delta, 1);
@@ -344,62 +394,146 @@ export default function ClientOneApp({
           </div>
         ) : null}
 
-        <header className="client-one-brand">
-          <div>
+        <header className="client-one-topbar page-header">
+          <div className="client-one-identity">
+            <p className="section-label">Client portal</p>
             <h1>Client One</h1>
-            <p>
-              {client.name || 'Client'}
-              {client.programName ? ` · ${client.programName}` : ''}
-              {client.campName ? ` · ${client.campName}` : ''}
-              {isPreview ? ' · Preview' : ''}
-            </p>
+            <div className="client-one-context" aria-label="Programme context">
+              <span className="client-one-context__item">{client.name || 'Client'}</span>
+              {client.programName ? (
+                <span className="client-one-context__item">{client.programName}</span>
+              ) : null}
+              {client.campName ? (
+                <span className="client-one-context__item">{client.campName}</span>
+              ) : null}
+              {isPreview ? (
+                <span className="client-one-context__item client-one-context__item--preview">Preview</span>
+              ) : null}
+            </div>
           </div>
           {!isPreview ? (
-            <Button type="button" variant="secondary" onClick={signOut}>Sign out</Button>
+            <div className="page-actions client-one-account-actions">
+              <Button type="button" variant="ghost" size="compact" onClick={sharePortalLink}>
+                {copied === 'link' ? 'Link copied' : 'Share link'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={() => { setPinEditorOpen((v) => !v); setPinMessage(''); }}
+              >
+                Update PIN
+              </Button>
+              <Button type="button" variant="ghost" size="compact" onClick={signOut}>
+                Sign out
+              </Button>
+            </div>
           ) : null}
         </header>
 
-        <nav className="client-one-nav" aria-label="Client One sections">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={tab === item.id ? 'is-active' : ''}
-              onClick={() => setTab(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
+        {!isPreview && pinEditorOpen ? (
+          <section className="client-one-card client-one-pin-editor" aria-label="Update Client One PIN">
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">Update PIN</h2>
+            </div>
+            <p className="meta-text">Enter your current 6-digit PIN, then choose a new one. The new PIN is shown once after save.</p>
+            <form className="client-one-pin-editor-form" onSubmit={submitPinUpdate}>
+              <label>
+                <span>Current PIN</span>
+                <input
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={currentPinInput}
+                  onChange={(e) => setCurrentPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                  aria-label="Current PIN"
+                />
+              </label>
+              <label>
+                <span>New PIN</span>
+                <input
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={newPinInput}
+                  onChange={(e) => setNewPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                  aria-label="New PIN"
+                />
+              </label>
+              <label>
+                <span>Confirm new PIN</span>
+                <input
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={confirmPinInput}
+                  onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                  aria-label="Confirm new PIN"
+                />
+              </label>
+              <div className="client-one-pin-actions">
+                <Button type="submit" disabled={pinBusy}>
+                  {pinBusy ? 'Saving…' : 'Save PIN'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setPinEditorOpen(false);
+                    setPinMessage('');
+                    setCurrentPinInput('');
+                    setNewPinInput('');
+                    setConfirmPinInput('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+            {pinMessage ? <p className="meta-text client-one-pin-message">{pinMessage}</p> : null}
+          </section>
+        ) : null}
+
+        <nav className="module-sub-nav module-sub-nav--bar client-one-nav" aria-label="Client One sections">
+          <div className="module-sub-nav__links">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`module-sub-nav__link${tab === item.id ? ' is-active' : ''}`}
+                aria-current={tab === item.id ? 'page' : undefined}
+                onClick={() => setTab(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </nav>
 
         {error ? <p className="error-text">{error}</p> : null}
 
         {tab === 'dashboard' ? (
-          <section className="client-one-card" aria-busy={busy}>
-            <RangeToolbar range={range} setRange={setRange} />
-            <div className="client-one-kpis">
-              {[
-                ['Total camps', kpis.total],
-                ['Approved / planned', kpis.approved],
-                ['Executed', kpis.executed],
-                ['Cancelled', kpis.cancelled],
-                ['Pending', kpis.pending],
-                ['Upcoming (7 days)', kpis.upcoming7Days],
-                ['Completion %', kpis.executionCompletionPct == null ? '—' : `${kpis.executionCompletionPct}%`],
-                ['Chargeable', kpis.chargeable],
-              ].map(([label, value]) => (
-                <div key={label} className="client-one-kpi">
-                  <span>{label}</span>
-                  <strong>{value ?? 0}</strong>
-                </div>
-              ))}
+          <section className={`client-one-card client-one-dashboard${busy ? ' is-loading' : ''}`} aria-busy={busy}>
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">Dashboard</h2>
+              <RangeToolbar range={range} setRange={setRange} />
             </div>
+            <ClientOneHeroKpis
+              kpis={kpis}
+              focus={dashFocus}
+              onFocusChange={setDashFocus}
+            />
+            <ClientOneDashboardCharts
+              charts={dashboard?.charts || {}}
+              leaderboards={dashboard?.leaderboards || {}}
+              focus={dashFocus}
+            />
           </section>
         ) : null}
 
         {tab === 'tracker' ? (
           <section className="client-one-card" aria-busy={busy}>
-            <RangeToolbar range={range} setRange={setRange} />
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">Camp tracker</h2>
+              <RangeToolbar range={range} setRange={setRange} />
+            </div>
             <div className="table-wrap">
               <table className="client-one-table">
                 <thead>
@@ -552,6 +686,9 @@ export default function ClientOneApp({
 
         {tab === 'invoices' ? (
           <section className="client-one-card" aria-busy={busy}>
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">Bills & invoices</h2>
+            </div>
             <div className="table-wrap">
               <table className="client-one-table">
                 <thead>
@@ -632,27 +769,31 @@ export default function ClientOneApp({
 
         {tab === 'mis' ? (
           <section className="client-one-card" aria-busy={busy}>
-            <RangeToolbar
-              range={range}
-              setRange={setRange}
-              trailing={(
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => clientOneApi.exportMis(range).catch((err) => setError(err.message))}
-                >
-                  Download CSV
-                </Button>
-              )}
-            />
-            <div className="client-one-kpis">
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">MIS reports</h2>
+              <RangeToolbar
+                range={range}
+                setRange={setRange}
+                trailing={(
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => clientOneApi.exportMis(range).catch((err) => setError(err.message))}
+                  >
+                    Download CSV
+                  </Button>
+                )}
+              />
+            </div>
+            <div className="client-one-kpis client-one-kpis--four" role="list">
               {[
                 ['Total', mis?.kpis?.total],
                 ['Executed', mis?.kpis?.executed],
                 ['Cancelled', mis?.kpis?.cancelled],
                 ['Completion %', mis?.kpis?.executionCompletionPct == null ? '—' : `${mis.kpis.executionCompletionPct}%`],
               ].map(([label, value]) => (
-                <div key={label} className="client-one-kpi">
+                <div key={label} className="client-one-kpi" role="listitem">
                   <span>{label}</span>
                   <strong>{value ?? 0}</strong>
                 </div>
@@ -664,7 +805,9 @@ export default function ClientOneApp({
 
         {tab === 'request-link' ? (
           <section className="client-one-card" aria-busy={busy}>
-            <h2 className="client-one-section-title">Public camp request link</h2>
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">Camp request</h2>
+            </div>
             <p className="meta-text">
               Share this link so authorised users can submit camp requests for
               {' '}
@@ -675,10 +818,10 @@ export default function ClientOneApp({
               <div className="client-one-link-box">
                 <code>{requestLink.url}</code>
                 <div className="client-one-pin-actions">
-                  <Button type="button" variant="secondary" onClick={() => copyText('link', requestLink.url)}>
+                  <Button type="button" variant="secondary" size="compact" onClick={() => copyText('link', requestLink.url)}>
                     {copied === 'link' ? 'Copied' : 'Copy link'}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => setRotateOpen(true)}>
+                  <Button type="button" variant="secondary" size="compact" onClick={() => setRotateOpen(true)}>
                     Rotate link
                   </Button>
                 </div>
@@ -691,29 +834,32 @@ export default function ClientOneApp({
 
         {tab === 'purchase-orders' ? (
           <section className="client-one-card" aria-busy={busy}>
-            <div className="client-one-toolbar">
-              <label className="client-one-upload">
-                <span>Upload PO</span>
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/*"
-                  onChange={async (e) => {
-                    const files = Array.from(e.target.files || []);
-                    e.target.value = '';
-                    if (!files.length) return;
-                    setBusy(true);
-                    try {
-                      const rows = await clientOneApi.uploadPurchaseOrders(files);
-                      setPurchaseOrders(rows || []);
-                    } catch (err) {
-                      setError(err?.message || 'Upload failed');
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                />
-              </label>
+            <div className="client-one-panel-head">
+              <h2 className="client-one-section-title">Purchase orders</h2>
+              <div className="client-one-toolbar">
+                <label className="client-one-upload">
+                  <span>Upload PO</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,application/pdf,image/*"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      e.target.value = '';
+                      if (!files.length) return;
+                      setBusy(true);
+                      try {
+                        const rows = await clientOneApi.uploadPurchaseOrders(files);
+                        setPurchaseOrders(rows || []);
+                      } catch (err) {
+                        setError(err?.message || 'Upload failed');
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
             </div>
             <div className="table-wrap">
               <table className="client-one-table">
@@ -734,17 +880,18 @@ export default function ClientOneApp({
                       <td>{po.poExpiryDate || '—'}</td>
                       <td>{po.fileCount || 0}</td>
                       <td>
-                        {(po.files || []).map((file) => (
-                          <button
-                            key={file.id}
-                            type="button"
-                            className="linkish"
-                            style={{ display: 'block' }}
-                            onClick={() => clientOneApi.downloadPoFile(po.id, file.id, file.fileName).catch((err) => setError(err.message))}
-                          >
-                            {file.fileName}
-                          </button>
-                        ))}
+                        <div className="client-one-file-links">
+                          {(po.files || []).map((file) => (
+                            <button
+                              key={file.id}
+                              type="button"
+                              className="linkish"
+                              onClick={() => clientOneApi.downloadPoFile(po.id, file.id, file.fileName).catch((err) => setError(err.message))}
+                            >
+                              {file.fileName}
+                            </button>
+                          ))}
+                        </div>
                       </td>
                     </tr>
                   ))}

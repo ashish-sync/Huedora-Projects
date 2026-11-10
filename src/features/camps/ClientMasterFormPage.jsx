@@ -664,7 +664,7 @@ export default function ClientMasterFormPage() {
             onSave={() => handleSectionSave(section.id)}
             onCancel={cancelSectionEdit}
             extra={section.id === 'program' ? (
-              <>
+              <div className="program-config-panels">
                 <ProgramCampRequestLink
                   recordId={recordId}
                   persisted={isPersisted}
@@ -677,7 +677,7 @@ export default function ClientMasterFormPage() {
                   persisted={isPersisted}
                   programActive={form.isActive !== false}
                 />
-              </>
+              </div>
             ) : null}
           >
             {section.id === 'campTerms' ? (

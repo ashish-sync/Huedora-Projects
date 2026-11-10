@@ -21,7 +21,7 @@ describe('ProgramCampRequestLink', () => {
   it('does not mint until Program Configuration is saved', async () => {
     const user = userEvent.setup();
     render(<ProgramCampRequestLink persisted={false} recordId="" />);
-    const button = screen.getByRole('button', { name: /copy camp request form link/i });
+    const button = screen.getByRole('button', { name: /copy form link/i });
     expect(button.disabled).toBe(true);
     await user.click(button);
     expect(mintRequestFormLink).not.toHaveBeenCalled();
@@ -43,7 +43,7 @@ describe('ProgramCampRequestLink', () => {
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
 
     render(<ProgramCampRequestLink persisted recordId="master-1" programActive />);
-    await user.click(screen.getByRole('button', { name: /copy camp request form link/i }));
+    await user.click(screen.getByRole('button', { name: /copy form link/i }));
 
     expect(mintRequestFormLink).toHaveBeenCalledWith('master-1', { replace: false });
     expect(writeText).toHaveBeenCalledWith('https://qa.example/c/abc123');

@@ -74,6 +74,9 @@ describe('ClientOneApp', () => {
       client: { name: 'Acme', programName: 'Oncology', campName: 'BMD' },
       kpis: {
         total: 3,
+        campCount: 3,
+        patientsScreened: 120,
+        uniqueDoctors: 4,
         approved: 1,
         executed: 1,
         cancelled: 0,
@@ -82,6 +85,8 @@ describe('ClientOneApp', () => {
         executionCompletionPct: 50,
         chargeable: 1,
       },
+      charts: {},
+      leaderboards: { doctors: [], mrs: [] },
     });
 
     render(
@@ -94,14 +99,17 @@ describe('ClientOneApp', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Client One' })).toBeTruthy();
-    await user.type(screen.getByLabelText('PIN'), '12345678');
+    await user.type(screen.getByLabelText('PIN'), '123456');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
       expect(login).toHaveBeenCalled();
       expect(screen.getByRole('button', { name: 'Dashboard' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Camp Tracker' })).toBeTruthy();
-      expect(screen.getByText('Total camps')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy();
+      expect(screen.getByText('Camp Count')).toBeTruthy();
+      expect(screen.getByText('Patients Screened')).toBeTruthy();
+      expect(screen.getByText('Unique Doctor')).toBeTruthy();
       expect(screen.getByText('3')).toBeTruthy();
       expect(screen.getByText(/Acme/)).toBeTruthy();
     });

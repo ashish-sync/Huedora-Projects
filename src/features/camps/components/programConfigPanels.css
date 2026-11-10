@@ -1,0 +1,229 @@
+/* Program Configuration extras — Camp Request + Client One (ERP panel layout) */
+
+.program-config-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.program-config-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-tier-1, var(--bg-muted, #f3f5f8));
+  padding: 12px 14px;
+}
+
+html[data-theme='dark'] .program-config-panel {
+  background: color-mix(in srgb, var(--bg-tier-2, #111827) 88%, var(--bg-tier-1, #090d16));
+}
+
+.program-config-panel__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 16px;
+  align-items: start;
+}
+
+.program-config-panel__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.program-config-panel__hint {
+  margin: 4px 0 0;
+  max-width: 62ch;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.program-config-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.program-config-panel__body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.program-config-panel__grid {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+  gap: 12px 20px;
+  align-items: start;
+}
+
+.program-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.program-config-field > span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.program-config-field .field-input {
+  width: 100%;
+  max-width: 160px;
+  height: var(--control-h-sm, 32px);
+  text-align: center;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+}
+
+.program-config-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 18px;
+}
+
+.program-config-meta p {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.program-config-meta code {
+  font-size: 0.78rem;
+}
+
+.program-config-pin-reveal {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--line));
+  border-radius: var(--radius-sm, 8px);
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-tier-2, #fff));
+}
+
+.program-config-pin-reveal__label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.program-config-pin-reveal__value {
+  margin: 6px 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.program-config-pin-reveal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.program-config-pin-reveal__note {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.program-config-permissions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.program-config-permissions__title {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.program-config-permissions__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.program-config-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-tier-2, #fff);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.program-config-check input {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.program-config-check:has(input:disabled) {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.program-config-panel .error-text {
+  margin: 8px 0 0;
+}
+
+@media (max-width: 900px) {
+  .program-config-permissions__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .program-config-panel__head {
+    grid-template-columns: 1fr;
+  }
+
+  .program-config-panel__actions,
+  .program-config-panel__actions .btn {
+    width: 100%;
+  }
+
+  .program-config-panel__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .program-config-meta {
+    padding-top: 0;
+  }
+
+  .program-config-field .field-input {
+    max-width: none;
+  }
+
+  .program-config-permissions__grid {
+    grid-template-columns: 1fr;
+  }
+}

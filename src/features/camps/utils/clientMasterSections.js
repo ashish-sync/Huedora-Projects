@@ -274,16 +274,18 @@ export function buildSectionSummary(sectionId, form) {
         { label: 'Method', value: form.campName || '—' },
         { label: 'Service Model', value: form.campType || '—' },
         { label: 'Camp Duration', value: form.campDuration || '—' },
-        { label: 'Healthcare Worker', value: fmtList(normalizeHealthcareWorkers(form.healthcareWorker)), span: 4 },
+        {
+          label: 'Healthcare Worker',
+          value: fmtList(normalizeHealthcareWorkers(form.healthcareWorker)),
+          span: 2,
+        },
         {
           label: 'Request Form (Client)',
           value: form.formMasterName || (form.formMasterId ? 'Linked form' : 'Not linked'),
-          span: 2,
         },
         {
           label: 'Activity Form (HCW)',
           value: form.activityFormMasterName || (form.activityFormMasterId ? 'Linked form' : 'Not linked'),
-          span: 2,
         },
       ];
     case 'spoc':

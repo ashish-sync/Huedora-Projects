@@ -267,8 +267,12 @@ export const clientMasterApi = {
   mintRequestFormLink: (id, { replace = false } = {}) =>
     post(`${BASE}/client-masters/${id}/request-form-link`, replace ? { replace: true } : {}),
   getClientOneAccess: (id) => get(`${BASE}/client-masters/${id}/client-one-access`),
-  mintClientOneAccess: (id, { rotate = false } = {}) =>
-    post(`${BASE}/client-masters/${id}/client-one-access`, rotate ? { rotate: true } : {}),
+  mintClientOneAccess: (id, { rotate = false, pin } = {}) => {
+    const body = {};
+    if (rotate) body.rotate = true;
+    if (pin) body.pin = pin;
+    return post(`${BASE}/client-masters/${id}/client-one-access`, body);
+  },
   updateClientOneAccess: (id, body) => patch(`${BASE}/client-masters/${id}/client-one-access`, body),
   revokeClientOneAccess: (id) => del(`${BASE}/client-masters/${id}/client-one-access`),
   previewClientOne: (id) => post(`${BASE}/client-masters/${id}/client-one-preview`, {}),

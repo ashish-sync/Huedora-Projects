@@ -18,7 +18,7 @@
   align-items: start;
 }
 
-/* ── Full-width filter toolbar ──────────────────────────────────────────── */
+/* ── Full-width filter toolbar (2×4 aligned grid) ───────────────────────── */
 
 .page-metrics:has(.activity-log-filters),
 .page-metrics-toolbar:has(.activity-log-filters) {
@@ -36,32 +36,41 @@
   width: 100% !important;
   max-width: none !important;
   margin-left: 0 !important;
+  gap: 0;
 }
 
 .page-metrics-toolbar .activity-log-filters .date-range-filter-fields,
 .activity-log-filters.date-range-filter .date-range-filter-fields {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(7rem, 0.9fr)) repeat(6, minmax(0, 1fr)) auto !important;
-  flex-wrap: nowrap !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-rows: auto !important;
   align-items: end !important;
-  gap: 12px !important;
+  column-gap: 16px !important;
+  row-gap: 14px !important;
   width: 100% !important;
 }
 
 .activity-log-filters .date-range-filter-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0 !important;
   width: 100% !important;
+  margin: 0;
 }
 
 .activity-log-filters .date-range-filter-field span {
+  display: block;
+  min-height: 1rem;
   font-size: 0.6875rem;
   font-weight: 700;
+  line-height: 1;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-tertiary, var(--muted));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .activity-log-filters .date-range-filter-field .date-input-field,
@@ -75,7 +84,19 @@
   min-width: 0 !important;
   width: 100% !important;
   max-width: none !important;
+  height: var(--control-h, 40px);
+  min-height: var(--control-h, 40px);
   box-sizing: border-box;
+}
+
+.activity-log-filters .date-range-filter-field .ops-filter-input {
+  padding: 0 12px;
+  border: 1px solid var(--line, var(--color-border-default));
+  border-radius: var(--control-radius, var(--radius-sm, 8px));
+  background: var(--bg-input, var(--bg-elevated));
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
 }
 
 .activity-log-filters .date-range-filter-field .date-input-display {
@@ -83,6 +104,7 @@
   padding-bottom: 0;
   padding-left: var(--control-pad-inline-start, 10px);
   padding-right: 42px !important;
+  font-size: 0.875rem;
 }
 
 .activity-log-filters .date-range-filter-field .date-input-picker-btn {
@@ -92,16 +114,20 @@
 }
 
 .activity-log-filters .date-range-filter-actions {
-  display: inline-flex !important;
+  grid-column: 1 / -1;
+  display: flex !important;
+  flex-wrap: wrap;
   align-items: center !important;
+  justify-content: flex-end;
   gap: 8px !important;
-  margin-left: 0 !important;
-  justify-self: start;
+  margin: 2px 0 0 !important;
   white-space: nowrap;
 }
 
 .activity-log-filters .date-range-filter-actions .btn {
   height: var(--control-h, 40px);
+  min-height: var(--control-h, 40px);
+  min-width: 5.5rem;
   padding: 0 16px;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -113,13 +139,24 @@
   .activity-log-filters.date-range-filter .date-range-filter-fields {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
+}
+
+@media (max-width: 760px) {
+  .page-metrics-toolbar .activity-log-filters .date-range-filter-fields,
+  .activity-log-filters.date-range-filter .date-range-filter-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 
   .activity-log-filters .date-range-filter-actions {
-    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .activity-log-filters .date-range-filter-actions .btn {
+    flex: 1 1 auto;
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 520px) {
   .page-metrics-toolbar .activity-log-filters .date-range-filter-fields,
   .activity-log-filters.date-range-filter .date-range-filter-fields {
     grid-template-columns: 1fr !important;

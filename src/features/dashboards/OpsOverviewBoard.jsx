@@ -200,60 +200,6 @@ export default function OpsOverviewBoard({
               </div>
             </ModuleCard>
 
-            <ModuleCard title="Camp One" subtitle="Chargeability · Cancellation · Punctuality">
-              <h4 className="ops-ov-subhead">Chargeability</h4>
-              <div className="ops-ov-tiles">
-                {(modules.campOne?.chargeability || []).map((row) => (
-                  <KpiTile
-                    key={`charge-${row.key}`}
-                    to={row.href}
-                    label={row.label}
-                    qty={row.qty}
-                    pctQty={row.pct}
-                    showValue={false}
-                  />
-                ))}
-              </div>
-              <h4 className="ops-ov-subhead">Cancellation</h4>
-              <div className="ops-ov-tiles">
-                <KpiTile
-                  to={modules.campOne?.cancellation?.byTylo?.href}
-                  label="Cancelled by Tylo"
-                  qty={modules.campOne?.cancellation?.byTylo?.qty}
-                  pctQty={modules.campOne?.cancellation?.byTylo?.pct}
-                  showValue={false}
-                />
-                <KpiTile
-                  to={modules.campOne?.cancellation?.byClient?.href}
-                  label="Cancelled by Client"
-                  qty={modules.campOne?.cancellation?.byClient?.qty}
-                  pctQty={modules.campOne?.cancellation?.byClient?.pct}
-                  showValue={false}
-                />
-                <KpiTile
-                  to={modules.campOne?.cancellation?.href}
-                  label="Cancellation rate"
-                  qty={modules.campOne?.cancellation?.cancelledTotal}
-                  pctQty={modules.campOne?.cancellation?.ratePct}
-                  showValue={false}
-                  meta={`of ${formatQty(modules.campOne?.cancellation?.eligibleTotal || 0)} eligible`}
-                />
-              </div>
-              <h4 className="ops-ov-subhead">Punctuality</h4>
-              <div className="ops-ov-tiles">
-                {(modules.campOne?.punctuality || []).map((row) => (
-                  <KpiTile
-                    key={`punct-${row.key}`}
-                    to={row.href}
-                    label={row.label}
-                    qty={row.qty}
-                    pctQty={row.pct}
-                    showValue={false}
-                  />
-                ))}
-              </div>
-            </ModuleCard>
-
             <ModuleCard title="Master One" subtitle="New vs Existing HCWs">
               <div className="ops-ov-tiles">
                 <KpiTile
@@ -328,6 +274,68 @@ export default function OpsOverviewBoard({
                   value={modules.financeOne?.cost?.value}
                   showValue
                 />
+              </div>
+            </ModuleCard>
+
+            <ModuleCard title="Camp One" subtitle="Chargeability · Cancellation · Punctuality">
+              <div className="ops-ov-camp-bands">
+                <div className="ops-ov-camp-band">
+                  <h4 className="ops-ov-subhead">Chargeability</h4>
+                  <div className="ops-ov-tiles ops-ov-tiles--compact">
+                    {(modules.campOne?.chargeability || []).map((row) => (
+                      <KpiTile
+                        key={`charge-${row.key}`}
+                        to={row.href}
+                        label={row.label}
+                        qty={row.qty}
+                        pctQty={row.pct}
+                        showValue={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="ops-ov-camp-band">
+                  <h4 className="ops-ov-subhead">Cancellation</h4>
+                  <div className="ops-ov-tiles ops-ov-tiles--compact">
+                    <KpiTile
+                      to={modules.campOne?.cancellation?.byTylo?.href}
+                      label="Cancelled by Tylo"
+                      qty={modules.campOne?.cancellation?.byTylo?.qty}
+                      pctQty={modules.campOne?.cancellation?.byTylo?.pct}
+                      showValue={false}
+                    />
+                    <KpiTile
+                      to={modules.campOne?.cancellation?.byClient?.href}
+                      label="Cancelled by Client"
+                      qty={modules.campOne?.cancellation?.byClient?.qty}
+                      pctQty={modules.campOne?.cancellation?.byClient?.pct}
+                      showValue={false}
+                    />
+                    <KpiTile
+                      to={modules.campOne?.cancellation?.href}
+                      label="Cancellation rate"
+                      qty={modules.campOne?.cancellation?.cancelledTotal}
+                      pctQty={modules.campOne?.cancellation?.ratePct}
+                      showValue={false}
+                      meta={`of ${formatQty(modules.campOne?.cancellation?.eligibleTotal || 0)} eligible`}
+                    />
+                  </div>
+                </div>
+                <div className="ops-ov-camp-band">
+                  <h4 className="ops-ov-subhead">Punctuality</h4>
+                  <div className="ops-ov-tiles ops-ov-tiles--compact">
+                    {(modules.campOne?.punctuality || []).map((row) => (
+                      <KpiTile
+                        key={`punct-${row.key}`}
+                        to={row.href}
+                        label={row.label}
+                        qty={row.qty}
+                        pctQty={row.pct}
+                        showValue={false}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </ModuleCard>
           </div>

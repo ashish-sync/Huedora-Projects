@@ -2482,16 +2482,20 @@
 .camp-ops-root .client-master-section-summary {
   display: grid;
   grid-template-columns: repeat(var(--client-master-cols), minmax(0, 1fr));
-  gap: var(--client-master-field-gap-y) var(--client-master-field-gap-x);
-  margin: 8px 0 0;
-  padding: 0;
+  gap: 10px 16px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-tier-1, var(--bg-muted, transparent));
 }
 
 .camp-ops-root .client-master-section-summary-row {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  min-height: 2.6rem;
 }
 
 .camp-ops-root .client-master-section-summary-row.span-2 {
@@ -2537,6 +2541,10 @@
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+.camp-ops-root .client-master-section-extra .program-config-panels {
+  margin-top: 0;
 }
 
 .camp-ops-root .program-camp-request-link__row {

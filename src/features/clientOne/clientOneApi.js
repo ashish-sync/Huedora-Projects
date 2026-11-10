@@ -129,6 +129,13 @@ export const clientOneApi = {
     return authedFetch('/client-one/me').then((r) => r.data);
   },
 
+  updatePin({ currentPin, pin } = {}) {
+    return authedFetch('/client-one/account/pin', {
+      method: 'POST',
+      body: JSON.stringify({ currentPin, pin }),
+    }).then((r) => r.data);
+  },
+
   dashboard({ from, to } = {}) {
     return authedFetch(withRange('/client-one/dashboard', { from, to })).then((r) => r.data);
   },

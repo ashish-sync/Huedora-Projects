@@ -980,7 +980,7 @@
 }
 
 .tylo-home-total-num {
-  color: var(--home-text);
+  color: var(--text-primary, #263445);
   font-weight: 700;
   font-size: 13px;
 }
@@ -2904,8 +2904,8 @@
   display: block;
   width: 100%;
   margin: 0 auto;
-  color: var(--accent-primary, #2563EB) !important;
-  font-weight: 700;
+  color: var(--text-primary, #263445) !important;
+  font-weight: 700 !important;
   font-size: 15px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
@@ -2916,13 +2916,11 @@
 }
 
 .tylo-home-ops-grid .tylo-home-total-num.is-zero,
-.tylo-home-total-num.is-zero {
-  color: var(--text-muted, #64748B) !important;
-}
-
+.tylo-home-total-num.is-zero,
 .tylo-home-ops-grid .tylo-home-total-num.is-nonzero,
 .tylo-home-total-num.is-nonzero {
-  color: var(--accent-primary, #2563EB) !important;
+  color: var(--text-primary, #263445) !important;
+  font-weight: 700 !important;
 }
 
 /* Workspace — segmented control + content pane */

@@ -4,6 +4,7 @@ import { api, downloadExcel } from '../../shared/api.js';
 import { MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDateTime } from '../../shared/dateFormat.js';
+import { resolveUserAvatarSrc } from '../../shared/userAvatar.js';
 import PageShell from '../../components/ui/PageShell.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
@@ -139,8 +140,10 @@ function formatWhen(iso) {
 }
 
 export default function RolePermissionMasterPage() {
-  const { can, user: me } = useAuth();
+  const { can, user: me, refreshMe } = useAuth();
   const canWrite = can('users:write') || can('*');
+  const avatarInputRef = useRef(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const canDelete = can('*');
   const canGrantAdmin = can('*');
   const canViewUsers = canWrite || can('users:read');
@@ -649,7 +652,11 @@ export default function RolePermissionMasterPage() {
                     }}
                   >
                     <div className="role-list-item-avatar" aria-hidden="true">
-                      {getInitials(u.fullName, u.email)}
+                      {u.avatarUrl ? (
+                        <img src={resolveUserAvatarSrc(u.avatarUrl)} alt="" />
+                      ) : (
+                        getInitials(u.fullName, u.email)
+                      )}
                     </div>
                     <div className="role-list-item-body">
                       <div className="activity-log-row__top">
@@ -693,6 +700,100 @@ export default function RolePermissionMasterPage() {
 
                 <section className="rp-section">
                   <h4>Profile & Identity</h4>
+                  {!creatingUser && editingUserId ? (
+                    <div className="rp-avatar-row">
+                      <div className="rp-avatar-preview" aria-hidden="true">
+                        {editingUser?.avatarUrl ? (
+                          <img
+                            src={resolveUserAvatarSrc(editingUser.avatarUrl)}
+                            alt=""
+                          />
+                        ) : (
+                          <span>{getInitials(userDraft.fullName, userDraft.email)}</span>
+                        )}
+                      </div>
+                      <div className="rp-avatar-copy">
+                        <p className="rp-avatar-title">Header photo</p>
+                        <p className="muted rp-hint">
+                          Shown in the app header. JPEG, PNG, WebP, or GIF · max 2 MB.
+                        </p>
+                        <div className="rp-avatar-actions">
+                          <input
+                            ref={avatarInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            hidden
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              event.target.value = '';
+                              if (!file || !editingUserId || !canWrite || avatarBusy) return;
+                              setAvatarBusy(true);
+                              setError('');
+                              setMsg('');
+                              try {
+                                const body = new FormData();
+                                body.append('avatar', file);
+                                const { data } = await api(`/users/${editingUserId}/avatar`, {
+                                  method: 'POST',
+                                  body,
+                                });
+                                skipDraftSyncRef.current = true;
+                                syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
+                                setUsers((prev) => mergeUserRecord(prev, data));
+                                if (String(me?.id) === String(data.id)) {
+                                  await refreshMe?.();
+                                }
+                                setMsg('Header photo updated.');
+                              } catch (err) {
+                                setError(err.message || 'Could not upload photo');
+                              } finally {
+                                setAvatarBusy(false);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="btn secondary btn-compact"
+                            disabled={!canWrite || avatarBusy}
+                            onClick={() => avatarInputRef.current?.click()}
+                          >
+                            {avatarBusy ? 'Uploading…' : editingUser?.avatarUrl ? 'Change photo' : 'Upload photo'}
+                          </button>
+                          {editingUser?.avatarUrl ? (
+                            <button
+                              type="button"
+                              className="btn ghost btn-compact"
+                              disabled={!canWrite || avatarBusy}
+                              onClick={async () => {
+                                if (!editingUserId || avatarBusy) return;
+                                setAvatarBusy(true);
+                                setError('');
+                                setMsg('');
+                                try {
+                                  const { data } = await api(`/users/${editingUserId}/avatar`, {
+                                    method: 'DELETE',
+                                  });
+                                  skipDraftSyncRef.current = true;
+                                  syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
+                                  setUsers((prev) => mergeUserRecord(prev, data));
+                                  if (String(me?.id) === String(data.id)) {
+                                    await refreshMe?.();
+                                  }
+                                  setMsg('Header photo removed.');
+                                } catch (err) {
+                                  setError(err.message || 'Could not remove photo');
+                                } finally {
+                                  setAvatarBusy(false);
+                                }
+                              }}
+                            >
+                              Remove
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="rp-form-grid">
                     <div className="field">
                       <label>Full name *</label>

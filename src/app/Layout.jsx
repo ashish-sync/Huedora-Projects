@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BrandLogo from '../components/BrandLogo.jsx';
 import AppSidebar from './AppSidebar.jsx';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../shared/api.js';
 import { useAuth } from '../shared/auth.jsx';
 import { useTheme } from '../shared/theme.jsx';
 import { MODULE } from '../shared/labels.js';
+import { resolveUserAvatarSrc } from '../shared/userAvatar.js';
 import {
   NOTIFICATION_POLL_MS,
   shouldSkipNotificationPoll,
@@ -32,6 +33,7 @@ export default function Layout({ children }) {
   const { user, logout, can } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isHome = pathname === '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -39,6 +41,8 @@ export default function Layout({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [fyiCount, setFyiCount] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState('');
+  const headerSearchRef = useRef(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('tylo:sidebar-collapsed') === 'true';
@@ -95,6 +99,27 @@ export default function Layout({ children }) {
   const prevPathRef = useRef(pathname);
   const menuRef = useRef(null);
   const bellRef = useRef(null);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+      event.preventDefault();
+      headerSearchRef.current?.focus();
+      headerSearchRef.current?.select?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const submitHeaderSearch = useCallback((event) => {
+    event?.preventDefault?.();
+    const q = String(headerSearch || '').trim();
+    if (!q) {
+      navigate('/');
+      return;
+    }
+    navigate(`/?q=${encodeURIComponent(q)}`);
+  }, [headerSearch, navigate]);
   const knownUnreadIdsRef = useRef(null);
   const lastUnreadPollRef = useRef(0);
   const unreadAbortRef = useRef(null);
@@ -299,161 +324,187 @@ export default function Layout({ children }) {
       {/* ── Main Workspace Column (Header with Logo + Page Content) ── */}
       <div className="app-main-column app-body">
         <header className="app-header">
-        <div className="header-brand-group">
-          <button
-            type="button"
-            className="header-sidebar-toggle"
-            onClick={() => setMobileNavOpen((v) => !v)}
-            aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
-            aria-expanded={mobileNavOpen}
-            title={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <Link to="/" className="brand" aria-label="TYLO One home">
-            <BrandLogo size={36} />
-            <strong className="brand-wordmark">
-              TYLO <span>One</span>
-            </strong>
-          </Link>
-        </div>
-        <div className="header-actions">
-          <button
-            type="button"
-            className="header-theme-toggle"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          >
-            {theme === 'dark' ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-                <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5Z" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
-          {canSeeNotifications && (
-            <div className="header-bell-wrap" ref={bellRef}>
-              <button
-                type="button"
-                className={`header-bell${pathname.startsWith('/notifications') || bellOpen ? ' is-active' : ''}${
-                  unreadCount ? ' has-unread' : ''
-                }`}
-                aria-label={
-                  unreadCount
-                    ? `Notifications, ${unreadCount} pending approval${unreadCount === 1 ? '' : 's'}`
-                    : 'Notifications'
-                }
-                aria-expanded={bellOpen}
-                aria-haspopup="dialog"
-                title={unreadCount ? `${unreadCount} pending approval${unreadCount === 1 ? '' : 's'}` : 'Notifications'}
-                onClick={() => {
-                  setBellOpen((v) => !v);
-                  emitNotificationsChanged();
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-                  <path
-                    d="M6.5 10.5a5.5 5.5 0 0 1 11 0c0 4.2 1.5 5.5 1.5 5.5H5s1.5-1.3 1.5-5.5Z"
-                    strokeLinejoin="round"
-                  />
-                  <path d="M10 17.75a2 2 0 0 0 4 0" strokeLinecap="round" />
-                </svg>
-                {unreadLabel ? (
-                  <span className="header-bell-badge" aria-hidden="true">
-                    {unreadLabel}
-                  </span>
-                ) : null}
-              </button>
-              {bellOpen ? (
-                <div className="header-notif-panel" role="menu" aria-label="Notification options">
-                  <div className="header-notif-panel-head">
-                    <span>Updates & approvals</span>
-                  </div>
-                  <Link
-                    to="/notifications?tab=approvals"
-                    role="menuitem"
-                    className={`header-notif-choice${unreadCount ? ' has-count' : ''}`}
-                    onClick={() => setBellOpen(false)}
-                  >
-                    <span className="header-notif-choice-copy">
-                      <strong>Pending approvals</strong>
-                      <span className="muted">Items that need your action</span>
-                    </span>
-                    <span className={`header-notif-choice-count${unreadCount ? ' is-active' : ''}`}>
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  </Link>
-                  <Link
-                    to="/notifications?tab=team"
-                    role="menuitem"
-                    className={`header-notif-choice${fyiCount ? ' has-count' : ''}`}
-                    onClick={() => setBellOpen(false)}
-                  >
-                    <span className="header-notif-choice-copy">
-                      <strong>FYI / Notifications</strong>
-                      <span className="muted">Status updates and informational alerts</span>
-                    </span>
-                    <span className={`header-notif-choice-count${fyiCount ? ' is-active' : ''}`}>
-                      {fyiCount > 99 ? '99+' : fyiCount}
-                    </span>
-                  </Link>
-                </div>
-              ) : null}
-            </div>
-          )}
-          <div className="header-user" ref={menuRef}>
+          <div className="header-brand-group">
             <button
               type="button"
-              className={`header-profile header-profile--icon${menuOpen ? ' is-open' : ''}`}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              aria-label={`Profile menu for ${user?.fullName || user?.email || 'user'}`}
-              onClick={() => setMenuOpen((v) => !v)}
+              className="header-sidebar-toggle"
+              onClick={() => setMobileNavOpen((v) => !v)}
+              aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+              aria-expanded={mobileNavOpen}
+              title={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
             >
-              <span className="header-avatar" aria-hidden="true">
-                {initials(user?.fullName || user?.email)}
-              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
             </button>
+            <Link to="/" className="brand" aria-label="TYLO One home">
+              <BrandLogo size={34} />
+              <strong className="brand-wordmark">
+                TYLO <span>One</span>
+              </strong>
+            </Link>
+          </div>
 
-            {menuOpen && (
-              <div className="header-profile-menu" role="menu">
-                <div className="header-profile-menu-label">My profile</div>
-                <div className="header-profile-menu-user">
-                  <strong>{user?.fullName || 'User'}</strong>
-                  {user?.designation ? <span className="header-profile-designation">{user.designation}</span> : null}
-                  <span>{user?.email}</span>
-                  {user?.reportingManager?.fullName ? (
-                    <span className="header-profile-manager">
-                      Reports to {user.reportingManager.fullName}
+          <form className="header-search-bar" role="search" onSubmit={submitHeaderSearch}>
+            <svg className="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="M16.5 16.5 21 21" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={headerSearchRef}
+              className="header-search-input"
+              type="search"
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              placeholder="Search across TYLO ONE (camps, clients, assets, documents…)"
+              aria-label="Search across TYLO ONE"
+              autoComplete="off"
+            />
+            <kbd className="header-search-kbd" aria-hidden="true">Ctrl K</kbd>
+          </form>
+
+          <div className="header-actions">
+            <button
+              type="button"
+              className="header-icon-btn header-theme-toggle"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                  <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5Z" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+            {canSeeNotifications && (
+              <div className="header-bell-wrap" ref={bellRef}>
+                <button
+                  type="button"
+                  className={`header-bell header-icon-btn${pathname.startsWith('/notifications') || bellOpen ? ' is-active' : ''}${
+                    unreadCount ? ' has-unread' : ''
+                  }`}
+                  aria-label={
+                    unreadCount
+                      ? `Notifications, ${unreadCount} pending approval${unreadCount === 1 ? '' : 's'}`
+                      : 'Notifications'
+                  }
+                  aria-expanded={bellOpen}
+                  aria-haspopup="dialog"
+                  title={unreadCount ? `${unreadCount} pending approval${unreadCount === 1 ? '' : 's'}` : 'Notifications'}
+                  onClick={() => {
+                    setBellOpen((v) => !v);
+                    emitNotificationsChanged();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+                    <path
+                      d="M6.5 10.5a5.5 5.5 0 0 1 11 0c0 4.2 1.5 5.5 1.5 5.5H5s1.5-1.3 1.5-5.5Z"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M10 17.75a2 2 0 0 0 4 0" strokeLinecap="round" />
+                  </svg>
+                  {unreadLabel ? (
+                    <span className="header-bell-badge" aria-hidden="true">
+                      {unreadLabel}
                     </span>
                   ) : null}
-                </div>
-                {(can('users:write') || can('*')) && (
-                  <Link
-                    to="/access-control"
-                    role="menuitem"
-                    className="header-profile-link"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {MODULE.ROLES_PERMISSIONS}
-                  </Link>
-                )}
-                <button type="button" role="menuitem" className="header-profile-logout" onClick={requestLogout}>
-                  Log out
                 </button>
+                {bellOpen ? (
+                  <div className="header-notif-panel" role="menu" aria-label="Notification options">
+                    <div className="header-notif-panel-head">
+                      <span>Updates & approvals</span>
+                    </div>
+                    <Link
+                      to="/notifications?tab=approvals"
+                      role="menuitem"
+                      className={`header-notif-choice${unreadCount ? ' has-count' : ''}`}
+                      onClick={() => setBellOpen(false)}
+                    >
+                      <span className="header-notif-choice-copy">
+                        <strong>Pending approvals</strong>
+                        <span className="muted">Items that need your action</span>
+                      </span>
+                      <span className={`header-notif-choice-count${unreadCount ? ' is-active' : ''}`}>
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    </Link>
+                    <Link
+                      to="/notifications?tab=team"
+                      role="menuitem"
+                      className={`header-notif-choice${fyiCount ? ' has-count' : ''}`}
+                      onClick={() => setBellOpen(false)}
+                    >
+                      <span className="header-notif-choice-copy">
+                        <strong>FYI / Notifications</strong>
+                        <span className="muted">Status updates and informational alerts</span>
+                      </span>
+                      <span className={`header-notif-choice-count${fyiCount ? ' is-active' : ''}`}>
+                        {fyiCount > 99 ? '99+' : fyiCount}
+                      </span>
+                    </Link>
+                  </div>
+                ) : null}
               </div>
             )}
+            <div className="header-user" ref={menuRef}>
+              <button
+                type="button"
+                className={`header-profile header-profile--pill${menuOpen ? ' is-open' : ''}`}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-label={`Profile menu for ${user?.fullName || user?.email || 'user'}`}
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <span className="header-avatar" aria-hidden="true">
+                  {user?.avatarUrl ? (
+                    <img src={resolveUserAvatarSrc(user.avatarUrl)} alt="" />
+                  ) : (
+                    initials(user?.fullName || user?.email)
+                  )}
+                </span>
+                <svg className="header-user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {menuOpen && (
+                <div className="header-profile-menu" role="menu">
+                  <div className="header-profile-menu-label">My profile</div>
+                  <div className="header-profile-menu-user">
+                    <strong>{user?.fullName || 'User'}</strong>
+                    {user?.designation ? <span className="header-profile-designation">{user.designation}</span> : null}
+                    <span>{user?.email}</span>
+                    {user?.reportingManager?.fullName ? (
+                      <span className="header-profile-manager">
+                        Reports to {user.reportingManager.fullName}
+                      </span>
+                    ) : null}
+                  </div>
+                  {(can('users:write') || can('*')) && (
+                    <Link
+                      to="/access-control"
+                      role="menuitem"
+                      className="header-profile-link"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {MODULE.ROLES_PERMISSIONS}
+                    </Link>
+                  )}
+                  <button type="button" role="menuitem" className="header-profile-logout" onClick={requestLogout}>
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </header>
 
         <main id="main-content" className={`main${isHome ? ' main--home' : ''}`} tabIndex={-1}>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../shared/auth.jsx';
 import { OPERATIONAL_MODULES } from '../../shared/navModules.jsx';
 import { api } from '../../shared/api.js';
@@ -513,6 +513,7 @@ function noteToneFor(note, index) {
 
 export default function DashboardPage() {
   const { can, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const userKey = String(user?._id || user?.id || 'guest');
   const canSeeDashboard = Boolean(can('dashboards:read') || can('*'));
   const canReadNotifications = Boolean(can('notifications:read') || can('*'));
@@ -524,7 +525,7 @@ export default function DashboardPage() {
 
   const [activeMode, setActiveMode] = useState(() => (canSeeDashboard ? 'dashboard' : 'my_view'));
   const [selectedModuleFilter, setSelectedModuleFilter] = useState('CAMP ONE');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => String(searchParams.get('q') || ''));
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [overviewError, setOverviewError] = useState('');
@@ -561,17 +562,11 @@ export default function DashboardPage() {
     if (notesState.owner !== userKey) setNotesState({ owner: userKey, value: readUserNotes(userKey) });
   }, [userKey, configState.owner, notesState.owner]);
 
-  // Global Ctrl+K / Cmd+K keyboard shortcut for search
+  // Keep homepage filter in sync when header search navigates with ?q=
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    const q = String(searchParams.get('q') || '');
+    setSearchQuery((prev) => (prev === q ? prev : q));
+  }, [searchParams]);
 
   useEffect(() => {
     if (!canSeeDashboard) {

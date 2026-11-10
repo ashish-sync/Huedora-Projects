@@ -183,6 +183,66 @@
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+.role-list-item-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rp-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-sunken, var(--bg-muted));
+}
+
+.rp-avatar-preview {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--color-brand-primary-subtle);
+  color: var(--color-brand-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border-default);
+}
+
+.rp-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rp-avatar-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.rp-avatar-title {
+  margin: 0 0 2px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.rp-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .role-list-item-body {

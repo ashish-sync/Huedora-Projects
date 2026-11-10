@@ -127,10 +127,10 @@ textarea {
 .app-header {
   height: var(--header-height, 56px);
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 480px) minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  column-gap: var(--space-3);
   padding: 0 var(--page-gutter-inline);
   background: var(--color-header-bg, var(--bg-header));
   color: var(--color-text-primary);
@@ -258,19 +258,26 @@ textarea {
 .header-search-bar {
   display: flex;
   align-items: center;
+  justify-self: center;
+  width: 100%;
+  max-width: 480px;
+  min-width: 0;
   background: var(--bg-tier-1, #0B1120);
   border: 1px solid var(--border-default, #1E293B);
   border-radius: 8px;
-  padding: 6px 12px;
-  width: 440px;
-  max-width: 38vw;
+  padding: 0 12px;
+  height: var(--control-h-sm, 32px);
   gap: 8px;
+  margin: 0;
+  box-shadow: none;
+  outline: none;
   transition: border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
 }
 
 .header-search-bar:focus-within {
   border-color: var(--brand-primary, #2563EB);
-  box-shadow: 0 0 0 1px var(--brand-primary, #2563EB);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #2563EB) 22%, transparent);
+  outline: none;
 }
 
 .header-search-icon {
@@ -281,14 +288,27 @@ textarea {
 }
 
 .header-search-input {
-  background: transparent;
-  border: 0;
-  outline: none;
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  appearance: none;
+  -webkit-appearance: none;
   color: var(--color-text-primary, #F8FAFC);
   font-size: 0.8125rem;
   font-family: inherit;
   flex: 1;
   min-width: 0;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.header-search-input:focus,
+.header-search-input:focus-visible {
+  outline: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 .header-search-input::placeholder {
@@ -356,8 +376,7 @@ textarea {
 }
 
 @media (max-width: 1024px) {
-  .header-greeting-block,
-  .header-search-bar {
+  .header-greeting-block {
     display: none;
   }
 }
@@ -365,10 +384,12 @@ textarea {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-left: auto;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
 }
 
+.header-icon-btn,
 .header-theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -381,17 +402,29 @@ textarea {
   color: var(--color-text-secondary);
   cursor: pointer;
   flex-shrink: 0;
+  text-decoration: none;
   transition: background var(--duration) var(--ease), color var(--duration) var(--ease);
 }
 
+.header-icon-btn svg,
 .header-theme-toggle svg {
-  width: var(--icon-size-md);
-  height: var(--icon-size-md);
+  width: var(--icon-size-md, 18px);
+  height: var(--icon-size-md, 18px);
 }
 
-.header-theme-toggle:hover {
+.header-icon-btn:hover,
+.header-theme-toggle:hover,
+.header-icon-btn.is-active,
+.header-bell.is-active {
   background: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
   color: var(--color-text-primary);
+}
+
+html[data-theme='dark'] .header-icon-btn:hover,
+html[data-theme='dark'] .header-theme-toggle:hover,
+html[data-theme='dark'] .header-icon-btn.is-active,
+html[data-theme='dark'] .header-bell.is-active {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .header-bell {
@@ -534,9 +567,9 @@ textarea {
 }
 
 .header-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
   background: var(--color-brand-primary-subtle, rgba(14, 116, 244, 0.12));
   color: var(--color-brand-primary, #0284c7);
   display: grid;
@@ -545,6 +578,25 @@ textarea {
   font-weight: 700;
   border: 1px solid color-mix(in srgb, var(--color-brand-primary, #0284c7) 25%, transparent);
   backdrop-filter: none;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .header-search-bar {
+    display: none;
+  }
 }
 
 .header-profile-menu {

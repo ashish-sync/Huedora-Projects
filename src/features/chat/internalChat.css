@@ -101,7 +101,7 @@
   height: 16px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--status-danger-dot);
+  background: var(--status-danger-action-bg);
   color: var(--text-on-brand);
   font-size: 9px;
   font-weight: 700;
@@ -272,7 +272,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--status-success-dot);
+  background: var(--status-success-action-bg);
   color: var(--text-on-brand);
   font-size: 9px;
   font-weight: 700;

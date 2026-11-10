@@ -131,9 +131,9 @@ html.dark {
   --bg-muted: #0F172A;
   --border-default: #1E293B;
   --border-strong: #334155;
-  --brand-primary: #3B82F6;
-  --brand-primary-hover: #60A5FA;
-  --brand-primary-pressed: #2563EB;
+  --brand-primary: #2563EB;
+  --brand-primary-hover: #2D63D8;
+  --brand-primary-pressed: #1D46A3;
   --brand-accent: #60A5FA;
   --brand-primary-rgb: 96 165 250;
   --brand-secondary: #CBD5E1;

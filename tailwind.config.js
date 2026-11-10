@@ -27,9 +27,11 @@ export default {
         'brand-primary-pressed': 'var(--brand-primary-pressed)',
         'brand-accent': 'var(--brand-accent)',
         'brand-selected-bg': 'var(--brand-selected-bg)',
-        amber: { DEFAULT: 'var(--color-amber)', strong: 'var(--color-amber-strong)', subtle: 'var(--color-amber-subtle)' },
-        violet: { DEFAULT: 'var(--color-violet)', strong: 'var(--color-violet-strong)', subtle: 'var(--color-violet-subtle)' },
-        gold: { DEFAULT: 'var(--color-gold)', subtle: 'var(--color-gold-subtle)' },
+        semantic: {
+          amber: { DEFAULT: 'var(--color-amber)', strong: 'var(--color-amber-strong)', subtle: 'var(--color-amber-subtle)' },
+          violet: { DEFAULT: 'var(--color-violet)', strong: 'var(--color-violet-strong)', subtle: 'var(--color-violet-subtle)' },
+          gold: { DEFAULT: 'var(--color-gold)', subtle: 'var(--color-gold-subtle)' },
+        },
         module: {
           asset: 'var(--module-tone-asset)',
           document: 'var(--module-tone-document)',
@@ -50,6 +52,8 @@ export default {
             bg: 'var(--status-success-bg)',
             border: 'var(--status-success-border)',
             dot: 'var(--status-success-dot)',
+            action: 'var(--status-success-action-bg)',
+            'action-hover': 'var(--status-success-action-hover)',
           },
           warning: {
             text: 'var(--status-warning-text)',
@@ -62,6 +66,8 @@ export default {
             bg: 'var(--status-danger-bg)',
             border: 'var(--status-danger-border)',
             dot: 'var(--status-danger-dot)',
+            action: 'var(--status-danger-action-bg)',
+            'action-hover': 'var(--status-danger-action-hover)',
           },
           info: {
             text: 'var(--status-info-text)',

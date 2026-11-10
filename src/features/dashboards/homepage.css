@@ -15,6 +15,8 @@
   --home-muted-text: var(--text-muted);
   --home-blue: var(--brand-primary);
   --home-blue-hover: var(--brand-primary-hover);
+  --home-button-bg: var(--brand-primary);
+  --home-button-hover: var(--brand-primary-hover);
   --home-green: var(--status-success-dot);
   --home-green-bg: var(--status-success-bg);
   --home-amber: var(--status-warning-dot);
@@ -216,7 +218,7 @@
 }
 
 .tylo-home-mode-toggle button.is-active {
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   color: #ffffff;
 }
 
@@ -534,7 +536,7 @@
 }
 
 .tylo-home-preset-btn.is-active {
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   border-color: var(--home-blue);
   color: var(--text-on-brand, #fff);
   font-weight: 600;
@@ -603,7 +605,7 @@
 }
 
 .tylo-home-submit-btn {
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   color: var(--text-on-brand, #fff);
   border: 0;
   border-radius: 6px;
@@ -618,7 +620,7 @@
 }
 
 .tylo-home-submit-btn:hover {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
 }
 
 .tylo-home-clear-btn {
@@ -1155,7 +1157,7 @@
 }
 
 .tylo-home-rail-btn.is-active {
-  background: var(--home-blue) !important;
+  background: var(--home-button-bg) !important;
   color: var(--text-on-brand, #fff) !important;
 }
 
@@ -1247,7 +1249,7 @@
 }
 
 .tylo-home-notes-add-btn {
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   color: var(--text-on-brand, #fff);
   border: 0;
   border-radius: 6px;
@@ -1263,7 +1265,7 @@
 }
 
 .tylo-home-notes-add-btn:hover:not(:disabled) {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
 }
 
 .tylo-home-notes-empty {
@@ -2045,7 +2047,7 @@
   margin: 0;
   border-radius: var(--welcome-control-radius);
   border: 1px solid var(--home-blue);
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   color: var(--text-on-brand, #fff);
   font-family: inherit;
   font-size: 12px;
@@ -2059,7 +2061,7 @@
 }
 
 .tylo-home-welcome-range-apply:hover:not(:disabled) {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
   border-color: var(--home-blue-hover);
 }
 
@@ -2538,7 +2540,7 @@
 }
 
 .tylo-home-ops-grid .tylo-home-preset-btn.is-active {
-  background: var(--home-blue) !important;
+  background: var(--home-button-bg) !important;
   border-color: var(--home-blue) !important;
   color: var(--text-on-brand, #fff) !important;
   font-weight: 600;
@@ -2837,7 +2839,7 @@
 }
 
 .tylo-home-ops-grid .tylo-home-ws-tab.is-active {
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   color: var(--text-on-brand, #fff);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--home-blue) 35%, transparent);
 }
@@ -2911,7 +2913,7 @@
   padding: 0 14px;
   border-radius: 8px;
   border: none;
-  background: var(--home-blue);
+  background: var(--home-button-bg);
   color: var(--text-on-brand, #fff);
   font-weight: 600;
   font-size: 12px;
@@ -2921,7 +2923,7 @@
 }
 
 .tylo-home-ops-grid .tylo-home-notes-add-btn:hover:not(:disabled) {
-  background: var(--home-blue-hover);
+  background: var(--home-button-hover);
 }
 
 .tylo-home-ops-grid .tylo-home-notes-add-btn:focus-visible {
@@ -3694,7 +3696,7 @@
 
 .tylo-home-ops-grid .tylo-home-pin-option input:checked + .tylo-home-pin-box {
   border-color: var(--home-blue);
-  background: var(--home-blue);
+  background: var(--home-button-bg);
 }
 
 .tylo-home-ops-grid .tylo-home-pin-option input:checked + .tylo-home-pin-box::after {

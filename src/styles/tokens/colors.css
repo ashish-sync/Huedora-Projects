@@ -298,14 +298,14 @@ html[data-theme='light'] {
   --color-gold: #B45309;
   --color-gold-subtle: #FFFBEB;
 
-  --module-tone-asset: #0284C7;
-  --module-tone-document: #2563EB;
-  --module-tone-verify: #059669;
-  --module-tone-camp: #D97706;
+  --module-tone-asset: #0369A1;
+  --module-tone-document: #1D4ED8;
+  --module-tone-verify: #047857;
+  --module-tone-camp: #B45309;
   --module-tone-request: #0E7490;
   --module-tone-master: #4F46E5;
-  --module-tone-movement: #0891B2;
-  --module-tone-finance: #16A34A;
+  --module-tone-movement: #0E7490;
+  --module-tone-finance: #15803D;
 }
 
 [data-theme='dark'],

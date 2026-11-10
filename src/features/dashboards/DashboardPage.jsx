@@ -952,7 +952,7 @@ export default function DashboardPage() {
     const bySlot = new Map((campSchedule?.rows || []).map((row) => [row.campSlot, row]));
     return CAMP_SCHEDULE_SLOT_UI.map((meta) => {
       const counts = bySlot.get(meta.campSlot) || EMPTY_SCHEDULE_COUNTS;
-      return {
+    return {
         ...meta,
         today: Number(counts.today) || 0,
         tomorrow: Number(counts.tomorrow) || 0,
@@ -1368,12 +1368,12 @@ export default function DashboardPage() {
                             </span>
                             <span>{row.campSlot}</span>
                           </div>
-                        </td>
+                      </td>
                         <td className={`tylo-home-sched-num ${row.today === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.today}</td>
                         <td className={`tylo-home-sched-num ${row.tomorrow === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.tomorrow}</td>
                         <td className={`tylo-home-sched-num ${row.dayAfter === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.dayAfter}</td>
                         <td className={`tylo-home-sched-num ${row.restOfMonth === 0 ? 'is-zero' : 'is-nonzero'}`}>{row.restOfMonth}</td>
-                      </tr>
+                    </tr>
                     ))}
                   </tbody>
                   <tfoot>

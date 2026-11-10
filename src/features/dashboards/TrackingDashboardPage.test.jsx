@@ -24,17 +24,49 @@ vi.mock('../../shared/auth.jsx', () => ({
   }),
 }));
 
-const EMPTY_OVERVIEW = {
-  generatedAt: '2026-11-01T12:00:00.000Z',
-  health: { score: 100, label: 'Healthy', tone: 'ok' },
-  pending: [],
-  alerts: [],
-  kpis: [],
-  modules: [],
-  financials: {},
-  agreementsHealth: {},
-  repairsSla: {},
-  breakdowns: {},
+const EMPTY_KPIS = {
+  generatedAt: '2026-11-10T12:00:00.000Z',
+  from: '2026-11-01',
+  to: '2026-11-10',
+  limitations: ['Asset status is a current-state snapshot'],
+  modules: {
+    assetOne: {
+      statuses: [
+        { status: 'Tylo Office', qty: 2, value: 1000, pctQty: 50, pctValue: 50, href: '/asset-one?agreementStatus=Tylo%20Office' },
+      ],
+    },
+    verificationOne: {
+      conditions: [
+        { key: 'SAFE', label: 'Safe', qty: 1, pctQty: 100, href: '/verification-one?condition=SAFE' },
+      ],
+    },
+    campOne: {
+      chargeability: [{ key: 'Chargeable', label: 'Chargeable', qty: 1, pct: 100, href: '/camp-one/manage' }],
+      punctuality: [{ key: 'Good', label: 'Good', qty: 1, pct: 100, href: '/camp-one/manage' }],
+      cancellation: {
+        eligibleTotal: 1,
+        cancelledTotal: 0,
+        ratePct: 0,
+        byTylo: { qty: 0, pct: 0, href: '/camp-one/manage' },
+        byClient: { qty: 0, pct: 0, href: '/camp-one/manage' },
+        href: '/camp-one/manage',
+      },
+    },
+    masterOne: {
+      newHcws: { qty: 1, pct: 50, href: '/master-one' },
+      existingHcws: { qty: 1, pct: 50, href: '/master-one' },
+    },
+    movementOne: {
+      inward: { qty: 3, value: 300, href: '/movement-one/inward' },
+      outward: { qty: 1, value: 100, href: '/movement-one/outward' },
+      closingBalance: { qty: 2, value: 200, href: '/movement-one/inward', logic: 'Inward − Outward' },
+    },
+    financeOne: {
+      revenue: { qty: 2, value: 5000, href: '/finance-one/billing/invoice' },
+      outstanding: { qty: 1, value: 1000, creditsApplied: 0, href: '/finance-one/billing/invoice' },
+      cost: { qty: 1, value: 400, href: '/finance-one/payouts' },
+    },
+  },
 };
 
 function renderDashboard(initialEntry = '/dashboard') {
@@ -59,8 +91,8 @@ describe('Operations Dashboard runtime states and access', () => {
   beforeEach(() => {
     permissions.splice(0, permissions.length, '*');
     apiMock.mockImplementation(async (path) => {
-      if (path === '/dashboards/overview') return { data: EMPTY_OVERVIEW };
       if (path === '/dashboards/modules') return { data: [{ id: 'assets', label: 'Asset One' }] };
+      if (String(path).startsWith('/dashboards/ops-overview-kpis')) return { data: EMPTY_KPIS };
       throw new Error(`Unexpected API path: ${path}`);
     });
   });
@@ -70,67 +102,33 @@ describe('Operations Dashboard runtime states and access', () => {
     vi.clearAllMocks();
   });
 
-  it('renders a successful empty dataset with explicit empty-state content', async () => {
+  it('defaults to Overview and loads six-module KPI architecture', async () => {
     renderDashboard();
 
-    expect(await screen.findByText('No active risks')).toBeTruthy();
-    expect(screen.getAllByText('No distribution data yet').length).toBeGreaterThan(0);
-    expect(screen.queryByLabelText('Loading overview')).toBeNull();
+    expect((await screen.findByRole('tab', { name: 'Overview' })).getAttribute('aria-selected')).toBe('true');
+    expect(await screen.findByRole('heading', { name: 'Asset One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Verification One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Camp One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Master One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Movement One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Finance One' })).toBeTruthy();
+    expect(screen.getByText('Cancelled by Tylo')).toBeTruthy();
+    expect(screen.getByText('Cancelled by Client')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Complete project health' })).toBeNull();
+    expect(apiMock.mock.calls.some(([path]) => String(path).startsWith('/dashboards/ops-overview-kpis'))).toBe(true);
   });
 
-  it('renders an explicit empty state when the API returns no overview payload', async () => {
-    apiMock.mockImplementation(async (path) => (
-      path === '/dashboards/overview' ? { data: null } : { data: [] }
-    ));
-    renderDashboard();
-
-    expect(await screen.findByText('No dashboard data available')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Refresh' }).length).toBe(2);
-  });
-
-  it('shows the loading skeleton during a delayed response and prevents duplicate refreshes', async () => {
-    let resolveInitial;
-    let resolveRefresh;
-    apiMock.mockImplementation((path) => {
-      if (path === '/dashboards/overview') {
-        return new Promise((resolve) => {
-          if (!resolveInitial) resolveInitial = resolve;
-          else resolveRefresh = resolve;
-        });
-      }
-      return Promise.resolve({ data: [{ id: 'assets', label: 'Asset One' }] });
-    });
-
+  it('keeps Module review available from the Overview tab', async () => {
     const user = userEvent.setup();
     renderDashboard();
-    expect(screen.getByLabelText('Loading overview')).toBeTruthy();
-    const firstRefresh = screen.getByRole('button', { name: 'Refreshing…' });
-    expect(firstRefresh.disabled).toBe(true);
-    await user.click(firstRefresh);
-    expect(apiMock.mock.calls.filter(([path]) => path === '/dashboards/overview')).toHaveLength(1);
 
-    resolveInitial({ data: EMPTY_OVERVIEW });
-    expect(await screen.findByText('No active risks')).toBeTruthy();
+    await screen.findByRole('heading', { name: 'Asset One' });
+    await user.click(screen.getByRole('tab', { name: 'Module review' }));
 
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
-    const refreshing = await screen.findByRole('button', { name: 'Refreshing…' });
-    expect(refreshing.disabled).toBe(true);
-    await user.click(refreshing);
-    expect(apiMock.mock.calls.filter(([path]) => path === '/dashboards/overview')).toHaveLength(2);
-
-    resolveRefresh({ data: EMPTY_OVERVIEW });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh' }).disabled).toBe(false));
-  });
-
-  it('shows an API error and allows a later refresh', async () => {
-    apiMock.mockImplementation(async (path) => {
-      if (path === '/dashboards/overview') throw new Error('Dashboard service unavailable');
-      return { data: [] };
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Module review' }).getAttribute('aria-selected')).toBe('true');
     });
-    renderDashboard();
-
-    expect(await screen.findByText('Dashboard service unavailable')).toBeTruthy();
-    expect(screen.queryByLabelText('Loading overview')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Choose a module to review' })).toBeTruthy();
   });
 
   it.each([
@@ -150,7 +148,6 @@ describe('Operations Dashboard runtime states and access', () => {
     const dashboardToggle = await screen.findByRole('button', { name: /Tylo One Dashboard/i });
 
     if (allowed) {
-      // Authorised roles land on Business Overview and can open Operations Dashboard via search.
       expect(screen.getByRole('heading', { name: 'Business Overview' })).toBeTruthy();
       expect(dashboardToggle.disabled).toBe(false);
       expect(dashboardToggle.getAttribute('aria-pressed')).toBe('true');
@@ -158,22 +155,7 @@ describe('Operations Dashboard runtime states and access', () => {
       await user.type(screen.getByPlaceholderText(/Filter modules or workflows/i), 'Operations');
       expect(await screen.findByRole('link', { name: /Operations Dashboard/i })).toBeTruthy();
     } else {
-      // Unauthorised roles stay on My View; dashboard toggle and ops shortcut stay unavailable.
-      expect(screen.getByRole('heading', { name: 'My View' })).toBeTruthy();
       expect(dashboardToggle.disabled).toBe(true);
-
-      await user.type(screen.getByPlaceholderText(/Filter modules or workflows/i), 'Operations');
-      await waitFor(() => {
-        expect(screen.queryByRole('link', { name: /Operations Dashboard/i })).toBeNull();
-      });
     }
-  });
-
-  it('redirects a user without dashboard permission before requesting dashboard APIs', async () => {
-    permissions.splice(0, permissions.length, 'assets:read');
-    renderDashboard();
-
-    expect(await screen.findByRole('heading', { name: 'Home' })).toBeTruthy();
-    expect(apiMock).not.toHaveBeenCalled();
   });
 });

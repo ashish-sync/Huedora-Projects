@@ -18,16 +18,45 @@
   align-items: start;
 }
 
-/* ── Stacked Filter Toolbar Standardisation ────────────────────────────── */
+/* ── Full-width filter toolbar ──────────────────────────────────────────── */
 
-.page-metrics--stacked .date-range-filter-field {
+.page-metrics:has(.activity-log-filters),
+.page-metrics-toolbar:has(.activity-log-filters) {
+  width: 100% !important;
+  max-width: none !important;
+  flex: 1 1 100% !important;
+}
+
+.page-metrics-toolbar .activity-log-filters.date-range-filter,
+.activity-log-filters.date-range-filter {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+}
+
+.page-metrics-toolbar .activity-log-filters .date-range-filter-fields,
+.activity-log-filters.date-range-filter .date-range-filter-fields {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(7rem, 0.9fr)) repeat(6, minmax(0, 1fr)) auto !important;
+  flex-wrap: nowrap !important;
+  align-items: end !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.activity-log-filters .date-range-filter-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 140px;
+  min-width: 0 !important;
+  width: 100% !important;
 }
 
-.page-metrics--stacked .date-range-filter-field span {
+.activity-log-filters .date-range-filter-field span {
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -35,20 +64,66 @@
   color: var(--color-text-tertiary);
 }
 
-.page-metrics--stacked .date-range-filter-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  align-self: flex-end;
+.activity-log-filters .date-range-filter-field .date-input-field,
+.activity-log-filters .date-range-filter-field .date-input-control,
+.activity-log-filters .date-range-filter-field .date-input-display,
+.activity-log-filters .date-range-filter-field .ops-filter-input,
+.activity-log-filters .date-range-filter-field select,
+.activity-log-filters .date-range-filter-field .adaptive-select-host,
+.activity-log-filters .date-range-filter-field .adaptive-select,
+.activity-log-filters .date-range-filter-field .adaptive-select__control {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
 }
 
-.page-metrics--stacked .date-range-filter-actions .btn {
+.activity-log-filters .date-range-filter-field .date-input-display {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: var(--control-pad-inline-start, 10px);
+  padding-right: 42px !important;
+}
+
+.activity-log-filters .date-range-filter-field .date-input-picker-btn {
+  right: 8px;
+  width: 28px;
+  height: 28px;
+}
+
+.activity-log-filters .date-range-filter-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-left: 0 !important;
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.activity-log-filters .date-range-filter-actions .btn {
   height: var(--control-h, 40px);
   padding: 0 16px;
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: var(--control-radius, 8px);
+}
+
+@media (max-width: 1100px) {
+  .page-metrics-toolbar .activity-log-filters .date-range-filter-fields,
+  .activity-log-filters.date-range-filter .date-range-filter-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .activity-log-filters .date-range-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-metrics-toolbar .activity-log-filters .date-range-filter-fields,
+  .activity-log-filters.date-range-filter .date-range-filter-fields {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* ── View Switcher ──────────────────────────────────────────────────────── */
@@ -165,6 +240,47 @@
   background: var(--color-bg-sunken);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border-default);
+}
+
+.activity-severity-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-sunken);
+  color: var(--color-text-secondary);
+}
+
+.activity-severity-pill--critical {
+  color: var(--color-danger, #b91c1c);
+  border-color: color-mix(in srgb, var(--color-danger, #b91c1c) 35%, var(--color-border-default));
+  background: color-mix(in srgb, var(--color-danger, #b91c1c) 10%, transparent);
+}
+
+.activity-severity-pill--important {
+  color: var(--color-warning, #b45309);
+  border-color: color-mix(in srgb, var(--color-warning, #b45309) 35%, var(--color-border-default));
+  background: color-mix(in srgb, var(--color-warning, #b45309) 10%, transparent);
+}
+
+.activity-severity-pill--informational {
+  color: var(--color-text-secondary);
+}
+
+.activity-log-detail__pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.activity-timeline-banner {
+  margin: 0 0 10px;
+  font-size: 0.84rem;
 }
 
 .activity-log-row__title {

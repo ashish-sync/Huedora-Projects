@@ -7,6 +7,7 @@ import { ClientMasterCampTermsBox } from './components/ClientMasterCampTermsBox.
 import { ClientMasterFormSectionFields } from './components/ClientMasterFormSections.jsx';
 import { ClientMasterSectionCard } from './components/ClientMasterSectionCard.jsx';
 import { ProgramCampRequestLink } from './components/ProgramCampRequestLink.jsx';
+import { ClientOneAccessPanel } from './components/ClientOneAccessPanel.jsx';
 import { clientMasterApi } from './campOpsApi.js';
 import { clientMasterEditPath, clientMasterListPath } from './clientMasterPaths.js';
 import {
@@ -663,13 +664,20 @@ export default function ClientMasterFormPage() {
             onSave={() => handleSectionSave(section.id)}
             onCancel={cancelSectionEdit}
             extra={section.id === 'program' ? (
-              <ProgramCampRequestLink
-                recordId={recordId}
-                persisted={isPersisted}
-                programActive={form.isActive !== false}
-                formMasterId={form.formMasterId}
-                formMasterName={form.formMasterName}
-              />
+              <>
+                <ProgramCampRequestLink
+                  recordId={recordId}
+                  persisted={isPersisted}
+                  programActive={form.isActive !== false}
+                  formMasterId={form.formMasterId}
+                  formMasterName={form.formMasterName}
+                />
+                <ClientOneAccessPanel
+                  recordId={recordId}
+                  persisted={isPersisted}
+                  programActive={form.isActive !== false}
+                />
+              </>
             ) : null}
           >
             {section.id === 'campTerms' ? (

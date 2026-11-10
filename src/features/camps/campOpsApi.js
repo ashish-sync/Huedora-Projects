@@ -44,6 +44,10 @@ async function put(path, body) {
   return asAxios(await api(path, { method: 'PUT', body: body ?? {} }));
 }
 
+async function patch(path, body) {
+  return asAxios(await api(path, { method: 'PATCH', body: body ?? {} }));
+}
+
 async function del(path) {
   return asAxios(await api(path, { method: 'DELETE' }));
 }
@@ -262,6 +266,12 @@ export const clientMasterApi = {
   },
   mintRequestFormLink: (id, { replace = false } = {}) =>
     post(`${BASE}/client-masters/${id}/request-form-link`, replace ? { replace: true } : {}),
+  getClientOneAccess: (id) => get(`${BASE}/client-masters/${id}/client-one-access`),
+  mintClientOneAccess: (id, { rotate = false } = {}) =>
+    post(`${BASE}/client-masters/${id}/client-one-access`, rotate ? { rotate: true } : {}),
+  updateClientOneAccess: (id, body) => patch(`${BASE}/client-masters/${id}/client-one-access`, body),
+  revokeClientOneAccess: (id) => del(`${BASE}/client-masters/${id}/client-one-access`),
+  previewClientOne: (id) => post(`${BASE}/client-masters/${id}/client-one-preview`, {}),
   downloadCampTermsFile: async (id, fileId) => ({
     data: await getBlob(
       `${BASE}/client-masters/${id}/camp-terms-files/${encodeURIComponent(fileId)}`

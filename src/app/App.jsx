@@ -28,6 +28,9 @@ const AssetRequestsPage = lazy(() => import('../features/assetRequests/AssetRequ
 const RequestProductUploadPage = lazy(() => import('../features/assetRequests/RequestProductUploadPage.jsx'));
 const CampExecutePage = lazy(() => import('../features/camps/executor/CampExecutePage.jsx'));
 const CampProgramRequestPage = lazy(() => import('../features/camps/requestForm/CampProgramRequestPage.jsx'));
+const ClientOneApp = lazy(() => import('../features/clientOne/ClientOneApp.jsx'));
+const ClientOneHubPage = lazy(() => import('../features/clientOne/ClientOneHubPage.jsx'));
+const ClientOnePreviewPage = lazy(() => import('../features/clientOne/ClientOnePreviewPage.jsx'));
 const ImportsPage = lazy(() => import('../features/imports/ImportsPage.jsx'));
 const AuditPage = lazy(() => import('../features/audit/AuditPage.jsx'));
 const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage.jsx'));
@@ -149,6 +152,8 @@ export default function App() {
       <Route path="/e/:token" element={<Suspense fallback={<PageLoader />}><CampExecutePage /></Suspense>} />
       <Route path="/camp-request/:token" element={<Suspense fallback={<PageLoader />}><CampProgramRequestPage /></Suspense>} />
       <Route path="/c/:token" element={<Suspense fallback={<PageLoader />}><CampProgramRequestPage /></Suspense>} />
+      <Route path="/client-one" element={<Suspense fallback={<PageLoader />}><ClientOneApp /></Suspense>} />
+      <Route path="/o/:accessId" element={<Suspense fallback={<PageLoader />}><ClientOneApp /></Suspense>} />
       <Route
         path="*"
         element={
@@ -251,6 +256,24 @@ export default function App() {
                   <Route path="client-masters/:id/edit" element={<CampClientMasterEditRedirect />} />
                   <Route path="users" element={<Navigate to={MODULE_PATH.ACCESS_CONTROL} replace />} />
                 </Route>
+
+                {/* Client One — staff hub / preview (external PIN portal stays public at /client-one) */}
+                <Route
+                  path={MODULE_PATH.CLIENT_ONE}
+                  element={
+                    <RequirePermission anyOf={['camps:read', 'camps:request', 'camps:approve']}>
+                      <ClientOneHubPage />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="/client-one/preview/:clientMasterId"
+                  element={
+                    <RequirePermission anyOf={['camps:read', 'camps:request', 'camps:approve']}>
+                      <ClientOnePreviewPage />
+                    </RequirePermission>
+                  }
+                />
 
                 {/* Finance One */}
                 <Route path={MODULE_PATH.FINANCE_ONE} element={

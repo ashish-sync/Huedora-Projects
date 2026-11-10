@@ -55,9 +55,10 @@ describe('AuditPage Activity Log', () => {
     );
 
     expect(await screen.findByRole('heading', { name: 'Activity Log' })).toBeTruthy();
-    expect(screen.getByText('Total Records')).toBeTruthy();
-    expect(screen.getByText('Current View')).toBeTruthy();
-    expect(screen.getByText('Date Window')).toBeTruthy();
+    expect(screen.queryByText('Total Records')).toBeNull();
+    expect(screen.getByLabelText('Activity type')).toBeTruthy();
+    expect(screen.getByLabelText('Severity')).toBeTruthy();
+    expect(screen.getByLabelText('Record ID')).toBeTruthy();
     expect(screen.getByText('Approved a camp')).toBeTruthy();
     expect(screen.getByText('Camp One')).toBeTruthy();
     expect(screen.queryByText('camp_ops.approve')).toBeNull();
@@ -65,6 +66,7 @@ describe('AuditPage Activity Log', () => {
 
     await user.click(screen.getByRole('button', { name: /Approved a camp/i }));
     expect(await screen.findByText(/priya@tylo.test approved a camp/i)).toBeTruthy();
+    expect(await screen.findByText('Event ID')).toBeTruthy();
     expect(screen.getAllByText('26-10-0042').length).toBeGreaterThan(0);
 
     const closeBtn = screen.getByRole('button', { name: /Close activity detail/i });

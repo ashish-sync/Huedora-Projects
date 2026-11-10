@@ -22,9 +22,31 @@ describe('activityLogCatalog', () => {
     expect(described.summary).not.toContain('camp_ops.approve');
   });
 
-  it('maps finance and sign-in events to the right module', () => {
+  it('maps finance, permissions, and sign-in events to the right module', () => {
     expect(resolveActivityModule('FINANCE.CLIENT_INVOICE.ISSUE').label).toBe('Finance One');
     expect(resolveActivityModule('USER.LOGIN_SUCCESS').label).toBe('Sign-in');
+    expect(resolveActivityModule('ROLE.UPDATE').label).toBe('User & Permissions');
+    expect(resolveActivityModule('AGREEMENT.SEND').label).toBe('Document Centre');
+  });
+
+  it('surfaces severity source and record metadata from stored rows', () => {
+    const described = describeActivity({
+      _id: 'evt-1',
+      action: 'ROLE.DELETE',
+      entityType: 'Role',
+      entityId: 'role-9',
+      actorEmail: 'admin@tylo.test',
+      result: 'SUCCESS',
+      severity: 'critical',
+      source: 'UI',
+      activityType: 'cancellation',
+      reason: 'Obsolete role',
+    });
+    expect(described.severityLabel).toBe('Critical');
+    expect(described.sourceLabel).toBe('UI');
+    expect(described.eventId).toBe('evt-1');
+    expect(described.recordId).toBe('role-9');
+    expect(described.reason).toBe('Obsolete role');
   });
 
   it('lists readable field changes and skips secrets', () => {

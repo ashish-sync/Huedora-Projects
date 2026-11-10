@@ -3536,6 +3536,11 @@ html[data-theme='light'] .app-sidebar {
   --card-soft: color-mix(in srgb, #d97706 12%, var(--color-bg-elevated));
 }
 
+.tylo-directory-card.tone-client {
+  --card-accent: #7c3aed;
+  --card-soft: color-mix(in srgb, #7c3aed 12%, var(--color-bg-elevated));
+}
+
 .tylo-directory-card.tone-request {
   --card-accent: #0284c7;
   --card-soft: color-mix(in srgb, #0284c7 12%, var(--color-bg-elevated));
@@ -4541,6 +4546,11 @@ html[data-theme='light'] .app-sidebar {
   --card-soft: color-mix(in srgb, #d97706 12%, var(--bg-elevated));
 }
 
+.tylo-home-card.tone-client {
+  --card-accent: #7c3aed;
+  --card-soft: color-mix(in srgb, #7c3aed 12%, var(--bg-elevated));
+}
+
 .tylo-home-card.tone-request {
   --card-accent: #0284c7;
   --card-soft: color-mix(in srgb, #0284c7 12%, var(--bg-elevated));
@@ -4720,6 +4730,183 @@ html[data-theme='light'] .app-sidebar {
   flex-direction: column;
   gap: 22px;
   animation: rise-in 0.45s var(--ease) both;
+}
+
+.ops-ov-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--border-strong, var(--line));
+  background: var(--bg-tier-2, var(--bg-elevated));
+}
+
+.ops-ov-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.ops-ov-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 10.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.ops-ov-field .field-input,
+.ops-ov-field .adaptive-select,
+.ops-ov-field .date-input-field,
+.ops-ov-field .date-input-control,
+.ops-ov-field .date-input-display {
+  min-height: var(--control-h, 36px);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ops-ov-field .date-input-display {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: var(--control-pad-inline-start, 10px);
+  padding-right: 42px;
+}
+
+.ops-ov-field .date-input-picker-btn {
+  right: 8px;
+  width: 28px;
+  height: 28px;
+}
+
+.ops-ov-filter-hint {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.ops-ov-limits {
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 8px);
+  background: var(--bg-tier-2, var(--bg-elevated));
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ops-ov-limits ul {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+}
+
+.ops-ov-skel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ops-ov-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ops-ov-module {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--line);
+  background: var(--bg-tier-2, var(--bg-elevated));
+}
+
+.ops-ov-module-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.ops-ov-module-head p {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ops-ov-subhead {
+  margin: 10px 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ops-ov-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 8px;
+}
+
+.ops-ov-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius, 8px);
+  border: 1px solid var(--line);
+  background: var(--bg-tier-1, var(--bg));
+  color: inherit;
+  text-decoration: none;
+  min-height: 76px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+a.ops-ov-tile:hover,
+a.ops-ov-tile:focus-visible {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+  background: var(--bg-hover, var(--bg-tier-1));
+  outline: none;
+}
+
+.ops-ov-tile-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.ops-ov-tile-qty {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.ops-ov-tile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.ops-ov-tile-meta em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+@media (max-width: 960px) {
+  .ops-ov-grid,
+  .ops-ov-skel {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ops-section {
@@ -13907,6 +14094,7 @@ button.vf-summary-card.is-clickable:hover,
   --ilog-muted: var(--muted);
   --ilog-map: var(--bg-tint);
   --ilog-dot: var(--brand);
+  --ilog-side-col: 280px;
   background: var(--ilog-beige);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -13973,6 +14161,93 @@ button.vf-summary-card.is-clickable:hover,
   color: var(--brand);
   display: grid;
   place-items: center;
+}
+
+.ilog-dash-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--ilog-side-col, 280px);
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters {
+  min-width: 0;
+  width: 100%;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .date-input,
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .date-input-control,
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .date-input-field,
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field select,
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .adaptive-select-host,
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .adaptive-select,
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .adaptive-select__control {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+/*
+ * design-system locks date displays to --control-w-date !important. When the
+ * control stretches and the display stays fixed, the absolute calendar icon
+ * sits outside the bordered field — override both width and icon inset.
+ */
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .date-input-display {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: var(--control-pad-inline-start, 10px);
+  padding-right: 42px !important;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .date-input-picker-btn {
+  right: 8px;
+  width: 28px;
+  height: 28px;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-field .date-input-native {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  max-width: 2.5rem;
+}
+
+.ilog-dash-toolbar .ilog-dash-filters .date-range-filter-actions {
+  margin-left: 0;
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.ilog-dash-toolbar .ilog-dash-metric-field {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.ilog-dash-toolbar .ilog-dash-metric {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 2px;
+  margin-left: 0;
+  box-sizing: border-box;
 }
 
 .ilog-dash-header {
@@ -14137,6 +14412,16 @@ button.vf-summary-card.is-clickable:hover,
   align-items: flex-end;
 }
 
+/* Keep Overview filters stretched above the KPI column (not flex-wrap). */
+.ilog-dash-toolbar .ilog-dash-filters.date-range-filter .date-range-filter-fields {
+  display: grid;
+  flex-wrap: nowrap;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+}
+
 .ilog-dash-filters .date-range-filter-actions {
   margin-left: 0;
 }
@@ -14220,10 +14505,12 @@ button.vf-summary-card.is-clickable:hover,
 .ilog-dash-metric {
   display: inline-flex;
   align-items: center;
+  width: var(--ilog-side-col, 280px);
   background: var(--surface-muted, #e8e2d6);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm, 8px);
   padding: 3px;
   margin-left: auto;
+  box-sizing: border-box;
 }
 
 .ilog-dash-metric-btn {
@@ -14233,8 +14520,10 @@ button.vf-summary-card.is-clickable:hover,
   font-size: 0.82rem;
   font-weight: 600;
   padding: 6px 14px;
-  border-radius: var(--radius-full);
+  border-radius: calc(var(--radius-sm, 8px) - 1px);
   cursor: pointer;
+  flex: 1 1 0;
+  text-align: center;
 }
 
 .ilog-dash-metric-btn.is-active {
@@ -14256,7 +14545,7 @@ button.vf-summary-card.is-clickable:hover,
 
 .ilog-dash-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
+  grid-template-columns: minmax(0, 1fr) var(--ilog-side-col, 280px);
   gap: 12px;
   align-items: stretch;
   margin-top: 4px;
@@ -14364,6 +14653,7 @@ button.vf-summary-card.is-clickable:hover,
 .ilog-dash-panel--map {
   align-self: stretch;
   height: 100%;
+  min-width: 0;
 }
 
 .ilog-dash-panel-head,
@@ -14398,8 +14688,22 @@ button.vf-summary-card.is-clickable:hover,
 }
 
 @media (max-width: 980px) {
+  .ilog-dash-toolbar,
   .ilog-dash-body {
     grid-template-columns: 1fr;
+  }
+
+  .ilog-dash-toolbar .ilog-dash-filters .date-range-filter-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ilog-dash-toolbar .ilog-dash-filters .date-range-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .ilog-dash-toolbar .ilog-dash-metric-field {
+    max-width: var(--ilog-side-col, 280px);
   }
 
   .ilog-dash-panel--map {
@@ -14409,10 +14713,16 @@ button.vf-summary-card.is-clickable:hover,
   }
 }
 
+.ilog-location-preview {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+}
+
 .ilog-dash-map-wrap {
   position: relative;
   width: 100%;
-  max-width: 220px;
+  max-width: 280px;
   margin: 0 auto;
   flex: 1;
   display: flex;
@@ -14422,17 +14732,25 @@ button.vf-summary-card.is-clickable:hover,
 
 .ilog-dash-map {
   width: 100%;
-  max-height: 260px;
+  max-height: 240px;
   height: auto;
   display: block;
 }
 
+.ilog-dash-map-route {
+  stroke: color-mix(in srgb, var(--brand) 70%, #64748b);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-opacity: 0.75;
+  fill: none;
+}
+
 .ilog-city-list {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   width: 100%;
-  max-height: 480px;
-  padding: 4px 6px 4px 0;
+  max-height: 280px;
+  padding: 2px 4px 2px 0;
   overflow-y: auto;
 }
 
@@ -14598,7 +14916,8 @@ button.vf-summary-card.is-clickable:hover,
 
 @media (max-width: 560px) {
   .ilog-quick-actions,
-  .ilog-dash-filters {
+  .ilog-dash-filters,
+  .ilog-dash-toolbar .ilog-dash-filters .date-range-filter-fields {
     grid-template-columns: 1fr;
   }
 

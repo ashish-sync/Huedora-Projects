@@ -7,7 +7,13 @@ import PageShell from '../../components/ui/PageShell.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
-import { ACTIVITY_MODULES, ACTIVITY_STATUSES, describeActivity } from './activityLogCatalog.js';
+import {
+  ACTIVITY_MODULES,
+  ACTIVITY_SEVERITIES,
+  ACTIVITY_STATUSES,
+  ACTIVITY_TYPES,
+  describeActivity,
+} from './activityLogCatalog.js';
 import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 import './activityLog.css';
 import '../notifications/notifications.css';
@@ -26,6 +32,19 @@ function defaultActivityRange() {
   return { from: ymd(from), to: ymd(to) };
 }
 
+function emptyApplied(from, to) {
+  return {
+    module: '',
+    employee: '',
+    status: '',
+    activityType: '',
+    severity: '',
+    entityId: '',
+    from,
+    to,
+  };
+}
+
 function StatusPill({ status, failed }) {
   return (
     <span className={`activity-log-status${failed ? ' activity-log-status--bad' : ' activity-log-status--ok'}`}>
@@ -35,11 +54,23 @@ function StatusPill({ status, failed }) {
   );
 }
 
+function SeverityPill({ severity, label }) {
+  const tone = String(severity || 'informational').toLowerCase();
+  return (
+    <span className={`activity-severity-pill activity-severity-pill--${tone}`}>
+      {label || 'Informational'}
+    </span>
+  );
+}
+
 function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
   return (
     <section className="card activity-log-detail" aria-label="Activity details">
       <div className="activity-log-detail__header">
-        <StatusPill status={described.status} failed={described.failed} />
+        <div className="activity-log-detail__pills">
+          <StatusPill status={described.status} failed={described.failed} />
+          <SeverityPill severity={described.severity} label={described.severityLabel} />
+        </div>
         {onClose ? (
           <button type="button" className="btn ghost btn-compact" onClick={onClose} aria-label="Close activity detail">
             Close
@@ -52,6 +83,10 @@ function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
 
       <dl className="activity-log-facts">
         <div>
+          <dt>Event ID</dt>
+          <dd><code className="mono-sm">{described.eventId || '-'}</code></dd>
+        </div>
+        <div>
           <dt>Employee</dt>
           <dd>{described.employee}</dd>
         </div>
@@ -63,6 +98,24 @@ function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
           <dt>Module</dt>
           <dd>{described.moduleLabel}</dd>
         </div>
+        <div>
+          <dt>Activity type</dt>
+          <dd>{described.activityTypeLabel}</dd>
+        </div>
+        <div>
+          <dt>Source</dt>
+          <dd>{described.sourceLabel}</dd>
+        </div>
+        <div>
+          <dt>Severity</dt>
+          <dd>{described.severityLabel}</dd>
+        </div>
+        {described.recordId ? (
+          <div>
+            <dt>Record ID</dt>
+            <dd><code className="mono-sm">{described.recordId}</code></dd>
+          </div>
+        ) : null}
         {described.subject ? (
           <div>
             <dt>Record</dt>
@@ -73,6 +126,30 @@ function ActivityDetail({ row, described, canSeeTechnical, onClose }) {
           <dt>Outcome</dt>
           <dd>{described.status}</dd>
         </div>
+        {described.reason ? (
+          <div>
+            <dt>Reason</dt>
+            <dd>{described.reason}</dd>
+          </div>
+        ) : null}
+        {described.relatedEventId ? (
+          <div>
+            <dt>Related event</dt>
+            <dd><code className="mono-sm">{described.relatedEventId}</code></dd>
+          </div>
+        ) : null}
+        {described.reversalOfEventId ? (
+          <div>
+            <dt>Reversal of</dt>
+            <dd><code className="mono-sm">{described.reversalOfEventId}</code></dd>
+          </div>
+        ) : null}
+        {described.reversedByEventId ? (
+          <div>
+            <dt>Reversed by</dt>
+            <dd><code className="mono-sm">{described.reversedByEventId}</code></dd>
+          </div>
+        ) : null}
       </dl>
 
       {described.changes.length ? (
@@ -143,16 +220,15 @@ export default function AuditPage({
   const [moduleId, setModuleId] = useState('');
   const [employee, setEmployee] = useState('');
   const [status, setStatus] = useState('');
+  const [activityType, setActivityType] = useState('');
+  const [severity, setSeverity] = useState('');
+  const [entityId, setEntityId] = useState('');
   const fallbackRange = defaultActivityRange();
   const [from, setFrom] = useState(initialFrom || fallbackRange.from);
   const [to, setTo] = useState(initialTo || fallbackRange.to);
-  const [applied, setApplied] = useState({
-    module: '',
-    employee: '',
-    status: '',
-    from: initialFrom || fallbackRange.from,
-    to: initialTo || fallbackRange.to,
-  });
+  const [applied, setApplied] = useState(
+    emptyApplied(initialFrom || fallbackRange.from, initialTo || fallbackRange.to),
+  );
   const [detailRow, setDetailRow] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -192,7 +268,7 @@ export default function AuditPage({
     return () => { cancelled = true; };
   }, [selectedId, rows]);
 
-  const load = (filters = applied, pageNum = page, pageLimit = limit) => {
+  const load = (filters = applied, pageNum = page, pageLimit = limit, viewMode = view) => {
     setLoading(true);
     setError('');
     const params = new URLSearchParams({
@@ -204,6 +280,10 @@ export default function AuditPage({
     if (filters.module) params.set('module', filters.module);
     if (filters.employee) params.set('employee', filters.employee);
     if (filters.status) params.set('status', filters.status);
+    if (filters.activityType) params.set('activityType', filters.activityType);
+    if (filters.severity) params.set('severity', filters.severity);
+    if (filters.entityId) params.set('entityId', filters.entityId);
+    if (viewMode === 'technical') params.set('includeRoutine', '1');
     api(`/audit-logs?${params}`)
       .then((r) => {
         setRows(r.data || []);
@@ -216,10 +296,34 @@ export default function AuditPage({
   useEffect(() => {
     if (!canRead) return;
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when page/limit change
-  }, [page, limit, canRead, applied.from, applied.to, applied.module, applied.employee, applied.status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when page/limit/filters/view change
+  }, [
+    page,
+    limit,
+    canRead,
+    view,
+    applied.from,
+    applied.to,
+    applied.module,
+    applied.employee,
+    applied.status,
+    applied.activityType,
+    applied.severity,
+    applied.entityId,
+  ]);
 
   if (!canRead) return <p className="error">You do not have access to the Activity Log.</p>;
+
+  const currentFilterPatch = () => ({
+    module: moduleId,
+    employee: employee.trim(),
+    status,
+    activityType,
+    severity,
+    entityId: entityId.trim(),
+    from,
+    to,
+  });
 
   const submitFilters = (e) => {
     e?.preventDefault?.();
@@ -227,14 +331,7 @@ export default function AuditPage({
       setError('From date must be on or before To date');
       return;
     }
-    const next = {
-      module: moduleId,
-      employee: employee.trim(),
-      status,
-      from,
-      to,
-    };
-    setApplied(next);
+    setApplied(currentFilterPatch());
     setPage(1);
     setSelectedId('');
   };
@@ -243,28 +340,34 @@ export default function AuditPage({
     setModuleId('');
     setEmployee('');
     setStatus('');
+    setActivityType('');
+    setSeverity('');
+    setEntityId('');
     const fallback = defaultActivityRange();
     const nextFrom = embedded ? initialFrom || fallback.from : fallback.from;
     const nextTo = embedded ? initialTo || fallback.to : fallback.to;
     setFrom(nextFrom);
     setTo(nextTo);
-    setApplied({ module: '', employee: '', status: '', from: nextFrom, to: nextTo });
+    setApplied(emptyApplied(nextFrom, nextTo));
     setPage(1);
     setSelectedId('');
   };
 
   const selected = detailRow || rows.find((row) => row._id === selectedId);
   const selectedDescribed = selected ? describeActivity(selected) : null;
+  const timelineMode = Boolean(applied.entityId);
 
   const applyEmbedded = (patch) => {
     const next = {
-      module: moduleId,
-      employee: employee.trim(),
-      status,
-      from,
-      to,
+      ...currentFilterPatch(),
       ...patch,
     };
+    if (patch.module !== undefined) setModuleId(patch.module);
+    if (patch.employee !== undefined) setEmployee(patch.employee);
+    if (patch.status !== undefined) setStatus(patch.status);
+    if (patch.activityType !== undefined) setActivityType(patch.activityType);
+    if (patch.severity !== undefined) setSeverity(patch.severity);
+    if (patch.entityId !== undefined) setEntityId(patch.entityId);
     setApplied(next);
     setPage(1);
     setSelectedId('');
@@ -304,6 +407,53 @@ export default function AuditPage({
         />
       </label>
       <label className={filterClass}>
+        <span>Activity type</span>
+        <AdaptiveSelect
+          aria-label="Activity type"
+          value={activityType}
+          onChange={(e) => {
+            const next = e.target.value;
+            setActivityType(next);
+            if (embedded) applyEmbedded({ activityType: next });
+          }}
+        >
+          <option value="">All types</option>
+          {ACTIVITY_TYPES.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </AdaptiveSelect>
+      </label>
+      <label className={filterClass}>
+        <span>Severity</span>
+        <AdaptiveSelect
+          aria-label="Severity"
+          value={severity}
+          onChange={(e) => {
+            const next = e.target.value;
+            setSeverity(next);
+            if (embedded) applyEmbedded({ severity: next });
+          }}
+        >
+          <option value="">All severities</option>
+          {ACTIVITY_SEVERITIES.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </AdaptiveSelect>
+      </label>
+      <label className={filterClass}>
+        <span>Record ID</span>
+        <input
+          className="ops-filter-input"
+          value={entityId}
+          onChange={(e) => {
+            setEntityId(e.target.value);
+            if (embedded) applyEmbedded({ entityId: e.target.value.trim() });
+          }}
+          placeholder="Record ID"
+          aria-label="Record ID"
+        />
+      </label>
+      <label className={filterClass}>
         <span>Status</span>
         <AdaptiveSelect
           aria-label="Status"
@@ -325,6 +475,7 @@ export default function AuditPage({
 
   const toolbar = (
     <DateRangeFilter
+      className="activity-log-filters"
       from={from}
       to={to}
       onFromChange={setFrom}
@@ -372,16 +523,6 @@ export default function AuditPage({
         ) : null
       }
       toolbar={embedded ? null : toolbar}
-      stackMetrics={!embedded}
-      kpis={
-        embedded
-          ? []
-          : [
-              { label: 'Total Records', value: listMeta.total },
-              { label: 'Current View', value: `${rows.length} on page` },
-              { label: 'Date Window', value: `${from} → ${to}` },
-            ]
-      }
     >
       {embedded ? (
         <OpsReviewSlot totalLabel="Total activities" totalValue={listMeta.total}>
@@ -389,6 +530,11 @@ export default function AuditPage({
         </OpsReviewSlot>
       ) : null}
       {error ? <p className="error">{error}</p> : null}
+      {timelineMode && view === 'activity' ? (
+        <p className="activity-timeline-banner muted">
+          Record timeline for ID <code className="mono-sm">{applied.entityId}</code>
+        </p>
+      ) : null}
 
       {view === 'technical' && canSeeTechnical ? (
         <div className="activity-table-card table-wrap">
@@ -399,27 +545,32 @@ export default function AuditPage({
                 <th>Actor</th>
                 <th>Action</th>
                 <th>Entity</th>
+                <th>Severity</th>
                 <th>Result</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row._id}>
-                  <td>{formatDateTime(row.at)}</td>
-                  <td>{row.actorEmail || row.actorType || '-'}</td>
-                  <td><code className="mono-sm">{row.action}</code></td>
-                  <td>
-                    {row.entityType || '-'}
-                    {row.entityId ? ` ${String(row.entityId).slice(-6)}` : ''}
-                  </td>
-                  <td>
-                    <StatusPill
-                      status={row.result || '-'}
-                      failed={row.result !== 'SUCCESS' && row.result !== 'OK'}
-                    />
-                  </td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const described = describeActivity(row);
+                return (
+                  <tr key={row._id}>
+                    <td>{formatDateTime(row.at)}</td>
+                    <td>{row.actorEmail || row.actorType || '-'}</td>
+                    <td><code className="mono-sm">{row.action}</code></td>
+                    <td>
+                      {row.entityType || '-'}
+                      {row.entityId ? ` ${String(row.entityId).slice(-6)}` : ''}
+                    </td>
+                    <td>{described.severityLabel}</td>
+                    <td>
+                      <StatusPill
+                        status={row.result || '-'}
+                        failed={row.result !== 'SUCCESS' && row.result !== 'OK'}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {!rows.length && !loading ? (
@@ -447,6 +598,7 @@ export default function AuditPage({
                     <p className="activity-log-row__title">{described.title}</p>
                     <div className="activity-log-row__badges">
                       <span className="activity-module-pill">{described.moduleLabel}</span>
+                      <SeverityPill severity={described.severity} label={described.severityLabel} />
                       <StatusPill status={described.status} failed={described.failed} />
                     </div>
                   </div>

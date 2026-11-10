@@ -14,6 +14,7 @@ export const MODULE = {
   ASSET_MASTER: 'Asset One',
   ASSET_VERIFICATION: 'Verification One',
   CAMP_MANAGEMENT: 'Camp One',
+  CLIENT_ONE: 'Client One',
   ASSET_REQUESTS: 'Request One',
   LOGISTICS: 'Movement One',
   /** @deprecated Prefer LOGISTICS */
@@ -77,6 +78,7 @@ export const MODULE_BLURB = {
   DOCUMENT_HUB: 'Create, send, and track contracts.',
   ASSET_VERIFICATION: 'Photo and GPS checks with audit history.',
   CAMP_MANAGEMENT: 'Camp operations across all lifecycle stages.',
+  CLIENT_ONE: 'Client portal preview and programme access configuration.',
   ASSET_REQUESTS:
     'Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests.',
   LOGISTICS: 'Goods receipt (all product types), goods issue, consumption, and production output.',

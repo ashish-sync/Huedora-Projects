@@ -135,6 +135,35 @@ export const OPERATIONAL_MODULES = [
     ),
   },
   {
+    id: 'client-one',
+    to: '/client-one/hub',
+    title: MODULE.CLIENT_ONE,
+    blurb: MODULE_BLURB.CLIENT_ONE,
+    tone: 'tone-client',
+    /** Sidebar group — System (not Operations). Home launcher still lists this module. */
+    section: 'system',
+    keywords: [
+      'client',
+      'client one',
+      'portal',
+      'pin',
+      'programme',
+      'preview',
+      'dashboard',
+      'invoice',
+      'mis',
+    ],
+    canShow: (can) =>
+      can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
+    icon: (
+      <svg {...iconProps}>
+        <rect x="4" y="5" width="16" height="14" rx="2.2" />
+        <path d="M8 9.2h8M8 12.4h5.5" />
+        <circle cx="16.2" cy="15.4" r="1.5" />
+      </svg>
+    ),
+  },
+  {
     id: 'request-one',
     to: '/request-one',
     title: MODULE.ASSET_REQUESTS,
@@ -289,6 +318,9 @@ export function isNavActive(pathname = '', targetPath = '') {
   }
   if (targetPath === '/camp-one/manage') {
     return pathname.startsWith('/camp-one');
+  }
+  if (targetPath === '/client-one/hub') {
+    return pathname === '/client-one/hub' || pathname.startsWith('/client-one/preview');
   }
   return pathname.startsWith(targetPath);
 }

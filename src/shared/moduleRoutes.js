@@ -10,6 +10,7 @@ export const MODULE_PATH = {
   DOCUMENT_ONE: '/document-one',
   VERIFICATION_ONE: '/verification-one',
   CAMP_ONE: '/camp-one',
+  CLIENT_ONE: '/client-one/hub',
   REQUEST_ONE: '/request-one',
   MASTER_ONE: '/master-one',
   MOVEMENT_ONE: '/movement-one',

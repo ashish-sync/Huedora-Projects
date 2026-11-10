@@ -7,15 +7,22 @@ export const ACTIVITY_MODULES = [
   { id: 'camp-one', label: 'Camp One' },
   { id: 'finance-one', label: 'Finance One' },
   { id: 'asset-one', label: 'Asset One' },
-  { id: 'document-one', label: 'Document One' },
+  { id: 'document-one', label: 'Document Centre' },
   { id: 'verification-one', label: 'Verification One' },
   { id: 'request-one', label: 'Request One' },
   { id: 'movement-one', label: 'Movement One' },
   { id: 'master-one', label: 'Master One' },
-  { id: 'access', label: 'Access Control' },
-  { id: 'sign-in', label: 'Sign-in' },
+  { id: 'access', label: 'User & Permissions' },
+  { id: 'automations', label: 'Automations' },
   { id: 'imports', label: 'Imports' },
   { id: 'other', label: 'Other' },
+];
+
+/** Sign-in stays available for Technical log / includeRoutine, not the default module filter. */
+export const ACTIVITY_MODULES_ALL = [
+  ...ACTIVITY_MODULES.slice(0, -1),
+  { id: 'sign-in', label: 'Sign-in' },
+  ACTIVITY_MODULES[ACTIVITY_MODULES.length - 1],
 ];
 
 export const ACTIVITY_STATUSES = [
@@ -23,16 +30,44 @@ export const ACTIVITY_STATUSES = [
   { id: 'FAILURE', label: 'Failed' },
 ];
 
+export const ACTIVITY_SEVERITIES = [
+  { id: 'critical', label: 'Critical' },
+  { id: 'important', label: 'Important' },
+  { id: 'informational', label: 'Informational' },
+];
+
+export const ACTIVITY_TYPES = [
+  { id: 'create', label: 'Creation' },
+  { id: 'update', label: 'Modification' },
+  { id: 'status', label: 'Status change' },
+  { id: 'assignment', label: 'Assignment' },
+  { id: 'approval', label: 'Approval' },
+  { id: 'cancellation', label: 'Cancellation' },
+  { id: 'finance', label: 'Financial' },
+  { id: 'stock', label: 'Stock movement' },
+  { id: 'document', label: 'Document' },
+  { id: 'import_export', label: 'Import / export' },
+  { id: 'system', label: 'System' },
+];
+
+export const ACTIVITY_SOURCES = [
+  { id: 'UI', label: 'UI' },
+  { id: 'API', label: 'API' },
+  { id: 'Import', label: 'Import' },
+  { id: 'Automation', label: 'Automation' },
+];
+
 const MODULE_MATCHERS = [
   { id: 'camp-one', action: /^(camp_ops\.|CampRequest\.|CAMP\.)/i, entity: /camp/i },
   { id: 'finance-one', action: /^(FINANCE\.|finance)/i, entity: /finance|invoice|expense|payout|vendor/i },
   { id: 'asset-one', action: /^(ASSET\.|ASSET_MASTER\.)/i, entity: /asset(?!_request)|device/i },
-  { id: 'document-one', action: /^(AGREEMENT\.|DOCUMENT\.|DOCUMENT_TEMPLATE\.)/i, entity: /agreement|document_template/i },
+  { id: 'document-one', action: /^(AGREEMENT\.|DOCUMENT\.|DOCUMENT_TEMPLATE\.|SIGNATURE\.)/i, entity: /agreement|document_template|signature/i },
   { id: 'verification-one', action: /^VERIFICATION\./i, entity: /verification/i },
   { id: 'request-one', action: /^(ASSET_REQUEST\.|REPAIR\.)/i, entity: /asset_request|repair/i },
   { id: 'movement-one', action: /^Logistics/i, entity: /logistics/i },
   { id: 'master-one', action: /^(CONTACT\.|GEO|SIGNATURE_MASTER\.|PICKLIST\.|HCW\.)/i, entity: /contact|geo|signature|picklist|hcw/i },
-  { id: 'access', action: /^(USER\.(CREATE|UPDATE|DELETE)|ROLE\.|SYSTEM\.)/i, entity: /user|role/i },
+  { id: 'access', action: /^(USER\.(CREATE|UPDATE|DELETE|DEACTIV)|ROLE\.|SYSTEM\.)/i, entity: /user|role/i },
+  { id: 'automations', action: /^(JOB\.|SWEEP\.|RETENTION\.|RM\.|NOTIFY\.|purge)/i, entity: /job|sweep|retention/i },
   { id: 'sign-in', action: /^USER\.(LOGIN|LOGOUT|TOKEN|PASSWORD|REFRESH)/i, entity: /session|auth/i },
   { id: 'imports', action: /import/i, entity: /import/i },
 ];
@@ -140,15 +175,36 @@ const SKIP_FIELDS = new Set([
   'photos',
 ]);
 
-export function resolveActivityModule(action = '', entityType = '') {
+export function resolveActivityModule(action = '', entityType = '', moduleId = '') {
+  if (moduleId) {
+    const listed = ACTIVITY_MODULES_ALL.find((m) => m.id === moduleId)
+      || ACTIVITY_MODULES.find((m) => m.id === moduleId);
+    if (listed) return listed;
+  }
   const a = String(action || '');
   const e = String(entityType || '');
   for (const match of MODULE_MATCHERS) {
     if ((a && match.action.test(a)) || (e && match.entity.test(e))) {
-      return ACTIVITY_MODULES.find((m) => m.id === match.id);
+      return ACTIVITY_MODULES_ALL.find((m) => m.id === match.id)
+        || ACTIVITY_MODULES.find((m) => m.id === match.id);
     }
   }
   return ACTIVITY_MODULES.find((m) => m.id === 'other');
+}
+
+export function severityLabel(severity) {
+  const id = String(severity || '').toLowerCase();
+  return ACTIVITY_SEVERITIES.find((s) => s.id === id)?.label || 'Informational';
+}
+
+export function activityTypeLabel(type) {
+  const id = String(type || '').toLowerCase();
+  return ACTIVITY_TYPES.find((t) => t.id === id)?.label || 'Modification';
+}
+
+export function sourceLabel(source) {
+  const id = String(source || '');
+  return ACTIVITY_SOURCES.find((s) => s.id === id)?.label || id || 'API';
 }
 
 export function activityResultLabel(result) {
@@ -255,12 +311,15 @@ export function activityChanges(before, after) {
 }
 
 export function describeActivity(row = {}) {
-  const module = resolveActivityModule(row.action, row.entityType);
+  const module = resolveActivityModule(row.action, row.entityType, row.module);
   const title = titleFromAction(row.action);
   const employee = activityEmployee(row);
   const subject = pickSubject(row);
   const failed = isFailedResult(row.result);
   const status = activityResultLabel(row.result);
+  const severity = String(row.severity || 'informational').toLowerCase();
+  const activityType = String(row.activityType || '').toLowerCase();
+  const source = String(row.source || 'API');
   const where = [module.label, subject].filter(Boolean).join(' · ');
   const summary = failed
     ? `${employee} tried to ${title.charAt(0).toLowerCase()}${title.slice(1)}${subject ? ` (${subject})` : ''}, but it did not complete.`
@@ -275,6 +334,18 @@ export function describeActivity(row = {}) {
     where,
     status,
     failed,
+    severity,
+    severityLabel: severityLabel(severity),
+    activityType,
+    activityTypeLabel: activityTypeLabel(activityType),
+    source,
+    sourceLabel: sourceLabel(source),
+    reason: row.reason || '',
+    eventId: row._id || '',
+    recordId: row.entityId || '',
+    relatedEventId: row.relatedEventId || '',
+    reversalOfEventId: row.reversalOfEventId || '',
+    reversedByEventId: row.reversedByEventId || '',
     changes: activityChanges(row.before, row.after),
   };
 }

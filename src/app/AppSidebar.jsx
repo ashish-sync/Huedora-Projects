@@ -14,6 +14,9 @@ export default function AppSidebar({
   const canSeeAudit = can('audit:read') || can('*');
 
   const visibleModules = OPERATIONAL_MODULES.filter((m) => m.canShow(can));
+  const operationModules = visibleModules.filter((m) => m.section !== 'system');
+  const systemModules = visibleModules.filter((m) => m.section === 'system');
+  const showSystemSection = canSeeAccess || canSeeAudit || systemModules.length > 0;
 
   return (
     <aside
@@ -81,12 +84,12 @@ export default function AppSidebar({
             )}
           </div>
 
-          {visibleModules.length > 0 && (
+          {operationModules.length > 0 && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">
                 <span>Operations</span>
               </div>
-              {visibleModules.map((m) => {
+              {operationModules.map((m) => {
                 const active = isNavActive(pathname, m.to);
                 return (
                   <Link
@@ -106,11 +109,28 @@ export default function AppSidebar({
             </div>
           )}
 
-          {(canSeeAccess || canSeeAudit) && (
+          {showSystemSection && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">
                 <span>System</span>
               </div>
+              {systemModules.map((m) => {
+                const active = isNavActive(pathname, m.to);
+                return (
+                  <Link
+                    key={m.id}
+                    to={m.to}
+                    className={`sidebar-nav-item ${m.tone || ''}${active ? ' is-active' : ''}`}
+                    title={m.title}
+                    onClick={onNavigate}
+                  >
+                    <span className="sidebar-nav-icon" aria-hidden="true">
+                      {m.icon}
+                    </span>
+                    <span className="sidebar-nav-label">{m.title}</span>
+                  </Link>
+                );
+              })}
               {canSeeAccess && (
                 <Link
                   to="/access-control"

@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { MODULE, NAV } from '../../shared/labels.js';
+import { MODULE, MODULE_BLURB, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import ModuleSubNav from '../../components/ui/ModuleSubNav.jsx';
@@ -32,7 +32,7 @@ export default function LogisticsLayout() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.LOGISTICS }]}
       title={MODULE.LOGISTICS}
-      description="Stock execution: goods receipt, goods issue, consumption, and production output. Raise and approve Goods Issuance in Request One; fulfill pack / POD / delivery here."
+      description={MODULE_BLURB.LOGISTICS}
     >
       <ModuleSubNav
         ariaLabel={`${MODULE.LOGISTICS} sections`}

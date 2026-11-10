@@ -65,7 +65,7 @@ describe('AppSidebar', () => {
   it('renders authorized modules and system links', () => {
     const can = vi.fn((perm) => perm.includes('camps') || perm.includes('dashboards'));
 
-    render(
+    const { container } = render(
       <MemoryRouter>
         <AppSidebar pathname="/" can={can} isCollapsed={false} />
       </MemoryRouter>
@@ -74,5 +74,13 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('link', { name: /Dashboard Home/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Operations/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Camp One/i })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Client One/i })).toBeTruthy();
+
+    const sections = [...container.querySelectorAll('.sidebar-section')];
+    const operations = sections.find((el) => el.querySelector('.sidebar-section-title')?.textContent?.includes('Operations'));
+    const system = sections.find((el) => el.querySelector('.sidebar-section-title')?.textContent?.includes('System'));
+    expect(operations?.textContent).toMatch(/Camp One/);
+    expect(operations?.textContent).not.toMatch(/Client One/);
+    expect(system?.textContent).toMatch(/Client One/);
   });
 });

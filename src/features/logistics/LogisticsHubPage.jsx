@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
-import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import DateRangeFilter from '../../components/ui/DateRangeFilter.jsx';
 import { api } from '../../shared/api.js';
-import { MODULE, NAV } from '../../shared/labels.js';
 import { OpsReviewSlot } from '../dashboards/OpsReviewHeader.jsx';
 
 const MAP_VIEW = { width: 420, height: 480, minLon: 68, maxLon: 97.5, minLat: 6.5, maxLat: 37.5 };
+
 const CITY_COORDS = {
   mumbai: [19.076, 72.877],
   pune: [18.52, 73.856],
@@ -33,8 +32,15 @@ const CITY_COORDS = {
   kochi: [9.932, 76.267],
   coimbatore: [11.016, 76.956],
   visakhapatnam: [17.687, 83.219],
+  vizag: [17.687, 83.219],
   chandigarh: [30.733, 76.779],
+  gurgaon: [28.459, 77.027],
+  gurugram: [28.459, 77.027],
+  noida: [28.535, 77.391],
+  thane: [19.218, 72.978],
+  'navi mumbai': [19.033, 73.029],
 };
+
 const STATE_COORDS = {
   'andaman and nicobar islands': [11.741, 92.659],
   'andhra pradesh': [15.912, 79.74],
@@ -72,6 +78,15 @@ const STATE_COORDS = {
   'west bengal': [22.987, 87.855],
 };
 
+function normalizePlaceKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\bcity\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function projectPoint([lat, lon]) {
   return [
     ((lon - MAP_VIEW.minLon) / (MAP_VIEW.maxLon - MAP_VIEW.minLon)) * MAP_VIEW.width,
@@ -80,8 +95,8 @@ function projectPoint([lat, lon]) {
 }
 
 function locationPoint(city, state) {
-  const cityKey = String(city || '').trim().toLowerCase();
-  const stateKey = String(state || '').trim().toLowerCase();
+  const cityKey = normalizePlaceKey(city);
+  const stateKey = normalizePlaceKey(state);
   const coords = CITY_COORDS[cityKey] || STATE_COORDS[stateKey];
   if (!coords) return null;
   const point = projectPoint(coords);
@@ -101,17 +116,50 @@ function formatNum(n, metric) {
   return Math.round(num).toLocaleString();
 }
 
-function IndiaInventoryMap({ cities, metric, focusedCustodian }) {
+function placeLabel(city, state) {
+  return [city, state].filter(Boolean).join(', ') || 'Unknown';
+}
+
+function MovementLocationPreview({ cities = [], routes = [], metric, focusedCustodian }) {
   const [hover, setHover] = useState(null);
   const valueKey = metric === 'amount' ? 'amount' : 'qty';
-  const max = Math.max(...cities.map((city) => Number(city[valueKey]) || 0), 1);
-  const points = cities
+  const rankedCities = useMemo(
+    () => [...cities]
+      .filter((city) => (Number(city[valueKey]) || 0) > 0 && String(city.city || '').toLowerCase() !== 'unknown')
+      .sort((a, b) => (Number(b[valueKey]) || 0) - (Number(a[valueKey]) || 0)),
+    [cities, valueKey],
+  );
+  const maxCity = Math.max(...rankedCities.map((city) => Number(city[valueKey]) || 0), 1);
+
+  const points = rankedCities
     .map((city) => ({
       ...city,
       value: Number(city[valueKey]) || 0,
       point: locationPoint(city.city, city.state),
+      label: placeLabel(city.city, city.state),
     }))
-    .filter((city) => city.value > 0 && city.point);
+    .filter((city) => city.point);
+
+  const routeLines = useMemo(
+    () => (routes || [])
+      .map((route) => {
+        const from = locationPoint(route.fromCity, route.fromState);
+        const to = locationPoint(route.toCity, route.toState);
+        if (!from || !to) return null;
+        return {
+          ...route,
+          from,
+          to,
+          value: Number(route[valueKey]) || 0,
+          label: `${placeLabel(route.fromCity, route.fromState)} → ${placeLabel(route.toCity, route.toState)}`,
+        };
+      })
+      .filter(Boolean)
+      .filter((route) => route.value > 0)
+      .slice(0, 24),
+    [routes, valueKey],
+  );
+
   const focusPoint = focusedCustodian
     ? locationPoint(focusedCustodian.city, focusedCustodian.state)
     : null;
@@ -120,67 +168,113 @@ function IndiaInventoryMap({ cities, metric, focusedCustodian }) {
   const viewBox = focusPoint
     ? `${Math.max(0, Math.min(focusPoint[0] - zoomWidth / 2, MAP_VIEW.width - zoomWidth))} ${Math.max(
         0,
-        Math.min(focusPoint[1] - zoomHeight / 2, MAP_VIEW.height - zoomHeight)
+        Math.min(focusPoint[1] - zoomHeight / 2, MAP_VIEW.height - zoomHeight),
       )} ${zoomWidth} ${zoomHeight}`
     : `0 0 ${MAP_VIEW.width} ${MAP_VIEW.height}`;
 
+  const unmappedCount = rankedCities.length - points.length;
+
   return (
-    <div className="ilog-dash-map-wrap">
-      <svg
-        className="ilog-dash-map"
-        viewBox={viewBox}
-        role="img"
-        aria-label={
-          focusPoint
-            ? `India inventory map focused on ${focusedCustodian.name}`
-            : 'Inventory distribution across India'
-        }
-      >
-        <path
-          className="ilog-dash-map-land"
-          d="M210 40 L235 48 L255 70 L270 95 L285 120 L295 150 L300 180 L305 210 L300 250
-             L290 290 L275 320 L255 350 L240 380 L220 410 L200 430 L175 440 L150 430 L130 400
-             L115 370 L105 340 L95 300 L90 260 L85 220 L80 180 L75 150 L70 120 L85 95 L110 75
-             L140 55 L170 42 Z"
-        />
-        <path
-          className="ilog-dash-map-land ilog-dash-map-land--ne"
-          d="M270 95 L300 85 L330 100 L350 130 L340 160 L320 170 L300 155 L285 130 Z"
-        />
-        {points.map((city) => {
-          const radius = 5 + (city.value / max) * 9;
-          return (
-            <circle
-              key={`${city.city}-${city.state}`}
-              className="ilog-dash-map-dot"
-              cx={city.point[0]}
-              cy={city.point[1]}
-              r={radius}
-              onMouseEnter={() => setHover(city)}
-              onMouseLeave={() => setHover(null)}
-            >
-              <title>
-                {city.city}: {formatNum(city.value, metric)}
-              </title>
-            </circle>
-          );
-        })}
-      </svg>
-      {focusPoint && (
-        <div className="ilog-map-focus">
-          <strong>{focusedCustodian.name}</strong>
-          <span>
-            {[focusedCustodian.city, focusedCustodian.state].filter(Boolean).join(', ')}
-          </span>
+    <div className="ilog-location-preview">
+      {points.length || routeLines.length ? (
+        <div className="ilog-dash-map-wrap">
+          <svg
+            className="ilog-dash-map"
+            viewBox={viewBox}
+            role="img"
+            aria-label={
+              focusPoint
+                ? `Movement map focused on ${focusedCustodian.name}`
+                : 'Movement locations and routes across India'
+            }
+          >
+            <path
+              className="ilog-dash-map-land"
+              d="M210 40 L235 48 L255 70 L270 95 L285 120 L295 150 L300 180 L305 210 L300 250
+                 L290 290 L275 320 L255 350 L240 380 L220 410 L200 430 L175 440 L150 430 L130 400
+                 L115 370 L105 340 L95 300 L90 260 L85 220 L80 180 L75 150 L70 120 L85 95 L110 75
+                 L140 55 L170 42 Z"
+            />
+            <path
+              className="ilog-dash-map-land ilog-dash-map-land--ne"
+              d="M270 95 L300 85 L330 100 L350 130 L340 160 L320 170 L300 155 L285 130 Z"
+            />
+            {routeLines.map((route) => (
+              <line
+                key={route.label}
+                className="ilog-dash-map-route"
+                x1={route.from[0]}
+                y1={route.from[1]}
+                x2={route.to[0]}
+                y2={route.to[1]}
+                onMouseEnter={() => setHover({ label: route.label, value: route.value })}
+                onMouseLeave={() => setHover(null)}
+              >
+                <title>
+                  {route.label}: {formatNum(route.value, metric)}
+                </title>
+              </line>
+            ))}
+            {points.map((city) => {
+              const radius = 5 + (city.value / maxCity) * 9;
+              return (
+                <circle
+                  key={city.label}
+                  className="ilog-dash-map-dot"
+                  cx={city.point[0]}
+                  cy={city.point[1]}
+                  r={radius}
+                  onMouseEnter={() => setHover({ label: city.label, value: city.value })}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <title>
+                    {city.label}: {formatNum(city.value, metric)}
+                  </title>
+                </circle>
+              );
+            })}
+          </svg>
+          {focusPoint ? (
+            <div className="ilog-map-focus">
+              <strong>{focusedCustodian.name}</strong>
+              <span>{placeLabel(focusedCustodian.city, focusedCustodian.state)}</span>
+            </div>
+          ) : null}
+          {hover ? (
+            <div className="ilog-dash-map-tip" role="status">
+              <strong>{hover.label}</strong>
+              <span>{formatNum(hover.value, metric)}</span>
+            </div>
+          ) : null}
         </div>
-      )}
-      {hover && (
-        <div className="ilog-dash-map-tip" role="status">
-          <strong>{hover.city}</strong>
-          <span>{formatNum(hover.value, metric)}</span>
-        </div>
-      )}
-      {!points.length && <p className="ilog-dash-empty muted">No mapped city data yet</p>}
+      ) : null}
+
+      <div className="ilog-city-list" aria-label="Locations by movement volume">
+        {!rankedCities.length ? (
+          <p className="ilog-dash-empty muted">No destination cities in this period.</p>
+        ) : (
+          rankedCities.slice(0, 8).map((city) => {
+            const value = Number(city[valueKey]) || 0;
+            const label = placeLabel(city.city, city.state);
+            return (
+              <div key={label} className="ilog-city-row">
+                <div className="ilog-city-row-label">
+                  <strong title={label}>{label}</strong>
+                  <span>{formatNum(value, metric)}</span>
+                </div>
+                <div className="ilog-city-track" aria-hidden="true">
+                  <span style={{ width: `${Math.max(6, (value / maxCity) * 100)}%` }} />
+                </div>
+              </div>
+            );
+          })
+        )}
+        {unmappedCount > 0 ? (
+          <p className="ilog-dash-empty muted">
+            {unmappedCount} location{unmappedCount === 1 ? '' : 's'} listed without map coordinates.
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -189,9 +283,7 @@ function KpiGroup({ title, items, metric, columns }) {
   return (
     <section className="ilog-kpi-group" aria-label={title}>
       <h3 className="ilog-kpi-group-title">{title}</h3>
-      <div
-        className={`ilog-dash-kpi-row${columns === 4 ? ' ilog-dash-kpi-row--4' : ''}`}
-      >
+      <div className={`ilog-dash-kpi-row${columns === 4 ? ' ilog-dash-kpi-row--4' : ''}`}>
         {items.map((item) => (
           <div
             key={item.label}
@@ -210,6 +302,7 @@ const EMPTY = {
   filters: { months: [], inventoryTypes: [], hcws: [] },
   kpis: {},
   byCity: [],
+  routes: [],
   byInventoryType: [],
 };
 
@@ -289,119 +382,57 @@ export default function LogisticsHubPage({
 
   const k = data.kpis || {};
   const m = metric;
-  const unit = m === 'amount' ? 'Amount' : 'Quantity';
   const focusedCustodian =
     applied.hcwId !== 'all'
       ? (data.filters?.hcws || []).find((custodian) => String(custodian.id) === String(applied.hcwId))
       : null;
 
   const row1 = [
-    { label: `Goods Receipt ${unit}`, value: m === 'amount' ? k.inwardAmount : k.inwardQty, tone: 'in' },
-    { label: `Goods Issue ${unit}`, value: m === 'amount' ? k.outwardAmount : k.outwardQty, tone: 'out' },
-    {
-      label: `Balance ${unit}`,
-      value: m === 'amount' ? k.balanceAmount : k.balanceQty,
-      tone: 'balance',
-    },
+    { label: 'Goods Receipt', value: m === 'amount' ? k.inwardAmount : k.inwardQty, tone: 'in' },
+    { label: 'Goods Issue', value: m === 'amount' ? k.outwardAmount : k.outwardQty, tone: 'out' },
+    { label: 'Balance', value: m === 'amount' ? k.balanceAmount : k.balanceQty, tone: 'balance' },
   ];
   const row2 = [
-    { label: `Used ${unit}`, value: m === 'amount' ? k.usedAmount : k.usedQty, tone: 'used' },
+    { label: 'Used', value: m === 'amount' ? k.usedAmount : k.usedQty, tone: 'used' },
+    { label: 'Wastage', value: m === 'amount' ? k.wastageAmount : k.wastageQty, tone: 'waste' },
     {
-      label: `Wastage ${unit}`,
-      value: m === 'amount' ? k.wastageAmount : k.wastageQty,
-      tone: 'waste',
-    },
-    {
-      label: `Field Balance ${unit}`,
+      label: 'Field Balance',
       value: m === 'amount' ? k.fieldBalanceAmount : k.fieldBalanceQty,
       tone: 'field',
     },
   ];
   const row3 = [
-    { label: `Safe ${unit}`, value: m === 'amount' ? k.safeAmount : k.safeQty, tone: 'safe' },
-    {
-      label: `Caution ${unit}`,
-      value: m === 'amount' ? k.cautionAmount : k.cautionQty,
-      tone: 'caution',
-    },
-    {
-      label: `Critical ${unit}`,
-      value: m === 'amount' ? k.criticalAmount : k.criticalQty,
-      tone: 'critical',
-    },
-    {
-      label: `Expired ${unit}`,
-      value: m === 'amount' ? k.expiredAmount : k.expiredQty,
-      tone: 'expired',
-    },
+    { label: 'Safe', value: m === 'amount' ? k.safeAmount : k.safeQty, tone: 'safe' },
+    { label: 'Caution', value: m === 'amount' ? k.cautionAmount : k.cautionQty, tone: 'caution' },
+    { label: 'Critical', value: m === 'amount' ? k.criticalAmount : k.criticalQty, tone: 'critical' },
+    { label: 'Expired', value: m === 'amount' ? k.expiredAmount : k.expiredQty, tone: 'expired' },
   ];
+
+  const metricToggle = (
+    <div className="ilog-dash-metric-field">
+      <div className="ilog-dash-metric" role="group" aria-label="Quantity or amount">
+        <button
+          type="button"
+          className={`ilog-dash-metric-btn${metric === 'quantity' ? ' is-active' : ''}`}
+          onClick={() => setMetric('quantity')}
+        >
+          Quantity
+        </button>
+        <button
+          type="button"
+          className={`ilog-dash-metric-btn${metric === 'amount' ? ' is-active' : ''}`}
+          onClick={() => setMetric('amount')}
+        >
+          Amount
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className={`ilog-hub${embedded ? ' ilog-hub--embedded' : ''}`}>
-      {!embedded && (
-      <section className="ilog-quick-actions" aria-label="Quick actions">
-        <Link to="/movement-one/inward" className="ilog-rail-card">
-          <span className="ilog-rail-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="10" y="14" width="22" height="22" rx="3" />
-              <path d="M32 25h10M38 19l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M16 22h10M16 28h7" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span className="ilog-rail-body">
-            <strong>{NAV.GOODS_RECEIPT}</strong>
-            <span>Seller receipts and field returns land in the warehouse.</span>
-            <em>Open →</em>
-          </span>
-        </Link>
-
-        <Link to="/movement-one/outward" className="ilog-rail-card">
-          <span className="ilog-rail-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="16" y="14" width="22" height="22" rx="3" />
-              <path d="M16 25H6M12 19l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M22 22h10M22 28h7" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span className="ilog-rail-body">
-            <strong>{NAV.GOODS_ISSUE}</strong>
-            <span>Manual goods issue or fulfill a Request One goods issue.</span>
-            <em>Open →</em>
-          </span>
-        </Link>
-      </section>
-      )}
-
       <section className="ilog-dash" aria-busy={busy}>
-        {embedded ? null : (
-        <header className="ilog-dash-header">
-          <div>
-            <p className="ilog-dash-eyebrow">{MODULE.LOGISTICS}</p>
-            <h2>Stock movement and field balance</h2>
-            <p>Receipts, issues, consumption, expiry health, and city distribution.</p>
-          </div>
-          <div className="ilog-dash-metric" role="group" aria-label="Display metric">
-            <button
-              type="button"
-              className={`ilog-dash-metric-btn${metric === 'quantity' ? ' is-active' : ''}`}
-              onClick={() => setMetric('quantity')}
-            >
-              Quantity
-            </button>
-            <button
-              type="button"
-              className={`ilog-dash-metric-btn${metric === 'amount' ? ' is-active' : ''}`}
-              onClick={() => setMetric('amount')}
-            >
-              Amount
-            </button>
-          </div>
-        </header>
-        )}
-
-        {error && (
-          <FeedbackBanner variant="error">{error}</FeedbackBanner>
-        )}
+        {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
 
         {embedded ? (
           <OpsReviewSlot
@@ -421,9 +452,7 @@ export default function LogisticsHubPage({
               >
                 <option value="all">All categories</option>
                 {(data.filters?.inventoryTypes || []).map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
+                  <option key={type} value={type}>{type}</option>
                 ))}
               </AdaptiveSelect>
             </label>
@@ -459,61 +488,51 @@ export default function LogisticsHubPage({
               </AdaptiveSelect>
             </label>
           </OpsReviewSlot>
-        ) : null}
-
-        {!embedded ? (
-        <div className="ilog-filter-panel">
-          <div className="ilog-filter-heading">
-            <div>
-              <strong>Filters</strong>
-              <span>Refine all dashboard metrics</span>
-            </div>
-            {busy && <span className="muted ilog-dash-busy">Updating…</span>}
+        ) : (
+          <div className="ilog-dash-toolbar">
+            <DateRangeFilter
+              className="ilog-dash-filters"
+              from={dateFrom}
+              to={dateTo}
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              onSubmit={submitFilters}
+              onClear={clearFilters}
+              submitting={busy}
+            >
+              <div className="date-range-filter-field">
+                <label htmlFor="ilog-inv">Product category</label>
+                <AdaptiveSelect
+                  id="ilog-inv"
+                  value={inventoryType}
+                  onChange={(e) => setInventoryType(e.target.value)}
+                >
+                  <option value="all">All categories</option>
+                  {(data.filters?.inventoryTypes || []).map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </AdaptiveSelect>
+              </div>
+              <div className="date-range-filter-field">
+                <label htmlFor="ilog-hcw">Custodian / HCW</label>
+                <AdaptiveSelect
+                  id="ilog-hcw"
+                  value={hcwId}
+                  onChange={(e) => setHcwId(e.target.value)}
+                >
+                  <option value="all">All custodians</option>
+                  {(data.filters?.hcws || []).map((hcw) => (
+                    <option key={hcw.id} value={hcw.id}>
+                      {hcw.id}
+                      {hcw.name && hcw.name !== hcw.id ? `: ${hcw.name}` : ''}
+                    </option>
+                  ))}
+                </AdaptiveSelect>
+              </div>
+            </DateRangeFilter>
+            {metricToggle}
           </div>
-          <DateRangeFilter
-            className="ilog-dash-filters"
-            from={dateFrom}
-            to={dateTo}
-            onFromChange={setDateFrom}
-            onToChange={setDateTo}
-            onSubmit={submitFilters}
-            onClear={clearFilters}
-            submitting={busy}
-          >
-            <div className="date-range-filter-field">
-              <label htmlFor="ilog-inv">Product category</label>
-              <AdaptiveSelect
-                id="ilog-inv"
-                value={inventoryType}
-                onChange={(e) => setInventoryType(e.target.value)}
-              >
-                <option value="all">All categories</option>
-                {(data.filters?.inventoryTypes || []).map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </AdaptiveSelect>
-            </div>
-            <div className="date-range-filter-field">
-              <label htmlFor="ilog-hcw">Custodian / HCW</label>
-              <AdaptiveSelect
-                id="ilog-hcw"
-                value={hcwId}
-                onChange={(e) => setHcwId(e.target.value)}
-              >
-                <option value="all">All custodians</option>
-                {(data.filters?.hcws || []).map((hcw) => (
-                  <option key={hcw.id} value={hcw.id}>
-                    {hcw.id}
-                    {hcw.name && hcw.name !== hcw.id ? `: ${hcw.name}` : ''}
-                  </option>
-                ))}
-              </AdaptiveSelect>
-            </div>
-          </DateRangeFilter>
-        </div>
-        ) : null}
+        )}
 
         <div className="ilog-dash-body">
           <div className="ilog-kpi-sections">
@@ -524,11 +543,12 @@ export default function LogisticsHubPage({
 
           <section className="ilog-dash-panel ilog-dash-panel--map">
             <header className="ilog-dash-panel-head">
-              <h3>Inventory by city</h3>
-              <p>Filter by custodian to zoom</p>
+              <h3>Locations &amp; routes</h3>
+              <p>Destination volume and goods-issue routes</p>
             </header>
-            <IndiaInventoryMap
+            <MovementLocationPreview
               cities={data.byCity || []}
+              routes={data.routes || []}
               metric={metric}
               focusedCustodian={focusedCustodian}
             />

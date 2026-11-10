@@ -5,10 +5,11 @@ import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import OpsReviewHeader, { OpsReviewSlotProvider } from './OpsReviewHeader.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, downloadExcel } from '../../shared/api.js';
-import { formatDateRangeLabel, formatDateTime } from '../../shared/dateFormat.js';
+import { formatDateRangeLabel } from '../../shared/dateFormat.js';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { getQuickDateRange } from '../camps/utils/dateRange.js';
 import { buildOpsReviewReturnTo, withOpsReviewReturnTo } from './opsReviewReturn.js';
+import OpsOverviewBoard from './OpsOverviewBoard.jsx';
 
 const LogisticsHubPage = lazy(() => import('../logistics/LogisticsHubPage.jsx'));
 const CampOperationsBoard = lazy(() => import('../camps/components/CampOperationsBoard.jsx'));
@@ -137,152 +138,12 @@ function breakdownEntries(summary = {}) {
   return blocks;
 }
 
-function formatInr(n) {
-  const value = Number(n) || 0;
-  try {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(value);
-  } catch {
-    return `₹${value.toLocaleString('en-IN')}`;
-  }
-}
-
-function formatKpiValue(kpi) {
-  if (kpi.format === 'currency') return formatInr(kpi.value);
-  return Number(kpi.value || 0).toLocaleString('en-IN');
-}
-
-function severityClass(severity) {
-  if (severity === 'critical') return 'is-critical';
-  if (severity === 'high' || severity === 'warn') return 'is-warn';
-  if (severity === 'medium') return 'is-medium';
-  if (severity === 'ok') return 'is-ok';
-  return '';
-}
-
-function severityLabel(severity) {
-  if (!severity) return 'Info';
-  return String(severity).replace(/_/g, ' ');
-}
-
-function relativeUpdated(iso) {
-  if (!iso) return '';
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return '';
-  const mins = Math.max(0, Math.round((Date.now() - t) / 60000));
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return formatDateTime(iso);
-}
-
-function HealthRing({ score = 0, tone = 'ok' }) {
-  const value = Math.max(0, Math.min(100, Number(score) || 0));
-  const r = 42;
-  const c = 2 * Math.PI * r;
-  const offset = c - (value / 100) * c;
-  return (
-    <div className={`ops-ring ops-ring--${tone}`} aria-hidden="true">
-      <svg viewBox="0 0 100 100" className="ops-ring-svg">
-        <circle className="ops-ring-track" cx="50" cy="50" r={r} />
-        <circle
-          className="ops-ring-progress"
-          cx="50"
-          cy="50"
-          r={r}
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-        />
-      </svg>
-      <div className="ops-ring-center">
-        <span className="ops-health-value">{value}</span>
-        <span className="ops-health-label">Score</span>
-      </div>
-    </div>
-  );
-}
-
-function OverviewSkeleton() {
-  return (
-    <div className="ops-overview" aria-busy="true" aria-label="Loading overview">
-      <div className="ops-skel ops-skel--hero" />
-      <div className="ops-kpi-grid">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="ops-skel ops-skel--kpi" />
-        ))}
-      </div>
-      <div className="ops-split">
-        <div className="ops-skel ops-skel--panel" />
-        <div className="ops-skel ops-skel--panel" />
-      </div>
-    </div>
-  );
-}
-
-function StatusBars({ title, map = {}, empty = 'No distribution data yet' }) {
-  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  const total = entries.reduce((s, [, n]) => s + n, 0) || 1;
-  const max = entries.reduce((m, [, n]) => Math.max(m, n), 0) || 1;
-  if (!entries.length) {
-    return (
-      <section className="ops-panel ops-panel--soft">
-        <header className="ops-panel-head">
-          <h3>{title}</h3>
-        </header>
-        <p className="ops-empty-inline">{empty}</p>
-      </section>
-    );
-  }
-  return (
-    <section className="ops-panel ops-panel--soft">
-      <header className="ops-panel-head">
-        <h3>{title}</h3>
-        <span className="ops-panel-meta">{total.toLocaleString('en-IN')} total</span>
-      </header>
-      <ul className="ops-bars">
-        {entries.map(([label, count]) => (
-          <li key={label}>
-            <div className="ops-bars-meta">
-              <span className="ops-bars-label">{label || '—'}</span>
-              <span className="ops-bars-count">
-                {count}
-                <em>{Math.round((count / total) * 100)}%</em>
-              </span>
-            </div>
-            <div className="ops-bars-track" aria-hidden="true">
-              <span style={{ width: `${Math.max(4, (count / max) * 100)}%` }} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function insightLine(overview) {
-  if (!overview) return '';
-  const alerts = overview.alerts?.length || 0;
-  const pending = (overview.pending || []).reduce((s, p) => s + (Number(p.count) || 0), 0);
-  const breached = overview.repairsSla?.breached || 0;
-  if (alerts === 0 && pending === 0 && breached === 0) {
-    return 'All queues are clear. No critical risks or SLA breaches reported.';
-  }
-  const parts = [];
-  if (pending > 0) parts.push(`${pending} pending action${pending === 1 ? '' : 's'}`);
-  if (alerts > 0) parts.push(`${alerts} active alert${alerts === 1 ? '' : 's'}`);
-  if (breached > 0) parts.push(`${breached} SLA breach${breached === 1 ? '' : 'es'}`);
-  return `Focus now: ${parts.join(' · ')}.`;
-}
-
 export default function TrackingDashboardPage() {
   const { can } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const canDownload = can('dashboards:read') || can('*');
   const canSeeCampOps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
+  const showAssetValue = can('assets:view-value') || can('*');
 
   const moduleParam = searchParams.get('module');
   const tabParam = searchParams.get('tab');
@@ -295,9 +156,6 @@ export default function TrackingDashboardPage() {
       ? 'drilldown'
       : 'overview';
   const [view, setView] = useState(initialView);
-  const [overview, setOverview] = useState(null);
-  const [overviewLoading, setOverviewLoading] = useState(true);
-  const [overviewError, setOverviewError] = useState('');
 
   const [modules, setModules] = useState([]);
   const [moduleId, setModuleId] = useState(wantsCampReview ? 'camps' : '');
@@ -311,25 +169,31 @@ export default function TrackingDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [submitted, setSubmitted] = useState(Boolean(wantsCampReview));
+  const [overviewData, setOverviewData] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState('');
 
   const isEmbeddedModule = EMBEDDED_REVIEW.has(moduleId);
 
-  const loadOverview = useCallback(async () => {
+  const loadOverviewKpis = useCallback(async () => {
     setOverviewLoading(true);
     setOverviewError('');
     try {
-      const res = await api('/dashboards/overview');
-      setOverview(res.data);
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const q = params.toString();
+      const res = await api(`/dashboards/ops-overview-kpis${q ? `?${q}` : ''}`);
+      setOverviewData(res.data || null);
     } catch (err) {
-      setOverview(null);
-      setOverviewError(err.message);
+      setOverviewData(null);
+      setOverviewError(err.message || 'Unable to load overview KPIs.');
     } finally {
       setOverviewLoading(false);
     }
-  }, []);
+  }, [from, to]);
 
   useEffect(() => {
-    loadOverview();
     api('/dashboards/modules')
       .then((r) => {
         const list = r.data || [];
@@ -343,7 +207,13 @@ export default function TrackingDashboardPage() {
         }
       })
       .catch((e) => setError(e.message));
-  }, [loadOverview, wantsCampReview]);
+  }, [wantsCampReview]);
+
+  useEffect(() => {
+    if (view !== 'overview') return undefined;
+    loadOverviewKpis();
+    return undefined;
+  }, [view, loadOverviewKpis]);
 
   useEffect(() => {
     if (!wantsCampReview) return;
@@ -381,7 +251,6 @@ export default function TrackingDashboardPage() {
   }, [from, to]);
 
   useEffect(() => {
-    if (view !== 'drilldown') return;
     setSearchParams((prev) => {
       if (
         (prev.get('from') || '') === (from || '')
@@ -394,7 +263,7 @@ export default function TrackingDashboardPage() {
       applyRangeToParams(params, from, to, preset);
       return params;
     }, { replace: true });
-  }, [view, from, to, preset, setSearchParams]);
+  }, [from, to, preset, setSearchParams]);
 
   const setDashboardView = (next) => {
     setView(next);
@@ -405,26 +274,10 @@ export default function TrackingDashboardPage() {
         if (moduleId) params.set('module', moduleId);
         applyRangeToParams(params, from, to, preset);
       } else {
-        params.delete('tab');
+        params.set('tab', 'overview');
         params.delete('module');
+        applyRangeToParams(params, from, to, preset);
       }
-      return params;
-    }, { replace: true });
-  };
-
-  const openDrilldown = (nextModuleId) => {
-    const next = nextModuleId || moduleId;
-    if (next) setModuleId(next);
-    setView('drilldown');
-    setData(null);
-    const autoSubmit = EMBEDDED_REVIEW.has(next);
-    setSubmitted(autoSubmit);
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set('tab', 'drilldown');
-      if (next) params.set('module', next);
-      else params.delete('module');
-      applyRangeToParams(params, from, to, preset);
       return params;
     }, { replace: true });
   };
@@ -516,15 +369,6 @@ export default function TrackingDashboardPage() {
 
   const summaryBlocks = breakdownEntries(data?.summary);
 
-  const health = overview?.health;
-  const fin = overview?.financials;
-  const agreements = overview?.agreementsHealth;
-  const repairs = overview?.repairsSla;
-  const pendingTotal = useMemo(
-    () => (overview?.pending || []).reduce((s, p) => s + (Number(p.count) || 0), 0),
-    [overview]
-  );
-  const insight = useMemo(() => insightLine(overview), [overview]);
   const reviewPresets = useMemo(() => [...CAMP_DAY_PRESETS, ...PRESETS], []);
   const fallbackTotal = useMemo(() => {
     if (!submitted || isEmbeddedModule) return null;
@@ -540,7 +384,7 @@ export default function TrackingDashboardPage() {
     <PageShell
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="Executive project health: KPIs, pending work, operational risks, and finances."
+      description="KPI architecture across Asset, Verification, Camp, Master, Movement, and Finance One."
       actions={
         <>
           <div className="ops-view-toggle" role="tablist" aria-label="Dashboard view">
@@ -563,16 +407,6 @@ export default function TrackingDashboardPage() {
               Module review
             </button>
           </div>
-          {view === 'overview' ? (
-            <button
-              className="btn secondary"
-              type="button"
-              disabled={overviewLoading}
-              onClick={loadOverview}
-            >
-              {overviewLoading ? 'Refreshing…' : 'Refresh'}
-            </button>
-          ) : null}
           {view === 'drilldown' && submitted && moduleId === 'logistics' ? (
             <Link className="btn secondary" to="/movement-one">
               Open Movement One
@@ -621,325 +455,31 @@ export default function TrackingDashboardPage() {
         </>
       }
     >
-      {(overviewError || error) && view === 'overview' ? (
-        <FeedbackBanner variant="error">{overviewError || error}</FeedbackBanner>
-      ) : null}
       {error && view === 'drilldown' ? (
         <FeedbackBanner variant="error">{error}</FeedbackBanner>
       ) : null}
 
       {view === 'overview' ? (
-        <div className="ops-overview">
-          {overviewLoading && !overview ? <OverviewSkeleton /> : null}
-
-          {!overviewLoading && !overview && !overviewError ? (
-            <EmptyState
-              title="No dashboard data available"
-              description="The dashboard returned no overview data. Use Refresh to try again."
-              action={(
-                <button className="btn secondary" type="button" onClick={loadOverview}>
-                  Refresh
-                </button>
-              )}
-            />
-          ) : null}
-
-          {overview ? (
-            <>
-              <section className={`ops-hero ops-hero--${health?.tone || 'ok'}`}>
-                <div className="ops-hero-main">
-                  <HealthRing score={health?.score} tone={health?.tone || 'ok'} />
-                  <div className="ops-hero-copy">
-                    <div className="ops-hero-eyebrow">
-                      <span className={`ops-tone-pill ops-tone-pill--${health?.tone || 'ok'}`}>
-                        {health?.label || 'Project health'}
-                      </span>
-                      <span className="ops-hero-updated" title={formatDateTime(overview.generatedAt)}>
-                        Updated {relativeUpdated(overview.generatedAt)}
-                      </span>
-                    </div>
-                    <h2>Complete project health</h2>
-                    <p className="ops-hero-insight">{insight}</p>
-                    <div className="ops-hero-chips" aria-label="Attention summary">
-                      <span className="ops-chip">
-                        <strong>{overview.alerts?.length || 0}</strong> alerts
-                      </span>
-                      <span className="ops-chip">
-                        <strong>{pendingTotal}</strong> pending
-                      </span>
-                      <span className="ops-chip">
-                        <strong>{repairs?.breached || 0}</strong> SLA breaches
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <aside className="ops-hero-aside" aria-label="Quick signals">
-                  <div className="ops-signal">
-                    <span className="ops-signal-label">Open repairs</span>
-                    <strong>{repairs?.openCount || 0}</strong>
-                  </div>
-                  <div className="ops-signal">
-                    <span className="ops-signal-label">Agreements expiring</span>
-                    <strong>{agreements?.expiring || 0}</strong>
-                  </div>
-                  <div className="ops-signal">
-                    <span className="ops-signal-label">Expense open</span>
-                    <strong>{fin?.expenseOpen || 0}</strong>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-compact ops-hero-cta"
-                    onClick={() => setDashboardView('drilldown')}
-                  >
-                    Module review
-                  </button>
-                </aside>
-              </section>
-
-              <section className="ops-section" aria-labelledby="ops-kpi-heading">
-                <div className="ops-section-head">
-                  <div>
-                    <h3 id="ops-kpi-heading">Critical KPIs</h3>
-                    <p>Live cross-module metrics. Select any card to take action.</p>
-                  </div>
-                </div>
-                <div className="ops-kpi-grid" aria-label="Critical KPIs">
-                  {(overview.kpis || []).map((kpi) => (
-                    <Link
-                      key={kpi.id}
-                      to={kpi.href || '#'}
-                      className={`ops-kpi ${severityClass(kpi.tone)}`}
-                    >
-                      <span className="ops-kpi-label">{kpi.label}</span>
-                      <span className="ops-kpi-value">{formatKpiValue(kpi)}</span>
-                      <span className="ops-kpi-go">Open →</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-
-              <div className="ops-split">
-                <section className="ops-panel" aria-labelledby="ops-pending-heading">
-                  <header className="ops-panel-head">
-                    <div>
-                      <h3 id="ops-pending-heading">Pending actions</h3>
-                      <p className="ops-panel-sub">Queues that block progress</p>
-                    </div>
-                    <span className="ops-count-badge">{pendingTotal}</span>
-                  </header>
-                  {!overview.pending?.length ? (
-                    <div className="ops-empty">
-                      <strong>All clear</strong>
-                      <p>No open approval or finance queues.</p>
-                    </div>
-                  ) : (
-                    <ul className="ops-action-list">
-                      {overview.pending.map((item) => (
-                        <li key={item.id} className={severityClass(item.severity)}>
-                          <div className="ops-item-body">
-                            <strong>{item.label}</strong>
-                            <span className="ops-item-meta">
-                              <em>{item.count}</em> open
-                            </span>
-                          </div>
-                          <div className="ops-action-links">
-                            <Link className="btn secondary btn-compact" to={item.href}>
-                              Open
-                            </Link>
-                            {item.module ? (
-                              <button
-                                type="button"
-                                className="btn ghost btn-compact"
-                                onClick={() => openDrilldown(item.module)}
-                              >
-                                Review
-                              </button>
-                            ) : null}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-
-                <section className="ops-panel" aria-labelledby="ops-alerts-heading">
-                  <header className="ops-panel-head">
-                    <div>
-                      <h3 id="ops-alerts-heading">Risks &amp; alerts</h3>
-                      <p className="ops-panel-sub">Priority first</p>
-                    </div>
-                    <span className="ops-count-badge ops-count-badge--warn">
-                      {overview.alerts?.length || 0}
-                    </span>
-                  </header>
-                  {!overview.alerts?.length ? (
-                    <div className="ops-empty">
-                      <strong>No active risks</strong>
-                      <p>No critical or high-severity signals right now.</p>
-                    </div>
-                  ) : (
-                    <ul className="ops-alert-list">
-                      {overview.alerts.map((alert) => (
-                        <li key={alert.id} className={severityClass(alert.severity)}>
-                          <div className="ops-item-body">
-                            <span className={`ops-severity ops-severity--${alert.severity}`}>
-                              {severityLabel(alert.severity)}
-                            </span>
-                            <strong>{alert.label}</strong>
-                            <p>{alert.detail}</p>
-                          </div>
-                          <div className="ops-action-links">
-                            <Link className="btn secondary btn-compact" to={alert.href}>
-                              Review
-                            </Link>
-                            {alert.module ? (
-                              <button
-                                type="button"
-                                className="btn ghost btn-compact"
-                                onClick={() => openDrilldown(alert.module)}
-                              >
-                                Drill down
-                              </button>
-                            ) : null}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              </div>
-
-              <section className="ops-section" aria-labelledby="ops-finance-heading">
-                <div className="ops-section-head">
-                  <div>
-                    <h3 id="ops-finance-heading">Financial snapshot</h3>
-                    <p>Commercial documents, expenses, and agreement exposure.</p>
-                  </div>
-                  <Link className="btn secondary btn-compact" to="/finance-one">
-                    Finance One
-                  </Link>
-                </div>
-                <div className="ops-finance-grid">
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Expense total</span>
-                    <strong>{formatInr(fin?.expenseTotal)}</strong>
-                    <span className="ops-tile-meta">
-                      {fin?.expenseCount || 0} expenses · {fin?.expenseOpen || 0} open
-                    </span>
-                  </div>
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Vendor invoices</span>
-                    <strong>{formatInr(fin?.invoiceTotal)}</strong>
-                    <span className="ops-tile-meta">
-                      {fin?.invoiceCount || 0} invoices · {fin?.invoiceOpen || 0} open
-                    </span>
-                  </div>
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Client invoices</span>
-                    <strong>{formatInr(fin?.clientInvoiceTotal)}</strong>
-                    <span className="ops-tile-meta">
-                      {fin?.clientInvoiceCount || 0} docs · {fin?.commercialDraft || 0} in progress
-                    </span>
-                  </div>
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Proformas</span>
-                    <strong>{fin?.proformaCount || 0}</strong>
-                    <span className="ops-tile-meta">{fin?.proformaDraft || 0} draft</span>
-                  </div>
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Purchase orders</span>
-                    <strong>{fin?.purchaseOrderCount || 0}</strong>
-                    <span className="ops-tile-meta">{fin?.purchaseOrderDraft || 0} draft</span>
-                  </div>
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Agreements active</span>
-                    <strong>{agreements?.active || 0}</strong>
-                    <span className="ops-tile-meta">
-                      {agreements?.expiring || 0} expiring · {agreements?.expired || 0} expired
-                    </span>
-                  </div>
-                  <div className="ops-finance-tile">
-                    <span className="ops-kpi-label">Repair SLA</span>
-                    <strong>
-                      {repairs?.openCount || 0} <span className="ops-tile-unit">open</span>
-                    </strong>
-                    <span className="ops-tile-meta">{repairs?.breached || 0} breached</span>
-                  </div>
-                </div>
-              </section>
-
-              <section className="ops-section" aria-labelledby="ops-modules-heading">
-                <div className="ops-section-head">
-                  <div>
-                    <h3 id="ops-modules-heading">Module portfolio</h3>
-                    <p>Status by module. Select a module to work on it, or drill into a dated review.</p>
-                  </div>
-                </div>
-                <div className="ops-module-grid">
-                  {(overview.modules || []).map((mod) => (
-                    <article key={mod.id} className={`ops-module ${severityClass(mod.status)}`}>
-                      <div className="ops-module-top">
-                        <h4>{mod.label}</h4>
-                        <span className={`ops-status-pill ops-status-pill--${mod.status || 'ok'}`}>
-                          {mod.status === 'critical'
-                            ? 'Critical'
-                            : mod.status === 'warn'
-                              ? 'Watch'
-                              : 'Healthy'}
-                        </span>
-                      </div>
-                      <div className="ops-module-metrics">
-                        <div>
-                          <strong>{Number(mod.primary || 0).toLocaleString('en-IN')}</strong>
-                          <span>{mod.primaryLabel}</span>
-                        </div>
-                        {mod.secondaryLabel ? (
-                          <div>
-                            <strong>{Number(mod.secondary || 0).toLocaleString('en-IN')}</strong>
-                            <span>{mod.secondaryLabel}</span>
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="ops-action-links ops-module-actions">
-                        <Link className="btn secondary btn-compact" to={mod.href}>
-                          Open
-                        </Link>
-                        <button
-                          type="button"
-                          className="btn ghost btn-compact"
-                          onClick={() => openDrilldown(mod.id)}
-                        >
-                          Review
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="ops-section" aria-labelledby="ops-dist-heading">
-                <div className="ops-section-head">
-                  <div>
-                    <h3 id="ops-dist-heading">Operational distribution</h3>
-                    <p>Status mix across assets, requests, verification, and camps.</p>
-                  </div>
-                </div>
-                <div className="ops-breakdown-grid">
-                  <StatusBars title="Assets by status" map={overview.breakdowns?.assetsByStatus} />
-                  <StatusBars
-                    title="Requests by status"
-                    map={overview.breakdowns?.requestsByStatus}
-                  />
-                  <StatusBars
-                    title="Verifications by status"
-                    map={overview.breakdowns?.verificationByStatus}
-                  />
-                  <StatusBars title="Camps by status" map={overview.breakdowns?.campsByStatus} />
-                </div>
-              </section>
-            </>
-          ) : null}
-        </div>
+        <OpsOverviewBoard
+          data={overviewData}
+          loading={overviewLoading}
+          error={overviewError}
+          showValue={showAssetValue}
+          from={from}
+          to={to}
+          preset={preset}
+          presets={reviewPresets}
+          onFrom={(next) => {
+            setFrom(next);
+            setPreset(detectPreset(next, to));
+          }}
+          onTo={(next) => {
+            setTo(next);
+            setPreset(detectPreset(from, next));
+          }}
+          onPreset={applyPreset}
+          onRefresh={loadOverviewKpis}
+        />
       ) : null}
 
       {view === 'drilldown' ? (
@@ -948,34 +488,34 @@ export default function TrackingDashboardPage() {
             presets={reviewPresets}
             preset={preset}
             onPreset={applyPreset}
-            from={from}
-            to={to}
+          from={from}
+          to={to}
             onFrom={(next) => {
-              setFrom(next);
-              setPreset(detectPreset(next, to));
-            }}
+            setFrom(next);
+            setPreset(detectPreset(next, to));
+          }}
             onTo={(next) => {
-              setTo(next);
-              setPreset(detectPreset(from, next));
-            }}
+            setTo(next);
+            setPreset(detectPreset(from, next));
+          }}
             moduleId={moduleId}
             modules={modules}
             onModule={(next) => {
-              setModuleId(next);
-              setData(null);
-              setError('');
+                setModuleId(next);
+                setData(null);
+                setError('');
               if (EMBEDDED_REVIEW.has(next)) {
-                setSubmitted(true);
-                setSearchParams((prev) => {
-                  const params = new URLSearchParams(prev);
-                  params.set('tab', 'drilldown');
-                  params.set('module', next);
-                  return params;
-                }, { replace: true });
-              } else {
-                setSubmitted(false);
-              }
-            }}
+                  setSubmitted(true);
+                  setSearchParams((prev) => {
+                    const params = new URLSearchParams(prev);
+                    params.set('tab', 'drilldown');
+                    params.set('module', next);
+                    return params;
+                  }, { replace: true });
+                } else {
+                  setSubmitted(false);
+                }
+              }}
             onSubmit={submitReview}
             onClear={clearReview}
             submitting={loading}

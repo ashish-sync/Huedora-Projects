@@ -311,8 +311,8 @@ textarea {
 }
 
 .header-bell-badge--blue {
-  background: #2563EB !important;
-  color: #FFFFFF !important;
+  background: var(--brand-primary) !important;
+  color: var(--text-on-brand) !important;
   min-width: 18px;
   height: 18px;
   border-radius: 9999px;
@@ -339,7 +339,7 @@ textarea {
 
 .header-profile--pill:hover,
 .header-profile--pill.is-open {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-interactive-overlay);
 }
 
 .header-user-display-name {
@@ -468,7 +468,7 @@ textarea {
   height: var(--control-h-sm);
   padding: 0 12px;
   border-radius: var(--radius-md);
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--color-text-on-primary-muted);
   font-size: 0.84rem;
   font-weight: 650;
   letter-spacing: -0.01em;
@@ -477,7 +477,7 @@ textarea {
 
 .header-nav-link:hover,
 .header-nav-link.is-active {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--color-text-on-primary) 14%, transparent);
   color: var(--color-text-on-primary);
 }
 
@@ -866,13 +866,13 @@ textarea {
 }
 
 .app-sidebar--collapsed .sidebar-nav-item.is-active {
-  background: #2563EB !important;
-  color: #FFFFFF !important;
+  background: var(--brand-primary) !important;
+  color: var(--text-on-brand) !important;
   border-radius: 8px;
 }
 
 .app-sidebar--collapsed .sidebar-nav-item.is-active .sidebar-nav-icon svg {
-  stroke: #FFFFFF !important;
+  stroke: var(--text-on-brand) !important;
 }
 
 .app-sidebar--collapsed .sidebar-nav-item.is-active::before {
@@ -3352,7 +3352,7 @@ textarea {
 }
 
 .tylo-pin-picker-item.is-pinned .tylo-pin-picker-status {
-  color: #eab308;
+  color: var(--color-gold);
 }
 
 /* Department Subzone in Statistics */
@@ -3481,43 +3481,43 @@ textarea {
 }
 
 .tylo-directory-card.tone-asset {
-  --card-accent: #0284c7;
-  --card-soft: color-mix(in srgb, #0284c7 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-asset);
+  --card-soft: color-mix(in srgb, var(--module-tone-asset) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-document {
-  --card-accent: #2563eb;
-  --card-soft: color-mix(in srgb, #2563eb 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-document);
+  --card-soft: color-mix(in srgb, var(--module-tone-document) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-verify {
-  --card-accent: #059669;
-  --card-soft: color-mix(in srgb, #059669 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-verify);
+  --card-soft: color-mix(in srgb, var(--module-tone-verify) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-camp {
-  --card-accent: #d97706;
-  --card-soft: color-mix(in srgb, #d97706 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-camp);
+  --card-soft: color-mix(in srgb, var(--module-tone-camp) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-request {
-  --card-accent: #0284c7;
-  --card-soft: color-mix(in srgb, #0284c7 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-request);
+  --card-soft: color-mix(in srgb, var(--module-tone-request) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-master {
-  --card-accent: #4f46e5;
-  --card-soft: color-mix(in srgb, #4f46e5 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-master);
+  --card-soft: color-mix(in srgb, var(--module-tone-master) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-movement {
-  --card-accent: #0891b2;
-  --card-soft: color-mix(in srgb, #0891b2 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-movement);
+  --card-soft: color-mix(in srgb, var(--module-tone-movement) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card.tone-finance {
-  --card-accent: #16a34a;
-  --card-soft: color-mix(in srgb, #16a34a 12%, var(--color-bg-elevated));
+  --card-accent: var(--module-tone-finance);
+  --card-soft: color-mix(in srgb, var(--module-tone-finance) 12%, var(--color-bg-elevated));
 }
 
 .tylo-directory-card:hover {
@@ -3574,7 +3574,7 @@ textarea {
 }
 
 .tylo-pin-btn.is-pinned {
-  color: #eab308;
+  color: var(--color-gold);
 }
 
 .tylo-pin-btn svg {
@@ -6606,7 +6606,7 @@ body:has(.login-page),
   padding: 16px 18px;
   border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-interactive-overlay);
   backdrop-filter: blur(8px);
   max-width: 32rem;
   animation: rise-in 0.6s var(--ease) 0.12s both;
@@ -6698,7 +6698,7 @@ body:has(.login-page),
 
 .health-insight--login .health-insight-icon {
   color: var(--color-text-on-primary);
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--color-text-on-primary) 14%, transparent);
 }
 
 .health-insight-icon {

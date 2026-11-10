@@ -251,8 +251,6 @@ html[data-theme='light'] {
   --color-pink-subtle: #FDF2F8;
   --color-orange: #C2410C;
   --color-orange-subtle: #FFF7ED;
-  --color-medical: #B42318;
-  --color-medical-subtle: #FEF2F1;
   --color-overlay: rgb(15 23 42 / 0.48);
   --color-scrim: rgb(15 23 42 / 0.32);
   --color-white: #FFFFFF;
@@ -279,8 +277,6 @@ html.dark {
   --color-pink-subtle: rgb(236 72 153 / 0.14);
   --color-orange: #FDBA74;
   --color-orange-subtle: rgb(249 115 22 / 0.14);
-  --color-medical: #F97066;
-  --color-medical-subtle: rgb(249 112 102 / 0.14);
   --color-overlay: rgb(0 0 0 / 0.65);
   --color-scrim: rgb(0 0 0 / 0.48);
   --color-white: #FFFFFF;

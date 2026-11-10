@@ -24,16 +24,15 @@
   --home-info-text: var(--status-info-text);
   --home-info-bg: var(--status-info-bg);
   --home-cyan: var(--status-info-dot);
-  --home-violet: #7C3AED;
-  --home-violet-bg: color-mix(in srgb, #7C3AED 12%, transparent);
-  --home-gold: #B45309;
-  --home-gold-bg: var(--status-warning-bg);
+  --home-violet: var(--color-violet);
+  --home-violet-bg: var(--color-violet-subtle);
+  --home-gold: var(--color-gold);
+  --home-gold-bg: var(--color-gold-subtle);
   --home-note-amber-bg: color-mix(in srgb, var(--status-warning-dot) 16%, var(--bg-tier-2));
   --home-note-sky-bg: color-mix(in srgb, var(--brand-primary) 14%, var(--bg-tier-2));
-  --home-note-violet-bg: color-mix(in srgb, #7C3AED 14%, var(--bg-tier-2));
+  --home-note-violet-bg: color-mix(in srgb, var(--color-violet) 14%, var(--bg-tier-2));
   --home-note-mint-bg: color-mix(in srgb, var(--status-success-dot) 14%, var(--bg-tier-2));
-  --home-panel-shadow: 0 1px 2px color-mix(in srgb, #0F172A 6%, transparent),
-    0 4px 12px color-mix(in srgb, #0F172A 4%, transparent);
+  --home-panel-shadow: var(--shadow-xs), var(--shadow-md);
   --home-motion: 160ms ease;
   --home-focus-ring: 0 0 0 2px var(--home-surface), 0 0 0 4px color-mix(in srgb, var(--home-blue) 55%, transparent);
 
@@ -1497,7 +1496,7 @@
   padding: 8px 10px;
   border-radius: 4px;
   background: var(--home-red-bg);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid color-mix(in srgb, var(--status-danger-dot) 20%, transparent);
   color: var(--home-red);
   font-size: 11px;
   display: flex;
@@ -3796,14 +3795,13 @@ html[data-theme='dark'] .tylo-home,
 .dark .tylo-home,
 html.dark .tylo-home {
   --home-blue: var(--brand-accent);
-  --home-blue-hover: #93C5FD;
-  --home-violet: #A78BFA;
-  --home-violet-bg: color-mix(in srgb, #A78BFA 16%, transparent);
-  --home-gold: #FBBF24;
-  --home-gold-bg: color-mix(in srgb, #FBBF24 14%, transparent);
-  --home-note-violet-bg: color-mix(in srgb, #A78BFA 16%, var(--bg-tier-2));
-  --home-panel-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent),
-    0 8px 20px color-mix(in srgb, #000 22%, transparent);
+  --home-blue-hover: var(--brand-primary-hover);
+  --home-violet: var(--color-violet);
+  --home-violet-bg: var(--color-violet-subtle);
+  --home-gold: var(--color-gold);
+  --home-gold-bg: var(--color-gold-subtle);
+  --home-note-violet-bg: color-mix(in srgb, var(--color-violet) 14%, var(--bg-tier-2));
+  --home-panel-shadow: var(--shadow-xs), var(--shadow-md);
 }
 
 [data-theme='dark'] .tylo-home-ops-grid > .tylo-home-panel,

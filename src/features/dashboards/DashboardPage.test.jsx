@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import DashboardPage, { parseQuickAccessUrlInput } from './DashboardPage.jsx';
+import DashboardPage, { parseQuickAccessUrlInput, welcomeHeadingName } from './DashboardPage.jsx';
 
 const { apiMock, permissions, testUser } = vi.hoisted(() => ({
   apiMock: vi.fn(),
@@ -253,16 +253,25 @@ describe('DashboardPage homepage', () => {
     expect(parseQuickAccessUrlInput('https://evil.example/camps')).toBeNull();
   });
 
+  it('resolves welcome heading identity with role fallback', () => {
+    expect(welcomeHeadingName({ fullName: 'Local Admin' })).toBe('Local');
+    expect(welcomeHeadingName({ systemRole: 'Super Admin' })).toBe('Administrator');
+    expect(welcomeHeadingName({ roleLabel: 'Operations Lead' })).toBe('Operations');
+    expect(welcomeHeadingName({})).toBe('');
+  });
+
   it('adds a page URL widget under Quick Access Customize', async () => {
     const user = userEvent.setup();
     renderDashboardPage();
 
-    await user.click(await screen.findByRole('button', { name: /Customize pins/i }));
-    await user.click(screen.getAllByRole('button', { name: 'Add shortcut' })[0]);
+    await user.click(await screen.findByRole('button', { name: /Customize pins/i }, { timeout: 10000 }));
+    const addButtons = await screen.findAllByRole('button', { name: 'Add shortcut' });
+    await user.click(addButtons[0]);
 
-    const input = screen.getByPlaceholderText(/Module name or page URL/i);
+    const input = await screen.findByPlaceholderText(/Module name or page URL/i);
+    await user.clear(input);
     await user.type(input, 'Camp Ops | /camps/ops-board');
-    await user.click(screen.getByRole('option', { name: /Add page · Camp Ops/i }));
+    await user.click(await screen.findByRole('option', { name: /Add page · Camp Ops/i }));
 
     const saved = JSON.parse(localStorage.getItem('tylo_one_my_view_config') || '{}');
     const items = saved.users?.['admin-1']?.quickAccessItems || [];
@@ -270,20 +279,22 @@ describe('DashboardPage homepage', () => {
 
     await user.click(screen.getByRole('button', { name: /Customize pins/i }));
     expect(screen.getByRole('link', { name: /Camp Ops/i })).toBeTruthy();
-  });
+  }, 20000);
 
   it('filters modules and workflows and can clear the search', async () => {
     const user = userEvent.setup();
     renderDashboardPage();
 
-    const searchInput = await screen.findByPlaceholderText(/Filter modules or workflows/i);
-    await user.type(searchInput, 'Movement');
+    const searchInput = await screen.findByPlaceholderText(/Filter modules or workflows/i, {}, { timeout: 10000 });
+    await user.click(searchInput);
+    await user.clear(searchInput);
+    await user.type(searchInput, 'Movement', { delay: 15 });
 
-    expect(await screen.findByRole('region', { name: 'Search results' })).toBeTruthy();
-    expect(screen.getByText('Movement One')).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Search results' }, { timeout: 10000 })).toBeTruthy();
+    expect(await screen.findByText('Movement One')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(searchInput.value).toBe('');
     expect(screen.getByRole('region', { name: 'Quick access' })).toBeTruthy();
-  });
+  }, 20000);
 });

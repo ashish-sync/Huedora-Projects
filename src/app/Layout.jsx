@@ -17,6 +17,7 @@ import {
 } from '../shared/notificationSound.js';
 import AppErrorBoundary from '../components/AppErrorBoundary.jsx';
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx';
+import CalendarReminderWatcher from '../features/calendar/CalendarReminderWatcher.jsx';
 import { TIME_ZONE } from '../shared/dateFormat.js';
 import '../features/notifications/notifications.css';
 
@@ -472,6 +473,8 @@ export default function Layout({ children }) {
         onConfirm={confirmAndLogout}
         onCancel={() => setConfirmLogout(false)}
       />
+
+      <CalendarReminderWatcher />
     </div>
   );
 }

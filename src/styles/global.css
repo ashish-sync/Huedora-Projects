@@ -991,7 +991,9 @@ textarea {
 }
 
 .main.main--home {
-  padding: 12px var(--page-gutter-inline) 14px;
+  /* Tighter side gutters so the ops dashboard uses more viewport width */
+  --home-gutter-inline: clamp(0.625rem, 1vw, 1rem);
+  padding: 10px var(--home-gutter-inline) 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1006,14 +1008,19 @@ textarea {
   height: 100%;
   max-height: 100%;
   min-height: 0;
+  /* Home is a command surface — fill the shell, don't cap at content-max */
+  max-width: none;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 @media (max-width: 900px) {
   .main.main--home {
     height: auto;
     max-height: none;
-    overflow-y: auto;
-    padding: var(--space-3) var(--page-gutter-inline) var(--space-6);
+  overflow-y: auto;
+    padding: var(--space-3) var(--home-gutter-inline, var(--page-gutter-inline)) var(--space-6);
   }
 
   .main.main--home > .tylo-home {
@@ -1290,9 +1297,9 @@ textarea {
   }
 
   .tylo-command-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   }
 
   .tylo-command-panel {
@@ -9303,7 +9310,7 @@ body:has(.login-page),
 }
 
 /* Backward compatibility for legacy cd-layout if any screen mounts it */
-.cd-layout {
+  .cd-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;

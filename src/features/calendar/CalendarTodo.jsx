@@ -62,6 +62,14 @@ function personLabel(person) {
   return person.fullName || person.name || 'Colleague';
 }
 
+function firstName(name = '') {
+  const parts = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return parts[0] || 'Colleague';
+}
+
 function buildMonthCells(cursor) {
   const first = startOfMonth(cursor);
   const startPad = first.getDay();
@@ -71,6 +79,7 @@ function buildMonthCells(cursor) {
   for (let day = 1; day <= daysInMonth; day += 1) {
     cells.push(new Date(cursor.getFullYear(), cursor.getMonth(), day));
   }
+  /* Pad only to complete the final week — yields dynamic 4–6 rows. */
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
 }
@@ -99,22 +108,24 @@ function ChevronRight() {
   );
 }
 
-function RefreshIcon({ spinning }) {
+function GoToTodayIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      width="13"
-      height="13"
+      width="14"
+      height="14"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.6"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={spinning ? 'tylo-cal-spin' : ''}
       aria-hidden="true"
     >
-      <path d="M13.5 8A5.5 5.5 0 1 1 12 4.1L13.5 2.5" />
-      <path d="M13.5 6V2.5H10" />
+      <rect x="2.25" y="3.25" width="11.5" height="10.5" rx="1.75" />
+      <path d="M2.25 6.5h11.5" />
+      <path d="M5.25 2.25v2" />
+      <path d="M10.75 2.25v2" />
+      <circle cx="8" cy="10" r="1.35" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -123,6 +134,46 @@ function PlusIcon() {
   return (
     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
       <path d="M8 3v10M3 8h10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FieldCalendarIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
+      <rect x="2.75" y="3.75" width="10.5" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1.25" />
+      <path d="M2.75 6.75h10.5M5.5 2.5v2.5M10.5 2.5v2.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function FieldClockIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.25" stroke="currentColor" strokeWidth="1.25" />
+      <path d="M8 5.4V8.15l2.1 1.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FieldPersonIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" aria-hidden="true">
+      <circle cx="8" cy="5.4" r="2.15" stroke="currentColor" strokeWidth="1.25" />
+      <path
+        d="M3.85 13.1c.5-2 1.9-2.95 4.15-2.95s3.65.95 4.15 2.95"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function FieldChevronIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" aria-hidden="true">
+      <path d="m4.5 6.25 3.5 3.5 3.5-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -143,6 +194,7 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
   const [suggestForm, setSuggestForm] = useState({ date: '', time: '11:00', endTime: '12:00', note: '' });
 
   const monthCells = useMemo(() => buildMonthCells(cursor), [cursor]);
+  const weekRows = Math.max(4, Math.ceil(monthCells.length / 7));
   const weekdayLabels = compact ? WEEKDAYS_COMPACT : WEEKDAYS;
 
   const refresh = useCallback(async () => {
@@ -179,6 +231,15 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!formOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setFormOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [formOpen]);
+
   const eventsByDay = useMemo(() => {
     const map = new Map();
     for (const event of events) {
@@ -206,7 +267,6 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
 
   const handleDayClick = (day) => {
     setSelectedDate(day);
-    if (compact) openCreate(day);
   };
 
   const handleCreate = async (event) => {
@@ -217,6 +277,7 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
     try {
       const startAt = combineDateAndTime(form.date, form.time);
       const endAt = combineDateAndTime(form.date, addOneHour(form.time));
+      const reminderAt = new Date(new Date(startAt).getTime() - 5 * 60 * 1000).toISOString();
       await api('/calendar/events', {
         method: 'POST',
         body: {
@@ -225,7 +286,7 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
           body: form.note.trim(),
           startAt,
           endAt,
-          reminderAt: startAt,
+          reminderAt,
           peerUserId: form.peerUserId || undefined,
         },
       });
@@ -299,13 +360,12 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
         <div className="tylo-cal-toolbar-actions">
           <button
             type="button"
-            className="tylo-cal-icon-btn tylo-cal-refresh-btn"
-            onClick={refresh}
-            disabled={loading}
-            title="Refresh"
-            aria-label="Refresh"
+            className="tylo-cal-icon-btn tylo-cal-today-btn"
+            onClick={goToday}
+            title="Go to today"
+            aria-label="Go to today"
           >
-            <RefreshIcon spinning={loading} />
+            <GoToTodayIcon />
           </button>
           <button
             type="button"
@@ -332,20 +392,34 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
         <div className="tylo-cal-grid-wrap">
           <div className="tylo-cal-weekdays">
             {weekdayLabels.map((day, index) => (
-              <span key={`${WEEKDAYS[index]}-${index}`} title={WEEKDAYS[index]}>
+              <span
+                key={`${WEEKDAYS[index]}-${index}`}
+                title={WEEKDAYS[index]}
+                className={index === 0 ? 'is-sunday' : undefined}
+              >
                 {day}
               </span>
             ))}
           </div>
-          <div className="tylo-cal-grid" role="grid" aria-label={formatMonthTitle(cursor)}>
+          <div
+            className="tylo-cal-grid"
+            role="grid"
+            aria-label={formatMonthTitle(cursor)}
+            style={{ '--cal-week-rows': weekRows }}
+          >
             {monthCells.map((day, index) => {
               if (!day) return <div key={`pad-${index}`} className="tylo-cal-cell is-empty" />;
               const key = toDateInputValue(day);
               const dayItems = eventsByDay.get(key) || [];
               const isSelected = sameDay(day, selectedDate);
               const isToday = sameDay(day, today);
+              const isSunday = day.getDay() === 0;
               const visibleItems = dayItems.slice(0, compact ? 2 : 3);
               const overflow = dayItems.length - visibleItems.length;
+              const eventTitles = dayItems
+                .map((item) => String(item.title || '').trim())
+                .filter(Boolean);
+              const eventTitleAttr = eventTitles.length ? eventTitles.join('\n') : undefined;
               return (
                 <button
                   key={key}
@@ -354,12 +428,14 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
                     'tylo-cal-cell' +
                     (isSelected ? ' is-selected' : '') +
                     (isToday ? ' is-today' : '') +
+                    (isSunday ? ' is-sunday' : '') +
                     (dayItems.length ? ' has-events' : '')
                   }
+                  title={eventTitleAttr}
                   onClick={() => handleDayClick(day)}
                   aria-label={
                     dayItems.length
-                      ? `${formatDayHeading(day)}, ${dayItems.length} item${dayItems.length === 1 ? '' : 's'}`
+                      ? `${formatDayHeading(day)}, ${dayItems.length} item${dayItems.length === 1 ? '' : 's'}: ${eventTitles.join(', ')}`
                       : formatDayHeading(day)
                   }
                 >
@@ -469,75 +545,125 @@ export default function CalendarTodo({ compact = false, onBadgeChange }) {
       </div>
 
       {formOpen ? (
-        <div className="tylo-cal-modal" role="dialog" aria-modal="true" aria-label="Create calendar item">
-          <form className="tylo-cal-modal-card" onSubmit={handleCreate}>
-            <div className="tylo-cal-modal-head">
-              <div>
-                <h4>Add entry</h4>
-                <p className="tylo-cal-modal-date">{formatDayHeading(new Date(`${form.date}T12:00:00`))}</p>
-              </div>
-              <button type="button" className="tylo-cal-nav-btn" onClick={() => setFormOpen(false)} aria-label="Close">
-                ×
-              </button>
-            </div>
-
-            <label className="tylo-cal-field">
-              <span>Title</span>
-              <input
-                required
-                maxLength={160}
-                value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="What needs to happen?"
-                autoFocus
-              />
-            </label>
-
-            <label className="tylo-cal-field">
-              <span>Note</span>
-              <textarea
-                rows={2}
-                maxLength={2000}
-                value={form.note}
-                onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-                placeholder="Optional details"
-              />
-            </label>
-
-            <div className="tylo-cal-field-row tylo-cal-field-row--two">
-              <label className="tylo-cal-field">
-                <span>Time</span>
-                <input
-                  type="time"
+        <div
+          className="tylo-cal-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Create calendar item"
+          onClick={() => setFormOpen(false)}
+        >
+          <form
+            className="tylo-cal-modal-card tylo-cal-modal-card--entry"
+            onSubmit={handleCreate}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="tylo-cal-modal-body tylo-cal-modal-body--entry">
+              <label className="tylo-cal-field tylo-cal-field--task">
+                <span className="tylo-cal-field-label">
+                  What needs to happen?<span className="tylo-cal-req" aria-hidden="true">*</span>
+                </span>
+                <textarea
                   required
-                  value={form.time}
-                  onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))}
+                  rows={1}
+                  maxLength={160}
+                  value={form.title}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setForm((prev) => ({ ...prev, title: next }));
+                    const el = e.target;
+                    el.style.height = '36px';
+                    el.style.height = `${Math.min(72, Math.max(36, el.scrollHeight))}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    /* Enter alone stays one line; Alt+Enter inserts a line break */
+                    if (!e.altKey) {
+                      e.preventDefault();
+                    }
+                  }}
+                  placeholder="Enter task or activity..."
+                  autoFocus
+                  aria-label="What needs to happen?"
+                  title="Press Alt+Enter for a line break"
                 />
               </label>
-              <label className="tylo-cal-field">
-                <span>Colleague</span>
-                <select
-                  value={form.peerUserId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, peerUserId: e.target.value }))}
-                >
-                  <option value="">Optional</option>
-                  {directory.map((person) => (
-                    <option key={person.id} value={person.id}>
-                      {person.fullName}
-                      {person.designation ? ` · ${person.designation}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
 
-            <div className="tylo-cal-modal-actions">
-              <button type="button" className="tylo-cal-text-btn" onClick={() => setFormOpen(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="tylo-cal-primary-btn" disabled={saving || !form.title.trim()}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
+              <div className="tylo-cal-field-row tylo-cal-field-row--two">
+                <label className="tylo-cal-field">
+                  <span className="tylo-cal-field-label">
+                    Date<span className="tylo-cal-req" aria-hidden="true">*</span>
+                  </span>
+                  <span className="tylo-cal-control">
+                    <span className="tylo-cal-control-icon" aria-hidden="true">
+                      <FieldCalendarIcon />
+                    </span>
+                    <input
+                      type="date"
+                      required
+                      value={form.date}
+                      onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
+                      aria-label="Date"
+                    />
+                    <span className="tylo-cal-control-chevron" aria-hidden="true">
+                      <FieldChevronIcon />
+                    </span>
+                  </span>
+                </label>
+                <label className="tylo-cal-field">
+                  <span className="tylo-cal-field-label">
+                    Time<span className="tylo-cal-req" aria-hidden="true">*</span>
+                  </span>
+                  <span className="tylo-cal-control">
+                    <span className="tylo-cal-control-icon" aria-hidden="true">
+                      <FieldClockIcon />
+                    </span>
+                    <input
+                      type="time"
+                      required
+                      value={form.time}
+                      onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))}
+                      aria-label="Time"
+                    />
+                    <span className="tylo-cal-control-chevron" aria-hidden="true">
+                      <FieldChevronIcon />
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              <div className="tylo-cal-field-row tylo-cal-field-row--submit">
+                <label className="tylo-cal-field">
+                  <span className="tylo-cal-field-label">Colleague</span>
+                  <span className="tylo-cal-control">
+                    <span className="tylo-cal-control-icon" aria-hidden="true">
+                      <FieldPersonIcon />
+                    </span>
+                    <select
+                      value={form.peerUserId}
+                      onChange={(e) => setForm((prev) => ({ ...prev, peerUserId: e.target.value }))}
+                      aria-label="Colleague"
+                    >
+                      <option value="">Optional</option>
+                      {directory.map((person) => (
+                        <option key={person.id} value={person.id}>
+                          {firstName(person.fullName || person.name)}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="tylo-cal-control-chevron" aria-hidden="true">
+                      <FieldChevronIcon />
+                    </span>
+                  </span>
+                </label>
+                <button
+                  type="submit"
+                  className="tylo-cal-primary-btn tylo-cal-save-btn"
+                  disabled={saving || !form.title.trim()}
+                >
+                  <PlusIcon />
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
             </div>
           </form>
         </div>

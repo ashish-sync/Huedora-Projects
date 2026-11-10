@@ -370,6 +370,16 @@ function getGreeting(name) {
   return firstName ? prefix + ', ' + firstName : prefix;
 }
 
+/** Prefer personal name; fall back to a friendly role identity (never blank). */
+export function welcomeHeadingName(user) {
+  const personal = String(user?.fullName || user?.name || user?.displayName || '').trim();
+  if (personal) return personal.split(/\s+/)[0];
+  const role = String(user?.roleLabel || user?.systemRole || user?.role || '').trim();
+  if (!role) return '';
+  if (/super\s*admin|administrator|^admin$/i.test(role)) return 'Administrator';
+  return role.split(/\s+/)[0];
+}
+
 function asLocalDate(value) {
   if (!value) return '';
   return formatDateTime(value);
@@ -1239,9 +1249,7 @@ export default function DashboardPage() {
           {/* Top-left: Welcome greeting + camp quality metrics */}
           <section className="tylo-home-panel tylo-home-greeting-panel" aria-label="Welcome">
             {(() => {
-              const welcomeFirst = String(user?.fullName || user?.name || user?.displayName || '')
-                .trim()
-                .split(/\s+/)[0];
+              const welcomeFirst = welcomeHeadingName(user);
               const welcomeDate = new Intl.DateTimeFormat('en-GB', {
                 timeZone: TIME_ZONE,
                 weekday: 'long',

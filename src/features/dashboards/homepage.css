@@ -1828,7 +1828,7 @@
   --ops-panel-radius: 12px;
   --ops-panel-gap: 12px;
   --ops-title-size: 14px;
-  --ops-subtitle-size: 12px;
+  --ops-subtitle-size: 13px;
   --ops-control-h: 36px;
   display: flex;
   flex-direction: column;
@@ -1846,13 +1846,14 @@
 
 .tylo-home-ops-grid {
   display: grid;
-  /* Balanced enterprise triad: Welcome | Schedule | Workspace */
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1.22fr) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1.05fr) minmax(0, 1fr);
+  /* Wider, more even triad so cards expand into available viewport width */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr) minmax(0, 1.05fr);
+  grid-template-rows: minmax(0, 1.02fr) minmax(0, 1fr);
   gap: var(--ops-gap);
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
+  width: 100%;
   overflow: hidden;
   align-items: stretch;
 }
@@ -1896,7 +1897,7 @@
 
 .tylo-home-ops-grid .tylo-home-greeting-date {
   margin: 0 0 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
   letter-spacing: 0.01em;
@@ -2047,7 +2048,8 @@
   border-radius: var(--welcome-control-radius);
   border: 1px solid var(--home-blue);
   background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  /* Always white label on brand fill in light + dark */
+  color: #fff !important;
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -2062,6 +2064,7 @@
 .tylo-home-welcome-range-apply:hover:not(:disabled) {
   background: var(--home-blue-hover);
   border-color: var(--home-blue-hover);
+  color: #fff !important;
 }
 
 .tylo-home-welcome-range-apply:focus-visible {
@@ -2113,7 +2116,7 @@
 
 .tylo-home-welcome-range-hint {
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--home-secondary);
   line-height: 1.3;
@@ -2289,7 +2292,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
   min-height: calc(1.25em * 2);
@@ -2305,7 +2308,7 @@
 }
 
 .tylo-home-welcome-bucket-hint {
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.2;
   color: var(--home-muted-text, var(--home-secondary));
 }
@@ -2346,7 +2349,17 @@
   }
 
   .tylo-home-ops-grid {
-    grid-template-columns: minmax(0, 1.06fr) minmax(0, 1.2fr) minmax(0, 1.02fr);
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1.18fr) minmax(0, 1.08fr);
+  }
+}
+
+@media (min-width: 1920px) {
+  .tylo-home-ops-dashboard {
+    --ops-gap: 16px;
+  }
+
+  .tylo-home-ops-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.15fr) minmax(0, 1.1fr);
   }
 }
 
@@ -2619,13 +2632,17 @@
 .tylo-home-ops-grid .tylo-home-bp-legend--executed::before { background: var(--home-green); }
 
 /* Schedule — mockup alignment: Session left, metric cols equal + centered */
+.tylo-home-ops-grid .tylo-home-schedule-panel {
+  overflow: hidden;
+}
+
 .tylo-home-ops-grid .tylo-home-schedule-panel .tylo-home-card-subtitle {
   display: block !important;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table-wrap {
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -2635,13 +2652,13 @@
 .tylo-home-ops-grid .tylo-home-schedule-table {
   width: 100%;
   height: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
 }
 
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 22%; }
-.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 19.5%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 28%; }
+.tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 18%; }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead tr,
 .tylo-home-ops-grid .tylo-home-schedule-table tbody tr,
@@ -2664,7 +2681,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table thead th:not(:first-child),
@@ -2676,7 +2693,7 @@
 .tylo-home-ops-grid .tylo-home-schedule-table thead th {
   color: var(--home-muted-text);
   font-weight: 700;
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background: transparent;
@@ -2684,6 +2701,7 @@
   padding: 4px 2px 10px;
   overflow: visible;
   text-overflow: clip;
+  line-height: 1.3;
 }
 
 .tylo-home-ops-grid .tylo-home-schedule-table th:first-child,
@@ -2750,8 +2768,17 @@
 .tylo-home-ops-grid .tylo-home-schedule-table tfoot th {
   border-bottom: none;
   background: var(--home-muted);
-  padding-top: 10px;
-  padding-bottom: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  overflow: visible;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.tylo-home-ops-grid .tylo-home-schedule-table tfoot th:first-child {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .tylo-home-ops-grid .tylo-home-total-row-head {
@@ -2761,21 +2788,26 @@
   color: var(--home-cyan) !important;
   font-size: 13px !important;
   font-weight: 700;
+  line-height: 1.35 !important;
   text-transform: none;
   letter-spacing: 0;
   white-space: nowrap;
+  overflow: visible;
+  max-width: none;
 }
 
 .tylo-home-ops-grid .tylo-home-total-icon {
   width: 16px;
   height: 16px;
   display: inline-flex;
+  flex-shrink: 0;
   color: var(--home-cyan);
 }
 
 .tylo-home-ops-grid .tylo-home-total-icon svg {
   width: 16px;
   height: 16px;
+  overflow: visible;
 }
 
 .tylo-home-ops-grid .tylo-home-total-num {
@@ -2784,13 +2816,17 @@
   color: var(--home-text) !important;
   font-weight: 700;
   font-size: 14px;
+  line-height: 1.35;
   font-variant-numeric: tabular-nums;
   text-align: center;
+  overflow: visible;
 }
 
 /* Workspace — segmented control + content pane */
 .tylo-home-ops-grid .tylo-home-workspace-panel {
-  gap: 10px !important;
+  gap: 4px !important;
+  /* Reclaim a little bottom chrome so the calendar can sit lower */
+  padding-bottom: calc(var(--ops-panel-pad-y) - 6px) !important;
 }
 
 .tylo-home-ops-grid .tylo-home-workspace-tabs {
@@ -2870,6 +2906,15 @@
   overflow: hidden !important;
 }
 
+.tylo-home-ops-grid .tylo-home-workspace-content {
+  /* Drop the default 10px pad so tabs sit closer to the month header */
+  padding: 0 !important;
+}
+
+.tylo-home-ops-grid .tylo-home-sticky-notes:not(.tylo-home-sticky-notes--todo) {
+  padding-top: 2px;
+}
+
 .tylo-home-ops-grid .tylo-home-sticky-notes--chat,
 .tylo-home-productivity-body--chat {
   flex: 1 1 auto;
@@ -2913,7 +2958,7 @@
   border-radius: 8px;
   border: none;
   background: var(--home-blue);
-  color: var(--text-on-brand, #fff);
+  color: #fff !important;
   font-weight: 600;
   font-size: 12px;
   cursor: pointer;
@@ -3024,7 +3069,7 @@
 
 .tylo-home-ops-grid .tylo-home-notes-empty-sub {
   margin: 0;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--home-secondary);
   line-height: 1.45;
   max-width: 260px;
@@ -3236,7 +3281,6 @@
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  font-variant-numeric: tabular-nums;
   color: var(--home-text) !important;
   flex-shrink: 0;
 }
@@ -3258,7 +3302,7 @@
   column-gap: 8px;
   text-decoration: none;
   color: var(--home-secondary) !important;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 500;
   padding: 0 8px;
   border-radius: 6px;
@@ -3290,7 +3334,7 @@
 .tylo-home-ops-grid .tylo-home-stage-num {
   font-weight: 700;
   color: var(--home-text) !important;
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   text-align: right;
   justify-self: end;
@@ -3303,7 +3347,7 @@
   content: " ›";
   opacity: 0.5;
   font-weight: 400;
-  font-size: 11px;
+  font-size: 12px;
   margin-left: 3px;
   color: var(--home-muted-text);
 }
@@ -3486,21 +3530,26 @@
 
 .tylo-home-ops-grid .tylo-home-quick-empty-hint {
   grid-column: 1 / -1;
-  grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   text-align: center;
   color: var(--home-secondary);
-  font-size: 11px;
-  padding: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 28px 16px;
+  min-height: 120px;
+  border: 1px dashed var(--home-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--home-muted) 65%, transparent);
 }
 
 .tylo-home-ops-grid .tylo-home-quick-empty-hint strong {
   color: var(--home-text);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .tylo-home-ops-grid .tylo-home-quick-panel.is-adding .tylo-home-quick-add-search {
@@ -3747,7 +3796,7 @@
     --ops-panel-gap: 8px;
     --ops-control-h: 32px;
     --ops-title-size: 13px;
-    --ops-subtitle-size: 11px;
+    --ops-subtitle-size: 12px;
   }
 
   .tylo-home-ops-grid .tylo-home-bp-subtitle,
@@ -3776,7 +3825,11 @@
 
   .tylo-home-ops-grid .tylo-home-stage-row-link {
     padding: 2px 4px;
-    font-size: 10px;
+    font-size: 11px;
+  }
+
+  .tylo-home-ops-grid .tylo-home-stage-num {
+    font-size: 11px;
   }
 
   .tylo-home-ops-grid .tylo-home-quick-subtile {
@@ -3804,6 +3857,27 @@ html.dark .tylo-home {
   --home-note-violet-bg: color-mix(in srgb, #A78BFA 16%, var(--bg-tier-2));
   --home-panel-shadow: 0 1px 2px color-mix(in srgb, #000 35%, transparent),
     0 8px 20px color-mix(in srgb, #000 22%, transparent);
+}
+
+/* Apply / primary actions keep white labels in both themes */
+[data-theme='dark'] .tylo-home-welcome-range-apply,
+html[data-theme='dark'] .tylo-home-welcome-range-apply,
+.dark .tylo-home-welcome-range-apply,
+html.dark .tylo-home-welcome-range-apply,
+[data-theme='dark'] .tylo-home-ops-grid .tylo-home-notes-add-btn,
+html[data-theme='dark'] .tylo-home-ops-grid .tylo-home-notes-add-btn,
+.dark .tylo-home-ops-grid .tylo-home-notes-add-btn,
+html.dark .tylo-home-ops-grid .tylo-home-notes-add-btn {
+  color: #fff !important;
+}
+
+[data-theme='dark'] .tylo-home-welcome-range-apply,
+html[data-theme='dark'] .tylo-home-welcome-range-apply,
+.dark .tylo-home-welcome-range-apply,
+html.dark .tylo-home-welcome-range-apply {
+  /* Keep solid brand fill so white text stays readable on light accent tokens */
+  background: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
 }
 
 [data-theme='dark'] .tylo-home-ops-grid > .tylo-home-panel,

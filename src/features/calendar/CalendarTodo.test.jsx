@@ -85,15 +85,17 @@ describe('CalendarTodo', () => {
     expect(await screen.findByRole('grid', {}, { timeout: 10000 })).toBeTruthy();
     await waitFor(() => expect(onBadgeChange).toHaveBeenCalledWith(1));
 
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Go to today' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByRole('dialog', { name: 'Create calendar item' })).toBeTruthy();
-    expect(screen.getByText('Title')).toBeTruthy();
-    expect(screen.getByText('Note')).toBeTruthy();
-    expect(screen.getByText('Time')).toBeTruthy();
-    expect(screen.getByText('Colleague')).toBeTruthy();
+    expect(screen.getByLabelText('What needs to happen?')).toBeTruthy();
+    expect(screen.getByLabelText('Date')).toBeTruthy();
+    expect(screen.getByLabelText('Time')).toBeTruthy();
+    expect(screen.getByLabelText('Colleague')).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Bob' })).toBeTruthy();
 
-    await user.type(screen.getByPlaceholderText('What needs to happen?'), 'Call vendor');
+    await user.type(screen.getByRole('textbox', { name: 'What needs to happen?' }), 'Call vendor');
     await user.selectOptions(screen.getByLabelText('Colleague'), 'u-bob');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -112,17 +114,18 @@ describe('CalendarTodo', () => {
     });
   }, 20000);
 
-  it('opens the add-entry form when a compact calendar date is clicked', async () => {
+  it('opens add-entry from the Add button, not from a date click', async () => {
     const user = userEvent.setup();
     render(<CalendarTodo compact />);
 
     expect(await screen.findByRole('grid')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /15 Nov/i }));
+    expect(screen.queryByRole('dialog', { name: 'Create calendar item' })).toBeNull();
 
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByRole('dialog', { name: 'Create calendar item' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Add entry' })).toBeTruthy();
-    expect(screen.getByLabelText('Title')).toBeTruthy();
-    expect(screen.getByLabelText('Note')).toBeTruthy();
+    expect(screen.getByLabelText('What needs to happen?')).toBeTruthy();
+    expect(screen.getByLabelText('Date')).toBeTruthy();
     expect(screen.getByLabelText('Time')).toBeTruthy();
     expect(screen.getByLabelText('Colleague')).toBeTruthy();
   }, 15000);

@@ -38,8 +38,9 @@
 .tylo-cal-nav {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  flex: 0 0 auto;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -49,8 +50,11 @@
   font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  flex-shrink: 0;
-  overflow: visible;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tylo-cal-toolbar-actions {
@@ -106,16 +110,21 @@
 
 .tylo-cal-text-btn {
   border: 1px solid var(--cal-border);
-  background: transparent;
+  background: var(--cal-muted);
   color: var(--cal-text);
   padding: 5px 10px;
   height: 28px;
 }
 
+.tylo-cal-text-btn:hover {
+  border-color: color-mix(in srgb, var(--cal-accent) 40%, var(--cal-border));
+  color: var(--cal-accent);
+}
+
 .tylo-cal-primary-btn {
   border: none;
   background: var(--cal-accent);
-  color: var(--text-on-brand, #fff);
+  color: #fff !important;
   padding: 5px 12px;
   height: 28px;
   white-space: nowrap;
@@ -130,21 +139,20 @@
   justify-content: center;
 }
 
-@keyframes tylo-cal-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.tylo-cal-today-btn {
+  color: var(--cal-accent);
 }
 
-.tylo-cal-spin {
-  animation: tylo-cal-spin 0.8s linear infinite;
+.tylo-cal-today-btn:hover {
+  border-color: color-mix(in srgb, var(--cal-accent) 55%, var(--cal-border));
+  background: color-mix(in srgb, var(--cal-accent) 12%, var(--cal-muted));
+  color: var(--cal-accent);
 }
 
 .tylo-cal-primary-btn:disabled {
-  opacity: 0.5;
+  opacity: 1;
+  background: color-mix(in srgb, var(--cal-accent) 42%, var(--cal-muted));
+  color: #fff !important;
   cursor: not-allowed;
 }
 
@@ -196,15 +204,15 @@
 .tylo-cal-weekdays {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 1px;
-  padding: 8px 8px 4px;
+  gap: 3px;
+  padding: 8px 6px 4px;
   flex: 0 0 auto;
   border-bottom: 1px solid color-mix(in srgb, var(--cal-border) 80%, transparent);
 }
 
 .tylo-cal-weekdays span {
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -212,26 +220,32 @@
   line-height: 1.2;
 }
 
+.tylo-cal-weekdays span.is-sunday {
+  color: var(--status-danger-dot, #dc2626);
+}
+
 .tylo-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--cal-week-rows, 6), minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
-  gap: 1px;
-  padding: 4px;
+  gap: 3px;
+  padding: 6px;
   flex: 1 1 auto;
   min-height: 0;
-  background: color-mix(in srgb, var(--cal-border) 55%, transparent);
+  background: var(--cal-pane);
 }
 
 .tylo-cal-cell {
-  border: none;
-  border-radius: 0;
-  background: var(--cal-pane);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--cal-muted);
   color: var(--cal-text);
   min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 4px;
+  aspect-ratio: auto;
+  padding: 5px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -240,43 +254,84 @@
   cursor: pointer;
   text-align: left;
   overflow: hidden;
-  transition: background 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .tylo-cal-cell.is-empty {
-  background: color-mix(in srgb, var(--cal-muted) 55%, var(--cal-pane));
+  background: color-mix(in srgb, var(--cal-muted) 40%, transparent);
+  border-color: transparent;
   cursor: default;
   pointer-events: none;
 }
 
 .tylo-cal-cell:hover:not(.is-empty) {
-  background: color-mix(in srgb, var(--cal-accent) 8%, var(--cal-pane));
+  background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-muted));
+  border-color: color-mix(in srgb, var(--cal-accent) 28%, var(--cal-border));
 }
 
 .tylo-cal-cell.is-selected {
-  background: color-mix(in srgb, var(--cal-accent) 14%, var(--cal-pane));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cal-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--cal-accent) 16%, var(--cal-muted));
+  border-color: var(--cal-accent);
+  box-shadow: none;
+}
+
+.tylo-cal-cell.is-today:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--cal-accent) 45%, var(--cal-border));
 }
 
 .tylo-cal-cell.is-today .tylo-cal-day-num {
   background: var(--cal-accent);
-  color: var(--text-on-brand, #fff);
+  color: #fff;
+}
+
+.tylo-cal-cell.is-selected .tylo-cal-day-num {
+  background: var(--cal-accent);
+  color: #fff;
+  box-shadow: none;
+}
+
+.tylo-cal-cell.is-sunday .tylo-cal-day-num {
+  color: var(--status-danger-dot, #dc2626);
+}
+
+.tylo-cal-cell.is-sunday.is-today .tylo-cal-day-num,
+.tylo-cal-cell.is-sunday.is-selected .tylo-cal-day-num {
+  color: #fff;
+  background: var(--status-danger-dot, #dc2626);
+}
+
+.tylo-cal-cell.has-events:not(.is-selected):not(.is-today) {
+  background: var(--cal-muted);
+  border-color: transparent;
+}
+
+.tylo-cal-cell.has-events:not(.is-selected):not(.is-today) .tylo-cal-day-num {
+  color: #F59E0B;
+  font-weight: 800;
+  background: transparent;
+}
+
+.tylo-cal-cell.has-events.is-sunday:not(.is-selected):not(.is-today) .tylo-cal-day-num {
+  color: #F59E0B;
 }
 
 .tylo-cal-day-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
+  min-width: 28px;
+  width: auto;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
   flex: 0 0 auto;
   align-self: flex-start;
   background: transparent;
   color: var(--cal-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .tylo-cal-cell-events {
@@ -297,7 +352,7 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--cal-accent) 18%, var(--cal-muted));
   color: var(--cal-text);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1.25;
   white-space: nowrap;
@@ -320,7 +375,7 @@
 }
 
 .tylo-cal-chip-more {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--cal-secondary);
   padding: 0 2px;
@@ -473,106 +528,469 @@
 }
 
 .tylo-cal-modal-card {
-  width: min(380px, 100%);
+  width: min(400px, 100%);
   max-height: 100%;
   overflow: auto;
   background: var(--cal-surface);
   border: 1px solid var(--border-strong, var(--cal-border));
   border-radius: 12px;
-  padding: 14px;
+  padding: 14px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   box-shadow: 0 12px 40px color-mix(in srgb, #000 25%, transparent);
+  box-sizing: border-box;
+}
+
+.tylo-cal-modal-card--entry {
+  width: min(420px, 100%);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  justify-content: flex-start;
 }
 
 .tylo-cal-modal-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--cal-border);
+}
+
+.tylo-cal-modal-card:not(.tylo-cal-modal-card--entry) .tylo-cal-modal-head {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.tylo-cal-modal-eyebrow {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cal-secondary);
 }
 
 .tylo-cal-modal-head h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--cal-text);
+  line-height: 1.25;
 }
 
 .tylo-cal-modal-date {
-  margin: 2px 0 0;
-  font-size: 11px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--cal-secondary);
+  line-height: 1.35;
+}
+
+.tylo-cal-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+}
+
+.tylo-cal-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--cal-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--cal-muted) 55%, var(--cal-pane));
+}
+
+.tylo-cal-form-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cal-secondary);
+  line-height: 1.2;
 }
 
 .tylo-cal-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--cal-secondary);
   min-width: 0;
 }
+
+.tylo-cal-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--cal-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tylo-cal-req {
+  color: var(--status-danger-dot, #dc2626);
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+.tylo-cal-field--grow {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tylo-cal-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.tylo-cal-control-icon,
+.tylo-cal-control-chevron {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cal-secondary);
+  pointer-events: none;
+}
+
+.tylo-cal-control-icon {
+  left: 10px;
+  width: 14px;
+  height: 14px;
+}
+
+.tylo-cal-control-chevron {
+  right: 10px;
+  width: 12px;
+  height: 12px;
+}
+
+.tylo-cal-control select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
 
 .tylo-cal-field input,
 .tylo-cal-field textarea,
 .tylo-cal-field select {
   height: 36px;
+  width: 100%;
+  min-width: 0;
   border-radius: 8px;
-  border: 1px solid var(--cal-border);
-  background: var(--bg-input, var(--cal-pane));
+  border: 1px solid var(--border-strong, var(--cal-border));
+  background: var(--bg-tier-2, var(--bg-input, var(--cal-surface)));
   color: var(--cal-text);
   padding: 0 10px;
   font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  box-sizing: border-box;
+  color-scheme: light dark;
+}
+
+.tylo-cal-field input::placeholder,
+.tylo-cal-field textarea::placeholder {
+  color: var(--cal-secondary);
+  opacity: 0.8;
+}
+
+.tylo-cal-field input[type='date'],
+.tylo-cal-field input[type='time'] {
+  display: block;
+  min-height: 36px;
+  line-height: 1.2;
+}
+
+.tylo-cal-field input[type='date']::-webkit-calendar-picker-indicator,
+.tylo-cal-field input[type='time']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  margin-left: 4px;
+}
+
+/* Inside icon controls, never show the native glyph (avoids dark-mode invert blobs) */
+.tylo-cal-field .tylo-cal-control input[type='date']::-webkit-calendar-picker-indicator,
+.tylo-cal-field .tylo-cal-control input[type='time']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] .tylo-cal-field .tylo-cal-control input[type='date']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] .tylo-cal-field .tylo-cal-control input[type='time']::-webkit-calendar-picker-indicator {
+  opacity: 0 !important;
+  filter: none !important;
+  background: transparent !important;
+  color: transparent !important;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tylo-cal-field input[type='date']::-webkit-datetime-edit,
+.tylo-cal-field input[type='time']::-webkit-datetime-edit,
+.tylo-cal-field input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.tylo-cal-field input[type='time']::-webkit-datetime-edit-fields-wrapper,
+.tylo-cal-field input[type='date']::-webkit-datetime-edit-text,
+.tylo-cal-field input[type='time']::-webkit-datetime-edit-text,
+.tylo-cal-field input[type='date']::-webkit-datetime-edit-month-field,
+.tylo-cal-field input[type='date']::-webkit-datetime-edit-day-field,
+.tylo-cal-field input[type='date']::-webkit-datetime-edit-year-field,
+.tylo-cal-field input[type='time']::-webkit-datetime-edit-hour-field,
+.tylo-cal-field input[type='time']::-webkit-datetime-edit-minute-field,
+.tylo-cal-field input[type='time']::-webkit-datetime-edit-ampm-field {
+  color: var(--cal-text);
+}
+
+html[data-theme='dark'] .tylo-cal-field input[type='date'],
+html[data-theme='dark'] .tylo-cal-field input[type='time'],
+html[data-theme='dark'] .tylo-cal-field select {
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] .tylo-cal-field input[type='date']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] .tylo-cal-field input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.9;
+}
+
+/* Re-assert hide after dark invert so custom control icons stay clean */
+html[data-theme='dark'] .tylo-cal-field .tylo-cal-control input[type='date']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] .tylo-cal-field .tylo-cal-control input[type='time']::-webkit-calendar-picker-indicator {
+  filter: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.tylo-cal-field select option {
+  background: var(--bg-tier-2, var(--cal-surface));
+  color: var(--cal-text);
+}
+
+.tylo-cal-field input:focus,
+.tylo-cal-field textarea:focus,
+.tylo-cal-field select:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--cal-accent) 45%, var(--cal-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cal-accent) 18%, transparent);
+}
+
+/* Must follow base field padding so icons do not overlap values */
+.tylo-cal-field .tylo-cal-control input,
+.tylo-cal-field .tylo-cal-control select {
+  padding-left: 34px;
+  padding-right: 28px;
+}
+
+.tylo-cal-field .tylo-cal-control input[type='date']::-webkit-datetime-edit,
+.tylo-cal-field .tylo-cal-control input[type='time']::-webkit-datetime-edit {
+  padding-left: 0;
+}
+
+.tylo-cal-control-icon {
+  color: var(--cal-secondary);
+  opacity: 0.9;
+}
+
+.tylo-cal-control-icon svg,
+.tylo-cal-control-chevron svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .tylo-cal-field textarea {
   height: auto;
-  min-height: 56px;
-  padding: 8px 10px;
+  min-height: 72px;
+  padding: 9px 10px;
   resize: vertical;
+  line-height: 1.4;
+  flex: 1 1 auto;
+}
+
+.tylo-cal-field-hint {
+  margin: -2px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--cal-secondary);
 }
 
 .tylo-cal-field-row {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
+  align-items: end;
 }
 
 .tylo-cal-field-row--two {
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tylo-cal-field-row--submit {
+  grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+}
+
+.tylo-cal-field--task textarea {
+  /* Single-line by default; equal top/bottom padding matches other 36px controls */
+  height: 36px;
+  min-height: 36px;
+  max-height: 72px;
+  padding: 8px 10px;
+  line-height: 1.25;
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  field-sizing: content;
+}
+
+.tylo-cal-modal-card--entry .tylo-cal-modal-body--entry {
+  gap: 14px;
+  padding: 14px;
+  overflow: visible;
+}
+
+.tylo-cal-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 88px;
+}
+
+.tylo-cal-save-btn svg {
+  flex-shrink: 0;
 }
 
 .tylo-cal-modal-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 12px 14px;
+  border-top: 1px solid var(--cal-border);
+  background: color-mix(in srgb, var(--cal-muted) 40%, var(--cal-surface));
+}
+
+.tylo-cal-modal-card:not(.tylo-cal-modal-card--entry) .tylo-cal-modal-actions {
+  padding: 0;
+  border-top: 0;
+  background: transparent;
   margin-top: 2px;
+}
+
+.tylo-cal-modal-actions .tylo-cal-text-btn {
+  border-color: var(--border-strong, var(--cal-border));
+  background: var(--cal-pane);
+  color: var(--cal-text);
+}
+
+.tylo-cal-modal-actions .tylo-cal-text-btn,
+.tylo-cal-modal-actions .tylo-cal-primary-btn {
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12px;
 }
 
 .tylo-home-ops-grid .tylo-home-sticky-notes--todo,
 .tylo-home-sticky-notes--todo {
-  padding: 4px !important;
+  padding: 0 !important;
   overflow: hidden !important;
   height: 100%;
   min-height: 0;
   width: 100%;
 }
 
-/* Homepage compact: full-bleed month calendar, no side/day dock. */
+/* Homepage compact: ERP month calendar — equal cells, clear today/selected */
 .tylo-cal--compact {
-  gap: 6px;
+  gap: 4px;
+  height: 100%;
+  min-height: 0;
 }
 
 .tylo-cal--compact .tylo-cal-toolbar {
-  padding: 0 2px;
+  padding: 0;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.tylo-cal--compact .tylo-cal-nav {
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--cal-border);
+  background: var(--cal-muted);
+}
+
+.tylo-cal--compact .tylo-cal-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.tylo-cal--compact .tylo-cal-nav-btn:hover {
+  background: var(--cal-pane);
+  border-color: transparent;
+}
+
+.tylo-cal--compact .tylo-cal-icon-btn,
+.tylo-cal--compact .tylo-cal-add-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.tylo-cal--compact .tylo-cal-today-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--cal-accent) 40%, var(--cal-border));
+  background: color-mix(in srgb, var(--cal-accent) 10%, var(--cal-muted));
+  color: var(--cal-accent);
 }
 
 .tylo-cal--compact .tylo-cal-month {
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 700;
   white-space: nowrap;
-  flex-shrink: 0;
-  overflow: visible;
+  min-width: 0;
+  padding: 0 4px;
+  text-align: center;
 }
 
 .tylo-cal--compact .tylo-cal-layout {
@@ -585,38 +1003,228 @@
 }
 
 .tylo-cal--compact .tylo-cal-grid-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   border-radius: 10px;
+  border: 1px solid var(--cal-border);
+  background: var(--cal-pane);
+  overflow: hidden;
 }
 
 .tylo-cal--compact .tylo-cal-weekdays {
-  padding: 6px 6px 3px;
+  /* Match grid tracks: 7 equal columns, same horizontal inset/gap as date cells */
+  padding: 8px 10px 4px;
+  column-gap: 6px;
+  row-gap: 0;
+  gap: 0 6px;
+  background: color-mix(in srgb, var(--cal-muted) 70%, var(--cal-pane));
 }
 
 .tylo-cal--compact .tylo-cal-weekdays span {
-  font-size: 10px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-align: center;
 }
 
 .tylo-cal--compact .tylo-cal-grid {
-  padding: 3px;
-  gap: 1px;
+  /* Fixed 7 Sun–Sat columns; row count from --cal-week-rows (4–6) */
+  container-type: size;
+  padding: 6px 10px 10px;
+  column-gap: 6px;
+  row-gap: 8px;
+  gap: 8px 6px;
+  background: var(--cal-pane);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--cal-week-rows, 5), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
 }
 
 .tylo-cal--compact .tylo-cal-cell {
-  padding: 3px;
-  gap: 2px;
+  /* Soft rounded rectangle — color fills the whole cell */
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: auto;
+  padding: 0;
+  gap: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--cal-muted);
+  min-height: 0;
+  align-self: stretch;
+  justify-self: stretch;
+  align-items: center;
+  justify-content: center;
+}
+
+.tylo-cal--compact .tylo-cal-cell:hover:not(.is-empty) {
+  background: color-mix(in srgb, var(--cal-accent) 12%, var(--cal-muted));
+  border-color: color-mix(in srgb, var(--cal-accent) 28%, var(--cal-border));
+}
+
+.tylo-cal--compact .tylo-cal-cell.is-empty {
+  background: transparent;
+  border-color: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Selected / today: full-cell solid fill (not an inset chip) */
+.tylo-cal--compact .tylo-cal-cell.is-selected {
+  background: var(--cal-accent);
+  border-color: var(--cal-accent);
+}
+
+.tylo-cal--compact .tylo-cal-cell.is-today:not(.is-selected) {
+  background: color-mix(in srgb, var(--cal-accent) 78%, var(--cal-muted));
+  border-color: var(--cal-accent);
+}
+
+.tylo-cal--compact .tylo-cal-cell.is-sunday.is-selected,
+.tylo-cal--compact .tylo-cal-cell.is-sunday.is-today:not(.is-selected) {
+  background: var(--status-danger-dot, #dc2626);
+  border-color: var(--status-danger-dot, #dc2626);
 }
 
 .tylo-cal--compact .tylo-cal-day-num {
-  width: 20px;
-  height: 20px;
-  font-size: 11px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  font-size: 12px;
+  align-self: stretch;
+  border-radius: 0;
+  background: transparent !important;
+}
+
+.tylo-cal--compact .tylo-cal-cell.is-sunday .tylo-cal-day-num {
+  color: var(--status-danger-dot, #dc2626);
+}
+
+.tylo-cal--compact .tylo-cal-cell.is-selected .tylo-cal-day-num,
+.tylo-cal--compact .tylo-cal-cell.is-today .tylo-cal-day-num,
+.tylo-cal--compact .tylo-cal-cell.is-sunday.is-selected .tylo-cal-day-num,
+.tylo-cal--compact .tylo-cal-cell.is-sunday.is-today .tylo-cal-day-num {
+  color: #fff;
+  background: transparent !important;
+}
+
+/* Activity dates: amber text only — no background highlight */
+.tylo-cal--compact .tylo-cal-cell.has-events:not(.is-selected):not(.is-today) {
+  background: var(--cal-muted);
+  border-color: transparent;
+}
+
+.tylo-cal--compact .tylo-cal-cell.has-events:not(.is-selected):not(.is-today) .tylo-cal-day-num {
+  background: transparent !important;
+  color: #F59E0B;
+  font-weight: 800;
+}
+
+.tylo-cal--compact .tylo-cal-cell.has-events.is-sunday:not(.is-selected):not(.is-today) .tylo-cal-day-num {
+  color: #F59E0B;
+}
+
+.tylo-cal--compact .tylo-cal-cell-events {
+  display: none;
 }
 
 .tylo-cal--compact .tylo-cal-chip {
-  font-size: 8px;
+  font-size: 9px;
   padding: 1px 3px;
+}
+
+
+/* Compact To-Do: flat Add Entry form with visible controls */
+.tylo-cal--compact .tylo-cal-modal {
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-tier-1) 42%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.tylo-cal--compact .tylo-cal-modal-card--entry {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px color-mix(in srgb, #0F172A 18%, transparent);
+  overflow: hidden;
+  align-self: stretch;
+}
+
+.tylo-cal--compact .tylo-cal-modal-body,
+.tylo-cal--compact .tylo-cal-modal-body--entry {
+  padding: 12px;
+  gap: 10px;
+  justify-content: flex-start;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tylo-cal--compact .tylo-cal-modal-body--entry > .tylo-cal-field,
+.tylo-cal--compact .tylo-cal-field-row--two,
+.tylo-cal--compact .tylo-cal-field-row--submit {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.tylo-cal--compact .tylo-cal-field {
+  gap: 4px;
+}
+
+.tylo-cal--compact .tylo-cal-field-row--two,
+.tylo-cal--compact .tylo-cal-field-row--submit {
+  gap: 8px;
+}
+
+/* One-line task field — equal top/bottom padding; grows only after Alt+Enter */
+.tylo-cal--compact .tylo-cal-field--task textarea {
+  height: 36px;
+  min-height: 36px;
+  max-height: 72px;
+  padding: 8px 10px;
+  line-height: 20px;
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.tylo-cal--compact .tylo-cal-modal-body--entry {
+  /* Equal inset so the form sits evenly in the panel */
+  padding: 12px;
+}
+
+.tylo-cal--compact .tylo-cal-field-row--submit {
+  /* Colleague 80% / Save 20% */
+  grid-template-columns: 4fr 1fr;
+  margin-top: 0;
+  align-items: end;
+}
+
+.tylo-cal--compact .tylo-cal-field-row--submit > .tylo-cal-field {
+  min-width: 0;
+}
+
+.tylo-cal--compact .tylo-cal-save-btn {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
 }
 
 @media (max-width: 900px) {
@@ -626,5 +1234,10 @@
 
   .tylo-cal-grid {
     min-height: 220px;
+  }
+
+  .tylo-cal-field-row,
+  .tylo-cal-field-row--two {
+    grid-template-columns: 1fr;
   }
 }

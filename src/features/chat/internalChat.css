@@ -8,12 +8,12 @@
   --chat-text: var(--text-main);
   --chat-secondary: var(--text-secondary);
   --chat-mine: var(--brand-primary);
-  --chat-mine-text: var(--text-on-brand, #fff);
+  --chat-mine-text: #fff;
   --chat-theirs: var(--bg-muted);
   --chat-accent: var(--brand-primary);
   --chat-hover: var(--bg-hover, var(--bg-muted));
   --chat-pad-x: 10px;
-  --chat-control-h: 32px;
+  --chat-control-h: 36px;
 
   display: grid;
   grid-template-columns: minmax(176px, 1.08fr) minmax(0, 1.22fr);
@@ -449,7 +449,8 @@
   color: var(--chat-text);
   padding: 0 12px;
   font-size: 12px;
-  line-height: var(--chat-control-h);
+  /* Keep line-height independent of control height to avoid placeholder clipping */
+  line-height: 1.35;
   font-family: inherit;
 }
 
@@ -457,8 +458,10 @@
   max-height: 72px;
   resize: none;
   overflow-y: hidden;
-  padding: 7px 10px;
+  padding: 8px 10px;
   line-height: 1.35;
+  height: auto;
+  min-height: var(--chat-control-h);
   scrollbar-width: none;
 }
 
@@ -470,7 +473,7 @@
 .tylo-chat-composer--oneline input[type='text']::placeholder {
   color: var(--chat-secondary);
   opacity: 0.9;
-  line-height: inherit;
+  line-height: 1.35;
 }
 
 .tylo-chat-composer textarea:focus,

@@ -82,7 +82,7 @@ export default function CampOperationsBoard({
   const assignedUserOptions = useMemo(
     () => (filterCatalog.assignedUsers || []).map((user) => ({
       email: user.email,
-      label: user.name ? `${user.name} · ${user.email}` : user.email,
+      label: user.name ? `${user.name} \u00B7 ${user.email}` : user.email,
     })),
     [filterCatalog],
   );

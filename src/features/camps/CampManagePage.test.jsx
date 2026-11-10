@@ -109,7 +109,9 @@ describe('CampManagePage', () => {
     await waitFor(() => {
       const calls = campApi.list.mock.calls;
       const lastParams = calls[calls.length - 1]?.[0] || {};
-      expect(lastParams.lifecycleStage).toBe('execution');
+      // Execution stage totals use boardStage (active execution + cancelled closures).
+      expect(lastParams.boardStage).toBe('execution');
+      expect(lastParams.lifecycleStage).toBeUndefined();
     });
 
     // Stay on the next stage after URL sync (regression for stale ?stage= snap-back).

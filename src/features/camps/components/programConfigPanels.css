@@ -21,7 +21,28 @@ html[data-theme='dark'] .program-config-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px 16px;
-  align-items: start;
+  align-items: center;
+}
+
+.program-config-panel--compact {
+  padding: 10px 12px;
+}
+
+.program-config-panel--compact .program-config-panel__head {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.program-config-panel--compact .program-config-panel__hint {
+  max-width: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.program-config-panel--compact .program-config-panel__actions {
+  justify-content: flex-start;
 }
 
 .program-config-panel__title {
@@ -61,6 +82,12 @@ html[data-theme='dark'] .program-config-panel {
   align-items: start;
 }
 
+.program-config-panel__grid--pin-row {
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  gap: 12px 24px;
+  align-items: start;
+}
+
 .program-config-field {
   display: flex;
   flex-direction: column;
@@ -74,15 +101,28 @@ html[data-theme='dark'] .program-config-panel {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
+  min-height: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .program-config-field .field-input {
   width: 100%;
   max-width: 160px;
   height: var(--control-h-sm, 32px);
+  min-height: var(--control-h-sm, 32px);
   text-align: center;
   letter-spacing: 0.16em;
   font-weight: 600;
+  box-sizing: border-box;
+}
+
+.program-config-field__meta {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted);
 }
 
 .program-config-meta {
@@ -150,6 +190,16 @@ html[data-theme='dark'] .program-config-panel {
   border-top: 1px solid var(--line);
 }
 
+.program-config-permissions--inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  min-width: 0;
+}
+
 .program-config-permissions__title {
   margin: 0 0 8px;
   font-size: 0.72rem;
@@ -162,16 +212,28 @@ html[data-theme='dark'] .program-config-panel {
 .program-config-permissions__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px 12px;
+  gap: 6px 10px;
+}
+
+.program-config-permissions--inline .program-config-permissions__title {
+  margin: 0;
+  min-height: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.program-config-permissions--inline .program-config-permissions__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .program-config-check {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 28px;
+  min-height: var(--control-h-sm, 32px);
   margin: 0;
-  padding: 4px 8px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm, 6px);
   background: var(--bg-tier-2, #fff);
@@ -179,6 +241,7 @@ html[data-theme='dark'] .program-config-panel {
   font-weight: 600;
   color: var(--ink);
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .program-config-check input {
@@ -211,7 +274,8 @@ html[data-theme='dark'] .program-config-panel {
     width: 100%;
   }
 
-  .program-config-panel__grid {
+  .program-config-panel__grid,
+  .program-config-panel__grid--pin-row {
     grid-template-columns: 1fr;
   }
 

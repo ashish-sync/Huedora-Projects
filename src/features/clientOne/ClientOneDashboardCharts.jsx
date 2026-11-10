@@ -2,11 +2,13 @@ import { useEffect, useId, useMemo, useState } from 'react';
 
 const CHART_TONES = 7;
 
+const EXTRA_HOURS_SECTIONS = ['Within 4 hours', 'More than 4 hours'];
+
 const CHART_META = {
   requestTimeline: { title: 'Request Timeline' },
   finalBilling: { title: 'Final Billing' },
   punctuality: { title: 'Punctuality Analysis' },
-  extraHours: { title: 'Extra Hours' },
+  extraHours: { title: 'Extra Hours', ensureLabels: EXTRA_HOURS_SECTIONS },
   executedClinics: { title: 'Executed Clinics' },
   tyloCancellation: { title: 'Tylo Cancellation' },
 };
@@ -33,24 +35,62 @@ function formatCount(value) {
   return n.toLocaleString('en-IN');
 }
 
-function normalizeSlices(slices = []) {
+function normalizeExtraHoursLabel(label = '') {
+  const raw = String(label || '').trim().toLowerCase();
+  if (raw === 'within 4 hours' || raw === 'within 4 hour') return 'Within 4 hours';
+  if (
+    raw === 'more than 4 hours'
+    || raw === 'beyond 4 hours'
+    || raw === 'more than 4 hour'
+    || raw === 'beyond 4 hour'
+  ) {
+    return 'More than 4 hours';
+  }
+  return String(label || '').trim();
+}
+
+function normalizeSlices(slices = [], { ensureLabels = [] } = {}) {
   const total = slices.reduce((sum, row) => sum + (Number(row.value) || 0), 0);
+  const mapped = slices.map((row, index) => {
+    const value = Number(row.value) || 0;
+    const pct = total > 0
+      ? Math.round((row.pct != null ? Number(row.pct) : (value / total) * 100))
+      : 0;
+    return {
+      label: ensureLabels.length ? normalizeExtraHoursLabel(row.label) : row.label,
+      value,
+      pct,
+      tone: index % CHART_TONES,
+    };
+  });
+
+  if (ensureLabels.length) {
+    const byLabel = new Map();
+    for (const row of mapped) {
+      if (!row.label) continue;
+      const prev = byLabel.get(row.label);
+      if (prev) {
+        prev.value += row.value;
+      } else {
+        byLabel.set(row.label, { ...row });
+      }
+    }
+    const rows = ensureLabels.map((label, index) => {
+      const existing = byLabel.get(label);
+      const value = existing?.value || 0;
+      return {
+        label,
+        value,
+        pct: total > 0 ? Math.round((value / total) * 100) : 0,
+        tone: index % CHART_TONES,
+      };
+    });
+    return { total, rows };
+  }
+
   return {
     total,
-    rows: slices
-      .map((row, index) => {
-        const value = Number(row.value) || 0;
-        const pct = total > 0
-          ? Math.round((row.pct != null ? Number(row.pct) : (value / total) * 100))
-          : 0;
-        return {
-          label: row.label,
-          value,
-          pct,
-          tone: index % CHART_TONES,
-        };
-      })
-      .filter((row) => row.value > 0),
+    rows: mapped.filter((row) => row.value > 0),
   };
 }
 
@@ -58,9 +98,13 @@ export function ClientOneMetricPanel({
   chartKey,
   title,
   slices = [],
+  ensureLabels,
   emptyText = 'No data',
 }) {
-  const { total, rows } = useMemo(() => normalizeSlices(slices), [slices]);
+  const { total, rows } = useMemo(
+    () => normalizeSlices(slices, { ensureLabels: ensureLabels || [] }),
+    [slices, ensureLabels],
+  );
   const [selectedLabel, setSelectedLabel] = useState('');
   const headingId = useId();
   const maxValue = useMemo(
@@ -225,6 +269,7 @@ export function ClientOneDashboardCharts({
             chartKey={key}
             title={CHART_META[key].title}
             slices={chart?.slices || []}
+            ensureLabels={CHART_META[key].ensureLabels}
           />
         ))}
       </div>

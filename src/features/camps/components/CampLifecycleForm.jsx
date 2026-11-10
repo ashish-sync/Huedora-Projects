@@ -1038,6 +1038,9 @@ export function CampLifecycleForm({
 
   function renderFinancialStage() {
     const disabled = stageDisabled('financial');
+    // Payment Confirm/Hold/Unhold must stay usable even when amount fields are read-only
+    // (e.g. finance:write without camps:update — same as Financial-stage bulk actions).
+    const paymentActionsDisabled = financialActionBusy;
     const submitted = Boolean(form.submittedToFinanceAt);
     const showHcwBlockers = !submitted && hcwFinanceBlockers.length > 0;
     const lockStandardPayouts = isExecutionCancellationForFinance({ status: campStatus, ...form });
@@ -1218,7 +1221,7 @@ export function CampLifecycleForm({
                   <CampFormInput
                     value={form.paymentRemark || ''}
                     onChange={(e) => updateField('paymentRemark', e.target.value)}
-                    disabled={disabled || financialActionBusy}
+                    disabled={paymentActionsDisabled || !onReleaseHold}
                     placeholder="Required when releasing Hold"
                   />
                 </label>
@@ -1226,7 +1229,7 @@ export function CampLifecycleForm({
                   <button
                     type="button"
                     className="btn secondary"
-                    disabled={disabled || financialActionBusy || !onReleaseHold}
+                    disabled={paymentActionsDisabled || !onReleaseHold}
                     onClick={() => onReleaseHold?.(form.paymentRemark)}
                   >
                     Unhold
@@ -1240,7 +1243,7 @@ export function CampLifecycleForm({
                     <button
                       type="button"
                       className="btn"
-                      disabled={disabled || financialActionBusy || !onConfirmPayment}
+                      disabled={paymentActionsDisabled || !onConfirmPayment}
                       onClick={() => onConfirmPayment?.()}
                     >
                       Confirm Payment
@@ -1253,7 +1256,7 @@ export function CampLifecycleForm({
                   <CampFormInput
                     value={form.paymentRemark || ''}
                     onChange={(e) => updateField('paymentRemark', e.target.value)}
-                    disabled={disabled || financialActionBusy}
+                    disabled={paymentActionsDisabled || !onHoldPayment}
                     placeholder="Required when placing on Hold"
                   />
                 </label>
@@ -1261,7 +1264,7 @@ export function CampLifecycleForm({
                   <button
                     type="button"
                     className="btn secondary"
-                    disabled={disabled || financialActionBusy || !onHoldPayment}
+                    disabled={paymentActionsDisabled || !onHoldPayment}
                     onClick={() => onHoldPayment?.(form.paymentRemark)}
                   >
                     Hold
@@ -1270,7 +1273,7 @@ export function CampLifecycleForm({
                     <button
                       type="button"
                       className="btn"
-                      disabled={!canSubmitFinance || submitFinanceBusy || disabled}
+                      disabled={!canSubmitFinance || submitFinanceBusy || paymentActionsDisabled}
                       title={!canSubmitFinance && hcwFinanceBlockers.length
                         ? hcwFinanceBlockers.join(' ')
                         : (form.paymentSubmitStatus !== 'payment_confirmed'

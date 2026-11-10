@@ -665,13 +665,6 @@ export default function ClientMasterFormPage() {
             onCancel={cancelSectionEdit}
             extra={section.id === 'program' ? (
               <div className="program-config-panels">
-                <ProgramCampRequestLink
-                  recordId={recordId}
-                  persisted={isPersisted}
-                  programActive={form.isActive !== false}
-                  formMasterId={form.formMasterId}
-                  formMasterName={form.formMasterName}
-                />
                 <ClientOneAccessPanel
                   recordId={recordId}
                   persisted={isPersisted}
@@ -719,13 +712,23 @@ export default function ClientMasterFormPage() {
                 canCreateCompany={canCreateCompany}
                 onFieldChange={updateField}
                 onClientNameChange={updateClientName}
-            onSelectRecord={applySuggestion}
+                onSelectRecord={applySuggestion}
                 onAssignedUsersChange={updateAssignedUserEmails}
                 programScopeLabel={
                   form.clientName && form.programName && form.campName
                     ? `${form.clientName} · ${form.programName} · ${form.campName}`
                     : ''
                 }
+                programCampRequestSlot={section.id === 'program' ? (
+                  <ProgramCampRequestLink
+                    compact
+                    recordId={recordId}
+                    persisted={isPersisted}
+                    programActive={form.isActive !== false}
+                    formMasterId={form.formMasterId}
+                    formMasterName={form.formMasterName}
+                  />
+                ) : null}
               />
             )}
           </ClientMasterSectionCard>

@@ -128,9 +128,8 @@ export const OPERATIONAL_MODULES = [
       can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
     icon: (
       <svg {...iconProps}>
-        <path d="M4.5 19.5 12 4.5l7.5 15H4.5Z" />
-        <path d="M12 4.5v15" />
-        <path d="M8.2 19.5c.7-2.2 2-3.5 3.8-3.5s3.1 1.3 3.8 3.5" />
+        <path d="M12 21s-6.2-4.9-6.2-10A6.2 6.2 0 0 1 12 4.8a6.2 6.2 0 0 1 6.2 6.2c0 5.1-6.2 10-6.2 10Z" />
+        <circle cx="12" cy="11" r="2.15" />
       </svg>
     ),
   },
@@ -157,9 +156,10 @@ export const OPERATIONAL_MODULES = [
       can('camps:read') || can('camps:request') || can('camps:approve') || can('*'),
     icon: (
       <svg {...iconProps}>
-        <rect x="4" y="5" width="16" height="14" rx="2.2" />
-        <path d="M8 9.2h8M8 12.4h5.5" />
-        <circle cx="16.2" cy="15.4" r="1.5" />
+        <circle cx="9" cy="8.2" r="2.3" />
+        <circle cx="16.2" cy="9" r="1.9" />
+        <path d="M4.4 18.8c.7-3.1 2.6-4.7 4.6-4.7 2 0 3.9 1.6 4.6 4.7" />
+        <path d="M12.6 18.8c.5-2.2 1.9-3.4 3.5-3.4 1.9 0 3.5 1.5 4.1 3.4" />
       </svg>
     ),
   },

@@ -2610,6 +2610,204 @@
   align-items: start;
 }
 
+/* Billing & Tax: 2 cols so GSTIN/PAN sit directly under State / State Code */
+.camp-ops-root .form-grid.client-master-section-grid--billing {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Program Configuration — explicit row grids for alignment */
+.camp-ops-root .client-master-program-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-program-row {
+  display: grid;
+  gap: 14px 18px;
+  align-items: start;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-program-row--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.camp-ops-root .client-master-program-row--3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.camp-ops-root .client-master-program-row--3 > * {
+  min-width: 0;
+  grid-column: auto;
+  max-width: 100%;
+}
+
+.camp-ops-root .client-master-program-row--3 > .client-master-program-form-select,
+.camp-ops-root .client-master-program-row--3 > .client-master-program-camp-request {
+  grid-column: span 1;
+}
+
+.camp-ops-root .client-master-program-row > label,
+.camp-ops-root .client-master-program-camp-request {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, var(--ink-soft));
+}
+
+.camp-ops-root .client-master-program-row > label input:not([type='checkbox']):not([type='radio']),
+.camp-ops-root .client-master-program-row > label select,
+.camp-ops-root .client-master-program-row > label .adaptive-select,
+.camp-ops-root .client-master-program-row > label .adaptive-select-host {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.camp-ops-root .client-master-program-row--3 > label > .program-form-master-select__title,
+.camp-ops-root .client-master-program-camp-request__label {
+  display: block;
+  margin: 0;
+  line-height: 1.25;
+  min-height: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camp-ops-root .client-master-program-camp-request__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.camp-ops-root .client-master-program-camp-request__label {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.camp-ops-root .client-master-program-camp-request__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: var(--control-h, 36px);
+  min-height: var(--control-h, 36px);
+}
+
+.camp-ops-root .client-master-program-camp-request__actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--control-h, 36px);
+  min-height: var(--control-h, 36px);
+  max-height: var(--control-h, 36px);
+  padding-left: 10px;
+  padding-right: 10px;
+  white-space: nowrap;
+}
+
+.camp-ops-root .client-master-program-camp-request .program-config-panel__hint,
+.camp-ops-root .client-master-program-camp-request .error-text {
+  margin: 0;
+}
+
+/* Healthcare Worker — same checkbox chip pattern as Portal permissions */
+.camp-ops-root .client-master-hcw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.camp-ops-root .client-master-hcw-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 11rem));
+  gap: 6px 10px;
+  align-items: stretch;
+  max-width: 36rem;
+}
+
+.camp-ops-root .client-master-hcw-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-h-sm, 32px);
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-tier-2, var(--bg-elevated, #fff));
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.camp-ops-root .client-master-hcw-check input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--color-brand-primary, var(--brand));
+  cursor: pointer;
+}
+
+.camp-ops-root .client-master-hcw-check:hover {
+  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 40%, var(--line));
+}
+
+.camp-ops-root .client-master-hcw-check.is-selected {
+  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 50%, var(--line));
+  background: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 8%, var(--bg-tier-2, var(--bg-elevated, #fff)));
+}
+
+.camp-ops-root .client-master-hcw-check:has(input:disabled) {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.camp-ops-root .client-master-hcw-field.is-invalid .client-master-hcw-check {
+  border-color: var(--danger);
+}
+
+@media (max-width: 1100px) {
+  .camp-ops-root .client-master-program-row--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .camp-ops-root .client-master-hcw-checks {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .camp-ops-root .client-master-program-row--4,
+  .camp-ops-root .client-master-program-row--3 {
+    grid-template-columns: 1fr;
+  }
+
+  .camp-ops-root .client-master-program-camp-request__actions {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--control-h, 36px);
+  }
+}
+
 .camp-ops-root .client-master-section-grid > label {
   display: flex;
   flex-direction: column;
@@ -4267,83 +4465,6 @@
   color: var(--ink-soft);
 }
 
-.camp-ops-root .client-master-hcw-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.camp-ops-root .client-master-hcw-roles {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--control-h);
-}
-
-.camp-ops-root .client-master-hcw-role {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: auto;
-  max-width: none;
-  margin: 0;
-  height: 2rem;
-  min-height: 2rem;
-  max-height: 2rem;
-  padding: 0 10px 0 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--bg-elevated);
-  box-shadow: none;
-  cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--ink);
-  user-select: none;
-  white-space: nowrap;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.camp-ops-root .client-master-hcw-role input[type='checkbox'] {
-  width: 14px !important;
-  height: 14px !important;
-  min-width: 14px !important;
-  min-height: 14px !important;
-  max-width: 14px !important;
-  max-height: 14px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  flex: 0 0 14px !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 3px !important;
-  background: var(--bg-elevated) !important;
-  box-shadow: none !important;
-  appearance: auto !important;
-  -webkit-appearance: checkbox !important;
-  accent-color: var(--color-brand-primary, var(--brand));
-  cursor: pointer;
-}
-
-.camp-ops-root .client-master-hcw-role span {
-  line-height: 1;
-}
-
-.camp-ops-root .client-master-hcw-role:hover {
-  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 40%, var(--line));
-}
-
-.camp-ops-root .client-master-hcw-role.is-selected {
-  border-color: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 50%, var(--line));
-  background: color-mix(in srgb, var(--color-brand-primary, var(--brand)) 8%, var(--bg-elevated));
-  color: var(--ink);
-}
-
-.camp-ops-root .client-master-hcw-field.is-invalid .client-master-hcw-role {
-  border-color: var(--danger);
-}
 
 .camp-ops-root .camp-consumables-used-remove-btn {
   appearance: none;

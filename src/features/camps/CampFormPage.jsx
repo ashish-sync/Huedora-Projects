@@ -180,12 +180,20 @@ export default function CampFormPage() {
       && camp.status === 'approved'
       && canEditLifecycleStage(camp.status, 'assignment', effectiveReached, camp, { isAdmin: isCampAdmin });
 
-    const financialEditable = cancelledClosure
+    const cancelledFinancialEditable = cancelledClosure
       && camp.status === 'cancelled'
       && (
         canEditLifecycleStage(camp.status, 'financial', effectiveReached, camp, { isAdmin: isCampAdmin })
         || canSaveCancelledOtherPayouts(camp.status, 'financial', effectiveReached, camp)
       );
+
+    // finance:write can Confirm/Hold/Unhold on Financial camps even without camps:update
+    // (bulk bar already allows this — keep the individual camp page consistent).
+    const paymentActionsEditable = hasPermission('finance:write')
+      && normalizeLifecycleStage(camp.lifecycleStage, 'request') === 'financial'
+      && String(camp.financePaymentStatus || '').trim().toLowerCase() !== 'paid';
+
+    const financialEditable = cancelledFinancialEditable || paymentActionsEditable;
 
     if (!canEditCampRecord(camp) && !assignmentEditable && !financialEditable) {
       setReadOnly(true);
@@ -727,7 +735,13 @@ export default function CampFormPage() {
           setHcwGapApprovalNotice('');
         }
         applyCampAccess(camp);
-        if (!canEditCampRecord(camp) && !(workingStage === 'assignment' && camp.status === 'approved')) {
+        const financialPaymentAccess = hasPermission('finance:write')
+          && normalizeLifecycleStage(camp.lifecycleStage, 'request') === 'financial';
+        if (
+          !canEditCampRecord(camp)
+          && !(workingStage === 'assignment' && camp.status === 'approved')
+          && !financialPaymentAccess
+        ) {
           setError('You can only edit camps that are pending review.');
         }
       })

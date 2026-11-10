@@ -58,6 +58,7 @@ export function ClientMasterFormSectionFields({
   onSelectRecord,
   onAssignedUsersChange,
   programScopeLabel = '',
+  programCampRequestSlot = null,
 }) {
   const updateField = onFieldChange;
 
@@ -114,8 +115,8 @@ export function ClientMasterFormSectionFields({
 
     case 'billing':
       return (
-        <div className="form-grid client-master-section-grid">
-          <label className="client-master-section-span-2">
+        <div className="form-grid client-master-section-grid client-master-section-grid--billing">
+          <label className="client-master-section-span-full">
             Billing Address
             <textarea
               rows={2}
@@ -167,61 +168,71 @@ export function ClientMasterFormSectionFields({
 
     case 'program':
       return (
-        <div className="form-grid client-master-section-grid">
-          <label>
-            Division / Therapy
-            <input
-              value={form.programName}
-              onChange={(e) => updateField('programName', e.target.value)}
-              placeholder="e.g. Viva BMD Camps, Ortreso"
-              className={fieldErrors.programName ? 'input-invalid' : ''}
-            />
-            <FieldError message={fieldErrors.programName} />
-          </label>
-          <label>
-            Method
-            <CampNameSelect
-              value={form.campName}
-              onChange={(value) => updateField('campName', value)}
-              error={fieldErrors.campName}
-            />
-          </label>
-          <label>
-            Service Model
-            <SearchableOptionsInput
-              value={form.campType}
-              onChange={(value) => updateField('campType', value)}
-              options={SERVICE_MODEL_OPTIONS}
-              placeholder="e.g. HCW + Device (Light Device)"
-              groupLabel="Service models"
-              error={fieldErrors.campType}
-            />
-          </label>
-          <label>
-            Camp Duration
-            <input
-              value={form.campDuration}
-              onChange={(e) => updateField('campDuration', e.target.value)}
-              placeholder="4:00"
-              className={fieldErrors.campDuration ? 'input-invalid' : ''}
-            />
-            <FieldError message={fieldErrors.campDuration} />
-          </label>
-          <div className={`client-master-hcw-field client-master-section-span-full${fieldErrors.healthcareWorker ? ' is-invalid' : ''}`}>
+        <div className="client-master-program-layout">
+          <div className="client-master-program-row client-master-program-row--4">
+            <label>
+              Division / Therapy
+              <input
+                value={form.programName}
+                onChange={(e) => updateField('programName', e.target.value)}
+                placeholder="e.g. Viva BMD Camps, Ortreso"
+                className={fieldErrors.programName ? 'input-invalid' : ''}
+              />
+              <FieldError message={fieldErrors.programName} />
+            </label>
+            <label>
+              Method
+              <CampNameSelect
+                value={form.campName}
+                onChange={(value) => updateField('campName', value)}
+                error={fieldErrors.campName}
+              />
+            </label>
+            <label>
+              Service Model
+              <SearchableOptionsInput
+                value={form.campType}
+                onChange={(value) => updateField('campType', value)}
+                options={SERVICE_MODEL_OPTIONS}
+                placeholder="e.g. HCW + Device (Light Device)"
+                groupLabel="Service models"
+                error={fieldErrors.campType}
+              />
+            </label>
+            <label>
+              Camp Duration
+              <input
+                value={form.campDuration}
+                onChange={(e) => updateField('campDuration', e.target.value)}
+                placeholder="4:00"
+                className={fieldErrors.campDuration ? 'input-invalid' : ''}
+              />
+              <FieldError message={fieldErrors.campDuration} />
+            </label>
+          </div>
+
+          <div className={`client-master-hcw-field${fieldErrors.healthcareWorker ? ' is-invalid' : ''}`}>
             <span className="client-master-field-label" id="client-master-hcw-label">
               Healthcare Worker
             </span>
-            <div className="client-master-hcw-roles" role="group" aria-labelledby="client-master-hcw-label">
+            <div
+              className="client-master-hcw-checks"
+              role="group"
+              aria-labelledby="client-master-hcw-label"
+            >
               {HEALTHCARE_WORKER_OPTIONS.map((option) => {
                 const checked = healthcareRoleSelected(form.healthcareWorker, option);
                 return (
-                  <label key={option} className={`client-master-hcw-role${checked ? ' is-selected' : ''}`}>
+                  <label key={option} className={`client-master-hcw-check${checked ? ' is-selected' : ''}`}>
                     <input
                       type="checkbox"
                       checked={checked}
                       disabled={loading}
                       onChange={() =>
-                        updateField('healthcareWorker', toggleHealthcareRole(form.healthcareWorker, option))
+                        updateField(
+                          'healthcareWorker',
+                          toggleHealthcareRole(form.healthcareWorker, option),
+                        )
                       }
                     />
                     <span>{option}</span>
@@ -231,28 +242,39 @@ export function ClientMasterFormSectionFields({
             </div>
             <FieldError message={fieldErrors.healthcareWorker} />
           </div>
-          <ProgramFormMasterSelect
-            purpose="request"
-            value={form.formMasterId || ''}
-            formName={form.formMasterName || ''}
-            disabled={loading}
-            error={fieldErrors.formMasterId}
-            onChange={({ formMasterId, formMasterName }) => {
-              updateField('formMasterId', formMasterId);
-              updateField('formMasterName', formMasterName);
-            }}
-          />
-          <ProgramFormMasterSelect
-            purpose="activity"
-            value={form.activityFormMasterId || ''}
-            formName={form.activityFormMasterName || ''}
-            disabled={loading}
-            error={fieldErrors.activityFormMasterId}
-            onChange={({ formMasterId, formMasterName }) => {
-              updateField('activityFormMasterId', formMasterId);
-              updateField('activityFormMasterName', formMasterName);
-            }}
-          />
+
+          <div
+            className="client-master-program-row client-master-program-row--3"
+            data-program-forms-row="true"
+          >
+            <ProgramFormMasterSelect
+              purpose="request"
+              className="client-master-program-form-select"
+              value={form.formMasterId || ''}
+              formName={form.formMasterName || ''}
+              disabled={loading}
+              error={fieldErrors.formMasterId}
+              onChange={({ formMasterId, formMasterName }) => {
+                updateField('formMasterId', formMasterId);
+                updateField('formMasterName', formMasterName);
+              }}
+            />
+            <ProgramFormMasterSelect
+              purpose="activity"
+              className="client-master-program-form-select"
+              value={form.activityFormMasterId || ''}
+              formName={form.activityFormMasterName || ''}
+              disabled={loading}
+              error={fieldErrors.activityFormMasterId}
+              onChange={({ formMasterId, formMasterName }) => {
+                updateField('activityFormMasterId', formMasterId);
+                updateField('activityFormMasterName', formMasterName);
+              }}
+            />
+            <div className="client-master-program-camp-request">
+              {programCampRequestSlot}
+            </div>
+          </div>
         </div>
       );
 

@@ -5,20 +5,16 @@ import { api } from '../../../shared/api.js';
 
 const PURPOSE = {
   request: {
-    label: 'Request Form (Form Master) for Client',
+    label: 'Request Form',
     ariaLabel: 'Request form from Form Master for Client',
     preferredCategory: 'PUBLIC_CAMP_REQUEST',
     categorySuffix: ' · Public Camp Request',
-    emptyHint: 'Connect a Form Master format for the Client camp request link.',
-    linkedHint: (name) => `Linked to “${name}” for Client request. Edit formats in Master One → Document One → Form Master.`,
   },
   activity: {
-    label: 'Activity Form (Form Master) for HCW',
+    label: 'Activity Form',
     ariaLabel: 'Activity form from Form Master for HCW',
     preferredCategory: 'HCW_ACTIVITY',
     categorySuffix: ' · HCW Activity Form',
-    emptyHint: 'Connect a Form Master format for the HCW Activity Form.',
-    linkedHint: (name) => `Linked to “${name}” for HCW Activity. Edit formats in Master One → Document One → Form Master.`,
   },
 };
 
@@ -34,6 +30,7 @@ export function ProgramFormMasterSelect({
   disabled = false,
   error = '',
   onChange,
+  className = '',
 }) {
   const config = PURPOSE[purpose] || PURPOSE.request;
   const [rows, setRows] = useState([]);
@@ -90,11 +87,9 @@ export function ProgramFormMasterSelect({
     return ordered;
   }, [rows, value, config.preferredCategory]);
 
-  const selected = options.find((row) => String(row._id) === String(value));
-
   return (
-    <label className="client-master-section-span-2">
-      {config.label}
+    <label className={className || undefined}>
+      <span className="program-form-master-select__title">{config.label}</span>
       <AdaptiveSelect
         value={value || ''}
         disabled={disabled || loading}
@@ -121,13 +116,6 @@ export function ProgramFormMasterSelect({
           </option>
         ))}
       </AdaptiveSelect>
-      <p className="meta-text program-form-master-select__hint">
-        {selected
-          ? `${selected.fields?.length || 0} fields · Create or edit formats in Master One → Document One → Form Master.`
-          : formName
-            ? config.linkedHint(formName)
-            : config.emptyHint}
-      </p>
       {error ? <FieldError message={error} /> : null}
       {!error && loadError && !rows.length ? (
         <span className="meta-text" style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2 }}>

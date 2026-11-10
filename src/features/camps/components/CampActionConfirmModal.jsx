@@ -375,11 +375,17 @@ export function CampActionConfirmModal({
 
                   {closureSubReasonRequiresRemarks(closureDetails.subReason) && (
                     <label className="modal-cancel-remark-field">
-                      Remarks
+                      {closureDetails.subReason === 'other_request_issues'
+                        ? 'Comment'
+                        : 'Remarks'}
                       <textarea
                         rows={2}
                         value={closureDetails.remarks}
-                        placeholder="Required for this sub-reason"
+                        placeholder={
+                          closureDetails.subReason === 'other_request_issues'
+                            ? 'Specify the request issue'
+                            : 'Required for this sub-reason'
+                        }
                         onChange={(e) => onClosureDetailsChange({
                           ...closureDetails,
                           closureType: effectiveClosureType,

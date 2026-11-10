@@ -151,14 +151,14 @@ export function ClientOneAccessPanel({
     ? 'Save Program Configuration to issue a Client One PIN for this programme.'
     : !programActive
       ? 'Activate this program before sharing Client One access.'
-      : 'Clients sign in with a 6-digit PIN. Leave blank to auto-generate, or enter your own. Shown once after Generate or Rotate.';
+      : '';
 
   return (
     <div className="program-config-panel" aria-label="Client One access">
       <div className="program-config-panel__head">
         <div>
           <p className="program-config-panel__title">Client One access</p>
-          <p className="program-config-panel__hint">{hint}</p>
+          {hint ? <p className="program-config-panel__hint">{hint}</p> : null}
         </div>
         <div className="program-config-panel__actions">
           {!access?.accessId ? (
@@ -213,7 +213,7 @@ export function ClientOneAccessPanel({
 
       {persisted && programActive ? (
         <div className="program-config-panel__body">
-          <div className="program-config-panel__grid">
+          <div className="program-config-panel__grid program-config-panel__grid--pin-row">
             <label className="program-config-field">
               <span>Set 6-digit PIN (optional)</span>
               <input
@@ -227,21 +227,39 @@ export function ClientOneAccessPanel({
                 aria-label="Optional 6-digit Client One PIN"
                 onChange={(e) => setCustomPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
               />
-            </label>
-            <div className="program-config-meta">
               {access?.accessId ? (
-                <p>
+                <p className="program-config-field__meta">
                   Access ID: <code className="mono-sm">{access.accessId}</code>
                 </p>
-              ) : (
-                <p>No access issued yet. Generate a PIN to create the portal link.</p>
-              )}
-              {access?.accessId && !revealedPin ? (
-                <p>
-                  PIN is hashed at rest. Use <strong>Rotate PIN</strong> to issue a new one (shown once).
-                </p>
               ) : null}
-            </div>
+            </label>
+
+            {access?.accessId ? (
+              <div className="program-config-permissions program-config-permissions--inline">
+                <p className="program-config-permissions__title">Portal permissions</p>
+                <div className="program-config-permissions__grid">
+                  {FEATURE_LABELS.map(([key, label]) => (
+                    <label key={key} className="program-config-check">
+                      <input
+                        type="checkbox"
+                        checked={features[key] !== false}
+                        disabled={disabled}
+                        onChange={(e) => {
+                          const next = { ...features, [key]: e.target.checked };
+                          setFeatures(next);
+                          saveFeatures(next);
+                        }}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="program-config-meta">
+                <p>No access issued yet. Generate a PIN to create the portal link.</p>
+              </div>
+            )}
           </div>
 
           {revealedPin ? (
@@ -267,29 +285,6 @@ export function ClientOneAccessPanel({
               <p className="program-config-pin-reveal__note">
                 There is no default PIN and it cannot be retrieved later. Use Rotate PIN if this one is lost.
               </p>
-            </div>
-          ) : null}
-
-          {access?.accessId ? (
-            <div className="program-config-permissions">
-              <p className="program-config-permissions__title">Portal permissions</p>
-              <div className="program-config-permissions__grid">
-                {FEATURE_LABELS.map(([key, label]) => (
-                  <label key={key} className="program-config-check">
-                    <input
-                      type="checkbox"
-                      checked={features[key] !== false}
-                      disabled={disabled}
-                      onChange={(e) => {
-                        const next = { ...features, [key]: e.target.checked };
-                        setFeatures(next);
-                        saveFeatures(next);
-                      }}
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
             </div>
           ) : null}
         </div>

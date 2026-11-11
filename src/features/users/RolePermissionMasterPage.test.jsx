@@ -188,5 +188,19 @@ describe('RolePermissionMasterPage Access Control', () => {
     expect(screen.getByRole('heading', { name: 'Create person' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add person' })).toBeTruthy();
   });
+
+  it('renders redesigned Profile & Identity Header photo card with preview and App Header simulation', async () => {
+    render(
+      <MemoryRouter>
+        <RolePermissionMasterPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Profile & Identity' })).toBeTruthy();
+    expect(screen.getByText('Header photo')).toBeTruthy();
+    expect(screen.getByText(/Shown in the app header/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Upload photo' })).toBeTruthy();
+    expect(screen.getByText('App Header Preview')).toBeTruthy();
+  });
 });
 

@@ -10,10 +10,13 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
+import { Camera, Trash2 } from 'lucide-react';
+import HeaderPhotoEditorModal from './HeaderPhotoEditorModal.jsx';
 import OrgHierarchyPanel from './OrgHierarchyPanel.jsx';
 import { personRoleLabel, personStatusLabel } from '../dashboards/opsReviewCatalog.js';
 import '../audit/activityLog.css';
 import './accessControl.css';
+import './headerPhotoEditor.css';
 import {
   DESIGNATION_ACCESS_TEMPLATES,
   getDesignationAccessTemplate,
@@ -144,6 +147,8 @@ export default function RolePermissionMasterPage() {
   const canWrite = can('users:write') || can('*');
   const avatarInputRef = useRef(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [pendingCropFile, setPendingCropFile] = useState(null);
   const canDelete = can('*');
   const canGrantAdmin = can('*');
   const canViewUsers = canWrite || can('users:read');
@@ -456,6 +461,35 @@ export default function RolePermissionMasterPage() {
     }
   };
 
+  const handleSaveCroppedAvatar = async (croppedFile) => {
+    if (!croppedFile || !editingUserId || !canWrite || avatarBusy) return;
+    setAvatarBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const body = new FormData();
+      body.append('avatar', croppedFile);
+      const { data } = await api(`/users/${editingUserId}/avatar`, {
+        method: 'POST',
+        body,
+      });
+      skipDraftSyncRef.current = true;
+      syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
+      setUsers((prev) => mergeUserRecord(prev, data));
+      if (String(me?.id) === String(data.id)) {
+        await refreshMe?.();
+      }
+      setMsg('Header photo updated.');
+      setCropModalOpen(false);
+      setPendingCropFile(null);
+    } catch (err) {
+      setError(err?.message || 'Could not upload photo');
+      throw err;
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   const downloadMaster = async () => {
     setError('');
     setExportBusy(true);
@@ -701,95 +735,121 @@ export default function RolePermissionMasterPage() {
                 <section className="rp-section">
                   <h4>Profile & Identity</h4>
                   {!creatingUser && editingUserId ? (
-                    <div className="rp-avatar-row">
-                      <div className="rp-avatar-preview" aria-hidden="true">
-                        {editingUser?.avatarUrl ? (
-                          <img
-                            src={resolveUserAvatarSrc(editingUser.avatarUrl)}
-                            alt=""
-                          />
-                        ) : (
-                          <span>{getInitials(userDraft.fullName, userDraft.email)}</span>
-                        )}
-                      </div>
-                      <div className="rp-avatar-copy">
-                        <p className="rp-avatar-title">Header photo</p>
-                        <p className="muted rp-hint">
-                          Shown in the app header. JPEG, PNG, WebP, or GIF · max 2 MB.
-                        </p>
-                        <div className="rp-avatar-actions">
-                          <input
-                            ref={avatarInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
-                            hidden
-                            onChange={async (event) => {
-                              const file = event.target.files?.[0];
-                              event.target.value = '';
-                              if (!file || !editingUserId || !canWrite || avatarBusy) return;
-                              setAvatarBusy(true);
-                              setError('');
-                              setMsg('');
-                              try {
-                                const body = new FormData();
-                                body.append('avatar', file);
-                                const { data } = await api(`/users/${editingUserId}/avatar`, {
-                                  method: 'POST',
-                                  body,
-                                });
-                                skipDraftSyncRef.current = true;
-                                syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
-                                setUsers((prev) => mergeUserRecord(prev, data));
-                                if (String(me?.id) === String(data.id)) {
-                                  await refreshMe?.();
-                                }
-                                setMsg('Header photo updated.');
-                              } catch (err) {
-                                setError(err.message || 'Could not upload photo');
-                              } finally {
-                                setAvatarBusy(false);
-                              }
-                            }}
-                          />
+                    <div className="rp-avatar-card">
+                      <div className="rp-avatar-main">
+                        <div className="rp-avatar-preview-wrap">
                           <button
                             type="button"
-                            className="btn secondary btn-compact"
+                            className="rp-avatar-preview-btn"
                             disabled={!canWrite || avatarBusy}
                             onClick={() => avatarInputRef.current?.click()}
+                            title={canWrite ? 'Click to change photo' : undefined}
+                            aria-label="Profile avatar image. Click to change photo."
                           >
-                            {avatarBusy ? 'Uploading…' : editingUser?.avatarUrl ? 'Change photo' : 'Upload photo'}
+                            {editingUser?.avatarUrl ? (
+                              <img
+                                src={resolveUserAvatarSrc(editingUser.avatarUrl)}
+                                alt=""
+                              />
+                            ) : (
+                              <span>{getInitials(userDraft.fullName, userDraft.email)}</span>
+                            )}
+                            {canWrite && !avatarBusy && (
+                              <span className="rp-avatar-hover-overlay" aria-hidden="true">
+                                <Camera size={14} />
+                                <span>Change</span>
+                              </span>
+                            )}
                           </button>
-                          {editingUser?.avatarUrl ? (
-                            <button
-                              type="button"
-                              className="btn ghost btn-compact"
-                              disabled={!canWrite || avatarBusy}
-                              onClick={async () => {
-                                if (!editingUserId || avatarBusy) return;
-                                setAvatarBusy(true);
+                        </div>
+                        <div className="rp-avatar-copy">
+                          <div className="rp-avatar-title-row">
+                            <p className="rp-avatar-title">Header photo</p>
+                            {editingUser?.avatarUrl ? (
+                              <span className="rp-avatar-tag rp-avatar-tag--active">Custom photo</span>
+                            ) : (
+                              <span className="rp-avatar-tag">Default initials</span>
+                            )}
+                          </div>
+                          <p className="rp-avatar-hint">
+                            Shown in the app header. JPEG, PNG, WebP, or GIF · max 2 MB.
+                          </p>
+                          <div className="rp-avatar-actions">
+                            <input
+                              ref={avatarInputRef}
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              hidden
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                event.target.value = '';
+                                if (!file || !editingUserId || !canWrite || avatarBusy) return;
+                                if (file.size > 10 * 1024 * 1024) {
+                                  setError('Photo must be 10 MB or smaller to edit');
+                                  return;
+                                }
                                 setError('');
                                 setMsg('');
-                                try {
-                                  const { data } = await api(`/users/${editingUserId}/avatar`, {
-                                    method: 'DELETE',
-                                  });
-                                  skipDraftSyncRef.current = true;
-                                  syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
-                                  setUsers((prev) => mergeUserRecord(prev, data));
-                                  if (String(me?.id) === String(data.id)) {
-                                    await refreshMe?.();
-                                  }
-                                  setMsg('Header photo removed.');
-                                } catch (err) {
-                                  setError(err.message || 'Could not remove photo');
-                                } finally {
-                                  setAvatarBusy(false);
-                                }
+                                setPendingCropFile(file);
+                                setCropModalOpen(true);
                               }}
+                            />
+                            <button
+                              type="button"
+                              className="rp-avatar-action-btn rp-avatar-action-btn--change"
+                              disabled={!canWrite || avatarBusy}
+                              onClick={() => avatarInputRef.current?.click()}
                             >
-                              Remove
+                              <Camera size={14} aria-hidden="true" />
+                              <span>{avatarBusy ? 'Saving…' : editingUser?.avatarUrl ? 'Change photo' : 'Upload photo'}</span>
                             </button>
-                          ) : null}
+                            {editingUser?.avatarUrl ? (
+                              <button
+                                type="button"
+                                className="rp-avatar-action-btn rp-avatar-action-btn--remove"
+                                disabled={!canWrite || avatarBusy}
+                                onClick={async () => {
+                                  if (!editingUserId || avatarBusy) return;
+                                  setAvatarBusy(true);
+                                  setError('');
+                                  setMsg('');
+                                  try {
+                                    const { data } = await api(`/users/${editingUserId}/avatar`, {
+                                      method: 'DELETE',
+                                    });
+                                    skipDraftSyncRef.current = true;
+                                    syncedUserIdRef.current = draftSyncKey(data.id, modules, roles);
+                                    setUsers((prev) => mergeUserRecord(prev, data));
+                                    if (String(me?.id) === String(data.id)) {
+                                      await refreshMe?.();
+                                    }
+                                    setMsg('Header photo removed.');
+                                  } catch (err) {
+                                    setError(err.message || 'Could not remove photo');
+                                  } finally {
+                                    setAvatarBusy(false);
+                                  }
+                                }}
+                              >
+                                <Trash2 size={13} aria-hidden="true" />
+                                <span>Remove</span>
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rp-avatar-simulation" aria-hidden="true">
+                        <span className="rp-simulation-label">App Header Preview</span>
+                        <div className="rp-simulation-pill">
+                          <div className="header-avatar">
+                            {editingUser?.avatarUrl ? (
+                              <img src={resolveUserAvatarSrc(editingUser.avatarUrl)} alt="" />
+                            ) : (
+                              <span>{getInitials(userDraft.fullName, userDraft.email)}</span>
+                            )}
+                          </div>
+                          <span className="rp-simulation-name">{editingUser?.fullName || userDraft.fullName || 'User'}</span>
                         </div>
                       </div>
                     </div>
@@ -1016,6 +1076,16 @@ export default function RolePermissionMasterPage() {
         busy={busy}
         onConfirm={executeRemoveUser}
         onCancel={() => setDeleteUserConfirm(false)}
+      />
+      <HeaderPhotoEditorModal
+        open={cropModalOpen}
+        file={pendingCropFile}
+        userName={editingUser?.fullName || userDraft.fullName}
+        onSave={handleSaveCroppedAvatar}
+        onCancel={() => {
+          setCropModalOpen(false);
+          setPendingCropFile(null);
+        }}
       />
     </PageShell>
   );

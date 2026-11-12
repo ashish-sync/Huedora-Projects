@@ -2,11 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link } from 'react-router-dom';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
+import DateInput from '../../components/ui/DateInput.jsx';
 import { api, downloadExcel } from '../../shared/api.js';
 import { openUploadView } from '../../shared/uploadViewUrl.js';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
+import { todayIso, toApiDateValue } from '../../shared/dateFormat.js';
 import { MODULE, ACTION, FILTER, NAV } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import './finance-commercial.css';
@@ -29,8 +32,6 @@ const PAYOUT_STATUS_FILTERS = [
   { value: 'under_review', label: PAYOUT_SETTLEMENT_LABELS.under_review },
   { value: 'not_paid', label: PAYOUT_SETTLEMENT_LABELS.not_paid },
 ];
-import DateInput from '../../components/ui/DateInput.jsx';
-import { todayIso, toApiDateValue } from '../../shared/dateFormat.js';
 
 function emptyDraft() {
   return {
@@ -318,12 +319,20 @@ export default function FinanceCampPayoutsPage() {
     setMsg('');
   }
 
+  const returnConfirmLabel = returnableRows.length === 1
+    ? `Camp ${returnableRows[0].campId || '—'}`
+    : `${returnableRows.length} camps`;
+
   function returnToCampFinancial() {
     if (!canReturn || !returnableRows.length) return;
     setReturnConfirmOpen(true);
   }
 
   async function executeReturnToCampFinancial() {
+    if (!canReturn || !returnableRows.length) {
+      setReturnConfirmOpen(false);
+      return;
+    }
     setReturnConfirmOpen(false);
 
     setReturnBusy(true);
@@ -921,6 +930,20 @@ export default function FinanceCampPayoutsPage() {
           </section>
         </div>
       </section>
+
+      <ConfirmDialog
+        open={returnConfirmOpen}
+        title="Return to Camp One Financial"
+        message={`Return ${returnConfirmLabel} to Camp One Financial (Pending Confirmation)? Revenue and payout amounts can be edited and Confirm Payment run again before re-submit.`}
+        confirmLabel="Return to Financial"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        loading={returnBusy}
+        onCancel={() => {
+          if (!returnBusy) setReturnConfirmOpen(false);
+        }}
+        onConfirm={executeReturnToCampFinancial}
+      />
     </div>
   );
 }

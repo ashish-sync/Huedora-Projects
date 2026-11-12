@@ -9,6 +9,17 @@ describe('canReturnCampFromPayoutQueue', () => {
     expect(canReturnCampFromPayoutQueue({ permissions: ['*'] })).toBe(true);
   });
 
+  it('allows Admin / Super Admin systemRole', () => {
+    expect(canReturnCampFromPayoutQueue({
+      permissions: ['finance:write'],
+      systemRole: 'Admin',
+    })).toBe(true);
+    expect(canReturnCampFromPayoutQueue({
+      permissions: ['finance:write'],
+      systemRole: 'Super Admin',
+    })).toBe(true);
+  });
+
   it('allows Accounts role and designation', () => {
     expect(canReturnCampFromPayoutQueue({
       permissions: ['finance:write'],

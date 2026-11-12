@@ -5,9 +5,11 @@
 
 const RETURN_EMAILS = new Set(['zohra@tylocare.com']);
 const RETURN_ROLES = new Set(['admin', 'accounts']);
+const RETURN_SYSTEM_ROLES = new Set(['admin', 'super admin']);
 const RETURN_DESIGNATIONS = new Set([
   'accounts',
   'lead - technology & process implementation',
+  'lead - process & tech',
 ]);
 
 function normalizeKey(value) {
@@ -22,6 +24,9 @@ export function canReturnCampFromPayoutQueue(user) {
   if (!user) return false;
   const perms = Array.isArray(user.permissions) ? user.permissions : [];
   if (perms.includes('*')) return true;
+
+  const systemRole = normalizeKey(user.systemRole);
+  if (RETURN_SYSTEM_ROLES.has(systemRole)) return true;
 
   const email = normalizeKey(user.email);
   if (RETURN_EMAILS.has(email)) return true;

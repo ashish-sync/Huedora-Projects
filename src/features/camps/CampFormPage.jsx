@@ -858,9 +858,28 @@ export default function CampFormPage() {
     }
   }
 
+  function buildFinanceActionPayload(extra = {}) {
+    // Confirm/Hold/Unhold must persist Financial-tab amounts — otherwise Excel export stays stale.
+    return {
+      campRevenue: form.campRevenue,
+      travelRevenue: form.travelRevenue,
+      overtimeRevenue: form.overtimeRevenue,
+      otherRevenue: form.otherRevenue,
+      totalRevenue: form.totalRevenue,
+      campAmount: form.campAmount,
+      travelling: form.travelling,
+      overtimeExpense: form.overtimeExpense,
+      otherExpenses: form.otherExpenses,
+      totalPayout: form.totalPayout,
+      campaignType: form.campaignType,
+      campaignName: form.campaignName,
+      ...extra,
+    };
+  }
+
   function applyCampResponsePreservingFinance(camp) {
     const next = campToForm(camp);
-    // Confirm/Hold/Unhold do not persist finance edits — keep local amounts if server still has zeros.
+    // Safety net if a payment action response omits an amount the tab still shows.
     const financePreserveKeys = [
       'campRevenue', 'travelRevenue', 'overtimeRevenue', 'otherRevenue', 'totalRevenue',
       'campAmount', 'travelling', 'overtimeExpense', 'otherExpenses', 'totalPayout',
@@ -883,7 +902,7 @@ export default function CampFormPage() {
     setFinancialActionBusy(true);
     setError('');
     try {
-      const res = await campApi.confirmPayment(id);
+      const res = await campApi.confirmPayment(id, buildFinanceActionPayload());
       const camp = res.data?.data || res.data;
       applyCampResponsePreservingFinance(camp);
     } catch (err) {
@@ -902,9 +921,9 @@ export default function CampFormPage() {
     setFinancialActionBusy(true);
     setError('');
     try {
-      const res = await campApi.holdPayment(id, {
+      const res = await campApi.holdPayment(id, buildFinanceActionPayload({
         paymentRemark: String(remark || form.paymentRemark || '').trim(),
-      });
+      }));
       const camp = res.data?.data || res.data;
       applyCampResponsePreservingFinance(camp);
     } catch (err) {
@@ -923,9 +942,9 @@ export default function CampFormPage() {
     setFinancialActionBusy(true);
     setError('');
     try {
-      const res = await campApi.releaseHold(id, {
+      const res = await campApi.releaseHold(id, buildFinanceActionPayload({
         paymentRemark: String(remark || form.paymentRemark || '').trim(),
-      });
+      }));
       const camp = res.data?.data || res.data;
       applyCampResponsePreservingFinance(camp);
     } catch (err) {
@@ -1602,7 +1621,6 @@ export default function CampFormPage() {
         : (
           campStatus !== 'cancelled'
           && campStatus !== 'rejected'
-          && activeStage !== 'financial'
           && canEditLifecycleStage(campStatus, activeStage, reachedLifecycleStage, campLifecycleContext, lifecycleEditOpts)
           && (activeStage !== 'assignment' || ['approved', 'executed'].includes(campStatus))
         )

@@ -49,16 +49,19 @@ describe('ClientOneHubPage', () => {
 
   it('lists programmes and opens an internal preview session', async () => {
     const user = userEvent.setup();
+    // Real campOpsApi asAxios shape: server `{ data: session }` becomes `res.data.data`.
     previewClientOne.mockResolvedValue({
       data: {
-        token: 'preview-tok',
-        expiresAt: new Date(Date.now() + 60_000).toISOString(),
-        mode: 'preview',
-        client: {
-          name: 'Acme',
-          programName: 'Oncology',
-          campName: 'BMD',
-          clientMasterId: 'm1',
+        data: {
+          token: 'preview-tok',
+          expiresAt: new Date(Date.now() + 60_000).toISOString(),
+          mode: 'preview',
+          client: {
+            name: 'Acme',
+            programName: 'Oncology',
+            campName: 'BMD',
+            clientMasterId: 'm1',
+          },
         },
       },
     });

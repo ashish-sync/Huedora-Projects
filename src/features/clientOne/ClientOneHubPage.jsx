@@ -64,7 +64,8 @@ export default function ClientOneHubPage() {
     try {
       clearClientOneSession('preview');
       const res = await clientMasterApi.previewClientOne(row._id);
-      const data = res?.data || {};
+      // campOpsApi asAxios wraps the JSON body — server `{ data: session }` → `res.data.data`.
+      const data = res?.data?.data || res?.data || {};
       if (!data.token) throw new Error('Preview session was not issued');
       setClientOneSession({
         token: data.token,

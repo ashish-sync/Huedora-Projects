@@ -136,6 +136,27 @@ const BULK_ACTION_COPY = {
     confirmLabel: 'Submit to Finance One',
     confirmClass: '',
   },
+  persistFinancialPayouts: {
+    title: 'Persist payout amounts',
+    message: (count) => (
+      `Same as Financial → Save Changes for payout columns on ${count} selected Confirmed Payment `
+      + `camp${count === 1 ? '' : 's'}: seed empty Camp Amount from Contact Directory, keep stored `
+      + 'Travelling / Overtime / Other, recompute totals. Does not change payment status, revenue, or other stages.'
+    ),
+    confirmLabel: 'Persist payouts',
+    confirmClass: '',
+  },
+  persistConfirmedPayoutsAll: {
+    title: 'Persist all confirmed payouts',
+    message: () => (
+      'Same as Financial → Save Changes for payout columns on all Confirmed Payment / Validation Completed '
+      + 'camps in the current date range (up to 5,000): seed empty Camp Amount from Contact Directory, '
+      + 'keep stored Travelling / Overtime / Other, recompute totals. '
+      + 'Does not change payment status, revenue, or other stages. Browser-only unsaved amounts cannot be recovered.'
+    ),
+    confirmLabel: 'Persist all confirmed',
+    confirmClass: '',
+  },
 };
 
 const CANCEL_OPTIONS = [

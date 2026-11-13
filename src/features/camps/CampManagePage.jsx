@@ -363,66 +363,48 @@ export default function CampsPage() {
     setBulkMessage('');
 
     try {
-        if (confirmRequest.mode === 'bulk') {
-        if (confirmRequest.action === 'persistConfirmedPayoutsAll') {
-          const { data } = await campApi.persistConfirmedPayouts({
-            dateFrom: dateFrom || undefined,
-            dateTo: dateTo || undefined,
-          });
-          const summary = data?.summary || {};
-          setBulkMessage(
-            `Confirmed payouts: ${summary.updated || 0} updated, `
-            + `${summary.unchanged || 0} unchanged, `
-            + `${summary.failed || 0} failed `
-            + `(scanned ${summary.scanned || 0})`,
-          );
-          if (data?.results?.failed?.length) {
-            setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
-          }
-          await loadCampsRef.current?.();
-        } else {
-          const selectedCamps = camps.filter((camp) => (
-            (confirmRequest.ids || selectedIds).includes(camp._id)
-          ));
-          const validation = validateBulkCampAction(confirmRequest.action, selectedCamps, getBulkAuth());
-          if (!validation.ok) {
-            setError(validation.message);
+      if (confirmRequest.mode === 'bulk') {
+        const selectedCamps = camps.filter((camp) => (
+          (confirmRequest.ids || selectedIds).includes(camp._id)
+        ));
+        const validation = validateBulkCampAction(confirmRequest.action, selectedCamps, getBulkAuth());
+        if (!validation.ok) {
+          setError(validation.message);
+          return;
+        }
+
+        if (confirmRequest.action === 'reject') {
+          const rejectionReason = confirmReasonDetails?.reason?.trim() || '';
+          if (!rejectionReason) {
+            setError('Refusal reason is required');
             return;
           }
+        }
+        if (['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)) {
+          const paymentRemark = confirmReasonDetails?.reason?.trim() || '';
+          if (!paymentRemark) {
+            setError(
+              confirmRequest.action === 'hold'
+                ? 'Hold Remark is required'
+                : 'Unhold Remark is required',
+            );
+            return;
+          }
+        }
 
-          if (confirmRequest.action === 'reject') {
-            const rejectionReason = confirmReasonDetails?.reason?.trim() || '';
-            if (!rejectionReason) {
-              setError('Refusal reason is required');
-              return;
-            }
-          }
-          if (['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)) {
-            const paymentRemark = confirmReasonDetails?.reason?.trim() || '';
-            if (!paymentRemark) {
-              setError(
-                confirmRequest.action === 'hold'
-                  ? 'Hold Remark is required'
-                  : 'Unhold Remark is required',
-              );
-              return;
-            }
-          }
-
-          const { data } = await campApi.bulkAction({
-            ids: validation.ids,
-            action: confirmRequest.action,
-            ...(confirmRequest.action === 'reject'
-              ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
-              : {}),
-            ...(['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)
-              ? { paymentRemark: confirmReasonDetails?.reason?.trim() || '' }
-              : {}),
-          });
-          setBulkMessage(`${data.summary.success} succeeded, ${data.summary.failed} failed`);
-          if (data.results.failed.length) {
-            setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
-          }
+        const { data } = await campApi.bulkAction({
+          ids: validation.ids,
+          action: confirmRequest.action,
+          ...(confirmRequest.action === 'reject'
+            ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
+            : {}),
+          ...(['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)
+            ? { paymentRemark: confirmReasonDetails?.reason?.trim() || '' }
+            : {}),
+        });
+        setBulkMessage(`${data.summary.success} succeeded, ${data.summary.failed} failed`);
+        if (data.results.failed.length) {
+          setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
         }
       } else {
         const { action, camp } = confirmRequest;
@@ -537,22 +519,6 @@ export default function CampsPage() {
 
   async function handleBulk(action) {
     openBulkActionConfirm(action);
-  }
-
-  function openPersistConfirmedPayoutsAll() {
-    if (!canFinanceWrite) {
-      setError('You do not have permission to persist financial payout amounts');
-      return;
-    }
-    setConfirmRequest({
-      mode: 'bulk',
-      action: 'persistConfirmedPayoutsAll',
-      count: 0,
-    });
-    setConfirmCancelDetails(null);
-    setConfirmClosureDetails(null);
-    setConfirmReasonDetails(null);
-    setError('');
   }
 
   // Keep a live ref so URL→state sync can read the current stage without
@@ -829,11 +795,6 @@ export default function CampsPage() {
   const bulkHoldValidation = validateBulkCampAction('hold', selectedCamps, bulkAuth);
   const bulkUnholdValidation = validateBulkCampAction('unhold', selectedCamps, bulkAuth);
   const bulkSubmitFinanceValidation = validateBulkCampAction('submitToFinance', selectedCamps, bulkAuth);
-  const bulkPersistPayoutsValidation = validateBulkCampAction(
-    'persistFinancialPayouts',
-    selectedCamps,
-    bulkAuth,
-  );
 
   const isRequestStage = workingStage === 'request';
   const isAssignmentStage = workingStage === 'assignment';
@@ -998,26 +959,6 @@ export default function CampsPage() {
           onClearAll={clearFilters}
         />
 
-        {isFinancialStage && canFinanceWrite && (
-          <div className="bulk-bar camps-manage-bulk-bar camps-manage-persist-payouts-bar">
-            <span>
-              Persist Camp Amount (and payout totals) for Confirmed Payment / Validation Completed
-              camps so Camp Download Excel matches Financial — no need to Save each camp.
-            </span>
-            <button
-              className="btn btn-compact"
-              type="button"
-              disabled={bulkLoading || confirmLoading}
-              onClick={openPersistConfirmedPayoutsAll}
-              title={dateFrom || dateTo
-                ? `Uses current date range ${dateFrom || '…'} → ${dateTo || '…'}`
-                : 'No date range set — scans all Confirmed Payment camps in scope (max 5,000)'}
-            >
-              Persist All Confirmed Payouts
-            </button>
-          </div>
-        )}
-
         {showBulkBar && (
           <div className="bulk-bar camps-manage-bulk-bar">
           <span>{selectedIds.length} selected</span>
@@ -1049,16 +990,6 @@ export default function CampsPage() {
               onClick={() => handleBulk('confirmPayment')}
             >
               Confirm Payment
-            </button>
-          )}
-          {canFinanceWrite && showBulkFinanceActions && (
-            <button
-              className="btn secondary btn-compact"
-              disabled={bulkLoading || confirmLoading || !bulkPersistPayoutsValidation.ok}
-              title={!bulkPersistPayoutsValidation.ok ? bulkPersistPayoutsValidation.message : undefined}
-              onClick={() => handleBulk('persistFinancialPayouts')}
-            >
-              Persist Payouts
             </button>
           )}
           {canBulkSubmitFinance && showBulkFinanceActions && (

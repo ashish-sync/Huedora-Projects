@@ -156,35 +156,4 @@ describe('validateBulkCampAction', () => {
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/permission/i);
   });
-
-  it('filters persistFinancialPayouts to Confirmed Payment financial camps', () => {
-    const result = validateBulkCampAction(
-      'persistFinancialPayouts',
-      [
-        {
-          _id: '1',
-          campId: 'A',
-          lifecycleStage: 'financial',
-          paymentSubmitStatus: 'payment_confirmed',
-        },
-        {
-          _id: '2',
-          campId: 'B',
-          lifecycleStage: 'financial',
-          paymentSubmitStatus: 'payment_not_checked',
-        },
-        {
-          _id: '3',
-          campId: 'C',
-          lifecycleStage: 'execution',
-          paymentSubmitStatus: 'payment_confirmed',
-        },
-      ],
-      financeAuth,
-    );
-    expect(result.ok).toBe(true);
-    expect(result.ids).toEqual(['1']);
-    expect(result.count).toBe(1);
-    expect(result.skipped?.length).toBe(2);
-  });
 });

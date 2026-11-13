@@ -11,7 +11,6 @@ const PERMISSION_MESSAGES = {
   unhold: 'You do not have permission to unhold payment',
   releaseHold: 'You do not have permission to unhold payment',
   submitToFinance: 'You do not have permission to submit camps to Finance One',
-  persistFinancialPayouts: 'You do not have permission to persist financial payout amounts',
 };
 
 const BULK_ACTION_PAST_TENSE = {
@@ -24,7 +23,6 @@ const BULK_ACTION_PAST_TENSE = {
   unhold: 'unheld',
   releaseHold: 'unheld',
   submitToFinance: 'submitted to Finance One',
-  persistFinancialPayouts: 'updated with persisted payout amounts',
 };
 
 function campLabel(camp) {
@@ -137,16 +135,6 @@ function getCampBulkIssue(action, camp, auth) {
     return null;
   }
 
-  if (action === 'persistFinancialPayouts') {
-    if (!isFinancialCamp(camp)) {
-      return `${campLabel(camp)} is not in Financial stage`;
-    }
-    if (normalizePaymentSubmitStatus(camp.paymentSubmitStatus) !== 'payment_confirmed') {
-      return `${campLabel(camp)} needs Confirmed Payment / Validation Completed`;
-    }
-    return null;
-  }
-
   return 'Unsupported bulk action';
 }
 
@@ -155,13 +143,7 @@ function canPerformBulkCampAction(action, auth) {
   if (action === 'approve') return auth.canApproveCamps();
   if (action === 'reject') return auth.canRejectCamps();
   if (action === 'execute') return auth.hasPermission('camps:execute');
-  if (
-    action === 'confirmPayment'
-    || action === 'hold'
-    || action === 'unhold'
-    || action === 'releaseHold'
-    || action === 'persistFinancialPayouts'
-  ) {
+  if (action === 'confirmPayment' || action === 'hold' || action === 'unhold' || action === 'releaseHold') {
     return auth.hasPermission('finance:write');
   }
   if (action === 'submitToFinance') {
@@ -175,14 +157,7 @@ function canPerformBulkCampAction(action, auth) {
 
 /** Finance bulk allows a partial eligible set; request approve/refuse stay all-or-nothing. */
 function allowsPartialEligibility(action) {
-  return [
-    'confirmPayment',
-    'hold',
-    'unhold',
-    'releaseHold',
-    'submitToFinance',
-    'persistFinancialPayouts',
-  ].includes(action);
+  return ['confirmPayment', 'hold', 'unhold', 'releaseHold', 'submitToFinance'].includes(action);
 }
 
 export function validateBulkCampAction(action, selectedCamps, auth) {

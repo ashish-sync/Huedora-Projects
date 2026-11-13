@@ -171,7 +171,6 @@ export const campApi = {
   releaseHold: (id, payload = {}) => post(`${BASE}/camps/${id}/release-hold`, payload),
   delete: (id) => del(`${BASE}/camps/${id}`),
   bulkAction: (payload) => post(`${BASE}/camps/bulk-action`, payload),
-  persistConfirmedPayouts: (payload = {}) => post(`${BASE}/camps/persist-confirmed-payouts`, payload),
   uploadExecutionDocuments: async (id, files, docType, docNote = '') => {
     try {
       return await uploadExecutionDocumentsDirect(id, files, docType, docNote);

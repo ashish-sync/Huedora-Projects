@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import {
+  BarChart3,
+  Bell,
+  Calendar,
+  ChevronDown,
+  FileText,
+  LayoutDashboard,
+  PlusSquare,
+  Search,
+  ShoppingCart,
+} from 'lucide-react';
 import Button from '../../components/ui/Button.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import { clientOneApi, setClientOneApiMode } from './clientOneApi.js';
@@ -10,6 +21,25 @@ import {
 import { DEFAULT_FEATURES, visibleNav } from './clientOneNav.js';
 import { clearClientOneSession, readClientOneSession } from './clientOneSession.js';
 import './clientOne.css';
+
+const NAV_ICONS = {
+  dashboard: LayoutDashboard,
+  tracker: Calendar,
+  invoices: FileText,
+  mis: BarChart3,
+  'request-link': PlusSquare,
+  'purchase-orders': ShoppingCart,
+};
+
+function formatDisplayDate(isoStr) {
+  if (!isoStr) return '';
+  const parts = String(isoStr).slice(0, 10).split('-');
+  if (parts.length !== 3) return isoStr;
+  const [y, m, d] = parts;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthIdx = parseInt(m, 10) - 1;
+  return `${d}-${months[monthIdx] || m}-${y}`;
+}
 
 function ymd(date) {
   const y = date.getFullYear();
@@ -152,6 +182,7 @@ export default function ClientOneApp({
   const [pinMessage, setPinMessage] = useState('');
   const [copied, setCopied] = useState('');
   const [dashFocus, setDashFocus] = useState('camps');
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const features = session?.features || session?.client?.features || DEFAULT_FEATURES;
   const navItems = useMemo(() => visibleNav(features), [features]);
@@ -396,39 +427,109 @@ export default function ClientOneApp({
 
         <header className="client-one-topbar page-header">
           <div className="client-one-identity">
-            <p className="section-label">Client portal</p>
-            <h1>Client One</h1>
-            <div className="client-one-context" aria-label="Programme context">
-              <span className="client-one-context__item">{client.name || 'Client'}</span>
-              {client.programName ? (
-                <span className="client-one-context__item">{client.programName}</span>
-              ) : null}
-              {client.campName ? (
-                <span className="client-one-context__item">{client.campName}</span>
-              ) : null}
-              {isPreview ? (
-                <span className="client-one-context__item client-one-context__item--preview">Preview</span>
-              ) : null}
+            <p className="section-label client-one-eyebrow">CLIENT PORTAL</p>
+            <div className="client-one-title-row">
+              <span className="client-one-title-bar" aria-hidden="true" />
+              <h1 className="client-one-main-title">Client One</h1>
+              <div className="client-one-selector-pill" title="Selected client">
+                <span>{client.name || 'Sun Pharma Laboratories Ltd.'}</span>
+                <ChevronDown size={14} className="client-one-chevron" aria-hidden="true" />
+              </div>
+              <div className="client-one-context-pills" aria-label="Programme context">
+                <span className="client-one-badge-pill">{client.programName || 'MOM'}</span>
+                <span className="client-one-badge-pill">{client.campName || 'Dietician'}</span>
+                {isPreview ? (
+                  <span className="client-one-badge-pill client-one-badge-pill--preview">Preview</span>
+                ) : null}
+              </div>
             </div>
           </div>
-          {!isPreview ? (
-            <div className="page-actions client-one-account-actions">
-              <Button type="button" variant="ghost" size="compact" onClick={sharePortalLink}>
-                {copied === 'link' ? 'Link copied' : 'Share link'}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="compact"
-                onClick={() => { setPinEditorOpen((v) => !v); setPinMessage(''); }}
-              >
-                Update PIN
-              </Button>
-              <Button type="button" variant="ghost" size="compact" onClick={signOut}>
-                Sign out
-              </Button>
+
+          <div className="client-one-topbar-right">
+            <div className="client-one-search-wrap">
+              <Search size={14} className="client-one-search-icon" aria-hidden="true" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="client-one-search-input"
+                aria-label="Search"
+              />
             </div>
-          ) : null}
+
+            <button
+              type="button"
+              className="client-one-bell-btn"
+              title="Notifications"
+              aria-label="Notifications"
+            >
+              <Bell size={16} />
+              <span className="client-one-bell-dot" aria-hidden="true" />
+            </button>
+
+            <div className="client-one-date-selector-wrap">
+              <button
+                type="button"
+                className="client-one-date-pill-btn"
+                onClick={() => setDatePickerOpen((v) => !v)}
+                aria-expanded={datePickerOpen}
+                title="Change date filter"
+              >
+                <Calendar size={14} className="client-one-date-icon" aria-hidden="true" />
+                <span className="client-one-date-text">
+                  {formatDisplayDate(range.from)} – {formatDisplayDate(range.to)}
+                </span>
+                <ChevronDown size={13} className="client-one-date-chevron" aria-hidden="true" />
+              </button>
+
+              {datePickerOpen ? (
+                <div className="client-one-date-popover">
+                  <div className="client-one-popover-head">
+                    <span className="client-one-popover-title">Filter by Date Range</span>
+                    <button
+                      type="button"
+                      className="client-one-popover-close"
+                      onClick={() => setDatePickerOpen(false)}
+                      aria-label="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <RangeToolbar
+                    range={range}
+                    setRange={setRange}
+                    trailing={
+                      <Button
+                        type="button"
+                        size="compact"
+                        onClick={() => setDatePickerOpen(false)}
+                      >
+                        Apply
+                      </Button>
+                    }
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            {!isPreview ? (
+              <div className="page-actions client-one-account-actions">
+                <Button type="button" variant="ghost" size="compact" onClick={sharePortalLink}>
+                  {copied === 'link' ? 'Link copied' : 'Share link'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="compact"
+                  onClick={() => { setPinEditorOpen((v) => !v); setPinMessage(''); }}
+                >
+                  Update PIN
+                </Button>
+                <Button type="button" variant="ghost" size="compact" onClick={signOut}>
+                  Sign out
+                </Button>
+              </div>
+            ) : null}
+          </div>
         </header>
 
         {!isPreview && pinEditorOpen ? (
@@ -491,30 +592,31 @@ export default function ClientOneApp({
           </section>
         ) : null}
 
-        <nav className="module-sub-nav module-sub-nav--bar client-one-nav" aria-label="Client One sections">
-          <div className="module-sub-nav__links">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`module-sub-nav__link${tab === item.id ? ' is-active' : ''}`}
-                aria-current={tab === item.id ? 'page' : undefined}
-                onClick={() => setTab(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
+        <nav className="client-one-nav" aria-label="Client One sections">
+          <div className="client-one-nav__links">
+            {navItems.map((item) => {
+              const NavIcon = NAV_ICONS[item.id] || LayoutDashboard;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`client-one-nav__link${tab === item.id ? ' is-active' : ''}`}
+                  aria-current={tab === item.id ? 'page' : undefined}
+                  onClick={() => setTab(item.id)}
+                >
+                  <NavIcon size={16} className="client-one-nav__icon" aria-hidden="true" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </nav>
 
         {error ? <p className="error-text">{error}</p> : null}
 
         {tab === 'dashboard' ? (
-          <section className={`client-one-card client-one-dashboard${busy ? ' is-loading' : ''}`} aria-busy={busy}>
-            <div className="client-one-panel-head">
-              <h2 className="client-one-section-title">Dashboard</h2>
-              <RangeToolbar range={range} setRange={setRange} />
-            </div>
+          <section className={`client-one-dashboard-wrap${busy ? ' is-loading' : ''}`} aria-busy={busy}>
+            <h2 className="client-one-section-title sr-only">Dashboard</h2>
             <ClientOneHeroKpis
               kpis={kpis}
               focus={dashFocus}

@@ -1184,19 +1184,8 @@ export default function CampFormPage() {
       campLifecycleContext,
     );
     if (readOnly && campStatus === 'cancelled' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
-    // Financial amounts must persist for Camp Download / Excel. Non-admins may save when
-    // the Financial stage is editable (or Other Payouts on cancelled closures). Confirm
-    // Payment also persists amounts, but Save must not silently no-op.
-    if (activeStage === 'financial' && !isCampAdmin && !cancelledOtherPayoutsSave) {
-      const financialEditable = canEditLifecycleStage(
-        campStatus,
-        'financial',
-        reachedLifecycleStage,
-        campLifecycleContext,
-        lifecycleEditOpts,
-      );
-      if (!financialEditable) return;
-    }
+    // Non-admins may only save Financial via Other Payouts on Cancelled by Tylo/Client.
+    if (activeStage === 'financial' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
     if (!acknowledgeGapOverride) setHcwGapConflict(null);
 
     if (!isEdit && activeStage !== 'request') {

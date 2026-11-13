@@ -136,6 +136,26 @@ const BULK_ACTION_COPY = {
     confirmLabel: 'Submit to Finance One',
     confirmClass: '',
   },
+  saveFinancialChanges: {
+    title: 'Bulk Save Changes',
+    message: (count) => (
+      `Run Financial → Save Changes for ${count} selected Confirmed Payment camp`
+      + `${count === 1 ? '' : 's'}? Seeds empty Camp Amount from Contact Directory and saves `
+      + 'totals like opening Edit and clicking Save Changes. Does not change payment status.'
+    ),
+    confirmLabel: 'Save Changes',
+    confirmClass: '',
+  },
+  saveConfirmedFinancialAll: {
+    title: 'Save all Confirmed Payment camps',
+    message: () => (
+      'Find all Financial camps under Confirmed Payment / Validation Completed in the current date '
+      + 'range (up to 5,000) and run Financial → Save Changes on each — same as Edit → Save Changes. '
+      + 'Does not change payment status. Travelling / Overtime / Other that were never saved cannot be recovered.'
+    ),
+    confirmLabel: 'Save all Confirmed Payment',
+    confirmClass: '',
+  },
 };
 
 const CANCEL_OPTIONS = [

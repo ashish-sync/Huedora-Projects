@@ -364,47 +364,65 @@ export default function CampsPage() {
 
     try {
       if (confirmRequest.mode === 'bulk') {
-        const selectedCamps = camps.filter((camp) => (
-          (confirmRequest.ids || selectedIds).includes(camp._id)
-        ));
-        const validation = validateBulkCampAction(confirmRequest.action, selectedCamps, getBulkAuth());
-        if (!validation.ok) {
-          setError(validation.message);
-          return;
-        }
-
-        if (confirmRequest.action === 'reject') {
-          const rejectionReason = confirmReasonDetails?.reason?.trim() || '';
-          if (!rejectionReason) {
-            setError('Refusal reason is required');
+        if (confirmRequest.action === 'saveConfirmedFinancialAll') {
+          const { data } = await campApi.bulkSaveConfirmedFinancial({
+            dateFrom: dateFrom || undefined,
+            dateTo: dateTo || undefined,
+          });
+          const summary = data?.summary || {};
+          setBulkMessage(
+            `Bulk Save Changes: ${summary.updated || 0} updated, `
+            + `${summary.unchanged || 0} unchanged, `
+            + `${summary.failed || 0} failed `
+            + `(scanned ${summary.scanned || 0} Confirmed Payment)`,
+          );
+          if (data?.results?.failed?.length) {
+            setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
+          }
+          await loadCampsRef.current?.();
+        } else {
+          const selectedCamps = camps.filter((camp) => (
+            (confirmRequest.ids || selectedIds).includes(camp._id)
+          ));
+          const validation = validateBulkCampAction(confirmRequest.action, selectedCamps, getBulkAuth());
+          if (!validation.ok) {
+            setError(validation.message);
             return;
           }
-        }
-        if (['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)) {
-          const paymentRemark = confirmReasonDetails?.reason?.trim() || '';
-          if (!paymentRemark) {
-            setError(
-              confirmRequest.action === 'hold'
-                ? 'Hold Remark is required'
-                : 'Unhold Remark is required',
-            );
-            return;
-          }
-        }
 
-        const { data } = await campApi.bulkAction({
-          ids: validation.ids,
-          action: confirmRequest.action,
-          ...(confirmRequest.action === 'reject'
-            ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
-            : {}),
-          ...(['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)
-            ? { paymentRemark: confirmReasonDetails?.reason?.trim() || '' }
-            : {}),
-        });
-        setBulkMessage(`${data.summary.success} succeeded, ${data.summary.failed} failed`);
-        if (data.results.failed.length) {
-          setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
+          if (confirmRequest.action === 'reject') {
+            const rejectionReason = confirmReasonDetails?.reason?.trim() || '';
+            if (!rejectionReason) {
+              setError('Refusal reason is required');
+              return;
+            }
+          }
+          if (['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)) {
+            const paymentRemark = confirmReasonDetails?.reason?.trim() || '';
+            if (!paymentRemark) {
+              setError(
+                confirmRequest.action === 'hold'
+                  ? 'Hold Remark is required'
+                  : 'Unhold Remark is required',
+              );
+              return;
+            }
+          }
+
+          const { data } = await campApi.bulkAction({
+            ids: validation.ids,
+            action: confirmRequest.action,
+            ...(confirmRequest.action === 'reject'
+              ? { rejectionReason: confirmReasonDetails?.reason?.trim() || '' }
+              : {}),
+            ...(['hold', 'unhold', 'releaseHold'].includes(confirmRequest.action)
+              ? { paymentRemark: confirmReasonDetails?.reason?.trim() || '' }
+              : {}),
+          });
+          setBulkMessage(`${data.summary.success} succeeded, ${data.summary.failed} failed`);
+          if (data.results.failed.length) {
+            setError(data.results.failed.map((item) => `${item.campId || item.id}: ${item.reason}`).join(' | '));
+          }
         }
       } else {
         const { action, camp } = confirmRequest;
@@ -519,6 +537,22 @@ export default function CampsPage() {
 
   async function handleBulk(action) {
     openBulkActionConfirm(action);
+  }
+
+  function openBulkSaveConfirmedFinancialAll() {
+    if (!isSuperAdmin()) {
+      setError('Only Admin or Super Admin can Save Changes on Payment Confirmed camps');
+      return;
+    }
+    setConfirmRequest({
+      mode: 'bulk',
+      action: 'saveConfirmedFinancialAll',
+      count: 0,
+    });
+    setConfirmCancelDetails(null);
+    setConfirmClosureDetails(null);
+    setConfirmReasonDetails(null);
+    setError('');
   }
 
   // Keep a live ref so URL→state sync can read the current stage without
@@ -787,14 +821,18 @@ export default function CampsPage() {
   const canAdminDeleteCamps = isSuperAdmin();
   const bulkDeleteValidation = validateBulkCampAction('delete', selectedCamps, bulkAuth);
   const canFinanceWrite = hasPermission('finance:write');
-  const canBulkSubmitFinance = hasPermission('camps:request')
-    || hasPermission('camps:approve')
-    || hasPermission('camps:update')
-    || canFinanceWrite;
+  // After Payment Confirmed, only Admin / Super Admin may modify (including Submit to Finance).
+  const canBulkSubmitFinance = isSuperAdmin() || canAdminDeleteCamps;
   const bulkConfirmPaymentValidation = validateBulkCampAction('confirmPayment', selectedCamps, bulkAuth);
   const bulkHoldValidation = validateBulkCampAction('hold', selectedCamps, bulkAuth);
   const bulkUnholdValidation = validateBulkCampAction('unhold', selectedCamps, bulkAuth);
   const bulkSubmitFinanceValidation = validateBulkCampAction('submitToFinance', selectedCamps, bulkAuth);
+  const canBulkSaveFinancial = canAdminDeleteCamps || isSuperAdmin();
+  const bulkSaveFinancialValidation = validateBulkCampAction(
+    'saveFinancialChanges',
+    selectedCamps,
+    bulkAuth,
+  );
 
   const isRequestStage = workingStage === 'request';
   const isAssignmentStage = workingStage === 'assignment';
@@ -802,7 +840,7 @@ export default function CampsPage() {
   const isFinancialStage = workingStage === 'financial';
 
   const showBulkApproveRefuse = isRequestStage;
-  const showBulkFinanceActions = isFinancialStage && (canFinanceWrite || canBulkSubmitFinance);
+  const showBulkFinanceActions = isFinancialStage && (canFinanceWrite || canBulkSubmitFinance || canBulkSaveFinancial);
   const showRowSelection = canAdminDeleteCamps
     || (showBulkApproveRefuse && (canApproveCamps() || canRejectCamps()))
     || showBulkFinanceActions;
@@ -959,6 +997,26 @@ export default function CampsPage() {
           onClearAll={clearFilters}
         />
 
+        {isFinancialStage && canBulkSaveFinancial && (
+          <div className="bulk-bar camps-manage-bulk-bar">
+            <span>
+              Bulk Financial → Save Changes for all Confirmed Payment / Validation Completed camps
+              (same as Edit → Save Changes).
+            </span>
+            <button
+              className="btn btn-compact"
+              type="button"
+              disabled={bulkLoading || confirmLoading}
+              onClick={openBulkSaveConfirmedFinancialAll}
+              title={dateFrom || dateTo
+                ? `Uses current date range ${dateFrom || '…'} → ${dateTo || '…'}`
+                : 'No date range set — scans all Confirmed Payment camps in scope (max 5,000)'}
+            >
+              Save All Confirmed Payment
+            </button>
+          </div>
+        )}
+
         {showBulkBar && (
           <div className="bulk-bar camps-manage-bulk-bar">
           <span>{selectedIds.length} selected</span>
@@ -990,6 +1048,16 @@ export default function CampsPage() {
               onClick={() => handleBulk('confirmPayment')}
             >
               Confirm Payment
+            </button>
+          )}
+          {canBulkSaveFinancial && showBulkFinanceActions && (
+            <button
+              className="btn secondary btn-compact"
+              disabled={bulkLoading || confirmLoading || !bulkSaveFinancialValidation.ok}
+              title={!bulkSaveFinancialValidation.ok ? bulkSaveFinancialValidation.message : undefined}
+              onClick={() => handleBulk('saveFinancialChanges')}
+            >
+              Save Changes
             </button>
           )}
           {canBulkSubmitFinance && showBulkFinanceActions && (

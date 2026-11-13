@@ -15,6 +15,13 @@ const financeAuth = {
   isSuperAdmin: () => false,
 };
 
+const adminAuth = {
+  canApproveCamps: () => true,
+  canRejectCamps: () => true,
+  hasPermission: () => true,
+  isSuperAdmin: () => true,
+};
+
 describe('validateBulkCampAction', () => {
   it('allows bulk refuse only for pending_review camps', () => {
     const result = validateBulkCampAction(
@@ -123,7 +130,21 @@ describe('validateBulkCampAction', () => {
     expect(result.ids).toEqual(['1']);
   });
 
-  it('allows submitToFinance only for confirmed unsaved finance camps', () => {
+  it('allows submitToFinance only for Admin on confirmed unsaved finance camps', () => {
+    const asFinance = validateBulkCampAction(
+      'submitToFinance',
+      [
+        {
+          _id: '1',
+          campId: 'A',
+          lifecycleStage: 'financial',
+          paymentSubmitStatus: 'payment_confirmed',
+        },
+      ],
+      financeAuth,
+    );
+    expect(asFinance.ok).toBe(false);
+
     const result = validateBulkCampAction(
       'submitToFinance',
       [
@@ -141,7 +162,7 @@ describe('validateBulkCampAction', () => {
           submittedToFinanceAt: '2026-01-01T00:00:00.000Z',
         },
       ],
-      financeAuth,
+      adminAuth,
     );
     expect(result.ok).toBe(true);
     expect(result.ids).toEqual(['1']);
@@ -155,5 +176,43 @@ describe('validateBulkCampAction', () => {
     );
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/permission/i);
+  });
+
+  it('filters saveFinancialChanges to Confirmed Payment for Admin only', () => {
+    const asFinance = validateBulkCampAction(
+      'saveFinancialChanges',
+      [
+        {
+          _id: '1',
+          campId: 'A',
+          lifecycleStage: 'financial',
+          paymentSubmitStatus: 'payment_confirmed',
+        },
+      ],
+      financeAuth,
+    );
+    expect(asFinance.ok).toBe(false);
+
+    const result = validateBulkCampAction(
+      'saveFinancialChanges',
+      [
+        {
+          _id: '1',
+          campId: 'A',
+          lifecycleStage: 'financial',
+          paymentSubmitStatus: 'payment_confirmed',
+        },
+        {
+          _id: '2',
+          campId: 'B',
+          lifecycleStage: 'financial',
+          paymentSubmitStatus: 'payment_not_checked',
+        },
+      ],
+      adminAuth,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.ids).toEqual(['1']);
+    expect(result.skipped?.length).toBe(1);
   });
 });

@@ -590,9 +590,20 @@ export function computeLifecycleDerived(form = {}, { pricing = null } = {}) {
   };
 }
 
+/** True once Confirm Payment / Validation Completed has locked the camp for non-admins. */
+export function isPaymentConfirmedCamp(campOrContext = {}) {
+  const submit = String(campOrContext?.paymentSubmitStatus || '').trim().toLowerCase();
+  return submit === 'payment_confirmed'
+    || submit === 'confirmed'
+    || submit === 'validation_completed';
+}
+
 export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, campContext = {}, { isAdmin = false } = {}) {
   const context = { status: campStatus, ...campContext };
   const reached = normalizeLifecycleStage(reachedStage, 'request');
+  // Payment Confirmed / Validation Completed: only Admin / Super Admin may modify.
+  if (isPaymentConfirmedCamp(context) && !isAdmin) return false;
+
   const paymentDone = String(context.financePaymentStatus || '').trim() === 'paid';
   if (paymentDone && !isAdmin) return false;
 
@@ -631,8 +642,8 @@ export function canEditLifecycleStage(campStatus, stage, reachedStage = stage, c
 }
 
 /**
- * Any Tylo One user may save Other Payouts on Cancelled by Tylo / Client (Financial).
- * Not gated by admin role or Payment Done. Camp / Travel / OT stay locked on the server.
+ * Any Tylo One user may save Other Payouts on Cancelled by Tylo / Client (Financial)
+ * until Payment Confirmed. After Confirm Payment, only Admin / Super Admin may modify.
  */
 export function canSaveCancelledOtherPayouts(
   campStatus,
@@ -643,6 +654,7 @@ export function canSaveCancelledOtherPayouts(
   if (String(campStatus || '') !== 'cancelled') return false;
   if (normalizeLifecycleStage(stage, '') !== 'financial') return false;
   const context = { status: campStatus, ...campContext };
+  if (isPaymentConfirmedCamp(context)) return false;
   if (!isExecutionCancellationForFinance(context)) return false;
   const reached = normalizeLifecycleStage(reachedStage, 'request');
   return reached === 'financial' || hasReachedLifecycleStage(reached, 'execution');

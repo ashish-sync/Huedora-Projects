@@ -212,13 +212,16 @@ export default function CampFormPage() {
     assignmentRefusalReason: form.assignmentRefusalReason,
     cancelledBy: campMeta?.cancelledBy || form.cancelledBy || '',
     financePaymentStatus: form.financePaymentStatus || campMeta?.financePaymentStatus || '',
+    paymentSubmitStatus: form.paymentSubmitStatus || campMeta?.paymentSubmitStatus || '',
   }), [
     form.executionStatus,
     form.assignmentRefusalReason,
     form.cancelledBy,
     form.financePaymentStatus,
+    form.paymentSubmitStatus,
     campMeta?.cancelledBy,
     campMeta?.financePaymentStatus,
+    campMeta?.paymentSubmitStatus,
   ]);
 
   const lifecycleEditOpts = useMemo(() => ({ isAdmin: isCampAdmin }), [isCampAdmin]);
@@ -1184,8 +1187,18 @@ export default function CampFormPage() {
       campLifecycleContext,
     );
     if (readOnly && campStatus === 'cancelled' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
-    // Non-admins may only save Financial via Other Payouts on Cancelled by Tylo/Client.
-    if (activeStage === 'financial' && !isCampAdmin && !cancelledOtherPayoutsSave) return;
+    // Financial Save must persist amounts (Excel / Camp Download). Non-admins may save when
+    // the Financial stage is editable, or Other Payouts on cancelled closures.
+    if (activeStage === 'financial' && !isCampAdmin && !cancelledOtherPayoutsSave) {
+      const financialEditable = canEditLifecycleStage(
+        campStatus,
+        'financial',
+        reachedLifecycleStage,
+        campLifecycleContext,
+        lifecycleEditOpts,
+      );
+      if (!financialEditable) return;
+    }
     if (!acknowledgeGapOverride) setHcwGapConflict(null);
 
     if (!isEdit && activeStage !== 'request') {

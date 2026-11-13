@@ -4,7 +4,10 @@ import { getErrorMessage } from '../../shared/importErrors.js';
 import { canSetHistoricalCampDates as canSetHistoricalCampDatesForUser } from './utils/campDatePolicy.js';
 
 /** TYLO role names that grant full camp-ops access (same as HueDora admin / super_admin). */
-const ADMIN_ROLE_NAMES = new Set(['admin', 'administrator']);
+const ADMIN_ROLE_NAMES = new Set(['admin', 'administrator', 'super admin', 'superadmin']);
+
+/** Platform System Role values that may modify Payment Confirmed camps. */
+const ADMIN_SYSTEM_ROLES = new Set(['admin', 'super admin']);
 
 function roleNamesFromUser(user) {
   const names = [];
@@ -13,6 +16,14 @@ function roleNamesFromUser(user) {
     names.push(String(r?.name || r || ''));
   }
   return names.map((n) => n.trim().toLowerCase()).filter(Boolean);
+}
+
+function hasAdminSystemRole(user) {
+  const systemRole = String(user?.systemRole || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  return ADMIN_SYSTEM_ROLES.has(systemRole);
 }
 
 /**
@@ -38,6 +49,7 @@ export function useCampOpsAuth() {
 
   const isAdmin =
     can('*')
+    || hasAdminSystemRole(user)
     || roleNames.some((n) => ADMIN_ROLE_NAMES.has(n));
 
   const hasPermission = useCallback((permission) => {

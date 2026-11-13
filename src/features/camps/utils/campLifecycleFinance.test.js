@@ -78,6 +78,7 @@ describe('camp lifecycle finance transition', () => {
       { executionStatus: 'Cancelled by Tylo' },
     )).toBe(true);
     // Payment Done still blocks full financial edit for non-admins, but Other Payouts stays open
+    // until Payment Confirmed.
     expect(canEditLifecycleStage(
       'cancelled',
       'financial',
@@ -90,6 +91,26 @@ describe('camp lifecycle finance transition', () => {
       'financial',
       'financial',
       { ...cancelledByClient, financePaymentStatus: 'paid' },
+    )).toBe(true);
+    expect(canSaveCancelledOtherPayouts(
+      'cancelled',
+      'financial',
+      'financial',
+      { ...cancelledByClient, paymentSubmitStatus: 'payment_confirmed' },
+    )).toBe(false);
+    expect(canEditLifecycleStage(
+      'executed',
+      'financial',
+      'financial',
+      { paymentSubmitStatus: 'payment_confirmed' },
+      { isAdmin: false },
+    )).toBe(false);
+    expect(canEditLifecycleStage(
+      'executed',
+      'financial',
+      'financial',
+      { paymentSubmitStatus: 'payment_confirmed' },
+      { isAdmin: true },
     )).toBe(true);
     expect(canSaveCancelledOtherPayouts(
       'executed',

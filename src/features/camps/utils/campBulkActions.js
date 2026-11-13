@@ -11,6 +11,7 @@ const PERMISSION_MESSAGES = {
   unhold: 'You do not have permission to unhold payment',
   releaseHold: 'You do not have permission to unhold payment',
   submitToFinance: 'You do not have permission to submit camps to Finance One',
+  saveFinancialChanges: 'You do not have permission to Save Changes on Financial camps',
 };
 
 const BULK_ACTION_PAST_TENSE = {
@@ -23,6 +24,7 @@ const BULK_ACTION_PAST_TENSE = {
   unhold: 'unheld',
   releaseHold: 'unheld',
   submitToFinance: 'submitted to Finance One',
+  saveFinancialChanges: 'saved',
 };
 
 function campLabel(camp) {
@@ -132,6 +134,23 @@ function getCampBulkIssue(action, camp, auth) {
     if (normalizePaymentSubmitStatus(camp.paymentSubmitStatus) !== 'payment_confirmed') {
       return `${campLabel(camp)} needs Confirm Payment before submit`;
     }
+    // Payment Confirmed camps: only Admin / Super Admin may modify (including submit).
+    if (auth.isSuperAdmin?.() !== true) {
+      return `${campLabel(camp)} is Payment Confirmed — only Admin or Super Admin can modify`;
+    }
+    return null;
+  }
+
+  if (action === 'saveFinancialChanges') {
+    if (auth.isSuperAdmin?.() !== true) {
+      return 'Only Admin or Super Admin can Save Changes on Payment Confirmed camps';
+    }
+    if (!isFinancialCamp(camp)) {
+      return `${campLabel(camp)} is not in Financial stage`;
+    }
+    if (normalizePaymentSubmitStatus(camp.paymentSubmitStatus) !== 'payment_confirmed') {
+      return `${campLabel(camp)} needs Confirmed Payment / Validation Completed`;
+    }
     return null;
   }
 
@@ -147,17 +166,25 @@ function canPerformBulkCampAction(action, auth) {
     return auth.hasPermission('finance:write');
   }
   if (action === 'submitToFinance') {
-    return auth.hasPermission('camps:request')
-      || auth.hasPermission('camps:approve')
-      || auth.hasPermission('camps:update')
-      || auth.hasPermission('finance:write');
+    // After Payment Confirmed, only Admin / Super Admin may submit (modify).
+    return auth.isSuperAdmin?.() === true;
+  }
+  if (action === 'saveFinancialChanges') {
+    return auth.isSuperAdmin?.() === true;
   }
   return false;
 }
 
 /** Finance bulk allows a partial eligible set; request approve/refuse stay all-or-nothing. */
 function allowsPartialEligibility(action) {
-  return ['confirmPayment', 'hold', 'unhold', 'releaseHold', 'submitToFinance'].includes(action);
+  return [
+    'confirmPayment',
+    'hold',
+    'unhold',
+    'releaseHold',
+    'submitToFinance',
+    'saveFinancialChanges',
+  ].includes(action);
 }
 
 export function validateBulkCampAction(action, selectedCamps, auth) {

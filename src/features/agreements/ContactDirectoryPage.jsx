@@ -462,8 +462,23 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
           }
         }
         if (editUpdatedAt) body.expectedUpdatedAt = editUpdatedAt;
-        const res = await api(`/contacts/${editId}`, { method: 'PATCH', body });
-        const saved = res?.data;
+        let saved;
+        try {
+          const res = await api(`/contacts/${editId}`, { method: 'PATCH', body });
+          saved = res?.data;
+        } catch (err) {
+          // KYC/other writes bump updatedAt — refresh token and retry once (no second click).
+          const stale = err?.code === 'STALE_UPDATE' || err?.status === 409;
+          if (!stale) throw err;
+          const fresh = await api(`/contacts/${editId}`);
+          const row = fresh?.data;
+          const nextToken = row?.updatedAt || '';
+          if (!nextToken) throw err;
+          setEditUpdatedAt(nextToken);
+          body.expectedUpdatedAt = nextToken;
+          const res = await api(`/contacts/${editId}`, { method: 'PATCH', body });
+          saved = res?.data;
+        }
         if (saved?.updatedAt) setEditUpdatedAt(saved.updatedAt);
       } else {
         if (!isHcwStaff) body.serviceProviderContactId = '';
@@ -474,20 +489,6 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       load();
       loadServiceProviders();
     } catch (err) {
-      // After KYC/other writes, sync the concurrency token so Save can retry immediately.
-      if (editId && (err?.code === 'STALE_UPDATE' || err?.status === 409)) {
-        try {
-          const fresh = await api(`/contacts/${editId}`);
-          const row = fresh?.data;
-          if (row?.updatedAt) setEditUpdatedAt(row.updatedAt);
-          setError(
-            'Contact was updated (for example by a document upload). Click Save again to apply your changes.',
-          );
-          return;
-        } catch {
-          /* fall through to original message */
-        }
-      }
       setError(err.message);
     } finally {
       setBusy(false);

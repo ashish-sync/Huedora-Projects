@@ -1256,7 +1256,8 @@ html[data-theme='dark'] .tylo-cal-field .tylo-cal-control input[type='time']::-w
   padding: 0 10px;
 }
 
-@media (max-width: 900px) {
+/* Calendar stack aligned to shell compact gate (--bp-lg) */
+@media (max-width: 1023px) {
   .tylo-cal-layout {
     grid-template-columns: 1fr;
   }

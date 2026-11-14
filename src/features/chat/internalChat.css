@@ -602,7 +602,8 @@
   min-height: 0;
 }
 
-@media (max-width: 900px) {
+/* Single-pane chat when shell is in compact mode (--bp-lg) */
+@media (max-width: 1023px) {
   .tylo-chat {
     grid-template-columns: 1fr;
   }

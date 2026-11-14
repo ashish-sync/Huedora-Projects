@@ -1112,9 +1112,13 @@
 }
 
 .camp-ops-root .modal-card-email {
-  width: 90vw;
+  width: min(90vw, 1200px);
   max-width: 90vw;
-  height: 92vh;
+  /* Prefer dvh + px cap so OS browser chrome does not force an oversized shell */
+  height: min(92vh, 900px);
+  height: min(92dvh, 900px);
+  max-height: min(92vh, 900px);
+  max-height: min(92dvh, 900px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1336,7 +1340,8 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  min-height: clamp(480px, calc(100dvh - 240px), 880px);
+  /* Shell-relative fill — avoid dvh clamp floors that force tall empty shells */
+  min-height: 0;
   padding: 0;
   overflow: hidden;
   background: var(--bg-elevated);
@@ -1635,7 +1640,7 @@
 
 .camp-ops-root .paste-workflow-grid {
   flex: 1 1 auto;
-  min-height: clamp(340px, 48vh, 620px);
+  min-height: 0;
   padding: 12px 18px !important;
   gap: 12px !important;
 }
@@ -1864,9 +1869,9 @@
 .camp-ops-root .communications-paste-shell .email-detail-layout,
 .camp-ops-root .paste-workflow-grid.email-detail-layout {
   flex: 1 1 auto;
-  min-height: clamp(340px, 48vh, 620px);
+  min-height: 0;
   align-items: stretch;
-  grid-template-rows: minmax(340px, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .camp-ops-root .paste-workflow-column.email-detail-panel {
@@ -2014,13 +2019,13 @@
 
   .camp-ops-root .communications-paste-shell,
   .camp-ops-root .paste-workflow-shell {
-    min-height: clamp(440px, calc(100dvh - 200px), 880px);
+    min-height: 0;
   }
 
   .camp-ops-root .communications-paste-shell .email-detail-layout,
   .camp-ops-root .paste-workflow-grid.email-detail-layout {
-    min-height: clamp(280px, 42vh, 560px);
-    grid-template-rows: minmax(260px, auto) minmax(260px, auto);
+    min-height: 0;
+    grid-template-rows: minmax(0, auto) minmax(0, auto);
   }
 
   .camp-ops-root .paste-workflow-header {

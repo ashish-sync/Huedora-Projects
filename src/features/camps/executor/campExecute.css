@@ -27,20 +27,24 @@
 }
 
 .camp-execute {
+  /* vh fallback, then dvh for mobile browser chrome */
+  min-height: 100vh;
   min-height: 100dvh;
   background: var(--ce-bg);
   color: var(--ce-ink);
-  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', var(--font-family-sans, Inter, system-ui, sans-serif);
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Step 1 (Camp Details): fit a single phone viewport when possible */
+/* Step 1 (Camp Details): fit the small viewport (chrome expanded) when possible */
 .camp-execute--fit {
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100vh;
+  max-height: 100vh;
+  height: 100svh;
+  max-height: 100svh;
   overflow: hidden;
 }
 
@@ -941,6 +945,7 @@
 }
 
 .camp-execute__center {
+  min-height: 100vh;
   min-height: 100dvh;
   display: grid;
   place-items: center;

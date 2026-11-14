@@ -935,7 +935,8 @@
   }
 }
 
-@media (max-width: 900px) {
+/* Stack with shell compact mode (--bp-lg / 1024) */
+@media (max-width: 1023px) {
   .finance-camp-payouts-layout,
   .finance-camp-payouts-layout--pivot {
     grid-template-columns: 1fr;
@@ -950,7 +951,7 @@
   }
 }
 
-@media (min-width: 901px) {
+@media (min-width: 1024px) {
   .finance-camp-payouts-filters {
     grid-template-columns: minmax(0, 1fr) var(--control-w-min) auto;
   }
@@ -1947,7 +1948,7 @@
   border-radius: var(--dropdown-radius, var(--radius-sm));
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .finance-hub-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

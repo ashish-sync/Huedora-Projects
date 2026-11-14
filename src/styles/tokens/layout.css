@@ -11,6 +11,10 @@
  * Breakpoints (use LITERAL px in @media — custom props are invalid there):
  *   xs 560 · sm 640 · md 768 · lg 1024 · xl 1280
  * Match --bp-* values when writing media queries.
+ * Shell / home desktop gate: max-width 1023 / min-width 1024 (--bp-lg).
+ * Migrated to --bp-lg: Finance hub/payouts, Chat, Calendar, Ops Review header,
+ * Asset Inventory forms. Legacy 900 remains in Camp Ops tables/forms, Audit,
+ * Program Config, and miscellaneous global.css feature layouts.
  */
 
 :root {

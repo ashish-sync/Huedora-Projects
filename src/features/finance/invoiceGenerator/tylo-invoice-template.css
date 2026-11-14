@@ -1,5 +1,5 @@
-/* A4 landscape commercial docs — fill the builder stage; content uses flex to consume the page */
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap');
+/* A4 landscape commercial docs — fill the builder stage; content uses flex to consume the page.
+   Typography uses self-hosted Inter / IBM Plex Mono (see foundations/fonts.css). */
 
 .tylo-invoice {
   --ti-page-w: 100%;
@@ -22,7 +22,7 @@
   max-height: none;
   max-width: none;
   box-sizing: border-box;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family-sans, 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif);
   font-size: 12.5px;
   line-height: 1.3;
   color: var(--ti-ink);
@@ -105,7 +105,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 1.1mm;
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-family-sans, 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -259,7 +259,7 @@
 }
 
 .ti-doc-meta-value--mono {
-  font-family: ui-monospace, 'SF Mono', monospace;
+  font-family: var(--font-family-mono, 'IBM Plex Mono', ui-monospace, monospace);
   font-size: 10px;
 }
 
@@ -577,7 +577,7 @@
 
 .ti-click-sign__name,
 .signature-name {
-  font-family: Arial, Helvetica, "Helvetica Neue", sans-serif;
+  font-family: var(--font-family-sans, 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif);
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.04em;
@@ -595,7 +595,7 @@
 
 .ti-click-sign__meta,
 .signature-date {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-family-sans, 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.02em;

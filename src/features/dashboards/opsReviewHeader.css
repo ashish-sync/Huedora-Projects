@@ -247,7 +247,7 @@ a.ops-review-header__total:hover .ops-review-header__total-value {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .ops-review-header__range .date-range-filter-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

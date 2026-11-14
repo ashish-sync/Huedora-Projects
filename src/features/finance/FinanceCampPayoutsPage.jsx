@@ -648,7 +648,7 @@ export default function FinanceCampPayoutsPage() {
                       : (payTargetRows[0].payeeName || payTargetRows[0].hcwName || payTargetRows[0].campId || 'Payout')}
                   </h3>
                 </div>
-                    {payMode === 'single' && focusRow ? (
+                {payMode === 'single' && focusRow ? (
                     <button
                       type="button"
                       className="btn secondary btn-compact"

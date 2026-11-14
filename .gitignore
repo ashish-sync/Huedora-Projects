@@ -25,3 +25,6 @@ tylo-one-*-preview*.html
 
 .cache/
 *.tgz
+
+# Visual QA test runs
+qa-artifacts/

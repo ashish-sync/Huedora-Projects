@@ -31,32 +31,36 @@
         }
       })();
     </script>
+    <!-- UI fonts are self-hosted (see src/styles/foundations/fonts.css). Preload critical Inter. -->
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/inter-latin-600-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <!-- Signature / invoice fonts only — non-critical for layout metrics -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lato:wght@300&display=optional"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
     <noscript>
       <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lato:wght@300&display=optional"
         rel="stylesheet"
       />
     </noscript>
-    <!-- Signature fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Lato:wght@300&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
   </head>
   <body>
     <div id="root"></div>

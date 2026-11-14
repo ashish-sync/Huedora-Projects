@@ -7,7 +7,8 @@ const SENDER_ORG = 'Tylo Care';
 
 function isLikelyMobile() {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+  // Align with shell/home compact gate (--bp-lg → max-width: 1023px).
+  return window.matchMedia('(max-width: 1023px), (pointer: coarse)').matches;
 }
 
 function PageChrome({ children }) {

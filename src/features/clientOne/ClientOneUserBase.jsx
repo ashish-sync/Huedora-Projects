@@ -1,5 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, Plus, UserRound } from 'lucide-react';
+import {
+  Building2,
+  Check,
+  ChevronRight,
+  Copy,
+  FolderTree,
+  KeyRound,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserRound,
+  Users,
+  X,
+} from 'lucide-react';
 import Button from '../../components/ui/Button.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import Input from '../../components/ui/Input.jsx';
@@ -13,6 +29,13 @@ const LEVELS = [
 ];
 
 const LEVEL_LABEL = Object.fromEntries(LEVELS.map((l) => [l.value, l.label]));
+
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 function emptyForm(overrides = {}) {
   return {
@@ -46,27 +69,52 @@ function flattenTree(nodes, acc = []) {
 
 function MemberNode({ node, depth, selectedId, onSelect }) {
   const inactive = node.status === 'inactive';
+  const isSelected = selectedId === node.id;
+  const initials = getInitials(node.fullName);
+  const reportsCount = node.children?.length || 0;
+
   return (
     <li className={`c1-org-node c1-org-node--${node.level}${inactive ? ' is-inactive' : ''}`}>
       <button
         type="button"
-        className={`c1-org-card${selectedId === node.id ? ' is-selected' : ''}`}
+        className={`c1-org-card${isSelected ? ' is-selected' : ''}`}
         onClick={() => onSelect(node)}
-        style={{ '--c1-org-indent': `${Math.max(0, depth) * 18}px` }}
+        style={{ '--c1-org-indent': `${Math.max(0, depth) * 16}px` }}
       >
-        <span className="c1-org-card__avatar" aria-hidden="true">
-          <UserRound size={16} />
+        <span
+          className={`c1-org-card__avatar c1-org-card__avatar--${node.level}`}
+          aria-hidden="true"
+        >
+          {initials}
         </span>
         <span className="c1-org-card__body">
-          <strong>{node.fullName}</strong>
-          <span className="c1-org-card__meta">
-            {LEVEL_LABEL[node.level] || node.level}
-            {node.designation ? ` · ${node.designation}` : ''}
+          <span className="c1-org-card__title-row">
+            <strong className="c1-org-card__name">{node.fullName}</strong>
+            <span className={`c1-level-tag c1-level-tag--${node.level}`}>
+              {LEVEL_LABEL[node.level] || node.level}
+            </span>
+            <span
+              className={`c1-status-dot c1-status-dot--${node.status}`}
+              title={node.status === 'inactive' ? 'Inactive' : 'Active'}
+              aria-label={node.status === 'inactive' ? 'Inactive status' : 'Active status'}
+            />
           </span>
-          <span className="c1-org-card__meta">{node.mobile || '—'}</span>
+          <span className="c1-org-card__meta">
+            {node.designation ? (
+              <span className="c1-org-card__meta-item">{node.designation}</span>
+            ) : null}
+            {node.mobile ? (
+              <span className="c1-org-card__meta-item">
+                <Phone size={11} aria-hidden="true" />
+                {node.mobile}
+              </span>
+            ) : null}
+          </span>
         </span>
-        {node.children?.length ? (
-          <span className="c1-org-card__count">{node.children.length}</span>
+        {reportsCount ? (
+          <span className="c1-org-card__count" title={`${reportsCount} direct reports`}>
+            {reportsCount} {reportsCount === 1 ? 'report' : 'reports'}
+          </span>
         ) : null}
         <ChevronRight size={16} className="c1-org-card__chevron" aria-hidden="true" />
       </button>
@@ -101,6 +149,10 @@ export default function ClientOneUserBase({ dateControls }) {
   const [saving, setSaving] = useState(false);
   const [revealedPin, setRevealedPin] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [levelFilter, setLevelFilter] = useState('all');
+  const [copiedPin, setCopiedPin] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
 
   const selected = useMemo(
     () => members.find((m) => m.id === selectedId) || null,
@@ -263,168 +315,518 @@ export default function ClientOneUserBase({ dateControls }) {
     else if (confirmAction === 'rotate') await rotatePin();
   };
 
+  const copyToClipboard = (text, fieldName) => {
+    if (!text) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (fieldName === 'pin') {
+          setCopiedPin(true);
+          setTimeout(() => setCopiedPin(false), 2000);
+        } else {
+          setCopiedField(fieldName);
+          setTimeout(() => setCopiedField(null), 2000);
+        }
+      }).catch(() => {});
+    }
+  };
+
   const allowedCreateLevels = useMemo(() => {
     if (!capabilities.canManage) return [];
     if (capabilities.maxCreateLevel === 'location') return LEVELS.filter((l) => l.value === 'location');
     return LEVELS;
   }, [capabilities]);
 
+  const filteredTree = useMemo(() => {
+    if (!searchQuery.trim() && levelFilter === 'all') return tree;
+    const q = searchQuery.trim().toLowerCase();
+
+    function filterNode(node) {
+      const matchSearch = !q
+        || node.fullName?.toLowerCase().includes(q)
+        || node.mobile?.includes(q)
+        || node.email?.toLowerCase().includes(q)
+        || node.designation?.toLowerCase().includes(q)
+        || (node.regions || []).some((r) => r.toLowerCase().includes(q))
+        || (node.locations || []).some((l) => l.toLowerCase().includes(q));
+
+      const matchLevel = levelFilter === 'all' || node.level === levelFilter;
+
+      const filteredChildren = (node.children || [])
+        .map(filterNode)
+        .filter(Boolean);
+
+      if ((matchSearch && matchLevel) || filteredChildren.length > 0) {
+        return {
+          ...node,
+          children: filteredChildren,
+        };
+      }
+      return null;
+    }
+
+    return tree.map(filterNode).filter(Boolean);
+  }, [tree, searchQuery, levelFilter]);
+
+  const stats = useMemo(() => {
+    const total = members.length;
+    const ho = members.filter((m) => m.level === 'ho').length;
+    const regional = members.filter((m) => m.level === 'regional').length;
+    const location = members.filter((m) => m.level === 'location').length;
+    const active = members.filter((m) => m.status === 'active').length;
+    return { total, ho, regional, location, active };
+  }, [members]);
+
   return (
-    <section className="client-one-section-wrap">
-      <div className="c1-page-head">
+    <section className="client-one-section-wrap c1-user-base-section">
+      <div className="c1-page-head c1-page-head--with-actions c1-user-base-head">
         <div className="c1-page-head__title-block">
           <h2 className="c1-page-head__title">User Base</h2>
           <p className="c1-page-head__subtitle meta-text">
             Organogram · Head Office → Regional → Location
           </p>
         </div>
-        <div className="c1-page-head__actions">
-          {dateControls}
+
+        <div className="c1-user-base-head__controls">
+          {dateControls ? (
+            <div className="c1-page-head__filters">
+              {dateControls}
+            </div>
+          ) : null}
           {capabilities.canManage ? (
-            <Button type="button" size="compact" onClick={() => openCreate()}>
-              <Plus size={14} aria-hidden="true" />
-              Add user
-            </Button>
+            <div className="c1-page-head__actions">
+              <Button type="button" size="compact" onClick={() => openCreate()}>
+                <Plus size={14} aria-hidden="true" />
+                Add user
+              </Button>
+            </div>
           ) : null}
         </div>
       </div>
 
+      <div className="c1-org-kpis" role="region" aria-label="Hierarchy overview metrics">
+        <div className="c1-org-kpi">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--total" aria-hidden="true">
+            <Users size={16} />
+          </div>
+          <div className="c1-org-kpi__body">
+            <span className="c1-org-kpi__label">Total Members</span>
+            <strong className="c1-org-kpi__value">{stats.total}</strong>
+          </div>
+        </div>
+
+        <div className="c1-org-kpi">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--ho" aria-hidden="true">
+            <Building2 size={16} />
+          </div>
+          <div className="c1-org-kpi__body">
+            <span className="c1-org-kpi__label">Head Office</span>
+            <strong className="c1-org-kpi__value">{stats.ho}</strong>
+          </div>
+        </div>
+
+        <div className="c1-org-kpi">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--regional" aria-hidden="true">
+            <FolderTree size={16} />
+          </div>
+          <div className="c1-org-kpi__body">
+            <span className="c1-org-kpi__label">Regional / State</span>
+            <strong className="c1-org-kpi__value">{stats.regional}</strong>
+          </div>
+        </div>
+
+        <div className="c1-org-kpi">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--location" aria-hidden="true">
+            <MapPin size={16} />
+          </div>
+          <div className="c1-org-kpi__body">
+            <span className="c1-org-kpi__label">Location / Branch</span>
+            <strong className="c1-org-kpi__value">{stats.location}</strong>
+          </div>
+        </div>
+
+        <div className="c1-org-kpi">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--active" aria-hidden="true">
+            <ShieldCheck size={16} />
+          </div>
+          <div className="c1-org-kpi__body">
+            <span className="c1-org-kpi__label">Active Access</span>
+            <strong className="c1-org-kpi__value">{stats.active}</strong>
+          </div>
+        </div>
+      </div>
+
       {error ? <p className="error-text" role="alert">{error}</p> : null}
+
       {revealedPin && !formOpen ? (
         <div className="client-one-card c1-org-pin-banner" role="status">
-          <p>
-            Secure PIN generated (shown once):
-            {' '}
-            <strong className="c1-org-pin-value">{revealedPin}</strong>
-          </p>
-          <Button type="button" variant="secondary" size="compact" onClick={() => setRevealedPin(null)}>
-            Dismiss
-          </Button>
+          <div className="c1-org-pin-banner__content">
+            <div className="c1-org-pin-banner__badge">
+              <KeyRound size={14} aria-hidden="true" />
+              <span>SECURE ACCESS PIN</span>
+            </div>
+            <p className="c1-org-pin-banner__text">
+              Generated PIN (shown once):
+              {' '}
+              <strong className="c1-org-pin-value">{revealedPin}</strong>
+            </p>
+            <p className="meta-text c1-org-pin-banner__hint">
+              Share this 6-digit PIN securely with the member. It will not be shown again.
+            </p>
+          </div>
+          <div className="c1-org-pin-banner__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              size="compact"
+              onClick={() => copyToClipboard(revealedPin, 'pin')}
+            >
+              {copiedPin ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+              {copiedPin ? 'Copied' : 'Copy PIN'}
+            </Button>
+            <Button type="button" size="compact" onClick={() => setRevealedPin(null)}>
+              Dismiss
+            </Button>
+          </div>
         </div>
       ) : null}
 
       <div className="c1-org-layout" aria-busy={busy}>
         <section className="client-one-card c1-org-tree-panel">
-          {!tree.length && !busy ? (
-            <p className="meta-text c1-org-empty">
-              No users yet. Add a Head Office user to start the organogram.
-            </p>
-          ) : (
-            <ul className="c1-org-tree">
-              {tree.map((node) => (
-                <MemberNode
-                  key={node.id}
-                  node={node}
-                  depth={0}
-                  selectedId={selectedId}
-                  onSelect={(n) => {
-                    setSelectedId(n.id);
-                    setRevealedPin(null);
-                  }}
+          <div className="c1-org-panel-head">
+            <div className="c1-org-panel-head__left">
+              <FolderTree size={16} className="c1-org-panel-head__icon" aria-hidden="true" />
+              <h3 className="c1-org-panel-head__title">Hierarchy Structure</h3>
+              <span className="c1-org-panel-head__badge">{members.length} members</span>
+            </div>
+            {capabilities.canManage && tree.length > 0 ? (
+              <Button type="button" variant="ghost" size="compact" onClick={() => openCreate()}>
+                <Plus size={13} aria-hidden="true" />
+                Add
+              </Button>
+            ) : null}
+          </div>
+
+          {members.length > 0 ? (
+            <div className="c1-org-toolbar">
+              <div className="c1-org-search-wrap">
+                <Search size={14} className="c1-org-search-icon" aria-hidden="true" />
+                <input
+                  type="search"
+                  className="c1-org-search-input"
+                  placeholder="Search members by name, mobile, territory..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search members"
                 />
-              ))}
-            </ul>
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    className="c1-org-search-clear"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Clear search"
+                  >
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+              <div className="c1-org-filter-pills" role="tablist" aria-label="Filter hierarchy level">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'ho', label: 'Head Office' },
+                  { id: 'regional', label: 'Regional' },
+                  { id: 'location', label: 'Location' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={levelFilter === tab.id}
+                    className={`c1-org-pill${levelFilter === tab.id ? ' is-active' : ''}`}
+                    onClick={() => setLevelFilter(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {!tree.length && !busy ? (
+            <div className="c1-org-empty-state">
+              <div className="c1-org-empty-state__icon">
+                <Building2 size={36} aria-hidden="true" />
+              </div>
+              <h4 className="c1-org-empty-state__title">No users configured yet</h4>
+              <p className="meta-text c1-org-empty">
+                No users yet. Add a Head Office user to start the organogram.
+              </p>
+              <p className="c1-org-empty-state__desc">
+                Head Office users sit at the top tier. Regional managers and location users report upwards through this hierarchy.
+              </p>
+              {capabilities.canManage ? (
+                <Button type="button" size="compact" onClick={() => openCreate({ level: 'ho' })}>
+                  <Plus size={14} aria-hidden="true" />
+                  Add Head Office user
+                </Button>
+              ) : null}
+            </div>
+          ) : filteredTree.length === 0 && searchQuery ? (
+            <div className="c1-org-empty-state c1-org-empty-state--compact">
+              <div className="c1-org-empty-state__icon">
+                <Search size={28} aria-hidden="true" />
+              </div>
+              <h4 className="c1-org-empty-state__title">No matching members</h4>
+              <p className="meta-text">
+                No members found matching &quot;{searchQuery}&quot;.
+              </p>
+              <Button type="button" variant="secondary" size="compact" onClick={() => setSearchQuery('')}>
+                Clear search
+              </Button>
+            </div>
+          ) : (
+            <div className="c1-org-tree-scroll">
+              <ul className="c1-org-tree">
+                {filteredTree.map((node) => (
+                  <MemberNode
+                    key={node.id}
+                    node={node}
+                    depth={0}
+                    selectedId={selectedId}
+                    onSelect={(n) => {
+                      setSelectedId(n.id);
+                      setRevealedPin(null);
+                    }}
+                  />
+                ))}
+              </ul>
+            </div>
           )}
         </section>
 
         <aside className="client-one-card c1-org-detail-panel">
+          <div className="c1-org-panel-head">
+            <div className="c1-org-panel-head__left">
+              <UserRound size={16} className="c1-org-panel-head__icon" aria-hidden="true" />
+              <h3 className="c1-org-panel-head__title">Member Profile & Access</h3>
+            </div>
+          </div>
+
           {!selected ? (
-            <p className="meta-text">Select a user to view details and management actions.</p>
+            <div className="c1-org-empty-state">
+              <div className="c1-org-empty-state__icon">
+                <UserRound size={36} aria-hidden="true" />
+              </div>
+              <h4 className="c1-org-empty-state__title">No Member Selected</h4>
+              <p className="c1-org-empty-state__subtitle meta-text">
+                Select a user to view details and management actions.
+              </p>
+              <p className="c1-org-empty-state__desc">
+                Choose any member from the hierarchy on the left to inspect profile attributes, hierarchy level, assigned regions, and manage portal access credentials.
+              </p>
+            </div>
           ) : (
-            <>
-              <header className="c1-org-detail__head">
-                <div>
-                  <h3>{selected.fullName}</h3>
-                  <p className="meta-text">{LEVEL_LABEL[selected.level]}</p>
+            <div className="c1-org-detail-content">
+              <header className="c1-org-detail__hero">
+                <div className={`c1-org-detail__avatar c1-org-detail__avatar--${selected.level}`}>
+                  {getInitials(selected.fullName)}
                 </div>
-                <span className={`c1-org-status c1-org-status--${selected.status}`}>
-                  {selected.status === 'inactive' ? 'Inactive' : 'Active'}
-                </span>
+                <div className="c1-org-detail__hero-text">
+                  <div className="c1-org-detail__hero-title-row">
+                    <h3>{selected.fullName}</h3>
+                    <span className={`c1-org-status c1-org-status--${selected.status}`}>
+                      <span className={`c1-status-dot c1-status-dot--${selected.status}`} />
+                      {selected.status === 'inactive' ? 'Inactive' : 'Active'}
+                    </span>
+                  </div>
+                  <div className="c1-org-detail__hero-badges">
+                    <span className={`c1-level-tag c1-level-tag--${selected.level}`}>
+                      {LEVEL_LABEL[selected.level] || selected.level}
+                    </span>
+                    {selected.designation ? (
+                      <span className="c1-org-detail__designation-badge">
+                        {selected.designation}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </header>
-              <dl className="c1-org-detail__grid">
-                <div>
-                  <dt>Mobile</dt>
-                  <dd>{selected.mobile || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Email</dt>
-                  <dd>{selected.email || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Designation</dt>
-                  <dd>{selected.designation || '—'}</dd>
-                </div>
-                <div>
-                  <dt>Reporting to</dt>
-                  <dd>
-                    {selected.parentId
-                      ? (members.find((m) => m.id === selected.parentId)?.fullName || '—')
-                      : '—'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Regions</dt>
-                  <dd>{selected.regions?.length ? selected.regions.join(', ') : '—'}</dd>
-                </div>
-                <div>
-                  <dt>Locations</dt>
-                  <dd>{selected.locations?.length ? selected.locations.join(', ') : '—'}</dd>
-                </div>
-              </dl>
+
+              <div className="c1-org-detail__section">
+                <h4 className="c1-org-detail__section-title">Contact & Organization</h4>
+                <dl className="c1-org-detail__grid">
+                  <div className="c1-org-detail__tile">
+                    <dt>
+                      <Phone size={12} aria-hidden="true" />
+                      Mobile
+                    </dt>
+                    <dd className="c1-org-detail__val-with-copy">
+                      <span>{selected.mobile || '—'}</span>
+                      {selected.mobile ? (
+                        <button
+                          type="button"
+                          className="c1-copy-btn"
+                          onClick={() => copyToClipboard(selected.mobile, 'mobile')}
+                          title="Copy mobile number"
+                        >
+                          {copiedField === 'mobile' ? <Check size={12} /> : <Copy size={12} />}
+                        </button>
+                      ) : null}
+                    </dd>
+                  </div>
+
+                  <div className="c1-org-detail__tile">
+                    <dt>
+                      <Mail size={12} aria-hidden="true" />
+                      Email
+                    </dt>
+                    <dd className="c1-org-detail__val-with-copy">
+                      <span>{selected.email || '—'}</span>
+                      {selected.email ? (
+                        <button
+                          type="button"
+                          className="c1-copy-btn"
+                          onClick={() => copyToClipboard(selected.email, 'email')}
+                          title="Copy email address"
+                        >
+                          {copiedField === 'email' ? <Check size={12} /> : <Copy size={12} />}
+                        </button>
+                      ) : null}
+                    </dd>
+                  </div>
+
+                  <div className="c1-org-detail__tile">
+                    <dt>Designation</dt>
+                    <dd>{selected.designation || '—'}</dd>
+                  </div>
+
+                  <div className="c1-org-detail__tile">
+                    <dt>Reporting to</dt>
+                    <dd>
+                      {selected.parentId ? (
+                        (() => {
+                          const parent = members.find((m) => m.id === selected.parentId);
+                          if (!parent) return '—';
+                          return (
+                            <button
+                              type="button"
+                              className="c1-org-parent-link"
+                              onClick={() => setSelectedId(parent.id)}
+                              title="Click to jump to manager in organogram"
+                            >
+                              {parent.fullName}
+                              <span className="c1-org-parent-link__sub">
+                                ({LEVEL_LABEL[parent.level] || parent.level})
+                              </span>
+                            </button>
+                          );
+                        })()
+                      ) : (
+                        <span className="meta-text">Top-level (Head Office)</span>
+                      )}
+                    </dd>
+                  </div>
+
+                  <div className="c1-org-detail__tile c1-org-detail__tile--full">
+                    <dt>
+                      <MapPin size={12} aria-hidden="true" />
+                      Assigned Regions / States
+                    </dt>
+                    <dd>
+                      {selected.regions?.length ? (
+                        <div className="c1-org-chips">
+                          {selected.regions.map((reg) => (
+                            <span key={reg} className="c1-org-chip">{reg}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="meta-text">—</span>
+                      )}
+                    </dd>
+                  </div>
+
+                  <div className="c1-org-detail__tile c1-org-detail__tile--full">
+                    <dt>
+                      <MapPin size={12} aria-hidden="true" />
+                      Assigned Locations / Branches
+                    </dt>
+                    <dd>
+                      {selected.locations?.length ? (
+                        <div className="c1-org-chips">
+                          {selected.locations.map((loc) => (
+                            <span key={loc} className="c1-org-chip c1-org-chip--branch">{loc}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="meta-text">—</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
               {capabilities.canManage ? (
-                <div className="c1-org-detail__actions">
-                  <Button type="button" variant="secondary" size="compact" onClick={() => openEdit(selected)}>
-                    Edit
-                  </Button>
-                  {selected.status === 'active' ? (
+                <div className="c1-org-detail__section c1-org-detail__section--actions">
+                  <h4 className="c1-org-detail__section-title">
+                    <KeyRound size={13} aria-hidden="true" />
+                    Access & Management Controls
+                  </h4>
+                  <div className="c1-org-detail__actions">
+                    <Button type="button" variant="secondary" size="compact" onClick={() => openEdit(selected)}>
+                      Edit
+                    </Button>
+                    {selected.status === 'active' ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="compact"
+                        onClick={() => setConfirmAction('deactivate')}
+                      >
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="compact"
+                        onClick={() => setConfirmAction('activate')}
+                      >
+                        Activate
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="secondary"
                       size="compact"
-                      onClick={() => setConfirmAction('deactivate')}
+                      onClick={() => setConfirmAction('rotate')}
                     >
-                      Deactivate
+                      <KeyRound size={13} aria-hidden="true" />
+                      Rotate PIN
                     </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="compact"
-                      onClick={() => setConfirmAction('activate')}
-                    >
-                      Activate
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="compact"
-                    onClick={() => setConfirmAction('rotate')}
-                  >
-                    Rotate PIN
-                  </Button>
-                  {selected.level === 'ho' && capabilities.maxCreateLevel === 'ho' ? (
-                    <Button
-                      type="button"
-                      size="compact"
-                      onClick={() => openCreate({ level: 'regional', parentId: selected.id })}
-                    >
-                      Add regional
-                    </Button>
-                  ) : null}
-                  {(selected.level === 'regional'
-                    && (capabilities.maxCreateLevel === 'ho' || capabilities.actorMemberId === selected.id)) ? (
+                    {selected.level === 'ho' && capabilities.maxCreateLevel === 'ho' ? (
                       <Button
                         type="button"
                         size="compact"
-                        onClick={() => openCreate({ level: 'location', parentId: selected.id })}
+                        onClick={() => openCreate({ level: 'regional', parentId: selected.id })}
                       >
-                        Add location
+                        <Plus size={13} aria-hidden="true" />
+                        Add regional
                       </Button>
                     ) : null}
+                    {(selected.level === 'regional'
+                      && (capabilities.maxCreateLevel === 'ho' || capabilities.actorMemberId === selected.id)) ? (
+                        <Button
+                          type="button"
+                          size="compact"
+                          onClick={() => openCreate({ level: 'location', parentId: selected.id })}
+                        >
+                          <Plus size={13} aria-hidden="true" />
+                          Add location
+                        </Button>
+                      ) : null}
+                  </div>
                 </div>
               ) : null}
-            </>
+            </div>
           )}
         </aside>
       </div>
@@ -470,15 +872,38 @@ export default function ClientOneUserBase({ dateControls }) {
           {formError ? <p className="error-text" role="alert">{formError}</p> : null}
           {revealedPin && formMode === 'create' ? (
             <div className="c1-org-pin-banner" role="status">
-              <p>
-                Secure PIN (shown once):
-                {' '}
-                <strong className="c1-org-pin-value">{revealedPin}</strong>
-              </p>
-              <p className="meta-text">Share this PIN privately with the user, then close.</p>
-              <Button type="button" size="compact" onClick={() => { setFormOpen(false); setRevealedPin(null); }}>
-                Done
-              </Button>
+              <div className="c1-org-pin-banner__content">
+                <div className="c1-org-pin-banner__badge">
+                  <KeyRound size={14} aria-hidden="true" />
+                  <span>SECURE ACCESS PIN</span>
+                </div>
+                <p className="c1-org-pin-banner__text">
+                  Generated PIN (shown once):
+                  {' '}
+                  <strong className="c1-org-pin-value">{revealedPin}</strong>
+                </p>
+                <p className="meta-text c1-org-pin-banner__hint">
+                  Share this 6-digit PIN securely with the member. It will not be shown again.
+                </p>
+              </div>
+              <div className="c1-org-pin-banner__actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="compact"
+                  onClick={() => copyToClipboard(revealedPin, 'pin')}
+                >
+                  {copiedPin ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                  {copiedPin ? 'Copied' : 'Copy PIN'}
+                </Button>
+                <Button
+                  type="button"
+                  size="compact"
+                  onClick={() => { setFormOpen(false); setRevealedPin(null); }}
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           ) : (
             <>

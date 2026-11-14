@@ -171,6 +171,12 @@ describe('HeaderPhotoEditorModal', () => {
       expect(screen.getByAltText('Original upload')).toBeTruthy();
     });
 
+    // Natural dimensions load async via Image.onload — Save no-ops until they land.
+    await waitFor(() => {
+      const img = screen.getByAltText('Original upload');
+      expect(String(img.getAttribute('style') || '')).toMatch(/width:\s*\d/);
+    });
+
     const saveBtn = screen.getByRole('button', { name: 'Save Header Photo' });
     fireEvent.click(saveBtn);
 

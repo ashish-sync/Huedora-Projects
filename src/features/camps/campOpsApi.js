@@ -265,6 +265,12 @@ export const clientMasterApi = {
     });
     return postForm(`${BASE}/client-masters/${id}/camp-terms-files`, formData);
   },
+  uploadPortalBrandImage: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return postForm(`${BASE}/client-masters/${id}/portal-brand-image`, formData);
+  },
+  deletePortalBrandImage: (id) => del(`${BASE}/client-masters/${id}/portal-brand-image`),
   mintRequestFormLink: (id, { replace = false } = {}) =>
     post(`${BASE}/client-masters/${id}/request-form-link`, replace ? { replace: true } : {}),
   getClientOneAccess: (id) => get(`${BASE}/client-masters/${id}/client-one-access`),

@@ -186,6 +186,7 @@ export function recordToForm(record, { keepClientName = true } = {}) {
     billingStateCode: record.billingStateCode || billing.stateCode || '',
     programName: record.programName || '',
     displayName: record.displayName || '',
+    portalBrandImage: record.portalBrandImage || null,
     campName: record.campName || 'BMD',
     campType: record.campType || '',
     healthcareWorker: normalizeHealthcareWorkers(record.healthcareWorker),

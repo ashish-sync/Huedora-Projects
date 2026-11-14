@@ -99,19 +99,89 @@ describe('ClientOneApp', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Client One' })).toBeTruthy();
-    await user.type(screen.getByLabelText('PIN'), '123456');
+    await user.type(screen.getByLabelText(/PIN/i), '123456');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
       expect(login).toHaveBeenCalled();
-      expect(screen.getByRole('button', { name: 'Dashboard' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Camp Tracker' })).toBeTruthy();
-      expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeTruthy();
-      expect(screen.getByText('Camp Count')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Overview' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Camp Register' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: /Operations (Dashboard|Overview)/i })).toBeTruthy();
+      expect(screen.getByText('Total Camps')).toBeTruthy();
       expect(screen.getByText('Patients Screened')).toBeTruthy();
-      expect(screen.getByText('Unique Doctor')).toBeTruthy();
+      expect(screen.getByText('Unique Doctors')).toBeTruthy();
       expect(screen.getByText('3')).toBeTruthy();
       expect(screen.getByText(/Acme/)).toBeTruthy();
+    });
+  });
+
+  it('opens Power BI drill-down table when clicking a KPI card and returns on back click', async () => {
+    const user = userEvent.setup();
+    login.mockResolvedValue({
+      token: 'tok-drilldown',
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      client: { name: 'Acme Health', programName: 'BMD', campName: 'Camp A', accessId: 'DRILL1' },
+      features: { dashboard: true, campTracker: true },
+    });
+    dashboard.mockResolvedValue({
+      client: { name: 'Acme Health', programName: 'BMD', campName: 'Camp A' },
+      kpis: {
+        total: 1,
+        campCount: 1,
+        patientsScreened: 25,
+        uniqueDoctors: 1,
+        executed: 1,
+        planned: 0,
+        cancelled: 0,
+      },
+      charts: {},
+      leaderboards: { doctors: [], mrs: [] },
+    });
+    camps.mockResolvedValue({
+      data: [
+        {
+          _id: 'camp-101',
+          campId: 'CMP-101',
+          campDate: '2026-11-05',
+          status: 'executed',
+          executionStatus: 'executed',
+          doctorName: 'Dr. Drilldown',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          actualPatients: 25,
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/client-one']}>
+        <Routes>
+          <Route path="/client-one" element={<ClientOneApp />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText(/PIN/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Total Camps')).toBeTruthy();
+    });
+
+    // Click the Total Camps KPI card to drill down
+    await user.click(screen.getByText('Total Camps'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Back to dashboard')).toBeTruthy();
+      expect(screen.getByText('CMP-101')).toBeTruthy();
+      expect(screen.getByText('Dr. Drilldown')).toBeTruthy();
+    });
+
+    // Click Back to Dashboard
+    await user.click(screen.getByLabelText('Back to dashboard'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Operations (Dashboard|Overview)/i })).toBeTruthy();
     });
   });
 });

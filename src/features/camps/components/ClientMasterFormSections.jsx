@@ -53,10 +53,13 @@ export function ClientMasterFormSectionFields({
   fieldErrors = {},
   loading = false,
   canCreateCompany = false,
+  recordId = '',
   onFieldChange,
   onClientNameChange,
   onSelectRecord,
   onAssignedUsersChange,
+  onUploadPortalBrandImage = null,
+  onDeletePortalBrandImage = null,
   programScopeLabel = '',
   programCampRequestSlot = null,
 }) {
@@ -95,7 +98,7 @@ export function ClientMasterFormSectionFields({
             <input
               value={form.displayName}
               onChange={(e) => updateField('displayName', e.target.value)}
-              placeholder="Program label shown in camp flows (optional)"
+              placeholder="Shown next to brand image in Client One header"
               className={fieldErrors.displayName ? 'input-invalid' : ''}
             />
             <FieldError message={fieldErrors.displayName} />
@@ -109,6 +112,41 @@ export function ClientMasterFormSectionFields({
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+          </label>
+          <label className="client-master-section-span-full">
+            Client One brand image
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              disabled={!recordId || typeof onUploadPortalBrandImage !== 'function'}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) onUploadPortalBrandImage?.(file);
+              }}
+            />
+            <small className="meta-text">
+              {recordId
+                ? 'PNG/JPG shown in the Client One portal header next to Display Name.'
+                : 'Save the Client Master first, then upload the brand image.'}
+            </small>
+            {form.portalBrandImage?.url ? (
+              <div className="client-master-portal-brand-preview">
+                <img
+                  src={form.portalBrandImage.url}
+                  alt={form.displayName || form.clientName || 'Portal brand'}
+                  width={48}
+                  height={48}
+                />
+                <span className="meta-text">{form.portalBrandImage.fileName || 'Uploaded'}</span>
+                {typeof onDeletePortalBrandImage === 'function' ? (
+                  <button type="button" className="btn secondary btn-compact" onClick={onDeletePortalBrandImage}>
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            <FieldError message={fieldErrors.portalBrandImage} />
           </label>
         </div>
       );

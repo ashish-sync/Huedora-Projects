@@ -47,6 +47,7 @@ const emptyForm = {
   clientName: '',
   clientCode: '',
   displayName: '',
+  portalBrandImage: null,
   billingAddress: '',
   billingGstin: '',
   billingPan: '',
@@ -516,6 +517,51 @@ export default function ClientMasterFormPage() {
     }
   }
 
+  async function handleUploadPortalBrandImage(file) {
+    if (!isPersisted || !file || !recordId) return;
+    setFieldErrors((prev) => {
+      if (!prev.portalBrandImage) return prev;
+      const next = { ...prev };
+      delete next.portalBrandImage;
+      return next;
+    });
+    setCampTermsFileBusy(true);
+    try {
+      const { data } = await clientMasterApi.uploadPortalBrandImage(recordId, file);
+      const row = data?.data || data;
+      setForm((prev) => applyClientMasterServerTouch({
+        ...prev,
+        portalBrandImage: row?.portalBrandImage || null,
+      }, row));
+    } catch (err) {
+      const message = err?.code === 'NETWORK_UPLOAD_FAILED'
+        ? 'Could not reach the API. Confirm the local server is running on port 5000, then try again.'
+        : (err?.message || 'Failed to upload brand image');
+      setFieldErrors((prev) => ({
+        ...prev,
+        portalBrandImage: message,
+      }));
+    } finally {
+      setCampTermsFileBusy(false);
+    }
+  }
+
+  async function handleDeletePortalBrandImage() {
+    if (!isPersisted) return;
+    try {
+      const { data } = await clientMasterApi.deletePortalBrandImage(recordId);
+      setForm((prev) => applyClientMasterServerTouch({
+        ...prev,
+        portalBrandImage: null,
+      }, data.data));
+    } catch (err) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        portalBrandImage: err?.message || 'Failed to remove brand image',
+      }));
+    }
+  }
+
   async function handleCampTermsFileDelete(file) {
     if (!isSuperAdmin() || !isPersisted || !file) return;
     if (!window.confirm(`Remove “${file.fileName || 'file'}”?`)) return;
@@ -710,10 +756,13 @@ export default function ClientMasterFormPage() {
                 fieldErrors={sectionErrors}
                 loading={sectionSaving}
                 canCreateCompany={canCreateCompany}
+                recordId={recordId}
                 onFieldChange={updateField}
                 onClientNameChange={updateClientName}
                 onSelectRecord={applySuggestion}
                 onAssignedUsersChange={updateAssignedUserEmails}
+                onUploadPortalBrandImage={handleUploadPortalBrandImage}
+                onDeletePortalBrandImage={handleDeletePortalBrandImage}
                 programScopeLabel={
                   form.clientName && form.programName && form.campName
                     ? `${form.clientName} · ${form.programName} · ${form.campName}`

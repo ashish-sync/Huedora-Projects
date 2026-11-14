@@ -15,8 +15,8 @@ export const CLIENT_MASTER_SECTIONS = [
   {
     id: 'clientInfo',
     title: 'Client Information',
-    description: 'Company identity, display name, and active status',
-    fields: ['clientName', 'clientCode', 'displayName', 'isActive'],
+    description: 'Company identity, display name, portal brand image, and active status',
+    fields: ['clientName', 'clientCode', 'displayName', 'portalBrandImage', 'isActive'],
   },
   {
     id: 'billing',

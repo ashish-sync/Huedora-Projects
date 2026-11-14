@@ -4,12 +4,12 @@ import { clientMasterApi } from '../campOpsApi.js';
 import './programConfigPanels.css';
 
 const FEATURE_LABELS = [
-  ['dashboard', 'Dashboard'],
-  ['campTracker', 'Camp Tracker'],
-  ['invoices', 'Bills & Invoices'],
-  ['mis', 'MIS Reports'],
-  ['campRequestLink', 'Camp Request Link'],
-  ['poUpload', 'Purchase Order Upload'],
+  ['dashboard', 'Overview'],
+  ['campTracker', 'Camp Register'],
+  ['invoices', 'Incoming Docs'],
+  ['mis', 'Reports & Analytics'],
+  ['campRequestLink', 'User Base'],
+  ['poUpload', 'Outgoing Docs'],
 ];
 
 const DEFAULT_FEATURES = Object.fromEntries(FEATURE_LABELS.map(([k]) => [k, true]));

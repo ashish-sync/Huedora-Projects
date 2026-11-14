@@ -1,23 +1,32 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   BarChart3,
-  Bell,
   Calendar,
+  Check,
   ChevronDown,
-  FileText,
+  FileInput,
+  FileOutput,
   LayoutDashboard,
-  PlusSquare,
-  Search,
-  ShoppingCart,
+  Link2,
+  LogOut,
+  Pencil,
+  RefreshCw,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings2,
+  Users,
 } from 'lucide-react';
 import Button from '../../components/ui/Button.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
+import Input from '../../components/ui/Input.jsx';
+import { apiUrl } from '../../shared/config.js';
 import { clientOneApi, setClientOneApiMode } from './clientOneApi.js';
 import {
   ClientOneDashboardCharts,
   ClientOneHeroKpis,
 } from './ClientOneDashboardCharts.jsx';
+import ClientOneDrillDownView from './ClientOneDrillDownView.jsx';
 import { DEFAULT_FEATURES, visibleNav } from './clientOneNav.js';
 import { clearClientOneSession, readClientOneSession } from './clientOneSession.js';
 import './clientOne.css';
@@ -25,21 +34,11 @@ import './clientOne.css';
 const NAV_ICONS = {
   dashboard: LayoutDashboard,
   tracker: Calendar,
-  invoices: FileText,
+  invoices: FileInput,
   mis: BarChart3,
-  'request-link': PlusSquare,
-  'purchase-orders': ShoppingCart,
+  'request-link': Users,
+  'purchase-orders': FileOutput,
 };
-
-function formatDisplayDate(isoStr) {
-  if (!isoStr) return '';
-  const parts = String(isoStr).slice(0, 10).split('-');
-  if (parts.length !== 3) return isoStr;
-  const [y, m, d] = parts;
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const monthIdx = parseInt(m, 10) - 1;
-  return `${d}-${months[monthIdx] || m}-${y}`;
-}
 
 function ymd(date) {
   const y = date.getFullYear();
@@ -64,22 +63,6 @@ function formatStatus(value) {
   const raw = String(value || '').replace(/_/g, ' ').trim();
   if (!raw) return '—';
   return raw.charAt(0).toUpperCase() + raw.slice(1);
-}
-
-function RangeToolbar({ range, setRange, trailing = null }) {
-  return (
-    <div className="client-one-toolbar">
-      <label>
-        <span>From</span>
-        <input type="date" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
-      </label>
-      <label>
-        <span>To</span>
-        <input type="date" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
-      </label>
-      {trailing}
-    </div>
-  );
 }
 
 function PinGate({ accessId, onSuccess }) {
@@ -115,18 +98,17 @@ function PinGate({ accessId, onSuccess }) {
         <form className="client-one-card client-one-pin-card" onSubmit={submit} aria-label="Client One sign-in">
           <h2 className="client-one-section-title">Sign in</h2>
           <p className="meta-text">Enter the PIN issued for this access link.</p>
-          <label className="client-one-pin-field">
-            <span>PIN</span>
-            <input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
-              placeholder="••••••"
-              aria-label="PIN"
-              maxLength={6}
-            />
-          </label>
+          <Input
+            label="PIN"
+            containerClassName="client-one-pin-field"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+            placeholder="••••••"
+            maxLength={6}
+            required
+          />
           {accessId ? (
             <p className="meta-text client-one-pin-message">
               Access link: <code className="mono-sm">{accessId}</code>
@@ -182,7 +164,12 @@ export default function ClientOneApp({
   const [pinMessage, setPinMessage] = useState('');
   const [copied, setCopied] = useState('');
   const [dashFocus, setDashFocus] = useState('camps');
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [drillDown, setDrillDown] = useState(null);
+  const [draftRange, setDraftRange] = useState(defaultRange);
+  const [brandImageFailed, setBrandImageFailed] = useState(false);
+  const [managePortalOpen, setManagePortalOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const managePortalRef = useRef(null);
 
   const features = session?.features || session?.client?.features || DEFAULT_FEATURES;
   const navItems = useMemo(() => visibleNav(features), [features]);
@@ -190,6 +177,24 @@ export default function ClientOneApp({
   useEffect(() => {
     setClientOneApiMode(isPreview ? 'preview' : 'external');
   }, [isPreview]);
+
+  useEffect(() => {
+    if (!managePortalOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (!managePortalRef.current?.contains(event.target)) {
+        setManagePortalOpen(false);
+      }
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setManagePortalOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [managePortalOpen]);
 
   useEffect(() => {
     if (!navItems.some((item) => item.id === tab) && navItems[0]) {
@@ -210,13 +215,14 @@ export default function ClientOneApp({
           if (!cancelled) setDashboard(dash);
         }),
       );
-    }
-    if (tab === 'tracker') {
-      loaders.push(
-        clientOneApi.camps({ from: range.from, to: range.to, page: 1, limit: 100 }).then((list) => {
-          if (!cancelled) setCamps(list.data || []);
-        }),
-      );
+      const campPromise = clientOneApi.camps?.({ from: range.from, to: range.to, page: 1, limit: 500 });
+      if (campPromise?.then) {
+        loaders.push(
+          campPromise.then((list) => {
+            if (!cancelled && list?.data) setCamps(list.data);
+          }).catch(() => null),
+        );
+      }
     }
     if (tab === 'hcw') {
       loaders.push(
@@ -285,9 +291,20 @@ export default function ClientOneApp({
     return () => { cancelled = true; };
   }, [session?.token, tab, range.from, range.to, calMonth.from, calMonth.to, isPreview]);
 
+  const ensureCampsLoaded = () => {
+    if (!camps.length && session?.token) {
+      const p = clientOneApi.camps?.({ from: range.from, to: range.to, page: 1, limit: 500 });
+      if (p?.then) {
+        p.then((res) => {
+          if (Array.isArray(res?.data)) setCamps(res.data);
+        }).catch(() => null);
+      }
+    }
+  };
+
   useEffect(() => {
-    if (!selectedId || !session?.token || tab !== 'tracker') {
-      if (tab !== 'tracker') setDetail(null);
+    if (!selectedId || !session?.token || (tab !== 'tracker' && tab !== 'dashboard')) {
+      if (tab !== 'tracker' && tab !== 'dashboard') setDetail(null);
       return undefined;
     }
     let cancelled = false;
@@ -315,6 +332,20 @@ export default function ClientOneApp({
     }
     return cells;
   }, [calMonth.from, calendar]);
+
+  const client = dashboard?.client || session?.client || {};
+  const kpis = dashboard?.kpis || mis?.kpis || {};
+  const brandTitle = String(client.displayName || client.name || '').trim() || 'Client One';
+  // Method = Client Master → Program Configuration → Method (stored as campName).
+  const brandMethod = String(client.method || client.campName || '').trim();
+  const brandImageUrl = client.portalBrandImageUrl
+    ? apiUrl(client.portalBrandImageUrl)
+    : '';
+  const showBrandImage = Boolean(brandImageUrl) && !brandImageFailed;
+
+  useEffect(() => {
+    setBrandImageFailed(false);
+  }, [brandImageUrl]);
 
   if (!session?.token) {
     if (isPreview) {
@@ -344,8 +375,17 @@ export default function ClientOneApp({
     );
   }
 
-  const client = dashboard?.client || session.client || {};
-  const kpis = dashboard?.kpis || mis?.kpis || {};
+  function submitDateRange() {
+    const next = { from: draftRange.from, to: draftRange.to };
+    setRange(next);
+    setDraftRange(next);
+  }
+
+  function clearDateRange() {
+    const next = defaultRange();
+    setDraftRange(next);
+    setRange(next);
+  }
 
   function signOut() {
     clientOneApi.logout();
@@ -410,128 +450,200 @@ export default function ClientOneApp({
     setCalMonth(monthRange(next));
   }
 
+  const dateControls = (
+    <div className="client-one-date-filter" role="group" aria-label="Filter by date range">
+      <label className="client-one-date-field">
+        <span className="client-one-date-field__label">From</span>
+        <input
+          type="date"
+          className="client-one-date-field__input"
+          value={draftRange.from}
+          onChange={(e) => setDraftRange((r) => ({ ...r, from: e.target.value }))}
+        />
+      </label>
+      <span className="client-one-date-filter__sep" aria-hidden="true">–</span>
+      <label className="client-one-date-field">
+        <span className="client-one-date-field__label">To</span>
+        <input
+          type="date"
+          className="client-one-date-field__input"
+          value={draftRange.to}
+          onChange={(e) => setDraftRange((r) => ({ ...r, to: e.target.value }))}
+        />
+      </label>
+      <div className="client-one-date-filter__actions">
+        <Button type="button" size="compact" onClick={submitDateRange}>
+          <Check size={12} aria-hidden="true" />
+          Apply
+        </Button>
+        <Button type="button" variant="secondary" size="compact" onClick={clearDateRange}>
+          <RefreshCw size={12} aria-hidden="true" />
+          Clear
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`client-one${isPreview ? ' client-one--preview' : ''}`}>
-      <div className="client-one-shell">
-        {isPreview ? (
-          <div className="client-one-preview-banner" role="status">
-            <div>
-              <strong>Internal preview</strong>
-              <span> Staff session — not the external client PIN portal.</span>
-            </div>
-            <Button type="button" variant="secondary" onClick={signOut}>
-              Exit preview
-            </Button>
-          </div>
-        ) : null}
-
-        <header className="client-one-topbar page-header">
-          <div className="client-one-identity">
-            <p className="section-label client-one-eyebrow">CLIENT PORTAL</p>
-            <div className="client-one-title-row">
-              <span className="client-one-title-bar" aria-hidden="true" />
-              <h1 className="client-one-main-title">Client One</h1>
-              <div className="client-one-selector-pill" title="Selected client">
-                <span>{client.name || 'Sun Pharma Laboratories Ltd.'}</span>
-                <ChevronDown size={14} className="client-one-chevron" aria-hidden="true" />
-              </div>
-              <div className="client-one-context-pills" aria-label="Programme context">
-                <span className="client-one-badge-pill">{client.programName || 'MOM'}</span>
-                <span className="client-one-badge-pill">{client.campName || 'Dietician'}</span>
-                {isPreview ? (
-                  <span className="client-one-badge-pill client-one-badge-pill--preview">Preview</span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="client-one-topbar-right">
-            <div className="client-one-search-wrap">
-              <Search size={14} className="client-one-search-icon" aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="client-one-search-input"
-                aria-label="Search"
+    <div
+      className={[
+        'client-one',
+        'client-one--app',
+        isPreview ? 'client-one--preview' : '',
+        tab === 'dashboard' ? 'client-one--overview' : '',
+        sidebarCollapsed ? 'client-one--sidebar-collapsed' : '',
+      ].filter(Boolean).join(' ')}
+    >
+      <div className="client-one-layout">
+        <aside className="client-one-sidebar" aria-label="Client One navigation">
+          <div className="client-one-sidebar__brand">
+            {showBrandImage ? (
+              <img
+                className="client-one-sidebar__logo"
+                src={brandImageUrl}
+                alt=""
+                width={36}
+                height={36}
+                onError={() => setBrandImageFailed(true)}
               />
-            </div>
-
-            <button
-              type="button"
-              className="client-one-bell-btn"
-              title="Notifications"
-              aria-label="Notifications"
-            >
-              <Bell size={16} />
-              <span className="client-one-bell-dot" aria-hidden="true" />
-            </button>
-
-            <div className="client-one-date-selector-wrap">
-              <button
-                type="button"
-                className="client-one-date-pill-btn"
-                onClick={() => setDatePickerOpen((v) => !v)}
-                aria-expanded={datePickerOpen}
-                title="Change date filter"
-              >
-                <Calendar size={14} className="client-one-date-icon" aria-hidden="true" />
-                <span className="client-one-date-text">
-                  {formatDisplayDate(range.from)} – {formatDisplayDate(range.to)}
-                </span>
-                <ChevronDown size={13} className="client-one-date-chevron" aria-hidden="true" />
-              </button>
-
-              {datePickerOpen ? (
-                <div className="client-one-date-popover">
-                  <div className="client-one-popover-head">
-                    <span className="client-one-popover-title">Filter by Date Range</span>
-                    <button
-                      type="button"
-                      className="client-one-popover-close"
-                      onClick={() => setDatePickerOpen(false)}
-                      aria-label="Close"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <RangeToolbar
-                    range={range}
-                    setRange={setRange}
-                    trailing={
-                      <Button
-                        type="button"
-                        size="compact"
-                        onClick={() => setDatePickerOpen(false)}
-                      >
-                        Apply
-                      </Button>
-                    }
-                  />
-                </div>
+            ) : (
+              <span className="client-one-sidebar__logo-fallback" aria-hidden="true">
+                {brandTitle.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <div className="client-one-sidebar__brand-text">
+              <div className="client-one-sidebar__title-line">
+                <h1 className="client-one-sidebar__name">{brandTitle}</h1>
+                {isPreview ? <span className="client-one-brand__chip">Preview</span> : null}
+              </div>
+              {brandMethod ? (
+                <p className="client-one-sidebar__meta" title="Method">{brandMethod}</p>
               ) : null}
             </div>
-
-            {!isPreview ? (
-              <div className="page-actions client-one-account-actions">
-                <Button type="button" variant="ghost" size="compact" onClick={sharePortalLink}>
-                  {copied === 'link' ? 'Link copied' : 'Share link'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="compact"
-                  onClick={() => { setPinEditorOpen((v) => !v); setPinMessage(''); }}
-                >
-                  Update PIN
-                </Button>
-                <Button type="button" variant="ghost" size="compact" onClick={signOut}>
-                  Sign out
-                </Button>
-              </div>
-            ) : null}
           </div>
-        </header>
 
+          <nav className="client-one-sidebar__nav" aria-label="Client One sections">
+            {navItems.map((item) => {
+              const NavIcon = NAV_ICONS[item.id] || LayoutDashboard;
+              const active = tab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`client-one-sidebar__link${active ? ' is-active' : ''}`}
+                  aria-current={active ? 'page' : undefined}
+                  title={item.label}
+                  onClick={() => setTab(item.id)}
+                >
+                  <NavIcon size={16} strokeWidth={1.75} className="client-one-sidebar__icon" aria-hidden="true" />
+                  <span className="client-one-sidebar__label">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="client-one-sidebar__footer">
+            <div className="client-one-sidebar__programme">
+              <span className="client-one-sidebar__programme-name">
+                {brandMethod ? `${brandMethod} Programme` : 'Client One'}
+              </span>
+              <span className="client-one-sidebar__live">
+                <span className="client-one-sidebar__live-dot" aria-hidden="true" />
+                Live
+              </span>
+            </div>
+            <button
+              type="button"
+              className="client-one-sidebar__collapse"
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              aria-pressed={sidebarCollapsed}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+              <span className="client-one-sidebar__label">
+                {sidebarCollapsed ? 'Expand' : 'Collapse'}
+              </span>
+            </button>
+          </div>
+        </aside>
+
+        <div className="client-one-workspace">
+          {isPreview ? (
+            <div className="client-one-preview-banner" role="status">
+              <div>
+                <strong>Internal preview</strong>
+                <span> Staff session — not the external client PIN portal.</span>
+              </div>
+              <Button type="button" variant="secondary" size="compact" onClick={signOut}>
+                Exit preview
+              </Button>
+            </div>
+          ) : null}
+
+          <header className="client-one-workspace__topbar">
+            <div className="client-one-workspace__topbar-note">
+              {isPreview ? 'Internal staff preview' : 'Client portal'}
+            </div>
+            <div className="client-one-header__utility">
+              {!isPreview ? (
+                <div className="client-one-manage-portal" ref={managePortalRef}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="compact"
+                    aria-haspopup="menu"
+                    aria-expanded={managePortalOpen}
+                    onClick={() => setManagePortalOpen((open) => !open)}
+                  >
+                    <Settings2 size={14} aria-hidden="true" />
+                    Manage Portal
+                    <ChevronDown size={13} aria-hidden="true" />
+                  </Button>
+                  {managePortalOpen ? (
+                    <div className="client-one-manage-portal__menu" role="menu" aria-label="Manage Portal">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="client-one-manage-portal__item"
+                        onClick={() => {
+                          sharePortalLink();
+                          setManagePortalOpen(false);
+                        }}
+                      >
+                        <Link2 size={14} aria-hidden="true" />
+                        {copied === 'link' ? 'Link copied' : 'Share Link'}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="client-one-manage-portal__item"
+                        onClick={() => {
+                          setPinEditorOpen(true);
+                          setPinMessage('');
+                          setManagePortalOpen(false);
+                        }}
+                      >
+                        <Pencil size={14} aria-hidden="true" />
+                        Update PIN
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              <Button type="button" variant="secondary" size="compact" onClick={signOut}>
+                <LogOut size={14} aria-hidden="true" />
+                {isPreview ? 'Exit preview' : 'Sign out'}
+              </Button>
+            </div>
+          </header>
+
+          {tab !== 'dashboard' ? (
+            <div className="client-one-workspace__toolbar">
+              {dateControls}
+            </div>
+          ) : null}
+
+          <div className="client-one-workspace__body">
         {!isPreview && pinEditorOpen ? (
           <section className="client-one-card client-one-pin-editor" aria-label="Update Client One PIN">
             <div className="client-one-panel-head">
@@ -539,36 +651,33 @@ export default function ClientOneApp({
             </div>
             <p className="meta-text">Enter your current 6-digit PIN, then choose a new one. The new PIN is shown once after save.</p>
             <form className="client-one-pin-editor-form" onSubmit={submitPinUpdate}>
-              <label>
-                <span>Current PIN</span>
-                <input
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={currentPinInput}
-                  onChange={(e) => setCurrentPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
-                  aria-label="Current PIN"
-                />
-              </label>
-              <label>
-                <span>New PIN</span>
-                <input
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={newPinInput}
-                  onChange={(e) => setNewPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
-                  aria-label="New PIN"
-                />
-              </label>
-              <label>
-                <span>Confirm new PIN</span>
-                <input
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={confirmPinInput}
-                  onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
-                  aria-label="Confirm new PIN"
-                />
-              </label>
+              <Input
+                label="Current PIN"
+                inputMode="numeric"
+                maxLength={6}
+                value={currentPinInput}
+                onChange={(e) => setCurrentPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                autoComplete="current-password"
+                required
+              />
+              <Input
+                label="New PIN"
+                inputMode="numeric"
+                maxLength={6}
+                value={newPinInput}
+                onChange={(e) => setNewPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                autoComplete="new-password"
+                required
+              />
+              <Input
+                label="Confirm new PIN"
+                inputMode="numeric"
+                maxLength={6}
+                value={confirmPinInput}
+                onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                autoComplete="new-password"
+                required
+              />
               <div className="client-one-pin-actions">
                 <Button type="submit" disabled={pinBusy}>
                   {pinBusy ? 'Saving…' : 'Save PIN'}
@@ -592,49 +701,99 @@ export default function ClientOneApp({
           </section>
         ) : null}
 
-        <nav className="client-one-nav" aria-label="Client One sections">
-          <div className="client-one-nav__links">
-            {navItems.map((item) => {
-              const NavIcon = NAV_ICONS[item.id] || LayoutDashboard;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`client-one-nav__link${tab === item.id ? ' is-active' : ''}`}
-                  aria-current={tab === item.id ? 'page' : undefined}
-                  onClick={() => setTab(item.id)}
-                >
-                  <NavIcon size={16} className="client-one-nav__icon" aria-hidden="true" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
         {error ? <p className="error-text">{error}</p> : null}
 
         {tab === 'dashboard' ? (
-          <section className={`client-one-dashboard-wrap${busy ? ' is-loading' : ''}`} aria-busy={busy}>
-            <h2 className="client-one-section-title sr-only">Dashboard</h2>
-            <ClientOneHeroKpis
-              kpis={kpis}
-              focus={dashFocus}
-              onFocusChange={setDashFocus}
-            />
-            <ClientOneDashboardCharts
-              charts={dashboard?.charts || {}}
-              leaderboards={dashboard?.leaderboards || {}}
-              focus={dashFocus}
-            />
+          <section
+            className={`client-one-dashboard-wrap${busy ? ' is-loading' : ''}`}
+            aria-busy={busy}
+          >
+            {drillDown ? (
+              <>
+                <ClientOneDrillDownView
+                  drillDown={drillDown}
+                  camps={camps}
+                  range={range}
+                  client={client}
+                  onBack={() => {
+                    setDrillDown(null);
+                    setSelectedId('');
+                    setDetail(null);
+                  }}
+                  onSelectCamp={(id) => setSelectedId(id)}
+                  selectedCampId={selectedId}
+                />
+                {detail ? (
+                  <div className="client-one-detail">
+                    <div className="client-one-detail__head">
+                      <h3>{detail.campId || 'Camp detail'}</h3>
+                      <button
+                        type="button"
+                        className="btn secondary btn-compact"
+                        onClick={() => {
+                          setSelectedId('');
+                          setDetail(null);
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <dl className="client-one-facts">
+                      <div><dt>Status</dt><dd>{formatStatus(detail.status)}</dd></div>
+                      <div><dt>Schedule</dt><dd>{[detail.campDate, detail.startTime, detail.endTime].filter(Boolean).join(' · ') || '—'}</dd></div>
+                      <div><dt>Assignment</dt><dd>{formatStatus(detail.assignmentStatus)}</dd></div>
+                      <div><dt>Execution</dt><dd>{formatStatus(detail.executionStatus || detail.effectiveExecutionStatus)}</dd></div>
+                      <div><dt>HCW</dt><dd>{detail.hcwName || 'Unassigned'}{detail.hcwContact ? ` · ${detail.hcwContact}` : ''}</dd></div>
+                      <div><dt>Category</dt><dd>{detail.hcwCategory || '—'}</dd></div>
+                      <div><dt>Address</dt><dd>{detail.campAddress || [detail.city, detail.state, detail.pincode].filter(Boolean).join(', ') || '—'}</dd></div>
+                      <div><dt>In / Out</dt><dd>{[detail.inTime, detail.outTime].filter(Boolean).join(' → ') || '—'}</dd></div>
+                      <div><dt>Chargeable</dt><dd>{formatStatus(detail.chargeableStatus)}</dd></div>
+                      <div><dt>Punctuality</dt><dd>{formatStatus(detail.punctuality)}</dd></div>
+                      <div><dt>Attire</dt><dd>{formatStatus(detail.attire)}</dd></div>
+                      <div><dt>Patients</dt><dd>{detail.actualPatients ?? '—'}</dd></div>
+                    </dl>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <header className="c1-overview-head">
+                  <div className="c1-overview-head__titles">
+                    <span className="c1-overview-head__eyebrow">OPERATIONS</span>
+                    <h2 className="c1-overview-head__title">Operations Dashboard</h2>
+                    <p className="c1-overview-head__subtitle">
+                      Health Camp Operations · {brandMethod ? `${brandMethod} Programme` : 'BMD Programme'}
+                    </p>
+                  </div>
+                  {dateControls}
+                </header>
+                <ClientOneHeroKpis
+                  kpis={kpis}
+                  focus={dashFocus}
+                  onFocusChange={setDashFocus}
+                  onDrillDown={(payload) => {
+                    setDrillDown(payload);
+                    ensureCampsLoaded();
+                  }}
+                />
+                <ClientOneDashboardCharts
+                  charts={dashboard?.charts || {}}
+                  leaderboards={dashboard?.leaderboards || {}}
+                  focus={dashFocus}
+                  onDrillDown={(payload) => {
+                    setDrillDown(payload);
+                    ensureCampsLoaded();
+                  }}
+                />
+              </>
+            )}
           </section>
         ) : null}
 
         {tab === 'tracker' ? (
           <section className="client-one-card" aria-busy={busy}>
             <div className="client-one-panel-head">
-              <h2 className="client-one-section-title">Camp tracker</h2>
-              <RangeToolbar range={range} setRange={setRange} />
+              <h2 className="client-one-section-title">Camp Register</h2>
             </div>
             <div className="table-wrap">
               <table className="client-one-table">
@@ -706,7 +865,6 @@ export default function ClientOneApp({
 
         {tab === 'hcw' ? (
           <section className="client-one-card" aria-busy={busy}>
-            <RangeToolbar range={range} setRange={setRange} />
             <div className="table-wrap">
               <table className="client-one-table">
                 <thead>
@@ -789,7 +947,7 @@ export default function ClientOneApp({
         {tab === 'invoices' ? (
           <section className="client-one-card" aria-busy={busy}>
             <div className="client-one-panel-head">
-              <h2 className="client-one-section-title">Bills & invoices</h2>
+              <h2 className="client-one-section-title">Incoming Docs</h2>
             </div>
             <div className="table-wrap">
               <table className="client-one-table">
@@ -872,21 +1030,15 @@ export default function ClientOneApp({
         {tab === 'mis' ? (
           <section className="client-one-card" aria-busy={busy}>
             <div className="client-one-panel-head">
-              <h2 className="client-one-section-title">MIS reports</h2>
-              <RangeToolbar
-                range={range}
-                setRange={setRange}
-                trailing={(
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="compact"
-                    onClick={() => clientOneApi.exportMis(range).catch((err) => setError(err.message))}
-                  >
-                    Download CSV
-                  </Button>
-                )}
-              />
+              <h2 className="client-one-section-title">Reports & Analytics</h2>
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={() => clientOneApi.exportMis(range).catch((err) => setError(err.message))}
+              >
+                Download CSV
+              </Button>
             </div>
             <div className="client-one-kpis client-one-kpis--four" role="list">
               {[
@@ -908,7 +1060,7 @@ export default function ClientOneApp({
         {tab === 'request-link' ? (
           <section className="client-one-card" aria-busy={busy}>
             <div className="client-one-panel-head">
-              <h2 className="client-one-section-title">Camp request</h2>
+              <h2 className="client-one-section-title">User Base</h2>
             </div>
             <p className="meta-text">
               Share this link so authorised users can submit camp requests for
@@ -937,7 +1089,7 @@ export default function ClientOneApp({
         {tab === 'purchase-orders' ? (
           <section className="client-one-card" aria-busy={busy}>
             <div className="client-one-panel-head">
-              <h2 className="client-one-section-title">Purchase orders</h2>
+              <h2 className="client-one-section-title">Outgoing Docs</h2>
               <div className="client-one-toolbar">
                 <label className="client-one-upload">
                   <span>Upload PO</span>
@@ -1005,6 +1157,8 @@ export default function ClientOneApp({
             </div>
           </section>
         ) : null}
+          </div>
+        </div>
       </div>
 
       <ConfirmDialog

@@ -5,14 +5,13 @@ import {
   Calendar,
   Clock,
   Layers,
-  MapPin,
   Stethoscope,
   Tent,
   Timer,
-  TrendingUp,
   Users,
   XCircle,
 } from 'lucide-react';
+import { CANCELLED_BY_TYLO_REASON_LABELS } from '../camps/constants/campClosure';
 
 const CARD_CONFIGS = {
   requestTimeline: {
@@ -30,33 +29,27 @@ const CARD_CONFIGS = {
       '< 5 Days': '< 5 Days',
     },
     colors: {
-      '≥ 5 Days': '#2563EB', // Vibrant Blue
-      '< 5 Days': '#60A5FA', // Sky Blue
+      '≥ 5 Days': '#2563EB',
+      '< 5 Days': '#60A5FA',
     },
   },
   extraHours: {
     title: 'Execution Duration',
     subtitle: 'Camp execution by total hours',
     icon: Clock,
-    ensureLabels: ['≤ 4 Hours', '4 – 8 Hours', '> 8 Hours'],
+    ensureLabels: ['Within 4 hours', 'More than 4 hours'],
     labelMap: {
-      'Within 4 hours': '≤ 4 Hours',
-      'within 4 hours': '≤ 4 Hours',
-      '≤ 4 Hours': '≤ 4 Hours',
-      '<= 4 Hours': '≤ 4 Hours',
-      'More than 4 hours': '4 – 8 Hours',
-      'more than 4 hours': '4 – 8 Hours',
-      '4 – 8 Hours': '4 – 8 Hours',
-      '4 - 8 Hours': '4 – 8 Hours',
-      '4-8 Hours': '4 – 8 Hours',
-      '> 8 Hours': '> 8 Hours',
-      'More than 8 hours': '> 8 Hours',
-      'more than 8 hours': '> 8 Hours',
+      'Within 4 hours': 'Within 4 hours',
+      'within 4 hours': 'Within 4 hours',
+      '≤ 4 Hours': 'Within 4 hours',
+      '<= 4 Hours': 'Within 4 hours',
+      'More than 4 hours': 'More than 4 hours',
+      'more than 4 hours': 'More than 4 hours',
+      'Beyond 4 Hours': 'More than 4 hours',
     },
     colors: {
-      '≤ 4 Hours': '#0D9488',   // Deep Teal
-      '4 – 8 Hours': '#2DD4BF', // Mint / Aqua
-      '> 8 Hours': '#94A3B8',   // Slate
+      'Within 4 hours': 'var(--accent-primary, #2563EB)',
+      'More than 4 hours': 'var(--text-muted, #94A3B8)',
     },
   },
   finalBilling: {
@@ -71,9 +64,9 @@ const CARD_CONFIGS = {
       'Non Chargeable': 'Non-Chargeable',
     },
     colors: {
-      Chargeable: '#0F766E',       // Dark Teal
-      Planned: '#06B6D4',          // Cyan
-      'Non-Chargeable': '#94A3B8', // Slate Grey
+      Chargeable: '#0F766E',
+      Planned: '#06B6D4',
+      'Non-Chargeable': '#94A3B8',
     },
   },
   executedClinics: {
@@ -88,10 +81,10 @@ const CARD_CONFIGS = {
       'Cancelled by Tylo': 'Cancelled by Tylo',
     },
     colors: {
-      Executed: '#2563EB',              // Blue
-      Planned: '#38BDF8',               // Sky Blue
-      'Cancelled by Client': '#64748B', // Grey-Blue
-      'Cancelled by Tylo': '#CBD5E1',   // Light Grey
+      Executed: '#2563EB',
+      Planned: '#38BDF8',
+      'Cancelled by Client': '#64748B',
+      'Cancelled by Tylo': '#CBD5E1',
     },
   },
   punctuality: {
@@ -107,37 +100,46 @@ const CARD_CONFIGS = {
       Cancelled: 'Cancelled',
     },
     colors: {
-      Good: '#10B981',      // Emerald Green
-      Pending: '#6EE7B7',   // Mint / Sage
-      Average: '#F59E0B',   // Soft Amber
-      Poor: '#94A3B8',      // Neutral Slate
-      Cancelled: '#CBD5E1', // Soft Grey
+      Good: '#10B981',
+      Pending: '#6EE7B7',
+      Average: '#F59E0B',
+      Poor: '#94A3B8',
+      Cancelled: '#CBD5E1',
     },
   },
   tyloCancellation: {
     title: 'Tylo Cancellation Reasons',
     subtitle: 'Reasons for camps cancelled by Tylo',
     icon: XCircle,
-    ensureLabels: [
-      'HCW Unavailability',
-      'Equipment Issue',
-      'Logistics Delay',
-      'Location Issue',
-      'Other Reason',
-    ],
+    ensureLabels: [...CANCELLED_BY_TYLO_REASON_LABELS],
+    strictLabels: true,
     labelMap: {
-      'HCW Unavailability': 'HCW Unavailability',
-      'Equipment Issue': 'Equipment Issue',
-      'Logistics Delay': 'Logistics Delay',
-      'Location Issue': 'Location Issue',
-      'Other Reason': 'Other Reason',
+      ...Object.fromEntries(
+        CANCELLED_BY_TYLO_REASON_LABELS.map((label) => [label, label]),
+      ),
+      'HCW Unavailability': 'Resource Issue',
+      'HCW Backout': 'Resource Issue',
+      Punctuality: 'Operational Issue',
+      'Compliance & Knowledge': 'Operational Issue',
+      'Grooming Issue': 'Operational Issue',
+      'Device Failure': 'Device & Inventory',
+      'Inventory Shortage': 'Device & Inventory',
+      'Missing Consumables': 'Device & Inventory',
+      'Equipment Issue': 'Device & Inventory',
+      'Adverse Weather': 'External Factors',
+      'Force Majeure': 'External Factors',
+      'Other (Mandatory Remarks)': 'Other',
+      'Other Reason': 'Other',
+      'Logistics Delay': 'Other',
+      'Location Issue': 'Other',
+      Unspecified: 'Other',
     },
     colors: {
-      'HCW Unavailability': '#475569', // Slate Navy
-      'Equipment Issue': '#64748B',    // Slate
-      'Logistics Delay': '#94A3B8',    // Muted Grey
-      'Location Issue': '#CBD5E1',     // Light Grey
-      'Other Reason': '#E2E8F0',       // Soft Grey
+      'Resource Issue': '#475569',
+      'Operational Issue': '#64748B',
+      'Device & Inventory': '#94A3B8',
+      'External Factors': '#CBD5E1',
+      Other: '#E2E8F0',
     },
   },
 };
@@ -173,19 +175,24 @@ function normalizeSlices(chartKey, slices = []) {
   const labelMap = config.labelMap || {};
   const ensureLabels = config.ensureLabels || [];
   const colorMap = config.colors || {};
+  const strictLabels = Boolean(config.strictLabels);
+  const fallbackOther = ensureLabels.includes('Other')
+    ? 'Other'
+    : (ensureLabels[ensureLabels.length - 1] || '');
 
-  // Group incoming values by mapped label
   const valueMap = new Map();
   for (const item of slices) {
     if (!item) continue;
     const rawLabel = String(item.label || '').trim();
-    const mapped = labelMap[rawLabel] || rawLabel;
+    let mapped = labelMap[rawLabel] || rawLabel;
+    if (strictLabels && ensureLabels.length > 0 && mapped && !ensureLabels.includes(mapped)) {
+      mapped = fallbackOther;
+    }
     if (!mapped) continue;
     const val = Number(item.value) || 0;
     valueMap.set(mapped, (valueMap.get(mapped) || 0) + val);
   }
 
-  // Calculate total count
   let total = 0;
   for (const v of valueMap.values()) {
     total += v;
@@ -208,24 +215,24 @@ function normalizeSlices(chartKey, slices = []) {
       });
     }
 
-    // Also include any extra labels that were provided in data
-    let extraIdx = ensureLabels.length;
-    for (const [label, val] of valueMap.entries()) {
-      if (!seenLabels.has(label) && val > 0) {
-        seenLabels.add(label);
-        const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-        const color = colorMap[label] || DEFAULT_FALLBACK_COLORS[extraIdx % DEFAULT_FALLBACK_COLORS.length];
-        extraIdx += 1;
-        rows.push({
-          label,
-          value: val,
-          pct,
-          color,
-        });
+    if (!strictLabels) {
+      let extraIdx = ensureLabels.length;
+      for (const [label, val] of valueMap.entries()) {
+        if (!seenLabels.has(label) && val > 0) {
+          seenLabels.add(label);
+          const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+          const color = colorMap[label] || DEFAULT_FALLBACK_COLORS[extraIdx % DEFAULT_FALLBACK_COLORS.length];
+          extraIdx += 1;
+          rows.push({
+            label,
+            value: val,
+            pct,
+            color,
+          });
+        }
       }
     }
   } else {
-    // Standard filtered rows
     let idx = 0;
     for (const [label, val] of valueMap.entries()) {
       if (val > 0) {
@@ -252,10 +259,11 @@ export function DonutChart({
   rows = [],
   total = 0,
   unit = 'Camps',
-  size = 116,
-  strokeWidth = 15,
+  size = 88,
+  strokeWidth = 12,
   selectedLabel = '',
   onSelectLabel,
+  onDrillDown,
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -277,7 +285,11 @@ export function DonutChart({
   });
 
   return (
-    <div className="c1-donut-chart" style={{ width: size, height: size }}>
+    <div
+      className="c1-donut-chart"
+      style={{ width: size, height: size, cursor: onDrillDown ? 'pointer' : 'default' }}
+      title={onDrillDown ? 'Click to drill down into records' : undefined}
+    >
       <svg
         width={size}
         height={size}
@@ -285,13 +297,12 @@ export function DonutChart({
         className="c1-donut-svg"
         aria-hidden="true"
       >
-        {/* Track circle */}
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke="#E2E8F0"
+          stroke="var(--border-default, #D4DDE8)"
           strokeWidth={strokeWidth}
         />
 
@@ -304,12 +315,16 @@ export function DonutChart({
             stroke={arcs[0].color}
             strokeWidth={strokeWidth}
             className={`c1-donut-slice${selectedLabel === arcs[0].label ? ' is-selected' : ''}`}
-            onClick={() => onSelectLabel?.(arcs[0].label)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectLabel?.(arcs[0].label);
+              onDrillDown?.(arcs[0].label);
+            }}
           />
         ) : (
           <g transform={`rotate(-90 ${center} ${center})`}>
             {arcs.map((arc) => {
-              const gap = 2;
+              const gap = 1.5;
               const visualArc = Math.max(0, arc.arcLength - gap);
               const isSelected = selectedLabel === arc.label;
               const isMuted = selectedLabel && !isSelected;
@@ -321,18 +336,34 @@ export function DonutChart({
                   r={radius}
                   fill="none"
                   stroke={arc.color}
-                  strokeWidth={isSelected ? strokeWidth + 2 : strokeWidth}
+                  strokeWidth={isSelected ? strokeWidth + 1.5 : strokeWidth}
                   strokeDasharray={`${visualArc} ${circumference - visualArc}`}
                   strokeDashoffset={-arc.offset}
                   className={`c1-donut-slice${isSelected ? ' is-selected' : ''}${isMuted ? ' is-muted' : ''}`}
-                  onClick={() => onSelectLabel?.(arc.label)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectLabel?.(arc.label);
+                    onDrillDown?.(arc.label);
+                  }}
                 />
               );
             })}
           </g>
         )}
       </svg>
-      <div className="c1-donut-center">
+      <div
+        className="c1-donut-center"
+        onClick={() => onDrillDown?.('All')}
+        role={onDrillDown ? 'button' : undefined}
+        tabIndex={onDrillDown ? 0 : undefined}
+        aria-label={onDrillDown ? `Drill down into ${total} ${unit}` : undefined}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onDrillDown?.('All');
+          }
+        }}
+      >
         <span className="c1-donut-count">{formatCount(total)}</span>
         <span className="c1-donut-unit">{total === 1 ? 'Camp' : unit}</span>
       </div>
@@ -345,6 +376,7 @@ export function ClientOneMetricPanel({
   title: customTitle,
   slices = [],
   emptyText = 'No data',
+  onDrillDown,
 }) {
   const config = CARD_CONFIGS[chartKey] || {};
   const title = customTitle || config.title || 'Analysis';
@@ -362,19 +394,34 @@ export function ClientOneMetricPanel({
     setSelectedLabel('');
   }, [slices]);
 
+  const handleDrillDown = (lbl) => {
+    onDrillDown?.({
+      source: 'chart',
+      key: chartKey,
+      label: lbl || 'All',
+      title: lbl && lbl !== 'All' ? `${title}: ${lbl}` : `${title}`,
+      subtitle,
+    });
+  };
+
   return (
     <article className="c1-kpi-card" data-chart={chartKey} aria-labelledby={headingId}>
-      <header className="c1-kpi-card__head">
+      <header
+        className="c1-kpi-card__head"
+        onClick={() => onDrillDown && handleDrillDown('All')}
+        style={{ cursor: onDrillDown ? 'pointer' : 'default' }}
+        title={onDrillDown ? `Click to drill down into all ${title} records` : undefined}
+      >
         <div className="c1-kpi-card__title-wrap">
           <div className="c1-kpi-card__icon" aria-hidden="true">
-            <IconComponent size={18} />
+            <IconComponent size={14} strokeWidth={1.75} />
           </div>
           <div className="c1-kpi-card__text">
             <h3 className="c1-kpi-card__title" id={headingId}>{title}</h3>
             {subtitle ? <p className="c1-kpi-card__sub">{subtitle}</p> : null}
           </div>
         </div>
-        <span className="c1-kpi-card__total" title={`Total: ${formatCount(total)}`}>
+        <span className="c1-kpi-card__total" title={`Total: ${formatCount(total)} (Click to drill down)`}>
           {formatCount(total)}
         </span>
       </header>
@@ -388,6 +435,7 @@ export function ClientOneMetricPanel({
             total={total}
             selectedLabel={selectedLabel}
             onSelectLabel={(lbl) => setSelectedLabel((prev) => (prev === lbl ? '' : lbl))}
+            onDrillDown={onDrillDown ? (lbl) => handleDrillDown(lbl) : undefined}
           />
 
           <ul className="c1-legend-list" aria-label={`${title} breakdown`}>
@@ -399,8 +447,12 @@ export function ClientOneMetricPanel({
                   <button
                     type="button"
                     className={`c1-legend-btn${selected ? ' is-selected' : ''}${muted ? ' is-muted' : ''}`}
-                    onClick={() => setSelectedLabel((prev) => (prev === row.label ? '' : row.label))}
+                    onClick={() => {
+                      setSelectedLabel((prev) => (prev === row.label ? '' : row.label));
+                      handleDrillDown(row.label);
+                    }}
                     aria-pressed={selected}
+                    title={`Click to drill down into ${row.label} records`}
                   >
                     <span className="c1-legend-left">
                       <span
@@ -425,27 +477,12 @@ export function ClientOneMetricPanel({
   );
 }
 
-function SparklineWave({ color = '#60A5FA' }) {
-  return (
-    <svg
-      viewBox="0 0 100 36"
-      className="c1-hero-sparkline"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M 2 28 C 22 28, 30 14, 48 20 C 66 26, 75 10, 98 8"
-        fill="none"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-export function ClientOneHeroKpis({ kpis = {}, focus = 'camps', onFocusChange }) {
+export function ClientOneHeroKpis({
+  kpis = {},
+  focus = 'camps',
+  onFocusChange,
+  onDrillDown,
+}) {
   const campCount = Number(kpis.campCount ?? kpis.total ?? 0);
   const executed = Number(kpis.executed ?? 0);
   const pending = Number(kpis.pending ?? 0);
@@ -458,36 +495,31 @@ export function ClientOneHeroKpis({ kpis = {}, focus = 'camps', onFocusChange })
   const cards = [
     {
       key: 'camps',
-      label: 'Camp Count',
+      label: 'Total Camps',
       value: campCount,
       icon: Tent,
-      iconBg: '#EFF6FF',
-      iconColor: '#2563EB',
-      trend: '+12%',
-      sparkColor: '#60A5FA',
-      subtitle: `${executed} Executed · ${pending} Planned · ${cancelled} Cancelled`,
+      tone: 'camps',
+      chips: [
+        { label: 'Executed', value: executed, tone: 'executed' },
+        { label: 'Planned', value: pending, tone: 'planned' },
+        { label: 'Cancelled', value: cancelled, tone: 'cancelled' },
+      ],
     },
     {
       key: 'patients',
       label: 'Patients Screened',
       value: patientsScreened,
       icon: Users,
-      iconBg: '#ECFDF5',
-      iconColor: '#0D9488',
-      trend: '+18%',
-      sparkColor: '#34D399',
+      tone: 'patients',
       subtitle: `${avgPatientsPerCamp} Avg / Camp`,
     },
     {
       key: 'doctors',
-      label: 'Unique Doctor',
+      label: 'Unique Doctors',
       value: uniqueDoctors,
       icon: Stethoscope,
-      iconBg: '#EFF6FF',
-      iconColor: '#2563EB',
-      trend: '+8%',
-      sparkColor: '#60A5FA',
-      subtitle: 'Active Specialist Reach',
+      tone: 'doctors',
+      subtitle: 'Active specialist reach',
     },
   ];
 
@@ -502,34 +534,61 @@ export function ClientOneHeroKpis({ kpis = {}, focus = 'camps', onFocusChange })
             type="button"
             role="listitem"
             className={`c1-hero-card${active ? ' is-active' : ''}`}
-            onClick={() => onFocusChange?.(card.key)}
+            onClick={() => {
+              onFocusChange?.(card.key);
+              onDrillDown?.({
+                source: 'hero',
+                key: card.key,
+                label: 'All',
+                title: card.label === 'Total Camps' ? 'Camp Count' : card.label,
+                subtitle: card.subtitle || 'All camps in selected period',
+              });
+            }}
             aria-pressed={active}
+            title={`Click to drill down into ${card.label}`}
           >
             <div className="c1-hero-card__top">
               <div
-                className="c1-hero-card__icon"
-                style={{ backgroundColor: card.iconBg, color: card.iconColor }}
+                className={`c1-hero-card__icon c1-hero-card__icon--${card.tone}`}
                 aria-hidden="true"
               >
-                <Icon size={22} />
+                <Icon size={16} strokeWidth={1.75} />
               </div>
 
               <div className="c1-hero-card__metric">
                 <span className="c1-hero-card__label">{card.label}</span>
-                <div className="c1-hero-card__val-row">
-                  <strong className="c1-hero-card__val">{formatCount(card.value)}</strong>
-                  <span className="c1-hero-card__trend" aria-label={`Trend ${card.trend}`}>
-                    <span className="c1-hero-card__arrow">↑</span> {card.trend}
-                  </span>
-                </div>
-              </div>
-
-              <div className="c1-hero-card__chart-slot">
-                <SparklineWave color={card.sparkColor} />
+                <strong className="c1-hero-card__val">{formatCount(card.value)}</strong>
               </div>
             </div>
 
-            <p className="c1-hero-card__sub">{card.subtitle}</p>
+            {card.chips ? (
+              <ul className="c1-hero-card__chips" aria-label="Camp status breakdown">
+                {card.chips.map((chip) => (
+                  <li
+                    key={chip.label}
+                    className={`c1-hero-chip c1-hero-chip--${chip.tone}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFocusChange?.('camps');
+                      onDrillDown?.({
+                        source: 'hero',
+                        key: 'camps',
+                        label: chip.label,
+                        title: `Camp Count (${chip.label})`,
+                        subtitle: `${formatCount(chip.value)} ${chip.label.toLowerCase()} camps in period`,
+                      });
+                    }}
+                    title={`Click to drill down into ${chip.label} camps`}
+                  >
+                    <span className="c1-hero-chip__dot" aria-hidden="true" />
+                    <span className="c1-hero-chip__val">{formatCount(chip.value)}</span>
+                    <span className="c1-hero-chip__label">{chip.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="c1-hero-card__sub">{card.subtitle}</p>
+            )}
           </button>
         );
       })}
@@ -537,52 +596,17 @@ export function ClientOneHeroKpis({ kpis = {}, focus = 'camps', onFocusChange })
   );
 }
 
-function LeaderCard({ rank, item }) {
-  const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : 'rank-3';
-  return (
-    <article className={`c1-field-card c1-field-card--${rankClass}`}>
-      <header className="c1-field-card__head">
-        <span className="c1-field-card__rank" aria-label={`Rank ${rank}`}>{rank}</span>
-        <h4 className="c1-field-card__name" title={item.name}>{item.name}</h4>
-      </header>
-
-      <div className="c1-field-card__facts">
-        <div className="c1-field-card__fact">
-          <span className="c1-field-card__fact-label">
-            <MapPin size={12} className="c1-fact-icon" aria-hidden="true" /> State
-          </span>
-          <span className="c1-field-card__fact-val">{item.state || '—'}</span>
-        </div>
-
-        <div className="c1-field-card__fact">
-          <span className="c1-field-card__fact-label">
-            <Tent size={12} className="c1-fact-icon" aria-hidden="true" /> Camps
-          </span>
-          <span className="c1-field-card__fact-val">{formatCount(item.camps)}</span>
-        </div>
-
-        <div className="c1-field-card__fact">
-          <span className="c1-field-card__fact-label">
-            <Users size={12} className="c1-fact-icon" aria-hidden="true" /> Patients
-          </span>
-          <span className="c1-field-card__fact-val">{formatCount(item.patients)}</span>
-        </div>
-
-        <div className="c1-field-card__fact">
-          <span className="c1-field-card__fact-label">
-            <BarChart3 size={12} className="c1-fact-icon" aria-hidden="true" /> Avg / Camp
-          </span>
-          <span className="c1-field-card__fact-val">{Number(item.avgPatients || 0).toFixed(1)}</span>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-export function ClientOneLeaderboard({ doctors = [], mrs = [], focus = '' }) {
+export function ClientOneLeaderboard({
+  doctors = [],
+  mrs = [],
+  focus = '',
+  onDrillDown,
+}) {
   const [mode, setMode] = useState('mrs');
   const items = mode === 'doctors' ? doctors : mrs;
-  const label = mode === 'doctors' ? "Top DR's" : "Top MR's";
+  const nameHeader = mode === 'doctors' ? 'Doctor' : 'Medical Representative';
+  const rows = items.slice(0, 5);
+  const maxAvg = Math.max(...rows.map((item) => Number(item.avgPatients) || 0), 1);
 
   useEffect(() => {
     if (focus === 'doctors') setMode('doctors');
@@ -590,38 +614,92 @@ export function ClientOneLeaderboard({ doctors = [], mrs = [], focus = '' }) {
   }, [focus]);
 
   return (
-    <section className="c1-field-performance" aria-label="Field Performance">
+    <section className="c1-field-performance" aria-label="Top Performers">
       <div className="c1-field-performance__head">
         <div className="c1-field-performance__title-row">
-          <Users size={20} className="c1-field-title-icon" aria-hidden="true" />
-          <h3 className="c1-field-performance__title">{label}</h3>
+          <Users size={16} className="c1-field-title-icon" aria-hidden="true" />
+          <h3 className="c1-field-performance__title">Top Performers</h3>
         </div>
 
         <div className="c1-field-toggle" role="group" aria-label="Leaderboard type">
-          <button
-            type="button"
-            className={mode === 'doctors' ? 'is-active' : ''}
-            onClick={() => setMode('doctors')}
-            aria-pressed={mode === 'doctors'}
-          >
-            Top DR&apos;s
-          </button>
           <button
             type="button"
             className={mode === 'mrs' ? 'is-active' : ''}
             onClick={() => setMode('mrs')}
             aria-pressed={mode === 'mrs'}
           >
-            Top MR&apos;s
+            Top MRs
+          </button>
+          <button
+            type="button"
+            className={mode === 'doctors' ? 'is-active' : ''}
+            onClick={() => setMode('doctors')}
+            aria-pressed={mode === 'doctors'}
+          >
+            Top DRs
           </button>
         </div>
       </div>
 
-      {items.length ? (
-        <div className="c1-field-grid">
-          {items.slice(0, 3).map((item, index) => (
-            <LeaderCard key={`${mode}-${item.name}-${index}`} rank={index + 1} item={item} />
-          ))}
+      {rows.length ? (
+        <div className="c1-perf-table-wrap">
+          <table className="c1-perf-table">
+            <thead>
+              <tr>
+                <th scope="col">Rank</th>
+                <th scope="col">{nameHeader}</th>
+                <th scope="col">State</th>
+                <th scope="col">Camps</th>
+                <th scope="col">Patients</th>
+                <th scope="col">Avg / Camp</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((item, index) => {
+                const rank = index + 1;
+                const avg = Number(item.avgPatients) || 0;
+                const barPct = Math.max(6, Math.round((avg / maxAvg) * 100));
+                return (
+                  <tr
+                    key={`${mode}-${item.name}-${index}`}
+                    onClick={() =>
+                      onDrillDown?.({
+                        source: 'performer',
+                        mode,
+                        name: item.name,
+                        item,
+                        title: `${mode === 'doctors' ? 'Doctor' : 'Medical Representative'}: ${item.name}`,
+                        subtitle: `${formatCount(item.camps)} Camps · ${formatCount(item.patients)} Patients · ${item.state || '—'}`,
+                      })
+                    }
+                    className="c1-perf-row--interactive"
+                    style={{ cursor: onDrillDown ? 'pointer' : 'default' }}
+                    title={onDrillDown ? `Click to drill down into camps for ${item.name}` : undefined}
+                  >
+                    <td>
+                      <span className={`c1-perf-rank c1-perf-rank--${rank}`} aria-label={`Rank ${rank}`}>
+                        {String(rank).padStart(2, '0')}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="c1-perf-name" title={item.name}>{item.name}</span>
+                    </td>
+                    <td>{item.state || '—'}</td>
+                    <td className="c1-perf-num">{formatCount(item.camps)}</td>
+                    <td className="c1-perf-num">{formatCount(item.patients)}</td>
+                    <td>
+                      <div className="c1-perf-avg">
+                        <span className="c1-perf-num">{avg.toFixed(1)}</span>
+                        <span className="c1-perf-bar" aria-hidden="true">
+                          <span className="c1-perf-bar__fill" style={{ width: `${barPct}%` }} />
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <p className="c1-empty-state">No leaderboard data available for this date range.</p>
@@ -634,6 +712,7 @@ export function ClientOneDashboardCharts({
   charts = {},
   leaderboards = {},
   focus = 'camps',
+  onDrillDown,
 }) {
   const panels = PANEL_ORDER.map((key) => [
     key,
@@ -646,7 +725,7 @@ export function ClientOneDashboardCharts({
     <div className="c1-analytics">
       <div className="c1-section-header">
         <div className="c1-section-header__title-group">
-          <BarChart3 size={20} className="c1-section-icon" aria-hidden="true" />
+          <BarChart3 size={16} className="c1-section-icon" aria-hidden="true" />
           <h2 className="c1-section-title">Camp Operations Analysis</h2>
         </div>
       </div>
@@ -657,6 +736,7 @@ export function ClientOneDashboardCharts({
             key={key}
             chartKey={key}
             slices={chart?.slices || []}
+            onDrillDown={onDrillDown}
           />
         ))}
       </div>
@@ -665,6 +745,7 @@ export function ClientOneDashboardCharts({
         doctors={leaderboards.doctors || []}
         mrs={leaderboards.mrs || []}
         focus={focus}
+        onDrillDown={onDrillDown}
       />
     </div>
   );

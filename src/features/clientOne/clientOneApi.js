@@ -108,6 +108,7 @@ export const clientOneApi = {
       token: data.token,
       expiresAt: data.expiresAt,
       client: data.client,
+      member: data.member || data.client?.member || null,
       features: data.features || data.client?.features,
       mode: 'external',
     }, 'external');
@@ -233,5 +234,30 @@ export const clientOneApi = {
       `/client-one/purchase-orders/${encodeURIComponent(poId)}/files/${encodeURIComponent(fileId)}`,
       { method: 'DELETE' },
     ).then((r) => r.data || []);
+  },
+
+  listMembers() {
+    return authedFetch('/client-one/members').then((r) => r.data || { tree: [], members: [], capabilities: {} });
+  },
+
+  createMember(payload) {
+    return authedFetch('/client-one/members', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    }).then((r) => r.data);
+  },
+
+  updateMember(id, payload) {
+    return authedFetch(`/client-one/members/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload || {}),
+    }).then((r) => r.data);
+  },
+
+  rotateMemberPin(id) {
+    return authedFetch(`/client-one/members/${encodeURIComponent(id)}/pin/rotate`, {
+      method: 'POST',
+      body: '{}',
+    }).then((r) => r.data);
   },
 };

@@ -34,6 +34,10 @@ vi.mock('./clientOneApi.js', () => ({
     mis: (...args) => mis(...args),
     campRequestLink: (...args) => campRequestLink(...args),
     purchaseOrders: (...args) => purchaseOrders(...args),
+    listMembers: vi.fn(async () => ({ tree: [], members: [], capabilities: { canManage: true, role: 'programme', maxCreateLevel: 'ho' } })),
+    createMember: vi.fn(),
+    updateMember: vi.fn(),
+    rotateMemberPin: vi.fn(),
   },
 }));
 

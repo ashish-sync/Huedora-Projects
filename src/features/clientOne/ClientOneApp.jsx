@@ -28,6 +28,7 @@ import {
   ClientOneHeroKpis,
 } from './ClientOneDashboardCharts.jsx';
 import ClientOneDrillDownView from './ClientOneDrillDownView.jsx';
+import ClientOneUserBase from './ClientOneUserBase.jsx';
 import { DEFAULT_FEATURES, visibleNav } from './clientOneNav.js';
 import { clearClientOneSession, readClientOneSession } from './clientOneSession.js';
 import './clientOne.css';
@@ -143,12 +144,12 @@ function PinGate({ accessId, onSuccess }) {
           <div className="client-one-identity">
             <p className="section-label">Client portal</p>
             <h1>Client One</h1>
-            <p className="page-desc">Sign in with your 6-digit PIN to view authorised programme data.</p>
+            <p className="page-desc">Sign in with your 6-digit member or programme PIN to view authorised data.</p>
           </div>
         </header>
         <form className="client-one-card client-one-pin-card" onSubmit={submit} aria-label="Client One sign-in">
           <h2 className="client-one-section-title">Sign in</h2>
-          <p className="meta-text">Enter the PIN issued for this access link.</p>
+          <p className="meta-text">Enter your individual member PIN, or the shared programme PIN if still in use.</p>
           <Input
             label="PIN"
             containerClassName="client-one-pin-field"
@@ -390,6 +391,7 @@ export default function ClientOneApp({
   }, [calMonth.from, calendar]);
 
   const client = dashboard?.client || session?.client || {};
+  const sessionMember = session?.member || client?.member || null;
   const kpis = dashboard?.kpis || mis?.kpis || {};
   const brandTitle = String(client.displayName || client.name || '').trim() || 'Client One';
   // Method = Client Master → Program Configuration → Method (stored as campName).
@@ -402,12 +404,6 @@ export default function ClientOneApp({
   useEffect(() => {
     setBrandImageFailed(false);
   }, [brandImageUrl]);
-
-  const portalShareUrl = useMemo(() => {
-    const accessId = client.accessId || session?.client?.accessId || '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    return accessId ? `${origin}/o/${accessId}` : `${origin}/client-one`;
-  }, [client.accessId, session?.client?.accessId]);
 
   useEffect(() => {
     if (!session?.token || isPreview || features?.campRequestLink === false) return undefined;
@@ -719,6 +715,11 @@ export default function ClientOneApp({
               )}
               {isPreview ? (
                 <span className="client-one-brand__chip">Preview</span>
+              ) : null}
+              {sessionMember?.fullName ? (
+                <span className="client-one-brand__chip" title={sessionMember.designation || sessionMember.level}>
+                  {sessionMember.fullName}
+                </span>
               ) : null}
             </div>
             <div className="client-one-header__utility">
@@ -1135,36 +1136,7 @@ export default function ClientOneApp({
         ) : null}
 
         {tab === 'request-link' ? (
-          <section className="client-one-section-wrap">
-            <ClientOnePageHead title="User Base">
-              {dateControls}
-            </ClientOnePageHead>
-            <section className="client-one-card" aria-busy={busy}>
-              <p className="meta-text">
-                Share this portal link so authorised users can sign in to Client One for
-                {' '}
-                {client.programName || 'this programme'}
-                {client.campName ? ` · ${client.campName}` : ''}.
-              </p>
-              {portalShareUrl ? (
-                <div className="client-one-link-box">
-                  <code>{portalShareUrl}</code>
-                  <div className="client-one-pin-actions">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="compact"
-                      onClick={() => copyText('portal', portalShareUrl)}
-                    >
-                      {copied === 'portal' ? 'Copied' : 'Share link'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <EmptyState>No portal link is available yet.</EmptyState>
-              )}
-            </section>
-          </section>
+          <ClientOneUserBase dateControls={dateControls} />
         ) : null}
 
         {tab === 'purchase-orders' ? (

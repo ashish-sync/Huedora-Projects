@@ -227,4 +227,11 @@ export const clientOneApi = {
     const blob = await authedBlob(path);
     triggerDownload(blob, fileName || 'purchase-order');
   },
+
+  deletePoFile(poId, fileId) {
+    return authedFetch(
+      `/client-one/purchase-orders/${encodeURIComponent(poId)}/files/${encodeURIComponent(fileId)}`,
+      { method: 'DELETE' },
+    ).then((r) => r.data || []);
+  },
 };

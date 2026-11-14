@@ -2,9 +2,9 @@
 export const CLIENT_ONE_NAV = [
   { id: 'dashboard', label: 'Overview', feature: 'dashboard' },
   { id: 'tracker', label: 'Camp Register', feature: 'campTracker' },
-  { id: 'invoices', label: 'Incoming Docs', feature: 'invoices' },
   { id: 'mis', label: 'Reports & Analytics', feature: 'mis' },
   { id: 'request-link', label: 'User Base', feature: 'campRequestLink' },
+  { id: 'invoices', label: 'Incoming Docs', feature: 'invoices' },
   { id: 'purchase-orders', label: 'Outgoing Docs', feature: 'poUpload' },
 ];
 

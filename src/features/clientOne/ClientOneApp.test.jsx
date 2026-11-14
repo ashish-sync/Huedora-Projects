@@ -45,6 +45,11 @@ describe('ClientOneApp', () => {
     camps.mockReset();
     camp.mockReset();
     logout.mockReset();
+    campRequestLink.mockReset();
+    purchaseOrders.mockReset();
+    campRequestLink.mockResolvedValue({ url: 'http://localhost/c/TESTLINK' });
+    purchaseOrders.mockResolvedValue([]);
+    camps.mockResolvedValue({ data: [] });
   });
 
   afterEach(() => {
@@ -106,12 +111,14 @@ describe('ClientOneApp', () => {
       expect(login).toHaveBeenCalled();
       expect(screen.getByRole('button', { name: 'Overview' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Camp Register' })).toBeTruthy();
-      expect(screen.getByRole('heading', { name: /Operations (Dashboard|Overview)/i })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Operations Overview' })).toBeTruthy();
+      expect(screen.queryByText('OPERATIONS')).toBeNull();
+      expect(screen.queryByText(/Health Camp Operations/i)).toBeNull();
       expect(screen.getByText('Total Camps')).toBeTruthy();
       expect(screen.getByText('Patients Screened')).toBeTruthy();
       expect(screen.getByText('Unique Doctors')).toBeTruthy();
       expect(screen.getByText('3')).toBeTruthy();
-      expect(screen.getByText(/Acme/)).toBeTruthy();
+      expect(screen.getAllByText(/Acme/).length).toBeGreaterThan(0);
     });
   });
 
@@ -181,7 +188,9 @@ describe('ClientOneApp', () => {
     await user.click(screen.getByLabelText('Back to dashboard'));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /Operations (Dashboard|Overview)/i })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Operations Overview' })).toBeTruthy();
+      expect(screen.queryByText('OPERATIONS')).toBeNull();
+      expect(screen.queryByText(/Health Camp Operations/i)).toBeNull();
     });
   });
 });

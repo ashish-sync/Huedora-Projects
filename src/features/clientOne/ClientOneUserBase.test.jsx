@@ -472,4 +472,67 @@ describe('ClientOneUserBase', () => {
       global.FileReader = originalFileReader;
     }
   });
+
+  it('renders header, KPIs, and search toolbar with 6-column aligned structure', async () => {
+    listMembers.mockResolvedValue(mockData);
+    geoStates.mockResolvedValue([]);
+    geoCities.mockResolvedValue([]);
+
+    const mockDateControls = (
+      <div className="client-one-date-filter" data-testid="test-date-filter">
+        <label className="client-one-date-field">
+          <span className="client-one-date-field__label">From</span>
+        </label>
+        <span className="client-one-date-filter__sep">–</span>
+        <label className="client-one-date-field">
+          <span className="client-one-date-field__label">To</span>
+        </label>
+      </div>
+    );
+
+    const { container } = render(<ClientOneUserBase dateControls={mockDateControls} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'User Base' })).toBeTruthy();
+    });
+
+    // 1. Header row verification
+    const head = container.querySelector('.c1-user-base-head');
+    expect(head).toBeTruthy();
+
+    const titleBlock = head.querySelector('.c1-user-base-head__title');
+    expect(titleBlock).toBeTruthy();
+    expect(titleBlock.textContent).toContain('User Base');
+
+    const dateBlock = head.querySelector('.c1-user-base-head__date');
+    expect(dateBlock).toBeTruthy();
+    expect(dateBlock.querySelector('[data-testid="test-date-filter"]')).toBeTruthy();
+
+    const actionsBlock = head.querySelector('.c1-user-base-head__actions');
+    expect(actionsBlock).toBeTruthy();
+    expect(actionsBlock.querySelector('button:nth-child(1)')?.textContent).toContain('Import');
+    expect(actionsBlock.querySelector('button:nth-child(2)')?.textContent).toContain('Add user');
+
+    // 2. 6-column KPI row verification
+    const kpiRow = container.querySelector('.c1-org-kpis');
+    expect(kpiRow).toBeTruthy();
+    const kpiCards = kpiRow.querySelectorAll('.c1-org-kpi');
+    expect(kpiCards.length).toBe(6);
+    const kpiLabels = Array.from(kpiCards).map(
+      (c) => c.querySelector('.c1-org-kpi__label')?.textContent
+    );
+    expect(kpiLabels).toEqual(['Zonal', 'Regional', 'Area', 'Territory', 'Active', 'Inactive']);
+
+    // 3. Search and filter toolbar verification
+    const toolbar = container.querySelector('.c1-org-toolbar');
+    expect(toolbar).toBeTruthy();
+
+    const searchCol = toolbar.querySelector('.c1-org-toolbar__search');
+    expect(searchCol).toBeTruthy();
+    expect(searchCol.querySelector('input[type="search"]')).toBeTruthy();
+
+    const filterCol = toolbar.querySelector('.c1-org-toolbar__filters');
+    expect(filterCol).toBeTruthy();
+    expect(filterCol.querySelector('.c1-org-filter-select')).toBeTruthy();
+  });
 });

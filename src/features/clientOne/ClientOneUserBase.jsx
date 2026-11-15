@@ -797,37 +797,35 @@ export default function ClientOneUserBase({ dateControls }) {
   return (
     <section className="client-one-section-wrap c1-user-base-section">
       <div className="c1-page-head c1-page-head--with-actions c1-user-base-head">
-        <div className="c1-page-head__title-block">
+        <div className="c1-page-head__title-block c1-user-base-head__title">
           <h2 className="c1-page-head__title">User Base</h2>
           <p className="c1-page-head__subtitle meta-text">
             Organogram · Zonal → Regional → Area → Territory
           </p>
         </div>
 
-        <div className="c1-user-base-head__controls">
-          {dateControls ? (
-            <div className="c1-page-head__filters">
-              {dateControls}
-            </div>
-          ) : null}
-          {capabilities.canManage ? (
-            <div className="c1-page-head__actions">
-              <Button
-                type="button"
-                variant="secondary"
-                size="compact"
-                onClick={openImportModal}
-              >
-                <Upload size={14} aria-hidden="true" />
-                Import
-              </Button>
-              <Button type="button" size="compact" onClick={() => openCreate()}>
-                <Plus size={14} aria-hidden="true" />
-                Add user
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        {dateControls ? (
+          <div className="c1-page-head__filters c1-user-base-head__date">
+            {dateControls}
+          </div>
+        ) : null}
+
+        {capabilities.canManage ? (
+          <div className="c1-page-head__actions c1-user-base-head__actions">
+            <Button
+              type="button"
+              size="compact"
+              onClick={openImportModal}
+            >
+              <Upload size={14} aria-hidden="true" />
+              Import
+            </Button>
+            <Button type="button" size="compact" onClick={() => openCreate()}>
+              <Plus size={14} aria-hidden="true" />
+              Add user
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div className="c1-org-kpis" role="region" aria-label="Hierarchy overview metrics">

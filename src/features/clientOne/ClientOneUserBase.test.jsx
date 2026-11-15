@@ -198,10 +198,11 @@ describe('ClientOneUserBase', () => {
     const designationSelect = screen.getByLabelText('Designation');
     expect(designationSelect.value).toBe('Zonal');
 
-    // Default designation is Zonal -> Reporting To is disabled with "No reporting parent"
+    // Default designation is Zonal -> Reporting To is top-most hierarchy and left blank
     const reportingSelectZonal = screen.getByLabelText('Reporting To');
     expect(reportingSelectZonal.disabled).toBe(true);
-    expect(screen.getByText('No reporting parent')).toBeTruthy();
+    expect(reportingSelectZonal.value).toBe('');
+    expect(screen.queryByText('No reporting parent')).toBeNull();
 
     // Change to Regional -> Reporting To shows Zonal User
     fireEvent.change(designationSelect, { target: { value: 'Regional' } });

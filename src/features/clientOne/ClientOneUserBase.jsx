@@ -1049,7 +1049,7 @@ export default function ClientOneUserBase({ dateControls }) {
                           </span>
                         </button>
                       ) : (
-                        <span className="meta-text">No reporting parent (Top Level)</span>
+                        <span className="meta-text">—</span>
                       )}
                     </dd>
                   </div>
@@ -1380,7 +1380,7 @@ export default function ClientOneUserBase({ dateControls }) {
                       value=""
                       aria-label="Reporting To"
                     >
-                      <option value="">No reporting parent</option>
+                      <option value=""></option>
                     </select>
                   ) : (
                     <>
@@ -1685,7 +1685,7 @@ export default function ClientOneUserBase({ dateControls }) {
                                 {r.designation || '—'}
                               </span>
                             </td>
-                            <td>{r.reportingToMobile || (r.designation === 'Zonal' ? 'None (Top Level)' : '—')}</td>
+                            <td>{r.reportingToMobile || '—'}</td>
                             <td>{r.states || '—'}</td>
                             <td>{r.cities || '—'}</td>
                             <td>

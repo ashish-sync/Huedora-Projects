@@ -915,21 +915,18 @@ export default function ClientOneUserBase({ dateControls }) {
         </div>
 
         <div className="c1-org-toolbar__filters">
-          <label className="c1-org-filter-group">
-            <span className="meta-text">Designation:</span>
-            <select
-              className="tylo-select c1-org-filter-select"
-              value={levelFilter}
-              onChange={(e) => setLevelFilter(e.target.value)}
-              aria-label="Filter by designation"
-            >
-              <option value="all">All designations</option>
-              <option value="Zonal">Zonal</option>
-              <option value="Regional">Regional</option>
-              <option value="Area">Area</option>
-              <option value="Territory">Territory</option>
-            </select>
-          </label>
+          <select
+            className="tylo-select c1-org-filter-select"
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+            aria-label="Filter by designation"
+          >
+            <option value="all">All designations</option>
+            <option value="Zonal">Zonal</option>
+            <option value="Regional">Regional</option>
+            <option value="Area">Area</option>
+            <option value="Territory">Territory</option>
+          </select>
         </div>
       </div>
 

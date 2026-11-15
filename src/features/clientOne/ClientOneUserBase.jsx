@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AlertCircle,
   Building2,
   Check,
+  CheckCircle2,
   ChevronRight,
   Copy,
+  Download,
+  FileSpreadsheet,
   FolderTree,
   KeyRound,
   MapPin,
@@ -11,8 +15,10 @@ import {
   Plus,
   Search,
   ShieldCheck,
+  Upload,
   UserRound,
   Users,
+  UserX,
   X,
 } from 'lucide-react';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
@@ -46,6 +52,88 @@ export function normalizeDesignation(member) {
     return member.designation;
   }
   return LEVEL_TO_DESIGNATION[member?.level] || 'Zonal';
+}
+
+export function normalizeDesignationInput(val) {
+  const s = String(val || '').trim().toLowerCase();
+  if (s === 'zonal' || s === 'ho') return 'Zonal';
+  if (s === 'regional') return 'Regional';
+  if (s === 'area') return 'Area';
+  if (s === 'territory' || s === 'location') return 'Territory';
+  return '';
+}
+
+export function parseCsv(text) {
+  if (!text || !text.trim()) return [];
+  const lines = [];
+  let row = [''];
+  let inQuotes = false;
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        row[row.length - 1] += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push('');
+    } else if ((char === '\r' || char === '\n') && !inQuotes) {
+      if (char === '\r' && nextChar === '\n') {
+        i += 1;
+      }
+      lines.push(row);
+      row = [''];
+    } else {
+      row[row.length - 1] += char;
+    }
+    i += 1;
+  }
+  if (row.length > 1 || (row.length === 1 && row[0].trim() !== '')) {
+    lines.push(row);
+  }
+  if (lines.length < 2) return [];
+  const headers = lines[0].map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ''));
+  const rows = [];
+  for (let r = 1; r < lines.length; r += 1) {
+    const rawRow = lines[r];
+    if (rawRow.every((val) => !val || !val.trim())) continue;
+    const obj = {};
+    headers.forEach((h, colIdx) => {
+      obj[h] = (rawRow[colIdx] || '').trim();
+    });
+    const desRaw = obj.designation || obj.role || obj.tier || '';
+    const normDes = normalizeDesignationInput(desRaw);
+    const mobile = (obj.mobile || obj.mobilenumber || obj.phone || '').replace(/\D+/g, '');
+    const reportingToMobile = (
+      obj.reportingtomobile || obj.reportingto || obj.reportingmanager || obj.reportingmanagermobile || obj.manager || ''
+    ).replace(/\D+/g, '');
+    const fullName = obj.fullname || obj.name || obj.user || '';
+
+    let error = '';
+    if (!fullName) error = 'Name is required';
+    else if (!mobile || mobile.length < 10) error = 'Valid 10-digit mobile required';
+    else if (!normDes) error = 'Designation must be Zonal, Regional, Area, or Territory';
+    else if (normDes !== 'Zonal' && !reportingToMobile) {
+      error = `Reporting ${normDes === 'Regional' ? 'Zonal' : normDes === 'Area' ? 'Regional' : 'Area'} mobile required`;
+    }
+
+    rows.push({
+      _rowIndex: r,
+      fullName,
+      mobile,
+      designation: normDes || desRaw,
+      reportingToMobile,
+      states: obj.state || obj.states || obj.region || obj.regions || '',
+      cities: obj.city || obj.cities || obj.location || obj.locations || '',
+      error,
+      isValid: !error,
+    });
+  }
+  return rows;
 }
 
 function getInitials(name) {
@@ -162,6 +250,16 @@ export default function ClientOneUserBase({ dateControls }) {
   const [levelFilter, setLevelFilter] = useState('all');
   const [copiedPin, setCopiedPin] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+
+  // Bulk import states
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importRows, setImportRows] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState('');
+  const [copiedAllPins, setCopiedAllPins] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Master geography data
   const [masterStates, setMasterStates] = useState([]);
@@ -349,6 +447,102 @@ export default function ClientOneUserBase({ dateControls }) {
       ...overrides,
     }));
     setFormOpen(true);
+  };
+
+  const openImportModal = () => {
+    setImportOpen(true);
+    setImportFile(null);
+    setImportRows([]);
+    setImportResult(null);
+    setImportError('');
+    setCopiedAllPins(false);
+  };
+
+  const processCsvFile = (file) => {
+    if (!file) return;
+    setImportFile(file);
+    setImportError('');
+    setImportResult(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result || '';
+        const parsed = parseCsv(text);
+        if (!parsed.length) {
+          setImportError('No valid data rows found in CSV file. Please use the sample template.');
+          setImportRows([]);
+          return;
+        }
+        setImportRows(parsed);
+      } catch (err) {
+        setImportError(err?.message || 'Failed to parse CSV file');
+        setImportRows([]);
+      }
+    };
+    reader.onerror = () => {
+      setImportError('Error reading CSV file');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        setImportError('Please upload a .csv file');
+        return;
+      }
+      processCsvFile(file);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processCsvFile(file);
+    }
+  };
+
+  const handleImportSubmit = async () => {
+    const validRows = importRows.filter((r) => r.isValid);
+    if (!validRows.length) {
+      setImportError('No valid rows to import');
+      return;
+    }
+    setImporting(true);
+    setImportError('');
+    try {
+      const payload = validRows.map((r) => ({
+        fullName: r.fullName,
+        mobile: r.mobile,
+        designation: r.designation,
+        reportingToMobile: r.reportingToMobile || undefined,
+        states: r.states,
+        cities: r.cities,
+      }));
+      const res = await clientOneApi.importMembers(payload);
+      setImportResult(res);
+      if (res?.created?.length) {
+        await load();
+      }
+    } catch (err) {
+      setImportError(err?.message || 'Failed to import users');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const copyAllPins = () => {
+    if (!importResult?.created?.length) return;
+    const lines = importResult.created.map(
+      (m) => `${m.fullName} | ${m.mobile} | ${normalizeDesignation(m)} | PIN: ${m.pin || 'N/A'}`
+    );
+    const text = `TYLO ONE — Member Credentials\n\n${lines.join('\n')}`;
+    copyToClipboard(text);
+    setCopiedAllPins(true);
+    setTimeout(() => setCopiedAllPins(false), 2000);
   };
 
   const openEdit = (member) => {
@@ -588,13 +782,13 @@ export default function ClientOneUserBase({ dateControls }) {
   }, [tree, searchQuery, levelFilter]);
 
   const stats = useMemo(() => {
-    const total = members.length;
     const zonal = members.filter((m) => normalizeDesignation(m) === 'Zonal').length;
     const regional = members.filter((m) => normalizeDesignation(m) === 'Regional').length;
     const area = members.filter((m) => normalizeDesignation(m) === 'Area').length;
     const territory = members.filter((m) => normalizeDesignation(m) === 'Territory').length;
     const active = members.filter((m) => m.status === 'active').length;
-    return { total, zonal, regional, area, territory, active };
+    const inactive = members.filter((m) => m.status === 'inactive').length;
+    return { zonal, regional, area, territory, active, inactive };
   }, [members]);
 
   const selectedDes = selected ? normalizeDesignation(selected) : 'Zonal';
@@ -618,6 +812,15 @@ export default function ClientOneUserBase({ dateControls }) {
           ) : null}
           {capabilities.canManage ? (
             <div className="c1-page-head__actions">
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={openImportModal}
+              >
+                <Upload size={14} aria-hidden="true" />
+                Import
+              </Button>
               <Button type="button" size="compact" onClick={() => openCreate()}>
                 <Plus size={14} aria-hidden="true" />
                 Add user
@@ -629,17 +832,7 @@ export default function ClientOneUserBase({ dateControls }) {
 
       <div className="c1-org-kpis" role="region" aria-label="Hierarchy overview metrics">
         <div className="c1-org-kpi">
-          <div className="c1-org-kpi__icon c1-org-kpi__icon--total" aria-hidden="true">
-            <Users size={16} />
-          </div>
-          <div className="c1-org-kpi__body">
-            <span className="c1-org-kpi__label">Total Members</span>
-            <strong className="c1-org-kpi__value">{stats.total}</strong>
-          </div>
-        </div>
-
-        <div className="c1-org-kpi">
-          <div className="c1-org-kpi__icon c1-org-kpi__icon--ho" aria-hidden="true">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--zonal" aria-hidden="true">
             <Building2 size={16} />
           </div>
           <div className="c1-org-kpi__body">
@@ -669,7 +862,7 @@ export default function ClientOneUserBase({ dateControls }) {
         </div>
 
         <div className="c1-org-kpi">
-          <div className="c1-org-kpi__icon c1-org-kpi__icon--location" aria-hidden="true">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--territory" aria-hidden="true">
             <MapPin size={16} />
           </div>
           <div className="c1-org-kpi__body">
@@ -685,6 +878,16 @@ export default function ClientOneUserBase({ dateControls }) {
           <div className="c1-org-kpi__body">
             <span className="c1-org-kpi__label">Active</span>
             <strong className="c1-org-kpi__value">{stats.active}</strong>
+          </div>
+        </div>
+
+        <div className="c1-org-kpi">
+          <div className="c1-org-kpi__icon c1-org-kpi__icon--inactive" aria-hidden="true">
+            <UserX size={16} />
+          </div>
+          <div className="c1-org-kpi__body">
+            <span className="c1-org-kpi__label">Inactive</span>
+            <strong className="c1-org-kpi__value">{stats.inactive}</strong>
           </div>
         </div>
       </div>
@@ -1244,6 +1447,293 @@ export default function ClientOneUserBase({ dateControls }) {
             </>
           )}
         </form>
+      </ModalShell>
+
+      {/* Bulk Import Users Modal */}
+      <ModalShell
+        open={importOpen}
+        onClose={() => {
+          if (!importing) {
+            setImportOpen(false);
+            setImportResult(null);
+          }
+        }}
+        title="Import Users"
+        panelClassName="modal-card c1-org-import-modal"
+      >
+        <div className="c1-import-body">
+          {importResult ? (
+            <div className="c1-import-summary" role="status">
+              <div
+                className={`c1-import-banner ${
+                  importResult.errors?.length ? 'c1-import-banner--partial' : 'c1-import-banner--success'
+                }`}
+              >
+                {importResult.errors?.length ? (
+                  <AlertCircle size={22} className="c1-import-banner__icon" aria-hidden="true" />
+                ) : (
+                  <CheckCircle2 size={22} className="c1-import-banner__icon" aria-hidden="true" />
+                )}
+                <div className="c1-import-banner__text">
+                  <h4>
+                    {importResult.created?.length
+                      ? `Imported ${importResult.created.length} ${importResult.created.length === 1 ? 'user' : 'users'} successfully`
+                      : 'Import completed with warnings'}
+                  </h4>
+                  <p>
+                    {importResult.created?.length
+                      ? 'Secure 6-digit access PINs have been generated below. Copy or record them before closing.'
+                      : 'No new users could be created. Review the error details below.'}
+                  </p>
+                </div>
+              </div>
+
+              {importResult.errors?.length ? (
+                <div className="c1-import-errors-box" role="alert">
+                  <h5>Failed Rows ({importResult.errors.length})</h5>
+                  <ul className="c1-import-errors-list">
+                    {importResult.errors.map((err, idx) => (
+                      <li key={idx}>
+                        <strong>Row {err.row || idx + 1} ({err.name || 'Unknown'}):</strong> {err.error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {importResult.created?.length ? (
+                <div className="c1-import-credentials-box">
+                  <div className="c1-import-credentials-head">
+                    <h5 className="c1-import-credentials-title">
+                      Generated Member Credentials ({importResult.created.length})
+                    </h5>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="compact"
+                      onClick={copyAllPins}
+                    >
+                      {copiedAllPins ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                      {copiedAllPins ? 'Copied all' : 'Copy All Credentials'}
+                    </Button>
+                  </div>
+                  <div className="c1-import-preview-box">
+                    <table className="c1-import-table" aria-label="Created credentials">
+                      <thead>
+                        <tr>
+                          <th>Full Name</th>
+                          <th>Mobile</th>
+                          <th>Designation</th>
+                          <th>Access PIN</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importResult.created.map((item) => (
+                          <tr key={item.id || item.mobile}>
+                            <td><strong>{item.fullName}</strong></td>
+                            <td>{item.mobile}</td>
+                            <td>
+                              <span className={`c1-level-tag c1-level-tag--${normalizeDesignation(item).toLowerCase()}`}>
+                                {normalizeDesignation(item)}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="c1-import-pin-pill">{item.pin || '—'}</span>
+                            </td>
+                            <td>
+                              {item.pin ? (
+                                <button
+                                  type="button"
+                                  className="c1-copy-btn"
+                                  onClick={() => copyToClipboard(item.pin, `pin-${item.mobile}`)}
+                                  title="Copy PIN"
+                                  aria-label={`Copy PIN for ${item.fullName}`}
+                                >
+                                  {copiedField === `pin-${item.mobile}` ? (
+                                    <Check size={13} aria-hidden="true" />
+                                  ) : (
+                                    <Copy size={13} aria-hidden="true" />
+                                  )}
+                                </button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="c1-org-form__footer">
+                <Button
+                  type="button"
+                  size="compact"
+                  onClick={() => {
+                    setImportOpen(false);
+                    setImportResult(null);
+                  }}
+                >
+                  Done & Refresh Organogram
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="c1-import-toolbar">
+                <div className="c1-import-toolbar__info">
+                  <span className="c1-import-toolbar__title">CSV File Import</span>
+                  <span className="c1-import-toolbar__hint">
+                    Required headers: fullName, mobile, designation, reportingToMobile, state, city
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="compact"
+                  onClick={() => clientOneApi.downloadMemberImportSample()}
+                >
+                  <Download size={13} aria-hidden="true" />
+                  Download Sample CSV
+                </Button>
+              </div>
+
+              {!importFile ? (
+                <div
+                  className={`c1-import-dropzone${isDragOver ? ' is-drag-over' : ''}`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('c1-import-file-input')?.click()}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      document.getElementById('c1-import-file-input')?.click();
+                    }
+                  }}
+                  aria-label="Upload CSV file"
+                >
+                  <input
+                    id="c1-import-file-input"
+                    type="file"
+                    accept=".csv,text/csv"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  <div className="c1-import-dropzone__icon">
+                    <Upload size={20} aria-hidden="true" />
+                  </div>
+                  <p className="c1-import-dropzone__text">
+                    Drag and drop your CSV file here, or <span className="c1-link-text">browse</span>
+                  </p>
+                  <p className="c1-import-dropzone__hint">Supports .csv files up to 5 MB</p>
+                </div>
+              ) : (
+                <div className="c1-import-file-selected">
+                  <div className="c1-import-file-selected__info">
+                    <FileSpreadsheet size={20} className="c1-import-file-selected__icon" aria-hidden="true" />
+                    <div>
+                      <strong className="c1-import-file-selected__name">{importFile.name}</strong>
+                      <span className="meta-text"> · {(importFile.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => {
+                      setImportFile(null);
+                      setImportRows([]);
+                      setImportError('');
+                    }}
+                  >
+                    Change File
+                  </Button>
+                </div>
+              )}
+
+              {importError ? (
+                <p className="error-text" role="alert">{importError}</p>
+              ) : null}
+
+              {importRows.length ? (
+                <>
+                  <div className="c1-import-credentials-head">
+                    <h5 className="c1-import-credentials-title">
+                      Data Validation Preview ({importRows.filter((r) => r.isValid).length} of {importRows.length} valid)
+                    </h5>
+                  </div>
+                  <div className="c1-import-preview-box">
+                    <table className="c1-import-table" aria-label="CSV data preview">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Full Name</th>
+                          <th>Mobile</th>
+                          <th>Designation</th>
+                          <th>Reports To (Mobile)</th>
+                          <th>State(s)</th>
+                          <th>City/Cities</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importRows.map((r, i) => (
+                          <tr key={i} className={r.isValid ? '' : 'has-error'}>
+                            <td>{r._rowIndex || i + 1}</td>
+                            <td><strong>{r.fullName || '—'}</strong></td>
+                            <td>{r.mobile || '—'}</td>
+                            <td>
+                              <span className={`c1-level-tag c1-level-tag--${(r.designation || 'zonal').toLowerCase()}`}>
+                                {r.designation || '—'}
+                              </span>
+                            </td>
+                            <td>{r.reportingToMobile || (r.designation === 'Zonal' ? 'None (Top Level)' : '—')}</td>
+                            <td>{r.states || '—'}</td>
+                            <td>{r.cities || '—'}</td>
+                            <td>
+                              {r.isValid ? (
+                                <span className="c1-import-badge c1-import-badge--valid">Valid</span>
+                              ) : (
+                                <span className="c1-import-badge c1-import-badge--error" title={r.error}>
+                                  {r.error}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : null}
+
+              <div className="c1-org-form__footer">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={importing}
+                  onClick={() => setImportOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  disabled={importing || !importRows.filter((r) => r.isValid).length}
+                  onClick={handleImportSubmit}
+                >
+                  {importing
+                    ? 'Importing…'
+                    : `Import ${importRows.filter((r) => r.isValid).length} ${
+                        importRows.filter((r) => r.isValid).length === 1 ? 'User' : 'Users'
+                      }`}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </ModalShell>
     </section>
   );

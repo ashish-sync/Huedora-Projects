@@ -261,6 +261,25 @@ export const clientOneApi = {
     }).then((r) => r.data);
   },
 
+  importMembers(rows) {
+    return authedFetch('/client-one/members/import', {
+      method: 'POST',
+      body: JSON.stringify({ rows: rows || [] }),
+    }).then((r) => r.data || {});
+  },
+
+  downloadMemberImportSample() {
+    const header = 'fullName,mobile,designation,reportingToMobile,state,city\r\n';
+    const sampleRows = [
+      'Amit Sharma,9876543210,Zonal,,Maharashtra;Gujarat,Mumbai;Pune;Ahmedabad',
+      'Priya Patel,9876543211,Regional,9876543210,Maharashtra,Mumbai;Pune',
+      'Rahul Verma,9876543212,Area,9876543211,Maharashtra,Mumbai',
+      'Sneha Kulkarni,9876543213,Territory,9876543212,Maharashtra,Mumbai',
+    ].join('\r\n');
+    const blob = new Blob([header + sampleRows + '\r\n'], { type: 'text/csv;charset=utf-8;' });
+    triggerDownload(blob, 'client-one-user-base-template.csv');
+  },
+
   geoStates() {
     return authedFetch('/client-one/geo/states').then((r) => r.data || []);
   },

@@ -9,6 +9,8 @@ const updateMember = vi.fn();
 const rotateMemberPin = vi.fn();
 const geoStates = vi.fn();
 const geoCities = vi.fn();
+const importMembers = vi.fn();
+const downloadMemberImportSample = vi.fn();
 
 vi.mock('./clientOneApi.js', () => ({
   clientOneApi: {
@@ -18,6 +20,8 @@ vi.mock('./clientOneApi.js', () => ({
     rotateMemberPin: (...args) => rotateMemberPin(...args),
     geoStates: (...args) => geoStates(...args),
     geoCities: (...args) => geoCities(...args),
+    importMembers: (...args) => importMembers(...args),
+    downloadMemberImportSample: (...args) => downloadMemberImportSample(...args),
   },
 }));
 
@@ -30,6 +34,8 @@ describe('ClientOneUserBase', () => {
     rotateMemberPin.mockReset();
     geoStates.mockReset();
     geoCities.mockReset();
+    importMembers.mockReset();
+    downloadMemberImportSample.mockReset();
   });
 
   const mockData = {
@@ -333,5 +339,137 @@ describe('ClientOneUserBase', () => {
         }),
       );
     });
+  });
+
+  it('displays the 6 required KPI metric cards: Zonal, Regional, Area, Territory, Active, Inactive', async () => {
+    const dataWithAllTiers = {
+      ...mockData,
+      members: [
+        { id: 'zon1', fullName: 'Zonal User', designation: 'Zonal', status: 'active' },
+        { id: 'reg1', fullName: 'Regional User', designation: 'Regional', status: 'active' },
+        { id: 'area1', fullName: 'Area User', designation: 'Area', status: 'active' },
+        { id: 'ter1', fullName: 'Territory User', designation: 'Territory', status: 'inactive' },
+      ],
+    };
+    listMembers.mockResolvedValue(dataWithAllTiers);
+    geoStates.mockResolvedValue([]);
+    geoCities.mockResolvedValue([]);
+
+    render(<ClientOneUserBase dateControls={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('region', { name: 'Hierarchy overview metrics' })).toBeTruthy();
+    });
+
+    const kpiRegion = screen.getByRole('region', { name: 'Hierarchy overview metrics' });
+    expect(kpiRegion.innerHTML).toContain('Zonal');
+    expect(kpiRegion.innerHTML).toContain('Regional');
+    expect(kpiRegion.innerHTML).toContain('Area');
+    expect(kpiRegion.innerHTML).toContain('Territory');
+    expect(kpiRegion.innerHTML).toContain('Active');
+    expect(kpiRegion.innerHTML).toContain('Inactive');
+
+    // Inactive count is 1, Active count is 3
+    expect(kpiRegion.innerHTML).toContain('3');
+    expect(kpiRegion.innerHTML).toContain('1');
+  });
+
+  it('renders Import button next to Add user in header and opens Import modal', async () => {
+    listMembers.mockResolvedValue(mockData);
+    geoStates.mockResolvedValue([]);
+    geoCities.mockResolvedValue([]);
+
+    render(<ClientOneUserBase dateControls={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /import/i })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /add user/i })).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Import Users' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /download sample csv/i })).toBeTruthy();
+      expect(screen.getByText(/Drag and drop your CSV file here/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /download sample csv/i }));
+    expect(downloadMemberImportSample).toHaveBeenCalled();
+  });
+
+  it('submits valid import and renders credentials summary with generated PINs', async () => {
+    listMembers.mockResolvedValue(mockData);
+    geoStates.mockResolvedValue([]);
+    geoCities.mockResolvedValue([]);
+    importMembers.mockResolvedValue({
+      created: [
+        {
+          id: 'imp1',
+          fullName: 'Bulk Zonal',
+          mobile: '9888888881',
+          designation: 'Zonal',
+          pin: '789123',
+        },
+      ],
+      errors: [],
+      total: 1,
+    });
+
+    render(<ClientOneUserBase dateControls={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /import/i })).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Import Users' })).toBeTruthy();
+    });
+
+    // Simulate uploading a CSV file with valid row
+    const csvContent = 'fullName,mobile,designation,reportingToMobile,state,city\nBulk Zonal,9888888881,Zonal,,Maharashtra,Mumbai';
+    const file = new File([csvContent], 'users.csv', { type: 'text/csv' });
+
+    // Spy on FileReader to simulate file reading in jsdom
+    const originalFileReader = global.FileReader;
+    class MockFileReader {
+      readAsText() {
+        setTimeout(() => {
+          this.onload?.({ target: { result: csvContent } });
+        }, 10);
+      }
+    }
+    global.FileReader = MockFileReader;
+
+    try {
+      const fileInput = document.getElementById('c1-import-file-input');
+      expect(fileInput).toBeTruthy();
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Data Validation Preview (1 of 1 valid)')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Import 1 User' })).toBeTruthy();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Import 1 User' }));
+
+      await waitFor(() => {
+        expect(importMembers).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.objectContaining({
+              fullName: 'Bulk Zonal',
+              mobile: '9888888881',
+              designation: 'Zonal',
+            }),
+          ]),
+        );
+        expect(screen.getByText('Imported 1 user successfully')).toBeTruthy();
+        expect(screen.getByText('789123')).toBeTruthy();
+      });
+    } finally {
+      global.FileReader = originalFileReader;
+    }
   });
 });

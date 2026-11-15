@@ -260,4 +260,15 @@ export const clientOneApi = {
       body: '{}',
     }).then((r) => r.data);
   },
+
+  geoStates() {
+    return authedFetch('/client-one/geo/states').then((r) => r.data || []);
+  },
+
+  geoCities(states = []) {
+    const list = Array.isArray(states) ? states : (states ? [states] : []);
+    const params = new URLSearchParams();
+    if (list.length) params.set('states', list.join(','));
+    return authedFetch(`/client-one/geo/cities?${params}`).then((r) => r.data || []);
+  },
 };

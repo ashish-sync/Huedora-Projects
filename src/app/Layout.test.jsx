@@ -104,6 +104,41 @@ describe('Layout Shell Architecture', () => {
     expect(sidebarWrap.classList.contains('is-mobile-open')).toBe(false);
   });
 
+  it('toggles expanded and collapsed sidebar without changing shell structure', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <Layout>
+          <div data-testid="dashboard-content">Dashboard Workspace</div>
+        </Layout>
+      </MemoryRouter>
+    );
+
+    const appShell = container.querySelector('.app-shell');
+    const sidebarWrap = container.querySelector('.sidebar-drawer-wrap');
+    const sidebar = container.querySelector('aside.app-sidebar');
+    const mainColumn = container.querySelector('.app-main-column');
+
+    expect(sidebarWrap.parentElement).toBe(appShell);
+    expect(mainColumn.parentElement).toBe(appShell);
+    expect(screen.getByTestId('dashboard-content')).toBeTruthy();
+
+    // Normalize to collapsed, then expand
+    if (!sidebar.classList.contains('app-sidebar--collapsed')) {
+      fireEvent.click(screen.getByRole('button', { name: /collapse navigation sidebar/i }));
+    }
+    expect(sidebar.classList.contains('app-sidebar--collapsed')).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: /expand navigation sidebar/i }));
+    expect(sidebar.classList.contains('app-sidebar--collapsed')).toBe(false);
+    // Rail wrapper + main column remain siblings; expand is overlay (CSS), not a re-parent
+    expect(sidebarWrap.parentElement).toBe(appShell);
+    expect(mainColumn.parentElement).toBe(appShell);
+    expect(sidebarWrap.contains(sidebar)).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: /collapse navigation sidebar/i }));
+    expect(sidebar.classList.contains('app-sidebar--collapsed')).toBe(true);
+  });
+
   it('auto-collapses the sidebar when user picks a module from an expanded sidebar', () => {
     const { container } = render(
       <MemoryRouter initialEntries={['/']}>

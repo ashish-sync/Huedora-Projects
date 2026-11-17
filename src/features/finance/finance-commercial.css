@@ -2082,6 +2082,42 @@ html[data-theme='dark'] .finance-pdf-preview-frame {
   gap: var(--space-2);
 }
 
+.finance-bank-login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-h-sm, 36px);
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: #9B1D20;
+  overflow: hidden;
+  line-height: 0;
+  text-decoration: none;
+  box-shadow: 0 1px 2px color-mix(in srgb, #9B1D20 28%, transparent);
+  transition:
+    filter var(--duration-fast, 120ms) var(--ease-standard, ease),
+    box-shadow var(--duration-fast, 120ms) var(--ease-standard, ease);
+}
+
+.finance-bank-login-link:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 2px 6px color-mix(in srgb, #9B1D20 35%, transparent);
+}
+
+.finance-bank-login-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, #9B1D20 55%, white);
+  outline-offset: 2px;
+}
+
+.finance-bank-login-link__logo {
+  display: block;
+  height: var(--control-h-sm, 36px);
+  width: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
 .finance-docs-title {
   margin: 0;
   font-size: var(--text-h3-size);

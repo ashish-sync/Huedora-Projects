@@ -56,7 +56,7 @@ import {
   emptyContactPerson,
   syncPrimaryContactFields,
 } from '../utils/campContactPersons';
-import { formatDoctorName, formatContactPersonName } from '../../../shared/textFormat.js';
+import { formatDoctorName, formatDoctorNameLive, formatContactPersonName } from '../../../shared/textFormat.js';
 import {
   CANCELLATION_LOCKED_PAYOUT_FIELDS,
   FINANCE_PAYOUT_PART_FIELDS,
@@ -326,9 +326,12 @@ export function CampLifecycleForm({
       ? computeDurationHours(form.startTime, form.endTime)
       : form.durationHours;
     const durationLabel = durationHours ? `${durationHours} hr` : '';
+    const defaultContactLevel = lockProgramFields
+      ? ''
+      : (form.contactPersonLevel || DEFAULT_CONTACT_PERSON_LEVEL);
     const contactPersons = Array.isArray(form.contactPersons) && form.contactPersons.length
       ? form.contactPersons
-      : [emptyContactPerson(form.contactPersonLevel || DEFAULT_CONTACT_PERSON_LEVEL)];
+      : [emptyContactPerson(defaultContactLevel)];
     const singleDivisionOption = divisionOptions.length === 1;
     const singleMethodOption = campNameOptions.length === 1;
 
@@ -342,7 +345,7 @@ export function CampLifecycleForm({
     const addContactPerson = () => {
       updateFields?.(syncPrimaryContactFields([
         ...contactPersons,
-        emptyContactPerson(DEFAULT_CONTACT_PERSON_LEVEL),
+        emptyContactPerson(defaultContactLevel),
       ]));
     };
 
@@ -412,10 +415,11 @@ export function CampLifecycleForm({
                   Doctor Name
                   <CampFormInput
                     value={form.doctorName}
-                    onChange={(e) => updateField('doctorName', e.target.value)}
+                    onChange={(e) => updateField('doctorName', formatDoctorNameLive(e.target.value))}
                     onBlur={(e) => updateField('doctorName', formatDoctorName(e.target.value))}
                     disabled={disabled}
                     required
+                    placeholder="e.g. Rajesh Kumar"
                   />
                 </label>
                 <label>
@@ -433,6 +437,7 @@ export function CampLifecycleForm({
                     picklistKey="camp.doctorSpecialty"
                     otherLabel="Other (Specify Others)"
                     source="camp.request"
+                    placeholder="Select specialty…"
                     disabled={disabled}
                     required
                   />
@@ -568,14 +573,11 @@ export function CampLifecycleForm({
                   Doctor Name
                   <CampFormInput
                     value={form.doctorName}
-                    onChange={(e) => updateField('doctorName', e.target.value)}
+                    onChange={(e) => updateField('doctorName', formatDoctorNameLive(e.target.value))}
                     onBlur={(e) => updateField('doctorName', formatDoctorName(e.target.value))}
                     disabled={disabled}
                     required
                   />
-                  {!disabled ? (
-                    <span className="meta-text">Title Case, no Dr or Dr. prefix</span>
-                  ) : null}
                 </label>
                 <label>
                   Legacy Code
@@ -708,12 +710,13 @@ export function CampLifecycleForm({
                         </span>
                         <select
                           {...bindAutofillBlockSelect()}
-                          value={contact.level || DEFAULT_CONTACT_PERSON_LEVEL}
+                          value={contact.level || ''}
                           onChange={(e) => updateContactPerson(index, { level: e.target.value })}
                           disabled={disabled}
                           required
                           aria-label="Contact Person Level"
                         >
+                          <option value="">Select…</option>
                           {CONTACT_PERSON_LEVEL_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                           ))}

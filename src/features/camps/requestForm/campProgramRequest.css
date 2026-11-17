@@ -222,11 +222,29 @@
   margin-top: 1rem;
 }
 
-/* Keep the 2-up field pairs on phones; do not inherit Camp One's 1-column stack. */
+.camp-program-request__actions .camp-execute__btn.primary {
+  background: var(--brand-primary);
+  color: #fff;
+  box-shadow: 0 6px 16px rgb(var(--brand-primary-rgb) / 0.22);
+}
+
+.camp-program-request__actions .camp-execute__btn.primary:hover:not(:disabled) {
+  background: var(--brand-primary-hover);
+}
+
+.camp-program-request__actions .camp-execute__btn.primary:active:not(:disabled) {
+  background: var(--brand-primary-pressed);
+  transform: translateY(1px);
+  box-shadow: 0 3px 10px rgb(var(--brand-primary-rgb) / 0.2);
+}
+
+/* Keep the 2-up field pairs on phones; do not inherit Camp One's 1-column stack.
+   align-items:start keeps labels/inputs level when one column has helper text. */
 .camp-program-request .camp-ops-root .camp-request-pair-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px 12px;
+  align-items: start;
   min-width: 0;
   width: 100%;
 }
@@ -234,6 +252,12 @@
 .camp-program-request__form .camp-request-pair-row > label {
   min-width: 0;
   overflow: visible;
+  align-self: start;
+}
+
+.camp-program-request__form .camp-request-pair-row > label > .meta-text {
+  margin-top: 2px;
+  font-weight: 500;
 }
 
 .camp-program-request__form .camp-request-pair-row .time-input-control,

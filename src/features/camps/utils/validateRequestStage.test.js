@@ -64,12 +64,12 @@ describe('validateRequestStageForm', () => {
     expect(errors).not.toContain('Contact person number must be exactly 10 digits');
   });
 
-  it('rejects doctor names with Dr prefix', () => {
+  it('accepts doctor names with Dr prefix (auto-stripped on save)', () => {
     const errors = validateRequestStageForm({
       ...validRequest,
       doctorName: 'Dr. Rajesh Kumar',
     });
-    expect(errors).toContain('Enter doctor name without Dr or Dr. — use Title Case (e.g. Rajesh Kumar)');
+    expect(errors).toEqual([]);
   });
 
   it('allows historical camp dates for any user', () => {

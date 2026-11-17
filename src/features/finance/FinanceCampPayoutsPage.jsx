@@ -494,11 +494,20 @@ export default function FinanceCampPayoutsPage() {
               </Link>
               <a
                 href="https://my.idfcfirst.bank.in/login"
-                className="btn secondary btn-compact"
+                className="finance-bank-login-link"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="IDFC FIRST Bank login"
+                title="IDFC FIRST Bank Login"
               >
-                Bank Login
+                <img
+                  className="finance-bank-login-link__logo"
+                  src="/brand/idfc-first-bank.png"
+                  alt="IDFC FIRST Bank"
+                  width={132}
+                  height={36}
+                  decoding="async"
+                />
               </a>
             </div>
           </div>

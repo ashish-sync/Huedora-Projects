@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { cleanSpaces, formatTextValue, toProperTitleCase } from './textFormat.js';
+import {
+  cleanSpaces,
+  formatDoctorName,
+  formatDoctorNameLive,
+  formatTextValue,
+  getDoctorNameFormatError,
+  toProperTitleCase,
+} from './textFormat.js';
 
 describe('textFormat', () => {
   it('cleans extra whitespace', () => {
@@ -11,6 +18,16 @@ describe('textFormat', () => {
     expect(formatTextValue('  ravi kumar  ', 'doctorName')).toBe('Ravi Kumar');
     expect(formatTextValue('  guru krupa clinic  ', 'campAddress')).toBe('Guru Krupa Clinic');
     expect(formatTextValue('  mahesh  ', 'hcwName')).toBe('Mahesh');
+  });
+
+  it('strips Dr/Dr. and title-cases doctor names', () => {
+    expect(formatDoctorName('  dr. rajesh   kumar  ')).toBe('Rajesh Kumar');
+    expect(formatDoctorName('Doctor Anita Desai')).toBe('Anita Desai');
+    expect(formatDoctorName('DR RAJESH KUMAR')).toBe('Rajesh Kumar');
+    expect(formatDoctorName('Dr.Rajesh Kumar')).toBe('Rajesh Kumar');
+    expect(formatDoctorName('Drake Smith')).toBe('Drake Smith');
+    expect(formatDoctorNameLive('dr. rajesh ')).toBe('Rajesh ');
+    expect(getDoctorNameFormatError('Dr. Rajesh Kumar')).toBeNull();
   });
 
   it('preserves codes and picklists', () => {

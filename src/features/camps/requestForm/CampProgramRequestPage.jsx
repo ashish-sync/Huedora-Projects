@@ -11,6 +11,7 @@ import { toApiDateValue } from '../utils/dateFormat.js';
 import { parseCampDurationToHours } from '../utils/campClientMasterPricing.js';
 import { computeDurationHours, computeEndTime } from '../utils/campSchedule.js';
 import { syncPrimaryContactFields, normalizeContactPersons } from '../utils/campContactPersons.js';
+import { formatDoctorName, formatDoctorNameLive } from '../../../shared/textFormat.js';
 import { campRequestFormApi } from './campRequestFormApi.js';
 import {
   applyFieldFormat,
@@ -40,9 +41,7 @@ const FORM_STRING_FIELDS = [
 function seedFormFromProgram(ctx) {
   const form = emptyLifecycleForm();
   const hours = parseCampDurationToHours(ctx?.campDuration) || 4;
-  // Default within public working window (Mon–Sat 10 AM–7 PM IST).
-  const startTime = '10:00';
-  const endTime = computeEndTime(startTime, hours) || '14:00';
+  // Public form starts blank — applicants must fill every field (no time/specialty defaults).
   return {
     ...form,
     source: 'program_form',
@@ -51,8 +50,13 @@ function seedFormFromProgram(ctx) {
     campaignType: ctx?.programName || '',
     campaignName: ctx?.campName || '',
     durationHours: hours,
-    startTime,
-    endTime,
+    startTime: '',
+    endTime: '',
+    campSlot: '',
+    speciality: '',
+    expectedPatients: '',
+    contactPersonLevel: '',
+    contactPersons: [{ level: '', name: '', phone: '' }],
     requestDate: todayIsoDate(),
   };
 }
@@ -114,7 +118,8 @@ export default function CampProgramRequestPage() {
     setForm((prev) => {
       const def = fieldConfigByKey.get(key);
       const shouldFormat = formSettings.enforceFieldRules && def?.format;
-      const nextValue = shouldFormat ? applyFieldFormat(value, def.format) : value;
+      let nextValue = shouldFormat ? applyFieldFormat(value, def.format) : value;
+      if (key === 'doctorName') nextValue = formatDoctorNameLive(nextValue);
       const next = { ...prev, [key]: nextValue };
 
       // Keep End Time aligned with Start Time + camp duration so the public
@@ -143,9 +148,11 @@ export default function CampProgramRequestPage() {
       const next = { ...prev };
       for (const [key, value] of Object.entries(patch || {})) {
         const def = fieldConfigByKey.get(key);
-        next[key] = formSettings.enforceFieldRules && def?.format
+        let nextValue = formSettings.enforceFieldRules && def?.format
           ? applyFieldFormat(value, def.format)
           : value;
+        if (key === 'doctorName') nextValue = formatDoctorNameLive(nextValue);
+        next[key] = nextValue;
       }
       if (patch?.startTime && !patch?.endTime) {
         const duration = Number(next.durationHours) > 0 ? Number(next.durationHours) : 4;
@@ -212,6 +219,7 @@ export default function CampProgramRequestPage() {
       ...form,
       ...trimmed,
       ...contactFields,
+      doctorName: formatDoctorName(trimmed.doctorName || form.doctorName),
       clientId: context?.clientId || form.clientId,
       clientName: context?.clientName || form.clientName,
       campaignType: context?.programName || form.campaignType,
@@ -342,7 +350,7 @@ export default function CampProgramRequestPage() {
               <div className="camp-program-request__actions">
                 <button
                   type="submit"
-                  className="camp-execute__btn camp-execute__btn--primary"
+                  className="camp-execute__btn primary"
                   disabled={busy}
                 >
                   {busy ? 'Submitting…' : 'Submit Request'}

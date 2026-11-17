@@ -14,13 +14,15 @@ import { useAuth } from '../../shared/auth.jsx';
 import { FILTER } from '../../shared/labels.js';
 import { COMMERCIAL_DOC_TYPES, docTypeLabel } from './commercialDocumentConfig.js';
 import { fetchCommercialOrgList, loadOrgListCache } from './commercialOrgMaster.js';
+import ModalShell from '../../components/ui/ModalShell.jsx';
 import {
   buildEditPath,
   correctCommercialDocumentNumber,
+  createServerPdfObjectUrl,
   deleteCommercialDocument,
   downloadServerPdf,
   duplicateCommercialDocument,
-  openServerPdf,
+  printServerPdf,
   recordCommercialPayment,
   updateCommercialLifecycleStatus,
 } from './builder/builderPersistence.js';
@@ -178,9 +180,11 @@ function FinanceDocActionsMenu({
           <button type="button" role="menuitem" onClick={() => run(onEdit)}>
             Edit Document
           </button>
-          <button type="button" role="menuitem" onClick={() => run(onPrint)}>
-            Print Document
-          </button>
+          {onPrint ? (
+            <button type="button" role="menuitem" onClick={() => run(onPrint)}>
+              Print Document
+            </button>
+          ) : null}
           {showDuplicate ? (
             <button type="button" role="menuitem" onClick={() => run(onDuplicate)}>
               Create Duplicate
@@ -264,6 +268,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [statusBusyId, setStatusBusyId] = useState('');
   const [viewBusyId, setViewBusyId] = useState('');
   const [downloadBusyId, setDownloadBusyId] = useState('');
+  const [printBusyId, setPrintBusyId] = useState('');
+  const [pdfPreview, setPdfPreview] = useState(null);
 
   const [payRow, setPayRow] = useState(null);
   const [payAmount, setPayAmount] = useState('');
@@ -448,12 +454,28 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
     }
   }
 
+  function closePdfPreview() {
+    if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
+    setPdfPreview(null);
+  }
+
+  useEffect(() => () => {
+    if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
+  }, [pdfPreview?.url]);
+
   async function handleViewDocument(row) {
     if (!row?._id || !row?.documentType) return;
     setViewBusyId(row._id);
     setError('');
     try {
-      await openServerPdf(row.documentType, row._id);
+      const { url } = await createServerPdfObjectUrl(row.documentType, row._id, { download: false });
+      if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
+      setPdfPreview({
+        url,
+        title: displayDocumentNumber(row),
+        subtitle: `${docTypeLabel(row.documentType)} · ${row.recipientName || '—'}`,
+        row,
+      });
     } catch (e) {
       setError(e.message || 'Unable to open document');
     } finally {
@@ -473,6 +495,19 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       setError(e.message || 'Unable to download document');
     } finally {
       setDownloadBusyId('');
+    }
+  }
+
+  async function handlePrintDocument(row) {
+    if (!row?._id || !row?.documentType) return;
+    setPrintBusyId(row._id);
+    setError('');
+    try {
+      await printServerPdf(row.documentType, row._id);
+    } catch (e) {
+      setError(e.message || 'Unable to print document');
+    } finally {
+      setPrintBusyId('');
     }
   }
 
@@ -662,7 +697,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                   duplicateBusyId === row._id ||
                   statusBusyId === row._id ||
                   viewBusyId === row._id ||
-                  downloadBusyId === row._id;
+                  downloadBusyId === row._id ||
+                  printBusyId === row._id;
                 const numberLabel = displayDocumentNumber(row);
                 const canView = Boolean(row._id && row.documentType);
                 return (
@@ -730,9 +766,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                         busy={rowBusy}
                         onDownload={canView ? () => handleDownloadDocument(row) : null}
                         onEdit={() => navigate(buildEditPath(row.documentType, row._id))}
-                        onPrint={() =>
-                          navigate(`${buildEditPath(row.documentType, row._id)}?print=1`)
-                        }
+                        onPrint={canView ? () => handlePrintDocument(row) : null}
                         onDuplicate={() => handleDuplicate(row)}
                         onPayment={() => openPayment(row)}
                         onUpdateStatus={() => openStatusUpdate(row)}
@@ -924,6 +958,52 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
           }
         }}
       />
+
+      <ModalShell
+        open={Boolean(pdfPreview?.url)}
+        onClose={closePdfPreview}
+        title={pdfPreview?.title || 'Document'}
+        overlayClassName="modal-overlay finance-pdf-preview-overlay"
+        panelClassName="modal-card finance-pdf-preview-modal"
+      >
+        {pdfPreview?.subtitle ? (
+          <p className="muted finance-pdf-preview-meta">{pdfPreview.subtitle}</p>
+        ) : null}
+        <div className="finance-pdf-preview-frame">
+          {pdfPreview?.url ? (
+            <iframe
+              title={`Document ${pdfPreview.title || ''}`}
+              src={pdfPreview.url}
+              className="finance-pdf-preview-iframe"
+            />
+          ) : null}
+        </div>
+        <div className="modal-actions finance-pdf-preview-actions">
+          <button type="button" className="btn secondary" onClick={closePdfPreview}>
+            Close
+          </button>
+          {pdfPreview?.row ? (
+            <button
+              type="button"
+              className="btn secondary"
+              disabled={downloadBusyId === pdfPreview.row._id}
+              onClick={() => handleDownloadDocument(pdfPreview.row)}
+            >
+              {downloadBusyId === pdfPreview.row._id ? 'Downloading…' : 'Download'}
+            </button>
+          ) : null}
+          {pdfPreview?.row ? (
+            <button
+              type="button"
+              className="btn primary"
+              disabled={printBusyId === pdfPreview.row._id}
+              onClick={() => handlePrintDocument(pdfPreview.row)}
+            >
+              {printBusyId === pdfPreview.row._id ? 'Preparing…' : 'Print'}
+            </button>
+          ) : null}
+        </div>
+      </ModalShell>
     </>
   );
 

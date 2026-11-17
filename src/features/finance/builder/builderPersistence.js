@@ -880,11 +880,20 @@ export async function fetchServerPdfBlob(documentType, id, { download = true } =
   if (!(blob instanceof Blob) || blob.size < 64) {
     throw new Error(download ? 'PDF download failed' : 'Unable to open document PDF');
   }
-  // Browsers need an explicit PDF MIME type to render blob: URLs in a new tab.
-  if (blob.type && blob.type !== 'application/pdf') {
+  // Browsers need an explicit PDF MIME type to render blob: URLs inline.
+  if (blob.type !== 'application/pdf') {
     return new Blob([blob], { type: 'application/pdf' });
   }
   return blob;
+}
+
+/**
+ * Object URL for the same server PDF used for download/print.
+ * Caller must revoke the URL when done.
+ */
+export async function createServerPdfObjectUrl(documentType, id, { download = false } = {}) {
+  const blob = await fetchServerPdfBlob(documentType, id, { download });
+  return { blob, url: URL.createObjectURL(blob) };
 }
 
 export async function downloadServerPdf(documentType, id, fileName) {
@@ -900,17 +909,55 @@ export async function downloadServerPdf(documentType, id, fileName) {
   return blob;
 }
 
-/** Open the commercial document PDF in a new browser window for viewing. */
+/**
+ * Open the commercial document PDF for viewing without relying on pop-ups.
+ * Prefer embedding the returned URL in an in-app viewer (FinanceDocumentsList).
+ * Falls back to a same-tab navigation only when no viewer callback is used.
+ */
 export async function openServerPdf(documentType, id) {
-  const blob = await fetchServerPdfBlob(documentType, id, { download: false });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!win) {
-    URL.revokeObjectURL(url);
-    throw new Error('Pop-up blocked. Allow pop-ups to view the document.');
-  }
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  return blob;
+  return createServerPdfObjectUrl(documentType, id, { download: false });
+}
+
+/** Print the server PDF via a hidden iframe (same file as download/view). */
+export async function printServerPdf(documentType, id) {
+  const { url } = await createServerPdfObjectUrl(documentType, id, { download: false });
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('title', 'Print document');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+    let settled = false;
+    const cleanup = () => {
+      window.setTimeout(() => {
+        try {
+          iframe.remove();
+        } catch {
+          /* ignore */
+        }
+        URL.revokeObjectURL(url);
+      }, 60_000);
+    };
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err instanceof Error ? err : new Error('Unable to print document'));
+    };
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+      } catch (err) {
+        fail(err);
+      }
+    };
+    iframe.onerror = () => fail(new Error('Unable to print document'));
+    document.body.appendChild(iframe);
+    iframe.src = url;
+  });
 }
 
 export function buildEditPath(documentType, id) {

@@ -87,7 +87,7 @@ describe('CampLifecycleForm program request mode', () => {
 
     const order = [
       'Doctor Name',
-      'Doctor Code',
+      'Legacy Code',
       'Specialty',
       'Camp Date',
       'Start Time',
@@ -114,7 +114,7 @@ describe('CampLifecycleForm program request mode', () => {
       expect(row).toBeTruthy();
       expect(row.contains(screen.getByText(right, { exact: false }))).toBe(true);
     };
-    pairLabels('Doctor Name', 'Doctor Code');
+    pairLabels('Doctor Name', 'Legacy Code');
     pairLabels('Specialty', 'Camp Date');
     pairLabels('Start Time', 'End Time');
     pairLabels('PIN Code', 'City');

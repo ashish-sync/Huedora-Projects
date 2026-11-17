@@ -488,9 +488,19 @@ export default function FinanceCampPayoutsPage() {
         <div className="finance-camp-payouts-toolbar">
           <div className="finance-docs-head finance-docs-head--embedded">
             <h3 className="finance-docs-title">{NAV.PAYOUT_QUEUE}</h3>
-            <Link to="/camp-one/manage" className="btn secondary btn-compact">
-              Open {MODULE.CAMP_MANAGEMENT}
-            </Link>
+            <div className="finance-camp-payouts-head-actions">
+              <Link to="/camp-one/manage" className="btn secondary btn-compact">
+                Open {MODULE.CAMP_MANAGEMENT}
+              </Link>
+              <a
+                href="https://my.idfcfirst.bank.in/login"
+                className="btn secondary btn-compact"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Bank Login
+              </a>
+            </div>
           </div>
 
           <MasterFilterShell

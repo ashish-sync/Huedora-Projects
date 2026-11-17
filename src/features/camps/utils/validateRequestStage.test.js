@@ -21,6 +21,7 @@ const validRequest = {
   endTime: '13:00',
   doctorName: 'Rajesh Kumar',
   doctorCode: 'DOC001',
+  speciality: 'General Practitioner',
   campAddress: '12 Main Street',
   state: 'Maharashtra',
   district: 'Mumbai',

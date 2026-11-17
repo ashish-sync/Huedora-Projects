@@ -43,7 +43,8 @@ export function validateRequestStageForm(form = {}, options = {}) {
 
   const doctorNameError = getDoctorNameFormatError(form.doctorName);
   if (doctorNameError) errors.push(doctorNameError);
-  if (!hasText(form.doctorCode)) errors.push('Doctor code is required');
+  if (!hasText(form.doctorCode)) errors.push('Legacy code is required');
+  if (!hasText(form.speciality)) errors.push('Specialty is required');
   if (!hasText(form.campAddress)) errors.push('Camp address is required');
   if (options.skipLocation !== true) {
     if (!hasText(form.state)) errors.push('State is required');
@@ -82,6 +83,10 @@ export function validateRequestStageForm(form = {}, options = {}) {
       errors.push(`${label} number must be exactly 10 digits`);
     }
   });
+
+  if (options.requireAllFields === true && !hasText(form.remarks)) {
+    errors.push('Remarks is required');
+  }
 
   const futureRequestDateError = getFutureRequestDateError(form.requestDate);
   if (futureRequestDateError) errors.push(futureRequestDateError);

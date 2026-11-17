@@ -5,15 +5,13 @@ import CampProgramRequestPage from './CampProgramRequestPage.jsx';
 
 const load = vi.fn();
 const submit = vi.fn();
-const downloadSample = vi.fn();
-const uploadData = vi.fn();
 
 vi.mock('./campRequestFormApi.js', () => ({
   campRequestFormApi: {
     load: (...args) => load(...args),
     submit: (...args) => submit(...args),
-    downloadSample: (...args) => downloadSample(...args),
-    uploadData: (...args) => uploadData(...args),
+    downloadSample: vi.fn(),
+    uploadData: vi.fn(),
     lookupPin: vi.fn(),
     fetchStates: vi.fn(),
     fetchDistricts: vi.fn(),
@@ -35,6 +33,7 @@ vi.mock('../components/CampLifecycleForm.jsx', () => ({
         onClick={() => updateFields({
           doctorName: 'Anita Sharma',
           doctorCode: 'D001',
+          speciality: 'General Practitioner',
           campDate: '2026-11-20',
           hq: 'Devanahalli',
           pincode: '560300',
@@ -55,6 +54,7 @@ vi.mock('../components/CampLifecycleForm.jsx', () => ({
           addressManualEntry: false,
           latitude: '13.05158',
           longitude: '77.61194',
+          remarks: 'Public screening camp',
         })}
       >
         Apply selected address
@@ -67,8 +67,6 @@ afterEach(() => {
   cleanup();
   load.mockReset();
   submit.mockReset();
-  downloadSample.mockReset();
-  uploadData.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -93,7 +91,7 @@ describe('CampProgramRequestPage', () => {
     });
   });
 
-  it('loads the program and shows a locked New Camp request form', async () => {
+  it('loads the program and shows a locked New Camp request form without bulk upload', async () => {
     renderPage();
     const form = await screen.findByTestId('request-form');
     expect(form.getAttribute('data-lock')).toBe('true');
@@ -102,44 +100,17 @@ describe('CampProgramRequestPage', () => {
     expect(screen.getByRole('heading', { name: 'New Camp Request' })).toBeTruthy();
     expect(screen.getByText(/Acme Health · Viva BMD · BMD/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /submit request/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /bulk upload/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /bulk upload/i })).toBeNull();
     expect(screen.getByAltText('TYLO')).toBeTruthy();
     await waitFor(() => expect(load).toHaveBeenCalledWith('token-1'));
   });
 
-  it('opens bulk upload options for sample download and data upload', async () => {
-    if (!URL.createObjectURL) {
-      URL.createObjectURL = () => 'blob:sample';
-    }
-    if (!URL.revokeObjectURL) {
-      URL.revokeObjectURL = () => {};
-    }
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:sample');
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    downloadSample.mockResolvedValue(new Blob(['Doctor Name'], { type: 'text/csv' }));
-    uploadData.mockResolvedValue({
-      summary: { created: 2, skipped: 0, failed: 0 },
-      created: [{ campId: 'C-1' }, { campId: 'C-2' }],
-    });
-
+  it('blocks submit when required fields are incomplete', async () => {
     renderPage();
     await screen.findByTestId('request-form');
-
-    fireEvent.click(screen.getByRole('button', { name: /bulk upload/i }));
-    expect(screen.getByRole('menuitem', { name: /download sample template/i })).toBeTruthy();
-    expect(screen.getByRole('menuitem', { name: /upload data/i })).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('menuitem', { name: /download sample template/i }));
-    await waitFor(() => expect(downloadSample).toHaveBeenCalledWith('token-1'));
-
-    fireEvent.click(screen.getByRole('button', { name: /bulk upload/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /upload data/i }));
-    const fileInput = document.querySelector('.camp-program-request__file');
-    expect(fileInput).toBeTruthy();
-    const file = new File(['Doctor Name\nAnita Sharma'], 'camps.csv', { type: 'text/csv' });
-    fireEvent.change(fileInput, { target: { files: [file] } });
-    await waitFor(() => expect(uploadData).toHaveBeenCalledWith('token-1', file));
-    expect(await screen.findByText(/2 camp requests submitted for Camp One review/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /submit request/i }));
+    expect(submit).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toBeTruthy();
   });
 
   it('submits the selected address with latitude and longitude', async () => {
@@ -158,6 +129,8 @@ describe('CampProgramRequestPage', () => {
     expect(payload.longitude).toBe('77.61194');
     expect(payload.pincode).toBe('560300');
     expect(payload.city).toBe('Devanahalli');
+    expect(payload.doctorCode).toBe('D001');
+    expect(payload.remarks).toBe('Public screening camp');
     expect(payload.source).toBe('program_form');
     expect(await screen.findByText(/Request submitted for Camp One review as C-100/i)).toBeTruthy();
   });

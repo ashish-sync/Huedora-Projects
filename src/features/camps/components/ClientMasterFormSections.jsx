@@ -1,5 +1,6 @@
 import FieldError from '../../../components/ui/FieldError.jsx';
 import { PhoneField } from '../../../components/ui/PhoneField.jsx';
+import { apiUrl } from '../../../shared/config.js';
 import { CampNameSelect } from './CampNameSelect';
 import { ClientNameSearchInput } from './ClientNameSearchInput';
 import { AssignedSystemUserPicker } from './AssignedSystemUserPicker.jsx';
@@ -8,6 +9,13 @@ import { ClientMasterConsumablesField } from './ClientMasterConsumablesField.jsx
 import { ClientMasterStateSelect } from './ClientMasterStateSelect.jsx';
 import { ProgramFormMasterSelect } from './ProgramFormMasterSelect.jsx';
 import { normalizeHealthcareWorkers } from '../utils/healthcareWorkers.js';
+
+function portalBrandPreviewSrc(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw) || raw.startsWith('blob:') || raw.startsWith('data:')) return raw;
+  return apiUrl(raw);
+}
 
 const SERVICE_MODEL_OPTIONS = [
   'HCW Only',
@@ -133,7 +141,7 @@ export function ClientMasterFormSectionFields({
             {form.portalBrandImage?.url ? (
               <div className="client-master-portal-brand-preview">
                 <img
-                  src={form.portalBrandImage.url}
+                  src={portalBrandPreviewSrc(form.portalBrandImage.url)}
                   alt={form.displayName || form.clientName || 'Portal brand'}
                   width={48}
                   height={48}

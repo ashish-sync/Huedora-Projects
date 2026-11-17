@@ -419,7 +419,7 @@ export function CampLifecycleForm({
                   />
                 </label>
                 <label>
-                  Doctor Code
+                  Legacy Code
                   <CampFormInput value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
                 </label>
               </div>
@@ -434,6 +434,7 @@ export function CampLifecycleForm({
                     otherLabel="Other (Specify Others)"
                     source="camp.request"
                     disabled={disabled}
+                    required
                   />
                 </label>
                 <label>
@@ -577,7 +578,7 @@ export function CampLifecycleForm({
                   ) : null}
                 </label>
                 <label>
-                  Doctor Code
+                  Legacy Code
                   <CampFormInput value={form.doctorCode} onChange={(e) => updateField('doctorCode', e.target.value)} disabled={disabled} required />
                 </label>
                 <label>
@@ -590,6 +591,7 @@ export function CampLifecycleForm({
                     otherLabel="Other (Specify Others)"
                     source="camp.request"
                     disabled={disabled}
+                    required
                   />
                 </label>
               </div>
@@ -790,6 +792,7 @@ export function CampLifecycleForm({
                     value={form.remarks}
                     onChange={(e) => updateField('remarks', e.target.value)}
                     disabled={disabled}
+                    required={Boolean(lockProgramFields || requestOnly)}
                   />
                 </label>
               </div>
@@ -889,6 +892,7 @@ export function CampLifecycleForm({
                     value={form.remarks}
                     onChange={(e) => updateField('remarks', e.target.value)}
                     disabled={disabled}
+                    required={Boolean(requestOnly)}
                   />
                 </label>
               </div>

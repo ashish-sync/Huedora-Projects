@@ -233,7 +233,19 @@
 
 .camp-program-request__form .camp-request-pair-row > label {
   min-width: 0;
+  overflow: visible;
+}
+
+.camp-program-request__form .camp-request-pair-row .time-input-control,
+.camp-program-request__form .camp-request-pair-row .date-input-control {
   overflow: hidden;
+  min-width: 0;
+  width: 100%;
+}
+
+.camp-program-request__form .camp-request-pair-row .date-input-display {
+  width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 720px) {

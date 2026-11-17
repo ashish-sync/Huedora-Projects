@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AutofillDecoyFields } from '../../../shared/suppressBrowserAutofill.js';
 import { GeoLookupContext } from '../../../shared/GeoLookupContext.jsx';
@@ -9,11 +9,9 @@ import { confirmCampDurationIfNeeded } from '../utils/campDurationWarning.js';
 import { trimFormStrings } from '../utils/trimInput.js';
 import { toApiDateValue } from '../utils/dateFormat.js';
 import { parseCampDurationToHours } from '../utils/campClientMasterPricing.js';
-import { computeEndTime } from '../utils/campSchedule.js';
+import { computeDurationHours, computeEndTime } from '../utils/campSchedule.js';
 import { syncPrimaryContactFields, normalizeContactPersons } from '../utils/campContactPersons.js';
 import { campRequestFormApi } from './campRequestFormApi.js';
-import { validateImportFileClient, getErrorMessage } from '../../../shared/importErrors.js';
-import { IMPORT_ACCEPT_ATTR } from '../../../shared/importFilePolicy.js';
 import {
   applyFieldFormat,
   getFormMasterCampDateErrors,
@@ -36,41 +34,15 @@ const TYLO_LOGO_SRC = '/brand/tylo-logo.jpg';
 const FORM_STRING_FIELDS = [
   'campaignName', 'campaignType', 'doctorName', 'doctorCode', 'campAddress', 'city', 'state', 'district',
   'pincode', 'latitude', 'longitude', 'googlePlaceId', 'startTime', 'endTime', 'contactPersonLevel',
-  'fieldPersonName', 'fieldPersonPhone', 'remarks', 'hq', 'zone', 'source', 'requestDate',
+  'fieldPersonName', 'fieldPersonPhone', 'remarks', 'hq', 'zone', 'source', 'requestDate', 'speciality',
 ];
-
-function downloadBlob(blob, fileName) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.URL.revokeObjectURL(url);
-}
-
-function formatImportResult(result) {
-  const created = Number(result?.summary?.created || 0);
-  const skipped = Number(result?.summary?.skipped || 0);
-  const failed = Number(result?.summary?.failed || 0);
-  const campWord = created === 1 ? 'camp request' : 'camp requests';
-  if (created && !skipped && !failed) {
-    return `${created} ${campWord} submitted for Camp One review.`;
-  }
-  const parts = [];
-  if (created) parts.push(`${created} submitted`);
-  if (skipped) parts.push(`${skipped} skipped as duplicates`);
-  if (failed) parts.push(`${failed} ${failed === 1 ? 'row' : 'rows'} failed`);
-  const firstFail = result?.failed?.[0]?.reason;
-  const suffix = firstFail ? ` ${firstFail.replace(/[.]+$/, '')}.` : '.';
-  return `${parts.join(', ') || 'No rows were imported'}.${failed && firstFail ? suffix : ''}`;
-}
 
 function seedFormFromProgram(ctx) {
   const form = emptyLifecycleForm();
   const hours = parseCampDurationToHours(ctx?.campDuration) || 4;
-  const startTime = '09:00';
+  // Default within public working window (Mon–Sat 10 AM–7 PM IST).
+  const startTime = '10:00';
+  const endTime = computeEndTime(startTime, hours) || '14:00';
   return {
     ...form,
     source: 'program_form',
@@ -80,7 +52,7 @@ function seedFormFromProgram(ctx) {
     campaignName: ctx?.campName || '',
     durationHours: hours,
     startTime,
-    endTime: computeEndTime(startTime, hours) || '13:00',
+    endTime,
     requestDate: todayIsoDate(),
   };
 }
@@ -91,13 +63,8 @@ export default function CampProgramRequestPage() {
   const [form, setForm] = useState(() => emptyLifecycleForm());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [importResult, setImportResult] = useState(null);
-  const fileInputRef = useRef(null);
-  const menuRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,24 +88,6 @@ export default function CampProgramRequestPage() {
       cancelled = true;
     };
   }, [token]);
-
-  useEffect(() => {
-    if (!menuOpen) return undefined;
-    function onPointerDown(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    }
-    function onKey(event) {
-      if (event.key === 'Escape') setMenuOpen(false);
-    }
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [menuOpen]);
 
   const formMasterFields = useMemo(
     () => (Array.isArray(context?.form?.fields) ? context.form.fields : []),
@@ -166,17 +115,42 @@ export default function CampProgramRequestPage() {
       const def = fieldConfigByKey.get(key);
       const shouldFormat = formSettings.enforceFieldRules && def?.format;
       const nextValue = shouldFormat ? applyFieldFormat(value, def.format) : value;
-      return { ...prev, [key]: nextValue };
+      const next = { ...prev, [key]: nextValue };
+
+      // Keep End Time aligned with Start Time + camp duration so the public
+      // form never leaves End Time blank after a start-time change.
+      if (key === 'startTime' && nextValue) {
+        const duration = Number(prev.durationHours) > 0
+          ? Number(prev.durationHours)
+          : (prev.startTime && prev.endTime
+            ? computeDurationHours(prev.startTime, prev.endTime)
+            : 4);
+        const endTime = computeEndTime(nextValue, duration);
+        if (endTime) {
+          next.endTime = endTime;
+          next.durationHours = duration;
+        }
+      } else if (key === 'endTime' && nextValue && prev.startTime) {
+        next.durationHours = computeDurationHours(prev.startTime, nextValue);
+      }
+
+      return next;
     });
   }, [fieldConfigByKey, formSettings.enforceFieldRules]);
 
   const updateFields = useCallback((patch) => {
     setForm((prev) => {
-      if (!formSettings.enforceFieldRules) return { ...prev, ...patch };
       const next = { ...prev };
       for (const [key, value] of Object.entries(patch || {})) {
         const def = fieldConfigByKey.get(key);
-        next[key] = def?.format ? applyFieldFormat(value, def.format) : value;
+        next[key] = formSettings.enforceFieldRules && def?.format
+          ? applyFieldFormat(value, def.format)
+          : value;
+      }
+      if (patch?.startTime && !patch?.endTime) {
+        const duration = Number(next.durationHours) > 0 ? Number(next.durationHours) : 4;
+        const endTime = computeEndTime(next.startTime, duration);
+        if (endTime) next.endTime = endTime;
       }
       return next;
     });
@@ -195,8 +169,11 @@ export default function CampProgramRequestPage() {
 
   async function handleSubmit(e) {
     e?.preventDefault?.();
-    if (busy || uploading || submitted) return;
-    const requestErrors = validateRequestStageForm(form, { canSetHistorical: false });
+    if (busy || submitted) return;
+    const requestErrors = validateRequestStageForm(form, {
+      canSetHistorical: false,
+      requireAllFields: true,
+    });
     if (requestErrors.length) {
       setError(requestErrors[0]);
       return;
@@ -252,7 +229,6 @@ export default function CampProgramRequestPage() {
 
     setBusy(true);
     setError('');
-    setImportResult(null);
     try {
       const result = await campRequestFormApi.submit(token, payload);
       setSubmitted(result);
@@ -263,52 +239,8 @@ export default function CampProgramRequestPage() {
     }
   }
 
-  async function handleDownloadSample() {
-    setMenuOpen(false);
-    setError('');
-    try {
-      const blob = await campRequestFormApi.downloadSample(token);
-      if (blob?.type && blob.type.includes('application/json')) {
-        const json = JSON.parse(await blob.text());
-        throw new Error(json?.error?.message || json?.message || 'Could not download the sample template');
-      }
-      downloadBlob(blob, 'camp-request-form_Sample.csv');
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not download the sample template'));
-    }
-  }
-
-  function handleUploadData() {
-    setMenuOpen(false);
-    fileInputRef.current?.click();
-  }
-
-  async function handleUploadFile(event) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    const invalid = validateImportFileClient(file);
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
-    setUploading(true);
-    setError('');
-    setImportResult(null);
-    try {
-      const result = await campRequestFormApi.uploadData(token, file);
-      setImportResult(result);
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not upload the file'));
-    } finally {
-      setUploading(false);
-    }
-  }
-
   const divisionOptions = context?.programName ? [context.programName] : [];
   const campNameOptions = context?.campName ? [context.campName] : [];
-  const importMessage = importResult ? formatImportResult(importResult) : '';
-  const importFailed = Boolean(importResult && !importResult.summary?.created && importResult.summary?.failed);
 
   const minCampDate = useMemo(
     () => minCampDateIsoSatisfyingAdvanceBooking(new Date(), form.startTime || '10:00'),
@@ -341,6 +273,14 @@ export default function CampProgramRequestPage() {
     }
   }, [form.campDate, minCampDate, updateField]);
 
+  // Heal blank End Time (e.g. cleared native picker) from Start + duration.
+  useEffect(() => {
+    if (!form.startTime || form.endTime) return;
+    const duration = Number(form.durationHours) > 0 ? Number(form.durationHours) : 4;
+    const endTime = computeEndTime(form.startTime, duration);
+    if (endTime) updateField('endTime', endTime);
+  }, [form.startTime, form.endTime, form.durationHours, updateField]);
+
   const brand = (
     <header className="camp-program-request__brand">
       <img
@@ -352,41 +292,6 @@ export default function CampProgramRequestPage() {
         decoding="async"
       />
       <h1>New Camp Request</h1>
-      <div className="camp-program-request__brand-end">
-        {context && formSettings.allowExcelUpload !== false ? (
-          <div className="camp-program-request__bulk" ref={menuRef}>
-            <button
-              type="button"
-              className="camp-program-request__bulk-btn"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              disabled={busy || uploading}
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              Bulk Upload
-            </button>
-            {menuOpen ? (
-              <div className="camp-program-request__bulk-menu" role="menu">
-                <button type="button" role="menuitem" onClick={handleDownloadSample}>
-                  Download Sample Template
-                </button>
-                <button type="button" role="menuitem" onClick={handleUploadData}>
-                  Upload Data
-                </button>
-              </div>
-            ) : null}
-            <input
-              ref={fileInputRef}
-              className="camp-program-request__file"
-              type="file"
-              accept={IMPORT_ACCEPT_ATTR}
-              onChange={handleUploadFile}
-              tabIndex={-1}
-              aria-hidden="true"
-            />
-          </div>
-        ) : null}
-      </div>
     </header>
   );
 
@@ -410,14 +315,6 @@ export default function CampProgramRequestPage() {
             <form className="camp-ops-root camp-program-request__form" onSubmit={handleSubmit} autoComplete="off">
               <AutofillDecoyFields />
               {error ? <div className="camp-execute__error" role="alert">{error}</div> : null}
-              {importMessage ? (
-                <div
-                  className={importFailed ? 'camp-execute__error' : 'camp-execute__success'}
-                  role="status"
-                >
-                  {importMessage}
-                </div>
-              ) : null}
               <p className="camp-program-request__program">
                 {context.clientName}
                 {context.programName ? ` · ${context.programName}` : ''}
@@ -433,24 +330,22 @@ export default function CampProgramRequestPage() {
                   campStatus="pending_review"
                   divisionOptions={divisionOptions}
                   campNameOptions={campNameOptions}
-                  reachedLifecycleStage="request"
+                  stageReadOnly={{}}
                   requestOnly
                   lockProgramFields
                   addressLookup={addressLookup}
-                  canSetHistoricalCampDates={false}
                   minCampDate={minCampDate}
                   advanceBookingError={advanceBookingError}
                   advanceBookingHint={advanceBookingHint}
-                  onValidationError={setError}
                 />
               </GeoLookupContext.Provider>
               <div className="camp-program-request__actions">
                 <button
                   type="submit"
-                  className="camp-execute__btn primary camp-execute__btn--submit"
-                  disabled={busy || uploading}
+                  className="camp-execute__btn camp-execute__btn--primary"
+                  disabled={busy}
                 >
-                  {uploading ? 'Uploading…' : busy ? 'Submitting…' : 'Submit request'}
+                  {busy ? 'Submitting…' : 'Submit Request'}
                 </button>
               </div>
             </form>

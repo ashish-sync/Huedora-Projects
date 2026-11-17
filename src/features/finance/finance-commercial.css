@@ -2075,6 +2075,13 @@ html[data-theme='dark'] .finance-pdf-preview-frame {
   margin-bottom: var(--space-4);
 }
 
+.finance-camp-payouts-head-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .finance-docs-title {
   margin: 0;
   font-size: var(--text-h3-size);

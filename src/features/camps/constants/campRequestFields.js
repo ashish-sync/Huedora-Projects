@@ -15,7 +15,7 @@ export const CAMP_REQUEST_FIELD_LABELS = {
   startTime: 'Camp Start Time',
   endTime: 'Camp End Time',
   doctorName: 'Doctor Name',
-  doctorCode: 'Doctor Code',
+  doctorCode: 'Legacy Code',
   speciality: 'Doctor Type / Specialty',
   campAddress: 'Camp / Clinic Address',
   pincode: 'PIN Code',

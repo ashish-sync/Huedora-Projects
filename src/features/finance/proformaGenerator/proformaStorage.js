@@ -18,7 +18,7 @@ export function defaultLineRow(overrides = {}) {
     type: 'line',
     id: crypto.randomUUID(),
     description: 'Healthcare Camp / Activation Services',
-    hsnSac: '999316',
+    hsnSac: '',
     qty: 1,
     rate: 0,
     discount: 0,

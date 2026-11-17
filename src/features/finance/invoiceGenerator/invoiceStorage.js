@@ -35,7 +35,7 @@ export function defaultLineItem(overrides = {}) {
     id: crypto.randomUUID(),
     description: '',
     subDescription: '',
-    hsnSac: '999316',
+    hsnSac: '',
     uom: 'Nos',
     qty: 1,
     rate: 0,

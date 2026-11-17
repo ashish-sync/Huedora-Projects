@@ -14,6 +14,18 @@ import { syncPrimaryContactFields, normalizeContactPersons } from '../utils/camp
 import { campRequestFormApi } from './campRequestFormApi.js';
 import { validateImportFileClient, getErrorMessage } from '../../../shared/importErrors.js';
 import { IMPORT_ACCEPT_ATTR } from '../../../shared/importFilePolicy.js';
+import {
+  applyFieldFormat,
+  getFormMasterCampDateErrors,
+  normalizeFormSettings,
+  validateFormMasterValues,
+} from '../../masters/formFieldRuntime.js';
+import {
+  ADVANCE_BOOKING_LEAD_TIME_ERROR,
+  getAdvanceBookingEligibility,
+  getAdvanceBookingErrors,
+  minCampDateIsoSatisfyingAdvanceBooking,
+} from '../utils/campAdvanceBooking.js';
 import '../campOps.css';
 import '../campOps.theme.css';
 import '../executor/campExecute.css';
@@ -128,13 +140,47 @@ export default function CampProgramRequestPage() {
     };
   }, [menuOpen]);
 
+  const formMasterFields = useMemo(
+    () => (Array.isArray(context?.form?.fields) ? context.form.fields : []),
+    [context?.form?.fields],
+  );
+
+  const formSettings = useMemo(
+    () => normalizeFormSettings(
+      context?.form?.settings || context?.formSettings,
+      context?.form?.category || 'PUBLIC_CAMP_REQUEST',
+    ),
+    [context?.form?.settings, context?.form?.category, context?.formSettings],
+  );
+
+  const fieldConfigByKey = useMemo(() => {
+    const map = new Map();
+    for (const field of formMasterFields) {
+      if (field?.key) map.set(String(field.key), field);
+    }
+    return map;
+  }, [formMasterFields]);
+
   const updateField = useCallback((key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }, []);
+    setForm((prev) => {
+      const def = fieldConfigByKey.get(key);
+      const shouldFormat = formSettings.enforceFieldRules && def?.format;
+      const nextValue = shouldFormat ? applyFieldFormat(value, def.format) : value;
+      return { ...prev, [key]: nextValue };
+    });
+  }, [fieldConfigByKey, formSettings.enforceFieldRules]);
 
   const updateFields = useCallback((patch) => {
-    setForm((prev) => ({ ...prev, ...patch }));
-  }, []);
+    setForm((prev) => {
+      if (!formSettings.enforceFieldRules) return { ...prev, ...patch };
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(patch || {})) {
+        const def = fieldConfigByKey.get(key);
+        next[key] = def?.format ? applyFieldFormat(value, def.format) : value;
+      }
+      return next;
+    });
+  }, [fieldConfigByKey, formSettings.enforceFieldRules]);
 
   const geoLookup = useMemo(() => ({
     lookupPin: (pin) => campRequestFormApi.lookupPin(token, pin),
@@ -150,9 +196,34 @@ export default function CampProgramRequestPage() {
   async function handleSubmit(e) {
     e?.preventDefault?.();
     if (busy || uploading || submitted) return;
-    const requestErrors = validateRequestStageForm(form);
+    const requestErrors = validateRequestStageForm(form, { canSetHistorical: false });
     if (requestErrors.length) {
       setError(requestErrors[0]);
+      return;
+    }
+    if (formSettings.enforceFieldRules && formMasterFields.length) {
+      const masterErrors = validateFormMasterValues(formMasterFields, form);
+      if (masterErrors.length) {
+        setError(masterErrors[0]);
+        return;
+      }
+    }
+    const dateErrors = getFormMasterCampDateErrors(form);
+    if (dateErrors.length) {
+      setError(dateErrors[0]);
+      return;
+    }
+    const bookingErrors = getAdvanceBookingErrors(
+      {
+        campDate: form.campDate,
+        startTime: form.startTime,
+        requestDate: form.requestDate,
+      },
+      new Date(),
+      { checkAcceptanceWindow: false },
+    );
+    if (bookingErrors.length) {
+      setError(bookingErrors[0] || ADVANCE_BOOKING_LEAD_TIME_ERROR);
       return;
     }
     const duration = Number(form.durationHours);
@@ -239,6 +310,37 @@ export default function CampProgramRequestPage() {
   const importMessage = importResult ? formatImportResult(importResult) : '';
   const importFailed = Boolean(importResult && !importResult.summary?.created && importResult.summary?.failed);
 
+  const minCampDate = useMemo(
+    () => minCampDateIsoSatisfyingAdvanceBooking(new Date(), form.startTime || '10:00'),
+    [form.startTime],
+  );
+
+  const advanceBookingEligibility = useMemo(
+    () => getAdvanceBookingEligibility(
+      {
+        campDate: form.campDate,
+        startTime: form.startTime,
+        requestDate: form.requestDate,
+      },
+      new Date(),
+    ),
+    [form.campDate, form.startTime, form.requestDate],
+  );
+
+  const advanceBookingError = advanceBookingEligibility.ready && !advanceBookingEligibility.ok
+    ? advanceBookingEligibility.message
+    : '';
+  const advanceBookingHint = advanceBookingEligibility.ready && advanceBookingEligibility.ok
+    ? advanceBookingEligibility.message
+    : (!form.campDate || !form.startTime ? advanceBookingEligibility.message : '');
+
+  useEffect(() => {
+    if (!form.campDate || !minCampDate) return;
+    if (String(form.campDate).slice(0, 10) < minCampDate) {
+      updateField('campDate', minCampDate);
+    }
+  }, [form.campDate, minCampDate, updateField]);
+
   const brand = (
     <header className="camp-program-request__brand">
       <img
@@ -251,7 +353,7 @@ export default function CampProgramRequestPage() {
       />
       <h1>New Camp Request</h1>
       <div className="camp-program-request__brand-end">
-        {context ? (
+        {context && formSettings.allowExcelUpload !== false ? (
           <div className="camp-program-request__bulk" ref={menuRef}>
             <button
               type="button"
@@ -336,6 +438,9 @@ export default function CampProgramRequestPage() {
                   lockProgramFields
                   addressLookup={addressLookup}
                   canSetHistoricalCampDates={false}
+                  minCampDate={minCampDate}
+                  advanceBookingError={advanceBookingError}
+                  advanceBookingHint={advanceBookingHint}
                   onValidationError={setError}
                 />
               </GeoLookupContext.Provider>

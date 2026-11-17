@@ -72,6 +72,24 @@
   white-space: nowrap;
 }
 
+.form-master__settings {
+  padding: 12px 14px;
+  border: 1px solid var(--border-divider, #D8E0EA);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-nested, #EDF2F7);
+}
+
+.form-master__settings-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+.form-master__settings-grid .form-master__check {
+  white-space: normal;
+  min-height: 0;
+}
+
 .form-master__layout {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);

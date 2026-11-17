@@ -229,7 +229,7 @@ export const MASTER_ENTITIES = [
         label: 'Category',
         required: true,
         type: 'select',
-        options: ['PUBLIC_CAMP_REQUEST', 'INTERNAL', 'OTHER'],
+        options: ['PUBLIC_CAMP_REQUEST', 'HCW_ACTIVITY', 'INTERNAL', 'OTHER'],
       },
       { name: 'description', label: 'Description', type: 'textarea' },
     ],

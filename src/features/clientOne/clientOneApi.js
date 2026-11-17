@@ -284,10 +284,21 @@ export const clientOneApi = {
     return authedFetch('/client-one/geo/states').then((r) => r.data || []);
   },
 
-  geoCities(states = []) {
-    const list = Array.isArray(states) ? states : (states ? [states] : []);
+  /**
+   * Load cities the same way Camp One does (by stateId).
+   * Accepts either an array of state names, or `{ stateIds, states }`.
+   */
+  geoCities(input = []) {
     const params = new URLSearchParams();
-    if (list.length) params.set('states', list.join(','));
+    if (Array.isArray(input) || typeof input === 'string') {
+      const list = Array.isArray(input) ? input : (input ? [input] : []);
+      if (list.length) params.set('states', list.join(','));
+    } else {
+      const stateIds = Array.isArray(input?.stateIds) ? input.stateIds.filter(Boolean) : [];
+      const states = Array.isArray(input?.states) ? input.states.filter(Boolean) : [];
+      if (stateIds.length) params.set('stateIds', stateIds.join(','));
+      else if (states.length) params.set('states', states.join(','));
+    }
     return authedFetch(`/client-one/geo/cities?${params}`).then((r) => r.data || []);
   },
 };

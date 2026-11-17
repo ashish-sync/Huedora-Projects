@@ -165,17 +165,31 @@ select:not([multiple]):not([size]) option {
   height: auto !important;
   min-height: var(--control-h) !important;
   max-height: none !important;
-  overflow: visible !important;
-  align-items: center;
+  /* Keep chevron on the right — react-select defaults to flex-wrap:wrap,
+     which drops indicators under the tags at bottom-left. */
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
+  align-items: center !important;
 }
 
 .adaptive-select--multi .adaptive-select__value-container {
   display: flex !important;
   flex-wrap: wrap;
   gap: 4px;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  height: auto !important;
   padding-top: 6px !important;
   padding-bottom: 6px !important;
   grid-template-columns: none;
+  overflow: hidden !important;
+}
+
+.adaptive-select--multi .adaptive-select__indicators {
+  align-self: center !important;
+  height: auto !important;
+  max-height: var(--control-h) !important;
+  flex: 0 0 auto !important;
 }
 
 .adaptive-select--multi .adaptive-select__input-container {

@@ -18,7 +18,9 @@ import {
   buildEditPath,
   correctCommercialDocumentNumber,
   deleteCommercialDocument,
+  downloadServerPdf,
   duplicateCommercialDocument,
+  openServerPdf,
   recordCommercialPayment,
   updateCommercialLifecycleStatus,
 } from './builder/builderPersistence.js';
@@ -84,6 +86,7 @@ function FinanceDocActionsMenu({
   canWrite,
   admin,
   busy,
+  onDownload,
   onEdit,
   onPrint,
   onDuplicate,
@@ -108,7 +111,7 @@ function FinanceDocActionsMenu({
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
-    const panelHeight = panelRef.current?.offsetHeight || 220;
+    const panelHeight = panelRef.current?.offsetHeight || 280;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < panelHeight + MENU_GAP && rect.top > spaceBelow;
     const top = openUp
@@ -167,6 +170,11 @@ function FinanceDocActionsMenu({
           aria-label="Document actions"
           style={{ top: coords.top, left: coords.left, width: MENU_WIDTH }}
         >
+          {onDownload ? (
+            <button type="button" role="menuitem" onClick={() => run(onDownload)}>
+              Download Document
+            </button>
+          ) : null}
           <button type="button" role="menuitem" onClick={() => run(onEdit)}>
             Edit Document
           </button>
@@ -254,6 +262,8 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   const [deleteConfirmDoc, setDeleteConfirmDoc] = useState(null);
   const [duplicateBusyId, setDuplicateBusyId] = useState('');
   const [statusBusyId, setStatusBusyId] = useState('');
+  const [viewBusyId, setViewBusyId] = useState('');
+  const [downloadBusyId, setDownloadBusyId] = useState('');
 
   const [payRow, setPayRow] = useState(null);
   const [payAmount, setPayAmount] = useState('');
@@ -435,6 +445,34 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
       setError(e.message || 'Failed to duplicate document');
     } finally {
       setDuplicateBusyId('');
+    }
+  }
+
+  async function handleViewDocument(row) {
+    if (!row?._id || !row?.documentType) return;
+    setViewBusyId(row._id);
+    setError('');
+    try {
+      await openServerPdf(row.documentType, row._id);
+    } catch (e) {
+      setError(e.message || 'Unable to open document');
+    } finally {
+      setViewBusyId('');
+    }
+  }
+
+  async function handleDownloadDocument(row) {
+    if (!row?._id || !row?.documentType) return;
+    setDownloadBusyId(row._id);
+    setError('');
+    try {
+      const fileName = String(row.documentNumber || docTypeLabel(row.documentType) || 'document')
+        .replace(/[^\w.-]+/g, '_');
+      await downloadServerPdf(row.documentType, row._id, fileName);
+    } catch (e) {
+      setError(e.message || 'Unable to download document');
+    } finally {
+      setDownloadBusyId('');
     }
   }
 
@@ -622,14 +660,30 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                 const rowBusy =
                   deleteBusyId === row._id ||
                   duplicateBusyId === row._id ||
-                  statusBusyId === row._id;
+                  statusBusyId === row._id ||
+                  viewBusyId === row._id ||
+                  downloadBusyId === row._id;
+                const numberLabel = displayDocumentNumber(row);
+                const canView = Boolean(row._id && row.documentType);
                 return (
                   <tr key={row._id}>
                     <td
                       className="mono-sm finance-docs-col-number"
-                      title={displayDocumentNumber(row)}
+                      title={canView ? `View ${numberLabel}` : numberLabel}
                     >
-                      {displayDocumentNumber(row)}
+                      {canView ? (
+                        <button
+                          type="button"
+                          className="finance-docs-number-link"
+                          onClick={() => handleViewDocument(row)}
+                          disabled={viewBusyId === row._id}
+                          aria-label={`View document ${numberLabel}`}
+                        >
+                          {viewBusyId === row._id ? 'Opening…' : numberLabel}
+                        </button>
+                      ) : (
+                        numberLabel
+                      )}
                     </td>
                     <td
                       className="finance-docs-col-type"
@@ -674,6 +728,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                         canWrite={canWrite}
                         admin={admin}
                         busy={rowBusy}
+                        onDownload={canView ? () => handleDownloadDocument(row) : null}
                         onEdit={() => navigate(buildEditPath(row.documentType, row._id))}
                         onPrint={() =>
                           navigate(`${buildEditPath(row.documentType, row._id)}?print=1`)

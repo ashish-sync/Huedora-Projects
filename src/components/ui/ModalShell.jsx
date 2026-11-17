@@ -32,6 +32,11 @@ export default function ModalShell({
         ? { 'aria-label': title }
         : {};
 
+  // Keep latest onClose without re-running focus trap on every parent render
+  // (inline onClose={() => ...} would otherwise remount focus onto the first field).
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return undefined;
 
@@ -55,7 +60,7 @@ export default function ModalShell({
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
       if (event.key !== 'Tab' || !panel) return;
@@ -91,7 +96,7 @@ export default function ModalShell({
         }
       }
     };
-  }, [open, onClose, initialFocusRef]);
+  }, [open, initialFocusRef]);
 
   if (!open) return null;
 

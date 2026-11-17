@@ -82,7 +82,7 @@ function invoiceLikeToPayload(form, documentType) {
       .filter((row) => trim(row.description) || Number(row.qty) || Number(row.rate))
       .map((row, index) => ({
         description: trim(row.description),
-        sacCode: trim(row.hsnSac) || '999316',
+        sacCode: trim(row.hsnSac),
         qty: row.qty,
         rate: row.rate,
         discount: row.discount,
@@ -112,7 +112,7 @@ function proformaToPayload(form) {
     lineItems.push({
       sectionTitle,
       description: trim(row.description),
-      sacCode: trim(row.hsnSac) || '999316',
+      sacCode: trim(row.hsnSac),
       qty: row.qty,
       rate: row.rate,
       discount: row.discount,
@@ -513,7 +513,7 @@ function mergeInvoiceLike(base, doc) {
       ? doc.lineItems.map((row) =>
           defaultLineItem({
             description: row.description || '',
-            hsnSac: row.sacCode || '999316',
+            hsnSac: row.sacCode || '',
             qty: row.qty ?? 1,
             rate: row.rate ?? 0,
             discount: row.discount ?? 0,
@@ -597,7 +597,7 @@ function mergeProforma(doc) {
       ? doc.lineItems.map((row) =>
           defaultLineRow({
             description: row.description || '',
-            hsnSac: row.sacCode || '999316',
+            hsnSac: row.sacCode || '',
             qty: row.qty ?? 1,
             rate: row.rate ?? 0,
             discount: row.discount ?? 0,
@@ -870,20 +870,25 @@ export async function duplicateCommercialDocument(id) {
 }
 
 /** Fetch the sharp PDFKit-rendered PDF as a Blob (vector text — not html2canvas). */
-export async function fetchServerPdfBlob(documentType, id) {
+export async function fetchServerPdfBlob(documentType, id, { download = true } = {}) {
   const cfg = docConfig(documentType);
   if (!cfg) throw new Error('Unknown document type');
-  const res = await apiFetch(`${cfg.pdfPath(id)}?download=1`);
-  if (!res.ok) throw new Error('PDF download failed');
+  const path = download ? `${cfg.pdfPath(id)}?download=1` : cfg.pdfPath(id);
+  const res = await apiFetch(path);
+  if (!res.ok) throw new Error(download ? 'PDF download failed' : 'Unable to open document PDF');
   const blob = await res.blob();
   if (!(blob instanceof Blob) || blob.size < 64) {
-    throw new Error('PDF download failed');
+    throw new Error(download ? 'PDF download failed' : 'Unable to open document PDF');
+  }
+  // Browsers need an explicit PDF MIME type to render blob: URLs in a new tab.
+  if (blob.type && blob.type !== 'application/pdf') {
+    return new Blob([blob], { type: 'application/pdf' });
   }
   return blob;
 }
 
 export async function downloadServerPdf(documentType, id, fileName) {
-  const blob = await fetchServerPdfBlob(documentType, id);
+  const blob = await fetchServerPdfBlob(documentType, id, { download: true });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -892,6 +897,19 @@ export async function downloadServerPdf(documentType, id, fileName) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  return blob;
+}
+
+/** Open the commercial document PDF in a new browser window for viewing. */
+export async function openServerPdf(documentType, id) {
+  const blob = await fetchServerPdfBlob(documentType, id, { download: false });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) {
+    URL.revokeObjectURL(url);
+    throw new Error('Pop-up blocked. Allow pop-ups to view the document.');
+  }
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   return blob;
 }
 

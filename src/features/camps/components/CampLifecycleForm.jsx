@@ -222,6 +222,12 @@ export function CampLifecycleForm({
   requestOnly = false,
   lockProgramFields = false,
   addressLookup = null,
+  /** IST YYYY-MM-DD — earliest camp date that can meet advance booking. */
+  minCampDate = '',
+  /** Shown under camp date / start time when advance booking fails. */
+  advanceBookingError = '',
+  /** Shown when advance booking is met (eligibility summary). */
+  advanceBookingHint = '',
 }) {
   const resolvedActiveStage = normalizeLifecycleStage(activeStage, 'request');
   const clientMasterPricing = useMemo(
@@ -438,12 +444,22 @@ export function CampLifecycleForm({
                     onChange={(v) => updateField('campDate', v)}
                     disabled={disabled}
                     required
+                    min={minCampDate || undefined}
                   />
                 </label>
               </div>
               {campDateNeedsApproval ? (
                 <p className="meta-text full camp-request-date-warning">
                   Camp date is more than 2 days before today and needs Reporting Manager approval.
+                </p>
+              ) : null}
+              {advanceBookingError ? (
+                <p className="meta-text full camp-request-date-warning camp-request-date-warning--error" role="alert">
+                  {advanceBookingError}
+                </p>
+              ) : advanceBookingHint ? (
+                <p className="meta-text full camp-request-date-hint" role="status">
+                  {advanceBookingHint}
                 </p>
               ) : null}
               <div className="camp-request-pair-row full">
@@ -492,6 +508,7 @@ export function CampLifecycleForm({
                     onChange={(v) => updateField('campDate', v)}
                     disabled={disabled}
                     required
+                    min={minCampDate || undefined}
                   />
                 </label>
               </div>
@@ -508,6 +525,15 @@ export function CampLifecycleForm({
               {campDateNeedsApproval ? (
                 <p className="meta-text full camp-request-date-warning">
                   Camp date is more than 2 days before today and needs Reporting Manager approval.
+                </p>
+              ) : null}
+              {advanceBookingError ? (
+                <p className="meta-text full camp-request-date-warning camp-request-date-warning--error" role="alert">
+                  {advanceBookingError}
+                </p>
+              ) : advanceBookingHint ? (
+                <p className="meta-text full camp-request-date-hint" role="status">
+                  {advanceBookingHint}
                 </p>
               ) : null}
               <div className="camp-request-times full">

@@ -1136,7 +1136,7 @@ export default function ClientOneApp({
         ) : null}
 
         {tab === 'request-link' ? (
-          <ClientOneUserBase dateControls={dateControls} />
+          <ClientOneUserBase />
         ) : null}
 
         {tab === 'purchase-orders' ? (

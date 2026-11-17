@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   Building2,
@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   Upload,
   UserRound,
-  Users,
   UserX,
   X,
 } from 'lucide-react';
@@ -231,7 +230,7 @@ function MemberNode({ node, depth, selectedId, onSelect }) {
   );
 }
 
-export default function ClientOneUserBase({ dateControls }) {
+export default function ClientOneUserBase() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [tree, setTree] = useState([]);
@@ -265,6 +264,9 @@ export default function ClientOneUserBase({ dateControls }) {
   const [masterStates, setMasterStates] = useState([]);
   const [cityCache, setCityCache] = useState({});
   const [loadingCities, setLoadingCities] = useState(false);
+  /** States already fetched (or in-flight) — keeps city load effect from looping. */
+  const cityFetchKeysRef = useRef(new Set());
+  const statesKey = (form.states || []).join('|');
 
   useEffect(() => {
     let cancelled = false;
@@ -315,40 +317,83 @@ export default function ClientOneUserBase({ dateControls }) {
     return fallbackAllStates;
   }, [formParent, fallbackAllStates]);
 
-  // Load cities dynamically when states change
+  // Load cities when selected states change — Camp One style (by stateId).
+  // Never depend on cityCache (that caused a fetch loop).
   useEffect(() => {
-    if (!formOpen || !form.states?.length) {
-      return;
+    if (!formOpen || !statesKey) {
+      setLoadingCities(false);
+      return undefined;
     }
-    const needed = form.states.filter((st) => !cityCache[st.toLowerCase()]);
-    if (!needed.length) return;
+    const selectedStates = statesKey.split('|').filter(Boolean);
+    const needed = selectedStates.filter((st) => {
+      const key = st.toLowerCase();
+      return !cityFetchKeysRef.current.has(key);
+    });
+    if (!needed.length) return undefined;
+
+    needed.forEach((st) => cityFetchKeysRef.current.add(st.toLowerCase()));
+
+    const stateIds = needed
+      .map((name) => {
+        const row = fallbackAllStates.find(
+          (s) => String(s.name || s).toLowerCase() === name.toLowerCase(),
+        );
+        return row?.id || row?._id || '';
+      })
+      .filter(Boolean);
 
     let cancelled = false;
     setLoadingCities(true);
-    clientOneApi.geoCities(form.states)
+    clientOneApi
+      .geoCities({ stateIds, states: needed })
       .then((cities) => {
         if (cancelled) return;
         setCityCache((prev) => {
           const next = { ...prev };
+          // Seed requested keys so empty results still count as loaded.
+          for (const st of needed) {
+            const key = st.toLowerCase();
+            if (!next[key]) next[key] = [];
+          }
+          const idToStateName = new Map();
+          for (const st of needed) {
+            const row = fallbackAllStates.find(
+              (s) => String(s.name || s).toLowerCase() === st.toLowerCase(),
+            );
+            const sid = row?.id || row?._id;
+            if (sid) idToStateName.set(String(sid), st.toLowerCase());
+          }
           for (const c of cities || []) {
-            const stKey = String(c.stateName || '').toLowerCase();
+            const byId = c.stateId ? idToStateName.get(String(c.stateId)) : '';
+            const apiState = String(c.stateName || '').toLowerCase();
+            const matched = needed.find((st) => st.toLowerCase() === apiState);
+            const stKey = byId || (matched ? matched.toLowerCase() : apiState);
+            if (!stKey) continue;
             if (!next[stKey]) next[stKey] = [];
             if (!next[stKey].some((existing) => existing.name === c.name)) {
-              next[stKey].push(c);
+              next[stKey].push({
+                ...c,
+                stateName: c.stateName || matched || needed.find((st) => st.toLowerCase() === stKey) || '',
+              });
             }
           }
           return next;
         });
       })
-      .catch(() => {})
+      .catch(() => {
+        // Allow retry on next open/change if the request failed.
+        needed.forEach((st) => cityFetchKeysRef.current.delete(st.toLowerCase()));
+      })
       .finally(() => {
         if (!cancelled) setLoadingCities(false);
       });
 
     return () => {
       cancelled = true;
+      // Release in-flight keys so a dependency change (e.g. states master load) can retry.
+      needed.forEach((st) => cityFetchKeysRef.current.delete(st.toLowerCase()));
     };
-  }, [formOpen, form.states, cityCache]);
+  }, [formOpen, statesKey, fallbackAllStates]);
 
   // Available cities: union of cities from selected states, scoped to parent's locations if parent restricted
   const availableCities = useMemo(() => {
@@ -432,6 +477,10 @@ export default function ClientOneUserBase({ dateControls }) {
       setSelectedId(tree[0].id);
     }
   }, [tree, selectedId]);
+
+  const closeFormModal = useCallback(() => {
+    if (!saving) setFormOpen(false);
+  }, [saving]);
 
   const openCreate = (overrides = {}) => {
     setFormMode('create');
@@ -804,12 +853,6 @@ export default function ClientOneUserBase({ dateControls }) {
           </p>
         </div>
 
-        {dateControls ? (
-          <div className="c1-page-head__filters c1-user-base-head__date">
-            {dateControls}
-          </div>
-        ) : null}
-
         {capabilities.canManage ? (
           <div className="c1-page-head__actions c1-user-base-head__actions">
             <Button
@@ -932,21 +975,56 @@ export default function ClientOneUserBase({ dateControls }) {
 
       {error ? <p className="error-text" role="alert">{error}</p> : null}
 
+      {revealedPin && !formOpen ? (
+        <div className="c1-org-pin-banner" role="status">
+          <div className="c1-org-pin-banner__content">
+            <div className="c1-org-pin-banner__badge">
+              <KeyRound size={14} aria-hidden="true" />
+              <span>SECURE ACCESS PIN</span>
+            </div>
+            <p className="c1-org-pin-banner__text">
+              Generated PIN (shown once):
+              {' '}
+              <strong className="c1-org-pin-value">{revealedPin}</strong>
+            </p>
+            <p className="meta-text c1-org-pin-banner__hint">
+              Share this 6-digit PIN securely with the member. It will not be shown again.
+            </p>
+          </div>
+          <div className="c1-org-pin-banner__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              size="compact"
+              onClick={() => copyToClipboard(revealedPin, 'pin')}
+            >
+              {copiedPin ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+              {copiedPin ? 'Copied' : 'Copy PIN'}
+            </Button>
+            <Button type="button" size="compact" onClick={() => setRevealedPin(null)}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="c1-org-layout">
         <div className="c1-org-tree-panel" role="region" aria-label="Organization hierarchy tree">
-          <div className="c1-org-tree-panel__head">
-            <h3 className="c1-org-tree-panel__title">
-              <FolderTree size={14} aria-hidden="true" />
-              Hierarchy Tree
-            </h3>
-            <span className="meta-text c1-org-tree-panel__count">
+          <div className="c1-org-panel-head">
+            <div className="c1-org-panel-head__left">
+              <FolderTree size={14} className="c1-org-panel-head__icon" aria-hidden="true" />
+              <h3 className="c1-org-panel-head__title">Hierarchy Tree</h3>
+            </div>
+            <span className="c1-org-panel-head__badge">
               {filteredTree.length} root {filteredTree.length === 1 ? 'branch' : 'branches'}
             </span>
           </div>
 
-          <div className="c1-org-tree-panel__content">
+          <div className="c1-org-tree-scroll">
             {busy && !tree.length ? (
-              <p className="meta-text c1-org-empty">Loading organogram…</p>
+              <div className="c1-org-empty-state c1-org-empty-state--compact">
+                <p className="c1-org-empty-state__subtitle">Loading organogram…</p>
+              </div>
             ) : filteredTree.length ? (
               <ul className="c1-org-tree" role="tree">
                 {filteredTree.map((root) => (
@@ -960,12 +1038,19 @@ export default function ClientOneUserBase({ dateControls }) {
                 ))}
               </ul>
             ) : (
-              <div className="c1-org-empty">
-                <UserRound size={32} className="c1-org-empty__icon" aria-hidden="true" />
-                <p>
+              <div className="c1-org-empty-state">
+                <span className="c1-org-empty-state__icon" aria-hidden="true">
+                  <UserRound size={22} />
+                </span>
+                <p className="c1-org-empty-state__title">
                   {searchQuery || levelFilter !== 'all'
-                    ? 'No members match the current search or filters.'
-                    : 'No users yet. Add a Zonal user to start the organogram.'}
+                    ? 'No matching members'
+                    : 'No users yet'}
+                </p>
+                <p className="c1-org-empty-state__subtitle">
+                  {searchQuery || levelFilter !== 'all'
+                    ? 'Try a different search or designation filter.'
+                    : 'Add a Zonal user to start the organogram.'}
                 </p>
                 {capabilities.canManage && !searchQuery && levelFilter === 'all' ? (
                   <Button type="button" size="compact" onClick={() => openCreate()}>
@@ -978,29 +1063,39 @@ export default function ClientOneUserBase({ dateControls }) {
           </div>
         </div>
 
-        <aside className="c1-org-detail" aria-label="Selected user details">
+        <aside className="c1-org-detail-panel" aria-label="Selected user details">
           {!selected ? (
-            <div className="c1-org-detail__empty">
-              <UserRound size={32} className="c1-org-empty__icon" aria-hidden="true" />
-              <p className="meta-text">Select a user to view details and management actions.</p>
+            <div className="c1-org-empty-state c1-org-empty-state--compact">
+              <span className="c1-org-empty-state__icon" aria-hidden="true">
+                <UserRound size={22} />
+              </span>
+              <p className="c1-org-empty-state__title">Select a user</p>
+              <p className="c1-org-empty-state__subtitle">
+                View profile details and management actions here.
+              </p>
             </div>
           ) : (
-            <div className="c1-org-detail__content">
-              <div className="c1-org-detail__header">
+            <div className="c1-org-detail-content">
+              <div className="c1-org-detail__hero">
                 <div
                   className={`c1-org-detail__avatar c1-org-detail__avatar--${selectedDes.toLowerCase()}`}
                   aria-hidden="true"
                 >
                   {getInitials(selected.fullName)}
                 </div>
-                <div className="c1-org-detail__header-text">
-                  <h3 className="c1-org-detail__name">{selected.fullName}</h3>
-                  <div className="c1-org-detail__tags">
+                <div className="c1-org-detail__hero-text">
+                  <div className="c1-org-detail__hero-title-row">
+                    <h3>{selected.fullName}</h3>
+                  </div>
+                  <div className="c1-org-detail__hero-badges">
                     <span className={`c1-level-tag c1-level-tag--${selectedDes.toLowerCase()}`}>
                       {selectedDes}
                     </span>
-                    <span className={`c1-status-pill c1-status-pill--${selected.status}`}>
-                      <span className="c1-status-pill__dot" aria-hidden="true" />
+                    <span className={`c1-org-status c1-org-status--${selected.status}`}>
+                      <span
+                        className={`c1-status-dot c1-status-dot--${selected.status}`}
+                        aria-hidden="true"
+                      />
                       {selected.status === 'active' ? 'Active' : 'Inactive'}
                     </span>
                   </div>
@@ -1216,9 +1311,7 @@ export default function ClientOneUserBase({ dateControls }) {
 
       <ModalShell
         open={formOpen}
-        onClose={() => {
-          if (!saving) setFormOpen(false);
-        }}
+        onClose={closeFormModal}
         title={formMode === 'create' ? 'Add user' : 'Edit user'}
         panelClassName="modal-card c1-org-form-modal"
       >
@@ -1262,35 +1355,42 @@ export default function ClientOneUserBase({ dateControls }) {
           ) : (
             <>
               <div className="c1-org-form__grid">
-                {/* ROW 1: Full Name | Mobile Number */}
-                <label className="field">
-                  <span className="field__label">
+                {/* ROW 1: Full Name | Mobile Number — use div wrappers (not <label>) so
+                    nested Input / react-select controls do not steal focus on re-render. */}
+                <div className="field">
+                  <span className="field__label" id="c1-ub-fullname-label">
                     Full Name <span className="req-star" aria-hidden="true">*</span>
                   </span>
                   <Input
                     required
                     name="fullName"
+                    className="field-input"
+                    containerClassName="c1-org-form__input-wrap"
                     placeholder="e.g. Rahul Sharma"
                     value={form.fullName}
                     onChange={(e) => {
                       setForm((p) => ({ ...p, fullName: e.target.value }));
                       if (fieldErrors.fullName) setFieldErrors((p) => ({ ...p, fullName: '' }));
                     }}
+                    aria-labelledby="c1-ub-fullname-label"
                     aria-required="true"
                     aria-invalid={Boolean(fieldErrors.fullName)}
+                    autoComplete="name"
                   />
                   {fieldErrors.fullName ? <span className="c1-field-error">{fieldErrors.fullName}</span> : null}
-                </label>
+                </div>
 
-                <label className="field">
-                  <span className="field__label">
+                <div className="field">
+                  <span className="field__label" id="c1-ub-mobile-label">
                     Mobile Number <span className="req-star" aria-hidden="true">*</span>
                   </span>
                   <Input
                     required
                     name="mobile"
                     type="tel"
-                    inputMode="tel"
+                    inputMode="numeric"
+                    className="field-input"
+                    containerClassName="c1-org-form__input-wrap"
                     placeholder="10-digit mobile number"
                     maxLength={10}
                     value={form.mobile}
@@ -1299,22 +1399,26 @@ export default function ClientOneUserBase({ dateControls }) {
                       setForm((p) => ({ ...p, mobile: val }));
                       if (fieldErrors.mobile) setFieldErrors((p) => ({ ...p, mobile: '' }));
                     }}
+                    aria-labelledby="c1-ub-mobile-label"
                     aria-required="true"
                     aria-invalid={Boolean(fieldErrors.mobile)}
+                    autoComplete="tel"
                   />
                   {fieldErrors.mobile ? <span className="c1-field-error">{fieldErrors.mobile}</span> : null}
-                </label>
+                </div>
 
-                {/* ROW 2: State (Multi-select) | City (Multi-select) */}
-                <label className="field">
-                  <span className="field__label">State (Multi-select)</span>
+                {/* ROW 2: State | City */}
+                <div className="field">
+                  <span className="field__label" id="c1-ub-states-label">State</span>
                   <AdaptiveSelect
                     multiple
+                    className="c1-org-form__geo-select"
                     name="states"
                     placeholder={availableStates.length ? 'Select state(s)' : 'Loading states…'}
                     value={form.states}
                     onChange={(e) => onStatesChange(e.target.value)}
-                    aria-label="State (Multi-select)"
+                    aria-label="State"
+                    aria-labelledby="c1-ub-states-label"
                   >
                     {availableStates.map((st) => (
                       <option key={st.name || st} value={st.name || st}>
@@ -1322,73 +1426,83 @@ export default function ClientOneUserBase({ dateControls }) {
                       </option>
                     ))}
                   </AdaptiveSelect>
-                </label>
+                </div>
 
-                <label className="field">
-                  <span className="field__label">City (Multi-select)</span>
+                <div className="field">
+                  <span className="field__label" id="c1-ub-cities-label">City</span>
                   <AdaptiveSelect
                     multiple
+                    className="c1-org-form__geo-select"
                     name="cities"
                     placeholder={
                       !form.states.length
-                        ? 'Select state(s) first'
+                        ? 'Select state first'
                         : loadingCities
                           ? 'Loading cities…'
                           : availableCities.length
                             ? 'Select city/cities'
                             : 'No cities found'
                     }
-                    disabled={!form.states.length || loadingCities}
+                    disabled={!form.states.length}
                     value={form.cities}
-                    onChange={(e) => setForm((p) => ({ ...p, cities: Array.isArray(e.target.value) ? e.target.value : [] }))}
-                    aria-label="City (Multi-select)"
+                    onChange={(e) => setForm((p) => ({
+                      ...p,
+                      cities: Array.isArray(e.target.value) ? e.target.value : [],
+                    }))}
+                    aria-label="City"
+                    aria-labelledby="c1-ub-cities-label"
                   >
                     {availableCities.map((ct) => (
                       <option key={`${ct.stateName || ''}-${ct.name || ct}`} value={ct.name || ct}>
-                        {ct.name || ct}{ct.stateName ? ` (${ct.stateName})` : ''}
+                        {ct.name || ct}
+                        {form.states.length > 1 && ct.stateName ? ` (${ct.stateName})` : ''}
                       </option>
                     ))}
                   </AdaptiveSelect>
-                </label>
+                </div>
 
-                {/* ROW 3: Designation (Dropdown) | Reporting To (Dropdown) */}
-                <label className="field">
-                  <span className="field__label">
+                {/* ROW 3: Designation | Reporting To — native tylo-select only
+                    (do not add adaptive-select class; it strips native chevron chrome). */}
+                <div className="field">
+                  <span className="field__label" id="c1-ub-designation-label">
                     Designation <span className="req-star" aria-hidden="true">*</span>
                   </span>
                   <select
-                    className="tylo-select adaptive-select"
+                    className="tylo-select"
                     value={form.designation}
                     onChange={(e) => onDesignationChange(e.target.value)}
                     aria-label="Designation"
+                    aria-labelledby="c1-ub-designation-label"
                     aria-required="true"
                   >
                     {DESIGNATIONS.map((des) => (
                       <option key={des} value={des}>{des}</option>
                     ))}
                   </select>
-                </label>
+                </div>
 
-                <label className="field">
-                  <span className="field__label">
+                <div className="field">
+                  <span className="field__label" id="c1-ub-reporting-label">
                     Reporting To {form.designation !== 'Zonal' ? <span className="req-star" aria-hidden="true">*</span> : null}
                   </span>
                   {form.designation === 'Zonal' ? (
                     <select
-                      className="tylo-select adaptive-select"
+                      className="tylo-select"
                       disabled
                       value=""
                       aria-label="Reporting To"
+                      aria-labelledby="c1-ub-reporting-label"
                     >
-                      <option value=""></option>
+                      <option value="">Not required for Zonal</option>
                     </select>
                   ) : (
                     <>
                       <select
-                        className={`tylo-select adaptive-select${fieldErrors.parentId ? ' is-invalid' : ''}`}
+                        className={`tylo-select${fieldErrors.parentId ? ' is-invalid' : ''}`}
                         value={form.parentId}
                         onChange={(e) => onParentChange(e.target.value)}
                         aria-label="Reporting To"
+                        aria-labelledby="c1-ub-reporting-label"
                         aria-required="true"
                       >
                         <option value="">
@@ -1405,27 +1519,25 @@ export default function ClientOneUserBase({ dateControls }) {
                       {fieldErrors.parentId ? <span className="c1-field-error">{fieldErrors.parentId}</span> : null}
                     </>
                   )}
-                </label>
-              </div>
+                </div>
 
-              {formMode === 'edit' ? (
-                <div className="c1-org-form__status-row">
-                  <label className="field">
-                    <span className="field__label">Account Status</span>
+                {formMode === 'edit' ? (
+                  <div className="field">
+                    <span className="field__label" id="c1-ub-status-label">Account Status</span>
                     <select
-                      className="tylo-select adaptive-select"
+                      className="tylo-select"
                       value={form.status}
                       onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                      aria-label="Account Status"
+                      aria-labelledby="c1-ub-status-label"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
-                  </label>
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
+              </div>
 
-              <p className="meta-text">
+              <p className="c1-org-form__note" role="note">
                 {formMode === 'create'
                   ? 'A secure 6-digit PIN is generated automatically and shown once after save.'
                   : 'PIN is not shown in listings. Use Rotate PIN to issue a new one.'}

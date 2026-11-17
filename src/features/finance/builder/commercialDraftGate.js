@@ -59,7 +59,7 @@ function countInvoiceLikeLineItems(lineItems) {
   let n = 0;
   for (const line of lineItems || []) {
     if (isUserLineDescription(line?.description)) n += 1;
-    else if (filled(line?.hsnSac) && trim(line.hsnSac) !== '999316') n += 1;
+    else if (filled(line?.hsnSac)) n += 1;
     else if (Number(line?.rate) > 0) n += 1;
     else if (Number(line?.qty) > 0 && Number(line?.qty) !== 1) {
       n += 1;
@@ -163,7 +163,7 @@ function countProformaEntries(form) {
   for (const row of form?.rows || []) {
     if (row?.type && row.type !== 'line') continue;
     if (isUserLineDescription(row?.description)) n += 1;
-    else if (filled(row?.hsnSac) && trim(row.hsnSac) !== '999316') n += 1;
+    else if (filled(row?.hsnSac)) n += 1;
     else if (Number(row?.rate) > 0) n += 1;
   }
 

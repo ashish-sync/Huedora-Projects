@@ -2743,97 +2743,39 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
 .c1-user-base-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3, 12px);
 }
 
-/* User Base Header (aligned to 6-column KPI grid) */
+/* User Base Header — title left, actions right (no date filter on organogram) */
 .c1-user-base-head {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
   align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
   width: 100%;
 }
 
 .c1-user-base-head__title {
-  grid-column: 1 / 4;
   min-width: 0;
-}
-
-.c1-user-base-head__date {
-  grid-column: 4 / 6;
-  min-width: 0;
-  display: flex;
-  align-items: flex-end;
-  width: 100%;
-}
-
-.c1-user-base-head__date .client-one-date-filter {
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-}
-
-.c1-user-base-head__date .client-one-date-field:first-of-type {
-  flex: 0 0 calc((100% - 10px) / 2);
-  width: calc((100% - 10px) / 2);
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.c1-user-base-head__date .client-one-date-filter__sep {
-  flex: 0 0 10px;
-  width: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.c1-user-base-head__date .client-one-date-field:last-of-type {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.c1-user-base-head__date .client-one-date-field__control {
-  width: 100%;
-}
-
-.c1-user-base-head__date .client-one-date-field__value {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.c1-user-base-head__date .client-one-date-filter__actions {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 4px;
+  flex: 1 1 auto;
 }
 
 .c1-user-base-head__actions {
-  grid-column: 6 / 7;
   min-width: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--space-2, 8px);
   align-items: flex-end;
-  width: 100%;
+  width: min(240px, 42%);
+  flex: 0 0 auto;
 }
 
 .c1-user-base-head__actions .btn {
   width: 100%;
-  padding: 0 4px;
-  height: 28px;
-  min-height: 28px;
-  font-size: 0.78rem;
+  padding: 0 var(--space-2, 8px);
+  height: var(--control-h, 36px);
+  min-height: var(--control-h, 36px);
+  font-size: var(--text-body-sm-size, 0.8125rem);
   font-weight: 600;
   justify-content: center;
   white-space: nowrap;
@@ -3578,11 +3520,12 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
   background: var(--bg-nested, #EDF2F7);
   border: 1px solid var(--border-board, #D4DDE8);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
   min-width: 0;
+  justify-content: flex-start;
 }
 
 .c1-org-detail__tile--full {
@@ -3662,18 +3605,21 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
 .c1-org-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 2px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0;
+  min-height: 1.4rem;
 }
 
 .c1-org-chip {
   font-size: 0.7rem;
   font-weight: 600;
+  line-height: 1.25;
   color: #7C3AED;
   background: color-mix(in srgb, #8B5CF6 12%, transparent);
   border: 1px solid color-mix(in srgb, #8B5CF6 25%, transparent);
-  padding: 1px 7px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
 }
 
 .c1-org-chip--branch {
@@ -3692,11 +3638,13 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
 .c1-org-detail__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: var(--space-2, 8px);
 }
 
 .c1-org-detail__actions .btn {
   white-space: nowrap;
+  min-height: var(--control-h, 36px);
 }
 
 /* PIN Banner */
@@ -3765,24 +3713,27 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
 .c1-org-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-4, 16px);
 }
 
 .c1-org-form__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 16px;
+  gap: var(--space-3, 12px) var(--space-4, 16px);
   align-items: start;
 }
 
-.c1-org-form__grid .field {
+.c1-org-form__grid .field,
+.c1-org-form__status-row .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
+  position: relative;
 }
 
-.c1-org-form__grid .field .field__label {
+.c1-org-form__grid .field .field__label,
+.c1-org-form__status-row .field .field__label {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-secondary, #475569);
@@ -3790,64 +3741,118 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
   align-items: center;
   gap: 2px;
   letter-spacing: -0.01em;
+  min-height: 1.1rem;
+  line-height: 1.2;
 }
 
-.c1-org-form__grid .field .req-star {
+.c1-org-form__grid .field .req-star,
+.c1-org-form__status-row .field .req-star {
   color: var(--color-danger, #EF4444);
   font-weight: 700;
 }
 
-.c1-org-form__grid .field input,
-.c1-org-form__grid .field select,
-.c1-org-form__grid .field .adaptive-select__control {
-  min-height: 38px;
-  height: 38px;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+.c1-org-form__grid .field > .adaptive-select-host,
+.c1-org-form__grid .field > select.tylo-select,
+.c1-org-form__status-row .field > select.tylo-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.c1-org-form__grid .field > input:not([type='hidden']):not([aria-hidden='true']),
+.c1-org-form__grid .field > select.tylo-select,
+.c1-org-form__status-row .field > select.tylo-select {
+  min-height: var(--control-h, 36px);
+  height: var(--control-h, 36px);
+  border-radius: var(--control-radius, 6px);
+  font-size: var(--text-body-sm-size, 0.8125rem);
   box-sizing: border-box;
 }
 
+/* Flatten nested Input .field wrapper so labels/controls stay in one column. */
+.c1-org-form__grid .field > .c1-org-form__input-wrap.field {
+  display: contents;
+}
+
+.c1-org-form__grid .field .field-control-wrap {
+  width: 100%;
+}
+
+.c1-org-form__grid .field .field-input,
+.c1-org-form__grid .field input.field-input {
+  width: 100%;
+  min-height: var(--control-h, 36px);
+  height: var(--control-h, 36px);
+  box-sizing: border-box;
+}
+
+.c1-org-form__grid .field .adaptive-select__control,
+.c1-org-form__grid .field .c1-org-form__geo-select .adaptive-select__control {
+  min-height: var(--control-h, 36px) !important;
+  border-radius: var(--control-radius, 6px) !important;
+}
+
 .c1-org-form__grid .field .adaptive-select--multi .adaptive-select__control {
-  min-height: 38px;
-  height: auto;
+  min-height: var(--control-h, 36px) !important;
+  height: auto !important;
+  max-height: none !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
+  align-items: center !important;
+}
+
+.c1-org-form__grid .field .adaptive-select--multi .adaptive-select__value-container {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+
+.c1-org-form__grid .field .adaptive-select__indicators,
+.c1-org-form__grid .field .adaptive-select__dropdown-indicator {
+  align-self: center !important;
+  height: auto !important;
+  max-height: var(--control-h, 36px) !important;
+  flex: 0 0 auto !important;
 }
 
 .c1-field-error {
   font-size: 0.7rem;
   color: var(--color-danger, #EF4444);
-  margin-top: 3px;
+  margin-top: 2px;
   line-height: 1.2;
 }
 
 .c1-org-form__status-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 16px;
-}
-
-.c1-org-form__status-row .field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.c1-org-form__status-row .field .field__label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-secondary, #475569);
+  gap: var(--space-3, 12px) var(--space-4, 16px);
 }
 
 .c1-org-form__span2 {
   grid-column: 1 / -1;
 }
 
+.c1-org-form__note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid var(--border-divider, #D8E0EA);
+  background: var(--bg-nested, #EDF2F7);
+  font-size: var(--text-body-sm-size, 0.8125rem);
+  line-height: 1.4;
+  color: var(--color-text-secondary, #475569);
+}
+
 .c1-org-form__footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 12px;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  margin-top: 0;
+  padding-top: var(--space-3, 12px);
   border-top: 1px solid var(--border-divider, #D8E0EA);
+}
+
+.c1-org-form__footer .btn {
+  min-width: 7.5rem;
 }
 
 /* Import Modal */
@@ -4156,19 +4161,20 @@ html[data-theme='dark'] .c1-field-toggle button.is-active {
   .c1-user-base-head__actions {
     display: flex;
     justify-content: flex-start;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
   }
 
-  .c1-user-base-head__actions .btn {
+  .c1-user-base-head__title {
+    flex: 1 1 100%;
+  }
+
+  .c1-user-base-head__actions {
+    display: flex;
+    justify-content: flex-start;
     width: auto;
-    flex: 0 0 auto;
-    padding: 0 14px;
-  }
-
-  .c1-org-kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .c1-org-toolbar {
+    max-width: none;
     grid-template-columns: 1fr;
     gap: 10px;
   }

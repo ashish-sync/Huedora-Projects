@@ -15,8 +15,22 @@ export default function FinanceBuilderPickerPage() {
     <div className="finance-hub finance-billing-center">
       {canWrite ? (
         <section className="finance-hub-panel card finance-hub-panel--picker">
-          <div className="finance-hub-create finance-hub-create--standalone">
-            <FinanceBuilderCreateSelect showLabel label="Create document" />
+          <div className="finance-hub-create finance-hub-create--standalone finance-hub-create--toolbar">
+            <p className="finance-create-doc-label">Create document</p>
+            <div className="finance-hub-create-toolbar">
+              <FinanceBuilderCreateSelect />
+              <p className="finance-hsn-sac-search">
+                Unsure of the code? Search the official GST directory{' '}
+                <a
+                  className="finance-hsn-sac-search-link"
+                  href="https://services.gst.gov.in/services/searchhsnsac"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Click Here
+                </a>
+              </p>
+            </div>
           </div>
         </section>
       ) : (

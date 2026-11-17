@@ -8,10 +8,18 @@ import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { api } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
+import {
+  applyFieldFormat,
+  compilePattern,
+  defaultFormSettingsForCategory,
+  evaluateShowWhen,
+  normalizeFormSettings,
+} from './formFieldRuntime.js';
 import './formMaster.css';
 
 const FALLBACK_CATEGORIES = [
   { id: 'PUBLIC_CAMP_REQUEST', label: 'Public Camp Request' },
+  { id: 'HCW_ACTIVITY', label: 'HCW Activity Form' },
   { id: 'INTERNAL', label: 'Internal' },
   { id: 'OTHER', label: 'Other' },
 ];
@@ -103,6 +111,7 @@ const emptyForm = {
   category: 'PUBLIC_CAMP_REQUEST',
   description: '',
   isActive: true,
+  settings: defaultFormSettingsForCategory('PUBLIC_CAMP_REQUEST'),
   fields: [emptyField()],
 };
 
@@ -140,12 +149,14 @@ function fieldToState(field = {}) {
 }
 
 function toFormState(row) {
+  const category = row.category || 'OTHER';
   return {
     name: row.name || '',
     code: row.code || '',
-    category: row.category || 'OTHER',
+    category,
     description: row.description || '',
     isActive: row.isActive !== false,
+    settings: normalizeFormSettings(row.settings, category),
     fields: Array.isArray(row.fields) && row.fields.length
       ? row.fields.map(fieldToState)
       : [emptyField()],
@@ -183,31 +194,6 @@ function fieldToPayload(field) {
 
 function categoryLabel(categories, id) {
   return categories.find((row) => row.id === id)?.label || id || '—';
-}
-
-function evaluateShowWhen(rule, values) {
-  if (!rule?.field) return true;
-  const current = String(values[rule.field] ?? '').trim();
-  const expected = String(rule.value ?? '').trim();
-  switch (rule.operator) {
-    case 'neq':
-      return current !== expected;
-    case 'in':
-      return expected
-        .split(',')
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .includes(current);
-    case 'contains':
-      return current.toLowerCase().includes(expected.toLowerCase());
-    case 'empty':
-      return !current;
-    case 'notEmpty':
-      return Boolean(current);
-    case 'eq':
-    default:
-      return current === expected;
-  }
 }
 
 function previewInputType(type) {
@@ -384,7 +370,14 @@ function FormLivePreview({ form, fieldTypes }) {
                       minLength={field.minLength || undefined}
                       maxLength={field.maxLength || undefined}
                       pattern={field.pattern || undefined}
-                      onChange={(e) => setValue(key, e.target.value)}
+                      formNoValidate
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const next = field.format
+                          ? applyFieldFormat(raw, field.format)
+                          : raw;
+                        setValue(key, next);
+                      }}
                     />
                   )}
                   {field.helpText ? <p className="form-master-preview__help">{field.helpText}</p> : null}
@@ -522,13 +515,26 @@ export default function FormMasterPage({ embedded = false } = {}) {
     setError('');
     setMsg('');
     try {
+      if (!form.name.trim()) throw new Error('Form name is required');
+      if (!form.code.trim()) throw new Error('Form code is required');
+      const labeledFields = form.fields.filter((field) => field.label.trim());
+      if (!labeledFields.length) throw new Error('Add at least one field with a label');
+      for (const field of labeledFields) {
+        const compiled = compilePattern(field.pattern);
+        if (!compiled.ok) {
+          throw new Error(
+            `Invalid regex on “${field.label.trim()}”: ${compiled.error || 'check Pattern (regex)'}`,
+          );
+        }
+      }
       const payload = {
         name: form.name.trim(),
         code: form.code.trim(),
         category: form.category,
         description: form.description.trim(),
         isActive: form.isActive,
-        fields: form.fields.filter((field) => field.label.trim()).map(fieldToPayload),
+        settings: normalizeFormSettings(form.settings, form.category),
+        fields: labeledFields.map(fieldToPayload),
       };
       if (editId) {
         await api(`/forms/${editId}`, { method: 'PATCH', body: payload });
@@ -611,7 +617,7 @@ export default function FormMasterPage({ embedded = false } = {}) {
       </MasterFilterShell>
 
       {canWrite ? (
-        <form className="form-master__panel" onSubmit={save}>
+        <form className="form-master__panel" onSubmit={save} noValidate>
           <div className="form-master__panel-head">
             <h4 className="form-master__panel-title">
               {editId ? 'Edit form format' : 'New form format'}
@@ -664,7 +670,14 @@ export default function FormMasterPage({ embedded = false } = {}) {
               <AdaptiveSelect
                 required
                 value={form.category}
-                onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                onChange={(e) => {
+                  const category = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    category,
+                    settings: defaultFormSettingsForCategory(category),
+                  }));
+                }}
               >
                 {categories.map((row) => (
                   <option key={row.id} value={row.id}>
@@ -684,6 +697,37 @@ export default function FormMasterPage({ embedded = false } = {}) {
                 Active
               </span>
             </label>
+          </div>
+
+          <div className="form-master__settings" style={{ marginTop: 16 }}>
+            <h4 className="form-master__panel-title">Form controls</h4>
+            <p className="form-master-preview__hint" style={{ marginTop: 4, marginBottom: 10 }}>
+              These apply when this format is linked on Client Master and used on public / activity forms.
+            </p>
+            <div className="form-master__settings-grid">
+              <label className="form-master__check">
+                <input
+                  type="checkbox"
+                  checked={form.settings?.allowExcelUpload !== false}
+                  onChange={(e) => setForm((prev) => ({
+                    ...prev,
+                    settings: { ...prev.settings, allowExcelUpload: e.target.checked },
+                  }))}
+                />
+                Allow Excel / bulk upload
+              </label>
+              <label className="form-master__check">
+                <input
+                  type="checkbox"
+                  checked={form.settings?.enforceFieldRules !== false}
+                  onChange={(e) => setForm((prev) => ({
+                    ...prev,
+                    settings: { ...prev.settings, enforceFieldRules: e.target.checked },
+                  }))}
+                />
+                Enforce format, pattern &amp; visibility rules
+              </label>
+            </div>
           </div>
 
           <div className="form-master__layout" style={{ marginTop: 16 }}>

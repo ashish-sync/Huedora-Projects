@@ -1101,8 +1101,8 @@ html[data-theme='light'] .app-sidebar {
 /* Short desktop: keep shell-relative fill (homepage densify); scroll only if children overflow. */
 @media (min-width: 1024px) and (max-height: 820px) {
   .main.main--home {
-    overflow-x: hidden;
-    overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   }
 }
 

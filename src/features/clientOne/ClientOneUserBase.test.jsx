@@ -127,7 +127,7 @@ describe('ClientOneUserBase', () => {
       { name: 'Pune', stateName: 'Maharashtra' },
     ]);
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getAllByText('Zonal User').length).toBeGreaterThan(0);
@@ -153,7 +153,7 @@ describe('ClientOneUserBase', () => {
       { name: 'Pune', stateName: 'Maharashtra' },
     ]);
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Add user' })).toBeTruthy();
@@ -167,8 +167,8 @@ describe('ClientOneUserBase', () => {
       expect(screen.getByPlaceholderText('e.g. Rahul Sharma')).toBeTruthy();
       expect(screen.getByPlaceholderText('10-digit mobile number')).toBeTruthy();
       // Row 2
-      expect(screen.getByLabelText('State (Multi-select)')).toBeTruthy();
-      expect(screen.getByLabelText('City (Multi-select)')).toBeTruthy();
+      expect(screen.getByLabelText('State')).toBeTruthy();
+      expect(screen.getByLabelText('City')).toBeTruthy();
       // Row 3
       expect(screen.getByLabelText('Designation')).toBeTruthy();
       expect(screen.getByLabelText('Reporting To')).toBeTruthy();
@@ -183,7 +183,7 @@ describe('ClientOneUserBase', () => {
     geoStates.mockResolvedValue([{ name: 'Maharashtra' }]);
     geoCities.mockResolvedValue([{ name: 'Mumbai', stateName: 'Maharashtra' }]);
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Add user' })).toBeTruthy();
@@ -232,7 +232,7 @@ describe('ClientOneUserBase', () => {
     geoStates.mockResolvedValue([{ name: 'Maharashtra' }]);
     geoCities.mockResolvedValue([{ name: 'Mumbai', stateName: 'Maharashtra' }]);
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Add user' })).toBeTruthy();
@@ -261,7 +261,7 @@ describe('ClientOneUserBase', () => {
       pin: '654321',
     });
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Add user' })).toBeTruthy();
@@ -306,7 +306,7 @@ describe('ClientOneUserBase', () => {
       parentId: 'zon1',
     });
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getAllByText('West Regional').length).toBeGreaterThan(0);
@@ -356,7 +356,7 @@ describe('ClientOneUserBase', () => {
     geoStates.mockResolvedValue([]);
     geoCities.mockResolvedValue([]);
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('region', { name: 'Hierarchy overview metrics' })).toBeTruthy();
@@ -380,7 +380,7 @@ describe('ClientOneUserBase', () => {
     geoStates.mockResolvedValue([]);
     geoCities.mockResolvedValue([]);
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /import/i })).toBeTruthy();
@@ -417,7 +417,7 @@ describe('ClientOneUserBase', () => {
       total: 1,
     });
 
-    render(<ClientOneUserBase dateControls={null} />);
+    render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /import/i })).toBeTruthy();
@@ -479,35 +479,20 @@ describe('ClientOneUserBase', () => {
     geoStates.mockResolvedValue([]);
     geoCities.mockResolvedValue([]);
 
-    const mockDateControls = (
-      <div className="client-one-date-filter" data-testid="test-date-filter">
-        <label className="client-one-date-field">
-          <span className="client-one-date-field__label">From</span>
-        </label>
-        <span className="client-one-date-filter__sep">–</span>
-        <label className="client-one-date-field">
-          <span className="client-one-date-field__label">To</span>
-        </label>
-      </div>
-    );
-
-    const { container } = render(<ClientOneUserBase dateControls={mockDateControls} />);
+    const { container } = render(<ClientOneUserBase />);
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 2, name: 'User Base' })).toBeTruthy();
     });
 
-    // 1. Header row verification
+    // 1. Header row verification (title + actions; no date filter on organogram)
     const head = container.querySelector('.c1-user-base-head');
     expect(head).toBeTruthy();
 
     const titleBlock = head.querySelector('.c1-user-base-head__title');
     expect(titleBlock).toBeTruthy();
     expect(titleBlock.textContent).toContain('User Base');
-
-    const dateBlock = head.querySelector('.c1-user-base-head__date');
-    expect(dateBlock).toBeTruthy();
-    expect(dateBlock.querySelector('[data-testid="test-date-filter"]')).toBeTruthy();
+    expect(head.querySelector('.c1-user-base-head__date')).toBeNull();
 
     const actionsBlock = head.querySelector('.c1-user-base-head__actions');
     expect(actionsBlock).toBeTruthy();

@@ -5101,6 +5101,12 @@
   color: var(--danger);
 }
 
+.camp-ops-root .camp-request-date-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--success, #15803d);
+}
+
 .camp-ops-root .camp-form-section {
   display: flex;
   flex-direction: column;

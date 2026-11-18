@@ -9879,7 +9879,7 @@ body:has(.login-page),
 }
 
 .qie-report-panel {
-  width: min(480px, 100%);
+  width: min(560px, 100%);
   height: 100%;
   background: var(--bg-tier-3, var(--color-bg-elevated, #fff));
   border-left: 1px solid var(--border-strong, var(--line));
@@ -10007,6 +10007,87 @@ body:has(.login-page),
 
 .qie-report-notes {
   margin: 0 0 8px;
+}
+
+.qie-assessment {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.qie-assessment--low_risk,
+.qie-assessment--verified {
+  color: var(--status-success-dot, #16a34a);
+}
+
+.qie-assessment--review_required {
+  color: var(--status-warning-dot, #d97706);
+}
+
+.qie-assessment--high_risk {
+  color: var(--status-danger-dot, #dc2626);
+}
+
+.qie-finding-severity {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+}
+
+.qie-finding--high .qie-finding-severity {
+  color: var(--status-danger-dot, #dc2626);
+}
+
+.qie-finding--medium .qie-finding-severity {
+  color: var(--status-warning-dot, #d97706);
+}
+
+.qie-finding--low .qie-finding-severity {
+  color: var(--muted);
+}
+
+.qie-region-preview {
+  margin: 10px 0 4px;
+}
+
+.qie-region-preview__canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 220px;
+  border: 1px solid var(--border-strong, var(--line));
+  border-radius: var(--radius-md, 8px);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-muted, #f1f5f9) 80%, transparent),
+      var(--bg-tier-2, #fff)
+    );
+  overflow: hidden;
+}
+
+.qie-region-preview__box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--status-warning-dot, #d97706);
+  background: color-mix(in srgb, var(--status-warning-dot, #d97706) 18%, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.qie-region-preview__box--high {
+  border-color: var(--status-danger-dot, #dc2626);
+  background: color-mix(in srgb, var(--status-danger-dot, #dc2626) 18%, transparent);
+}
+
+.qie-region-preview__box--low {
+  border-color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+}
+
+.qie-region-preview__hint {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
 }
 
 .cd-doc-view {

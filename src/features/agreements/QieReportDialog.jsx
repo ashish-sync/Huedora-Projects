@@ -10,11 +10,54 @@ const HR_ACTIONS = [
   { id: 'escalate', label: 'Escalate', variant: 'secondary' },
 ];
 
+const ASSESSMENT_LABELS = {
+  low_risk: 'Low Risk',
+  review_required: 'Review Required',
+  high_risk: 'High Risk',
+  verified: 'Verified',
+};
+
 function Field({ label, value }) {
   return (
     <div className="qie-report-field">
       <span className="qie-report-field__label">{label}</span>
       <span className="qie-report-field__value">{value || '—'}</span>
+    </div>
+  );
+}
+
+function severityClass(severity) {
+  const s = String(severity || '').toLowerCase();
+  if (s === 'high') return 'qie-finding--high';
+  if (s === 'medium') return 'qie-finding--medium';
+  return 'qie-finding--low';
+}
+
+function RegionPreview({ regions = [] }) {
+  if (!regions.length) return null;
+  return (
+    <div className="qie-region-preview" aria-label="Suspicious region highlights">
+      <div className="qie-region-preview__canvas">
+        {regions.map((region, idx) => {
+          const box = region.bboxNorm || {};
+          return (
+            <span
+              key={`${region.code}-${idx}`}
+              className={`qie-region-preview__box qie-region-preview__box--${region.severity || 'medium'}`}
+              style={{
+                left: `${(box.x || 0) * 100}%`,
+                top: `${(box.y || 0) * 100}%`,
+                width: `${(box.w || 0.08) * 100}%`,
+                height: `${(box.h || 0.08) * 100}%`,
+              }}
+              title={region.label || region.code}
+            />
+          );
+        })}
+      </div>
+      <p className="muted qie-region-preview__hint">
+        Highlighted regions show where QIE flagged visual or layout anomalies (normalized page coordinates).
+      </p>
     </div>
   );
 }
@@ -78,6 +121,17 @@ export default function QieReportDialog({
   const indicator = report?.indicator || 'amber';
   const credentialPassed = Boolean(report?.credentialVerification?.passed);
   const history = Array.isArray(report?.history) ? [...report.history].reverse() : [];
+  const assessmentKey = String(report?.risk?.assessmentOutcome || '').toLowerCase();
+  const assessmentLabel = ASSESSMENT_LABELS[assessmentKey] || (assessmentKey ? assessmentKey : '—');
+  const findings = Array.isArray(report?.forensic?.findings) ? report.forensic.findings : [];
+  const previewRegions = Array.isArray(report?.forensic?.previewRegions)
+    ? report.forensic.previewRegions
+    : findings.filter((f) => f.location?.bboxNorm).map((f) => ({
+      code: f.code,
+      severity: f.severity,
+      bboxNorm: f.location.bboxNorm,
+      label: f.message,
+    }));
 
   async function runReanalyze() {
     setBusy('reanalyze');
@@ -121,7 +175,7 @@ export default function QieReportDialog({
       >
         <div className="qie-report-header">
           <div>
-            <p className="qie-report-kicker">QIE · Post-Upload Verification</p>
+            <p className="qie-report-kicker">QIE · Authenticity &amp; Forensic Assessment</p>
             <h3 id="qie-report-title" className="qie-report-title">Educational Certificate Report</h3>
           </div>
           <button type="button" className="cd-drawer-close-btn" onClick={onClose} aria-label="Close report">
@@ -144,6 +198,9 @@ export default function QieReportDialog({
                   <p className="muted">
                     Status: {report.status || '—'} · Phase: {report.phase || '—'}
                   </p>
+                  <p className={`qie-assessment qie-assessment--${assessmentKey || 'unknown'}`}>
+                    Assessment: {assessmentLabel}
+                  </p>
                 </div>
               </div>
 
@@ -158,13 +215,25 @@ export default function QieReportDialog({
               </section>
 
               <section className="qie-report-section">
-                <h4>Extracted details</h4>
+                <h4>OCR results</h4>
                 <div className="qie-report-grid">
+                  <Field
+                    label="OCR accuracy"
+                    value={
+                      report.ocr?.accuracyScore != null
+                        ? String(report.ocr.accuracyScore)
+                        : report.risk?.ocrAccuracyScore != null
+                          ? String(report.risk.ocrAccuracyScore)
+                          : '—'
+                    }
+                  />
+                  <Field label="OCR engine" value={report.ocr?.engine || '—'} />
                   <Field label="Institution" value={report.extracted?.institution} />
                   <Field label="Qualification" value={report.extracted?.qualification} />
                   <Field label="Award year" value={report.extracted?.awardYear} />
                   <Field label="Reference" value={report.extracted?.referenceNo} />
                   <Field label="Classification" value={report.extracted?.classification} />
+                  <Field label="Verification URL" value={report.extracted?.verificationUrl} />
                 </div>
                 {report.extracted?.rawTextSnippet ? (
                   <p className="qie-report-snippet">{report.extracted.rawTextSnippet}</p>
@@ -172,15 +241,42 @@ export default function QieReportDialog({
               </section>
 
               <section className="qie-report-section">
-                <h4>Forensic findings</h4>
+                <h4>Forensic authenticity</h4>
+                <div className="qie-report-grid">
+                  <Field
+                    label="Authenticity score"
+                    value={
+                      report.forensic?.authenticityScore != null
+                        ? String(report.forensic.authenticityScore)
+                        : report.risk?.authenticityScore != null
+                          ? String(report.risk.authenticityScore)
+                          : '—'
+                    }
+                  />
+                  <Field label="Clean scan" value={report.forensic?.cleanScan ? 'Yes' : 'No'} />
+                  <Field label="Engine" value={report.forensic?.engine || '—'} />
+                  <Field
+                    label="AI watermark only"
+                    value={report.forensic?.aiWatermarkOnly ? 'Yes — review required, not automatic fraud' : 'No'}
+                  />
+                </div>
                 <p className="muted">
-                  Clean AI scan: {report.forensic?.cleanScan ? 'Yes' : 'No'} (never sufficient for a green tick alone)
+                  Clean AI/forensic scan alone never grants a green tick. AI watermarks require manual verification and are not sole grounds for fraud.
                 </p>
+                <RegionPreview regions={previewRegions} />
                 <ul className="qie-report-list">
-                  {(report.forensic?.findings || []).length
-                    ? report.forensic.findings.map((f) => (
-                        <li key={`${f.code}-${f.message}`}>
-                          <strong>{f.code}</strong> · {f.message}
+                  {findings.length
+                    ? findings.map((f, idx) => (
+                        <li key={`${f.code}-${idx}`} className={severityClass(f.severity)}>
+                          <strong>{f.code}</strong>
+                          {' · '}
+                          <span className="qie-finding-severity">{f.severity || 'medium'}</span>
+                          {f.confidence != null ? ` · conf ${(Number(f.confidence) * 100).toFixed(0)}%` : ''}
+                          <div>{f.message}</div>
+                          <div className="muted">
+                            Location: {f.location?.region || 'document'}
+                            {f.recommendedAction ? ` · Action: ${f.recommendedAction}` : ''}
+                          </div>
                         </li>
                       ))
                     : <li>No forensic anomalies recorded</li>}
@@ -198,6 +294,10 @@ export default function QieReportDialog({
                   }
                   />
                   <Field label="Method" value={report.credentialVerification?.method} />
+                  <Field
+                    label="Authoritative"
+                    value={report.credentialVerification?.authoritativeVerified ? 'Yes' : 'No'}
+                  />
                 </div>
                 <p className="muted">{report.credentialVerification?.details}</p>
               </section>
@@ -205,8 +305,17 @@ export default function QieReportDialog({
               <section className="qie-report-section">
                 <h4>Risk assessment</h4>
                 <div className="qie-report-grid">
-                  <Field label="Score" value={report.risk?.score != null ? String(report.risk.score) : '—'} />
+                  <Field label="Outcome" value={assessmentLabel} />
+                  <Field label="Risk score" value={report.risk?.score != null ? String(report.risk.score) : '—'} />
                   <Field label="Level" value={report.risk?.level} />
+                  <Field
+                    label="OCR vs authenticity"
+                    value={
+                      report.risk?.ocrAccuracyScore != null && report.risk?.authenticityScore != null
+                        ? `${report.risk.ocrAccuracyScore} / ${report.risk.authenticityScore}`
+                        : '—'
+                    }
+                  />
                 </div>
                 <ul className="qie-report-list">
                   {(report.risk?.factors || []).map((factor) => (
@@ -226,6 +335,9 @@ export default function QieReportDialog({
                         {entry.actorEmail ? ` · ${entry.actorEmail}` : ''}
                         {entry.from || entry.to ? ` · ${entry.from || '—'} → ${entry.to || '—'}` : ''}
                       </span>
+                      {entry.meta?.assessmentOutcome ? (
+                        <div className="muted">Assessment: {entry.meta.assessmentOutcome}</div>
+                      ) : null}
                     </li>
                   )) : <li className="muted">No history yet</li>}
                 </ul>

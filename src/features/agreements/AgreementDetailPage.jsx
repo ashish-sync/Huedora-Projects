@@ -142,17 +142,38 @@ export default function AgreementDetailPage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
+  /** Manual share link kept in session after Send (GET redacts tokens). */
+  const [recipientShareLink, setRecipientShareLink] = useState('');
   const canvasRef = useRef(null);
   const dockCanvasRef = useRef(null);
   const drawing = useRef(false);
   const signaturesRef = useRef(null);
   const pdfUrlRef = useRef('');
 
+  const buildRecipientLink = useCallback((shortCode, accessToken) => {
+    if (shortCode) return `${window.location.origin}/s/${shortCode}`;
+    if (accessToken) return `${window.location.origin}/sign/${accessToken}`;
+    return '';
+  }, []);
+
   const load = useCallback(async () => {
     const r = await api(`/agreements/${id}`);
     setDoc(r.data);
     return r.data;
   }, [id]);
+
+  const loadRecipientShareLink = useCallback(async () => {
+    if (!id) return '';
+    try {
+      const r = await api(`/agreements/${id}/recipient-link`);
+      const link = buildRecipientLink(r?.data?.recipientShortCode, r?.data?.recipientAccessToken);
+      setRecipientShareLink(link);
+      return link;
+    } catch {
+      setRecipientShareLink('');
+      return '';
+    }
+  }, [id, buildRecipientLink]);
 
   const loadMasterSignatures = useCallback(() => {
     api('/signatures?limit=100')
@@ -185,6 +206,17 @@ export default function AgreementDetailPage() {
     api('/assets?limit=200').then((r) => setAssets(r.data)).catch(() => {});
     loadMasterSignatures();
   }, [load, loadMasterSignatures]);
+
+  useEffect(() => {
+    if (!doc?._id) return undefined;
+    if (!['SENT', 'PARTIALLY_SIGNED'].includes(doc.status)) {
+      setRecipientShareLink('');
+      return undefined;
+    }
+    if (!can('agreements:write')) return undefined;
+    loadRecipientShareLink();
+    return undefined;
+  }, [doc?._id, doc?.status, can, loadRecipientShareLink]);
 
   const signFingerprint = (doc?.signers || [])
     .map((s) => `${s.id}:${s.status}:${s.signedAt || ''}:${s.acknowledgedAt || ''}`)
@@ -220,11 +252,8 @@ export default function AgreementDetailPage() {
   const receiver = partyOf(doc.signers, 'RECEIVER');
   const senderSigned = sender?.status === 'SIGNED';
   const needsSenderSign = canWrite && !isNonSigning && doc.status === 'DRAFT' && !senderSigned;
-  const recipientLink = doc.recipientShortCode
-    ? `${window.location.origin}/s/${doc.recipientShortCode}`
-    : doc.recipientAccessToken
-      ? `${window.location.origin}/sign/${doc.recipientAccessToken}`
-      : '';
+  const recipientLink = recipientShareLink
+    || buildRecipientLink(doc.recipientShortCode, doc.recipientAccessToken);
   const sentAwaitingReceiver = ['SENT', 'PARTIALLY_SIGNED'].includes(doc.status);
 
   const clearCanvas = (ref = canvasRef) => {
@@ -307,14 +336,37 @@ export default function AgreementDetailPage() {
   };
 
   const copyRecipientLink = async () => {
-    if (!recipientLink) return;
+    let link = recipientLink;
+    if (!link && canWrite) {
+      link = await loadRecipientShareLink();
+    }
+    if (!link) {
+      setError('Signing link is not available yet');
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(recipientLink);
+      await navigator.clipboard.writeText(link);
       setError('');
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2500);
     } catch {
       setError('Could not copy link');
+    }
+  };
+
+  const sendToReceiver = async () => {
+    setError('');
+    try {
+      const res = await api(`/agreements/${id}/send`, { method: 'POST', body: {} });
+      const link = buildRecipientLink(
+        res?.data?.recipientShortCode,
+        res?.data?.recipientAccessToken,
+      );
+      if (link) setRecipientShareLink(link);
+      await load();
+      setLinkCopied(false);
+    } catch (e) {
+      setError(e.message || 'Failed to send');
     }
   };
 
@@ -375,14 +427,14 @@ export default function AgreementDetailPage() {
                   ? 'Sign as owner first, then send to the receiver'
                   : undefined
               }
-              onClick={() => run(() => api(`/agreements/${id}/send`, { method: 'POST', body: {} }))}
+              onClick={sendToReceiver}
             >
               {isNonSigning ? 'Send for acknowledgment' : 'Send to receiver'}
             </button>
           )}
-          {canWrite && sentAwaitingReceiver && recipientLink && (
-            <button className="btn secondary" type="button" onClick={copyRecipientLink}>
-              {linkCopied ? 'Link copied!' : 'Copy receiver signing link'}
+          {canWrite && sentAwaitingReceiver && (
+            <button className="btn" type="button" onClick={copyRecipientLink}>
+              {linkCopied ? 'Link copied!' : 'Copy Link'}
             </button>
           )}
           {canWrite && doc.status === 'COMPLETED' && (
@@ -652,13 +704,15 @@ export default function AgreementDetailPage() {
               </button>
             </>
           )}
-          {sentAwaitingReceiver && recipientLink && (
+          {sentAwaitingReceiver && (
             <div style={{ marginTop: 16 }}>
               <p className="muted">Share this link with {receiver?.name || doc.partyName}:</p>
-              <code className="mono-sm">{recipientLink}</code>
+              {recipientLink ? <code className="mono-sm">{recipientLink}</code> : (
+                <p className="muted">Loading signing link…</p>
+              )}
               <div style={{ marginTop: 'var(--space-2)' }}>
-                <button className="btn secondary" type="button" onClick={copyRecipientLink}>
-                  {linkCopied ? 'Copied!' : 'Copy link'}
+                <button className="btn" type="button" onClick={copyRecipientLink}>
+                  {linkCopied ? 'Link copied!' : 'Copy Link'}
                 </button>
               </div>
             </div>

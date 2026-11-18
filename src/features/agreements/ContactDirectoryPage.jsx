@@ -29,12 +29,13 @@ import {
   CONTACT_KYC_MAX_BYTES,
 } from './contactKycUpload.js';
 import ServiceProviderProfile, { hydrateProviderEmployeesForForm } from './ServiceProviderProfile.jsx';
+import QieIndicator from './QieIndicator.jsx';
+import QieReportDialog from './QieReportDialog.jsx';
 import { emailError, phoneError } from '../../shared/validation.js';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import {
   HCW_RESOURCE_TYPES,
   RESOURCE_TYPES,
-  isHcwStaffResourceType,
   isServiceProviderContact,
   professionsForCategory,
   professionPicklistKey,
@@ -62,17 +63,34 @@ const empty = {
   longitude: '',
   googlePlaceId: '',
   panNumber: '',
+  aadhaarNumber: '',
+  upiId: '',
   ifscCode: '',
   bankName: '',
   accountNumber: '',
   passbookCopyUrl: '',
   panCardCopyUrl: '',
+  aadhaarFrontUrl: '',
+  aadhaarBackUrl: '',
+  educationalQualificationUrl: '',
+  resumeUrl: '',
+  educationalQie: null,
   stateId: '',
   districtId: '',
   cityId: '',
-  /** Default Camp Payout amount when this HCW is assigned in Camp One. */
+  /** Kept for Camp One payout resolution; no longer edited in Contact Directory. */
   campAmount: '',
   providerEmployees: [],
+};
+
+const DOC_UPLOAD_LABELS = {
+  aadhaar_front: 'Aadhaar Card – Front',
+  aadhaar_back: 'Aadhaar Card – Back',
+  pan_card: 'PAN Card',
+  passbook: 'Passbook / Cheque',
+  educational_qualification: 'Educational Certificate',
+  resume: 'Resume',
+  employee_educational_qualification: 'Educational Certificate',
 };
 
 const CATEGORY_TABS = [
@@ -81,6 +99,25 @@ const CATEGORY_TABS = [
   { id: 'Resource', label: 'Resources', tone: 'tone-info' },
   { id: 'Client', label: 'Clients', tone: 'tone-medical' },
 ];
+
+const FORM_SECTIONS_CLOSED = {
+  identity: false,
+  location: false,
+  credentials: false,
+  documents: false,
+  employees: false,
+};
+
+/** Keep sections 1–4 collapsed so Employee Details stays near the top when editing SPs. */
+function formSectionsForDrawer({ isProvider = false, isCreate = false } = {}) {
+  if (isProvider && !isCreate) {
+    return { ...FORM_SECTIONS_CLOSED, employees: true };
+  }
+  if (isProvider && isCreate) {
+    return { ...FORM_SECTIONS_CLOSED, identity: true, employees: true };
+  }
+  return { ...FORM_SECTIONS_CLOSED, identity: true };
+}
 
 export default function ContactDirectoryPage({ embedded = false } = {}) {
   const { can } = useAuth();
@@ -102,27 +139,32 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
-  const [serviceProviders, setServiceProviders] = useState([]);
   const [kycUploadBusy, setKycUploadBusy] = useState('');
   /** True after the user edits the embedded SP employee roster in this form session. */
   const [rosterTouched, setRosterTouched] = useState(false);
   const [editUpdatedAt, setEditUpdatedAt] = useState('');
   const [rosterSnapshot, setRosterSnapshot] = useState([]);
-  /** Provider link present when the edit form was opened (for intentional unlink). */
+  /** Provider link present when the edit form was opened (cleared on save — no dual engagement). */
   const [linkSnapshot, setLinkSnapshot] = useState('');
   const [pendingDestructiveLeave, setPendingDestructiveLeave] = useState(null);
-
-  const loadServiceProviders = () => {
-    api('/contacts?contactCategory=Healthcare Worker&resourceType=Service Provider&limit=500')
-      .then((r) => setServiceProviders(r.data || []))
-      .catch(() => setServiceProviders([]));
-  };
+  const [openSections, setOpenSections] = useState(() => formSectionsForDrawer({ isCreate: true }));
+  const [qieReportId, setQieReportId] = useState('');
 
   const isResource = form.contactCategory === 'Resource';
   const isHcw = form.contactCategory === 'Healthcare Worker';
   const isClient = form.contactCategory === 'Client';
-  const isHcwStaff = isHcw && isHcwStaffResourceType(form.resourceType);
   const isHcwProvider = isHcw && form.resourceType === 'Service Provider';
+
+  const toggleSection = useCallback((key) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const expandSectionForField = useCallback((target) => {
+    const section = target?.closest?.('[data-cd-section]');
+    const key = section?.getAttribute?.('data-cd-section');
+    if (!key) return;
+    setOpenSections((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
+  }, []);
   const showResourceType = isResource || isHcw;
   // Service Provider is the payout payee for linked staff: banking/KYC must be editable here.
   const showBankAndAddress = !isClient && Boolean(form.contactCategory);
@@ -181,10 +223,6 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     load();
   }, [load]);
 
-  useEffect(() => {
-    loadServiceProviders();
-  }, []);
-
   const isFormDirty = useCallback(() => {
     if (rosterTouched) return true;
     const initial = initialFormRef.current;
@@ -204,6 +242,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       'district',
       'city',
       'panNumber',
+      'aadhaarNumber',
+      'upiId',
       'ifscCode',
       'bankName',
       'accountNumber',
@@ -263,10 +303,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         ...f,
         contactCategory,
         resourceType: nextResourceType,
-        serviceProviderContactId:
-          contactCategory === 'Healthcare Worker' && isHcwStaffResourceType(nextResourceType)
-            ? f.serviceProviderContactId
-            : '',
+        serviceProviderContactId: '',
         providerEmployees: nextIsProvider
           ? (f.providerEmployees?.length ? f.providerEmployees : rosterSnapshot)
           : (clearRoster ? [] : (f.providerEmployees || rosterSnapshot || [])),
@@ -279,10 +316,17 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         longitude: contactCategory === 'Client' ? '' : f.longitude,
         googlePlaceId: contactCategory === 'Client' ? '' : f.googlePlaceId,
         panNumber: contactCategory === 'Client' ? '' : f.panNumber,
+        aadhaarNumber: contactCategory === 'Client' ? '' : f.aadhaarNumber,
+        upiId: contactCategory === 'Client' ? '' : f.upiId,
         ifscCode: contactCategory === 'Client' ? '' : f.ifscCode,
         bankName: contactCategory === 'Client' ? '' : f.bankName,
         accountNumber: contactCategory === 'Client' ? '' : f.accountNumber,
         campAmount: contactCategory === 'Healthcare Worker' ? f.campAmount : '',
+        educationalQualificationUrl:
+          contactCategory === 'Client' ? '' : f.educationalQualificationUrl,
+        aadhaarFrontUrl: contactCategory === 'Client' ? '' : f.aadhaarFrontUrl,
+        aadhaarBackUrl: contactCategory === 'Client' ? '' : f.aadhaarBackUrl,
+        resumeUrl: contactCategory === 'Client' ? '' : f.resumeUrl,
         clearProviderEmployees: clearRoster ? true : undefined,
       };
     });
@@ -324,6 +368,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     setEditUpdatedAt('');
     setRosterSnapshot([]);
     setLinkSnapshot('');
+    setOpenSections(formSectionsForDrawer({ isCreate: true }));
     setError('');
     setIsDrawerOpen(true);
   };
@@ -334,31 +379,43 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     setError('');
     if (!form.contactCategory) {
       setError('Contact Category is required');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
+      return;
+    }
+    if (!String(form.name || '').trim()) {
+      setError('Full Name is required');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
       return;
     }
     if (isResource && !form.resourceType) {
       setError('Resource Type is required for Resource contacts');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
       return;
     }
     if (isHcw && !form.resourceType) {
       setError('Resource Type is required for Healthcare Worker contacts');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
       return;
     }
     if (isClient && !String(form.organization || '').trim()) {
       setError('Organization Name is required for Client');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
       return;
     }
     if (isHcwProvider) {
       if (!String(form.name || '').trim()) {
         setError('Provider name is required');
+        setOpenSections((prev) => ({ ...prev, identity: true }));
         return;
       }
       if (!String(form.contact || '').trim()) {
         setError('Provider mobile number is required');
+        setOpenSections((prev) => ({ ...prev, identity: true }));
         return;
       }
       if (!String(form.state || '').trim()) {
         setError('Provider state is required');
+        setOpenSections((prev) => ({ ...prev, location: true }));
         return;
       }
       for (let i = 0; i < (form.providerEmployees || []).length; i += 1) {
@@ -374,22 +431,33 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         }
       }
     }
-    const eErr = emailError(form.email);
+    const emailRaw = String(form.email || '').trim();
+    if (emailRaw && !emailRaw.includes('@')) {
+      setError('Email ID must contain @');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
+      return;
+    }
+    const eErr = emailError(form.email, 'Email ID');
     if (eErr) {
       setError(eErr);
+      setOpenSections((prev) => ({ ...prev, identity: true }));
       return;
     }
-    const pErr = phoneError(form.contact);
+    if (!String(form.contact || '').trim()) {
+      setError('Contact Number is required');
+      setOpenSections((prev) => ({ ...prev, identity: true }));
+      return;
+    }
+    const pErr = phoneError(form.contact, 'Contact Number');
     if (pErr) {
       setError(pErr);
+      setOpenSections((prev) => ({ ...prev, identity: true }));
       return;
     }
-    if (!isHcwProvider && !String(form.email || '').trim() && !String(form.contact || '').trim()) {
-      setError('Email or phone is required for a contact');
-      return;
-    }
-    if (isHcwProvider && !String(form.contact || '').trim()) {
-      setError('Provider mobile number is required');
+    const upiRaw = String(form.upiId || '').trim();
+    if (upiRaw && !upiRaw.includes('@')) {
+      setError('UPI ID must contain @');
+      setOpenSections((prev) => ({ ...prev, credentials: true }));
       return;
     }
     setBusy(true);
@@ -402,16 +470,22 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         body.longitude = '';
         body.googlePlaceId = '';
         body.panNumber = '';
+        body.aadhaarNumber = '';
+        body.upiId = '';
         body.ifscCode = '';
         body.bankName = '';
         body.accountNumber = '';
-        body.campAmount = 0;
+        body.passbookCopyUrl = '';
+        body.panCardCopyUrl = '';
+        body.aadhaarFrontUrl = '';
+        body.aadhaarBackUrl = '';
+        body.educationalQualificationUrl = '';
+        body.resumeUrl = '';
       }
-      if (isHcwProvider) {
-        body.campAmount = 0;
-      } else if (isHcw) {
-        const amount = Number(form.campAmount);
-        body.campAmount = Number.isFinite(amount) && amount >= 0 ? amount : 0;
+      // Contact Directory no longer edits camp amounts — omit on PATCH so
+      // existing Camp One rates are preserved; new contacts default to 0.
+      if (editId) {
+        delete body.campAmount;
       } else {
         body.campAmount = 0;
       }
@@ -438,28 +512,16 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       if (!isClient) body.organization = '';
       body.supplyCategory = '';
+      // Individual/Full-Time cannot also sit under a Service Provider agency.
+      body.serviceProviderContactId = '';
 
-      // PATCH: omit blank geo / SP-link so empty cascade resets cannot wipe persisted values.
+      // PATCH: omit blank geo so empty cascade resets cannot wipe persisted values.
       if (editId) {
         for (const key of ['city', 'state', 'district', 'pinCode', 'stateId', 'districtId', 'cityId']) {
           if (body[key] == null || String(body[key]).trim() === '') delete body[key];
         }
-        const nextLink = String(body.serviceProviderContactId || '').trim();
-        if (isHcwStaff) {
-          if (!nextLink) {
-            delete body.serviceProviderContactId;
-            if (linkSnapshot) {
-              body.clearServiceProviderContactId = true;
-              body.serviceProviderContactId = '';
-            }
-          }
-        } else {
-          // Leaving Individual/Full-Time: clear stale provider link only when one existed.
-          delete body.serviceProviderContactId;
-          if (linkSnapshot) {
-            body.clearServiceProviderContactId = true;
-            body.serviceProviderContactId = '';
-          }
+        if (linkSnapshot) {
+          body.clearServiceProviderContactId = true;
         }
         if (editUpdatedAt) body.expectedUpdatedAt = editUpdatedAt;
         let saved;
@@ -481,13 +543,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         }
         if (saved?.updatedAt) setEditUpdatedAt(saved.updatedAt);
       } else {
-        if (!isHcwStaff) body.serviceProviderContactId = '';
         await api('/contacts', { method: 'POST', body });
       }
       invalidateContactsCaches();
       closeDrawer(true);
       load();
-      loadServiceProviders();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -495,40 +555,151 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     }
   };
 
-  async function uploadKycDocument(docType, file) {
+  function syncDocumentUrlsFromContact(contact = {}) {
+    setForm((current) => ({
+      ...current,
+      passbookCopyUrl: contact.passbookCopyUrl || '',
+      panCardCopyUrl: contact.panCardCopyUrl || '',
+      aadhaarFrontUrl: contact.aadhaarFrontUrl || '',
+      aadhaarBackUrl: contact.aadhaarBackUrl || '',
+      educationalQualificationUrl: contact.educationalQualificationUrl || '',
+      resumeUrl: contact.resumeUrl || '',
+      educationalQie: contact.educationalQie || null,
+      providerEmployees: Array.isArray(contact.providerEmployees)
+        ? hydrateProviderEmployeesForForm(contact.providerEmployees, current.campAmount)
+        : current.providerEmployees,
+    }));
+  }
+
+  function applyQieSummaryToForm(verification) {
+    if (!verification) return;
+    const summary = {
+      verificationId: verification._id || verification.verificationId || '',
+      indicator: verification.indicator || 'amber',
+      status: verification.status || '',
+      documentId: verification.documentId || '',
+      updatedAt: verification.updatedAt || '',
+    };
+    const employeeId = String(verification.employeeId || '').trim();
+    setForm((current) => {
+      if (employeeId) {
+        const employees = Array.isArray(current.providerEmployees)
+          ? current.providerEmployees.map((row) => (
+            String(row.id || '') === employeeId
+              ? { ...row, educationalQie: summary }
+              : row
+          ))
+          : [];
+        return { ...current, providerEmployees: employees };
+      }
+      return { ...current, educationalQie: summary };
+    });
+  }
+
+  async function uploadKycDocument(docType, file, { employeeId = '' } = {}) {
     if (!editId || !file) return;
+    const label = DOC_UPLOAD_LABELS[docType] || 'Document';
+    const busyKey = employeeId ? `${docType}:${employeeId}` : docType;
     const pre = validateUploadFile(file, {
       maxBytes: CONTACT_KYC_MAX_BYTES,
       acceptExt: CONTACT_KYC_ACCEPT_EXTENSIONS,
-      label: docType === 'passbook' ? 'Bank Account Proof' : 'PAN Card Copy',
+      label,
     });
     if (pre) {
       setError(pre);
       return;
     }
-    setKycUploadBusy(docType);
+    setKycUploadBusy(busyKey);
     setError('');
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('docType', docType);
+      if (employeeId) formData.append('employeeId', employeeId);
       const res = await api(`/contacts/${editId}/kyc-document`, { method: 'POST', body: formData });
       const contact = res.data || {};
       // KYC upload saves the contact and bumps updatedAt: keep the edit token in sync
       // or the next Save falsely fails with STALE_UPDATE.
       if (contact.updatedAt) setEditUpdatedAt(contact.updatedAt);
-      setForm((current) => ({
-        ...current,
-        passbookCopyUrl: contact.passbookCopyUrl || '',
-        panCardCopyUrl: contact.panCardCopyUrl || '',
-      }));
+      syncDocumentUrlsFromContact(contact);
       invalidateContactsCaches();
       load();
+      // QIE runs async after educational uploads — refresh once analysis has a chance to queue.
+      if (
+        docType === 'educational_qualification'
+        || docType === 'employee_educational_qualification'
+      ) {
+        window.setTimeout(() => {
+          load();
+          if (editId) {
+            api(`/contacts/${editId}`)
+              .then((fresh) => {
+                if (fresh?.data) syncDocumentUrlsFromContact(fresh.data);
+              })
+              .catch(() => {});
+          }
+        }, 1800);
+      }
     } catch (err) {
       setError(err.message || 'Failed to upload document');
     } finally {
       setKycUploadBusy('');
     }
+  }
+
+  function renderDocumentUpload({ docType, label, urlKey, qieSummary = null }) {
+    const busy = kycUploadBusy === docType;
+    const url = form[urlKey];
+    const showQie = docType === 'educational_qualification';
+    return (
+      <div className="field cd-doc-field" key={docType}>
+        <div className="cd-doc-head">
+          <label>{label}</label>
+          <div className="cd-doc-head-actions">
+            {showQie ? (
+              <QieIndicator
+                url={url}
+                summary={qieSummary || form.educationalQie}
+                onOpen={setQieReportId}
+              />
+            ) : null}
+            {editId && url ? (
+              <button
+                type="button"
+                className="cd-doc-view"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openUploadView(url).catch((err) => setError(err.message));
+                }}
+              >
+                View
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {editId ? (
+          <div
+            className={`cd-doc-slot${url ? ' is-attached' : ''}`}
+            title={CONTACT_KYC_HINT}
+          >
+            <FilePicker
+              className="cd-doc-picker"
+              accept={CONTACT_KYC_ACCEPT_ATTR}
+              disabled={Boolean(kycUploadBusy)}
+              buttonLabel={busy ? 'Uploading…' : url ? 'Replace' : 'Upload'}
+              emptyLabel={url ? 'File on record' : 'Choose file'}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadKycDocument(docType, file);
+                e.target.value = '';
+              }}
+            />
+          </div>
+        ) : (
+          <p className="cd-form-hint cd-doc-locked">Save contact to enable upload</p>
+        )}
+      </div>
+    );
   }
 
   const startEdit = (c) => {
@@ -572,11 +743,18 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       longitude: c.longitude || '',
       googlePlaceId: c.googlePlaceId || '',
       panNumber: c.panNumber || '',
+      aadhaarNumber: c.aadhaarNumber || '',
+      upiId: c.upiId || '',
       ifscCode: c.ifscCode || '',
       bankName: c.bankName || '',
       accountNumber: c.accountNumber || '',
       passbookCopyUrl: c.passbookCopyUrl || '',
       panCardCopyUrl: c.panCardCopyUrl || '',
+      aadhaarFrontUrl: c.aadhaarFrontUrl || '',
+      aadhaarBackUrl: c.aadhaarBackUrl || '',
+      educationalQualificationUrl: c.educationalQualificationUrl || '',
+      resumeUrl: c.resumeUrl || '',
+      educationalQie: c.educationalQie || null,
       stateId: c.stateId || '',
       districtId: c.districtId || '',
       cityId: c.cityId || '',
@@ -588,6 +766,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
     initialFormRef.current = initialValues;
     setShowAccountMask(false);
     setForm(initialValues);
+    setOpenSections(formSectionsForDrawer({ isProvider, isCreate: false }));
     setError('');
     setIsDrawerOpen(true);
   };
@@ -758,7 +937,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   <th>Organization</th>
                   <th>Contact Details</th>
                   <th>Location</th>
-                  <th className="cd-th-rate">Camp Rate</th>
+                  <th className="cd-th-qual">Qualification</th>
                   <th className="inv-col-actions">Actions</th>
                 </tr>
               </thead>
@@ -779,7 +958,14 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   return (
                     <tr key={c._id} className={editId === c._id ? 'is-selected' : undefined}>
                       <td className="cd-col-name">
-                        <strong className="cd-name">{c.name}</strong>
+                        <div className="cd-name-row">
+                          <strong className="cd-name">{c.name}</strong>
+                          <QieIndicator
+                            url={c.educationalQualificationUrl}
+                            summary={c.educationalQie}
+                            onOpen={setQieReportId}
+                          />
+                        </div>
                         {c.profession ? (
                           <span className="cd-name-meta">{c.profession}</span>
                         ) : null}
@@ -826,12 +1012,12 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                       <td className="cd-col-location">
                         {[c.city || c.district, c.state].filter(Boolean).join(', ') || '-'}
                       </td>
-                      <td className="cd-col-rate">
-                        {c.campAmount != null && c.campAmount !== '' ? (
-                          <span className="cd-rate-tag">₹{Number(c.campAmount).toLocaleString('en-IN')}</span>
-                        ) : (
-                          <span className="muted">-</span>
-                        )}
+                      <td className="cd-col-qual">
+                        <QieIndicator
+                          url={c.educationalQualificationUrl}
+                          summary={c.educationalQie}
+                          onOpen={setQieReportId}
+                        />
                       </td>
                       <td className="inv-col-actions">
                         {canWriteContacts && (
@@ -961,7 +1147,11 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
               </button>
             </div>
 
-            <form className="cd-drawer-form" onSubmit={save}>
+            <form
+              className="cd-drawer-form"
+              onSubmit={save}
+              onInvalidCapture={(e) => expandSectionForField(e.target)}
+            >
               <div className="cd-drawer-scroll">
                 {error && (
                   <div className="cd-drawer-error">
@@ -969,107 +1159,84 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                   </div>
                 )}
 
-                {/* Section 1: Classification */}
-                <section className="cd-form-section">
-                  <div className="cd-form-section-head">
+                {/* 1. Identity & Contact */}
+                <section
+                  className={`cd-form-section${openSections.identity ? ' is-open' : ' is-collapsed'}`}
+                  data-cd-section="identity"
+                >
+                  <button
+                    type="button"
+                    className="cd-form-section-toggle"
+                    aria-expanded={Boolean(openSections.identity)}
+                    onClick={() => toggleSection('identity')}
+                  >
                     <span className="cd-form-section-num">1</span>
-                    <h4 className="cd-section-title">Classification</h4>
-                  </div>
+                    <h4 className="cd-section-title">Identity &amp; Contact</h4>
+                    <span className="cd-form-section-chevron" aria-hidden="true">
+                      {openSections.identity ? '▾' : '▸'}
+                    </span>
+                  </button>
+                  <div className="cd-form-section-body" hidden={!openSections.identity}>
                   <div className="cd-form-grid">
-                    <div className={`cd-class-pair${showResourceType ? '' : ' cd-class-pair--single'}`}>
-                      <div className="field">
-                        <label>Contact Category *</label>
-                        <AdaptiveSelect
-                          required
-                          value={form.contactCategory}
-                          onChange={(e) => onCategoryChange(e.target.value)}
-                        >
-                          <option value="">Select category…</option>
-                          {DIRECTORY_CATEGORIES.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </AdaptiveSelect>
-                      </div>
-
-                      {showResourceType && (
-                        <div className="field">
-                          <label>Resource Type *</label>
-                          <OtherAwareSelect
-                            id="contact-resource-type"
-                            required
-                            picklistKey={isHcw ? 'contact.hcwResourceType' : 'contact.resourceType'}
-                            source="contact-directory"
-                            options={resourceTypeChoices}
-                            value={form.resourceType}
-                            onChange={(e) => {
-                              const nextType = e.target.value;
-                              const leavingProvider =
-                                form.resourceType === 'Service Provider'
-                                && nextType !== 'Service Provider'
-                                && (form.providerEmployees?.length || rosterSnapshot.length);
-                              if (leavingProvider) {
-                                setPendingDestructiveLeave({ kind: 'resourceType', value: nextType });
-                                return;
-                              }
-                              setForm((f) => ({
-                                ...f,
-                                resourceType: nextType,
-                                serviceProviderContactId: isHcwStaffResourceType(nextType)
-                                  ? f.serviceProviderContactId
-                                  : '',
-                                providerEmployees:
-                                  nextType === 'Service Provider'
-                                    ? (f.providerEmployees?.length ? f.providerEmployees : rosterSnapshot)
-                                    : [],
-                              }));
-                              if (nextType !== 'Service Provider') setRosterTouched(false);
-                            }}
-                          />
-                        </div>
-                      )}
+                    <div className="field">
+                      <label>Contact Category *</label>
+                      <AdaptiveSelect
+                        required
+                        value={form.contactCategory}
+                        onChange={(e) => onCategoryChange(e.target.value)}
+                      >
+                        <option value="">Select category…</option>
+                        {DIRECTORY_CATEGORIES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
                     </div>
 
-                    {isHcwStaff && (
-                      <div className="field cd-span-2">
-                        <label>Service Provider Agency</label>
-                        <AdaptiveSelect
-                          value={form.serviceProviderContactId}
-                          onChange={(e) =>
-                            setForm({ ...form, serviceProviderContactId: e.target.value })
-                          }
-                        >
-                          <option value="">None (direct engagement)</option>
-                          {serviceProviders
-                            .filter((p) => p._id !== editId)
-                            .map((p) => (
-                              <option key={p._id} value={p._id}>
-                                {p.name}
-                                {p.city ? ` · ${p.city}` : ''}
-                              </option>
-                            ))}
-                        </AdaptiveSelect>
-                        <p className="cd-form-hint">
-                          Link this worker to a provider agency for camp assignments and billing roll-ups.
-                        </p>
-                      </div>
-                    )}
-
-                    {isClient && (
-                      <div className="field cd-span-2">
-                        <label>Organization Name *</label>
-                        <input
+                    {showResourceType ? (
+                      <div className="field">
+                        <label>Resource Type *</label>
+                        <OtherAwareSelect
+                          id="contact-resource-type"
                           required
-                          value={form.organization}
-                          onChange={(e) => setForm({ ...form, organization: e.target.value })}
-                          placeholder="Client organization or company name"
+                          picklistKey={isHcw ? 'contact.hcwResourceType' : 'contact.resourceType'}
+                          source="contact-directory"
+                          options={resourceTypeChoices}
+                          value={form.resourceType}
+                          onChange={(e) => {
+                            const nextType = e.target.value;
+                            const leavingProvider =
+                              form.resourceType === 'Service Provider'
+                              && nextType !== 'Service Provider'
+                              && (form.providerEmployees?.length || rosterSnapshot.length);
+                            if (leavingProvider) {
+                              setPendingDestructiveLeave({ kind: 'resourceType', value: nextType });
+                              return;
+                            }
+                            setForm((f) => ({
+                              ...f,
+                              resourceType: nextType,
+                              serviceProviderContactId: '',
+                              providerEmployees:
+                                nextType === 'Service Provider'
+                                  ? (f.providerEmployees?.length ? f.providerEmployees : rosterSnapshot)
+                                  : [],
+                            }));
+                            if (nextType === 'Service Provider') {
+                              setOpenSections(formSectionsForDrawer({
+                                isProvider: true,
+                                isCreate: !editId,
+                              }));
+                            } else {
+                              setRosterTouched(false);
+                              setOpenSections((prev) => ({ ...prev, employees: false }));
+                            }
+                          }}
                         />
                       </div>
-                    )}
-
-                    {form.contactCategory && !isHcwProvider ? (
-                      <div className="field cd-span-2">
+                    ) : form.contactCategory ? (
+                      <div className="field">
                         <label>Profession / Role</label>
                         <OtherAwareSelect
                           id="contact-profession"
@@ -1081,112 +1248,92 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                         />
                       </div>
                     ) : null}
+
+                    {showResourceType && form.contactCategory ? (
+                      <div className="field">
+                        <label>Profession / Role</label>
+                        <OtherAwareSelect
+                          id="contact-profession"
+                          picklistKey={professionKey}
+                          source="contact-directory"
+                          options={professionOptions}
+                          value={form.profession}
+                          onChange={(e) => setForm({ ...form, profession: e.target.value })}
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="field">
+                      <label>Full Name *</label>
+                      <input
+                        required
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        placeholder={isHcwProvider ? 'Agency / provider name' : 'Legal full name'}
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Email ID</label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="name@example.com"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>Contact Number *</label>
+                      <input
+                        required
+                        inputMode="numeric"
+                        maxLength={10}
+                        value={form.contact}
+                        onChange={(e) => setForm({
+                          ...form,
+                          contact: e.target.value.replace(/\D+/g, '').slice(0, 10),
+                        })}
+                        placeholder="10-digit mobile number"
+                      />
+                    </div>
+
+                    {isClient ? (
+                      <div className="field cd-span-2">
+                        <label>Organization Name *</label>
+                        <input
+                          required
+                          value={form.organization}
+                          onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                          placeholder="Client organization or company name"
+                        />
+                      </div>
+                    ) : null}
+
+                  </div>
                   </div>
                 </section>
 
-                {/* Section: Service Provider Profile & Employees */}
-                {isHcwProvider ? (
-                  <section className="cd-form-section">
-                    <div className="cd-form-section-head">
-                      <span className="cd-form-section-num">2</span>
-                      <h4 className="cd-section-title">Provider Agency &amp; Employees</h4>
-                    </div>
-                    <ServiceProviderProfile
-                      form={form}
-                      disabled={busy}
-                      professionOptions={professionOptions}
-                      onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-                      onEmployeesChange={(providerEmployees) => {
-                        setRosterTouched(true);
-                        setForm((f) => ({ ...f, providerEmployees }));
-                      }}
-                    />
-                  </section>
-                ) : null}
-
-                {/* Section 2: Identity (non-SP) */}
-                {!isHcwProvider && (
-                  <section className="cd-form-section">
-                    <div className="cd-form-section-head">
-                      <span className="cd-form-section-num">2</span>
-                      <h4 className="cd-section-title">Identity &amp; Contact</h4>
-                    </div>
-                    <div className="cd-form-grid">
-                      <div className="field cd-span-2">
-                        <label>Full Name *</label>
-                        <input
-                          required
-                          value={form.name}
-                          onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          placeholder="Legal full name"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Email Address</label>
-                        <input
-                          type="email"
-                          value={form.email}
-                          onChange={(e) => setForm({ ...form, email: e.target.value })}
-                          placeholder="name@example.com"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Mobile Contact</label>
-                        <input
-                          value={form.contact}
-                          onChange={(e) => setForm({ ...form, contact: e.target.value })}
-                          placeholder="10-digit mobile number"
-                        />
-                      </div>
-                    </div>
-                    <p className="cd-form-hint">At least one of Email or Mobile Contact is required.</p>
-                  </section>
-                )}
-
-                {/* Section 3: Location (non-SP) */}
-                {!isHcwProvider && (
-                  <section className="cd-form-section">
-                    <div className="cd-form-section-head">
-                      <span className="cd-form-section-num">3</span>
-                      <h4 className="cd-section-title">Location &amp; Payout Rate</h4>
-                    </div>
-                    <LocationCascade
-                      value={form}
-                      onChange={(loc) => setForm((f) => ({ ...f, ...loc }))}
-                      showDistrict={false}
-                      showPin={showBankAndAddress}
-                      pinFirst={showBankAndAddress}
-                      pinInputOnly={showBankAndAddress}
-                      labels={{ state: 'State', city: 'City / District' }}
-                      afterCity={isHcw ? (
-                        <div className="field">
-                          <label>Default Camp Payout Amount (₹)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            inputMode="decimal"
-                            value={form.campAmount}
-                            onChange={(e) => setForm({ ...form, campAmount: e.target.value })}
-                            placeholder="Amount credited per completed camp"
-                          />
-                        </div>
-                      ) : null}
-                    />
-                  </section>
-                )}
-
-                {/* Section 4: Address & Banking / KYC */}
-                {showBankAndAddress && (
-                  <section className="cd-form-section cd-form-section--last">
-                    <div className="cd-form-section-head">
-                      <span className="cd-form-section-num">{isHcwProvider ? '3' : '4'}</span>
-                      <h4 className="cd-section-title">Address &amp; Banking (KYC)</h4>
-                    </div>
-                    <p className="cd-form-hint">
-                      Street address only. Banking and KYC are required for automated Finance payouts.
-                    </p>
-                    <div className="cd-form-grid">
+                {/* 2. Location & Address */}
+                <section
+                  className={`cd-form-section${openSections.location ? ' is-open' : ' is-collapsed'}`}
+                  data-cd-section="location"
+                >
+                  <button
+                    type="button"
+                    className="cd-form-section-toggle"
+                    aria-expanded={Boolean(openSections.location)}
+                    onClick={() => toggleSection('location')}
+                  >
+                    <span className="cd-form-section-num">2</span>
+                    <h4 className="cd-section-title">Location &amp; Address</h4>
+                    <span className="cd-form-section-chevron" aria-hidden="true">
+                      {openSections.location ? '▾' : '▸'}
+                    </span>
+                  </button>
+                  <div className="cd-form-section-body" hidden={!openSections.location}>
+                  <div className="cd-form-grid">
+                    {!isClient ? (
                       <div className="field cd-span-2">
                         <label>Street Address</label>
                         <PublicOlaAddressAutocomplete
@@ -1206,6 +1353,40 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                           }))}
                         />
                       </div>
+                    ) : null}
+                    <div className="cd-span-2 cd-location-pair">
+                      <LocationCascade
+                        value={form}
+                        onChange={(loc) => setForm((f) => ({ ...f, ...loc }))}
+                        showDistrict={false}
+                        showPin={false}
+                        labels={{ state: 'State', city: 'City / District' }}
+                      />
+                    </div>
+                  </div>
+                  </div>
+                </section>
+
+                {/* 3. Other Credentials */}
+                {showBankAndAddress ? (
+                  <section
+                    className={`cd-form-section${openSections.credentials ? ' is-open' : ' is-collapsed'}`}
+                    data-cd-section="credentials"
+                  >
+                    <button
+                      type="button"
+                      className="cd-form-section-toggle"
+                      aria-expanded={Boolean(openSections.credentials)}
+                      onClick={() => toggleSection('credentials')}
+                    >
+                      <span className="cd-form-section-num">3</span>
+                      <h4 className="cd-section-title">Other Credentials</h4>
+                      <span className="cd-form-section-chevron" aria-hidden="true">
+                        {openSections.credentials ? '▾' : '▸'}
+                      </span>
+                    </button>
+                    <div className="cd-form-section-body" hidden={!openSections.credentials}>
+                    <div className="cd-form-grid">
                       <div className="field">
                         <label htmlFor="cd-pan-number">PAN Number</label>
                         <input
@@ -1218,6 +1399,38 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                           className="cd-input-mono cd-input-upper"
                           onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase().trim() })}
                           placeholder="ABCDE1234F"
+                        />
+                      </div>
+                      <div className="field">
+                        <label htmlFor="cd-aadhaar-number">Aadhaar Number</label>
+                        <input
+                          id="cd-aadhaar-number"
+                          value={form.aadhaarNumber}
+                          maxLength={12}
+                          autoComplete="off"
+                          spellCheck={false}
+                          inputMode="numeric"
+                          className="cd-input-mono"
+                          onChange={(e) => setForm({
+                            ...form,
+                            aadhaarNumber: e.target.value.replace(/\D+/g, '').slice(0, 12),
+                          })}
+                          placeholder="12-digit Aadhaar"
+                        />
+                      </div>
+                      <div className="field">
+                        <label htmlFor="cd-upi-id">UPI ID</label>
+                        <input
+                          id="cd-upi-id"
+                          value={form.upiId}
+                          autoComplete="off"
+                          spellCheck={false}
+                          className="cd-input-mono"
+                          onChange={(e) => setForm({
+                            ...form,
+                            upiId: e.target.value.replace(/\s+/g, '').toLowerCase(),
+                          })}
+                          placeholder="name@upi"
                         />
                       </div>
                       <div className="field">
@@ -1271,83 +1484,112 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                           placeholder="Bank account number"
                         />
                       </div>
-                      <div className="field cd-span-2">
-                        <label>Bank Account Proof (Passbook / Cheque)</label>
-                        {editId ? (
-                          <div className="cd-upload-row">
-                            <FilePicker
-                              accept={CONTACT_KYC_ACCEPT_ATTR}
-                              disabled={Boolean(kycUploadBusy)}
-                              buttonLabel={kycUploadBusy === 'passbook' ? 'Uploading…' : 'Upload file'}
-                              emptyLabel="No file chosen"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) uploadKycDocument('passbook', file);
-                                e.target.value = '';
-                              }}
-                            />
-                            {form.passbookCopyUrl ? (
-                              <div className="cd-upload-preview">
-                                <span className="cd-upload-ok">✓ Document attached</span>
-                                <button
-                                  type="button"
-                                  className="cd-upload-link"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    openUploadView(form.passbookCopyUrl).catch((err) => setError(err.message));
-                                  }}
-                                >
-                                  View proof
-                                </button>
-                              </div>
-                            ) : (
-                              <p className="cd-form-hint">{CONTACT_KYC_HINT}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="cd-form-hint">Save the contact record first, then attach bank account proof.</p>
-                        )}
-                      </div>
-                      <div className="field cd-span-2">
-                        <label>PAN Card Copy</label>
-                        {editId ? (
-                          <div className="cd-upload-row">
-                            <FilePicker
-                              accept={CONTACT_KYC_ACCEPT_ATTR}
-                              disabled={Boolean(kycUploadBusy)}
-                              buttonLabel={kycUploadBusy === 'pan_card' ? 'Uploading…' : 'Upload file'}
-                              emptyLabel="No file chosen"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) uploadKycDocument('pan_card', file);
-                                e.target.value = '';
-                              }}
-                            />
-                            {form.panCardCopyUrl ? (
-                              <div className="cd-upload-preview">
-                                <span className="cd-upload-ok">✓ Document attached</span>
-                                <button
-                                  type="button"
-                                  className="cd-upload-link"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    openUploadView(form.panCardCopyUrl).catch((err) => setError(err.message));
-                                  }}
-                                >
-                                  View card
-                                </button>
-                              </div>
-                            ) : (
-                              <p className="cd-form-hint">{CONTACT_KYC_HINT}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="cd-form-hint">Save the contact record first, then attach PAN card copy.</p>
-                        )}
-                      </div>
+                    </div>
                     </div>
                   </section>
-                )}
+                ) : null}
+
+                {/* 4. Documents & Credentials */}
+                {showBankAndAddress ? (
+                  <section
+                    className={`cd-form-section${isHcwProvider ? '' : ' cd-form-section--last'}${openSections.documents ? ' is-open' : ' is-collapsed'}`}
+                    data-cd-section="documents"
+                  >
+                    <button
+                      type="button"
+                      className="cd-form-section-toggle"
+                      aria-expanded={Boolean(openSections.documents)}
+                      onClick={() => toggleSection('documents')}
+                    >
+                      <span className="cd-form-section-num">4</span>
+                      <h4 className="cd-section-title">Documents &amp; Credentials</h4>
+                      <span className="cd-form-section-chevron" aria-hidden="true">
+                        {openSections.documents ? '▾' : '▸'}
+                      </span>
+                    </button>
+                    <div className="cd-form-section-body" hidden={!openSections.documents}>
+                    <p className="cd-form-hint">
+                      {CONTACT_KYC_HINT}. Save the contact first to enable uploads.
+                    </p>
+                    <div className="cd-form-grid cd-docs-grid">
+                      {renderDocumentUpload({
+                        docType: 'aadhaar_front',
+                        label: 'Aadhaar Card – Front',
+                        urlKey: 'aadhaarFrontUrl',
+                      })}
+                      {renderDocumentUpload({
+                        docType: 'aadhaar_back',
+                        label: 'Aadhaar Card – Back',
+                        urlKey: 'aadhaarBackUrl',
+                      })}
+                      {renderDocumentUpload({
+                        docType: 'pan_card',
+                        label: 'PAN Card',
+                        urlKey: 'panCardCopyUrl',
+                      })}
+                      {renderDocumentUpload({
+                        docType: 'passbook',
+                        label: 'Passbook / Cheque',
+                        urlKey: 'passbookCopyUrl',
+                      })}
+                      {renderDocumentUpload({
+                        docType: 'educational_qualification',
+                        label: 'Educational Certificate',
+                        urlKey: 'educationalQualificationUrl',
+                        qieSummary: form.educationalQie,
+                      })}
+                      {renderDocumentUpload({
+                        docType: 'resume',
+                        label: 'Resume',
+                        urlKey: 'resumeUrl',
+                      })}
+                    </div>
+                    </div>
+                  </section>
+                ) : null}
+
+                {/* 5. Employee Details (Service Provider only) */}
+                {isHcwProvider ? (
+                  <section
+                    className={`cd-form-section cd-form-section--last${openSections.employees ? ' is-open' : ' is-collapsed'}`}
+                    data-cd-section="employees"
+                  >
+                    <button
+                      type="button"
+                      className="cd-form-section-toggle"
+                      aria-expanded={Boolean(openSections.employees)}
+                      onClick={() => toggleSection('employees')}
+                    >
+                      <span className="cd-form-section-num">5</span>
+                      <h4 className="cd-section-title">Employee Details</h4>
+                      <span className="cd-form-section-chevron" aria-hidden="true">
+                        {openSections.employees ? '▾' : '▸'}
+                      </span>
+                    </button>
+                    <div className="cd-form-section-body" hidden={!openSections.employees}>
+                    <ServiceProviderProfile
+                      form={form}
+                      disabled={busy}
+                      professionOptions={professionOptions}
+                      editId={editId}
+                      kycUploadBusy={kycUploadBusy}
+                      uploadAccept={CONTACT_KYC_ACCEPT_ATTR}
+                      uploadHint={CONTACT_KYC_HINT}
+                      onEmployeesChange={(providerEmployees) => {
+                        setRosterTouched(true);
+                        setForm((f) => ({ ...f, providerEmployees }));
+                      }}
+                      onUploadEmployeeCertificate={(employeeId, file) => {
+                        uploadKycDocument('employee_educational_qualification', file, { employeeId });
+                      }}
+                      onViewDocument={(url) => {
+                        openUploadView(url).catch((err) => setError(err.message));
+                      }}
+                      onOpenQieReport={setQieReportId}
+                    />
+                    </div>
+                  </section>
+                ) : null}
               </div>
 
               {/* Sticky Drawer Footer */}
@@ -1376,6 +1618,16 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         confirmVariant="danger"
         onConfirm={() => closeDrawer(true)}
         onCancel={() => setConfirmDiscardOpen(false)}
+      />
+      <QieReportDialog
+        open={Boolean(qieReportId)}
+        verificationId={qieReportId}
+        canReview={canWriteContacts}
+        onClose={() => setQieReportId('')}
+        onUpdated={(verification) => {
+          applyQieSummaryToForm(verification);
+          load();
+        }}
       />
     </PageShell>
   );

@@ -1,6 +1,6 @@
 /**
- * Contact Directory KYC attachments: PAN Card Copy + Bank Account Proof.
- * Accept PDF and common image formats.
+ * Contact Directory attachments: Aadhaar, PAN, Passbook/Cheque,
+ * Educational Certificate, and Resume. Accept PDF and common images.
  */
 
 export const CONTACT_KYC_ACCEPT_EXTENSIONS = [

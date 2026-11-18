@@ -1,5 +1,6 @@
-import LocationCascade from '../../components/ui/LocationCascade.jsx';
+import FilePicker from '../../components/ui/FilePicker.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
+import QieIndicator from './QieIndicator.jsx';
 import { HEALTHCARE_WORKER_PROFESSIONS } from './contactPicklists.js';
 
 export function emptyProviderEmployee() {
@@ -9,10 +10,12 @@ export function emptyProviderEmployee() {
     mobile: '',
     profession: '',
     campAmount: '',
+    educationalQualificationUrl: '',
+    educationalQie: null,
   };
 }
 
-/** Copy a legacy agency-level Camp Amount onto employees that do not have their own rate. */
+/** Normalize provider employees for the Contact Directory form (preserves stored campAmount). */
 export function hydrateProviderEmployeesForForm(employees = [], providerCampAmount) {
   const list = Array.isArray(employees) ? employees : [];
   const inherited = Number(providerCampAmount);
@@ -23,16 +26,28 @@ export function hydrateProviderEmployeesForForm(employees = [], providerCampAmou
     return {
       ...emp,
       campAmount: amount ? String(amount) : (emp?.campAmount === 0 || emp?.campAmount === '0' ? '0' : ''),
+      educationalQualificationUrl: emp?.educationalQualificationUrl || '',
+      educationalQie: emp?.educationalQie || null,
     };
   });
 }
 
+/**
+ * Employee Details for Service Provider contacts (section 5).
+ * Agency identity/location live in the main Contact Directory sections.
+ */
 export default function ServiceProviderProfile({
   form,
-  onChange,
   onEmployeesChange,
   professionOptions = HEALTHCARE_WORKER_PROFESSIONS,
   disabled = false,
+  editId = '',
+  kycUploadBusy = '',
+  onUploadEmployeeCertificate,
+  onViewDocument,
+  onOpenQieReport,
+  uploadAccept = '',
+  uploadHint = '',
 }) {
   const employees = Array.isArray(form.providerEmployees) ? form.providerEmployees : [];
 
@@ -50,88 +65,33 @@ export default function ServiceProviderProfile({
   };
 
   return (
-    <>
-      <section className="cd-section">
-        <h4 className="cd-section-title">Provider profile</h4>
-        <p className="cd-form-hint">Service provider agency details.</p>
-        <div className="cd-form-grid">
-          <div className="field cd-span-2">
-            <label>Name *</label>
-            <input
-              required
-              disabled={disabled}
-              value={form.name}
-              onChange={(e) => onChange({ name: e.target.value })}
-              placeholder="Agency / provider name"
-            />
-          </div>
-          <div className="field cd-span-2">
-            <label>Mobile Number *</label>
-            <input
-              required
-              disabled={disabled}
-              inputMode="tel"
-              value={form.contact}
-              onChange={(e) => onChange({ contact: e.target.value })}
-              placeholder="10-digit mobile"
-            />
-          </div>
-          <div className="cd-span-2 cd-provider-state">
-            <LocationCascade
-              value={{
-                stateId: form.stateId || '',
-                districtId: form.districtId || '',
-                cityId: form.cityId || '',
-                state: form.state || '',
-                district: form.district || '',
-                city: form.city || '',
-                pinCode: form.pinCode || '',
-              }}
-              onChange={(loc) =>
-                onChange({
-                  stateId: loc.stateId ?? '',
-                  districtId: loc.districtId ?? '',
-                  cityId: loc.cityId ?? '',
-                  state: loc.state ?? '',
-                  district: loc.district ?? '',
-                  city: loc.city ?? '',
-                  pinCode: loc.pinCode ?? '',
-                })
-              }
-              showDistrict={false}
-              showPin
-              pinFirst
-              pinInputOnly
-              disabled={disabled}
-              required
-              labels={{ state: 'State', city: 'City / District' }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Address, banking, and KYC live in Contact Directory "Address & banking"
-          so Service Providers do not see those fields twice. */}
-
-      <section className="cd-section">
-        <div className="cd-employee-head">
-          <h4 className="cd-section-title">Employees</h4>
-          {!disabled && (
-            <button type="button" className="btn btn-secondary btn-compact" onClick={addEmployee}>
-              + Add employee
-            </button>
-          )}
-        </div>
-        <p className="cd-form-hint">
-          Camp Amount becomes Camp Payout in Camp One when this person is assigned.
+    <div className="cd-employee-section">
+      <div className="cd-employee-head">
+        <p className="cd-form-hint cd-employee-intro">
+          Add people who work under this agency for camp assignments.
         </p>
-        {employees.length > 0 ? (
-          <ul className="cd-employee-list">
-            {employees.map((emp, index) => (
+        {!disabled && (
+          <button type="button" className="btn secondary btn-compact" onClick={addEmployee}>
+            + Add employee
+          </button>
+        )}
+      </div>
+
+      {employees.length > 0 ? (
+        <ul className="cd-employee-list">
+          {employees.map((emp, index) => {
+            const busyKey = `employee_educational_qualification:${emp.id}`;
+            const uploading = kycUploadBusy === busyKey;
+            return (
               <li key={emp.id || index} className="cd-employee-card">
                 <div className="cd-employee-card-head">
-                  <span className="cd-employee-card-title">
-                    {emp.name?.trim() || `Employee ${index + 1}`}
+                  <span className="cd-employee-card-title cd-employee-card-title--with-qie">
+                    <span>{emp.name?.trim() || `Employee ${index + 1}`}</span>
+                    <QieIndicator
+                      url={emp.educationalQualificationUrl}
+                      summary={emp.educationalQie}
+                      onOpen={onOpenQieReport}
+                    />
                   </span>
                   {!disabled && (
                     <button
@@ -144,9 +104,9 @@ export default function ServiceProviderProfile({
                     </button>
                   )}
                 </div>
-                <div className="cd-employee-fields">
+                <div className="cd-employee-fields cd-employee-fields--details">
                   <div className="field">
-                    <label>Name *</label>
+                    <label>Employee Full Name</label>
                     <input
                       required
                       disabled={disabled}
@@ -156,13 +116,16 @@ export default function ServiceProviderProfile({
                     />
                   </div>
                   <div className="field">
-                    <label>Mobile *</label>
+                    <label>Contact Number</label>
                     <input
                       required
                       disabled={disabled}
-                      inputMode="tel"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={emp.mobile}
-                      onChange={(e) => updateEmployee(index, { mobile: e.target.value })}
+                      onChange={(e) => updateEmployee(index, {
+                        mobile: e.target.value.replace(/\D+/g, '').slice(0, 10),
+                      })}
                       placeholder="10-digit mobile"
                     />
                   </div>
@@ -177,33 +140,74 @@ export default function ServiceProviderProfile({
                       onChange={(e) => updateEmployee(index, { profession: e.target.value })}
                     />
                   </div>
-                  <div className="field cd-employee-amount">
-                    <label>Camp Amount</label>
-                    <div className="cd-amount-input">
-                      <span className="cd-amount-prefix" aria-hidden="true">₹</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                        disabled={disabled}
-                        value={emp.campAmount ?? ''}
-                        onChange={(e) => updateEmployee(index, { campAmount: e.target.value })}
-                        placeholder="0.00"
-                      />
+                  <div className="field cd-doc-field">
+                    <div className="cd-doc-head">
+                      <label>Educational Certificate</label>
+                      <div className="cd-doc-head-actions">
+                        <QieIndicator
+                          url={emp.educationalQualificationUrl}
+                          summary={emp.educationalQie}
+                          onOpen={onOpenQieReport}
+                        />
+                        {editId && emp.id && emp.educationalQualificationUrl ? (
+                          <button
+                            type="button"
+                            className="cd-doc-view"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              onViewDocument?.(emp.educationalQualificationUrl);
+                            }}
+                          >
+                            View
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
+                    {editId && emp.id ? (
+                      <div
+                        className={`cd-doc-slot${emp.educationalQualificationUrl ? ' is-attached' : ''}`}
+                        title={uploadHint || undefined}
+                      >
+                        <FilePicker
+                          className="cd-doc-picker"
+                          accept={uploadAccept}
+                          disabled={disabled || Boolean(kycUploadBusy)}
+                          buttonLabel={
+                            uploading
+                              ? 'Uploading…'
+                              : emp.educationalQualificationUrl
+                                ? 'Replace'
+                                : 'Upload'
+                          }
+                          emptyLabel={
+                            emp.educationalQualificationUrl ? 'File on record' : 'Choose file'
+                          }
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file && onUploadEmployeeCertificate) {
+                              onUploadEmployeeCertificate(emp.id, file);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <p className="cd-form-hint cd-doc-locked">
+                        Save provider to enable upload
+                      </p>
+                    )}
                   </div>
                 </div>
               </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted cd-staff-empty">No employees added yet.</p>
-        )}
-        {employees.length > 0 ? (
-          <p className="cd-staff-count">{employees.length} employee(s)</p>
-        ) : null}
-      </section>
-    </>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="muted cd-staff-empty">No employees added yet.</p>
+      )}
+      {employees.length > 0 ? (
+        <p className="cd-staff-count">{employees.length} employee(s)</p>
+      ) : null}
+    </div>
   );
 }

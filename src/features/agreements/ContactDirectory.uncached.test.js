@@ -9,11 +9,34 @@ import { describe, expect, it } from 'vitest';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Contact Directory caching policy', () => {
-  it('loads lists via api() directly and invalidates picker caches after mutations', () => {
-    const src = fs.readFileSync(path.join(__dirname, 'ContactDirectoryPage.jsx'), 'utf8');
-    expect(src).toMatch(/invalidateContactsCaches/);
-    expect(src).not.toMatch(/fetchContactsList/);
+  const src = fs.readFileSync(path.join(__dirname, 'ContactDirectoryPage.jsx'), 'utf8');
+
+  it('loads lists via dynamic URLSearchParams (page, limit, search, category)', () => {
+    expect(src).toMatch(/new URLSearchParams\(\{\s*page:\s*String\(page\),\s*limit:\s*String\(limit\)\s*\}\)/);
+    expect(src).toMatch(/params\.set\('q',\s*debouncedQ\.trim\(\)\)/);
+    expect(src).toMatch(/params\.set\('contactCategory',\s*categoryFilter\)/);
     expect(src).toMatch(/api\(`\/contacts\?\$\{params\}`\)/);
-    expect(src).toMatch(/api\('\/contacts\?contactCategory=Healthcare Worker/);
+    expect(src).not.toMatch(/fetchContactsList/);
+    // Outdated hardcoded HCW list call must stay removed.
+    expect(src).not.toMatch(/api\('\/contacts\?contactCategory=Healthcare Worker/);
+  });
+
+  it('invalidates picker caches after create/update and KYC uploads', () => {
+    expect(src).toMatch(/invalidateContactsCaches/);
+
+    const saveIdx = src.indexOf('await api(\'/contacts\'');
+    const saveInvalidateIdx = src.indexOf('invalidateContactsCaches()', saveIdx);
+    expect(saveIdx).toBeGreaterThan(-1);
+    expect(saveInvalidateIdx).toBeGreaterThan(saveIdx);
+
+    const patchIdx = src.indexOf('api(`/contacts/${editId}`, { method: \'PATCH\'');
+    const patchInvalidateIdx = src.indexOf('invalidateContactsCaches()', Math.max(patchIdx, saveIdx));
+    expect(patchIdx).toBeGreaterThan(-1);
+    expect(patchInvalidateIdx).toBeGreaterThan(patchIdx);
+
+    const kycIdx = src.indexOf('kyc-document');
+    const kycInvalidateIdx = src.indexOf('invalidateContactsCaches()', kycIdx);
+    expect(kycIdx).toBeGreaterThan(-1);
+    expect(kycInvalidateIdx).toBeGreaterThan(kycIdx);
   });
 });

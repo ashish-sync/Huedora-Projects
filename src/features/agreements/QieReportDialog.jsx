@@ -45,8 +45,11 @@ const ACTION_LABELS = {
 };
 
 const FINDING_TITLES = {
-  AI_TOOL_WATERMARK_SPARKLE: 'Possible AI watermark (sparkle mark)',
-  AI_TOOL_WATERMARK_TEXT: 'Possible AI tool marker in the file',
+  VISUAL_WATERMARK_SPARKLE: 'Visual watermark pattern (sparkle)',
+  AI_PROVIDER_METADATA: 'AI provider mentioned in metadata',
+  AI_TOOL_WATERMARK_SPARKLE: 'Visual watermark pattern (sparkle)',
+  AI_TOOL_WATERMARK_TEXT: 'AI-related metadata marker',
+  C2PA_MANIFEST_PRESENT: 'Provenance container found (not verified)',
   IMAGE_EDITOR_TRACE: 'Possible image-editor trace',
   COMPRESSION_INCONSISTENCY: 'Signs of image editing or compositing',
   MARGIN_BACKGROUND_INCONSISTENCY: 'Uneven margins or background',
@@ -64,6 +67,13 @@ const FINDING_TITLES = {
   AWARD_YEAR_FROM_CAPTURE_DATE: 'Award year may be a photo date',
   CANDIDATE_NAME_NOT_EXTRACTED: 'Candidate name could not be read',
   CORE_FIELDS_MISSING: 'Key certificate fields are missing',
+};
+
+const CHECK_STATUS_LABELS = {
+  DETECTED: 'Detected',
+  NOT_DETECTED: 'Not detected',
+  NOT_CHECKED: 'Not checked',
+  NOT_ATTRIBUTED: 'Not attributed',
 };
 
 const IDENTITY_LABELS = {
@@ -152,12 +162,15 @@ function findingTitle(finding) {
 }
 
 function findingExplanation(finding) {
-  if (finding.code === 'AI_TOOL_WATERMARK_SPARKLE') {
-    return 'A faint multi-point mark was found near the bottom-right corner. This can resemble an AI-tool watermark and should be checked by eye.';
+  if (finding.code === 'VISUAL_WATERMARK_SPARKLE' || finding.code === 'AI_TOOL_WATERMARK_SPARKLE') {
+    return 'A faint multi-point sparkle was found near the bottom-right corner. This is a visual indicator only — QIE does not name an AI provider from this pattern alone.';
   }
-  if (finding.code === 'AI_TOOL_WATERMARK_TEXT') {
+  if (finding.code === 'AI_PROVIDER_METADATA' || finding.code === 'AI_TOOL_WATERMARK_TEXT') {
     const tool = finding.evidence?.toolLabel || 'an AI tool';
-    return `The file may contain markers associated with ${tool}. This is a warning for review, not proof of fraud on its own.`;
+    return `Structured metadata references ${tool}. This supports manual review and does not alone prove fraud.`;
+  }
+  if (finding.code === 'C2PA_MANIFEST_PRESENT') {
+    return 'A provenance container appears present, but claim verification was not performed by this engine.';
   }
   if (finding.code === 'OCR_TEXT_UNAVAILABLE' || finding.code === 'OCR_CORRUPTED_OR_BINARY') {
     return 'QIE could not read reliable certificate text from this file. Please verify the details visually before deciding.';
@@ -348,8 +361,15 @@ export default function QieReportDialog({
     report?.extracted?.sourceFileName || report?.originalName,
     'Certificate file',
   );
+  const forensicChannels = report?.forensic?.channels || report?.credentialVerification?.documentAuthenticity?.channels || {};
   const hrFacingFindings = findings.filter((f) => f.category === 'extraction'
+    || f.category === 'visual_watermark'
+    || f.category === 'ai_metadata'
+    || f.category === 'ai_generation'
+    || f.category === 'provenance'
     || f.code?.startsWith('AI_TOOL_WATERMARK')
+    || f.code?.startsWith('VISUAL_WATERMARK')
+    || f.code === 'AI_PROVIDER_METADATA'
     || ['COMPRESSION_INCONSISTENCY', 'MARGIN_BACKGROUND_INCONSISTENCY', 'LOW_RESOLUTION', 'FILE_TOO_SMALL', 'FILE_MISSING'].includes(f.code)
     || f.severity === 'high'
     || f.severity === 'medium');
@@ -434,6 +454,8 @@ export default function QieReportDialog({
                         || 'Identity is checked only against the name read from the certificate.'}
                     </p>
                     <p className="qie-status-card__meta">
+                      {identityCheck.code || 'IDENTITY_INCONCLUSIVE'}
+                      {' · '}
                       Expected: {displayValue(identityCheck.expectedHolderName || report.credentialVerification?.expectedHolderName, 'Not provided')}
                       {' · '}
                       From document: {displayValue(identityCheck.extractedHolderName || report.extracted?.holderName)}
@@ -457,6 +479,15 @@ export default function QieReportDialog({
                       {' · '}
                       Extraction: {extractionQuality.status || 'unknown'}
                     </p>
+                    {forensicChannels.visualWatermark || forensicChannels.synthId ? (
+                      <p className="qie-status-card__meta">
+                        Visual watermark: {CHECK_STATUS_LABELS[forensicChannels.visualWatermark?.status] || '—'}
+                        {' · '}
+                        Provider: {CHECK_STATUS_LABELS[forensicChannels.providerAttribution?.status] || '—'}
+                        {' · '}
+                        SynthID: {CHECK_STATUS_LABELS[forensicChannels.synthId?.status] || 'Not checked'}
+                      </p>
+                    ) : null}
                   </article>
 
                   <article className="qie-status-card">
@@ -582,6 +613,26 @@ export default function QieReportDialog({
                       <Field
                         label="AI watermark only"
                         value={report.forensic?.aiWatermarkOnly ? 'Yes' : 'No'}
+                      />
+                      <Field
+                        label="Visual watermark"
+                        value={CHECK_STATUS_LABELS[forensicChannels.visualWatermark?.status] || '—'}
+                      />
+                      <Field
+                        label="Provider attribution"
+                        value={CHECK_STATUS_LABELS[forensicChannels.providerAttribution?.status] || '—'}
+                      />
+                      <Field
+                        label="SynthID"
+                        value={CHECK_STATUS_LABELS[forensicChannels.synthId?.status] || 'Not checked'}
+                      />
+                      <Field
+                        label="C2PA presence"
+                        value={CHECK_STATUS_LABELS[forensicChannels.c2paPresence?.status] || '—'}
+                      />
+                      <Field
+                        label="C2PA verification"
+                        value={CHECK_STATUS_LABELS[forensicChannels.c2paVerification?.status] || 'Not checked'}
                       />
                       <Field
                         label="Risk score"

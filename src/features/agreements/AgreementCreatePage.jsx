@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { api, apiFetch, apiUrl } from '../../shared/api.js';
+import { api, apiFetch } from '../../shared/api.js';
 import { directoryCategoryChoices, HCW_RESOURCE_TYPES, RESOURCE_TYPES, SUPPLY_CATEGORIES, professionsForCategory, professionPicklistKey, resourceTypesForCategory, isHcwStaffResourceType } from './contactPicklists.js';
 import { MODULE_PATH } from '../../shared/moduleRoutes.js';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
@@ -47,6 +47,29 @@ function isHiddenPlaceholderField(placeholder) {
 function namedFileFromBlob(blob, fileName, mimeType) {
   const type = mimeType || blob?.type || 'application/octet-stream';
   return new File([blob], fileName, { type });
+}
+
+/** Normalize API preview paths for apiFetch (strip absolute host /api/v1 prefix). */
+function previewApiPath(rawPath = '') {
+  let path = String(rawPath || '').trim();
+  if (!path) return '';
+  try {
+    if (/^https?:\/\//i.test(path)) {
+      path = new URL(path).pathname + (new URL(path).search || '');
+    }
+  } catch {
+    /* keep raw */
+  }
+  path = path.replace(/^\/api\/v1(?=\/)/i, '');
+  if (!path.startsWith('/')) path = `/${path}`;
+  return path;
+}
+
+/** Chrome/Edge embedded PDF viewer — fit page width inside the iframe. */
+function pdfIframeSrc(blobUrl) {
+  if (!blobUrl) return '';
+  if (blobUrl.includes('#')) return blobUrl;
+  return `${blobUrl}#view=FitH&navpanes=0`;
 }
 
 async function fetchDocxFile(previewPath, fileName = 'document.docx') {
@@ -574,12 +597,23 @@ export default function AgreementCreatePage() {
         body: { values: mergedValues, lineRows: lineRowsByTable, title: builtTitle },
       });
       setPreviewToken(data.previewToken);
-      // Use the real preview URL (not a blob:) so Save/Download keeps the nomenclature name.
+      // Fetch with auth into a same-origin blob URL — iframes cannot embed api.tylo.systems
+      // (cross-origin / X-Frame-Options → "refused to connect").
       if (pdfUrl && String(pdfUrl).startsWith('blob:')) URL.revokeObjectURL(pdfUrl);
-      const namedPdfPath =
+      const namedPdfPath = previewApiPath(
         data.previewUrl ||
-        `/api/v1/templates/preview/${data.previewToken}/${encodeURIComponent(fileBase)}.pdf`;
-      setPdfUrl(apiUrl(namedPdfPath));
+          `/templates/preview/${data.previewToken}/${encodeURIComponent(fileBase)}.pdf`
+      );
+      const pdfRes = await apiFetch(namedPdfPath);
+      if (!pdfRes.ok) {
+        const body = await pdfRes.json().catch(() => ({}));
+        throw new Error(body.message || `PDF preview failed (${pdfRes.status})`);
+      }
+      const pdfBlob = await pdfRes.blob();
+      const typedPdf = pdfBlob.type === 'application/pdf'
+        ? pdfBlob
+        : new Blob([pdfBlob], { type: 'application/pdf' });
+      setPdfUrl(URL.createObjectURL(typedPdf));
       setPdfEngine(data.pdfEngine || '');
       if (data.filledDocxUrl) {
         const docxFile = await fetchDocxFile(data.filledDocxUrl, `${fileBase}.docx`);
@@ -1436,7 +1470,7 @@ export default function AgreementCreatePage() {
         <div className="esign-doc-view">
           <section className="card esign-pdf-panel">
             <div className="esign-pdf-toolbar">
-              <div>
+              <div className="esign-pdf-toolbar-copy">
                 <strong>{title || 'Document preview'}</strong>
                 <p className="muted" style={{ margin: '2px 0 0' }}>
                   {filledDocxBlob
@@ -1451,7 +1485,7 @@ export default function AgreementCreatePage() {
                       : ''}
                 </p>
               </div>
-              <div className="row">
+              <div className="esign-pdf-toolbar-actions">
                 {filledDocxBlob && pdfEngine === 'pdfkit' ? (
                   <div className="btn-group" role="group" aria-label="Preview mode">
                     <button
@@ -1496,6 +1530,7 @@ export default function AgreementCreatePage() {
                 </button>
               </div>
             </div>
+            {error ? <p className="error" role="alert">{error}</p> : null}
             {previewMode === 'word' && filledDocxBlob && pdfEngine === 'pdfkit' ? (
               <div className="esign-docx-frame">
                 <DocxNativePreview file={filledDocxBlob} />
@@ -1504,10 +1539,12 @@ export default function AgreementCreatePage() {
               <iframe
                 title={title || 'PDF preview'}
                 className="pdf-preview-frame esign-pdf-frame"
-                src={pdfUrl}
+                src={pdfIframeSrc(pdfUrl)}
               />
             ) : (
-              <p className="muted">Preview not loaded.</p>
+              <div className="esign-pdf-empty" role="status">
+                <p className="muted">Preview not loaded. Go back and continue again to rebuild the PDF.</p>
+              </div>
             )}
           </section>
         </div>

@@ -4145,3 +4145,300 @@ html[data-theme='dark'] .tylo-home-ops-grid > .tylo-home-quick-panel,
   .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session { width: 28%; }
   .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric { width: 18%; }
 }
+
+/*
+ * Phone homepage — MUST stay at end of file so it wins over desktop
+ * overflow/nowrap/grid-placement rules above (equal specificity, source order).
+ */
+@media (max-width: 768px) {
+  /* Phone home: Welcome + Schedule + Pipeline only */
+  .tylo-home-ops-grid > .tylo-home-workspace-panel,
+  .tylo-home-ops-grid > .tylo-home-quick-panel {
+    display: none !important;
+  }
+
+  .tylo-home,
+  .tylo-home-ops-dashboard {
+    --ops-gap: 12px;
+    --ops-panel-pad-y: 14px;
+    --ops-panel-pad-x: 14px;
+    --ops-panel-gap: 12px;
+    --ops-control-h: 40px;
+    --welcome-control-height: 40px;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Flex stack — avoids desktop grid-row overlap on phones */
+  .tylo-home-ops-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    gap: 12px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-items: stretch !important;
+  }
+
+  .tylo-home-ops-grid > .tylo-home-panel,
+  .tylo-home-ops-grid > .tylo-home-bp-panel,
+  .tylo-home-ops-grid > .tylo-home-greeting-panel,
+  .tylo-home-ops-grid > .tylo-home-schedule-panel,
+  .tylo-home-ops-grid > .tylo-home-pipeline-panel {
+    position: relative !important;
+    inset: auto !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+    overflow: hidden !important; /* keep wide children inside the card */
+  }
+
+  .tylo-home-ops-grid .tylo-home-greeting-panel,
+  .tylo-home-ops-grid .tylo-home-greeting,
+  .tylo-home-welcome-metrics,
+  .tylo-home-welcome-metric-body,
+  .tylo-home-welcome-controls {
+    overflow: visible !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .tylo-home-ops-grid .tylo-home-greeting-title {
+    font-size: 1.25rem !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-greeting-date {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    font-size: 0.8125rem !important;
+  }
+
+  /*
+   * Welcome controls (phone):
+   * Row 1 — Start Date | End Date
+   * Row 2 — Metric dropdown | Apply
+   */
+  .tylo-home-welcome-controls {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-areas: 'from to' 'metric apply' !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+
+  .tylo-home-welcome-range,
+  .tylo-home-welcome-range-inline {
+    display: contents !important;
+  }
+
+  .tylo-home-welcome-metric {
+    grid-area: metric !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .tylo-home-welcome-controls .tylo-home-welcome-range-date:nth-of-type(1),
+  .tylo-home-welcome-controls .date-input-field.tylo-home-welcome-range-date:nth-of-type(1) {
+    grid-area: from !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .tylo-home-welcome-controls .tylo-home-welcome-range-date:nth-of-type(2),
+  .tylo-home-welcome-controls .date-input-field.tylo-home-welcome-range-date:nth-of-type(2) {
+    grid-area: to !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .tylo-home-welcome-controls .tylo-home-welcome-range-to,
+  .tylo-home-welcome-controls .tylo-home-welcome-range-clear,
+  .tylo-home-welcome-controls .tylo-home-welcome-range-hint {
+    display: none !important;
+  }
+
+  .tylo-home-welcome-controls .tylo-home-welcome-range-apply {
+    grid-area: apply !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: var(--welcome-control-height) !important;
+  }
+
+  .tylo-home-welcome-buckets {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .tylo-home-welcome-bucket {
+    min-height: 88px !important;
+    height: auto !important;
+    padding: 14px 10px !important;
+  }
+
+  .tylo-home-welcome-bucket-value {
+    font-size: 1.25rem !important;
+  }
+
+  .tylo-home-welcome-bucket-label {
+    font-size: 0.75rem !important;
+    min-height: 0 !important;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  /* Schedule: scroll inside the card (do not paint over Pipeline) */
+  .tylo-home-ops-grid .tylo-home-schedule-panel {
+    overflow: hidden !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-schedule-table-wrap {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-schedule-table {
+    width: max-content !important;
+    min-width: 100% !important;
+    height: auto !important;
+    table-layout: auto !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-schedule-table thead th,
+  .tylo-home-ops-grid .tylo-home-schedule-table tbody td,
+  .tylo-home-ops-grid .tylo-home-schedule-table tfoot td,
+  .tylo-home-ops-grid .tylo-home-schedule-table tfoot th {
+    font-size: 0.75rem !important;
+    padding: 0.5rem 0.55rem !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap;
+  }
+
+  .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-session,
+  .tylo-home-ops-grid .tylo-home-schedule-table col.tylo-home-sched-col-metric {
+    width: auto !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-session-cell {
+    gap: 6px;
+    font-size: 0.8125rem;
+  }
+
+  /* Pipeline head + filters */
+  .tylo-home-ops-grid .tylo-home-pipeline-panel {
+    overflow: visible !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-pipeline-panel .tylo-home-pipeline-head {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-pipeline-controls,
+  .tylo-home-pipeline-controls {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .tylo-home-pipeline-filter,
+  .tylo-home-pipeline-filter--users {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-pipeline-range,
+  .tylo-home-pipeline-range {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 40px !important;
+    grid-template-areas: 'from from' 'to to' 'apply clear' !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+  }
+
+  .tylo-home-pipeline-range .tylo-home-welcome-range-to {
+    display: none !important;
+  }
+
+  .tylo-home-pipeline-range > .date-input-field:nth-of-type(1),
+  .tylo-home-pipeline-range > .tylo-home-pipeline-range-date:nth-of-type(1),
+  .tylo-home-pipeline-range > .tylo-home-welcome-range-date:nth-of-type(1),
+  .tylo-home-pipeline-range-date,
+  .tylo-home-pipeline-range .tylo-home-welcome-range-date {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: none !important;
+  }
+
+  .tylo-home-pipeline-range > .date-input-field:nth-of-type(1),
+  .tylo-home-pipeline-range > .tylo-home-pipeline-range-date:nth-of-type(1),
+  .tylo-home-pipeline-range > .tylo-home-welcome-range-date:nth-of-type(1) {
+    grid-area: from !important;
+  }
+
+  .tylo-home-pipeline-range > .date-input-field:nth-of-type(2),
+  .tylo-home-pipeline-range > .tylo-home-pipeline-range-date:nth-of-type(2),
+  .tylo-home-pipeline-range > .tylo-home-welcome-range-date:nth-of-type(2) {
+    grid-area: to !important;
+  }
+
+  .tylo-home-pipeline-range .tylo-home-welcome-range-apply {
+    grid-area: apply !important;
+    width: 100% !important;
+  }
+
+  .tylo-home-pipeline-range .tylo-home-welcome-range-clear {
+    grid-area: clear !important;
+    width: 40px !important;
+    min-width: 40px !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-pipeline-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    height: auto !important;
+    overflow: visible !important;
+    flex: 0 0 auto !important;
+  }
+
+  .tylo-home-ops-grid .tylo-home-stage-tile {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+}

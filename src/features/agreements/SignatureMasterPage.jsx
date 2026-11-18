@@ -329,7 +329,8 @@ export default function SignatureMasterPage({ embedded = false } = {}) {
                   </span>
                 </div>
                 <div className="sig-master-preview">
-                  {(row.signatureType === 'DRAWN' || row.signatureType === 'UPLOADED') &&
+                  {row.signatureType === 'DRAWN' ||
+                  row.signatureType === 'UPLOADED' ||
                   row.signatureData?.startsWith('data:image') ? (
                     <img src={row.signatureData} alt={`Signature of ${row.name}`} />
                   ) : (

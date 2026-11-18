@@ -458,7 +458,11 @@ export default function AgreementDetailPage() {
             {pdfLoading && <p className="muted">Loading preview…</p>}
             {pdfError && <p className="error">{pdfError}</p>}
             {!pdfLoading && pdfUrl && (
-              <iframe title="Agreement PDF" className="pdf-preview-frame esign-pdf-frame" src={pdfUrl} />
+              <iframe
+                title="Agreement PDF"
+                className="pdf-preview-frame esign-pdf-frame"
+                src={pdfUrl.includes('#') ? pdfUrl : `${pdfUrl}#view=FitH&navpanes=0`}
+              />
             )}
             {!pdfLoading && !pdfUrl && !pdfError && (
               <p className="muted">No preview available.</p>
@@ -536,7 +540,8 @@ export default function AgreementDetailPage() {
                               {s.roleLabel}: {s.name}
                             </strong>
                             <div className="sig-pick-preview">
-                              {(s.signatureType === 'DRAWN' || s.signatureType === 'UPLOADED') &&
+                              {s.signatureType === 'DRAWN' ||
+                              s.signatureType === 'UPLOADED' ||
                               s.signatureData?.startsWith('data:image') ? (
                                 <img src={s.signatureData} alt="" />
                               ) : (

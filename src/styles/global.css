@@ -1148,12 +1148,20 @@ html[data-theme='light'] .app-sidebar {
 @media (max-width: 1023px) {
   .main.main--home {
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: var(--space-3) var(--home-gutter-inline, var(--page-gutter-inline)) var(--space-6);
   }
 
   .main.main--home > .tylo-home {
     height: auto;
     max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .main.main--home {
+    --home-gutter-inline: 0.75rem;
+    padding: 0.75rem var(--home-gutter-inline) 1.5rem;
   }
 }
 
@@ -7428,6 +7436,33 @@ body:has(.login-page),
   margin-bottom: 12px;
 }
 
+.esign-pdf-toolbar-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.esign-pdf-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.esign-pdf-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(40vh, 320px);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-muted, var(--surface));
+  padding: 1.25rem;
+  text-align: center;
+}
+
 .esign-pdf-frame {
   width: 100%;
   min-height: min(78vh, 900px);
@@ -7435,6 +7470,28 @@ body:has(.login-page),
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
+}
+
+@media (max-width: 768px) {
+  .esign-pdf-toolbar-actions {
+    justify-content: stretch;
+  }
+
+  .esign-pdf-toolbar-actions > .btn,
+  .esign-pdf-toolbar-actions > .btn-group {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .esign-pdf-toolbar-actions > .btn:last-child {
+    flex: 1 1 100%;
+  }
+
+  .esign-pdf-frame,
+  .esign-docx-frame {
+    min-height: 60vh;
+    height: 60vh;
+    max-height: none;
+  }
 }
 
 .esign-docx-frame {

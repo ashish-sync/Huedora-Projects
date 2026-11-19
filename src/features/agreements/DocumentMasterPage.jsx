@@ -492,8 +492,8 @@ function TemplatePreviewModal({ template, onClose }) {
 }
 
 export default function DocumentMasterPage({ embedded = false } = {}) {
-  const { can } = useAuth();
-  const canDelete = can('agreements:write') || can('*');
+  const { can, canDelete: canDeleteRecords } = useAuth();
+  const canDelete = can('agreements:write') || canDeleteRecords();
   const [view, setView] = useState('templates');
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');

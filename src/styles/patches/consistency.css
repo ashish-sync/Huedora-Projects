@@ -630,6 +630,60 @@ html[data-theme='dark'] .camp-ops-root .dashboard-filter-panel {
   white-space: nowrap;
 }
 
+/* Master CSV import preview (delimiter + column mapping check) */
+.import-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm, 0.75rem);
+}
+
+.import-preview-meta {
+  margin: 0;
+}
+
+.import-preview-table-wrap {
+  max-height: min(50vh, 22rem);
+  overflow: auto;
+  border: 1px solid var(--color-border-default, var(--line));
+  border-radius: var(--control-radius, var(--radius-sm));
+  background: var(--bg-tier-2, var(--color-bg-surface, var(--bg)));
+}
+
+.import-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-sm-size, 0.82rem);
+}
+
+.import-preview-table th,
+.import-preview-table td {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--color-border-default, var(--line));
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text-primary, var(--ink));
+}
+
+.import-preview-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-muted, var(--color-bg-muted, var(--bg-elevated)));
+  font-weight: 650;
+}
+
+.import-preview-table tbody tr:hover td {
+  background: var(--bg-hover, var(--color-bg-hover, var(--brand-soft)));
+}
+
+.import-preview-more {
+  margin: 0.5rem 0.65rem 0.65rem;
+}
+
 @media (max-width: 768px) {
   .pm-filter-bar.inv-toolbar input[type='search'],
   .pm-filter-bar.inv-toolbar .inv-search,

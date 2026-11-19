@@ -1,7 +1,5 @@
-Name,Email,Resource Type,Profession,Contact,City,State
-Priya Sharma,priya.sharma@citycare.example,Full Timer,Camp Coordinator,+91 98765 43210,Pune,Maharashtra
-Rahul Mehta,rahul.mehta@metro.example,Contractual,Technician,+91 99887 76655,Mumbai,Maharashtra
-Anita Desai,anita.desai@clinic.example,Freelancer,Phlebotomist,+91 90123 45678,Ahmedabad,Gujarat
-Suresh Nair,suresh.nair@lab.example,Service Provider,MIS Executive,+91 91234 56789,Bengaluru,Karnataka
-Meera Iyer,meera.iyer@health.example,Retainer,Dietician,+91 98765 11122,Chennai,Tamil Nadu
-Vikram Shah,vikram.shah@partner.example,Individual,Camp Coordinator,+91 97654 32100,Surat,Gujarat
+Full Name,Email ID,Contact Number,Contact Category,Resource Type,Profession / Role,Street Address,State,City / District,PAN Number,Aadhaar Number,UPI ID,IFSC Code,Bank Name,Account Number,Employee Full Name,Employee Contact Number,Employee Profession / Role
+Dr. Ananya Rao,ananya@example.com,9876543210,Resource,Full-Time,Doctor,12 Health Park Road,Telangana,Hyderabad,ABCDE1234F,123456789012,ananya@upi,HDFC0001234,HDFC Bank,123456789012,,,
+City Hospital,ops@cityhospital.example,9123456780,Client,,,,Maharashtra,Mumbai,,,,,,,,,
+Anita Desai,anita@example.com,9111000002,Healthcare Worker,Individual,Doctor,5 Clinic Road,Maharashtra,Pune,BBBBB2222B,345678901234,anita@upi,HDFC0002222,HDFC Bank,112233445566,,,
+Care Staffing Agency,ops@carestaff.example,9000000001,Healthcare Worker,Service Provider,,,,,,,,,,,,Ravi Kumar,9111000001,Nurse

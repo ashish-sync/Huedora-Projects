@@ -26,6 +26,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import Input from '../../components/ui/Input.jsx';
 import ModalShell from '../../components/ui/ModalShell.jsx';
 import { CAMP_ZONE_DEFINITIONS } from '../../constants/geoZones.js';
+import { parseCsvTable, readCsvFileText } from '../../shared/csvParse.js';
 import { clientOneApi } from './clientOneApi.js';
 
 export const DESIGNATIONS = Object.freeze(['Zonal', 'Regional', 'Area', 'Territory']);
@@ -63,43 +64,15 @@ export function normalizeDesignationInput(val) {
 }
 
 export function parseCsv(text) {
-  if (!text || !text.trim()) return [];
-  const lines = [];
-  let row = [''];
-  let inQuotes = false;
-  let i = 0;
-  while (i < text.length) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        row[row.length - 1] += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      row.push('');
-    } else if ((char === '\r' || char === '\n') && !inQuotes) {
-      if (char === '\r' && nextChar === '\n') {
-        i += 1;
-      }
-      lines.push(row);
-      row = [''];
-    } else {
-      row[row.length - 1] += char;
-    }
-    i += 1;
-  }
-  if (row.length > 1 || (row.length === 1 && row[0].trim() !== '')) {
-    lines.push(row);
-  }
-  if (lines.length < 2) return [];
-  const headers = lines[0].map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ''));
+  if (!text || !String(text).trim()) return [];
+  const table = parseCsvTable(text);
+  if (!table.headers.length || !table.rows.length) return [];
+
+  const headers = table.headers.map((h) => h.trim().toLowerCase().replace(/[\s_-]+/g, ''));
   const rows = [];
-  for (let r = 1; r < lines.length; r += 1) {
-    const rawRow = lines[r];
-    if (rawRow.every((val) => !val || !val.trim())) continue;
+  for (let r = 0; r < table.rows.length; r += 1) {
+    const rawRow = table.rows[r];
+    if (rawRow.every((val) => !val || !String(val).trim())) continue;
     const obj = {};
     headers.forEach((h, colIdx) => {
       obj[h] = (rawRow[colIdx] || '').trim();
@@ -121,7 +94,7 @@ export function parseCsv(text) {
     }
 
     rows.push({
-      _rowIndex: r,
+      _rowIndex: r + 1,
       fullName,
       mobile,
       designation: normDes || desRaw,
@@ -512,10 +485,8 @@ export default function ClientOneUserBase() {
     setImportFile(file);
     setImportError('');
     setImportResult(null);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target.result || '';
+    readCsvFileText(file)
+      .then((text) => {
         const parsed = parseCsv(text);
         if (!parsed.length) {
           setImportError('No valid data rows found in CSV file. Please use the sample template.');
@@ -523,15 +494,11 @@ export default function ClientOneUserBase() {
           return;
         }
         setImportRows(parsed);
-      } catch (err) {
+      })
+      .catch((err) => {
         setImportError(err?.message || 'Failed to parse CSV file');
         setImportRows([]);
-      }
-    };
-    reader.onerror = () => {
-      setImportError('Error reading CSV file');
-    };
-    reader.readAsText(file);
+      });
   };
 
   const handleDrop = (e) => {

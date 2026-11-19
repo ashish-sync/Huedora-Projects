@@ -10,6 +10,7 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
 import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import Button from '../../components/ui/Button.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
 
 const STATUS_META = {
@@ -23,7 +24,7 @@ const STATUS_META = {
 };
 
 export default function AgreementsPage() {
-  const { can } = useAuth();
+  const { can, canDelete } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState([]);
@@ -36,6 +37,9 @@ export default function AgreementsPage() {
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
   const [listLoading, setListLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const canDeleteDocuments = canDelete();
 
   useEffect(() => {
     setStatus(searchParams.get('status') || '');
@@ -109,6 +113,28 @@ export default function AgreementsPage() {
   );
 
   const filteredEmpty = !rows.length && (!!status || !!q.trim());
+
+  const requestDeleteDocument = (agreement, event) => {
+    event?.stopPropagation?.();
+    if (!canDeleteDocuments || !agreement?._id) return;
+    setDeleteTarget(agreement);
+  };
+
+  const handleConfirmDeleteDocument = async () => {
+    if (!deleteTarget?._id || !canDeleteDocuments) return;
+    setDeleteBusy(true);
+    setError('');
+    try {
+      await api(`/agreements/${deleteTarget._id}/delete`, { method: 'POST', body: {} });
+      setDeleteTarget(null);
+      loadStats();
+      load();
+    } catch (e) {
+      setError(e.message || 'Could not delete document');
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   return (
     <PageShell
@@ -188,6 +214,7 @@ export default function AgreementsPage() {
               <th>Signers</th>
               <th>Status</th>
               <th>Updated</th>
+              {canDeleteDocuments ? <th>Actions</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -200,6 +227,9 @@ export default function AgreementsPage() {
                   <td style={{ padding: '12px 14px' }}><Skeleton width="40px" height="14px" /></td>
                   <td style={{ padding: '12px 14px' }}><Skeleton width="70px" height="22px" borderRadius="999px" /></td>
                   <td style={{ padding: '12px 14px' }}><Skeleton width="90px" height="14px" /></td>
+                  {canDeleteDocuments ? (
+                    <td style={{ padding: '12px 14px' }}><Skeleton width="64px" height="28px" /></td>
+                  ) : null}
                 </tr>
               ))
             ) : (
@@ -213,18 +243,32 @@ export default function AgreementsPage() {
                 <tr key={a._id} className="esign-row" onClick={() => navigate(`/document-one/${a._id}`)}>
                   <td>
                     <div className="esign-doc-title">{a.title || 'Untitled'}</div>
-                    <div className="muted mono-sm">{a.agreementNumber}</div>
+                    <div className="esign-doc-meta">{a.agreementNumber}</div>
                   </td>
                   <td>{a.type === 'TEMPORARY_OWNERSHIP' ? 'Temporary ownership' : 'Lease'}</td>
                   <td>
                     <div>{a.partyName}</div>
-                    <div className="muted mono-sm">{a.partyEmail || '-'}</div>
+                    <div className="esign-party-meta">{a.partyEmail || '-'}</div>
                   </td>
                   <td>{total ? `${done}/${total}` : '-'}</td>
                   <td>
                     <span className={`badge tone-${meta.tone}`}>{meta.label}</span>
                   </td>
                   <td className="muted">{a.updatedAt ? formatDateTime(a.updatedAt) : '-'}</td>
+                  {canDeleteDocuments ? (
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="esign-row-actions">
+                        <button
+                          className="btn danger btn-compact"
+                          type="button"
+                          title={`Delete ${a.title || a.agreementNumber || 'document'}`}
+                          onClick={(e) => requestDeleteDocument(a, e)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               );
               })
@@ -268,6 +312,24 @@ export default function AgreementsPage() {
           />
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete document?"
+        message={
+          deleteTarget
+            ? `Remove “${deleteTarget.title || deleteTarget.agreementNumber || 'this document'}” from Document One? This cannot be undone from the list.`
+            : ''
+        }
+        confirmLabel="Delete document"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={handleConfirmDeleteDocument}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteTarget(null);
+        }}
+      />
     </PageShell>
   );
 }

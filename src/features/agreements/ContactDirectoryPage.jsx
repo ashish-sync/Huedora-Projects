@@ -120,7 +120,7 @@ function formSectionsForDrawer({ isProvider = false, isCreate = false } = {}) {
 }
 
 export default function ContactDirectoryPage({ embedded = false } = {}) {
-  const { can } = useAuth();
+  const { can, canDelete } = useAuth();
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');
   const debouncedQ = useDebouncedValue(q, 300);
@@ -133,6 +133,8 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   const [editId, setEditId] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const excelConfig = masterExcelFor('contacts');
   const [page, setPage] = useState(1);
@@ -214,6 +216,32 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
   }, [page, limit, debouncedQ, categoryFilter]);
 
   const canWriteContacts = can('agreements:write');
+  const canDeleteContacts = canDelete();
+
+  const requestDeleteContact = (contact) => {
+    if (!canDeleteContacts || !contact?._id) return;
+    setDeleteTarget(contact);
+  };
+
+  const handleConfirmDeleteContact = async () => {
+    if (!deleteTarget?._id || !canDeleteContacts) return;
+    setDeleteBusy(true);
+    setError('');
+    try {
+      await api(`/contacts/${deleteTarget._id}/delete`, { method: 'POST', body: {} });
+      invalidateContactsCaches();
+      setDeleteTarget(null);
+      if (editId && String(editId) === String(deleteTarget._id)) {
+        setIsDrawerOpen(false);
+        setEditId(null);
+      }
+      await load();
+    } catch (e) {
+      setError(e.message || 'Could not delete contact');
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   useEffect(() => {
     setPage(1);
@@ -1020,16 +1048,28 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
                         />
                       </td>
                       <td className="inv-col-actions">
-                        {canWriteContacts && (
-                          <button
-                            className="btn secondary btn-compact"
-                            type="button"
-                            onClick={() => startEdit(c)}
-                            title={`Edit ${c.name}`}
-                          >
-                            Edit
-                          </button>
-                        )}
+                        <div className="cd-row-actions">
+                          {canWriteContacts && (
+                            <button
+                              className="btn secondary btn-compact"
+                              type="button"
+                              onClick={() => startEdit(c)}
+                              title={`Edit ${c.name}`}
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {canDeleteContacts && (
+                            <button
+                              className="btn danger btn-compact"
+                              type="button"
+                              onClick={() => requestDeleteContact(c)}
+                              title={`Delete ${c.name}`}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1618,6 +1658,22 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
         confirmVariant="danger"
         onConfirm={() => closeDrawer(true)}
         onCancel={() => setConfirmDiscardOpen(false)}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete contact?"
+        message={
+          deleteTarget
+            ? `Remove “${deleteTarget.name || 'this contact'}” from the Contact Directory? This cannot be undone from the list.`
+            : ''
+        }
+        confirmLabel="Delete contact"
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={handleConfirmDeleteContact}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteTarget(null);
+        }}
       />
       <QieReportDialog
         open={Boolean(qieReportId)}

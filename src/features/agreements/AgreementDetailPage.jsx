@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, apiFetch } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { formatDate, formatDateTime } from '../../shared/dateFormat.js';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import { decomposeProductType } from '../../shared/productTypes.js';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import { agreementTitleToFileBase, downloadBlobWithName } from './documentFileName.js';
@@ -126,7 +127,8 @@ function bindCanvasDraw(canvas, drawingRef) {
 
 export default function AgreementDetailPage() {
   const { id } = useParams();
-  const { can } = useAuth();
+  const navigate = useNavigate();
+  const { can, canDelete } = useAuth();
   const [doc, setDoc] = useState(null);
   const [assets, setAssets] = useState([]);
   const [error, setError] = useState('');
@@ -141,6 +143,8 @@ export default function AgreementDetailPage() {
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   /** Manual share link kept in session after Send (GET redacts tokens). */
   const [recipientShareLink, setRecipientShareLink] = useState('');
@@ -247,6 +251,7 @@ export default function AgreementDetailPage() {
 
   const meta = STATUS_META[doc.status] || { label: doc.status, tone: 'neutral' };
   const canWrite = can('agreements:write');
+  const canDeleteDocument = canDelete();
   const isNonSigning = doc.signingType === 'NON_SIGNING';
   const sender = partyOf(doc.signers, 'SENDER');
   const receiver = partyOf(doc.signers, 'RECEIVER');
@@ -272,6 +277,21 @@ export default function AgreementDetailPage() {
     } catch (e) {
       setError(e.message);
       return false;
+    }
+  };
+
+  const handleConfirmDeleteDocument = async () => {
+    if (!id || !canDelete()) return;
+    setDeleteBusy(true);
+    setError('');
+    try {
+      await api(`/agreements/${id}/delete`, { method: 'POST', body: {} });
+      setDeleteConfirmOpen(false);
+      navigate('/document-one');
+    } catch (e) {
+      setError(e.message || 'Could not delete document');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -453,6 +473,15 @@ export default function AgreementDetailPage() {
               onClick={() => run(() => api(`/agreements/${id}/terminate`, { method: 'POST', body: {} }))}
             >
               Terminate
+            </button>
+          )}
+          {canDeleteDocument && (
+            <button
+              className="btn danger"
+              type="button"
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              Delete
             </button>
           )}
         </div>
@@ -813,6 +842,19 @@ export default function AgreementDetailPage() {
           {!doc.activity?.length && <p className="muted">No activity yet.</p>}
         </section>
       )}
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Delete document?"
+        message={`Remove “${doc.title || doc.agreementNumber || 'this document'}” from Document One? Linked assets are released. This cannot be undone from the list.`}
+        confirmLabel="Delete document"
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={handleConfirmDeleteDocument}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteConfirmOpen(false);
+        }}
+      />
     </div>
   );
 }

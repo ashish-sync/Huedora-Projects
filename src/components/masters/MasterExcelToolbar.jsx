@@ -7,11 +7,22 @@ import {
   validateImportFileClient,
   formatRowImportError,
 } from '../../shared/importErrors.js';
+import {
+  csvDelimiterLabel,
+  isCsvFileName,
+  parseCsvTable,
+  readCsvFileText,
+} from '../../shared/csvParse.js';
 import ImportActionButton from '../ui/ImportActionButton.jsx';
+import ModalShell from '../ui/ModalShell.jsx';
+import Button from '../ui/Button.jsx';
+
+const PREVIEW_ROW_LIMIT = 8;
 
 /**
  * Standard master actions: Download and Import (sample lives inside Import).
- * Import accepts CSV (primary) or XLSB; samples are CSV.
+ * Import accepts CSV (primary) or Excel; CSV preview shows detected delimiter
+ * and column mapping before commit.
  */
 export default function MasterExcelToolbar({
   exportPath,
@@ -33,6 +44,7 @@ export default function MasterExcelToolbar({
   const [sampleBusy, setSampleBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [preview, setPreview] = useState(null);
 
   const compactClass = compact ? ' btn-compact' : '';
   const secondaryClass = secondary || compact ? ' secondary' : '';
@@ -75,18 +87,74 @@ export default function MasterExcelToolbar({
     }
   };
 
-  const runImport = async (file) => {
+  const closePreview = () => {
+    if (importBusy) return;
+    setPreview(null);
+  };
+
+  const prepareImport = async (file) => {
     if (!importPath || !file) return;
     const pre = validateImportFileClient(file);
     if (pre) {
       reportError(pre);
       return;
     }
+    setMsg('');
+
+    if (isCsvFileName(file.name)) {
+      try {
+        const text = await readCsvFileText(file);
+        const table = parseCsvTable(text);
+        if (!table.headers.length) {
+          reportError(new Error('CSV has no header row. Download the sample format and try again.'));
+          return;
+        }
+        if (!table.rows.length) {
+          reportError(new Error('CSV has no data rows. Add at least one row under the headers.'));
+          return;
+        }
+        if (table.headers.length < 2) {
+          reportError(
+            new Error(
+              'Could not split columns (entire row looks like one cell). Save as UTF-8 CSV with comma, semicolon, or tab separators.',
+            ),
+          );
+          return;
+        }
+        setPreview({
+          file,
+          kind: 'csv',
+          headers: table.headers,
+          rows: table.rows.slice(0, PREVIEW_ROW_LIMIT),
+          totalRows: table.rows.length,
+          delimiter: table.delimiter,
+          delimiterLabel: csvDelimiterLabel(table.delimiter),
+        });
+        return;
+      } catch (err) {
+        reportError(err);
+        return;
+      }
+    }
+
+    setPreview({
+      file,
+      kind: 'excel',
+      headers: [],
+      rows: [],
+      totalRows: null,
+      delimiter: null,
+      delimiterLabel: null,
+    });
+  };
+
+  const confirmImport = async () => {
+    if (!importPath || !preview?.file) return;
     setImportBusy(true);
     setMsg('');
     try {
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', preview.file);
       const { data } = await api(importPath, { method: 'POST', body: fd });
       const errHint =
         data.errorRows > 0
@@ -98,6 +166,7 @@ export default function MasterExcelToolbar({
         onError(data.errors.slice(0, 3).map(formatRowImportError).join(' '));
       }
       onImportComplete?.(data);
+      setPreview(null);
     } catch (err) {
       reportError(err);
     } finally {
@@ -128,7 +197,7 @@ export default function MasterExcelToolbar({
       <ImportActionButton
         canImport={Boolean(canImport && importPath)}
         hasSample={Boolean(samplePath)}
-        onImport={runImport}
+        onImport={prepareImport}
         onSample={handleSample}
         importBusy={importBusy}
         sampleBusy={sampleBusy}
@@ -136,6 +205,75 @@ export default function MasterExcelToolbar({
         title={acceptHint}
       />
       {msg && !onError ? <span className="muted mono-sm">{msg}</span> : null}
+
+      {preview ? (
+        <ModalShell
+          open
+          onClose={closePreview}
+          title="Preview import"
+          overlayClassName="modal-overlay"
+          panelClassName="modal-card modal-card--lg import-preview-modal"
+        >
+          <div className="import-preview-body">
+            <p className="modal-message import-preview-meta">
+              <strong>{preview.file?.name || 'Selected file'}</strong>
+              {preview.kind === 'csv' ? (
+                <>
+                  {' '}
+                  · {preview.totalRows} data row{preview.totalRows === 1 ? '' : 's'}
+                  {' '}
+                  · delimiter: {preview.delimiterLabel}
+                  {' '}
+                  · {preview.headers.length} columns
+                </>
+              ) : (
+                <> · Excel workbook — columns are mapped on the server using the sample headers.</>
+              )}
+            </p>
+
+            {preview.kind === 'csv' ? (
+              <div className="import-preview-table-wrap" role="region" aria-label="CSV data preview">
+                <table className="import-preview-table">
+                  <thead>
+                    <tr>
+                      {preview.headers.map((header) => (
+                        <th key={header}>{header}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.rows.map((row, rowIdx) => (
+                      <tr key={`preview-row-${rowIdx}`}>
+                        {preview.headers.map((_, colIdx) => (
+                          <td key={`preview-cell-${rowIdx}-${colIdx}`}>{row[colIdx] ?? ''}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {preview.totalRows > PREVIEW_ROW_LIMIT ? (
+                  <p className="muted import-preview-more">
+                    Showing first {PREVIEW_ROW_LIMIT} of {preview.totalRows} rows.
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="muted">
+                Confirm to upload. Prefer UTF-8 CSV (comma, semicolon, or tab) when you need a cell-level preview.
+              </p>
+            )}
+          </div>
+
+          <div className="confirm-actions modal-actions">
+            <Button variant="secondary" disabled={importBusy} onClick={closePreview}>
+              Cancel
+            </Button>
+            <Button variant="primary" loading={importBusy} onClick={confirmImport}>
+              {importBusy ? ACTION.IMPORTING : 'Confirm import'}
+            </Button>
+          </div>
+        </ModalShell>
+      ) : null}
     </div>
   );
 }

@@ -103,8 +103,17 @@ export function AuthProvider({ children }) {
     return user.permissions.includes('*') || user.permissions.includes(permission);
   }, [user]);
 
+  const isSuperAdmin = useCallback(() => {
+    const role = String(user?.systemRole || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+    return role === 'super admin';
+  }, [user]);
+
   const isAdmin = useCallback(() => can('*'), [can]);
-  const canDelete = useCallback(() => isAdmin(), [isAdmin]);
+  /** Destructive delete: RBAC Admin (`*`) or platform System Role Super Admin. */
+  const canDelete = useCallback(() => can('*') || isSuperAdmin(), [can, isSuperAdmin]);
 
   const value = useMemo(
     () => ({
@@ -114,12 +123,13 @@ export function AuthProvider({ children }) {
       logout,
       can,
       isAdmin,
+      isSuperAdmin,
       canDelete,
       refreshMe,
       bootSessionActive,
       completeLoginBoot,
     }),
-    [user, loading, login, logout, can, isAdmin, canDelete, refreshMe, bootSessionActive, completeLoginBoot]
+    [user, loading, login, logout, can, isAdmin, isSuperAdmin, canDelete, refreshMe, bootSessionActive, completeLoginBoot]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

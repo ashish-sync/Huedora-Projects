@@ -1451,6 +1451,49 @@ html[data-theme='dark'] .finance-pdf-preview-frame {
   background: var(--bg-tier-1, #090D16);
 }
 
+/* Billing Center HTML canvas preview (matches builder document look) */
+.finance-html-preview-modal {
+  width: min(1200px, calc(100vw - 1.5rem));
+  max-width: min(1200px, calc(100vw - 1.5rem));
+}
+
+.finance-html-preview-modal--portrait {
+  width: min(920px, calc(100vw - 1.5rem));
+  max-width: min(920px, calc(100vw - 1.5rem));
+}
+
+.finance-html-preview-frame {
+  overflow: auto;
+  background: var(--bg-tier-1, #F3F5F8);
+  -webkit-overflow-scrolling: touch;
+}
+
+.finance-html-preview-loading {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.finance-html-preview-canvas {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  min-width: min-content;
+}
+
+.finance-html-preview-canvas .invoice-print-root,
+.finance-html-preview-canvas .po-print-root,
+.finance-html-preview-canvas .dc-print-root {
+  margin: 0 auto;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 12%);
+}
+
+html[data-theme='dark'] .finance-html-preview-frame {
+  background: var(--bg-tier-1, #090D16);
+}
+
 .finance-docs-table .finance-docs-col-type {
   width: 7.75rem;
   min-width: 7.75rem;

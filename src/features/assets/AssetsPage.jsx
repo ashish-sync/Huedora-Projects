@@ -241,6 +241,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
   const [viewDocs, setViewDocs] = useState([]);
   const [viewLoading, setViewLoading] = useState(false);
   const [viewError, setViewError] = useState('');
+  const [editHasAgreementDoc, setEditHasAgreementDoc] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewTitle, setPreviewTitle] = useState('');
   const [docBusy, setDocBusy] = useState(false);
@@ -400,7 +401,10 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     const master = row.deviceMasterId && typeof row.deviceMasterId === 'object' ? row.deviceMasterId : null;
     const productType = row.productType || scopedType || 'Medical Device';
     const { categoryKind } = decomposeProductType(productType);
-    setEditingId(row._id);
+    const assetId = row._id;
+    const initialStatus = row.agreementStatus || 'Not Initiated';
+    setEditingId(assetId);
+    setEditHasAgreementDoc(false);
     setForm({
       productId: master?.productId || '',
       name: row.deviceNameSnapshot || master?.name || '',
@@ -415,7 +419,7 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           : master?.cost != null
             ? String(master.cost)
             : '',
-      agreementStatus: row.agreementStatus || 'Not Initiated',
+      agreementStatus: initialStatus,
       custody: row.custody || '',
       contactId: row.contactId?._id || row.contactId || '',
     });
@@ -423,10 +427,30 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setError('');
     setMsg('');
     setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+
+    // Existing rows: Agreement Signed only if Actions already has a document.
+    api(`/assets/${assetId}/documents`)
+      .then(({ data }) => {
+        const hasDoc = hasSignedAgreementCopy(data || [], {
+          agreementStatus: 'Agreement Signed',
+        });
+        setEditHasAgreementDoc(hasDoc);
+        if (!hasDoc && (initialStatus === 'Agreement Signed' || initialStatus === 'Active')) {
+          setForm((f) =>
+            f.agreementStatus === 'Agreement Signed' || f.agreementStatus === 'Active'
+              ? { ...f, agreementStatus: 'Not Initiated' }
+              : f
+          );
+        }
+      })
+      .catch(() => {
+        setEditHasAgreementDoc(false);
+      });
   };
 
   const closeForm = () => {
     setEditingId('');
+    setEditHasAgreementDoc(false);
     setForm(emptyForm);
     setFormOpen(false);
   };
@@ -564,6 +588,15 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setViewRow(null);
     setViewDocs([]);
   };
+
+  useEffect(() => {
+    if (!viewRow) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeView();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [viewRow, previewUrl]);
 
   const refreshDocs = async (assetId) => {
     const { data } = await api(`/assets/${assetId}/documents`);
@@ -849,17 +882,14 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     onChange={(e) => setForm({ ...form, agreementStatus: e.target.value })}
                   >
                     {ASSET_STATUS_OPTIONS.filter(
-                      (o) =>
-                        o !== 'Agreement Signed' ||
-                        editingId ||
-                        form.agreementStatus === 'Agreement Signed'
+                      (o) => o !== 'Agreement Signed' || editHasAgreementDoc
                     ).map((o) => (
                       <option key={o} value={o}>
                         {o}
                       </option>
                     ))}
                   </AdaptiveSelect>
-                  {!editingId && (
+                  {!editHasAgreementDoc && (
                     <p className="field-hint muted">
                       Set Agreement Signed from Actions after uploading a document.
                     </p>
@@ -1168,34 +1198,12 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       Replace file
                     </Button>
                   )}
-                  <span
-                    className="inv-pdf-preview-title"
-                    title={
-                      previewTitle ||
-                      viewSignedRecord.document?.name ||
-                      viewSignedRecord.agreement?.title ||
-                      ''
-                    }
+                  <Button
+                    className="inv-agreement-toolbar__close"
+                    variant="secondary"
+                    size="compact"
+                    onClick={closeView}
                   >
-                    {previewTitle ||
-                      viewSignedRecord.document?.name ||
-                      viewSignedRecord.agreement?.title ||
-                      'Signed file'}
-                  </span>
-                  {previewUrl ? (
-                    <Button
-                      variant="secondary"
-                      size="compact"
-                      onClick={() => {
-                        URL.revokeObjectURL(previewUrl);
-                        setPreviewUrl('');
-                        setPreviewTitle('');
-                      }}
-                    >
-                      Close preview
-                    </Button>
-                  ) : null}
-                  <Button variant="secondary" size="compact" onClick={closeView}>
                     Close
                   </Button>
                 </div>

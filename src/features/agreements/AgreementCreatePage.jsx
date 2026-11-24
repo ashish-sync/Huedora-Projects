@@ -32,7 +32,12 @@ import {
   mergeLineValuesIntoPlaceholders,
 } from './serviceAgreementLineColumns.js';
 import { LineDeviceNameCombobox, LineSerialCombobox } from './LineAssetCombobox.jsx';
-import { agreementTitleToFileBase, buildAgreementDocumentTitle, downloadBlobWithName } from './documentFileName.js';
+import {
+  agreementTitleToFileBase,
+  buildAgreementDocumentFileBase,
+  buildAgreementDocumentTitle,
+  downloadBlobWithName,
+} from './documentFileName.js';
 
 const EMPTY_ARRAY = Object.freeze([]);
 
@@ -581,6 +586,13 @@ export default function AgreementCreatePage() {
       documentDetails,
       dateValue: startDate || todayISODate(),
     });
+    const fileBase = agreementTitleToFileBase(
+      buildAgreementDocumentFileBase({
+        partyName,
+        documentDetails,
+        dateValue: startDate || todayISODate(),
+      })
+    );
     setTitle(builtTitle);
     setBusy(true);
     try {
@@ -591,7 +603,6 @@ export default function AgreementCreatePage() {
         lineRowsByTable
       );
       setPlaceholderValues(mergedValues);
-      const fileBase = agreementTitleToFileBase(builtTitle);
       const { data } = await api(`/templates/${selectedTemplateId}/fill-preview`, {
         method: 'POST',
         body: { values: mergedValues, lineRows: lineRowsByTable, title: builtTitle },

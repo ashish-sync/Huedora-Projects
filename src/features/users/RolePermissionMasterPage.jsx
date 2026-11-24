@@ -32,18 +32,11 @@ import {
 } from './moduleAccessTiers.js';
 
 const DEFAULT_DESIGNATIONS = [
-  'Healthcare Camp Coordinator',
-  'Ops Support Team',
-  'Team Leader',
-  'Senior Team Lead',
-  'Manager',
-  'Product Manager',
-  'Operations Manager',
-  'Operations Head',
-  'Director',
   'Business Head',
-  'Head of Department',
-  'Vice President',
+  'Camp Coordinator',
+  'Ops. Manager',
+  'Ops. Support Team',
+  'Team Leader',
 ];
 
 const SYSTEM_ROLES = ['Super Admin', 'Admin', 'User'];
@@ -79,6 +72,39 @@ function roleIdOf(r) {
   return String(r?._id || r?.id || r || '');
 }
 
+/** Align legacy designation labels to the locked Access Control picklist. */
+function canonicalizeDesignation(value) {
+  const key = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u2013\u2014\u2212]/g, '-')
+    .replace(/\s+/g, ' ');
+  const map = {
+    'healthcare camp coordinator': 'Camp Coordinator',
+    'ops support team': 'Ops. Support Team',
+    manager: 'Ops. Manager',
+    'operations manager': 'Ops. Manager',
+    'operations head': 'Ops. Manager',
+    'operations leader': 'Ops. Manager',
+    'product manager': 'Ops. Manager',
+    'senior manager': 'Ops. Manager',
+    'senior team lead': 'Ops. Manager',
+    'team lead': 'Team Leader',
+    director: 'Business Head',
+    'vice president': 'Business Head',
+    'head of department': 'Business Head',
+    accounts: 'Ops. Support Team',
+    'data analyst': 'Ops. Support Team',
+    'individual contributor': 'Ops. Support Team',
+    'logistics associate': 'Ops. Support Team',
+    'system analyst': 'Ops. Support Team',
+    'training manager': 'Ops. Support Team',
+  };
+  if (map[key]) return map[key];
+  const raw = String(value || '').trim();
+  return DEFAULT_DESIGNATIONS.includes(raw) ? raw : raw;
+}
+
 function buildUserDraftFromRecord(user, modules, roles) {
   if (!user) return { ...EMPTY_USER };
   const access = buildUserAccessDraft(user, modules, roles, roleIdOf);
@@ -87,7 +113,8 @@ function buildUserDraftFromRecord(user, modules, roles) {
     username: user.username || '',
     fullName: user.fullName || '',
     phone: user.phone || '',
-    designation: user.designation || '',
+    designation: canonicalizeDesignation(user.designation || ''),
+    systemRole: user.systemRole || 'User',
     reportingManagerId: user.reportingManagerId ? String(user.reportingManagerId) : '',
     password: '',
     passwordConfirm: '',
@@ -135,15 +162,16 @@ function formatWhen(iso) {
 }
 
 export default function RolePermissionMasterPage() {
-  const { can, user: me, refreshMe } = useAuth();
-  const canWrite = can('users:write') || can('*');
+  const { user: me, refreshMe, isSuperAdmin } = useAuth();
+  // Access Control is Super Admin (systemRole) only — route + APIs enforce the same.
+  const canWrite = isSuperAdmin();
   const avatarInputRef = useRef(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [pendingCropFile, setPendingCropFile] = useState(null);
-  const canDelete = can('*');
-  const canGrantAdmin = can('*');
-  const canViewUsers = canWrite || can('users:read');
+  const canDelete = canWrite;
+  const canGrantAdmin = canWrite;
+  const canViewUsers = canWrite;
   const [tab, setTab] = useState('users');
 
   const [roles, setRoles] = useState([]);
@@ -334,12 +362,10 @@ export default function RolePermissionMasterPage() {
       .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
   }, [users, creatingUser, editingUserId]);
 
-  const designationOptions = useMemo(() => {
-    const titles = [...(designations.length ? designations : DEFAULT_DESIGNATIONS)];
-    const current = String(userDraft.designation || '').trim();
-    if (current && !titles.includes(current)) titles.unshift(current);
-    return titles;
-  }, [designations, userDraft.designation]);
+  const designationOptions = useMemo(
+    () => [...(designations.length ? designations : DEFAULT_DESIGNATIONS)],
+    [designations]
+  );
 
   const saveUser = async (e) => {
     e.preventDefault();

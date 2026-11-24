@@ -15,7 +15,8 @@ vi.mock('../../shared/api.js', () => ({
 vi.mock('../../shared/auth.jsx', () => ({
   useAuth: () => ({
     can: () => true,
-    user: { id: 'u1', fullName: 'Priya Sharma' },
+    isSuperAdmin: () => true,
+    user: { id: 'u1', fullName: 'Priya Sharma', systemRole: 'Super Admin' },
   }),
 }));
 
@@ -51,7 +52,7 @@ const MOCK_USERS = [
     fullName: 'Priya Sharma',
     email: 'priya@tylo.test',
     username: 'priya',
-    designation: 'Healthcare Camp Coordinator',
+    designation: 'Camp Coordinator',
     systemRole: 'User',
     isActive: true,
     roles: [{ id: 'r_coord', name: 'Camp Coordinator' }],
@@ -62,7 +63,7 @@ const MOCK_USERS = [
     fullName: 'Aarav Patel',
     email: 'aarav@tylo.test',
     username: 'aarav',
-    designation: 'Director',
+    designation: 'Business Head',
     systemRole: 'Admin',
     isActive: false,
     roles: [],
@@ -77,7 +78,16 @@ describe('RolePermissionMasterPage Access Control', () => {
       if (p.startsWith('/users/roles')) return { data: MOCK_ROLES };
       if (p.startsWith('/users/permissions')) return { data: { modules: MOCK_MODULES } };
       if (p.startsWith('/users/designations')) {
-        return { data: ['Healthcare Camp Coordinator', 'Director'], accessTemplates: {} };
+        return {
+          data: [
+            'Business Head',
+            'Camp Coordinator',
+            'Ops. Manager',
+            'Ops. Support Team',
+            'Team Leader',
+          ],
+          accessTemplates: {},
+        };
       }
       if (p.startsWith('/users/hierarchy')) {
         return {
@@ -141,7 +151,7 @@ describe('RolePermissionMasterPage Access Control', () => {
     await user.click(aaravBtn);
 
     expect(screen.getByDisplayValue('aarav@tylo.test')).toBeTruthy();
-    expect(screen.getByDisplayValue('Director')).toBeTruthy();
+    expect(screen.getByDisplayValue('Business Head')).toBeTruthy();
   });
 
   it('toggles to Org hierarchy tab', async () => {

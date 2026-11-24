@@ -30,7 +30,7 @@ function initials(name = '') {
 }
 
 export default function Layout({ children }) {
-  const { user, logout, can } = useAuth();
+  const { user, logout, can, isSuperAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -308,6 +308,7 @@ export default function Layout({ children }) {
         <AppSidebar
           pathname={pathname}
           can={can}
+          isSuperAdmin={isSuperAdmin()}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={toggleSidebarCollapse}
           onNavigate={handleNavModulePick}
@@ -488,7 +489,7 @@ export default function Layout({ children }) {
                       </span>
                     ) : null}
                   </div>
-                  {(can('users:write') || can('*')) && (
+                  {isSuperAdmin() && (
                     <Link
                       to="/access-control"
                       role="menuitem"

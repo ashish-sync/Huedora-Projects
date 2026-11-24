@@ -170,7 +170,7 @@ export default function App() {
                   }
                 />
                 <Route path={MODULE_PATH.ACCESS_CONTROL} element={
-                  <RequirePermission anyOf={['users:read', 'users:write']}>
+                  <RequirePermission requireSuperAdmin>
                     <RolePermissionMasterPage />
                   </RequirePermission>
                 } />

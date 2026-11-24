@@ -1,18 +1,21 @@
 /** Mirrors server designation bundles for offline UI (API also returns these). */
+const CAMP_COORDINATOR_TEMPLATE = {
+  roleNames: ['Camp Coordinator'],
+  summary:
+    'Document One, Camp One (incl. Confirm / Hold / Unhold / Submit to Finance One), Request One, Operations Dashboard & Notifications, and Verification One.',
+  modules: [
+    { moduleId: 'agreements', access: 'All' },
+    { moduleId: 'camps', access: 'All' },
+    { moduleId: 'assetRequests', access: 'View, Request' },
+    { moduleId: 'platform', access: 'All' },
+    { moduleId: 'verifications', access: 'Viewer' },
+    { moduleId: 'finance', access: 'View, Add' },
+  ],
+};
+
 export const DESIGNATION_ACCESS_TEMPLATES = {
-  'healthcare camp coordinator': {
-    roleNames: ['Camp Coordinator'],
-    summary:
-      'Document One, Camp One (incl. Confirm / Hold / Unhold / Submit to Finance One), Request One, Operations Dashboard & Notifications, and Verification One.',
-    modules: [
-      { moduleId: 'agreements', access: 'All' },
-      { moduleId: 'camps', access: 'All' },
-      { moduleId: 'assetRequests', access: 'View, Request' },
-      { moduleId: 'platform', access: 'All' },
-      { moduleId: 'verifications', access: 'Viewer' },
-      { moduleId: 'finance', access: 'View, Add' },
-    ],
-  },
+  'camp coordinator': CAMP_COORDINATOR_TEMPLATE,
+  'healthcare camp coordinator': CAMP_COORDINATOR_TEMPLATE,
 };
 
 export const DESIGNATION_ROLE_NAMES = new Set(['Camp Coordinator']);

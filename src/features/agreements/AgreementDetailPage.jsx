@@ -9,7 +9,11 @@ import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import { decomposeProductType } from '../../shared/productTypes.js';
 import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
-import { agreementTitleToFileBase, downloadBlobWithName } from './documentFileName.js';
+import {
+  agreementTitleToFileBase,
+  displayAgreementDocumentName,
+  downloadBlobWithName,
+} from './documentFileName.js';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -423,7 +427,7 @@ export default function AgreementDetailPage() {
             <span className="crumb-sep" aria-hidden="true">/</span>
             <span>{doc.agreementNumber}</span>
           </p>
-          <h1>{doc.title}</h1>
+          <h1>{displayAgreementDocumentName(doc.title, doc.agreementNumber || 'Agreement')}</h1>
           <div className="row" style={{ marginTop: 'var(--space-2)' }}>
             <span className={`badge tone-${meta.tone}`}>{meta.label}</span>
             <span className={`badge ${isNonSigning ? 'tone-info' : 'tone-ok'}`}>

@@ -12,6 +12,7 @@ import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import Button from '../../components/ui/Button.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import { displayAgreementDocumentName } from './documentFileName.js';
 
 const STATUS_META = {
   DRAFT: { label: 'Draft', tone: 'neutral' },
@@ -242,7 +243,9 @@ export default function AgreementsPage() {
               return (
                 <tr key={a._id} className="esign-row" onClick={() => navigate(`/document-one/${a._id}`)}>
                   <td>
-                    <div className="esign-doc-title">{a.title || 'Untitled'}</div>
+                    <div className="esign-doc-title">
+                      {displayAgreementDocumentName(a.title, 'Untitled')}
+                    </div>
                     <div className="esign-doc-meta">{a.agreementNumber}</div>
                   </td>
                   <td>{a.type === 'TEMPORARY_OWNERSHIP' ? 'Temporary ownership' : 'Lease'}</td>

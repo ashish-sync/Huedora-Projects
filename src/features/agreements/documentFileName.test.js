@@ -1,41 +1,79 @@
 import { describe, expect, it } from 'vitest';
 import {
   agreementTitleToFileBase,
+  buildAgreementDocumentFileBase,
   buildAgreementDocumentTitle,
+  displayAgreementDocumentName,
   formatNomenclatureDate,
   primaryPartyName,
   shortenDocumentDetails,
 } from './documentFileName.js';
 
 describe('buildAgreementDocumentTitle', () => {
-  it('builds HCW-Document Details-Date nomenclature', () => {
+  it('stores document type only (no party or date)', () => {
     expect(
       buildAgreementDocumentTitle({
         partyName: 'Ashish',
         documentDetails: 'Service Agreement',
         dateValue: '2026-09-27',
       })
-    ).toBe('Ashish-Service Agreement-27-09-2026');
+    ).toBe('Service Agreement');
   });
 
-  it('trims parts and falls back when blank', () => {
-    expect(
-      buildAgreementDocumentTitle({
-        partyName: '  Ashish PP  ',
-        documentDetails: '',
-        dateValue: '2026-09-27',
-      })
-    ).toBe('Ashish PP-Agreement-27-09-2026');
-  });
-
-  it('shortens multi-party names and org-prefixed template titles', () => {
+  it('strips org prefixes and keeps ampersands', () => {
     expect(
       buildAgreementDocumentTitle({
         partyName: 'Manoj Kumar Rastogi & Charu Rastogi',
         documentDetails: 'Tylo Care - Service Agreement & NDA',
         dateValue: '2026-11-23',
       })
-    ).toBe('Manoj Kumar Rastogi-Service Agreement NDA-23-11-2026');
+    ).toBe('Service Agreement & NDA');
+  });
+
+  it('falls back when blank', () => {
+    expect(
+      buildAgreementDocumentTitle({
+        partyName: 'Ashish',
+        documentDetails: '',
+        dateValue: '2026-09-27',
+      })
+    ).toBe('Agreement');
+  });
+});
+
+describe('buildAgreementDocumentFileBase', () => {
+  it('keeps party + details + date for downloads', () => {
+    expect(
+      buildAgreementDocumentFileBase({
+        partyName: 'Manoj Kumar Rastogi & Charu Rastogi',
+        documentDetails: 'Tylo Care - Service Agreement & NDA',
+        dateValue: '2026-11-23',
+      })
+    ).toBe('Manoj Kumar Rastogi-Service Agreement & NDA-23-11-2026');
+  });
+});
+
+describe('displayAgreementDocumentName', () => {
+  it('strips party, org prefix, and trailing date from legacy titles', () => {
+    expect(
+      displayAgreementDocumentName(
+        'Tapas Sarkar-Tylo Care - Service Agreement & NDA-23-11-2026'
+      )
+    ).toBe('Service Agreement & NDA');
+    expect(
+      displayAgreementDocumentName(
+        'Manoj Kumar Rastogi & Charu Rastogi-Tylo Care - Service Agreement & NDA-23-11-2026'
+      )
+    ).toBe('Service Agreement & NDA');
+    expect(
+      displayAgreementDocumentName('Rakesh Chidanand Kadam-Service Agreement File-20-11-2026')
+    ).toBe('Service Agreement File');
+  });
+
+  it('passes through already-clean titles', () => {
+    expect(displayAgreementDocumentName('Service Agreement & NDA')).toBe(
+      'Service Agreement & NDA'
+    );
   });
 });
 
@@ -47,7 +85,7 @@ describe('primaryPartyName / shortenDocumentDetails', () => {
 
   it('strips Tylo Care prefixes from template names', () => {
     expect(shortenDocumentDetails('Tylo Care - Service Agreement & NDA')).toBe(
-      'Service Agreement NDA'
+      'Service Agreement & NDA'
     );
   });
 });
@@ -59,12 +97,9 @@ describe('formatNomenclatureDate', () => {
 });
 
 describe('agreementTitleToFileBase', () => {
-  it('replaces path-unsafe characters without exploding ampersands into dashes', () => {
+  it('replaces path-unsafe characters', () => {
     expect(agreementTitleToFileBase('Ashish-Service Agreement-27/09/2026')).toBe(
       'Ashish-Service Agreement-27-09-2026'
-    );
-    expect(agreementTitleToFileBase('Ashish PP-TCPL - Service Agreement & NDA-27/09/2026')).toBe(
-      'Ashish PP-TCPL - Service Agreement NDA-27-09-2026'
     );
   });
 });

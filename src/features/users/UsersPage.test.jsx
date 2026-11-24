@@ -13,6 +13,7 @@ vi.mock('../../shared/api.js', () => ({
 vi.mock('../../shared/auth.jsx', () => ({
   useAuth: () => ({
     can: (perm) => perm === 'users:read' || perm === 'users:write',
+    isSuperAdmin: () => true,
   }),
 }));
 

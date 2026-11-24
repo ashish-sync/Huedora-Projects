@@ -5,12 +5,13 @@ import { MODULE } from '../shared/labels.js';
 export default function AppSidebar({
   pathname = '',
   can,
+  isSuperAdmin = false,
   isCollapsed = false,
   onToggleCollapse,
   onNavigate,
 }) {
   const canSeeDashboard = can('dashboards:read') || can('*');
-  const canSeeAccess = can('users:write') || can('*');
+  const canSeeAccess = Boolean(isSuperAdmin);
   const canSeeAudit = can('audit:read') || can('*');
 
   const visibleModules = OPERATIONAL_MODULES.filter((m) => m.canShow(can));

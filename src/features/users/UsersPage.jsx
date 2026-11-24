@@ -21,9 +21,9 @@ function getInitials(fullName = '', email = '') {
 }
 
 export default function UsersPage({ embedded = false } = {}) {
-  const { can } = useAuth();
-  const canView = can('users:read') || can('users:write') || can('*');
-  const canManage = can('users:write') || can('*');
+  const { isSuperAdmin } = useAuth();
+  const canView = isSuperAdmin();
+  const canManage = canView;
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

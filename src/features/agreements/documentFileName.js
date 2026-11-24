@@ -1,16 +1,13 @@
 /**
- * Build Document One file/title nomenclature:
- * `{Primary Party}-{Document Details}-{DD-MM-YYYY}`
- * e.g. Ashish-Service Agreement-27-09-2026
- *
- * Long multi-party names and org-prefixed template titles are shortened so
- * list/file names stay readable.
+ * Document One display/file naming helpers.
+ * List titles show only the document type (e.g. "Service Agreement & NDA").
+ * Downloads can still use party + details + date for uniqueness.
  */
 
 import { formatDate, parseToDate } from '../../shared/dateFormat.js';
 
 const PARTY_MAX = 42;
-const DETAILS_MAX = 40;
+const DETAILS_MAX = 48;
 
 export function formatNomenclatureDate(value) {
   const date = parseToDate(value) || new Date();
@@ -34,15 +31,13 @@ export function primaryPartyName(value, fallback = 'Document') {
 }
 
 /**
- * Drop org brand prefixes and compress noisy separators in template titles.
- * "Tylo Care - Service Agreement & NDA" → "Service Agreement NDA"
+ * Drop org brand prefixes from template titles.
+ * "Tylo Care - Service Agreement & NDA" → "Service Agreement & NDA"
  */
 export function shortenDocumentDetails(value, fallback = 'Agreement') {
   let details = cleanPart(value, fallback);
   details = details
     .replace(/^(tylo\s*care(?:\s*private\s*limited)?|tcpl|tylo)\s*[-–—:|]\s*/i, '')
-    .replace(/\s*&\s*/g, ' ')
-    .replace(/\s*[-–—|]\s*/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   return truncatePart(details, DETAILS_MAX) || fallback;
@@ -55,7 +50,19 @@ function truncatePart(value, max) {
   return `${cut || text.slice(0, max - 1)}…`;
 }
 
+/** Stored / create title: document type only (no party, no date). */
 export function buildAgreementDocumentTitle({
+  documentDetails,
+  partyName: _partyName,
+  dateValue: _dateValue,
+} = {}) {
+  return shortenDocumentDetails(documentDetails, 'Agreement');
+}
+
+/**
+ * Unique download basename: `{Primary Party}-{Document Details}-{DD-MM-YYYY}`
+ */
+export function buildAgreementDocumentFileBase({
   partyName,
   documentDetails,
   dateValue,
@@ -66,12 +73,30 @@ export function buildAgreementDocumentTitle({
   return `${name}-${details}-${date}`;
 }
 
+/**
+ * List/detail label from a stored title that may still include party + date.
+ * "Tapas Sarkar-Tylo Care - Service Agreement & NDA-23-11-2026" → "Service Agreement & NDA"
+ */
+export function displayAgreementDocumentName(title, fallback = 'Agreement') {
+  let text = String(title || '').trim();
+  if (!text) return fallback;
+
+  text = text.replace(/-\d{2}-\d{2}-\d{4}\s*$/, '').trim();
+
+  const dash = text.indexOf('-');
+  if (dash > 0) {
+    const rest = text.slice(dash + 1).trim();
+    if (rest) text = rest;
+  }
+
+  return shortenDocumentDetails(text, fallback);
+}
+
 /** Safe download basename (path-unsafe chars become dashes). */
 export function agreementTitleToFileBase(title) {
   return (
     String(title || 'document')
       .replace(/[\\/:*?"<>|]+/g, '-')
-      .replace(/\s*&\s*/g, ' ')
       .replace(/\s+/g, ' ')
       .replace(/-+/g, '-')
       .replace(/^\s*-+\s*|\s*-+\s*$/g, '')

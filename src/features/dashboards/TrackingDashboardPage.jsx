@@ -139,11 +139,12 @@ function breakdownEntries(summary = {}) {
 }
 
 export default function TrackingDashboardPage() {
-  const { can } = useAuth();
+  const { can, isSuperAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const canDownload = can('dashboards:read') || can('*');
   const canSeeCampOps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
   const showAssetValue = can('assets:view-value') || can('*');
+  const canManageAccess = isSuperAdmin();
 
   const moduleParam = searchParams.get('module');
   const tabParam = searchParams.get('tab');
@@ -422,7 +423,7 @@ export default function TrackingDashboardPage() {
               Open Activity Log
             </Link>
           ) : null}
-          {view === 'drilldown' && submitted && moduleId === 'users' ? (
+          {view === 'drilldown' && submitted && moduleId === 'users' && canManageAccess ? (
             <Link className="btn secondary" to="/access-control">
               Manage access
             </Link>

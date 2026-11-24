@@ -12378,9 +12378,8 @@ body:has(.login-page),
   white-space: nowrap;
 }
 
-.inv-agreement-toolbar .inv-pdf-preview-title {
-  flex: 1 1 auto;
-  min-width: 8rem;
+.inv-agreement-toolbar__close {
+  margin-left: auto;
 }
 
 .inv-agreement-preview-hint {
@@ -12456,9 +12455,8 @@ body:has(.login-page),
     flex-wrap: wrap;
   }
 
-  .inv-agreement-toolbar .inv-pdf-preview-title {
-    flex: 1 1 100%;
-    min-width: 0;
+  .inv-agreement-toolbar__close {
+    margin-left: 0;
   }
 }
 

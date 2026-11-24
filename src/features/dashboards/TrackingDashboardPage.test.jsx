@@ -19,7 +19,12 @@ vi.mock('../../shared/api.js', () => ({
 vi.mock('../../shared/auth.jsx', () => ({
   useAuth: () => ({
     can: (permission) => permissions.includes('*') || permissions.includes(permission),
-    user: { id: 'permission-fixture', fullName: 'QA Fixture' },
+    isSuperAdmin: () => permissions.includes('*'),
+    user: {
+      id: 'permission-fixture',
+      fullName: 'QA Fixture',
+      systemRole: permissions.includes('*') ? 'Super Admin' : 'User',
+    },
     loading: false,
   }),
 }));

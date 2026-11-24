@@ -308,7 +308,7 @@ export default function Layout({ children }) {
         <AppSidebar
           pathname={pathname}
           can={can}
-          isSuperAdmin={isSuperAdmin()}
+          isSuperAdmin={Boolean(isSuperAdmin?.())}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={toggleSidebarCollapse}
           onNavigate={handleNavModulePick}
@@ -489,7 +489,7 @@ export default function Layout({ children }) {
                       </span>
                     ) : null}
                   </div>
-                  {isSuperAdmin() && (
+                  {Boolean(isSuperAdmin?.()) && (
                     <Link
                       to="/access-control"
                       role="menuitem"

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Layout from './Layout.jsx';
@@ -6,9 +6,15 @@ import Layout from './Layout.jsx';
 // Mock dependencies of Layout
 vi.mock('../shared/auth.jsx', () => ({
   useAuth: () => ({
-    user: { fullName: 'Alex Rivera', email: 'alex@tylo.com', role: 'admin' },
+    user: {
+      fullName: 'Alex Rivera',
+      email: 'alex@tylo.com',
+      role: 'admin',
+      systemRole: 'Super Admin',
+    },
     logout: vi.fn(),
     can: () => true,
+    isSuperAdmin: () => true,
   }),
 }));
 
@@ -28,7 +34,31 @@ vi.mock('../shared/api.js', () => ({
   }),
 }));
 
+function installLocalStorageMock() {
+  const store = new Map();
+  const mock = {
+    getItem: (key) => (store.has(String(key)) ? store.get(String(key)) : null),
+    setItem: (key, value) => {
+      store.set(String(key), String(value));
+    },
+    removeItem: (key) => {
+      store.delete(String(key));
+    },
+    clear: () => store.clear(),
+  };
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    writable: true,
+    value: mock,
+  });
+  return mock;
+}
+
 describe('Layout Shell Architecture', () => {
+  beforeEach(() => {
+    installLocalStorageMock();
+  });
+
   afterEach(() => {
     cleanup();
   });

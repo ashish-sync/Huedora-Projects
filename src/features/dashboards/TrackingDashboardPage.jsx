@@ -144,7 +144,7 @@ export default function TrackingDashboardPage() {
   const canDownload = can('dashboards:read') || can('*');
   const canSeeCampOps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');
   const showAssetValue = can('assets:view-value') || can('*');
-  const canManageAccess = isSuperAdmin();
+  const canManageAccess = Boolean(isSuperAdmin?.());
 
   const moduleParam = searchParams.get('module');
   const tabParam = searchParams.get('tab');

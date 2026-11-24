@@ -83,11 +83,16 @@
 }
 
 .ops-review-header__range .date-range-filter-field .date-input-display,
+.ops-review-header__range .date-range-filter-field .date-input-control,
 .ops-review-header__range .date-range-filter-field select,
+.ops-review-header__range .module-review-module .adaptive-select,
 .ops-review-header__range .module-review-module .adaptive-select__control {
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
+  height: var(--control-h, 36px);
+  min-height: var(--control-h, 36px);
+  box-sizing: border-box;
 }
 
 .ops-review-header__range .date-range-filter-actions {
@@ -97,6 +102,11 @@
   gap: 8px;
   align-self: end;
   white-space: nowrap;
+}
+
+.ops-review-header__range .date-range-filter-actions .btn {
+  height: var(--control-h, 36px);
+  min-height: var(--control-h, 36px);
 }
 
 .ops-review-header__meta {
@@ -144,11 +154,11 @@
   display: flex;
   align-items: center;
   margin: 0;
-  min-height: var(--control-height, 38px);
-  font-size: 1.85rem;
+  min-height: var(--control-h, 36px);
+  font-size: 1.5rem;
   line-height: 1;
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -217,16 +227,6 @@ a.ops-review-header__total:hover .ops-review-header__total-value {
 .ops-review-header__filters .ops-filter-input,
 .ops-review-header__filters .camp-client-typeahead input {
   box-sizing: border-box;
-  height: var(--control-height, 38px) !important;
-  min-height: var(--control-height, 38px) !important;
-  max-height: var(--control-height, 38px) !important;
-  padding: 0 0.75rem !important;
-  border: 1px solid var(--color-border-default, var(--line)) !important;
-  border-radius: var(--radius-sm, 6px) !important;
-  background: var(--bg-elevated) !important;
-  color: var(--color-text-primary, inherit);
-  font-size: var(--text-body-sm-size, 0.8125rem) !important;
-  font-weight: var(--text-body-sm-weight, 400) !important;
   height: var(--control-h, 36px) !important;
   min-height: var(--control-h, 36px) !important;
   max-height: var(--control-h, 36px) !important;
@@ -240,6 +240,16 @@ a.ops-review-header__total:hover .ops-review-header__total-value {
   letter-spacing: normal !important;
   text-transform: none !important;
   line-height: calc(var(--control-h, 36px) - 2px);
+}
+
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input)::placeholder,
+.ops-review-header__filter .ops-filter-input::placeholder,
+.ops-review-header__filters .ops-filter-input::placeholder,
+.ops-review-header__filters .camp-client-typeahead input::placeholder {
+  color: var(--color-text-tertiary, var(--muted));
+}
+
+.ops-review-header__filter input:not(.date-input-native):not(.adaptive-select__input):hover,
 .ops-review-header__filter .ops-filter-input:hover,
 .ops-review-header__filters .ops-filter-input:hover {
   border-color: var(--color-border-strong, var(--line)) !important;

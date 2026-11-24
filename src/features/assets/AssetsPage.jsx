@@ -35,6 +35,7 @@ import {
   decomposeProductType,
 } from '../../shared/productTypes.js';
 import {
+  hasSignedAgreementCopy,
   pickSignedAgreementRecord,
 } from './assetAgreementDocs.js';
 
@@ -467,6 +468,29 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
           return;
         }
       }
+      if (form.agreementStatus === 'Agreement Signed') {
+        if (!editingId) {
+          setError(
+            'Asset Status cannot be Agreement Signed until a document is uploaded under Actions.'
+          );
+          setBusy(false);
+          return;
+        }
+        try {
+          const { data: docs } = await api(`/assets/${editingId}/documents`);
+          if (!hasSignedAgreementCopy(docs || [], { agreementStatus: 'Agreement Signed' })) {
+            setError(
+              'Asset Status cannot be Agreement Signed until a document is uploaded under Actions.'
+            );
+            setBusy(false);
+            return;
+          }
+        } catch (docErr) {
+          setError(docErr.message || 'Could not verify agreement document.');
+          setBusy(false);
+          return;
+        }
+      }
       const shared = {
         ...(form.productId ? { productId: form.productId } : {}),
         name: form.name.trim(),
@@ -824,12 +848,22 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     value={form.agreementStatus}
                     onChange={(e) => setForm({ ...form, agreementStatus: e.target.value })}
                   >
-                    {ASSET_STATUS_OPTIONS.map((o) => (
+                    {ASSET_STATUS_OPTIONS.filter(
+                      (o) =>
+                        o !== 'Agreement Signed' ||
+                        editingId ||
+                        form.agreementStatus === 'Agreement Signed'
+                    ).map((o) => (
                       <option key={o} value={o}>
                         {o}
                       </option>
                     ))}
                   </AdaptiveSelect>
+                  {!editingId && (
+                    <p className="field-hint muted">
+                      Set Agreement Signed from Actions after uploading a document.
+                    </p>
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="asset-custody">{FIELD.ASSET_CUSTODY} *</label>
@@ -1086,42 +1120,32 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
       {viewRow && (
         <div className="inv-modal-backdrop" role="presentation" onClick={closeView}>
           <div
-            className="inv-modal inv-modal-wide card"
+            className={`inv-modal inv-modal-wide inv-modal--agreement${previewUrl ? ' inv-modal--preview-open' : ''}${!viewLoading && hasSignedCopy ? ' inv-modal--signed' : ''}`}
             role="dialog"
+            aria-modal="true"
             aria-labelledby="inv-view-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="inv-modal-head">
-              <h2 id="inv-view-title">{MODULE.ASSET_AGREEMENT}</h2>
-              <Button variant="secondary" size="compact" onClick={closeView}>Close</Button>
-            </div>
-            <p className="muted inv-modal-sub">
-              {viewRow.deviceNameSnapshot} · {viewRow.serialNumber || 'No serial'}
-            </p>
+            <h2 id="inv-view-title" className="sr-only">
+              {MODULE.ASSET_AGREEMENT}
+              {viewRow.deviceNameSnapshot ? ` — ${viewRow.deviceNameSnapshot}` : ''}
+              {viewRow.serialNumber ? ` · ${viewRow.serialNumber}` : ''}
+            </h2>
+
             {viewError && <p className="error">{viewError}</p>}
             {viewLoading && <p className="muted">Loading agreement…</p>}
 
             {!viewLoading && hasSignedCopy && viewSignedRecord && (
               <div className="inv-agreement-signed">
-                <p className="inv-agreement-signed-lead">
-                  Signed agreement on file in {MODULE.DOCUMENT_HUB}.
-                </p>
-                <div className="inv-agreement-meta muted mono-sm">
-                  {viewSignedRecord.agreement.agreementNumber}
-                  {viewSignedRecord.agreement.status ? ` · ${viewSignedRecord.agreement.status}` : ''}
-                </div>
-                <div className="inv-agreement-actions">
-                  {canViewAgreements && (
-                    <button
-                      type="button"
-                      className="btn btn-compact"
-                      onClick={() =>
-                        openAttachment(viewSignedRecord.agreement, viewSignedRecord.document)
-                      }
-                    >
-                      View signed copy
-                    </button>
-                  )}
+                <div className="inv-agreement-toolbar" role="toolbar" aria-label="Agreement actions">
+                  <span className="inv-agreement-chip">
+                    {viewSignedRecord.agreement.agreementNumber || 'Agreement'}
+                  </span>
+                  {viewSignedRecord.agreement.status ? (
+                    <span className="inv-agreement-chip inv-agreement-chip--status">
+                      {viewSignedRecord.agreement.status}
+                    </span>
+                  ) : null}
                   {canViewAgreements && (
                     <Link
                       className="btn secondary btn-compact"
@@ -1132,9 +1156,9 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                     </Link>
                   )}
                   {canManageAgreements && (
-                    <button
-                      type="button"
-                      className="btn secondary btn-compact"
+                    <Button
+                      variant="secondary"
+                      size="compact"
                       disabled={docBusy}
                       onClick={() => {
                         setReplaceTargetId(viewSignedRecord.agreement._id);
@@ -1142,34 +1166,69 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                       }}
                     >
                       Replace file
-                    </button>
+                    </Button>
                   )}
+                  <span
+                    className="inv-pdf-preview-title"
+                    title={
+                      previewTitle ||
+                      viewSignedRecord.document?.name ||
+                      viewSignedRecord.agreement?.title ||
+                      ''
+                    }
+                  >
+                    {previewTitle ||
+                      viewSignedRecord.document?.name ||
+                      viewSignedRecord.agreement?.title ||
+                      'Signed file'}
+                  </span>
+                  {previewUrl ? (
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      onClick={() => {
+                        URL.revokeObjectURL(previewUrl);
+                        setPreviewUrl('');
+                        setPreviewTitle('');
+                      }}
+                    >
+                      Close preview
+                    </Button>
+                  ) : null}
+                  <Button variant="secondary" size="compact" onClick={closeView}>
+                    Close
+                  </Button>
                 </div>
-                {previewUrl && (
+                {previewUrl ? (
                   <div className="inv-pdf-preview">
-                    <div className="inv-pdf-preview-head">
-                      <strong>{previewTitle}</strong>
-                      <button
-                        type="button"
-                        className="btn secondary btn-compact"
-                        onClick={() => {
-                          URL.revokeObjectURL(previewUrl);
-                          setPreviewUrl('');
-                          setPreviewTitle('');
-                        }}
-                      >
-                        Close preview
-                      </button>
-                    </div>
-                    <iframe title={previewTitle} src={previewUrl} className="inv-pdf-frame" />
+                    <iframe
+                      title={previewTitle || 'Signed agreement'}
+                      src={previewUrl}
+                      className="inv-pdf-frame"
+                    />
                   </div>
+                ) : (
+                  <p className="muted inv-agreement-preview-hint">
+                    Signed file is available — open it again from Document One if needed.
+                  </p>
                 )}
               </div>
             )}
 
             {!viewLoading && !hasSignedCopy && (
               <div className="inv-agreement-empty">
-                <p className="inv-agreement-empty-title">No signed agreement yet</p>
+                <div className="inv-modal-head">
+                  <div className="inv-modal-head-copy">
+                    <p className="inv-agreement-empty-title">{MODULE.ASSET_AGREEMENT}</p>
+                    <p className="muted inv-modal-sub">
+                      {viewRow.deviceNameSnapshot}
+                      {viewRow.serialNumber ? ` · ${viewRow.serialNumber}` : ''}
+                    </p>
+                  </div>
+                  <Button variant="secondary" size="compact" onClick={closeView}>
+                    Close
+                  </Button>
+                </div>
                 <p className="muted inv-agreement-empty-desc">
                   Start a new agreement in {MODULE.DOCUMENT_HUB}, or upload a signed copy if you
                   already have one.
@@ -1193,14 +1252,14 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                         if (f) uploadSignedAgreement(f);
                       }}
                     />
-                    <button
-                      type="button"
-                      className="btn secondary btn-compact"
+                    <Button
+                      variant="secondary"
+                      size="compact"
                       disabled={docBusy}
                       onClick={() => uploadDocRef.current?.click()}
                     >
                       {docBusy ? 'Uploading…' : 'Upload signed copy'}
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {!canManageAgreements && (

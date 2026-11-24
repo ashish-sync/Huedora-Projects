@@ -1,10 +1,16 @@
 /**
  * Build Document One file/title nomenclature:
- * `{Party Name}-{Document Details}-{DD-MM-YYYY}`
+ * `{Primary Party}-{Document Details}-{DD-MM-YYYY}`
  * e.g. Ashish-Service Agreement-27-09-2026
+ *
+ * Long multi-party names and org-prefixed template titles are shortened so
+ * list/file names stay readable.
  */
 
 import { formatDate, parseToDate } from '../../shared/dateFormat.js';
+
+const PARTY_MAX = 42;
+const DETAILS_MAX = 40;
 
 export function formatNomenclatureDate(value) {
   const date = parseToDate(value) || new Date();
@@ -20,22 +26,52 @@ function cleanPart(value, fallback) {
     .trim() || fallback;
 }
 
+/** Keep the first party when names are joined with & / and / ,. */
+export function primaryPartyName(value, fallback = 'Document') {
+  const raw = cleanPart(value, fallback);
+  const first = raw.split(/\s*(?:&+|\/|,|\band\b)\s*/i)[0] || raw;
+  return truncatePart(first, PARTY_MAX) || fallback;
+}
+
+/**
+ * Drop org brand prefixes and compress noisy separators in template titles.
+ * "Tylo Care - Service Agreement & NDA" → "Service Agreement NDA"
+ */
+export function shortenDocumentDetails(value, fallback = 'Agreement') {
+  let details = cleanPart(value, fallback);
+  details = details
+    .replace(/^(tylo\s*care(?:\s*private\s*limited)?|tcpl|tylo)\s*[-–—:|]\s*/i, '')
+    .replace(/\s*&\s*/g, ' ')
+    .replace(/\s*[-–—|]\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return truncatePart(details, DETAILS_MAX) || fallback;
+}
+
+function truncatePart(value, max) {
+  const text = String(value || '').trim();
+  if (!text || text.length <= max) return text;
+  const cut = text.slice(0, max - 1).replace(/\s+\S*$/, '').trim();
+  return `${cut || text.slice(0, max - 1)}…`;
+}
+
 export function buildAgreementDocumentTitle({
   partyName,
   documentDetails,
   dateValue,
 } = {}) {
-  const name = cleanPart(partyName, 'Document');
-  const details = cleanPart(documentDetails, 'Agreement');
+  const name = primaryPartyName(partyName, 'Document');
+  const details = shortenDocumentDetails(documentDetails, 'Agreement');
   const date = formatNomenclatureDate(dateValue);
   return `${name}-${details}-${date}`;
 }
 
-/** Safe download basename (slashes/ampersands become dashes). */
+/** Safe download basename (path-unsafe chars become dashes). */
 export function agreementTitleToFileBase(title) {
   return (
     String(title || 'document')
-      .replace(/[\\/:*?"<>|&]+/g, '-')
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s*&\s*/g, ' ')
       .replace(/\s+/g, ' ')
       .replace(/-+/g, '-')
       .replace(/^\s*-+\s*|\s*-+\s*$/g, '')

@@ -522,6 +522,9 @@ export default function AssetRequestsPage() {
     payableAmount: '',
   });
   const [fulfillBusy, setFulfillBusy] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectBusy, setRejectBusy] = useState(false);
   const [generatedLinks, setGeneratedLinks] = useState({});
   const [linkBusyId, setLinkBusyId] = useState('');
   const [linkedCamp, setLinkedCamp] = useState(null);
@@ -1689,6 +1692,47 @@ export default function AssetRequestsPage() {
     }
   };
 
+  const openReject = (request) => {
+    setError('');
+    setRejectReason('');
+    setRejectTarget({
+      id: request._id,
+      requestNumber: request.requestNumber || request._id,
+      requestType: request.requestType,
+    });
+  };
+
+  const closeReject = () => {
+    if (rejectBusy) return;
+    setRejectTarget(null);
+    setRejectReason('');
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget?.id) return;
+    const reason = String(rejectReason || '').trim();
+    if (!reason) {
+      setError('Enter a remark before refusing this request.');
+      return;
+    }
+    setError('');
+    setRejectBusy(true);
+    try {
+      await api(`/asset-requests/${rejectTarget.id}/reject`, {
+        method: 'POST',
+        body: { reason, rejectionReason: reason },
+      });
+      setMsg(`Request ${rejectTarget.requestNumber} refused.`);
+      setRejectTarget(null);
+      setRejectReason('');
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRejectBusy(false);
+    }
+  };
+
   const openFulfill = (request) => {
     setError('');
     setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
@@ -1711,15 +1755,15 @@ export default function AssetRequestsPage() {
     const hireeContact = String(fulfillForm.hireeContact || '').trim();
     const payableAmount = Number(fulfillForm.payableAmount);
     if (!hireeName) {
-      setError('Enter the hiree Name to fulfill this request.');
+      setError('Enter the Name to assign this hiring request.');
       return;
     }
     if (!hireeContact) {
-      setError('Enter the Contact Number to fulfill this request.');
+      setError('Enter the Number to assign this hiring request.');
       return;
     }
     if (!Number.isFinite(payableAmount) || payableAmount < 0) {
-      setError('Enter a valid Payable Amount.');
+      setError('Enter a valid Amount.');
       return;
     }
     setError('');
@@ -1729,7 +1773,7 @@ export default function AssetRequestsPage() {
         method: 'POST',
         body: { hireeName, hireeContact, payableAmount },
       });
-      setMsg(`Request ${fulfillTarget.requestNumber} fulfilled.`);
+      setMsg(`Request ${fulfillTarget.requestNumber} assigned.`);
       setFulfillTarget(null);
       setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
       await load();
@@ -1858,13 +1902,14 @@ export default function AssetRequestsPage() {
 
       {fulfillTarget && (
         <div className="card arq-jd-prompt" role="dialog" aria-labelledby="arq-fulfill-title">
-          <h3 id="arq-fulfill-title">Fulfill hiring request</h3>
+          <h3 id="arq-fulfill-title">Assign hiring request</h3>
           <p className="muted" style={{ margin: '0 0 var(--space-3)' }}>
-            Enter hiree details for <strong>{fulfillTarget.requestNumber}</strong>, then submit.
+            Enter Name, Number, and Amount for <strong>{fulfillTarget.requestNumber}</strong>, then
+            assign.
           </p>
           <form className="arq-grid" onSubmit={submitFulfill}>
             <div className="field">
-              <label htmlFor="hiring-fulfill-name">Name</label>
+              <label htmlFor="hiring-fulfill-name">Name *</label>
               <input
                 id="hiring-fulfill-name"
                 required
@@ -1876,7 +1921,7 @@ export default function AssetRequestsPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="hiring-fulfill-contact">Contact Number</label>
+              <label htmlFor="hiring-fulfill-contact">Number *</label>
               <input
                 id="hiring-fulfill-contact"
                 required
@@ -1889,7 +1934,7 @@ export default function AssetRequestsPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="hiring-fulfill-payable">Payable Amount</label>
+              <label htmlFor="hiring-fulfill-payable">Amount *</label>
               <input
                 id="hiring-fulfill-payable"
                 required
@@ -1906,7 +1951,7 @@ export default function AssetRequestsPage() {
             </div>
             <div className="arq-actions arq-span" style={{ marginTop: 'var(--space-2)' }}>
               <button type="submit" className="btn" disabled={fulfillBusy}>
-                {fulfillBusy ? 'Submitting…' : 'Submit'}
+                {fulfillBusy ? 'Assigning…' : 'Assign'}
               </button>
               <button
                 type="button"
@@ -3437,7 +3482,7 @@ export default function AssetRequestsPage() {
                       {r.requestType === 'HIRING' ? (
                         <>
                           {r.status === 'REQUESTED' && isMine && !authorityExempt && !mayApprove ? (
-                            <span className="muted mono-sm">Awaiting fulfillment</span>
+                            <span className="muted mono-sm">Awaiting assignment</span>
                           ) : null}
                           {r.status === 'REQUESTED' && !isMine && !mayApprove ? (
                             <span className="muted mono-sm">Awaiting {APPROVAL_AUTHORITY_LABEL}</span>
@@ -3447,8 +3492,8 @@ export default function AssetRequestsPage() {
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--approve"
-                                title="Fulfill"
-                                aria-label="Fulfill"
+                                title="Assign"
+                                aria-label="Assign"
                                 onClick={() => openFulfill(r)}
                               >
                                 <UserCheck size={16} strokeWidth={2.25} aria-hidden="true" />
@@ -3458,9 +3503,9 @@ export default function AssetRequestsPage() {
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--reject"
-                                title="Reject"
-                                aria-label="Reject"
-                                onClick={() => act(r._id, 'reject')}
+                                title="Refuse"
+                                aria-label="Refuse"
+                                onClick={() => openReject(r)}
                               >
                                 <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
@@ -3546,9 +3591,9 @@ export default function AssetRequestsPage() {
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--reject"
-                                title="Reject"
-                                aria-label="Reject"
-                                onClick={() => act(r._id, 'reject')}
+                                title="Refuse"
+                                aria-label="Refuse"
+                                onClick={() => openReject(r)}
                               >
                                 <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
@@ -3695,6 +3740,34 @@ export default function AssetRequestsPage() {
         onConfirm={handleConfirmCancelRequest}
         onCancel={() => setCancelConfirmTarget(null)}
       />
+      <ConfirmDialog
+        open={Boolean(rejectTarget)}
+        title="Refuse request?"
+        message={
+          rejectTarget
+            ? `Refuse request ${rejectTarget.requestNumber}? A remark is required.`
+            : ''
+        }
+        confirmLabel={rejectBusy ? 'Refusing…' : 'Refuse'}
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        loading={rejectBusy}
+        onConfirm={submitReject}
+        onCancel={closeReject}
+      >
+        <div className="field" style={{ marginTop: 'var(--space-3)' }}>
+          <label htmlFor="arq-reject-remark">Remark *</label>
+          <textarea
+            id="arq-reject-remark"
+            required
+            rows={3}
+            value={rejectReason}
+            disabled={rejectBusy}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Why is this request being refused?"
+          />
+        </div>
+      </ConfirmDialog>
       <ConfirmDialog
         open={Boolean(deleteConfirmTarget)}
         title="Delete request?"

@@ -23,7 +23,8 @@ a,
     opacity var(--duration-fast) var(--ease-standard);
 }
 
-.card:hover,
+/* Only interactive cards shift on hover — modals/static cards stay opaque. */
+.card.interactive:hover,
 .logistics-master-tree-item:hover {
   background-color: var(--color-bg-hover);
 }

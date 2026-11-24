@@ -1,7 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import DateInput from '../../components/ui/DateInput.jsx';
 import { EmptyState } from '../../components/ui/PageShell.jsx';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+
+const OVERVIEW_MODULE_OPTIONS = [
+  { id: '', label: 'All modules' },
+  { id: 'assetOne', label: 'Asset One' },
+  { id: 'verificationOne', label: 'Verification One' },
+  { id: 'masterOne', label: 'Master One' },
+  { id: 'movementOne', label: 'Movement One' },
+  { id: 'financeOne', label: 'Finance One' },
+  { id: 'campOne', label: 'Camp One' },
+];
 
 function formatInr(n) {
   const value = Number(n) || 0;
@@ -12,7 +23,7 @@ function formatInr(n) {
       maximumFractionDigits: 0,
     }).format(value);
   } catch {
-    return `₹${value.toLocaleString('en-IN')}`;
+    return `?${value.toLocaleString('en-IN')}`;
   }
 }
 
@@ -21,7 +32,7 @@ function formatQty(n) {
 }
 
 function formatPct(n) {
-  if (n == null || Number.isNaN(Number(n))) return '—';
+  if (n == null || Number.isNaN(Number(n))) return '';
   return `${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`;
 }
 
@@ -48,9 +59,9 @@ function KpiTile({ to, label, qty, value, pctQty, pctValue, showValue, meta }) {
   return <div className="ops-ov-tile ops-ov-tile--static">{body}</div>;
 }
 
-function ModuleCard({ title, subtitle, children }) {
+function ModuleCard({ title, subtitle, children, className = '' }) {
   return (
-    <section className="ops-ov-module" aria-label={title}>
+    <section className={`ops-ov-module${className ? ` ${className}` : ''}`} aria-label={title}>
       <header className="ops-ov-module-head">
         <h3>{title}</h3>
         {subtitle ? <p>{subtitle}</p> : null}
@@ -75,6 +86,8 @@ export default function OpsOverviewBoard({
   onRefresh,
 }) {
   const modules = data?.modules;
+  const [overviewModule, setOverviewModule] = useState('');
+  const showModule = (id) => !overviewModule || overviewModule === id;
 
   return (
     <div className="ops-overview ops-ov">
@@ -113,18 +126,28 @@ export default function OpsOverviewBoard({
               ))}
             </select>
           </label>
+          <label className="ops-ov-field">
+            <span>Module</span>
+            <select
+              className="adaptive-select"
+              value={overviewModule}
+              onChange={(e) => setOverviewModule(e.target.value)}
+              aria-label="Module"
+            >
+              {OVERVIEW_MODULE_OPTIONS.map((item) => (
+                <option key={item.id || 'all'} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
-            className="btn btn--secondary"
+            className="btn secondary"
             disabled={loading}
             onClick={onRefresh}
           >
             {loading ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
-        <p className="ops-ov-filter-hint muted">
-          Period KPIs use Date From / Date To. Asset status is a current-state snapshot. Movement combines all warehouses.
-        </p>
       </section>
 
       {error ? <FeedbackBanner variant="error">{error}</FeedbackBanner> : null}
@@ -142,7 +165,7 @@ export default function OpsOverviewBoard({
           title="No overview KPIs"
           description="Refresh to load module KPIs for the selected period."
           action={(
-            <button type="button" className="btn btn--primary" onClick={onRefresh}>
+            <button type="button" className="btn" onClick={onRefresh}>
               Refresh
             </button>
           )}
@@ -150,75 +173,55 @@ export default function OpsOverviewBoard({
       ) : null}
 
       {modules ? (
-        <>
-          {Array.isArray(data.limitations) && data.limitations.length ? (
-            <details className="ops-ov-limits">
-              <summary>Data limitations</summary>
-              <ul>
-                {data.limitations.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
-            </details>
-          ) : null}
-
-          <div className="ops-ov-grid">
-            <ModuleCard
-              title="Asset One"
-              subtitle={showValue ? 'Quantity · Value · % of inventory' : 'Quantity · % of inventory'}
-            >
+        <div className={`ops-ov-grid${overviewModule ? ' ops-ov-grid--filtered' : ''}`}>
+          {/* Row 1 — Chargeability | Cancellation */}
+          {showModule('campOne') ? (
+            <ModuleCard title="Chargeability" subtitle="Camp One">
               <div className="ops-ov-tiles">
-                {(modules.assetOne?.statuses || []).map((row) => (
+                {(modules.campOne?.chargeability || []).map((row) => (
                   <KpiTile
-                    key={row.status}
-                    to={row.href}
-                    label={row.status}
-                    qty={row.qty}
-                    value={row.value}
-                    pctQty={row.pctQty}
-                    pctValue={row.pctValue}
-                    showValue={showValue}
-                  />
-                ))}
-              </div>
-            </ModuleCard>
-
-            <ModuleCard title="Verification One" subtitle="Safe · Caution · Danger">
-              <div className="ops-ov-tiles">
-                {(modules.verificationOne?.conditions || []).map((row) => (
-                  <KpiTile
-                    key={row.key}
+                    key={`charge-${row.key}`}
                     to={row.href}
                     label={row.label}
                     qty={row.qty}
-                    value={row.value}
-                    pctQty={row.pctQty}
-                    pctValue={row.pctValue}
-                    showValue={showValue}
+                    pctQty={row.pct}
+                    showValue={false}
                   />
                 ))}
               </div>
             </ModuleCard>
-
-            <ModuleCard title="Master One" subtitle="New vs Existing HCWs">
+          ) : null}
+          {showModule('campOne') ? (
+            <ModuleCard title="Cancellation" subtitle="Camp One">
               <div className="ops-ov-tiles">
                 <KpiTile
-                  to={modules.masterOne?.newHcws?.href}
-                  label="New HCWs"
-                  qty={modules.masterOne?.newHcws?.qty}
-                  pctQty={modules.masterOne?.newHcws?.pct}
+                  to={modules.campOne?.cancellation?.byTylo?.href}
+                  label="Cancelled by Tylo"
+                  qty={modules.campOne?.cancellation?.byTylo?.qty}
+                  pctQty={modules.campOne?.cancellation?.byTylo?.pct}
                   showValue={false}
                 />
                 <KpiTile
-                  to={modules.masterOne?.existingHcws?.href}
-                  label="Existing HCWs"
-                  qty={modules.masterOne?.existingHcws?.qty}
-                  pctQty={modules.masterOne?.existingHcws?.pct}
+                  to={modules.campOne?.cancellation?.byClient?.href}
+                  label="Cancelled by Client"
+                  qty={modules.campOne?.cancellation?.byClient?.qty}
+                  pctQty={modules.campOne?.cancellation?.byClient?.pct}
                   showValue={false}
+                />
+                <KpiTile
+                  to={modules.campOne?.cancellation?.href}
+                  label="Cancellation rate"
+                  qty={modules.campOne?.cancellation?.cancelledTotal}
+                  pctQty={modules.campOne?.cancellation?.ratePct}
+                  showValue={false}
+                  meta={`of ${formatQty(modules.campOne?.cancellation?.eligibleTotal || 0)} eligible`}
                 />
               </div>
             </ModuleCard>
+          ) : null}
 
+          {/* Row 2 — Movement One | Finance One */}
+          {showModule('movementOne') ? (
             <ModuleCard title="Movement One" subtitle="All warehouses combined">
               <div className="ops-ov-tiles">
                 <KpiTile
@@ -241,11 +244,11 @@ export default function OpsOverviewBoard({
                   qty={modules.movementOne?.closingBalance?.qty}
                   value={modules.movementOne?.closingBalance?.value}
                   showValue
-                  meta={modules.movementOne?.closingBalance?.logic}
                 />
               </div>
             </ModuleCard>
-
+          ) : null}
+          {showModule('financeOne') ? (
             <ModuleCard title="Finance One" subtitle="Client invoices · Expenses">
               <div className="ops-ov-tiles">
                 <KpiTile
@@ -276,70 +279,94 @@ export default function OpsOverviewBoard({
                 />
               </div>
             </ModuleCard>
+          ) : null}
 
-            <ModuleCard title="Camp One" subtitle="Chargeability · Cancellation · Punctuality">
-              <div className="ops-ov-camp-bands">
-                <div className="ops-ov-camp-band">
-                  <h4 className="ops-ov-subhead">Chargeability</h4>
-                  <div className="ops-ov-tiles ops-ov-tiles--compact">
-                    {(modules.campOne?.chargeability || []).map((row) => (
-                      <KpiTile
-                        key={`charge-${row.key}`}
-                        to={row.href}
-                        label={row.label}
-                        qty={row.qty}
-                        pctQty={row.pct}
-                        showValue={false}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="ops-ov-camp-band">
-                  <h4 className="ops-ov-subhead">Cancellation</h4>
-                  <div className="ops-ov-tiles ops-ov-tiles--compact">
-                    <KpiTile
-                      to={modules.campOne?.cancellation?.byTylo?.href}
-                      label="Cancelled by Tylo"
-                      qty={modules.campOne?.cancellation?.byTylo?.qty}
-                      pctQty={modules.campOne?.cancellation?.byTylo?.pct}
-                      showValue={false}
-                    />
-                    <KpiTile
-                      to={modules.campOne?.cancellation?.byClient?.href}
-                      label="Cancelled by Client"
-                      qty={modules.campOne?.cancellation?.byClient?.qty}
-                      pctQty={modules.campOne?.cancellation?.byClient?.pct}
-                      showValue={false}
-                    />
-                    <KpiTile
-                      to={modules.campOne?.cancellation?.href}
-                      label="Cancellation rate"
-                      qty={modules.campOne?.cancellation?.cancelledTotal}
-                      pctQty={modules.campOne?.cancellation?.ratePct}
-                      showValue={false}
-                      meta={`of ${formatQty(modules.campOne?.cancellation?.eligibleTotal || 0)} eligible`}
-                    />
-                  </div>
-                </div>
-                <div className="ops-ov-camp-band">
-                  <h4 className="ops-ov-subhead">Punctuality</h4>
-                  <div className="ops-ov-tiles ops-ov-tiles--compact">
-                    {(modules.campOne?.punctuality || []).map((row) => (
-                      <KpiTile
-                        key={`punct-${row.key}`}
-                        to={row.href}
-                        label={row.label}
-                        qty={row.qty}
-                        pctQty={row.pct}
-                        showValue={false}
-                      />
-                    ))}
-                  </div>
-                </div>
+          {/* Row 3 — Verification One | Master One */}
+          {showModule('verificationOne') ? (
+            <ModuleCard title="Verification One" subtitle="Safe · Caution · Danger">
+              <div className="ops-ov-tiles">
+                {(modules.verificationOne?.conditions || []).map((row) => (
+                  <KpiTile
+                    key={row.key}
+                    to={row.href}
+                    label={row.label}
+                    qty={row.qty}
+                    value={row.value}
+                    pctQty={row.pctQty}
+                    pctValue={row.pctValue}
+                    showValue={showValue}
+                  />
+                ))}
               </div>
             </ModuleCard>
-          </div>
-        </>
+          ) : null}
+          {showModule('masterOne') ? (
+            <ModuleCard title="Master One" subtitle="New · Existing · Verified HCWs">
+              <div className="ops-ov-tiles">
+                <KpiTile
+                  to={modules.masterOne?.newHcws?.href}
+                  label="New HCWs"
+                  qty={modules.masterOne?.newHcws?.qty}
+                  pctQty={modules.masterOne?.newHcws?.pct}
+                  showValue={false}
+                />
+                <KpiTile
+                  to={modules.masterOne?.existingHcws?.href}
+                  label="Existing HCWs"
+                  qty={modules.masterOne?.existingHcws?.qty}
+                  pctQty={modules.masterOne?.existingHcws?.pct}
+                  showValue={false}
+                />
+                <KpiTile
+                  to={modules.masterOne?.verifiedHcws?.href}
+                  label="Verified HCWs"
+                  qty={modules.masterOne?.verifiedHcws?.qty}
+                  pctQty={modules.masterOne?.verifiedHcws?.pct}
+                  showValue={false}
+                />
+              </div>
+            </ModuleCard>
+          ) : null}
+
+          {/* Row 4 — Asset One | Punctuality */}
+          {showModule('assetOne') ? (
+            <ModuleCard
+              title="Asset One"
+              subtitle={showValue ? 'Quantity · Value · % of inventory' : 'Quantity · % of inventory'}
+            >
+              <div className="ops-ov-tiles">
+                {(modules.assetOne?.statuses || []).map((row) => (
+                  <KpiTile
+                    key={row.status}
+                    to={row.href}
+                    label={row.status}
+                    qty={row.qty}
+                    value={row.value}
+                    pctQty={row.pctQty}
+                    pctValue={row.pctValue}
+                    showValue={showValue}
+                  />
+                ))}
+              </div>
+            </ModuleCard>
+          ) : null}
+          {showModule('campOne') ? (
+            <ModuleCard title="Punctuality" subtitle="Camp One">
+              <div className="ops-ov-tiles">
+                {(modules.campOne?.punctuality || []).map((row) => (
+                  <KpiTile
+                    key={`punct-${row.key}`}
+                    to={row.href}
+                    label={row.label}
+                    qty={row.qty}
+                    pctQty={row.pct}
+                    showValue={false}
+                  />
+                ))}
+              </div>
+            </ModuleCard>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

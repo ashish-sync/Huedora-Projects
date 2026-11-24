@@ -3231,7 +3231,9 @@
 }
 
 .tylo-home-ops-grid .tylo-home-pipeline-panel {
+  /* Keep Method / Assigned Users / dates / Apply on one shared control height. */
   --welcome-control-height: var(--ops-control-h, 36px);
+  --control-h: var(--welcome-control-height);
   --welcome-control-pad-x: 10px;
   --welcome-control-radius: 8px;
 }
@@ -3300,7 +3302,7 @@
   color: var(--home-text);
   font-size: 12px;
   font-weight: 600;
-  line-height: calc(var(--welcome-control-height) - 2px);
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -3335,8 +3337,10 @@
   align-self: center;
 }
 
+.tylo-home-pipeline-range-date.date-input-field,
 .tylo-home-pipeline-range-date .date-input-field,
 .tylo-home-pipeline-range-date .date-input-control {
+  width: 100%;
   height: var(--welcome-control-height);
   min-height: var(--welcome-control-height);
   max-height: var(--welcome-control-height);
@@ -3347,6 +3351,7 @@
   border: 1px solid var(--border-major, #C5D0DE);
   background: var(--bg-input, #F5F7FA);
   box-sizing: border-box;
+  align-items: center;
 }
 
 .tylo-home-pipeline-range-date .date-input-display {
@@ -3357,11 +3362,16 @@
   font-weight: 600;
   color: var(--home-text);
   padding: 0 28px 0 10px;
-  line-height: calc(var(--welcome-control-height) - 2px);
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .tylo-home-pipeline-range-date .date-input-picker-btn {
   right: 8px;
+  width: 24px;
+  height: 24px;
   color: var(--home-text);
 }
 
@@ -3507,7 +3517,7 @@
   column-gap: 4px;
   text-decoration: none;
   color: var(--home-secondary) !important;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 500;
   padding: 0 2px 0 4px;
   border-radius: 6px;
@@ -3541,7 +3551,7 @@
 .tylo-home-ops-grid .tylo-home-stage-num {
   font-weight: 700;
   color: var(--home-text) !important;
-  font-size: 14px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   text-align: right;
@@ -3557,7 +3567,7 @@
   content: " ›";
   opacity: 0.5;
   font-weight: 400;
-  font-size: 12px;
+  font-size: 11px;
   margin-left: 3px;
   color: var(--home-muted-text);
 }
@@ -4045,7 +4055,7 @@
   .tylo-home-ops-grid .tylo-home-stage-row-link {
     padding: 0 2px 0 4px;
     /* Keep status labels readable — do not shrink (e.g. Pending Confirmation). */
-    font-size: 13.5px;
+    font-size: 12.5px;
   }
 
   .tylo-home-ops-grid .tylo-home-stage-row-link > span:first-child {
@@ -4055,7 +4065,7 @@
   }
 
   .tylo-home-ops-grid .tylo-home-stage-num {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .tylo-home-ops-grid .tylo-home-quick-subtile {

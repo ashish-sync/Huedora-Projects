@@ -248,7 +248,7 @@ export default function TrackingDashboardPage() {
 
   const rangeLabel = useMemo(() => {
     if (!from && !to) return 'All time';
-    return formatDateRangeLabel(from, to).replace(' to ', ' → ');
+    return formatDateRangeLabel(from, to).replace(' to ', ' ? ');
   }, [from, to]);
 
   useEffect(() => {
@@ -383,11 +383,12 @@ export default function TrackingDashboardPage() {
 
   return (
     <PageShell
+      className="ops-dashboard-page"
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.DASHBOARD }]}
       title={MODULE.DASHBOARD}
-      description="KPI architecture across Asset, Verification, Camp, Master, Movement, and Finance One."
+      description="KPI architecture dashboard across modules"
       actions={
-        <>
+        <div className="ops-dash-actions">
           <div className="ops-view-toggle" role="tablist" aria-label="Dashboard view">
             <button
               type="button"
@@ -408,52 +409,58 @@ export default function TrackingDashboardPage() {
               Module review
             </button>
           </div>
-          {view === 'drilldown' && submitted && moduleId === 'logistics' ? (
-            <Link className="btn secondary" to="/movement-one">
-              Open Movement One
-            </Link>
-          ) : null}
-          {view === 'drilldown' && submitted && moduleId === 'camps' ? (
-            <Link className="btn secondary" to={openCampOneHref} state={{ returnTo: campReviewReturnTo }}>
-              Open Camp One
-            </Link>
-          ) : null}
-          {view === 'drilldown' && submitted && moduleId === 'audit' ? (
-            <Link className="btn secondary" to="/audit">
-              Open Activity Log
-            </Link>
-          ) : null}
-          {view === 'drilldown' && submitted && moduleId === 'users' && canManageAccess ? (
-            <Link className="btn secondary" to="/access-control">
-              Manage access
-            </Link>
-          ) : null}
-          {view === 'drilldown' && submitted && moduleId === 'notifications' ? (
-            <Link className="btn secondary" to="/notifications">
-              Open inbox
-            </Link>
-          ) : null}
-          {view === 'drilldown' && submitted && moduleId === 'imports' ? (
-            <Link className="btn secondary" to="/imports">
-              Open uploads
-            </Link>
-          ) : null}
-          {view === 'drilldown' && data?.linkTo && !isEmbeddedModule ? (
-            <Link className="btn secondary" to={data.linkTo}>
-              Open module
-            </Link>
-          ) : null}
-          {view === 'drilldown' && canDownload && data && !isEmbeddedModule ? (
-            <button
-              className="btn secondary"
-              type="button"
-              disabled={exportBusy || loading}
-              onClick={downloadReview}
-            >
-              {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
-            </button>
-          ) : null}
-        </>
+          <div className="ops-dash-actions__links">
+            {view === 'drilldown' && submitted && moduleId === 'logistics' ? (
+              <Link className="btn secondary btn-compact" to="/movement-one">
+                Open Movement One
+              </Link>
+            ) : null}
+            {view === 'drilldown' && submitted && moduleId === 'camps' ? (
+              <Link
+                className="btn secondary btn-compact"
+                to={openCampOneHref}
+                state={{ returnTo: campReviewReturnTo }}
+              >
+                Open Camp One
+              </Link>
+            ) : null}
+            {view === 'drilldown' && submitted && moduleId === 'audit' ? (
+              <Link className="btn secondary btn-compact" to="/audit">
+                Open Activity Log
+              </Link>
+            ) : null}
+            {view === 'drilldown' && submitted && moduleId === 'users' && canManageAccess ? (
+              <Link className="btn secondary btn-compact" to="/access-control">
+                Manage access
+              </Link>
+            ) : null}
+            {view === 'drilldown' && submitted && moduleId === 'notifications' ? (
+              <Link className="btn secondary btn-compact" to="/notifications">
+                Open inbox
+              </Link>
+            ) : null}
+            {view === 'drilldown' && submitted && moduleId === 'imports' ? (
+              <Link className="btn secondary btn-compact" to="/imports">
+                Open uploads
+              </Link>
+            ) : null}
+            {view === 'drilldown' && data?.linkTo && !isEmbeddedModule ? (
+              <Link className="btn secondary btn-compact" to={data.linkTo}>
+                Open module
+              </Link>
+            ) : null}
+            {view === 'drilldown' && canDownload && data && !isEmbeddedModule ? (
+              <button
+                className="btn secondary btn-compact"
+                type="button"
+                disabled={exportBusy || loading}
+                onClick={downloadReview}
+              >
+                {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
+              </button>
+            ) : null}
+          </div>
+        </div>
       }
     >
       {error && view === 'drilldown' ? (
@@ -537,12 +544,12 @@ export default function TrackingDashboardPage() {
       ) : null}
 
           {loading && !data && !isEmbeddedModule ? (
-            <p className="muted">Loading review…</p>
+            <p className="muted">Loading review�</p>
           ) : null}
 
       {submitted && moduleId === 'logistics' ? (
         <div className="module-review-logistics">
-          <Suspense fallback={<p className="muted">Loading Movement One…</p>}>
+          <Suspense fallback={<p className="muted">Loading Movement One�</p>}>
             <LogisticsHubPage embedded initialFrom={from} initialTo={to} />
           </Suspense>
         </div>
@@ -550,7 +557,7 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'camps' && canSeeCampOps ? (
         <div className="module-review-logistics module-review-camps">
-          <Suspense fallback={<p className="muted">Loading Camp One board…</p>}>
+          <Suspense fallback={<p className="muted">Loading Camp One board�</p>}>
             <CampOperationsBoard
               embedded
               initialFrom={from}
@@ -563,7 +570,7 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'audit' ? (
         <div className="module-review-logistics">
-          <Suspense fallback={<p className="muted">Loading Activity Log…</p>}>
+          <Suspense fallback={<p className="muted">Loading Activity Log�</p>}>
             <AuditPage embedded initialFrom={from} initialTo={to} />
           </Suspense>
         </div>
@@ -571,7 +578,7 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'users' ? (
         <div className="module-review-logistics">
-          <Suspense fallback={<p className="muted">Loading team…</p>}>
+          <Suspense fallback={<p className="muted">Loading team�</p>}>
             <UsersPage embedded />
           </Suspense>
         </div>
@@ -579,7 +586,7 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'notifications' ? (
         <div className="module-review-logistics">
-          <Suspense fallback={<p className="muted">Loading inbox…</p>}>
+          <Suspense fallback={<p className="muted">Loading inbox�</p>}>
             <NotificationsPage embedded />
           </Suspense>
         </div>
@@ -587,21 +594,21 @@ export default function TrackingDashboardPage() {
 
       {submitted && moduleId === 'imports' ? (
         <div className="module-review-logistics">
-          <Suspense fallback={<p className="muted">Loading uploads…</p>}>
+          <Suspense fallback={<p className="muted">Loading uploads�</p>}>
             <ImportsPage embedded />
           </Suspense>
         </div>
       ) : null}
 
       {data && !isEmbeddedModule ? (
-        <div className="track-sections module-review-results">
+        <div className="track-sections module-review-results ops-review-results">
           {summaryBlocks.map((block) => (
-            <section className="card track-panel" key={block.title}>
+            <section className="card track-panel ops-review-card" key={block.title}>
               <div className="track-panel-head">
                 <div>
                   <h2>{block.title}</h2>
                   <p className="muted">
-                    {data.moduleLabel} · {rangeLabel}
+                    {data.moduleLabel} � {rangeLabel}
                   </p>
                 </div>
               </div>
@@ -628,14 +635,14 @@ export default function TrackingDashboardPage() {
             </section>
           ))}
 
-          <section className="card track-panel" style={{ gridColumn: '1 / -1' }}>
+          <section className="card track-panel ops-review-card ops-review-card--span">
             <div className="track-panel-head">
               <div>
                 <h2>{data.moduleLabel} records</h2>
                 <p className="muted">
                   Showing {data.rows?.length || 0}
                   {data.truncated ? ` of ${data.total}` : ''} in range
-                  {data.dateFieldLabel ? ` · sorted by ${data.dateFieldLabel}` : ''}
+                  {data.dateFieldLabel ? ` � sorted by ${data.dateFieldLabel}` : ''}
                 </p>
               </div>
               {data.linkTo ? (
@@ -644,10 +651,7 @@ export default function TrackingDashboardPage() {
                 </Link>
               ) : null}
             </div>
-                <div
-                  className="track-table-wrap card table-wrap"
-                  style={{ boxShadow: 'none', border: 0 }}
-                >
+            <div className="track-table-wrap ops-review-table-wrap">
               <table className="track-table">
                 <thead>
                   <tr>
@@ -660,10 +664,10 @@ export default function TrackingDashboardPage() {
                   {(data.rows || []).map((row) => (
                     <tr key={row.id}>
                       {(data.columns || []).map((col) => (
-                            <td
-                              key={col.key}
-                              className={col.key === 'when' ? 'mono-sm muted' : undefined}
-                            >
+                        <td
+                          key={col.key}
+                          className={col.key === 'when' ? 'mono-sm muted' : undefined}
+                        >
                           {row[col.key] ?? '-'}
                         </td>
                       ))}
@@ -672,7 +676,7 @@ export default function TrackingDashboardPage() {
                 </tbody>
               </table>
               {!data.rows?.length ? (
-                <p className="muted" style={{ padding: '1rem' }}>
+                <p className="muted ops-review-empty">
                   No records found for this module in the selected date range.
                 </p>
               ) : null}

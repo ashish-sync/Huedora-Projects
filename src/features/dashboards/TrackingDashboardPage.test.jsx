@@ -60,6 +60,7 @@ const EMPTY_KPIS = {
     masterOne: {
       newHcws: { qty: 1, pct: 50, href: '/master-one' },
       existingHcws: { qty: 1, pct: 50, href: '/master-one' },
+      verifiedHcws: { qty: 1, pct: 50, href: '/master-one' },
     },
     movementOne: {
       inward: { qty: 3, value: 300, href: '/movement-one/inward' },
@@ -111,12 +112,14 @@ describe('Operations Dashboard runtime states and access', () => {
     renderDashboard();
 
     expect((await screen.findByRole('tab', { name: 'Overview' })).getAttribute('aria-selected')).toBe('true');
-    expect(await screen.findByRole('heading', { name: 'Asset One' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Verification One' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Camp One' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Master One' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Chargeability' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Cancellation' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Movement One' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Finance One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Verification One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Master One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Asset One' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Punctuality' })).toBeTruthy();
     expect(screen.getByText('Cancelled by Tylo')).toBeTruthy();
     expect(screen.getByText('Cancelled by Client')).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Complete project health' })).toBeNull();

@@ -1,4 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Ban,
+  Check,
+  CheckCheck,
+  Copy,
+  Eye,
+  FileText,
+  Link2,
+  Trash2,
+  Upload,
+  UserCheck,
+  X,
+} from 'lucide-react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
@@ -19,7 +32,6 @@ import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { resolveProductType } from '../../shared/productTypes.js';
 import { categoriesForType } from '../../shared/productMasterConfig.js';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
-import WatchFollowButton from '../notifications/WatchFollowButton.jsx';
 import '../notifications/notifications.css';
 import { approvalRuleLabel } from './requestApproval.js';
 import {
@@ -451,7 +463,7 @@ function detailSummary(r) {
 }
 
 export default function AssetRequestsPage() {
-  const { can, user } = useAuth();
+  const { can, user, canDelete } = useAuth();
   const { options: hcwTypeOptions } = usePicklistOptions('hiring.hcwType', HCW_TYPES);
   const { options: hiringMethodOptions } = usePicklistOptions('hiring.method', HIRING_METHODS);
   const [searchParams] = useSearchParams();
@@ -463,6 +475,7 @@ export default function AssetRequestsPage() {
     can('*');
   const canComplete =
     can('asset-requests:approve') || can('movements:approve') || can('*');
+  const canDeleteRequests = canDelete();
   const authorityExempt = isApprovalAuthorityExempt(user, can);
   const userCanApproveRow = (row) => {
     const subject =
@@ -475,6 +488,8 @@ export default function AssetRequestsPage() {
   const [rows, setRows] = useState([]);
   const [cancelConfirmTarget, setCancelConfirmTarget] = useState(null);
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [assets, setAssets] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [vendorContacts, setVendorContacts] = useState([]);
@@ -1747,6 +1762,29 @@ export default function AssetRequestsPage() {
     }
   };
 
+  const requestDeleteRequest = (request) => {
+    if (!canDeleteRequests || !request?._id) return;
+    setDeleteConfirmTarget(request);
+  };
+
+  const handleConfirmDeleteRequest = async () => {
+    if (!deleteConfirmTarget?._id || !canDeleteRequests) return;
+    const req = deleteConfirmTarget;
+    setDeleteBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      await api(`/asset-requests/${req._id}/delete`, { method: 'POST', body: {} });
+      setMsg(`Request ${req.requestNumber || req._id} deleted.`);
+      setDeleteConfirmTarget(null);
+      await load();
+    } catch (err) {
+      setError(err.message || 'Could not delete request');
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   const downloadMaster = async () => {
     setError('');
     setExportBusy(true);
@@ -2093,6 +2131,67 @@ export default function AssetRequestsPage() {
                     {CAMP_TYPES.map((type) => (
                       <option key={type} value={type}>
                         {type}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+              </div>
+            ) : form.requestType === 'MASTER_ADD' ? (
+              <div className="arq-finance-meta-row arq-span">
+                <div className="field">
+                  <label>Request Type *</label>
+                  <AdaptiveSelect required value={form.requestType} onChange={(e) => setType(e.target.value)}>
+                    {REQUEST_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>Module *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.masterModule}
+                    onChange={(e) => {
+                      const moduleId = e.target.value;
+                      const first = entitiesForModule(moduleId)[0];
+                      setForm((prev) => ({
+                        ...prev,
+                        masterModule: moduleId,
+                        masterEntity: first?.id || '',
+                        masterPayload: emptyMasterPayload(first?.id || ''),
+                      }));
+                      setOtherAttachment(null);
+                      if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
+                    }}
+                  >
+                    {MASTER_MODULES.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </AdaptiveSelect>
+                </div>
+                <div className="field">
+                  <label>Master *</label>
+                  <AdaptiveSelect
+                    required
+                    value={form.masterEntity}
+                    onChange={(e) => {
+                      const entityId = e.target.value;
+                      setForm((prev) => ({
+                        ...prev,
+                        masterEntity: entityId,
+                        masterPayload: emptyMasterPayload(entityId),
+                      }));
+                      setOtherAttachment(null);
+                      if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
+                    }}
+                  >
+                    {entitiesForModule(form.masterModule).map((ent) => (
+                      <option key={ent.id} value={ent.id}>
+                        {ent.label}
                       </option>
                     ))}
                   </AdaptiveSelect>
@@ -2676,24 +2775,57 @@ export default function AssetRequestsPage() {
                     </AdaptiveSelect>
                   )}
                 </div>
-                <div className="field">
-                  <label>Raised For *</label>
-                  <AdaptiveSelect
-                    required
-                    value={form.raisedFor}
-                    onChange={(e) => {
-                      const raisedFor = e.target.value === 'OTHER' ? 'OTHER' : 'SELF';
-                      setForm((prev) => ({
-                        ...prev,
-                        raisedFor,
-                        raisedForContactId: raisedFor === 'SELF' ? '' : prev.raisedForContactId,
-                        payeeName: raisedFor === 'SELF' ? '' : prev.payeeName,
-                      }));
-                    }}
-                  >
-                    <option value="SELF">Self</option>
-                    <option value="OTHER">Another person</option>
-                  </AdaptiveSelect>
+                <div className="arq-finance-meta-row arq-span">
+                  <div className="field">
+                    <label>Raised For *</label>
+                    <AdaptiveSelect
+                      required
+                      value={form.raisedFor}
+                      onChange={(e) => {
+                        const raisedFor = e.target.value === 'OTHER' ? 'OTHER' : 'SELF';
+                        setForm((prev) => ({
+                          ...prev,
+                          raisedFor,
+                          raisedForContactId: raisedFor === 'SELF' ? '' : prev.raisedForContactId,
+                          payeeName: raisedFor === 'SELF' ? '' : prev.payeeName,
+                        }));
+                      }}
+                    >
+                      <option value="SELF">Self</option>
+                      <option value="OTHER">Another person</option>
+                    </AdaptiveSelect>
+                  </div>
+                  <div className="field">
+                    <label>Associate this expense with a Client?</label>
+                    <AdaptiveSelect
+                      value={form.associateWithClient}
+                      onChange={(e) => {
+                        const associateWithClient = e.target.value === 'YES' ? 'YES' : 'NO';
+                        setForm((prev) => ({
+                          ...prev,
+                          associateWithClient,
+                          clientMasterId: associateWithClient === 'NO' ? '' : prev.clientMasterId,
+                          clientId: associateWithClient === 'NO' ? '' : prev.clientId,
+                          clientName: associateWithClient === 'NO' ? '' : prev.clientName,
+                          clientCode: associateWithClient === 'NO' ? '' : prev.clientCode,
+                          divisionTherapy: associateWithClient === 'NO' ? '' : prev.divisionTherapy,
+                        }));
+                      }}
+                    >
+                      <option value="NO">No</option>
+                      <option value="YES">Yes</option>
+                    </AdaptiveSelect>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="reimbursement-remarks">Remarks</label>
+                    <input
+                      id="reimbursement-remarks"
+                      type="text"
+                      value={form.reason}
+                      onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                      placeholder="Optional notes about this expense"
+                    />
+                  </div>
                 </div>
                 {form.raisedFor === 'OTHER' ? (
                   <div className="field">
@@ -2715,27 +2847,6 @@ export default function AssetRequestsPage() {
                     </AdaptiveSelect>
                   </div>
                 ) : null}
-                <div className="field">
-                  <label>Associate this expense with a Client?</label>
-                  <AdaptiveSelect
-                    value={form.associateWithClient}
-                    onChange={(e) => {
-                      const associateWithClient = e.target.value === 'YES' ? 'YES' : 'NO';
-                      setForm((prev) => ({
-                        ...prev,
-                        associateWithClient,
-                        clientMasterId: associateWithClient === 'NO' ? '' : prev.clientMasterId,
-                        clientId: associateWithClient === 'NO' ? '' : prev.clientId,
-                        clientName: associateWithClient === 'NO' ? '' : prev.clientName,
-                        clientCode: associateWithClient === 'NO' ? '' : prev.clientCode,
-                        divisionTherapy: associateWithClient === 'NO' ? '' : prev.divisionTherapy,
-                      }));
-                    }}
-                  >
-                    <option value="NO">No</option>
-                    <option value="YES">Yes</option>
-                  </AdaptiveSelect>
-                </div>
                 {form.associateWithClient === 'YES' ? (
                   <div className="field">
                     <label>Code and Division / Therapy *</label>
@@ -2759,16 +2870,6 @@ export default function AssetRequestsPage() {
                     </AdaptiveSelect>
                   </div>
                 ) : null}
-                <div className="field arq-span">
-                  <label htmlFor="reimbursement-remarks">Remarks</label>
-                  <textarea
-                    id="reimbursement-remarks"
-                    rows={3}
-                    value={form.reason}
-                    onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                    placeholder="Optional notes about this expense"
-                  />
-                </div>
                 <DateInput
                   label="Expense date *"
                   required
@@ -2880,58 +2981,9 @@ export default function AssetRequestsPage() {
             {form.requestType === 'MASTER_ADD' && (
               <>
                 <div className="field arq-span">
-                  <h4 className="arq-section-title">Master One Request</h4>
-                  <p className="muted" style={{ margin: '0 0 var(--space-2)' }}>
-                    Choose the module and reference type. On approval the record is created in Master One.
+                  <p className="muted" style={{ margin: 0 }}>
+                    On approval the record is created in Master One.
                   </p>
-                </div>
-                <div className="field">
-                  <label>Module *</label>
-                  <AdaptiveSelect
-                    required
-                    value={form.masterModule}
-                    onChange={(e) => {
-                      const moduleId = e.target.value;
-                      const first = entitiesForModule(moduleId)[0];
-                      setForm((prev) => ({
-                        ...prev,
-                        masterModule: moduleId,
-                        masterEntity: first?.id || '',
-                        masterPayload: emptyMasterPayload(first?.id || ''),
-                      }));
-                      setOtherAttachment(null);
-                      if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
-                    }}
-                  >
-                    {MASTER_MODULES.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label>Master *</label>
-                  <AdaptiveSelect
-                    required
-                    value={form.masterEntity}
-                    onChange={(e) => {
-                      const entityId = e.target.value;
-                      setForm((prev) => ({
-                        ...prev,
-                        masterEntity: entityId,
-                        masterPayload: emptyMasterPayload(entityId),
-                      }));
-                      setOtherAttachment(null);
-                      if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
-                    }}
-                  >
-                    {entitiesForModule(form.masterModule).map((ent) => (
-                      <option key={ent.id} value={ent.id}>
-                        {ent.label}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
                 </div>
                 {(getMasterEntity(form.masterEntity)?.id === 'pin-codes'
                   ? []
@@ -3032,10 +3084,10 @@ export default function AssetRequestsPage() {
                           </option>
                         ))}
                       </AdaptiveSelect>
-                    ) : field.type === 'textarea' ? (
-                      <textarea
+                    ) : (
+                      <input
+                        type="text"
                         required={!!field.required}
-                        rows={2}
                         value={form.masterPayload?.[field.name] || ''}
                         onChange={(e) =>
                           setForm((prev) => ({
@@ -3046,19 +3098,10 @@ export default function AssetRequestsPage() {
                             },
                           }))
                         }
-                      />
-                    ) : (
-                      <input
-                        required={!!field.required}
-                        value={form.masterPayload?.[field.name] || ''}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            masterPayload: {
-                              ...(prev.masterPayload || {}),
-                              [field.name]: e.target.value,
-                            },
-                          }))
+                        placeholder={
+                          field.type === 'textarea'
+                            ? `Enter ${String(field.label || field.name).toLowerCase()}`
+                            : undefined
                         }
                       />
                     )}
@@ -3145,9 +3188,10 @@ export default function AssetRequestsPage() {
                     />
                   </div>
                 ) : null}
-                <div className="field arq-span">
+                <div className="field">
                   <label>Note (optional)</label>
                   <input
+                    type="text"
                     value={form.reason}
                     onChange={(e) => setForm({ ...form, reason: e.target.value })}
                     placeholder="Why this master is needed"
@@ -3317,8 +3361,8 @@ export default function AssetRequestsPage() {
         ))}
       </div>
 
-      <div className="card card--flush table-wrap">
-        <table>
+      <div className="card card--flush table-wrap arq-table-wrap">
+        <table className="arq-table">
           <thead>
             <tr>
               <th>Request Number</th>
@@ -3356,89 +3400,112 @@ export default function AssetRequestsPage() {
                   </td>
                   <td className="muted mono-sm">{detailSummary(r) || '-'}</td>
                   <td>
-                    <strong>
-                      {r.assetName ||
-                        r.trainingTopic ||
-                        r.hireeName ||
-                        r.hiringName ||
-                        (r.requestType === 'MASTER_ADD'
-                          ? getMasterEntity(r.masterEntity)?.label || r.masterEntity
-                          : '-') ||
-                        '-'}
-                    </strong>
-                    <div className="muted mono-sm">
-                      {r.requestType === 'MASTER_ADD'
-                        ? [
-                            MASTER_MODULES.find((m) => m.id === r.masterModule)?.label ||
-                              r.masterModule,
-                            r.createdMasterCode ? `Created ${r.createdMasterCode}` : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')
-                        : r.assetCustody ||
-                          r.payeeName ||
-                          r.traineeName ||
-                          [r.hiringCity, r.hiringState].filter(Boolean).join(', ') ||
-                          ''}
+                    <div className="arq-asset-cell">
+                      <strong>
+                        {r.assetName ||
+                          r.trainingTopic ||
+                          r.hireeName ||
+                          r.hiringName ||
+                          (r.requestType === 'MASTER_ADD'
+                            ? getMasterEntity(r.masterEntity)?.label || r.masterEntity
+                            : '-') ||
+                          '-'}
+                      </strong>
+                      {(() => {
+                        const meta =
+                          r.requestType === 'MASTER_ADD'
+                            ? [
+                                MASTER_MODULES.find((m) => m.id === r.masterModule)?.label ||
+                                  r.masterModule,
+                                r.createdMasterCode ? `Created ${r.createdMasterCode}` : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' · ')
+                            : r.assetCustody ||
+                              r.payeeName ||
+                              r.traineeName ||
+                              [r.hiringCity, r.hiringState].filter(Boolean).join(', ') ||
+                              '';
+                        return meta ? <div className="muted mono-sm">{meta}</div> : null;
+                      })()}
                     </div>
                   </td>
                   <td>{r.requestorId?.fullName || r.requestorId?.email || '-'}</td>
                   <td className="arq-reason">{r.reason || '-'}</td>
-                  <td>
-                    <div className="arq-actions">
+                  <td className="arq-actions-cell">
+                    <div className="arq-actions" role="group" aria-label="Request actions">
                       {r.requestType === 'HIRING' ? (
                         <>
-                          {mayApprove &&
-                            ['REQUESTED', 'APPROVED'].includes(r.status) && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="btn btn-compact"
-                                  onClick={() => openFulfill(r)}
-                                >
-                                  Fulfill
-                                </button>
-                                {r.status === 'REQUESTED' && (
-                                  <button
-                                    type="button"
-                                    className="btn secondary btn-compact"
-                                    onClick={() => act(r._id, 'reject')}
-                                  >
-                                    Reject
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          {r.status === 'REQUESTED' && isMine && !authorityExempt && (
+                          {r.status === 'REQUESTED' && isMine && !authorityExempt && !mayApprove ? (
                             <span className="muted mono-sm">Awaiting fulfillment</span>
-                          )}
-                          {r.status === 'REQUESTED' && !isMine && !mayApprove && (
+                          ) : null}
+                          {r.status === 'REQUESTED' && !isMine && !mayApprove ? (
                             <span className="muted mono-sm">Awaiting {APPROVAL_AUTHORITY_LABEL}</span>
-                          )}
-                          {isActive && (mayApprove || canComplete || (canRequest && isMine)) && (
-                            <button
-                              type="button"
-                              className="btn secondary btn-compact"
-                              onClick={() => cancelRequest(r)}
-                            >
-                              Cancel
-                            </button>
-                          )}
-                          {r.jdAttachment && (
-                            <button
-                              type="button"
-                              className="btn secondary btn-compact"
-                              onClick={() => openJd(r)}
-                            >
-                              View JD
-                            </button>
-                          )}
-                          {!r.jdAttachment &&
-                            isActive &&
-                            (mayApprove || canComplete || (canRequest && isMine)) && (
+                          ) : null}
+                          <div className="arq-actions-primary">
+                            {mayApprove && ['REQUESTED', 'APPROVED'].includes(r.status) ? (
                               <button
                                 type="button"
-                                className="btn secondary btn-compact"
+                                className="arq-icon-btn arq-icon-btn--approve"
+                                title="Fulfill"
+                                aria-label="Fulfill"
+                                onClick={() => openFulfill(r)}
+                              >
+                                <UserCheck size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {mayApprove && r.status === 'REQUESTED' ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--reject"
+                                title="Reject"
+                                aria-label="Reject"
+                                onClick={() => act(r._id, 'reject')}
+                              >
+                                <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {isActive && (mayApprove || canComplete || (canRequest && isMine)) ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="Cancel"
+                                aria-label="Cancel"
+                                onClick={() => cancelRequest(r)}
+                              >
+                                <X size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {canDeleteRequests ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--danger"
+                                title={`Delete ${r.requestNumber || r._id}`}
+                                aria-label={`Delete ${r.requestNumber || r._id}`}
+                                onClick={() => requestDeleteRequest(r)}
+                              >
+                                <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {r.jdAttachment ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="View JD"
+                                aria-label="View JD"
+                                onClick={() => openJd(r)}
+                              >
+                                <FileText size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {!r.jdAttachment &&
+                            isActive &&
+                            (mayApprove || canComplete || (canRequest && isMine)) ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="Upload JD"
+                                aria-label="Upload JD"
                                 onClick={() => {
                                   setJdFile(null);
                                   if (jdFileRef.current) jdFileRef.current.value = '';
@@ -3448,111 +3515,147 @@ export default function AssetRequestsPage() {
                                   });
                                 }}
                               >
-                                Upload JD
+                                <Upload size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
-                            )}
+                            ) : null}
+                          </div>
                         </>
                       ) : (
                         <>
-                      <WatchFollowButton entityType="AssetRequest" entityId={r._id} />
-                      {mayApprove && r.status === 'REQUESTED' && (
-                        <>
-                          <button type="button" className="btn btn-compact" onClick={() => act(r._id, 'approve')}>
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            className="btn secondary btn-compact"
-                            onClick={() => act(r._id, 'reject')}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {r.status === 'REQUESTED' && !isMine && !mayApprove && (
-                        <span className="muted mono-sm">
-                          Awaiting {approvalRuleLabel(r.requestType)}
-                        </span>
-                      )}
-                      {canComplete && r.status === 'APPROVED' && (
-                        <button type="button" className="btn secondary btn-compact" onClick={() => act(r._id, 'complete')}>
-                          Complete
-                        </button>
-                      )}
-                      {r.status === 'REQUESTED' && isMine && !authorityExempt && (
-                        <span className="muted mono-sm">Awaiting approval</span>
-                      )}
-                      {isActive && (mayApprove || canComplete || (canRequest && isMine)) && (
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          onClick={() => cancelRequest(r)}
-                        >
-                          Cancel
-                        </button>
-                      )}
-                      {isServiceRequest &&
-                        (r.productImage || r.productImageMetadata || r.productImagePath) && (
-                          <button
-                            type="button"
-                            className="btn secondary btn-compact"
-                            onClick={() => openProductImage(r)}
-                          >
-                            View image
-                          </button>
-                        )}
-                      {r.requestType === 'REIMBURSEMENT' && r.billAttachment && (
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          onClick={() => openBill(r)}
-                        >
-                          View bill
-                        </button>
-                      )}
-                      {(r.requestType === 'OTHER' || r.requestType === 'MASTER_ADD') &&
-                        r.requestAttachment && (
-                        <button
-                          type="button"
-                          className="btn secondary btn-compact"
-                          onClick={() => openRequestAttachment(r)}
-                        >
-                          View attachment
-                        </button>
-                      )}
-                      {isServiceRequest &&
-                        isActive &&
-                        (mayApprove || canComplete || (canRequest && isMine)) && (
-                        <>
-                          <button
-                            type="button"
-                            className="btn secondary btn-compact"
-                            disabled={linkBusyId === r._id}
-                            onClick={() => generateImageLink(r)}
-                          >
-                            {linkBusyId === r._id ? 'Generating…' : 'Generate image link'}
-                          </button>
-                          {generatedLinks[r._id] && (
-                            <div className="arq-generated-link">
-                              <code>{generatedLinks[r._id]}</code>
+                          {r.status === 'REQUESTED' && !isMine && !mayApprove ? (
+                            <span className="muted mono-sm">
+                              Awaiting {approvalRuleLabel(r.requestType)}
+                            </span>
+                          ) : null}
+                          {r.status === 'REQUESTED' && isMine && !authorityExempt && !mayApprove ? (
+                            <span className="muted mono-sm">Awaiting approval</span>
+                          ) : null}
+                          <div className="arq-actions-primary">
+                            {mayApprove && r.status === 'REQUESTED' ? (
                               <button
                                 type="button"
-                                className="btn secondary btn-compact"
+                                className="arq-icon-btn arq-icon-btn--approve"
+                                title="Approve"
+                                aria-label="Approve"
+                                onClick={() => act(r._id, 'approve')}
+                              >
+                                <Check size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {mayApprove && r.status === 'REQUESTED' ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--reject"
+                                title="Reject"
+                                aria-label="Reject"
+                                onClick={() => act(r._id, 'reject')}
+                              >
+                                <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {canComplete && r.status === 'APPROVED' ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--approve"
+                                title="Complete"
+                                aria-label="Complete"
+                                onClick={() => act(r._id, 'complete')}
+                              >
+                                <CheckCheck size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {isActive && (mayApprove || canComplete || (canRequest && isMine)) ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="Cancel"
+                                aria-label="Cancel"
+                                onClick={() => cancelRequest(r)}
+                              >
+                                <X size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {canDeleteRequests ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--danger"
+                                title={`Delete ${r.requestNumber || r._id}`}
+                                aria-label={`Delete ${r.requestNumber || r._id}`}
+                                onClick={() => requestDeleteRequest(r)}
+                              >
+                                <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {isServiceRequest &&
+                            (r.productImage || r.productImageMetadata || r.productImagePath) ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="View image"
+                                aria-label="View image"
+                                onClick={() => openProductImage(r)}
+                              >
+                                <Eye size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {r.requestType === 'REIMBURSEMENT' && r.billAttachment ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="View bill"
+                                aria-label="View bill"
+                                onClick={() => openBill(r)}
+                              >
+                                <FileText size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {(r.requestType === 'OTHER' || r.requestType === 'MASTER_ADD') &&
+                            r.requestAttachment ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="View attachment"
+                                aria-label="View attachment"
+                                onClick={() => openRequestAttachment(r)}
+                              >
+                                <FileText size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {isServiceRequest &&
+                            isActive &&
+                            (mayApprove || canComplete || (canRequest && isMine)) ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="Generate image link"
+                                aria-label="Generate image link"
+                                disabled={linkBusyId === r._id}
+                                onClick={() => generateImageLink(r)}
+                              >
+                                <Link2 size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                            {isServiceRequest && generatedLinks[r._id] ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn"
+                                title="Copy link"
+                                aria-label="Copy link"
                                 onClick={async () => {
                                   try {
                                     await navigator.clipboard.writeText(generatedLinks[r._id]);
                                     setMsg('Product image link copied to clipboard.');
                                   } catch {
-                                    setError('Could not copy the link. Select and copy it manually.');
+                                    setError(
+                                      'Could not copy the link. Select and copy it manually.'
+                                    );
                                   }
                                 }}
                               >
-                                Copy
+                                <Copy size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
-                            </div>
-                          )}
-                        </>
-                      )}
+                            ) : null}
+                          </div>
                         </>
                       )}
                     </div>
@@ -3591,6 +3694,23 @@ export default function AssetRequestsPage() {
         loading={cancelBusy}
         onConfirm={handleConfirmCancelRequest}
         onCancel={() => setCancelConfirmTarget(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteConfirmTarget)}
+        title="Delete request?"
+        message={
+          deleteConfirmTarget
+            ? `Remove “${deleteConfirmTarget.requestNumber || deleteConfirmTarget._id}” from Request One? This cannot be undone from the list.`
+            : ''
+        }
+        confirmLabel={deleteBusy ? 'Deleting…' : 'Delete request'}
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={handleConfirmDeleteRequest}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteConfirmTarget(null);
+        }}
       />
     </PageShell>
   );

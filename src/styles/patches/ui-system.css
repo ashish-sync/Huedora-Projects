@@ -340,3 +340,58 @@ html[data-theme='dark'] .import-action__menu {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-tertiary);
 }
+
+/* ── Request One: kill header divider above action icons ─────
+   design-system.css loads after global.css and re-applies th/td
+   borders; keep this rule in the last stylesheet so it wins. */
+.page-shell.arq-page .arq-table-wrap .arq-table,
+.page-shell.arq-page table.arq-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.page-shell.arq-page .arq-table thead th {
+  border: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+.page-shell.arq-page .arq-table tbody td {
+  border-top: 0 !important;
+}
+
+.page-shell.arq-page .arq-table tbody td {
+  border-bottom: 1px solid var(--color-border-default, var(--line));
+}
+
+.page-shell.arq-page .arq-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.page-shell.arq-page .arq-table thead th:last-child,
+.page-shell.arq-page .arq-table td.arq-actions-cell {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  padding-inline: 10px !important;
+  vertical-align: middle !important;
+}
+
+/* forms.css styles .arq-actions as a form footer (border-top + padding).
+   Table row action icons reuse that class — strip the footer chrome,
+   keep icon gap so buttons are not jammed together. */
+.page-shell.arq-page .arq-actions-cell .arq-actions,
+.page-shell.arq-page .arq-actions-cell .arq-actions-primary,
+.page-shell.arq-page td.arq-actions-cell .arq-actions {
+  margin: 0 !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  padding-top: 0 !important;
+  border: 0 !important;
+  border-top: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+}

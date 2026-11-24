@@ -640,11 +640,23 @@ textarea.doc-field-input {
 .form-actions,
 .am-form-actions,
 .logistics-form-actions,
-.arq-actions,
 .doc-form-actions,
 .vf-verify-actions,
 .pm-form-actions,
 .pin-master-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* Request One prompt/form footers only (not table row icon groups) */
+.arq-page .arq-jd-prompt > .arq-actions,
+.arq-page .arq-jd-prompt form .arq-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -671,11 +683,12 @@ textarea.doc-field-input {
   .form-actions,
   .am-form-actions,
   .logistics-form-actions,
-  .arq-actions,
   .doc-form-actions,
   .vf-verify-actions,
   .pm-form-actions,
-  .pin-master-actions {
+  .pin-master-actions,
+  .arq-page .arq-jd-prompt > .arq-actions,
+  .arq-page .arq-jd-prompt form .arq-actions {
     flex-direction: column-reverse;
     align-items: stretch;
   }
@@ -683,11 +696,11 @@ textarea.doc-field-input {
   .form-actions > .btn,
   .am-form-actions > .btn,
   .logistics-form-actions > .btn,
-  .arq-actions > .btn,
   .doc-form-actions > .btn,
   .vf-verify-actions > .btn,
   .pm-form-actions > .btn,
-  .pin-master-actions > .btn {
+  .pin-master-actions > .btn,
+  .arq-page .arq-jd-prompt .arq-actions > .btn {
     width: 100%;
     justify-content: center;
   }

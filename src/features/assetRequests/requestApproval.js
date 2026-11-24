@@ -1,16 +1,19 @@
 /**
  * Client mirror of Request One approval matrix (designation / role).
- * Repair & Service: Operations Leader OR Training Manager — either may approve once.
+ * Repair & Service: Manager OR Ops Support Team — either may approve once.
+ * (Org rename: Operations Leader → Manager, Training Manager → Ops Support Team.)
  * Admin (role, designation, or `*` permission) may approve every request type.
  */
 
 const OPERATIONS_LEADER_ALIASES = new Set([
+  'manager',
   'operations leader',
   'operations head',
   'operations manager',
 ]);
 
 const TRAINING_MANAGER_ALIASES = new Set([
+  'ops support team',
   'training manager',
   'training head',
 ]);
@@ -34,14 +37,14 @@ export function requiredApproverKeysForType(requestType) {
   switch (t) {
     case 'REPAIR':
     case 'MAINTENANCE':
-      return ['operations leader', 'training manager'];
+      return ['manager', 'ops support team'];
     case 'LOGISTICS':
     case 'MOVEMENT':
-      return ['operations leader'];
+      return ['manager'];
     case 'TRAINING':
-      return ['training manager'];
+      return ['ops support team'];
     case 'HIRING':
-      return ['operations leader'];
+      return ['manager'];
     default:
       return [];
   }
@@ -65,11 +68,11 @@ function userApproverKeys(user) {
 function matchesRequired(have, requiredKeys) {
   for (const key of requiredKeys) {
     const k = normalizeApproverKey(key);
-    if (k === 'operations leader') {
+    if (k === 'manager' || k === 'operations leader') {
       for (const h of have) {
         if (OPERATIONS_LEADER_ALIASES.has(h)) return true;
       }
-    } else if (k === 'training manager') {
+    } else if (k === 'ops support team' || k === 'training manager') {
       for (const h of have) {
         if (TRAINING_MANAGER_ALIASES.has(h)) return true;
       }

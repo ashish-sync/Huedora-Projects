@@ -7,6 +7,9 @@ const RETURN_EMAILS = new Set(['zohra@tylocare.com']);
 const RETURN_ROLES = new Set(['admin', 'accounts']);
 const RETURN_SYSTEM_ROLES = new Set(['admin', 'super admin']);
 const RETURN_DESIGNATIONS = new Set([
+  'ops support team',
+  'manager',
+  // Pre-rename titles (transitional)
   'accounts',
   'lead - technology & process implementation',
   'lead - process & tech',

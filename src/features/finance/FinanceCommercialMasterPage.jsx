@@ -174,7 +174,7 @@ export default function FinanceCommercialMasterPage() {
             🔒
           </span>
           <span>
-            View-only mode. Organisation master changes require Admin, Operations Head, Senior Manager, or Manager permissions.
+            View-only mode. Organisation master changes require Admin, Operations Head, or Manager permissions.
           </span>
         </div>
       ) : null}

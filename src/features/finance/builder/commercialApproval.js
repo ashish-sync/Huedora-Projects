@@ -7,8 +7,8 @@ import {
 /** Who may open / edit Organisation master (Admin via *). */
 export const ORG_MASTER_EDITOR_DESIGNATIONS = [
   'operations head',
-  'senior manager',
   'manager',
+  'senior manager', // pre-rename transitional
 ];
 
 export { normalizeDesignationKey, isApprovalExemptDesignation };
@@ -27,7 +27,7 @@ export function canApproveCommercialDocument(user, subject = null, can = null) {
   return canActorApproveSubject(user, subject, can);
 }
 
-/** Admin (*) or Operations Head / Senior Manager / Manager. */
+/** Admin (*) or Operations Head / Manager. */
 export function canManageOrganisationMaster(user) {
   if (!user) return false;
   const perms = user.permissions || [];

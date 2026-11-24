@@ -20,7 +20,7 @@ describe('canReturnCampFromPayoutQueue', () => {
     })).toBe(true);
   });
 
-  it('allows Accounts role and designation', () => {
+  it('allows Accounts role and Ops Support Team / Manager designations', () => {
     expect(canReturnCampFromPayoutQueue({
       permissions: ['finance:write'],
       roles: [{ name: 'Accounts' }],
@@ -28,6 +28,14 @@ describe('canReturnCampFromPayoutQueue', () => {
     expect(canReturnCampFromPayoutQueue({
       permissions: ['finance:write'],
       designation: 'Accounts',
+    })).toBe(true);
+    expect(canReturnCampFromPayoutQueue({
+      permissions: ['finance:write'],
+      designation: 'Ops Support Team',
+    })).toBe(true);
+    expect(canReturnCampFromPayoutQueue({
+      permissions: ['finance:write'],
+      designation: 'Manager',
     })).toBe(true);
   });
 

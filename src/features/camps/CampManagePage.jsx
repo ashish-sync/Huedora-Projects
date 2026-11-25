@@ -89,6 +89,8 @@ export default function CampsPage() {
   const {
     hasPermission,
     isSuperAdmin,
+    isPaymentConfirmedAdmin,
+    canDeleteRecords,
     canApproveCamps,
     canRejectCamps,
     canEditCampRecord,
@@ -318,6 +320,8 @@ export default function CampsPage() {
       canApproveCamps,
       canRejectCamps,
       isSuperAdmin,
+      isPaymentConfirmedAdmin,
+      canDeleteRecords,
     };
   }
 
@@ -540,7 +544,7 @@ export default function CampsPage() {
   }
 
   function openBulkSaveConfirmedFinancialAll() {
-    if (!isSuperAdmin()) {
+    if (!isPaymentConfirmedAdmin?.() && !isSuperAdmin?.()) {
       setError('Only Admin or Super Admin can Save Changes on Payment Confirmed camps');
       return;
     }
@@ -818,16 +822,16 @@ export default function CampsPage() {
   const bulkAuth = getBulkAuth();
   const bulkApproveValidation = validateBulkCampAction('approve', selectedCamps, bulkAuth);
   const bulkRejectValidation = validateBulkCampAction('reject', selectedCamps, bulkAuth);
-  const canAdminDeleteCamps = isSuperAdmin();
+  const canAdminDeleteCamps = Boolean(canDeleteRecords?.() || isSuperAdmin?.());
   const bulkDeleteValidation = validateBulkCampAction('delete', selectedCamps, bulkAuth);
   const canFinanceWrite = hasPermission('finance:write');
   // After Payment Confirmed, only Admin / Super Admin may modify (including Submit to Finance).
-  const canBulkSubmitFinance = isSuperAdmin() || canAdminDeleteCamps;
+  const canBulkSubmitFinance = Boolean(isPaymentConfirmedAdmin?.() || isSuperAdmin?.());
   const bulkConfirmPaymentValidation = validateBulkCampAction('confirmPayment', selectedCamps, bulkAuth);
   const bulkHoldValidation = validateBulkCampAction('hold', selectedCamps, bulkAuth);
   const bulkUnholdValidation = validateBulkCampAction('unhold', selectedCamps, bulkAuth);
   const bulkSubmitFinanceValidation = validateBulkCampAction('submitToFinance', selectedCamps, bulkAuth);
-  const canBulkSaveFinancial = canAdminDeleteCamps || isSuperAdmin();
+  const canBulkSaveFinancial = Boolean(isPaymentConfirmedAdmin?.() || isSuperAdmin?.());
   const bulkSaveFinancialValidation = validateBulkCampAction(
     'saveFinancialChanges',
     selectedCamps,

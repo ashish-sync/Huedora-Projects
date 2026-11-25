@@ -88,6 +88,7 @@ function FinanceDocActionsMenu({
   row,
   canWrite,
   admin,
+  canDeleteDocs = false,
   busy,
   onEdit,
   onPrint,
@@ -107,7 +108,7 @@ function FinanceDocActionsMenu({
   const showDuplicate = canWrite;
   const showCorrect =
     admin && (isIssuedStage(row?.status) || normalizeCommercialStage(row?.status) === 'Cancelled');
-  const showDelete = admin;
+  const showDelete = Boolean(canDeleteDocs);
 
   const placeMenu = useCallback(() => {
     const trigger = triggerRef.current;
@@ -236,8 +237,9 @@ function FinanceDocActionsMenu({
 
 export default function FinanceDocumentsList({ embedded = false, showCreateLink = true }) {
   const navigate = useNavigate();
-  const { can, isAdmin } = useAuth();
+  const { can, isAdmin, canDelete } = useAuth();
   const admin = Boolean(isAdmin?.());
+  const canDeleteDocs = Boolean(canDelete?.());
   const canWrite = can('finance:write') || can('*');
 
   const [rows, setRows] = useState([]);
@@ -410,12 +412,12 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
   }
 
   function handleDelete(row) {
-    if (!admin || !row?._id) return;
+    if (!canDeleteDocs || !row?._id) return;
     setDeleteConfirmDoc(row);
   }
 
   async function handleConfirmDeleteDoc() {
-    if (!deleteConfirmDoc || !admin) return;
+    if (!deleteConfirmDoc || !canDeleteDocs) return;
     const row = deleteConfirmDoc;
     setDeleteBusyId(row._id);
     setError('');
@@ -746,6 +748,7 @@ export default function FinanceDocumentsList({ embedded = false, showCreateLink 
                         row={row}
                         canWrite={canWrite}
                         admin={admin}
+                        canDeleteDocs={canDeleteDocs}
                         busy={rowBusy}
                         onEdit={() => navigate(buildEditPath(row.documentType, row._id))}
                         onPrint={canView ? () => handlePrintDocument(row) : null}

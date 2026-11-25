@@ -6,6 +6,8 @@ const auth = {
   canRejectCamps: () => true,
   hasPermission: (perm) => perm === 'camps:execute',
   isSuperAdmin: () => false,
+  isPaymentConfirmedAdmin: () => false,
+  canDeleteRecords: () => false,
 };
 
 const financeAuth = {
@@ -13,6 +15,8 @@ const financeAuth = {
   canRejectCamps: () => false,
   hasPermission: (perm) => ['finance:write', 'camps:request'].includes(perm),
   isSuperAdmin: () => false,
+  isPaymentConfirmedAdmin: () => false,
+  canDeleteRecords: () => false,
 };
 
 const adminAuth = {
@@ -20,6 +24,8 @@ const adminAuth = {
   canRejectCamps: () => true,
   hasPermission: () => true,
   isSuperAdmin: () => true,
+  isPaymentConfirmedAdmin: () => true,
+  canDeleteRecords: () => true,
 };
 
 describe('validateBulkCampAction', () => {

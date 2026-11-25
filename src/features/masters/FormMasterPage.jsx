@@ -405,9 +405,9 @@ function FormLivePreview({ form, fieldTypes }) {
 }
 
 export default function FormMasterPage({ embedded = false } = {}) {
-  const { can } = useAuth();
+  const { can, canDelete: canDeleteRecords } = useAuth();
   const canWrite = can('agreements:write') || can('*');
-  const canDelete = can('*');
+  const canDelete = canDeleteRecords();
 
   const [rows, setRows] = useState([]);
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);

@@ -37,7 +37,7 @@ function hasAdminSystemRole(user) {
  * HueDora aliases (camps:create, client-masters:*, …) map onto those TYLO camps:* perms.
  */
 export function useCampOpsAuth() {
-  const { user, can } = useTyloAuth();
+  const { user, can, isSuperAdmin: isPlatformSuperAdmin, canDelete } = useTyloAuth();
 
   const roleNames = useMemo(() => roleNamesFromUser(user), [user]);
   const primaryRoleLabel = useMemo(() => {
@@ -119,7 +119,11 @@ export function useCampOpsAuth() {
     hasPermission,
     isAdminUser: () => isAdmin || hasPermission('camps:approve'),
     isStrictAdmin: () => isAdmin || can('users:write'),
-    isSuperAdmin: () => isAdmin,
+    /** Platform System Role Super Admin only (record delete). */
+    isSuperAdmin: () => Boolean(isPlatformSuperAdmin?.()),
+    /** RBAC Admin / systemRole Admin|Super Admin — Payment Confirmed camp modify. */
+    isPaymentConfirmedAdmin: () => isAdmin,
+    canDeleteRecords: () => Boolean(canDelete?.()),
     canApproveCamps,
     canRejectCamps,
     canEditCampRecord,

@@ -237,10 +237,10 @@ export default function LogisticsMasterPage({
   description = 'Shared reference masters across Products, Finance, Document One, and Camp One.',
   initialEntity = '',
 } = {}) {
-  const { can } = useAuth();
+  const { can, canDelete: canDeleteRecords } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const canWriteLogistics = can('logistics:master') || can('logistics:write') || can('*');
-  const canDelete = can('*');
+  const canDelete = canDeleteRecords();
   const canWriteDocs = can('agreements:write') || can('*');
   const canReadDocs = can('agreements:read') || canWriteDocs;
   const canReadCamps = can('camps:read') || can('camps:request') || can('camps:approve') || can('*');

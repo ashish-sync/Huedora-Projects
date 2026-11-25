@@ -90,9 +90,9 @@ function bindCanvasDraw(canvas, drawingRef) {
 }
 
 export default function SignatureMasterPage({ embedded = false } = {}) {
-  const { can } = useAuth();
+  const { can, canDelete: canDeleteRecords } = useAuth();
   const canWrite = can('agreements:write');
-  const canDelete = can('*');
+  const canDelete = canDeleteRecords();
   const [rows, setRows] = useState([]);
   const [roles, setRoles] = useState(ROLES_FALLBACK);
   const { options: roleOptions } = usePicklistOptions('signature.role', ROLES_FALLBACK);

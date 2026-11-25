@@ -61,9 +61,9 @@ function statusTone(status) {
 }
 
 export default function DevicesPage() {
-  const { can } = useAuth();
+  const { can, canDelete: canDeleteRecords } = useAuth();
   const canWrite = can('devices:write') || can('*');
-  const canDelete = can('*');
+  const canDelete = canDeleteRecords();
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('');

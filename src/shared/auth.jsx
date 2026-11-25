@@ -112,8 +112,8 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   const isAdmin = useCallback(() => can('*'), [can]);
-  /** Destructive delete: RBAC Admin (`*`) or platform System Role Super Admin. */
-  const canDelete = useCallback(() => can('*') || isSuperAdmin(), [can, isSuperAdmin]);
+  /** Destructive delete across modules: platform System Role Super Admin only (not Admin / User). */
+  const canDelete = useCallback(() => isSuperAdmin(), [isSuperAdmin]);
 
   const value = useMemo(
     () => ({

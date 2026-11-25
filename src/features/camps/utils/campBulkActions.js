@@ -135,14 +135,14 @@ function getCampBulkIssue(action, camp, auth) {
       return `${campLabel(camp)} needs Confirm Payment before submit`;
     }
     // Payment Confirmed camps: only Admin / Super Admin may modify (including submit).
-    if (auth.isSuperAdmin?.() !== true) {
+    if (auth.isPaymentConfirmedAdmin?.() !== true && auth.isSuperAdmin?.() !== true) {
       return `${campLabel(camp)} is Payment Confirmed — only Admin or Super Admin can modify`;
     }
     return null;
   }
 
   if (action === 'saveFinancialChanges') {
-    if (auth.isSuperAdmin?.() !== true) {
+    if (auth.isPaymentConfirmedAdmin?.() !== true && auth.isSuperAdmin?.() !== true) {
       return 'Only Admin or Super Admin can Save Changes on Payment Confirmed camps';
     }
     if (!isFinancialCamp(camp)) {
@@ -158,7 +158,9 @@ function getCampBulkIssue(action, camp, auth) {
 }
 
 function canPerformBulkCampAction(action, auth) {
-  if (action === 'delete') return auth.isSuperAdmin?.() === true;
+  if (action === 'delete') {
+    return auth.canDeleteRecords?.() === true || auth.isSuperAdmin?.() === true;
+  }
   if (action === 'approve') return auth.canApproveCamps();
   if (action === 'reject') return auth.canRejectCamps();
   if (action === 'execute') return auth.hasPermission('camps:execute');
@@ -167,10 +169,10 @@ function canPerformBulkCampAction(action, auth) {
   }
   if (action === 'submitToFinance') {
     // After Payment Confirmed, only Admin / Super Admin may submit (modify).
-    return auth.isSuperAdmin?.() === true;
+    return auth.isPaymentConfirmedAdmin?.() === true || auth.isSuperAdmin?.() === true;
   }
   if (action === 'saveFinancialChanges') {
-    return auth.isSuperAdmin?.() === true;
+    return auth.isPaymentConfirmedAdmin?.() === true || auth.isSuperAdmin?.() === true;
   }
   return false;
 }

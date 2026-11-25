@@ -108,8 +108,14 @@ function filterApprovalBlockers(blockers, form, campNameOptions) {
 
 export default function CampFormPage() {
   const { id } = useParams();
-  const { canEditCampRecord, hasPermission, canSetHistoricalCampDates, isSuperAdmin } = useAuth();
-  const isCampAdmin = Boolean(isSuperAdmin?.());
+  const {
+    canEditCampRecord,
+    hasPermission,
+    canSetHistoricalCampDates,
+    isSuperAdmin,
+    isPaymentConfirmedAdmin,
+  } = useAuth();
+  const isCampAdmin = Boolean(isPaymentConfirmedAdmin?.() || isSuperAdmin?.());
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { workingStage } = useCampWorkingStage();

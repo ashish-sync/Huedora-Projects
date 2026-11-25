@@ -23,7 +23,7 @@ const emptyForm = {
 };
 
 export default function LocationMasterPage({ embedded = false } = {}) {
-  const { can } = useAuth();
+  const { can, canDelete: canDeleteRecords } = useAuth();
   const canWrite =
     can('camps:request') ||
     can('camps:approve') ||
@@ -31,7 +31,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     can('agreements:write') ||
     can('users:write') ||
     can('*');
-  const canDelete = can('*');
+  const canDelete = canDeleteRecords();
   const excelConfig = masterExcelFor('pin-codes');
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);

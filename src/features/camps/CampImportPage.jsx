@@ -31,9 +31,9 @@ async function parseApiErrorMessage(err, fallback) {
 }
 
 export default function ImportPage() {
-  const { isSuperAdmin, hasPermission } = useAuth();
+  const { isSuperAdmin, isPaymentConfirmedAdmin, hasPermission } = useAuth();
   const canImport = hasPermission('import:create') || hasPermission('import:execute');
-  const isAdminImport = isSuperAdmin();
+  const isAdminImport = Boolean(isPaymentConfirmedAdmin?.() || isSuperAdmin?.());
   const steps = isAdminImport ? STEPS_ADMIN : STEPS_EMPLOYEE;
 
   const [step, setStep] = useState(0);

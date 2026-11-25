@@ -12,6 +12,8 @@ vi.mock('../../shared/api.js', () => ({
 vi.mock('../../shared/auth.jsx', () => ({
   useAuth: () => ({
     can: () => true,
+    canDelete: () => true,
+    isSuperAdmin: () => true,
   }),
 }));
 

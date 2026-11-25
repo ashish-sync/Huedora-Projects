@@ -23,7 +23,7 @@ const emptyForm = {
 };
 
 export default function LocationMasterPage({ embedded = false } = {}) {
-  const { can, canDelete: canDeleteRecords } = useAuth();
+  const { can, canDelete: canDeleteFn, isSuperAdmin } = useAuth();
   const canWrite =
     can('camps:request') ||
     can('camps:approve') ||
@@ -31,7 +31,7 @@ export default function LocationMasterPage({ embedded = false } = {}) {
     can('agreements:write') ||
     can('users:write') ||
     can('*');
-  const canDelete = canDeleteRecords();
+  const canDelete = typeof canDeleteFn === 'function' ? canDeleteFn() : Boolean(isSuperAdmin?.());
   const excelConfig = masterExcelFor('pin-codes');
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);

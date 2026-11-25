@@ -61,9 +61,9 @@ function statusTone(status) {
 }
 
 export default function DevicesPage() {
-  const { can, canDelete: canDeleteRecords } = useAuth();
+  const { can, canDelete: canDeleteFn, isSuperAdmin } = useAuth();
   const canWrite = can('devices:write') || can('*');
-  const canDelete = canDeleteRecords();
+  const canDelete = typeof canDeleteFn === 'function' ? canDeleteFn() : Boolean(isSuperAdmin?.());
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState('');

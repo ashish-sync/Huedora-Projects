@@ -492,8 +492,8 @@ function TemplatePreviewModal({ template, onClose }) {
 }
 
 export default function DocumentMasterPage({ embedded = false } = {}) {
-  const { can, canDelete: canDeleteRecords } = useAuth();
-  const canDelete = canDeleteRecords();
+  const { can, canDelete: canDeleteFn, isSuperAdmin } = useAuth();
+  const canDelete = typeof canDeleteFn === 'function' ? canDeleteFn() : Boolean(isSuperAdmin?.());
   const [view, setView] = useState('templates');
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState('');

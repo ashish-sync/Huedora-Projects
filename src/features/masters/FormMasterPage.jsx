@@ -405,9 +405,9 @@ function FormLivePreview({ form, fieldTypes }) {
 }
 
 export default function FormMasterPage({ embedded = false } = {}) {
-  const { can, canDelete: canDeleteRecords } = useAuth();
+  const { can, canDelete: canDeleteFn, isSuperAdmin } = useAuth();
   const canWrite = can('agreements:write') || can('*');
-  const canDelete = canDeleteRecords();
+  const canDelete = typeof canDeleteFn === 'function' ? canDeleteFn() : Boolean(isSuperAdmin?.());
 
   const [rows, setRows] = useState([]);
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);

@@ -14,6 +14,8 @@ vi.mock('../../shared/api.js', () => ({
 vi.mock('../../shared/auth.jsx', () => ({
   useAuth: () => ({
     can: (perm) => perm === 'agreements:write' || perm === 'agreements:read' || perm === '*',
+    canDelete: () => true,
+    isSuperAdmin: () => true,
     user: { id: 'u-1', fullName: 'Admin' },
     loading: false,
   }),

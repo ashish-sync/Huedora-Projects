@@ -464,6 +464,7 @@ function requestDetailFields(r) {
   if (r.requestType === 'LOGISTICS') {
     pushDetail(rows, 'Issue kind', normalizeLogisticsKind(r.logisticsKind) || r.logisticsKind);
     pushDetail(rows, 'Transport mode', r.transportMode);
+    pushDetail(rows, 'AWB number', r.awbNumber);
     pushDetail(rows, 'Priority', r.priority);
     pushDetail(
       rows,
@@ -563,9 +564,9 @@ function requestDetailFields(r) {
   pushDetail(rows, 'Remarks', r.reason);
   if (r.processAction) {
     pushDetail(rows, 'Process action', r.processAction);
-    pushDetail(rows, 'Payment ref', r.processReference);
+    pushDetail(rows, 'UTR', r.processReference);
     if (r.processAmount != null && r.processAmount !== '') {
-      pushDetail(rows, 'Processed amount', `${r.currency || 'INR'} ${r.processAmount}`);
+      pushDetail(rows, 'Amount paid', `${r.currency || 'INR'} ${r.processAmount}`);
     }
     pushDetail(rows, 'Scheduled', r.scheduledAt ? formatDateTime(r.scheduledAt) : '');
     pushDetail(rows, 'Venue / trainer', r.scheduleVenue);
@@ -2068,11 +2069,35 @@ export default function AssetRequestsPage() {
         if (type === 'REIMBURSEMENT') {
           body.processReference = String(processForm.processReference || '').trim();
           body.processAmount = processForm.processAmount;
+          body.utr = body.processReference;
+          if (!body.processReference) {
+            setError('UTR is required.');
+            setProcessBusy(false);
+            return;
+          }
+          const paid = Number(body.processAmount);
+          if (!Number.isFinite(paid) || paid <= 0) {
+            setError('Exact payment amount is required and must be greater than zero.');
+            setProcessBusy(false);
+            return;
+          }
         } else if (type === 'TRAINING') {
           body.scheduledAt = String(processForm.scheduledAt || '').trim();
           body.scheduleVenue = String(processForm.scheduleVenue || '').trim();
         } else if (type === 'LOGISTICS') {
           body.issueNote = String(processForm.processRemark || '').trim();
+          body.transportMode = String(processForm.transportMode || '').trim();
+          body.awbNumber = String(processForm.awbNumber || '').trim();
+          if (!body.transportMode) {
+            setError('Mode of delivery is required.');
+            setProcessBusy(false);
+            return;
+          }
+          if (body.transportMode === 'Courier' && !body.awbNumber) {
+            setError('AWB number is required for Courier.');
+            setProcessBusy(false);
+            return;
+          }
         } else if (type === 'REPAIR' || type === 'MAINTENANCE' || type === 'SERVICE') {
           body.assigneeName = String(processForm.assigneeName || '').trim();
           body.assigneeContact = String(processForm.assigneeContact || '').trim();
@@ -2413,8 +2438,31 @@ export default function AssetRequestsPage() {
 
             {processTarget.requestType === 'REIMBURSEMENT' ? (
               <>
+                {processTarget.amount != null && processTarget.amount !== '' ? (
+                  <p className="muted mono-sm">
+                    Claimed amount: {processTarget.currency || 'INR'} {processTarget.amount}
+                  </p>
+                ) : null}
                 <div className="field">
-                  <label htmlFor="arq-process-ref">Payment reference *</label>
+                  <label htmlFor="arq-process-amount">Exact amount paid *</label>
+                  <input
+                    id="arq-process-amount"
+                    className="field-input"
+                    required
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={processForm.processAmount}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processAmount: e.target.value }))
+                    }
+                    placeholder="Confirm amount actually paid"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-ref">UTR *</label>
                   <input
                     id="arq-process-ref"
                     className="field-input"
@@ -2424,24 +2472,7 @@ export default function AssetRequestsPage() {
                     onChange={(e) =>
                       setProcessForm((prev) => ({ ...prev, processReference: e.target.value }))
                     }
-                    placeholder="UTR / voucher / payment id"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="arq-process-amount">Amount *</label>
-                  <input
-                    id="arq-process-amount"
-                    className="field-input"
-                    required
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={processForm.processAmount}
-                    disabled={processBusy}
-                    onChange={(e) =>
-                      setProcessForm((prev) => ({ ...prev, processAmount: e.target.value }))
-                    }
+                    placeholder="Enter UTR number"
                   />
                 </div>
                 <div className="field">
@@ -2520,6 +2551,49 @@ export default function AssetRequestsPage() {
                 ) : (
                   <p className="muted mono-sm">No product lines on this request.</p>
                 )}
+                <div className="field">
+                  <label htmlFor="arq-process-delivery-mode">Mode of delivery *</label>
+                  <select
+                    id="arq-process-delivery-mode"
+                    className="field-input adaptive-select"
+                    required
+                    value={processForm.transportMode}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({
+                        ...prev,
+                        transportMode: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select mode</option>
+                    {TRANSPORT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-awb">
+                    AWB number{processForm.transportMode === 'Courier' ? ' *' : ''}
+                  </label>
+                  <input
+                    id="arq-process-awb"
+                    className="field-input"
+                    required={processForm.transportMode === 'Courier'}
+                    value={processForm.awbNumber}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, awbNumber: e.target.value }))
+                    }
+                    placeholder={
+                      processForm.transportMode === 'Courier'
+                        ? 'Enter AWB / tracking number'
+                        : 'Optional for this mode'
+                    }
+                  />
+                </div>
                 <div className="field">
                   <label htmlFor="arq-process-remark">Issue note *</label>
                   <textarea

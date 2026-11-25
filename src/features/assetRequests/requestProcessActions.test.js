@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canShowProcessAction,
+  emptyProcessForm,
   processActionForType,
 } from './requestProcessActions.js';
 
@@ -47,5 +48,15 @@ describe('requestProcessActions', () => {
         { mayProcess: true, mayApprove: true }
       )
     ).toBe(false);
+  });
+
+  it('pre-fills logistics delivery mode and AWB on Issue form', () => {
+    const form = emptyProcessForm({
+      requestType: 'LOGISTICS',
+      transportMode: 'Courier',
+      awbNumber: '',
+    });
+    expect(form.transportMode).toBe('Courier');
+    expect(form.awbNumber).toBe('');
   });
 });

@@ -18476,24 +18476,24 @@ button.vf-summary-card.is-clickable:hover,
 
 .arq-request-details {
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border-major, #C5D0DE);
   border-radius: var(--radius-md, 8px);
   background: var(--bg-tier-2, #fff);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 10px;
+  align-items: baseline;
 }
 
 .arq-request-details--empty {
+  display: block;
   font-size: 0.9rem;
 }
 
 .arq-request-details__row {
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 8px 12px;
-  align-items: start;
+  display: contents;
 }
 
 .arq-request-details__row dt {
@@ -18503,17 +18503,19 @@ button.vf-summary-card.is-clickable:hover,
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--muted);
-  line-height: 1.35;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .arq-request-details__row dd {
   margin: 0;
+  min-width: 0;
   font-size: 0.9rem;
   line-height: 1.4;
   color: var(--text-primary, var(--text));
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 html[data-theme='dark'] .arq-request-details {

@@ -69,6 +69,8 @@ export function emptyProcessForm(row) {
     processAmount: row?.amount != null && row?.amount !== '' ? String(row.amount) : '',
     scheduledAt: '',
     scheduleVenue: '',
+    transportMode: row?.transportMode || '',
+    awbNumber: row?.awbNumber || '',
     assigneeName: '',
     assigneeContact: '',
   };

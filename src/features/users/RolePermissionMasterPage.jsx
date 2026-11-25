@@ -26,6 +26,7 @@ import {
   hasAnyModuleAccess,
   permissionsFromModuleMatrix,
   preserveUnmappedPermissions,
+  tierGroupsForModule,
   tierIsOnInMatrix,
   tiersForModule,
   toggleModuleTierInMatrix,
@@ -537,8 +538,11 @@ export default function RolePermissionMasterPage() {
       <section className="rp-section rp-section--modules">
         <h4>Control Center</h4>
         <p className="muted rp-hint">
-          Configure application-level privilege tiers. Options configured on one application do not cascade to another.
+          Configure application-level privilege tiers. Options on one application do not cascade to another.
           Select <strong>All</strong> to grant every available action for a single application.
+          For <strong>Request One</strong>, <em>Module access</em> (View / Request / Approve) is separate from{' '}
+          <em>Team inbox</em>. Each team inbox is type-isolated — Hiring never opens Finance, and vice versa.
+          Creators and their Reporting Manager still see their own tickets.
         </p>
         {designationTemplate && (
           <div className="rp-hint--template">
@@ -569,19 +573,23 @@ export default function RolePermissionMasterPage() {
           {modules.map((m) => {
             const moduleTiers = tiersForModule(m);
             if (!moduleTiers.length) return null;
+            const tierGroups = tierGroupsForModule(m);
+            const hasProcessGroup = tierGroups.some((group) => group.id === 'process');
             const moduleActive = hasAnyModuleAccess({ [m.id]: userDraft.moduleAccess[m.id] });
             const allOn = tierIsOnInMatrix(m, { id: 'all' }, userDraft.moduleAccess);
+            const accessGroup = tierGroups.find((group) => group.id === 'access');
+            const processGroup = tierGroups.find((group) => group.id === 'process');
             return (
               <div
                 key={m.id}
-                className={`rp-module-row ${hasAdmin ? 'is-muted' : ''} ${moduleActive || allOn ? 'is-active' : ''}`}
+                className={`rp-module-row ${hasProcessGroup ? 'rp-module-row--request-one' : ''} ${hasAdmin ? 'is-muted' : ''} ${moduleActive || allOn ? 'is-active' : ''}`}
               >
                 <div className="rp-module-card-copy">
                   <strong>{m.label}</strong>
                   <span className="muted">{m.description}</span>
                 </div>
-                <div className="rp-module-toggles">
-                  {moduleTiers.map((tier) => {
+                <div className={`rp-module-toggles ${hasProcessGroup ? 'rp-module-toggles--end' : ''}`}>
+                  {(accessGroup?.tiers || moduleTiers).map((tier) => {
                     const on = tierIsOnInMatrix(m, tier, userDraft.moduleAccess);
                     return (
                       <label
@@ -604,6 +612,40 @@ export default function RolePermissionMasterPage() {
                     );
                   })}
                 </div>
+                {processGroup ? (
+                  <div className="rp-request-team-inbox">
+                    <div className="rp-request-team-inbox__head">
+                      <strong>{processGroup.label}</strong>
+                      <span className="muted">
+                        {processGroup.hint ||
+                          'Grant the inbox for each request type this person processes'}
+                      </span>
+                    </div>
+                    <div className="rp-request-team-grid" role="group" aria-label="Request One team inbox">
+                      {processGroup.tiers.map((tier) => {
+                        const on = tierIsOnInMatrix(m, tier, userDraft.moduleAccess);
+                        return (
+                          <label
+                            key={`${m.id}-${tier.id}`}
+                            className={`rp-request-team-card ${on ? 'is-on' : ''}`}
+                            title={`${tier.label} · ${tier.team || 'Team'} inbox`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={on}
+                              disabled={!canWrite || hasAdmin}
+                              onChange={() => toggleModuleTier(m, tier)}
+                            />
+                            <span className="rp-request-team-card__copy">
+                              <strong>{tier.label}</strong>
+                              <span>{tier.team || 'Team'}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}

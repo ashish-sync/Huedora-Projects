@@ -829,6 +829,7 @@ export default function CommunicationsPastePage() {
                       value={pasteText}
                       onChange={(e) => setPasteText(e.target.value)}
                       disabled={(hasExtracted && !IS_DEMO_SERVER) || !hasPasteContext}
+                      rows={8}
                       {...bindAutofillBlock()}
                       placeholder={
                         hasPasteContext

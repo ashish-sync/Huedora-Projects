@@ -393,8 +393,8 @@
 
 .rp-module-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
+  grid-template-columns: minmax(12rem, 1fr) auto;
+  gap: 12px 20px;
   align-items: center;
   padding: 14px 18px;
   border: 1px solid var(--color-border-default);
@@ -423,6 +423,15 @@
   box-shadow: 0 1px 3px rgba(10, 90, 194, 0.08);
 }
 
+.rp-module-row--request-one {
+  grid-template-columns: minmax(12rem, 1fr) auto;
+  align-items: start;
+}
+
+.rp-module-row--request-one .rp-request-team-inbox {
+  grid-column: 1 / -1;
+}
+
 .rp-module-card-copy {
   display: flex;
   flex-direction: column;
@@ -440,6 +449,10 @@
   font-size: 0.75rem;
   color: var(--color-text-secondary);
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .rp-module-toggles {
@@ -447,6 +460,100 @@
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+  min-width: 0;
+}
+
+.rp-module-toggles--end {
+  justify-content: flex-end;
+}
+
+.rp-request-team-inbox {
+  margin-top: 2px;
+  padding: 12px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in srgb, var(--color-bg-sunken) 88%, var(--color-bg-elevated));
+}
+
+.rp-request-team-inbox__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.rp-request-team-inbox__head strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.rp-request-team-inbox__head span {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.rp-request-team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rp-request-team-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  margin: 0;
+  padding: 10px 10px 9px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--duration, 150ms) ease, background var(--duration, 150ms) ease;
+}
+
+.rp-request-team-card:hover:not(:has(input:disabled)) {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 45%, var(--color-border-default));
+}
+
+.rp-request-team-card.is-on {
+  border-color: color-mix(in srgb, var(--color-brand-primary) 45%, transparent);
+  background: color-mix(in srgb, var(--color-brand-primary) 8%, var(--color-bg-elevated));
+}
+
+.rp-request-team-card input {
+  width: 14px;
+  height: 14px;
+  margin: 2px 0 0;
+  accent-color: var(--color-brand-primary);
+  cursor: pointer;
+}
+
+.rp-request-team-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rp-request-team-card__copy strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.25;
+}
+
+.rp-request-team-card__copy span {
+  font-size: 0.68rem;
+  color: var(--color-text-secondary);
+  line-height: 1.3;
+}
+
+.rp-request-team-card:has(input:disabled) {
+  opacity: 0.7;
+  cursor: default;
 }
 
 /* ── Access Toggles / Chips ─────────────────────────────────────────────── */
@@ -494,6 +601,7 @@
 .access-toggle--all.is-on {
   border-style: solid;
 }
+
 
 .access-toggle:has(input:disabled) {
   opacity: 0.75;
@@ -840,6 +948,26 @@
   }
 
   .rp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rp-module-row,
+  .rp-module-row--request-one {
+    grid-template-columns: 1fr;
+  }
+
+  .rp-module-toggles,
+  .rp-module-toggles--end {
+    justify-content: flex-start;
+  }
+
+  .rp-request-team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .rp-request-team-grid {
     grid-template-columns: 1fr;
   }
 }

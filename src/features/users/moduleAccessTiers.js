@@ -1,13 +1,77 @@
 /** Per-module access tiers shown in the Control Center. */
 export const MODULE_ACCESS_TIERS = [
-  { id: 'all', label: 'All' },
-  { id: 'viewer', label: 'View', actionIds: ['view'] },
-  { id: 'requester', label: 'Request', actionIds: ['request'] },
-  { id: 'editor', label: 'Edit', actionIds: ['add', 'delete', 'upload'] },
-  { id: 'approver', label: 'Approve', actionIds: ['approve'] },
-  { id: 'verifier', label: 'Verify', actionIds: ['verify'] },
-  { id: 'payer', label: 'Pay', actionIds: ['pay'] },
+  { id: 'all', label: 'All', group: 'access' },
+  { id: 'viewer', label: 'View', actionIds: ['view'], group: 'access' },
+  { id: 'requester', label: 'Request', actionIds: ['request'], group: 'access' },
+  { id: 'editor', label: 'Edit', actionIds: ['add', 'delete', 'upload'], group: 'access' },
+  { id: 'approver', label: 'Approve', actionIds: ['approve'], group: 'access' },
+  { id: 'verifier', label: 'Verify', actionIds: ['verify'], group: 'access' },
+  { id: 'payer', label: 'Pay', actionIds: ['pay'], group: 'access' },
+  /**
+   * Request One team inbox — label = request type, team = responsible org.
+   * These are independent of View / Request / Approve.
+   */
+  {
+    id: 'manageService',
+    label: 'Repair & Service',
+    team: 'Asset Management',
+    actionIds: ['manageService'],
+    group: 'process',
+  },
+  {
+    id: 'manageLogistics',
+    label: 'Goods Issuance',
+    team: 'Supply Chain',
+    actionIds: ['manageLogistics'],
+    group: 'process',
+  },
+  {
+    id: 'manageTraining',
+    label: 'Training',
+    team: 'Training Team',
+    actionIds: ['manageTraining'],
+    group: 'process',
+  },
+  {
+    id: 'manageFinance',
+    label: 'Finance One',
+    team: 'Accounts',
+    actionIds: ['manageFinance'],
+    group: 'process',
+  },
+  {
+    id: 'manageHiring',
+    label: 'Hiring',
+    team: 'Recruitment & HR',
+    actionIds: ['manageHiring'],
+    group: 'process',
+  },
+  {
+    id: 'manageOther',
+    label: 'Other',
+    team: 'System Admin',
+    actionIds: ['manageOther'],
+    group: 'process',
+  },
 ];
+
+/** Split module tiers into Access / Team-inbox rows for Control Center layout. */
+export function tierGroupsForModule(module) {
+  const tiers = tiersForModule(module);
+  const access = tiers.filter((tier) => tier.group !== 'process');
+  const process = tiers.filter((tier) => tier.group === 'process');
+  const groups = [];
+  if (access.length) groups.push({ id: 'access', label: 'Module access', tiers: access });
+  if (process.length) {
+    groups.push({
+      id: 'process',
+      label: 'Team inbox',
+      hint: 'Who processes each request type — separate from Request / Approve',
+      tiers: process,
+    });
+  }
+  return groups;
+}
 
 export function accessActionIds(module) {
   return Object.keys(module?.actions || {}).filter((id) => module.actions[id]?.length);

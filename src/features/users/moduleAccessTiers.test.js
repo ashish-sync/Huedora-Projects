@@ -3,6 +3,7 @@ import {
   moduleMatrixFromPermissions,
   permissionsFromModuleMatrix,
   preserveUnmappedPermissions,
+  tierGroupsForModule,
   tierIsOn,
   tierIsOnInMatrix,
   tiersForModule,
@@ -129,6 +130,36 @@ describe('moduleAccessTiers', () => {
     expect(permissionsFromModuleMatrix(modules, matrix).sort()).toEqual(
       ['logistics:master', 'logistics:read', 'logistics:write'].sort()
     );
+  });
+
+  it('compiles Request One Recruitment tier to hiring:manage', () => {
+    const assetRequests = {
+      id: 'assetRequests',
+      label: 'Request One',
+      actions: {
+        all: [
+          'asset-requests:read',
+          'asset-requests:request',
+          'asset-requests:approve',
+          'asset-requests:hiring:manage',
+        ],
+        view: ['asset-requests:read'],
+        request: ['asset-requests:request'],
+        approve: ['asset-requests:approve'],
+        manageHiring: ['asset-requests:hiring:manage'],
+      },
+    };
+    expect(tiersForModule(assetRequests).map((t) => t.id)).toContain('manageHiring');
+    expect(
+      permissionsFromModuleMatrix([assetRequests], { assetRequests: ['manageHiring'] })
+    ).toEqual(['asset-requests:hiring:manage']);
+    const groups = tierGroupsForModule(assetRequests);
+    expect(groups.map((g) => g.id)).toEqual(['access', 'process']);
+    expect(groups[0].label).toBe('Module access');
+    expect(groups[1].label).toBe('Team inbox');
+    expect(groups[0].tiers.map((t) => t.id)).toEqual(['all', 'viewer', 'requester', 'approver']);
+    expect(groups[1].tiers.map((t) => t.id)).toEqual(['manageHiring']);
+    expect(groups[1].tiers[0].team).toBe('Recruitment & HR');
   });
 
   it('preserves unmapped legacy keys on save', () => {

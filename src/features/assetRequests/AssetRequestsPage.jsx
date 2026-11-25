@@ -35,6 +35,13 @@ import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 import '../notifications/notifications.css';
 import { approvalRuleLabel } from './requestApproval.js';
 import {
+  canCancelRequest,
+  canMutateRequestAttachments,
+  canProcessRequest,
+  cancelRequiresRemark,
+  isRequestOwner,
+} from './requestAccess.js';
+import {
   APPROVAL_AUTHORITY_LABEL,
   canActorApproveSubject,
   isApprovalAuthorityExempt,
@@ -473,8 +480,6 @@ export default function AssetRequestsPage() {
     can('repairs:write') ||
     can('maintenance:write') ||
     can('*');
-  const canComplete =
-    can('asset-requests:approve') || can('movements:approve') || can('*');
   const canDeleteRequests = canDelete();
   const authorityExempt = isApprovalAuthorityExempt(user, can);
   const userCanApproveRow = (row) => {
@@ -484,9 +489,13 @@ export default function AssetRequestsPage() {
         : { _id: row?.requestorId };
     return canActorApproveSubject(user, subject, can);
   };
+  const userCanProcessRow = (row) => canProcessRequest(user, can, row);
+  const userCanCancelRow = (row) => canCancelRequest(user, can, row);
+  const userCanMutateAttachments = (row) => canMutateRequestAttachments(user, can, row);
 
   const [rows, setRows] = useState([]);
   const [cancelConfirmTarget, setCancelConfirmTarget] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [cancelBusy, setCancelBusy] = useState(false);
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -1785,19 +1794,29 @@ export default function AssetRequestsPage() {
   };
 
   const cancelRequest = (request) => {
+    setCancelReason('');
     setCancelConfirmTarget(request);
   };
 
   const handleConfirmCancelRequest = async () => {
     if (!cancelConfirmTarget) return;
     const req = cancelConfirmTarget;
+    const remark = String(cancelReason || '').trim();
+    if (cancelRequiresRemark(user, req) && !remark) {
+      setError('Enter a remark before cancelling your request.');
+      return;
+    }
     setCancelBusy(true);
     setError('');
     setMsg('');
     try {
-      await api(`/asset-requests/${req._id}/cancel`, { method: 'POST', body: {} });
+      await api(`/asset-requests/${req._id}/cancel`, {
+        method: 'POST',
+        body: { reason: remark || undefined, cancellationReason: remark || undefined },
+      });
       setMsg(`Request ${req.requestNumber || req._id} cancelled.`);
       setCancelConfirmTarget(null);
+      setCancelReason('');
       await load();
     } catch (err) {
       setError(err.message);
@@ -3422,8 +3441,12 @@ export default function AssetRequestsPage() {
           </thead>
           <tbody>
             {filteredRows.map((r) => {
-              const isMine = String(r.requestorId?._id || r.requestorId) === String(user?.id);
+              const isMine = isRequestOwner(user, r);
               const mayApprove = userCanApproveRow(r);
+              const mayProcess = userCanProcessRow(r);
+              const mayCancel = userCanCancelRow(r);
+              const mayMutateAttachments = userCanMutateAttachments(r);
+              const mayAssignHiring = mayProcess;
               const isActive = r.status === 'REQUESTED' || r.status === 'APPROVED';
               const isServiceRequest =
                 r.requestType === 'REPAIR' || r.requestType === 'MAINTENANCE';
@@ -3481,14 +3504,14 @@ export default function AssetRequestsPage() {
                     <div className="arq-actions" role="group" aria-label="Request actions">
                       {r.requestType === 'HIRING' ? (
                         <>
-                          {r.status === 'REQUESTED' && isMine && !authorityExempt && !mayApprove ? (
+                          {r.status === 'REQUESTED' && isMine && !authorityExempt && !mayAssignHiring ? (
                             <span className="muted mono-sm">Awaiting assignment</span>
                           ) : null}
-                          {r.status === 'REQUESTED' && !isMine && !mayApprove ? (
+                          {r.status === 'REQUESTED' && !isMine && !mayAssignHiring ? (
                             <span className="muted mono-sm">Awaiting {APPROVAL_AUTHORITY_LABEL}</span>
                           ) : null}
                           <div className="arq-actions-primary">
-                            {mayApprove && ['REQUESTED', 'APPROVED'].includes(r.status) ? (
+                            {mayAssignHiring && ['REQUESTED', 'APPROVED'].includes(r.status) ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--approve"
@@ -3510,7 +3533,7 @@ export default function AssetRequestsPage() {
                                 <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {isActive && (mayApprove || canComplete || (canRequest && isMine)) ? (
+                            {isActive && mayCancel ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn"
@@ -3543,9 +3566,7 @@ export default function AssetRequestsPage() {
                                 <FileText size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {!r.jdAttachment &&
-                            isActive &&
-                            (mayApprove || canComplete || (canRequest && isMine)) ? (
+                            {!r.jdAttachment && isActive && mayMutateAttachments ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn"
@@ -3598,7 +3619,7 @@ export default function AssetRequestsPage() {
                                 <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {canComplete && r.status === 'APPROVED' ? (
+                            {mayProcess && r.status === 'APPROVED' ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--approve"
@@ -3609,7 +3630,7 @@ export default function AssetRequestsPage() {
                                 <CheckCheck size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {isActive && (mayApprove || canComplete || (canRequest && isMine)) ? (
+                            {isActive && mayCancel ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn"
@@ -3666,9 +3687,7 @@ export default function AssetRequestsPage() {
                                 <FileText size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {isServiceRequest &&
-                            isActive &&
-                            (mayApprove || canComplete || (canRequest && isMine)) ? (
+                            {isServiceRequest && isActive && mayMutateAttachments ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn"
@@ -3733,13 +3752,41 @@ export default function AssetRequestsPage() {
       <ConfirmDialog
         open={Boolean(cancelConfirmTarget)}
         title="Cancel Asset Request"
-        message={`Cancel request ${cancelConfirmTarget?.requestNumber || cancelConfirmTarget?._id}?`}
+        message={
+          cancelConfirmTarget
+            ? `Cancel request ${cancelConfirmTarget.requestNumber || cancelConfirmTarget._id}?${
+                cancelRequiresRemark(user, cancelConfirmTarget)
+                  ? ' A remark is required.'
+                  : ''
+              }`
+            : ''
+        }
         confirmLabel={cancelBusy ? 'Cancelling…' : 'Cancel request'}
         confirmVariant="danger"
         loading={cancelBusy}
         onConfirm={handleConfirmCancelRequest}
-        onCancel={() => setCancelConfirmTarget(null)}
-      />
+        onCancel={() => {
+          if (!cancelBusy) {
+            setCancelConfirmTarget(null);
+            setCancelReason('');
+          }
+        }}
+      >
+        {cancelConfirmTarget && cancelRequiresRemark(user, cancelConfirmTarget) ? (
+          <div className="field" style={{ marginTop: 'var(--space-3)' }}>
+            <label htmlFor="arq-cancel-remark">Remark *</label>
+            <textarea
+              id="arq-cancel-remark"
+              required
+              rows={3}
+              value={cancelReason}
+              disabled={cancelBusy}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Why is this request being cancelled?"
+            />
+          </div>
+        ) : null}
+      </ConfirmDialog>
       <ConfirmDialog
         open={Boolean(rejectTarget)}
         title="Refuse request?"

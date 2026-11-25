@@ -1,4 +1,5 @@
 import { api, apiFetch } from '../../../shared/api.js';
+import { todayIso } from '../../../shared/dateFormat.js';
 import { COMMERCIAL_DOC_TYPES } from '../commercialDocumentConfig.js';
 import { defaultInvoiceForm, defaultLineItem } from '../invoiceGenerator/invoiceStorage.js';
 import {
@@ -839,23 +840,67 @@ export async function deleteCommercialDocument(id) {
   return res.data;
 }
 
+function addDaysIso(dateText, days = 30) {
+  const base = String(dateText || '').trim() || todayIso();
+  const d = new Date(`${base}T12:00:00`);
+  if (Number.isNaN(d.getTime())) {
+    const fallback = new Date(`${todayIso()}T12:00:00`);
+    fallback.setDate(fallback.getDate() + days);
+    return fallback.toISOString().slice(0, 10);
+  }
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /**
  * Clone an existing commercial document as a new Draft.
  * Clears official number, workflow status fields (via POST create), and any signature stamp.
+ * Issue / document date resets to today; due date follows the standard +30 days rule.
  */
 export async function duplicateCommercialDocument(id) {
   const doc = await loadCommercialDocument(id);
   const documentType = doc.documentType;
   const form = apiDocToForm(documentType, doc);
+  const issueDate = todayIso();
+  const dueDate = addDaysIso(issueDate, 30);
 
   if (form.invoice && typeof form.invoice === 'object') {
-    form.invoice = { ...form.invoice, documentNumber: '' };
+    form.invoice = {
+      ...form.invoice,
+      documentNumber: '',
+      issueDate,
+      dueDate,
+      ...(Object.prototype.hasOwnProperty.call(form.invoice, 'dispatchDate')
+        ? { dispatchDate: issueDate }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(form.invoice, 'expectedDeliveryDate')
+        ? { expectedDeliveryDate: dueDate }
+        : {}),
+    };
   }
   if (form.document && typeof form.document === 'object') {
-    form.document = { ...form.document, documentNumber: '' };
+    form.document = {
+      ...form.document,
+      documentNumber: '',
+      issueDate,
+      dueDate,
+    };
   }
   if (form.po && typeof form.po === 'object') {
-    form.po = { ...form.po, documentNumber: '' };
+    form.po = {
+      ...form.po,
+      documentNumber: '',
+      documentDate: issueDate,
+      deliveryDate: dueDate,
+    };
+  }
+  if (form.delivery && typeof form.delivery === 'object') {
+    form.delivery = {
+      ...form.delivery,
+      ...(Object.prototype.hasOwnProperty.call(form.delivery, 'expectedDate')
+        ? { expectedDate: dueDate }
+        : {}),
+    };
   }
   if (form.signature && typeof form.signature === 'object') {
     form.signature = {

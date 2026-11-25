@@ -22,20 +22,21 @@ describe('Contact Directory caching policy', () => {
   });
 
   it('invalidates picker caches after create/update and KYC uploads', () => {
-    expect(src).toMatch(/invalidateContactsCaches/);
+    const drawerSrc = fs.readFileSync(path.join(__dirname, 'ContactDirectoryDrawer.jsx'), 'utf8');
+    expect(drawerSrc).toMatch(/invalidateContactsCaches/);
 
-    const saveIdx = src.indexOf('await api(\'/contacts\'');
-    const saveInvalidateIdx = src.indexOf('invalidateContactsCaches()', saveIdx);
+    const saveIdx = drawerSrc.indexOf('await api(\'/contacts\'');
+    const saveInvalidateIdx = drawerSrc.indexOf('invalidateContactsCaches()', saveIdx);
     expect(saveIdx).toBeGreaterThan(-1);
     expect(saveInvalidateIdx).toBeGreaterThan(saveIdx);
 
-    const patchIdx = src.indexOf('api(`/contacts/${editId}`, { method: \'PATCH\'');
-    const patchInvalidateIdx = src.indexOf('invalidateContactsCaches()', Math.max(patchIdx, saveIdx));
+    const patchIdx = drawerSrc.indexOf('api(`/contacts/${editId}`, { method: \'PATCH\'');
+    const patchInvalidateIdx = drawerSrc.indexOf('invalidateContactsCaches()', Math.max(patchIdx, saveIdx));
     expect(patchIdx).toBeGreaterThan(-1);
     expect(patchInvalidateIdx).toBeGreaterThan(patchIdx);
 
-    const kycIdx = src.indexOf('kyc-document');
-    const kycInvalidateIdx = src.indexOf('invalidateContactsCaches()', kycIdx);
+    const kycIdx = drawerSrc.indexOf('kyc-document');
+    const kycInvalidateIdx = drawerSrc.indexOf('invalidateContactsCaches()', kycIdx);
     expect(kycIdx).toBeGreaterThan(-1);
     expect(kycInvalidateIdx).toBeGreaterThan(kycIdx);
   });

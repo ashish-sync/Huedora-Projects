@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { api, downloadExcel } from '../../shared/api.js';
 import { useAuth } from '../../shared/auth.jsx';
 import { MODULE, FILTER, ACTION } from '../../shared/labels.js';

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { api, apiFetch } from '../../shared/api.js';
 import { MODULE, FIELD } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -481,11 +482,13 @@ export default function AgreementDetailPage() {
           )}
           {canDeleteDocument && (
             <button
-              className="btn danger"
+              className="esign-icon-btn esign-icon-btn--danger"
               type="button"
+              title="Delete document"
+              aria-label="Delete document"
               onClick={() => setDeleteConfirmOpen(true)}
             >
-              Delete
+              <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
             </button>
           )}
         </div>

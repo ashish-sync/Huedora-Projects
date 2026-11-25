@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Ban,
+  CalendarClock,
   Check,
   CheckCheck,
+  CircleDollarSign,
   Copy,
   Eye,
   FileText,
+  Info,
   Link2,
+  Package,
+  Plus,
   Trash2,
   Upload,
   UserCheck,
-  X,
 } from 'lucide-react';
 import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -21,6 +25,8 @@ import { FIELD, MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
 import PageShell from '../../components/ui/PageShell.jsx';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.jsx';
+import ModalShell from '../../components/ui/ModalShell.jsx';
+import ContactDirectoryDrawer from '../agreements/ContactDirectoryDrawer.jsx';
 import AdaptiveSelect from '../../components/ui/AdaptiveSelect.jsx';
 import OtherAwareSelect from '../../components/ui/OtherAwareSelect.jsx';
 import FilePicker from '../../components/ui/FilePicker.jsx';
@@ -32,15 +38,31 @@ import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { resolveProductType } from '../../shared/productTypes.js';
 import { categoriesForType } from '../../shared/productMasterConfig.js';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
+import { formatDateTime } from '../../shared/dateFormat.js';
 import '../notifications/notifications.css';
 import { approvalRuleLabel } from './requestApproval.js';
 import {
   canCancelRequest,
+  cancelRequiresRemark,
   canMutateRequestAttachments,
   canProcessRequest,
-  cancelRequiresRemark,
+  canViewRequest,
   isRequestOwner,
 } from './requestAccess.js';
+import {
+  canCreatorEditHiringDetails,
+  hasOpenClarification,
+  hiringProgressLabel,
+  hiringUpdateKindLabel,
+  requestDisplayStatus,
+  HIRING_PROGRESS_OPTIONS,
+  HIRING_UPDATE_KIND_OPTIONS,
+} from './hiringUpdates.js';
+import {
+  canShowProcessAction,
+  emptyProcessForm,
+  processActionForType,
+} from './requestProcessActions.js';
 import {
   APPROVAL_AUTHORITY_LABEL,
   canActorApproveSubject,
@@ -410,63 +432,235 @@ function isFreshDispatchKind(kind) {
   return k === 'Fresh Dispatch';
 }
 
-function detailSummary(r) {
-  const logisticsProducts = Array.isArray(r.logisticsProducts) ? r.logisticsProducts : [];
-  const productSummary = logisticsProducts.length
-    ? `${logisticsProducts
-        .slice(0, 2)
-        .map((item) => `${item.productName || item.productType || 'Product'} ×${item.qty || 0}`)
-        .join(', ')}${logisticsProducts.length > 2 ? ` +${logisticsProducts.length - 2} more` : ''}`
-    : '';
-  const bits = [
-    r.requestType === 'REPAIR'
-      ? 'Repair'
-      : r.requestType === 'MAINTENANCE'
+function pushDetail(rows, label, value) {
+  const text = value == null ? '' : String(value).trim();
+  if (!text) return;
+  rows.push({ label, value: text });
+}
+
+/** Structured Details rows shown in the request info (i) panel. */
+function requestDetailFields(r) {
+  const rows = [];
+  if (!r) return rows;
+
+  pushDetail(rows, 'Type', displayType(r.requestType));
+
+  if (r.requestType === 'REPAIR' || r.requestType === 'MAINTENANCE' || r.requestType === 'SERVICE') {
+    pushDetail(
+      rows,
+      'Service',
+      r.requestType === 'MAINTENANCE'
         ? 'Maintenance'
-        : '',
-    r.issueCategory ||
-      r.maintenanceKind ||
-      normalizeLogisticsKind(r.logisticsKind) ||
-      (r.requestType === 'REIMBURSEMENT'
-        ? [r.expenseCategory, r.expenseSubCategory].filter(Boolean).join(' · ')
-        : r.expenseCategory) ||
-      r.otherCategory,
-    r.transportMode,
-    r.priority,
-    r.otherSubcategory,
-    r.requestType === 'REIMBURSEMENT'
-      ? r.raisedFor === 'OTHER' || (r.payeeName && r.payeeName !== 'Self')
-        ? `Raised for: ${r.payeeName || 'Other'}`
-        : 'Raised for: Self'
-      : '',
-    r.requestType === 'REIMBURSEMENT' && r.associateWithClient
-      ? `Client: ${[r.clientCode, r.divisionTherapy || r.clientName].filter(Boolean).join(' · ') || '-'}`
-      : '',
-    r.requestType === 'LOGISTICS' && (r.clientName || r.clientCode || r.divisionTherapy || r.hiringMethod)
-      ? `Client: ${[r.clientName || r.clientCode, r.divisionTherapy, r.hiringMethod]
-          .filter(Boolean)
-          .join(' · ')}`
-      : '',
-    r.trainingTopic,
-    r.trainingName || r.assetName,
-    r.traineeName,
-    r.hiringType,
-    r.hcwType,
-    r.campType,
-    r.requestType === 'HIRING' ? r.hiringMethod : '',
-    r.hireeName
-      ? `Hiree: ${r.hireeName}${r.hireeContact ? ` · ${r.hireeContact}` : ''}${
+        : r.requestType === 'REPAIR'
+          ? 'Repair'
+          : r.serviceType || 'Service'
+    );
+    pushDetail(rows, 'Issue category', r.issueCategory || r.maintenanceKind);
+    pushDetail(rows, 'Priority', r.priority);
+    pushDetail(rows, 'Asset', r.assetName || r.trainingName);
+    pushDetail(rows, 'Custody', r.assetCustody);
+  }
+
+  if (r.requestType === 'LOGISTICS') {
+    pushDetail(rows, 'Issue kind', normalizeLogisticsKind(r.logisticsKind) || r.logisticsKind);
+    pushDetail(rows, 'Transport mode', r.transportMode);
+    pushDetail(rows, 'Priority', r.priority);
+    pushDetail(
+      rows,
+      'Client',
+      [r.clientName || r.clientCode, r.divisionTherapy, r.hiringMethod].filter(Boolean).join(' · ')
+    );
+    const logisticsProducts = Array.isArray(r.logisticsProducts) ? r.logisticsProducts : [];
+    if (logisticsProducts.length) {
+      pushDetail(
+        rows,
+        'Products',
+        logisticsProducts
+          .map((item) => `${item.productName || item.productType || 'Product'} ×${item.qty || 0}`)
+          .join(', ')
+      );
+    }
+    pushDetail(rows, 'Asset', r.assetName);
+  }
+
+  if (r.requestType === 'TRAINING') {
+    pushDetail(rows, 'Topic', r.trainingTopic);
+    pushDetail(rows, 'Training / asset', r.trainingName || r.assetName);
+    pushDetail(rows, 'Trainee', r.traineeName);
+    pushDetail(rows, 'Priority', r.priority);
+  }
+
+  if (r.requestType === 'REIMBURSEMENT') {
+    pushDetail(
+      rows,
+      'Expense',
+      [r.expenseCategory, r.expenseSubCategory].filter(Boolean).join(' · ')
+    );
+    pushDetail(
+      rows,
+      'Raised for',
+      r.raisedFor === 'OTHER' || (r.payeeName && r.payeeName !== 'Self')
+        ? r.payeeName || 'Other'
+        : 'Self'
+    );
+    if (r.associateWithClient) {
+      pushDetail(
+        rows,
+        'Client',
+        [r.clientCode, r.divisionTherapy || r.clientName].filter(Boolean).join(' · ') || '-'
+      );
+    }
+    if (r.amount != null && r.amount !== '') {
+      pushDetail(rows, 'Amount', `${r.currency || 'INR'} ${r.amount}`);
+    }
+  }
+
+  if (r.requestType === 'HIRING') {
+    pushDetail(rows, 'Hiring type', r.hiringType);
+    pushDetail(rows, 'HCW type', r.hcwType);
+    pushDetail(rows, 'Camp type', r.campType);
+    pushDetail(rows, 'Method', r.hiringMethod);
+    pushDetail(rows, 'Name', r.hiringName || r.hireeName);
+    pushDetail(
+      rows,
+      'Location',
+      [r.hiringCity, r.hiringState, r.hiringPinCode].filter(Boolean).join(', ')
+    );
+    pushDetail(rows, 'Address', r.hiringAddress);
+    if (r.engagementDateTime) {
+      pushDetail(rows, 'Engagement', new Date(r.engagementDateTime).toLocaleString());
+    }
+    if (r.hireeName) {
+      pushDetail(
+        rows,
+        'Assigned',
+        `${r.hireeName}${r.hireeContact ? ` · ${r.hireeContact}` : ''}${
           r.payableAmount != null && r.payableAmount !== '' ? ` · ₹${r.payableAmount}` : ''
         }`
-      : '',
-    r.requestType === 'MASTER_ADD'
-      ? `${r.masterModule || ''} · ${getMasterEntity(r.masterEntity)?.label || r.masterEntity || ''}`
-      : '',
-    r.createdMasterCode ? `Created ${r.createdMasterCode}` : '',
-    productSummary,
-    r.amount != null && r.amount !== '' ? `${r.currency || 'INR'} ${r.amount}` : '',
+      );
+    }
+  }
+
+  if (r.requestType === 'MASTER_ADD') {
+    pushDetail(rows, 'Module', r.masterModule);
+    pushDetail(
+      rows,
+      'Entity',
+      getMasterEntity(r.masterEntity)?.label || r.masterEntity
+    );
+    pushDetail(rows, 'Created code', r.createdMasterCode);
+  }
+
+  if (r.requestType === 'OTHER') {
+    pushDetail(rows, 'Category', r.otherCategory);
+    pushDetail(rows, 'Subcategory', r.otherSubcategory);
+    pushDetail(rows, 'Priority', r.priority);
+    if (r.amount != null && r.amount !== '') {
+      pushDetail(rows, 'Amount', `${r.currency || 'INR'} ${r.amount}`);
+    }
+  }
+
+  pushDetail(rows, 'Remarks', r.reason);
+  if (r.processAction) {
+    pushDetail(rows, 'Process action', r.processAction);
+    pushDetail(rows, 'Payment ref', r.processReference);
+    if (r.processAmount != null && r.processAmount !== '') {
+      pushDetail(rows, 'Processed amount', `${r.currency || 'INR'} ${r.processAmount}`);
+    }
+    pushDetail(rows, 'Scheduled', r.scheduledAt ? formatDateTime(r.scheduledAt) : '');
+    pushDetail(rows, 'Venue / trainer', r.scheduleVenue);
+    pushDetail(rows, 'Assignee', r.assigneeName);
+    pushDetail(rows, 'Assignee phone', r.assigneeContact);
+    pushDetail(rows, 'Issued at', r.issuedAt ? formatDateTime(r.issuedAt) : '');
+    pushDetail(rows, 'Process remark', r.processRemark);
+  }
+  pushDetail(rows, 'Last update', formatDateTime(requestLastUpdateAt(r)));
+  return rows;
+}
+
+function processActionIcon(requestType) {
+  const key = String(requestType || '').toUpperCase();
+  if (key === 'MASTER_ADD') return Plus;
+  if (key === 'REIMBURSEMENT') return CircleDollarSign;
+  if (key === 'TRAINING') return CalendarClock;
+  if (key === 'LOGISTICS') return Package;
+  if (key === 'REPAIR' || key === 'MAINTENANCE' || key === 'SERVICE') return UserCheck;
+  return CheckCheck;
+}
+
+/** Work-log entries for the Request Actions tab. */
+function buildRequestActionLog(r, hiringLogData) {
+  if (!r) return [];
+  const live = Array.isArray(hiringLogData?.updates) ? hiringLogData.updates : null;
+  if (live && live.length) return live;
+  const fromRow = Array.isArray(r.hiringUpdates) ? r.hiringUpdates : [];
+  if (fromRow.length) return fromRow;
+
+  const events = [];
+  const pushEvent = (id, message, at, kind = 'STATUS') => {
+    if (!at) return;
+    events.push({
+      id,
+      kind,
+      message,
+      at,
+      actorName: r.requestorId?.fullName || r.requestorId?.email || 'System',
+    });
+  };
+
+  pushEvent('created', 'Request submitted', r.createdAt || r.requestedAt);
+  pushEvent('approved', 'Request accepted', r.approvedAt);
+  pushEvent('completed', 'Request closed', r.completedAt || r.fulfilledAt);
+  const refuseRemark = String(r.rejectionReason || r.cancellationReason || '').trim();
+  if (r.rejectedAt) {
+    pushEvent(
+      'rejected',
+      refuseRemark ? `Request refused — ${refuseRemark}` : 'Request refused',
+      r.rejectedAt
+    );
+  } else if (r.cancelledAt) {
+    pushEvent(
+      'cancelled',
+      refuseRemark ? `Request refused — ${refuseRemark}` : 'Request refused',
+      r.cancelledAt
+    );
+  }
+
+  return events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+}
+
+function requestLastUpdateAt(r) {
+  if (!r) return null;
+  let latestHiringMs = 0;
+  for (const entry of Array.isArray(r.hiringUpdates) ? r.hiringUpdates : []) {
+    for (const raw of [entry?.at, entry?.resolvedAt]) {
+      if (!raw) continue;
+      const ms = new Date(raw).getTime();
+      if (Number.isFinite(ms) && ms > latestHiringMs) latestHiringMs = ms;
+    }
+  }
+  const candidates = [
+    latestHiringMs || null,
+    r.updatedAt,
+    r.completedAt,
+    r.fulfilledAt,
+    r.rejectedAt,
+    r.cancelledAt,
+    r.approvedAt,
+    r.createdAt,
+    r.requestedAt,
   ].filter(Boolean);
-  return bits.join(' · ');
+  let best = null;
+  let bestMs = 0;
+  for (const raw of candidates) {
+    const ms = typeof raw === 'number' ? raw : new Date(raw).getTime();
+    if (!Number.isFinite(ms)) continue;
+    if (ms >= bestMs) {
+      bestMs = ms;
+      best = typeof raw === 'number' ? new Date(raw) : raw;
+    }
+  }
+  return best;
 }
 
 export default function AssetRequestsPage() {
@@ -525,12 +719,30 @@ export default function AssetRequestsPage() {
   const [jdFile, setJdFile] = useState(null);
   const [jdBusy, setJdBusy] = useState(false);
   const [fulfillTarget, setFulfillTarget] = useState(null);
-  const [fulfillForm, setFulfillForm] = useState({
-    hireeName: '',
-    hireeContact: '',
-    payableAmount: '',
-  });
   const [fulfillBusy, setFulfillBusy] = useState(false);
+  const [processTarget, setProcessTarget] = useState(null);
+  const [processForm, setProcessForm] = useState(emptyProcessForm());
+  const [processBusy, setProcessBusy] = useState(false);
+  const [hiringUpdateForm, setHiringUpdateForm] = useState({
+    kind: 'STATUS',
+    progress: 'IN_PROGRESS',
+    message: '',
+  });
+  const [hiringUpdateBusy, setHiringUpdateBusy] = useState(false);
+  const [hiringLogTarget, setHiringLogTarget] = useState(null);
+  const [hiringLogData, setHiringLogData] = useState(null);
+  const [hiringLogLoading, setHiringLogLoading] = useState(false);
+  const [requestInfoTab, setRequestInfoTab] = useState('details');
+  const [hiringReply, setHiringReply] = useState('');
+  const [hiringDetailForm, setHiringDetailForm] = useState({
+    reason: '',
+    hiringAddress: '',
+    hiringCity: '',
+    hiringState: '',
+    hiringPinCode: '',
+    engagementDateTime: '',
+  });
+  const [hiringLogBusy, setHiringLogBusy] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectBusy, setRejectBusy] = useState(false);
@@ -1701,98 +1913,6 @@ export default function AssetRequestsPage() {
     }
   };
 
-  const openReject = (request) => {
-    setError('');
-    setRejectReason('');
-    setRejectTarget({
-      id: request._id,
-      requestNumber: request.requestNumber || request._id,
-      requestType: request.requestType,
-    });
-  };
-
-  const closeReject = () => {
-    if (rejectBusy) return;
-    setRejectTarget(null);
-    setRejectReason('');
-  };
-
-  const submitReject = async () => {
-    if (!rejectTarget?.id) return;
-    const reason = String(rejectReason || '').trim();
-    if (!reason) {
-      setError('Enter a remark before refusing this request.');
-      return;
-    }
-    setError('');
-    setRejectBusy(true);
-    try {
-      await api(`/asset-requests/${rejectTarget.id}/reject`, {
-        method: 'POST',
-        body: { reason, rejectionReason: reason },
-      });
-      setMsg(`Request ${rejectTarget.requestNumber} refused.`);
-      setRejectTarget(null);
-      setRejectReason('');
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setRejectBusy(false);
-    }
-  };
-
-  const openFulfill = (request) => {
-    setError('');
-    setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
-    setFulfillTarget({
-      id: request._id,
-      requestNumber: request.requestNumber || request._id,
-    });
-  };
-
-  const closeFulfill = () => {
-    if (fulfillBusy) return;
-    setFulfillTarget(null);
-    setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
-  };
-
-  const submitFulfill = async (e) => {
-    e?.preventDefault?.();
-    if (!fulfillTarget?.id) return;
-    const hireeName = String(fulfillForm.hireeName || '').trim();
-    const hireeContact = String(fulfillForm.hireeContact || '').trim();
-    const payableAmount = Number(fulfillForm.payableAmount);
-    if (!hireeName) {
-      setError('Enter the Name to assign this hiring request.');
-      return;
-    }
-    if (!hireeContact) {
-      setError('Enter the Number to assign this hiring request.');
-      return;
-    }
-    if (!Number.isFinite(payableAmount) || payableAmount < 0) {
-      setError('Enter a valid Amount.');
-      return;
-    }
-    setError('');
-    setFulfillBusy(true);
-    try {
-      await api(`/asset-requests/${fulfillTarget.id}/fulfill`, {
-        method: 'POST',
-        body: { hireeName, hireeContact, payableAmount },
-      });
-      setMsg(`Request ${fulfillTarget.requestNumber} assigned.`);
-      setFulfillTarget(null);
-      setFulfillForm({ hireeName: '', hireeContact: '', payableAmount: '' });
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setFulfillBusy(false);
-    }
-  };
-
   const cancelRequest = (request) => {
     setCancelReason('');
     setCancelConfirmTarget(request);
@@ -1845,6 +1965,315 @@ export default function AssetRequestsPage() {
       setError(err.message || 'Could not delete request');
     } finally {
       setDeleteBusy(false);
+    }
+  };
+
+  const openReject = (request, mode = 'reject') => {
+    setError('');
+    setRejectReason('');
+    setRejectTarget({
+      id: request._id,
+      requestNumber: request.requestNumber || request._id,
+      requestType: request.requestType,
+      mode: mode === 'cancel' ? 'cancel' : 'reject',
+    });
+  };
+
+  const closeReject = () => {
+    if (rejectBusy) return;
+    setRejectTarget(null);
+    setRejectReason('');
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget?.id) return;
+    const reason = String(rejectReason || '').trim();
+    if (!reason) {
+      setError('Enter a remark before refusing this request.');
+      return;
+    }
+    setError('');
+    setRejectBusy(true);
+    try {
+      if (rejectTarget.mode === 'cancel') {
+        await api(`/asset-requests/${rejectTarget.id}/cancel`, {
+          method: 'POST',
+          body: { reason, cancellationReason: reason },
+        });
+      } else {
+        await api(`/asset-requests/${rejectTarget.id}/reject`, {
+          method: 'POST',
+          body: { reason, rejectionReason: reason },
+        });
+      }
+      setMsg(`Request ${rejectTarget.requestNumber} refused.`);
+      setRejectTarget(null);
+      setRejectReason('');
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRejectBusy(false);
+    }
+  };
+
+  const openFulfill = (request) => {
+    if (fulfillBusy) return;
+    setError('');
+    setFulfillTarget({
+      id: request._id,
+      requestNumber: request.requestNumber || request._id,
+    });
+  };
+
+  const openProcess = (request) => {
+    if (processBusy) return;
+    const action = processActionForType(request.requestType);
+    if (!action) return;
+    setError('');
+    setProcessForm(emptyProcessForm(request));
+    setProcessTarget(request);
+  };
+
+  const closeProcess = () => {
+    if (processBusy) return;
+    setProcessTarget(null);
+    setProcessForm(emptyProcessForm());
+  };
+
+  const submitProcess = async (e) => {
+    e?.preventDefault?.();
+    if (!processTarget?._id || processBusy) return;
+    const action = processActionForType(processTarget.requestType);
+    if (!action) return;
+    setProcessBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      if (action.usesApprove) {
+        const processRemark = String(processForm.processRemark || '').trim();
+        if (!processRemark) {
+          setError('Remark is required.');
+          setProcessBusy(false);
+          return;
+        }
+        await api(`/asset-requests/${processTarget._id}/approve`, {
+          method: 'POST',
+          body: { processRemark },
+        });
+        setMsg(`Request ${processTarget.requestNumber || processTarget._id} added.`);
+      } else {
+        const type = String(processTarget.requestType || '').toUpperCase();
+        const body = { processRemark: String(processForm.processRemark || '').trim() };
+        if (type === 'REIMBURSEMENT') {
+          body.processReference = String(processForm.processReference || '').trim();
+          body.processAmount = processForm.processAmount;
+        } else if (type === 'TRAINING') {
+          body.scheduledAt = String(processForm.scheduledAt || '').trim();
+          body.scheduleVenue = String(processForm.scheduleVenue || '').trim();
+        } else if (type === 'LOGISTICS') {
+          body.issueNote = String(processForm.processRemark || '').trim();
+        } else if (type === 'REPAIR' || type === 'MAINTENANCE' || type === 'SERVICE') {
+          body.assigneeName = String(processForm.assigneeName || '').trim();
+          body.assigneeContact = String(processForm.assigneeContact || '').trim();
+        }
+        await api(`/asset-requests/${processTarget._id}/process`, {
+          method: 'POST',
+          body,
+        });
+        setMsg(
+          `Request ${processTarget.requestNumber || processTarget._id}: ${action.label}.`
+        );
+      }
+      setProcessTarget(null);
+      setProcessForm(emptyProcessForm());
+      await load();
+    } catch (err) {
+      setError(err.message || 'Could not process request');
+    } finally {
+      setProcessBusy(false);
+    }
+  };
+
+  const resetHiringUpdateForm = (request) => {
+    const current = String(request?.hiringProgress || '').toUpperCase();
+    const progress = ['IN_PROGRESS', 'AWAITING_INFO', 'ON_HOLD'].includes(current)
+      ? current
+      : 'IN_PROGRESS';
+    setHiringUpdateForm({
+      kind: 'STATUS',
+      progress,
+      message: '',
+    });
+  };
+
+  const submitHiringUpdate = async (e) => {
+    e?.preventDefault?.();
+    if (!hiringLogTarget?._id) return;
+    const kind = hiringUpdateForm.kind === 'CLARIFICATION' ? 'CLARIFICATION' : 'STATUS';
+    const progress = hiringUpdateForm.progress;
+    const message =
+      kind === 'STATUS'
+        ? `Status updated to ${hiringProgressLabel(progress)}.`
+        : String(hiringUpdateForm.message || '').trim();
+    if (kind === 'CLARIFICATION' && !message) {
+      setError('Enter a short clarification question.');
+      return;
+    }
+    setHiringUpdateBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      await api(`/asset-requests/${hiringLogTarget._id}/hiring-updates`, {
+        method: 'POST',
+        body: {
+          kind,
+          message,
+          progress: kind === 'STATUS' ? progress : undefined,
+        },
+      });
+      setMsg(
+        kind === 'STATUS'
+          ? `Status updated on ${hiringLogTarget.requestNumber || hiringLogTarget._id}.`
+          : `Clarification sent on ${hiringLogTarget.requestNumber || hiringLogTarget._id}.`
+      );
+      resetHiringUpdateForm(hiringLogTarget);
+      const res = await api(`/asset-requests/${hiringLogTarget._id}/hiring-updates`);
+      setHiringLogData(res.data || null);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setHiringUpdateBusy(false);
+    }
+  };
+
+  const openHiringLog = async (request) => {
+    setError('');
+    setHiringLogTarget(request);
+    setRequestInfoTab(hasOpenClarification(request) ? 'actions' : 'details');
+    setHiringReply('');
+    resetHiringUpdateForm(request);
+    setHiringDetailForm({
+      reason: request.reason || '',
+      hiringAddress: request.hiringAddress || '',
+      hiringCity: request.hiringCity || '',
+      hiringState: request.hiringState || '',
+      hiringPinCode: request.hiringPinCode || '',
+      engagementDateTime: request.engagementDateTime || '',
+    });
+    setHiringLogData({
+      status: request.status,
+      rejectionReason: request.rejectionReason || '',
+      cancellationReason: request.cancellationReason || '',
+      rejectedAt: request.rejectedAt || null,
+      cancelledAt: request.cancelledAt || null,
+      hiringProgress: request.hiringProgress || 'OPEN',
+      updates: Array.isArray(request.hiringUpdates) ? request.hiringUpdates : [],
+    });
+    setHiringLogLoading(true);
+    try {
+      const res = await api(`/asset-requests/${request._id}/hiring-updates`);
+      const payload = res?.data && typeof res.data === 'object' ? res.data : res;
+      if (payload && typeof payload === 'object') {
+        setHiringLogData({
+          status: payload.status || request.status,
+          rejectionReason: payload.rejectionReason || request.rejectionReason || '',
+          cancellationReason:
+            payload.cancellationReason || request.cancellationReason || '',
+          rejectedAt: payload.rejectedAt || request.rejectedAt || null,
+          cancelledAt: payload.cancelledAt || request.cancelledAt || null,
+          hiringProgress: payload.hiringProgress || request.hiringProgress || 'OPEN',
+          updates: Array.isArray(payload.updates)
+            ? payload.updates
+            : Array.isArray(request.hiringUpdates)
+              ? request.hiringUpdates
+              : [],
+        });
+      }
+    } catch (err) {
+      // Keep the panel open with row-local details if the log fetch fails.
+      setError(err.message || 'Could not refresh the request work log.');
+    } finally {
+      setHiringLogLoading(false);
+    }
+  };
+
+  const closeHiringLog = () => {
+    if (hiringLogBusy || hiringUpdateBusy) return;
+    setHiringLogTarget(null);
+    setHiringLogData(null);
+    setHiringReply('');
+    setRequestInfoTab('details');
+    resetHiringUpdateForm(null);
+  };
+
+  const submitHiringReply = async ({ withDetails = false } = {}) => {
+    if (!hiringLogTarget?._id) return;
+    const reply = String(hiringReply || '').trim();
+    if (!withDetails && !reply) {
+      setError('Enter a reply message.');
+      return;
+    }
+    setHiringLogBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      if (withDetails) {
+        await api(`/asset-requests/${hiringLogTarget._id}/hiring-details`, {
+          method: 'PATCH',
+          body: {
+            ...hiringDetailForm,
+            message: reply || undefined,
+          },
+        });
+        setMsg('Hiring details updated.');
+      } else {
+        await api(`/asset-requests/${hiringLogTarget._id}/hiring-updates`, {
+          method: 'POST',
+          body: { kind: 'REPLY', message: reply },
+        });
+        setMsg('Reply sent.');
+      }
+      const res = await api(`/asset-requests/${hiringLogTarget._id}/hiring-updates`);
+      setHiringLogData(res.data || null);
+      setHiringReply('');
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setHiringLogBusy(false);
+    }
+  };
+
+  const closeFulfill = () => {
+    if (fulfillBusy) return;
+    setFulfillTarget(null);
+  };
+
+  const handleAssignContactSaved = async (contact) => {
+    if (!fulfillTarget?.id) return;
+    const hireeName = String(contact?.name || '').trim();
+    const hireeContact = String(contact?.contact || contact?.mobile || '').trim();
+    if (!hireeName || !hireeContact) {
+      setError('Saved contact needs a name and phone number to assign this request.');
+      throw new Error('Saved contact needs a name and phone number to assign this request.');
+    }
+    setError('');
+    setFulfillBusy(true);
+    try {
+      await api(`/asset-requests/${fulfillTarget.id}/fulfill`, {
+        method: 'POST',
+        body: { hireeName, hireeContact },
+      });
+      setMsg(`Request ${fulfillTarget.requestNumber} assigned.`);
+      setFulfillTarget(null);
+      await load();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setFulfillBusy(false);
     }
   };
 
@@ -1919,71 +2348,276 @@ export default function AssetRequestsPage() {
         </div>
       )}
 
-      {fulfillTarget && (
-        <div className="card arq-jd-prompt" role="dialog" aria-labelledby="arq-fulfill-title">
-          <h3 id="arq-fulfill-title">Assign hiring request</h3>
-          <p className="muted" style={{ margin: '0 0 var(--space-3)' }}>
-            Enter Name, Number, and Amount for <strong>{fulfillTarget.requestNumber}</strong>, then
-            assign.
-          </p>
-          <form className="arq-grid" onSubmit={submitFulfill}>
-            <div className="field">
-              <label htmlFor="hiring-fulfill-name">Name *</label>
-              <input
-                id="hiring-fulfill-name"
-                required
-                autoComplete="off"
-                value={fulfillForm.hireeName}
-                onChange={(e) =>
-                  setFulfillForm((prev) => ({ ...prev, hireeName: e.target.value }))
-                }
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="hiring-fulfill-contact">Number *</label>
-              <input
-                id="hiring-fulfill-contact"
-                required
-                inputMode="tel"
-                autoComplete="off"
-                value={fulfillForm.hireeContact}
-                onChange={(e) =>
-                  setFulfillForm((prev) => ({ ...prev, hireeContact: e.target.value }))
-                }
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="hiring-fulfill-payable">Amount *</label>
-              <input
-                id="hiring-fulfill-payable"
-                required
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                autoComplete="off"
-                value={fulfillForm.payableAmount}
-                onChange={(e) =>
-                  setFulfillForm((prev) => ({ ...prev, payableAmount: e.target.value }))
-                }
-              />
-            </div>
-            <div className="arq-actions arq-span" style={{ marginTop: 'var(--space-2)' }}>
-              <button type="submit" className="btn" disabled={fulfillBusy}>
-                {fulfillBusy ? 'Assigning…' : 'Assign'}
-              </button>
+      <ContactDirectoryDrawer
+        open={Boolean(fulfillTarget)}
+        onClose={closeFulfill}
+        contact={null}
+        defaultCategory="Healthcare Worker"
+        canWrite
+        onSaved={handleAssignContactSaved}
+      />
+
+      <ModalShell
+        open={Boolean(processTarget)}
+        onClose={closeProcess}
+        title={
+          processTarget
+            ? `${processActionForType(processTarget.requestType)?.label || 'Process'} · ${
+                processTarget.requestNumber || processTarget._id
+              }`
+            : 'Process request'
+        }
+        titleId="arq-process-title"
+        panelClassName="modal-card modal-card--sm arq-process-panel"
+        closeOnOverlayClick={!processBusy}
+      >
+        {processTarget ? (
+          <form className="arq-process-form" onSubmit={submitProcess}>
+            <p className="muted mono-sm arq-process-form__lead">
+              {displayType(processTarget.requestType)}
+            </p>
+
+            {processTarget.requestType === 'MASTER_ADD' ? (
+              <>
+                <dl className="arq-request-details">
+                  <div className="arq-request-details__row">
+                    <dt>Module</dt>
+                    <dd>{processTarget.masterModule || '-'}</dd>
+                  </div>
+                  <div className="arq-request-details__row">
+                    <dt>Entity</dt>
+                    <dd>
+                      {getMasterEntity(processTarget.masterEntity)?.label ||
+                        processTarget.masterEntity ||
+                        '-'}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="field">
+                  <label htmlFor="arq-process-remark">Remark *</label>
+                  <textarea
+                    id="arq-process-remark"
+                    className="field-input"
+                    required
+                    rows={3}
+                    value={processForm.processRemark}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processRemark: e.target.value }))
+                    }
+                    placeholder="Confirm why this master record is being added"
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {processTarget.requestType === 'REIMBURSEMENT' ? (
+              <>
+                <div className="field">
+                  <label htmlFor="arq-process-ref">Payment reference *</label>
+                  <input
+                    id="arq-process-ref"
+                    className="field-input"
+                    required
+                    value={processForm.processReference}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processReference: e.target.value }))
+                    }
+                    placeholder="UTR / voucher / payment id"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-amount">Amount *</label>
+                  <input
+                    id="arq-process-amount"
+                    className="field-input"
+                    required
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={processForm.processAmount}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processAmount: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-remark">Remark</label>
+                  <input
+                    id="arq-process-remark"
+                    className="field-input"
+                    value={processForm.processRemark}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processRemark: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {processTarget.requestType === 'TRAINING' ? (
+              <>
+                <div className="field">
+                  <label htmlFor="arq-process-schedule">Schedule date/time *</label>
+                  <input
+                    id="arq-process-schedule"
+                    className="field-input"
+                    required
+                    type="datetime-local"
+                    value={processForm.scheduledAt}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, scheduledAt: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-venue">Venue / trainer *</label>
+                  <input
+                    id="arq-process-venue"
+                    className="field-input"
+                    required
+                    value={processForm.scheduleVenue}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, scheduleVenue: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-remark">Remark</label>
+                  <input
+                    id="arq-process-remark"
+                    className="field-input"
+                    value={processForm.processRemark}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processRemark: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {processTarget.requestType === 'LOGISTICS' ? (
+              <>
+                {(Array.isArray(processTarget.logisticsProducts)
+                  ? processTarget.logisticsProducts
+                  : []
+                ).length ? (
+                  <ul className="arq-process-lines muted mono-sm">
+                    {processTarget.logisticsProducts.map((item, idx) => (
+                      <li key={item.lineId || idx}>
+                        {item.productName || item.productType || 'Product'} ×{item.qty || 0}
+                        {item.uom ? ` ${item.uom}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted mono-sm">No product lines on this request.</p>
+                )}
+                <div className="field">
+                  <label htmlFor="arq-process-remark">Issue note *</label>
+                  <textarea
+                    id="arq-process-remark"
+                    className="field-input"
+                    required
+                    rows={3}
+                    value={processForm.processRemark}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processRemark: e.target.value }))
+                    }
+                    placeholder="Confirm issue / dispatch details"
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {['REPAIR', 'MAINTENANCE', 'SERVICE'].includes(processTarget.requestType) ? (
+              <>
+                <div className="field">
+                  <label htmlFor="arq-process-assignee">Assignee name *</label>
+                  <input
+                    id="arq-process-assignee"
+                    className="field-input"
+                    required
+                    value={processForm.assigneeName}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, assigneeName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-phone">Phone *</label>
+                  <input
+                    id="arq-process-phone"
+                    className="field-input"
+                    required
+                    inputMode="tel"
+                    value={processForm.assigneeContact}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, assigneeContact: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="arq-process-remark">Remark</label>
+                  <input
+                    id="arq-process-remark"
+                    className="field-input"
+                    value={processForm.processRemark}
+                    disabled={processBusy}
+                    onChange={(e) =>
+                      setProcessForm((prev) => ({ ...prev, processRemark: e.target.value }))
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {processTarget.requestType === 'OTHER' ? (
+              <div className="field">
+                <label htmlFor="arq-process-remark">Completion remark *</label>
+                <textarea
+                  id="arq-process-remark"
+                  className="field-input"
+                  required
+                  rows={3}
+                  value={processForm.processRemark}
+                  disabled={processBusy}
+                  onChange={(e) =>
+                    setProcessForm((prev) => ({ ...prev, processRemark: e.target.value }))
+                  }
+                  placeholder="How was this request completed?"
+                />
+              </div>
+            ) : null}
+
+            <div className="arq-process-form__actions">
               <button
                 type="button"
                 className="btn secondary"
-                disabled={fulfillBusy}
-                onClick={closeFulfill}
+                disabled={processBusy}
+                onClick={closeProcess}
               >
                 Cancel
               </button>
+              <button type="submit" className="btn" disabled={processBusy}>
+                {processBusy
+                  ? 'Saving…'
+                  : processActionForType(processTarget.requestType)?.label || 'Save'}
+              </button>
             </div>
           </form>
-        </div>
-      )}
+        ) : null}
+      </ModalShell>
 
       {canRequest && (
         <form className="card arq-form" onSubmit={submit} autoComplete="off" data-form-type="other">
@@ -3427,16 +4061,22 @@ export default function AssetRequestsPage() {
 
       <div className="card card--flush table-wrap arq-table-wrap">
         <table className="arq-table">
+          <colgroup>
+            <col className="arq-col-number" />
+            <col className="arq-col-type" />
+            <col className="arq-col-status" />
+            <col className="arq-col-requestor" />
+            <col className="arq-col-updated" />
+            <col className="arq-col-actions" />
+          </colgroup>
           <thead>
             <tr>
               <th>Request Number</th>
               <th>Type</th>
               <th>Status</th>
-              <th>Details</th>
-              <th>Asset</th>
               <th>Requestor</th>
-              <th>Remarks</th>
-              <th>Actions</th>
+              <th>Last Update</th>
+              <th className="arq-th-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -3447,59 +4087,44 @@ export default function AssetRequestsPage() {
               const mayCancel = userCanCancelRow(r);
               const mayMutateAttachments = userCanMutateAttachments(r);
               const mayAssignHiring = mayProcess;
+              const mayViewInfo = canViewRequest(user, can, r);
+              const hiringNeedsReply = hasOpenClarification(r);
               const isActive = r.status === 'REQUESTED' || r.status === 'APPROVED';
+              const mayRefuseApprove = mayApprove && r.status === 'REQUESTED';
+              const mayRefuseCancel = isActive && mayCancel;
+              const mayRefuse = mayRefuseApprove || mayRefuseCancel;
+              const refuseMode = mayRefuseApprove ? 'reject' : 'cancel';
               const isServiceRequest =
                 r.requestType === 'REPAIR' || r.requestType === 'MAINTENANCE';
               const overdue =
                 r.status === 'REQUESTED' && isApprovalOverdue(r.createdAt || r.requestedAt);
+              const displayStatus = requestDisplayStatus(r);
               return (
                 <tr key={r._id}>
                   <td className="mono-sm">{r.requestNumber}</td>
-                  <td>{displayType(r.requestType)}</td>
+                  <td className="arq-type">{displayType(r.requestType)}</td>
                   <td>
-                    <span className={`badge ${overdue ? 'tone-danger' : 'tone-neutral'}`}>
-                      {r.status}
+                    <span
+                      className={`badge tone-${
+                        overdue && displayStatus.label === 'Requested'
+                          ? 'danger'
+                          : displayStatus.tone
+                      }`}
+                    >
+                      {displayStatus.label}
                     </span>
-                    {overdue ? (
+                    {overdue && displayStatus.label === 'Requested' ? (
                       <span className="badge tone-danger" style={{ marginLeft: 6 }}>
                         Overdue
                       </span>
                     ) : null}
                   </td>
-                  <td className="muted mono-sm">{detailSummary(r) || '-'}</td>
-                  <td>
-                    <div className="arq-asset-cell">
-                      <strong>
-                        {r.assetName ||
-                          r.trainingTopic ||
-                          r.hireeName ||
-                          r.hiringName ||
-                          (r.requestType === 'MASTER_ADD'
-                            ? getMasterEntity(r.masterEntity)?.label || r.masterEntity
-                            : '-') ||
-                          '-'}
-                      </strong>
-                      {(() => {
-                        const meta =
-                          r.requestType === 'MASTER_ADD'
-                            ? [
-                                MASTER_MODULES.find((m) => m.id === r.masterModule)?.label ||
-                                  r.masterModule,
-                                r.createdMasterCode ? `Created ${r.createdMasterCode}` : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' · ')
-                            : r.assetCustody ||
-                              r.payeeName ||
-                              r.traineeName ||
-                              [r.hiringCity, r.hiringState].filter(Boolean).join(', ') ||
-                              '';
-                        return meta ? <div className="muted mono-sm">{meta}</div> : null;
-                      })()}
-                    </div>
+                  <td className="arq-requestor">
+                    {r.requestorId?.fullName || r.requestorId?.email || '-'}
                   </td>
-                  <td>{r.requestorId?.fullName || r.requestorId?.email || '-'}</td>
-                  <td className="arq-reason">{r.reason || '-'}</td>
+                  <td className="arq-updated mono-sm">
+                    {formatDateTime(requestLastUpdateAt(r))}
+                  </td>
                   <td className="arq-actions-cell">
                     <div className="arq-actions" role="group" aria-label="Request actions">
                       {r.requestType === 'HIRING' ? (
@@ -3522,37 +4147,34 @@ export default function AssetRequestsPage() {
                                 <UserCheck size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {mayApprove && r.status === 'REQUESTED' ? (
+                            {mayRefuse ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--reject"
                                 title="Refuse"
                                 aria-label="Refuse"
-                                onClick={() => openReject(r)}
+                                onClick={() => openReject(r, refuseMode)}
                               >
                                 <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {isActive && mayCancel ? (
+                            {mayViewInfo ? (
                               <button
                                 type="button"
-                                className="arq-icon-btn"
-                                title="Cancel"
-                                aria-label="Cancel"
-                                onClick={() => cancelRequest(r)}
+                                className={`arq-icon-btn${
+                                  hiringNeedsReply && isMine ? ' arq-icon-btn--attention' : ''
+                                }`}
+                                title={
+                                  r.status === 'REJECTED' || r.status === 'CANCELLED'
+                                    ? 'View request details'
+                                    : hiringNeedsReply
+                                      ? 'Request details — clarification waiting'
+                                      : 'Request details'
+                                }
+                                aria-label="Request details"
+                                onClick={() => openHiringLog(r)}
                               >
-                                <X size={16} strokeWidth={2.25} aria-hidden="true" />
-                              </button>
-                            ) : null}
-                            {canDeleteRequests ? (
-                              <button
-                                type="button"
-                                className="arq-icon-btn arq-icon-btn--danger"
-                                title={`Delete ${r.requestNumber || r._id}`}
-                                aria-label={`Delete ${r.requestNumber || r._id}`}
-                                onClick={() => requestDeleteRequest(r)}
-                              >
-                                <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
+                                <Info size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
                             {r.jdAttachment ? (
@@ -3584,6 +4206,17 @@ export default function AssetRequestsPage() {
                                 <Upload size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
+                            {canDeleteRequests ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--danger"
+                                title={`Delete ${r.requestNumber || r._id}`}
+                                aria-label={`Delete ${r.requestNumber || r._id}`}
+                                onClick={() => requestDeleteRequest(r)}
+                              >
+                                <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
                           </div>
                         </>
                       ) : (
@@ -3597,7 +4230,9 @@ export default function AssetRequestsPage() {
                             <span className="muted mono-sm">Awaiting approval</span>
                           ) : null}
                           <div className="arq-actions-primary">
-                            {mayApprove && r.status === 'REQUESTED' ? (
+                            {mayApprove &&
+                            r.status === 'REQUESTED' &&
+                            r.requestType !== 'MASTER_ADD' ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--approve"
@@ -3608,60 +4243,49 @@ export default function AssetRequestsPage() {
                                 <Check size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {mayApprove && r.status === 'REQUESTED' ? (
+                            {canShowProcessAction(r, { mayApprove, mayProcess })
+                              ? (() => {
+                                  const action = processActionForType(r.requestType);
+                                  const Icon = processActionIcon(r.requestType);
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="arq-icon-btn arq-icon-btn--approve"
+                                      title={action.label}
+                                      aria-label={action.label}
+                                      onClick={() => openProcess(r)}
+                                    >
+                                      <Icon size={16} strokeWidth={2.25} aria-hidden="true" />
+                                    </button>
+                                  );
+                                })()
+                              : null}
+                            {mayRefuse ? (
                               <button
                                 type="button"
                                 className="arq-icon-btn arq-icon-btn--reject"
                                 title="Refuse"
                                 aria-label="Refuse"
-                                onClick={() => openReject(r)}
+                                onClick={() => openReject(r, refuseMode)}
                               >
                                 <Ban size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
-                            {mayProcess && r.status === 'APPROVED' ? (
+                            {mayViewInfo ? (
                               <button
                                 type="button"
-                                className="arq-icon-btn arq-icon-btn--approve"
-                                title="Complete"
-                                aria-label="Complete"
-                                onClick={() => act(r._id, 'complete')}
+                                className={`arq-icon-btn${
+                                  hiringNeedsReply && isMine ? ' arq-icon-btn--attention' : ''
+                                }`}
+                                title={
+                                  hiringNeedsReply
+                                    ? 'Request details — clarification waiting'
+                                    : 'Request details'
+                                }
+                                aria-label="Request details"
+                                onClick={() => openHiringLog(r)}
                               >
-                                <CheckCheck size={16} strokeWidth={2.25} aria-hidden="true" />
-                              </button>
-                            ) : null}
-                            {isActive && mayCancel ? (
-                              <button
-                                type="button"
-                                className="arq-icon-btn"
-                                title="Cancel"
-                                aria-label="Cancel"
-                                onClick={() => cancelRequest(r)}
-                              >
-                                <X size={16} strokeWidth={2.25} aria-hidden="true" />
-                              </button>
-                            ) : null}
-                            {canDeleteRequests ? (
-                              <button
-                                type="button"
-                                className="arq-icon-btn arq-icon-btn--danger"
-                                title={`Delete ${r.requestNumber || r._id}`}
-                                aria-label={`Delete ${r.requestNumber || r._id}`}
-                                onClick={() => requestDeleteRequest(r)}
-                              >
-                                <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
-                              </button>
-                            ) : null}
-                            {isServiceRequest &&
-                            (r.productImage || r.productImageMetadata || r.productImagePath) ? (
-                              <button
-                                type="button"
-                                className="arq-icon-btn"
-                                title="View image"
-                                aria-label="View image"
-                                onClick={() => openProductImage(r)}
-                              >
-                                <Eye size={16} strokeWidth={2.25} aria-hidden="true" />
+                                <Info size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
                             {r.requestType === 'REIMBURSEMENT' && r.billAttachment ? (
@@ -3719,6 +4343,17 @@ export default function AssetRequestsPage() {
                                 <Copy size={16} strokeWidth={2.25} aria-hidden="true" />
                               </button>
                             ) : null}
+                            {canDeleteRequests ? (
+                              <button
+                                type="button"
+                                className="arq-icon-btn arq-icon-btn--danger"
+                                title={`Delete ${r.requestNumber || r._id}`}
+                                aria-label={`Delete ${r.requestNumber || r._id}`}
+                                onClick={() => requestDeleteRequest(r)}
+                              >
+                                <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
+                              </button>
+                            ) : null}
                           </div>
                         </>
                       )}
@@ -3729,7 +4364,7 @@ export default function AssetRequestsPage() {
             })}
             {!filteredRows.length && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={6} className="muted">
                   No requests yet.
                 </td>
               </tr>
@@ -3787,6 +4422,332 @@ export default function AssetRequestsPage() {
           </div>
         ) : null}
       </ConfirmDialog>
+      <ModalShell
+        open={Boolean(hiringLogTarget)}
+        onClose={closeHiringLog}
+        title={
+          hiringLogTarget
+            ? `${hiringLogTarget.requestNumber || hiringLogTarget._id}`
+            : 'Request'
+        }
+        titleId="arq-hiring-log-title"
+        panelClassName="modal-card modal-card--sm arq-hiring-panel"
+        closeOnOverlayClick={!hiringLogBusy && !hiringUpdateBusy}
+      >
+        {hiringLogTarget ? (
+          <>
+            {(() => {
+              const status = hiringLogData?.status || hiringLogTarget.status;
+              const refusalRemark =
+                status === 'REJECTED'
+                  ? String(
+                      hiringLogData?.rejectionReason || hiringLogTarget.rejectionReason || ''
+                    ).trim()
+                  : status === 'CANCELLED'
+                    ? String(
+                        hiringLogData?.cancellationReason ||
+                          hiringLogTarget.cancellationReason ||
+                          ''
+                      ).trim()
+                    : '';
+              const refusalWhen =
+                status === 'REJECTED'
+                  ? hiringLogData?.rejectedAt || hiringLogTarget.rejectedAt
+                  : status === 'CANCELLED'
+                    ? hiringLogData?.cancelledAt || hiringLogTarget.cancelledAt
+                    : null;
+              const mayReplyHiring =
+                isRequestOwner(user, hiringLogTarget) &&
+                canCreatorEditHiringDetails({
+                  ...hiringLogTarget,
+                  ...(hiringLogData || {}),
+                });
+              const mayPostHiring =
+                !mayReplyHiring &&
+                canProcessRequest(user, can, hiringLogTarget) &&
+                ['REQUESTED', 'APPROVED'].includes(hiringLogTarget.status);
+              const isClarification = hiringUpdateForm.kind === 'CLARIFICATION';
+              const onActions = requestInfoTab === 'actions';
+              const detailRows = requestDetailFields(hiringLogTarget);
+              const actionLog = buildRequestActionLog(hiringLogTarget, hiringLogData);
+              const infoStatus = requestDisplayStatus({
+                ...hiringLogTarget,
+                status,
+                hiringProgress:
+                  hiringLogData?.hiringProgress || hiringLogTarget.hiringProgress,
+              });
+              return (
+                <>
+                  <div className="arq-hiring-panel__header">
+                    <span className={`badge tone-${infoStatus.tone}`}>{infoStatus.label}</span>
+                    <span className="muted mono-sm arq-hiring-panel__type">
+                      {displayType(hiringLogTarget.requestType)}
+                    </span>
+                  </div>
+
+                  <div
+                    className="arq-hiring-mode arq-request-info-tabs"
+                    role="tablist"
+                    aria-label="Request info sections"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={!onActions}
+                      className={`arq-hiring-mode__btn${!onActions ? ' is-active' : ''}`}
+                      onClick={() => setRequestInfoTab('details')}
+                    >
+                      Request Details
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={onActions}
+                      className={`arq-hiring-mode__btn${onActions ? ' is-active' : ''}`}
+                      onClick={() => setRequestInfoTab('actions')}
+                    >
+                      Request Actions
+                    </button>
+                  </div>
+
+                  <div className="arq-hiring-panel__body">
+                    {!onActions ? (
+                      detailRows.length ? (
+                        <dl className="arq-request-details">
+                          {detailRows.map((row) => (
+                            <div className="arq-request-details__row" key={row.label}>
+                              <dt>{row.label}</dt>
+                              <dd>{row.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : (
+                        <div className="arq-request-details arq-request-details--empty muted">
+                          No detail fields recorded.
+                        </div>
+                      )
+                    ) : (
+                      <>
+                        {refusalRemark ? (
+                          <div className="arq-hiring-refusal">
+                            <div className="arq-hiring-log__meta">
+                              <strong>Refuse remark</strong>
+                              {refusalWhen ? (
+                                <span className="muted">
+                                  {formatDateTime(refusalWhen)}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p>{refusalRemark}</p>
+                          </div>
+                        ) : status === 'REJECTED' || status === 'CANCELLED' ? (
+                          <div className="arq-hiring-refusal arq-hiring-refusal--empty muted">
+                            No refuse remark recorded.
+                          </div>
+                        ) : null}
+
+                        <div className="arq-request-actions-block">
+                          <div className="arq-request-actions-block__label">Work log</div>
+                          {hiringLogLoading ? (
+                            <p className="muted">Loading updates…</p>
+                          ) : (
+                            <ul className="arq-hiring-log">
+                              {actionLog.length ? (
+                                actionLog.map((entry) => {
+                                  const kindKey = String(entry.kind || '').toUpperCase();
+                                  const kindLabel = hiringUpdateKindLabel(entry.kind);
+                                  const progressLabel = entry.progress
+                                    ? hiringProgressLabel(entry.progress)
+                                    : '';
+                                  const showProgress =
+                                    progressLabel &&
+                                    progressLabel.toLowerCase() !== kindLabel.toLowerCase();
+                                  const awaitingReply =
+                                    kindKey === 'CLARIFICATION' &&
+                                    entry.requiresReply &&
+                                    !entry.resolvedAt;
+                                  const toneClass =
+                                    kindKey === 'CLARIFICATION'
+                                      ? 'arq-hiring-log__item--ask'
+                                      : kindKey === 'REPLY'
+                                        ? 'arq-hiring-log__item--reply'
+                                        : kindKey === 'STATUS'
+                                          ? 'arq-hiring-log__item--status'
+                                          : '';
+                                  return (
+                                    <li
+                                      key={entry.id || `${entry.at}-${entry.kind}-${entry.message}`}
+                                      className={`arq-hiring-log__item ${toneClass}`.trim()}
+                                    >
+                                      <div className="arq-hiring-log__top">
+                                        <span className="arq-hiring-log__kind">{kindLabel}</span>
+                                        {showProgress ? (
+                                          <span className="arq-hiring-log__progress">
+                                            {progressLabel}
+                                          </span>
+                                        ) : null}
+                                        {awaitingReply ? (
+                                          <span className="arq-hiring-log__pending">
+                                            Needs reply
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <p className="arq-hiring-log__message">{entry.message}</p>
+                                      <div className="arq-hiring-log__meta">
+                                        <span>{entry.actorName || 'User'}</span>
+                                        {entry.at ? (
+                                          <span>{formatDateTime(entry.at)}</span>
+                                        ) : null}
+                                      </div>
+                                    </li>
+                                  );
+                                })
+                              ) : (
+                                <li className="arq-hiring-log__empty muted">No updates yet.</li>
+                              )}
+                            </ul>
+                          )}
+                        </div>
+
+                        {mayPostHiring ? (
+                          <form
+                            id="arq-hiring-update-form"
+                            className="arq-hiring-form"
+                            onSubmit={submitHiringUpdate}
+                          >
+                            <div
+                              className="arq-hiring-mode"
+                              role="tablist"
+                              aria-label="Hiring update action"
+                            >
+                              {HIRING_UPDATE_KIND_OPTIONS.map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  role="tab"
+                                  aria-selected={hiringUpdateForm.kind === opt.value}
+                                  className={`arq-hiring-mode__btn${
+                                    hiringUpdateForm.kind === opt.value ? ' is-active' : ''
+                                  }`}
+                                  disabled={hiringUpdateBusy || hiringLogBusy}
+                                  onClick={() =>
+                                    setHiringUpdateForm((prev) => ({
+                                      ...prev,
+                                      kind: opt.value,
+                                      message: opt.value === 'STATUS' ? '' : prev.message,
+                                    }))
+                                  }
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                            {!isClarification ? (
+                              <div className="field">
+                                <label htmlFor="hiring-update-progress">Progress</label>
+                                <select
+                                  id="hiring-update-progress"
+                                  className="field-input"
+                                  value={hiringUpdateForm.progress}
+                                  disabled={hiringUpdateBusy || hiringLogBusy}
+                                  onChange={(e) =>
+                                    setHiringUpdateForm((prev) => ({
+                                      ...prev,
+                                      progress: e.target.value,
+                                    }))
+                                  }
+                                >
+                                  {HIRING_PROGRESS_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : (
+                              <div className="field">
+                                <label htmlFor="hiring-update-message">Clarification</label>
+                                <input
+                                  id="hiring-update-message"
+                                  className="field-input"
+                                  required
+                                  maxLength={240}
+                                  value={hiringUpdateForm.message}
+                                  disabled={hiringUpdateBusy || hiringLogBusy}
+                                  onChange={(e) =>
+                                    setHiringUpdateForm((prev) => ({
+                                      ...prev,
+                                      message: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Ask a short question…"
+                                />
+                              </div>
+                            )}
+                          </form>
+                        ) : null}
+
+                        {mayReplyHiring ? (
+                          <div className="arq-hiring-reply">
+                            <div className="field">
+                              <label htmlFor="hiring-log-reply">Your reply</label>
+                              <input
+                                id="hiring-log-reply"
+                                className="field-input"
+                                value={hiringReply}
+                                disabled={hiringLogBusy}
+                                maxLength={240}
+                                onChange={(e) => setHiringReply(e.target.value)}
+                                placeholder="Answer in a short reply…"
+                              />
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="arq-hiring-panel__footer">
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      disabled={hiringLogBusy || hiringUpdateBusy}
+                      onClick={closeHiringLog}
+                    >
+                      Close
+                    </button>
+                    {onActions && mayReplyHiring ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={hiringLogBusy}
+                        onClick={() => submitHiringReply({ withDetails: false })}
+                      >
+                        {hiringLogBusy ? 'Sending…' : 'Send reply'}
+                      </button>
+                    ) : null}
+                    {onActions && mayPostHiring ? (
+                      <button
+                        type="submit"
+                        form="arq-hiring-update-form"
+                        className="btn"
+                        disabled={hiringUpdateBusy || hiringLogBusy}
+                      >
+                        {hiringUpdateBusy
+                          ? 'Saving…'
+                          : isClarification
+                            ? 'Ask clarification'
+                            : 'Update status'}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()}
+          </>
+        ) : null}
+      </ModalShell>
+
       <ConfirmDialog
         open={Boolean(rejectTarget)}
         title="Refuse request?"
@@ -3832,6 +4793,6 @@ export default function AssetRequestsPage() {
           if (!deleteBusy) setDeleteConfirmTarget(null);
         }}
       />
-    </PageShell>
+</PageShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { api, apiFetch } from '../../shared/api.js';
 import { MODULE } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -850,10 +851,12 @@ export default function DocumentMasterPage({ embedded = false } = {}) {
                         <td className="inv-col-actions" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            className="btn danger btn-compact"
+                            className="esign-icon-btn esign-icon-btn--danger"
+                            title={`Delete ${t.name || 'template'}`}
+                            aria-label={`Delete ${t.name || 'template'}`}
                             onClick={() => deleteTemplate(t._id, t.name)}
                           >
-                            Delete
+                            <Trash2 size={16} strokeWidth={2.25} aria-hidden="true" />
                           </button>
                         </td>
                       ) : null}

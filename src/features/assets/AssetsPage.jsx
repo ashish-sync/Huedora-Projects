@@ -734,45 +734,46 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     <>
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
-      {canWrite && formOpen ? (
-        <>
-          <div
-            className="cd-drawer-backdrop"
-            onClick={() => !busy && closeForm()}
-            aria-hidden="true"
-          />
-          <aside
-            className={`cd-drawer cd-drawer--wide${editingId ? ' cd-drawer--editing' : ''}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="asset-drawer-heading"
-            aria-label={editingId ? 'Edit asset' : 'Add asset'}
-          >
-            <div className="cd-drawer-header">
-              <div className="cd-drawer-header-copy">
-                <span className="cd-drawer-kicker">
-                  {editingId ? 'Edit Asset Record' : 'New Asset Record'}
-                </span>
-                <h3 id="asset-drawer-heading" className="cd-drawer-title">
-                  {editingId ? 'Edit asset' : 'Add asset'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="cd-drawer-close-btn"
+      {canWrite && formOpen
+        ? createPortal(
+            <>
+              <div
+                className="cd-drawer-backdrop"
                 onClick={() => !busy && closeForm()}
-                aria-label="Close drawer"
-                title="Close"
-                disabled={busy}
+                aria-hidden="true"
+              />
+              <aside
+                className={`cd-drawer cd-drawer--wide${editingId ? ' cd-drawer--editing' : ''}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="asset-drawer-heading"
+                aria-label={editingId ? 'Edit asset' : 'Add asset'}
               >
-                ×
-              </button>
-            </div>
-            <form ref={formRef} className="cd-drawer-form asset-drawer-form" onSubmit={save}>
-              <div className="cd-drawer-scroll">
-                <section className="cd-form-section is-open asset-drawer-section">
-                  <h4 className="cd-section-title">Asset details</h4>
-                  <div className="cd-form-grid">
+                <div className="cd-drawer-header">
+                  <div className="cd-drawer-header-copy">
+                    <span className="cd-drawer-kicker">
+                      {editingId ? 'Edit Asset Record' : 'New Asset Record'}
+                    </span>
+                    <h3 id="asset-drawer-heading" className="cd-drawer-title">
+                      {editingId ? 'Edit asset' : 'Add asset'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="cd-drawer-close-btn"
+                    onClick={() => !busy && closeForm()}
+                    aria-label="Close drawer"
+                    title="Close"
+                    disabled={busy}
+                  >
+                    ×
+                  </button>
+                </div>
+                <form ref={formRef} className="cd-drawer-form asset-drawer-form" onSubmit={save}>
+                  <div className="cd-drawer-scroll">
+                    <section className="cd-form-section is-open asset-drawer-section">
+                      <h4 className="cd-section-title">Asset details</h4>
+                      <div className="cd-form-grid">
                     <div className="field">
                       <label htmlFor="asset-product-type">{FIELD.ASSET_TYPE} *</label>
                       <AdaptiveSelect
@@ -1002,18 +1003,20 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
                   </div>
                 </section>
               </div>
-              <div className="cd-drawer-footer">
-                <Button variant="secondary" type="button" size="compact" disabled={busy} onClick={closeForm}>
-                  Cancel
-                </Button>
-                <Button variant="primary" type="submit" size="compact" loading={busy}>
-                  {editingId ? 'Save changes' : 'Add asset'}
-                </Button>
-              </div>
-            </form>
-          </aside>
-        </>
-      ) : null}
+                  <div className="cd-drawer-footer">
+                    <Button variant="secondary" type="button" size="compact" disabled={busy} onClick={closeForm}>
+                      Cancel
+                    </Button>
+                    <Button variant="primary" type="submit" size="compact" loading={busy}>
+                      {editingId ? 'Save changes' : 'Add asset'}
+                    </Button>
+                  </div>
+                </form>
+              </aside>
+            </>,
+            document.body,
+          )
+        : null}
 
       <MasterFilterShell
         actions={

@@ -148,11 +148,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
             ]
       }
       title={embedded ? undefined : MODULE.CONTACT_DIRECTORY}
-      description={
-        embedded
-          ? undefined
-          : 'Directory of healthcare workers, service providers, clients, and operational resources.'
-      }
+      description={undefined}
       actions={
         embedded || !can('agreements:write') ? null : (
           <Link className="btn" to="/document-one/new">
@@ -162,12 +158,7 @@ export default function ContactDirectoryPage({ embedded = false } = {}) {
       }
       kpis={embedded ? [] : [{ label: 'Total Contacts', value: listMeta.total || rows.length }]}
     >
-      {embedded && (
-        <MasterListHeader
-          title="Contact Directory"
-          subtitle="Directory of healthcare workers, service providers, clients, and operational resources."
-        />
-      )}
+      {embedded && <MasterListHeader title="Contact Directory" />}
       {error && (
         <FeedbackBanner variant="error">{error}</FeedbackBanner>
       )}

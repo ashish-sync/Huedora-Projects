@@ -81,8 +81,14 @@ export default function AdaptiveSelect({
   }, []);
 
   const selectStyles = useMemo(() => {
+    // Keep menu at least as wide as the control, but allow growth for long labels
+    // so options are not cramped against the edges.
     const menuWidthStyle = menuWidth
-      ? { width: menuWidth, minWidth: menuWidth, maxWidth: menuWidth }
+      ? {
+          minWidth: menuWidth,
+          width: 'max-content',
+          maxWidth: 'min(92vw, 22rem)',
+        }
       : {};
 
     const styleOverrides = style

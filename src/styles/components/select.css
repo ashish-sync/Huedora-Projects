@@ -375,7 +375,7 @@ select:not([multiple]):not([size]) option {
 
 .adaptive-select__menu {
   margin-top: 4px !important;
-  padding: var(--dropdown-menu-pad) !important;
+  padding: 6px !important;
   overflow: hidden;
   border: 1px solid var(--border-board, var(--border-strong)) !important;
   border-radius: var(--dropdown-radius) !important;
@@ -390,7 +390,8 @@ select:not([multiple]):not([size]) option {
 }
 
 .adaptive-select__option {
-  padding: var(--dropdown-option-pad-y) var(--dropdown-option-pad-x) !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
   margin: 2px 0 !important;
   border-radius: calc(var(--dropdown-radius) - 2px) !important;
   font-size: var(--text-body-sm-size, 0.8125rem) !important;
@@ -398,6 +399,7 @@ select:not([multiple]):not([size]) option {
   line-height: var(--dropdown-option-line-height) !important;
   color: var(--ink) !important;
   cursor: pointer !important;
+  white-space: nowrap !important;
   transition: var(--dropdown-transition) !important;
 }
 

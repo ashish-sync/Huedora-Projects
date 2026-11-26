@@ -9323,7 +9323,13 @@ body:has(.login-page),
   top: 0;
   right: 0;
   bottom: 0;
+  left: auto;
   width: min(580px, 96vw);
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  margin: 0;
   background: var(--bg-tier-3);
   z-index: 1050;
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.28);
@@ -9334,6 +9340,7 @@ body:has(.login-page),
   padding: 0 !important;
   border-radius: 0 !important;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 [data-theme="dark"] .cd-drawer {
@@ -9365,6 +9372,7 @@ body:has(.login-page),
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -18158,9 +18166,43 @@ button.vf-summary-card.is-clickable:hover,
   font-size: 0.84rem;
 }
 
+.arq-page .arq-bulk-bar {
+  margin: 0 0 10px;
+}
+
+.arq-page .arq-bulk-bar__count {
+  margin-right: 4px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
 .arq-page .arq-table {
   table-layout: fixed;
   width: 100%;
+}
+
+.arq-page .arq-table .arq-col-select {
+  width: 40px;
+}
+
+.arq-page .arq-table .arq-th-select,
+.arq-page .arq-table .arq-select-cell {
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.arq-page .arq-row-check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--color-brand-primary);
+}
+
+.arq-page .arq-table tr.is-selected td {
+  background: color-mix(in srgb, var(--color-brand-primary) 6%, var(--bg-tier-2, #fff));
 }
 
 .arq-page .arq-table .arq-col-number {
@@ -18172,7 +18214,7 @@ button.vf-summary-card.is-clickable:hover,
 }
 
 .arq-page .arq-table td.arq-type,
-.arq-page .arq-table th:nth-child(2) {
+.arq-page .arq-table th.arq-th-type {
   white-space: nowrap;
 }
 
@@ -18461,6 +18503,16 @@ button.vf-summary-card.is-clickable:hover,
 .arq-page .arq-filter-shell .master-filter-main {
   flex-wrap: wrap !important;
   row-gap: 8px !important;
+}
+
+.arq-page .arq-filter-shell .adaptive-select-host:has(.arq-filter-select) {
+  min-width: 168px;
+}
+
+.arq-page .arq-filter-shell .adaptive-select-host:has(.arq-filter-select--type) {
+  min-width: 220px;
+  flex: 1 1 220px;
+  max-width: 280px;
 }
 
 .arq-page .arq-filter-shell .arq-filter-date,

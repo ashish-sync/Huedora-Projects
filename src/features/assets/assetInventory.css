@@ -272,12 +272,14 @@ html[data-theme='dark'] .asset-inventory-shell .asset-form-card {
 /* Add / Edit asset drawer — Contact Directory form chrome (not asset-form-row page layout) */
 .asset-drawer-form .asset-drawer-section {
   margin: 0;
+  flex: 0 0 auto;
+  width: 100%;
 }
 
 .asset-drawer-form .cd-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 14px;
+  gap: 14px 16px;
   align-items: start;
   width: 100%;
 }

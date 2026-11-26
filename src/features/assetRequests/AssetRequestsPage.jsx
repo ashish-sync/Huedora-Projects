@@ -781,6 +781,9 @@ export default function AssetRequestsPage() {
   });
   const [hiringLogBusy, setHiringLogBusy] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkApproveOpen, setBulkApproveOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectBusy, setRejectBusy] = useState(false);
   const [generatedLinks, setGeneratedLinks] = useState({});
@@ -1213,6 +1216,60 @@ export default function AssetRequestsPage() {
     form.logisticsProducts.length > 0 &&
     form.logisticsProducts.every((item) => isLogisticsProductRowComplete(item));
   const filteredRows = rows;
+
+  useEffect(() => {
+    const visible = new Set(filteredRows.map((r) => r._id));
+    setSelectedIds((prev) => prev.filter((id) => visible.has(id)));
+  }, [filteredRows]);
+
+  const selectedRows = useMemo(
+    () => filteredRows.filter((r) => selectedIds.includes(r._id)),
+    [filteredRows, selectedIds]
+  );
+
+  const rowRefuseMode = (r) => {
+    const mayApprove = userCanApproveRow(r);
+    const mayCancel = userCanCancelRow(r);
+    const isActive = r.status === 'REQUESTED' || r.status === 'APPROVED';
+    if (mayApprove && r.status === 'REQUESTED') return 'reject';
+    if (isActive && mayCancel) return 'cancel';
+    return '';
+  };
+
+  const rowCanBulkApprove = (r) =>
+    Boolean(
+      userCanApproveRow(r) &&
+        r.status === 'REQUESTED' &&
+        r.requestType !== 'MASTER_ADD' &&
+        r.requestType !== 'HIRING'
+    );
+
+  const bulkApproveRows = selectedRows.filter(rowCanBulkApprove);
+  const bulkRefuseRows = selectedRows
+    .map((r) => {
+      const mode = rowRefuseMode(r);
+      return mode
+        ? { id: r._id, requestNumber: r.requestNumber || r._id, mode, requestType: r.requestType }
+        : null;
+    })
+    .filter(Boolean);
+  const showBulkBar = selectedIds.length > 0;
+  const canBulkApprove = bulkApproveRows.length > 0 && bulkApproveRows.length === selectedRows.length;
+  const canBulkRefuse = bulkRefuseRows.length > 0 && bulkRefuseRows.length === selectedRows.length;
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredRows.length && filteredRows.length > 0) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(filteredRows.map((r) => r._id));
+  };
+
+  const clearSelection = () => setSelectedIds([]);
 
   const buildListQuery = ({ forExport = false } = {}) => {
     const params = new URLSearchParams();
@@ -2061,10 +2118,32 @@ export default function AssetRequestsPage() {
     setError('');
     setRejectReason('');
     setRejectTarget({
+      bulk: false,
       id: request._id,
       requestNumber: request.requestNumber || request._id,
       requestType: request.requestType,
       mode: mode === 'cancel' ? 'cancel' : 'reject',
+      items: [
+        {
+          id: request._id,
+          requestNumber: request.requestNumber || request._id,
+          mode: mode === 'cancel' ? 'cancel' : 'reject',
+        },
+      ],
+    });
+  };
+
+  const openBulkRefuse = () => {
+    if (!canBulkRefuse || bulkBusy || rejectBusy) return;
+    setError('');
+    setRejectReason('');
+    setRejectTarget({
+      bulk: true,
+      items: bulkRefuseRows,
+      requestNumber:
+        bulkRefuseRows.length === 1
+          ? bulkRefuseRows[0].requestNumber
+          : `${bulkRefuseRows.length} requests`,
     });
   };
 
@@ -2075,7 +2154,8 @@ export default function AssetRequestsPage() {
   };
 
   const submitReject = async () => {
-    if (!rejectTarget?.id) return;
+    const items = Array.isArray(rejectTarget?.items) ? rejectTarget.items : [];
+    if (!items.length) return;
     const reason = String(rejectReason || '').trim();
     if (!reason) {
       setError('Enter a remark before refusing this request.');
@@ -2083,26 +2163,73 @@ export default function AssetRequestsPage() {
     }
     setError('');
     setRejectBusy(true);
+    const failed = [];
     try {
-      if (rejectTarget.mode === 'cancel') {
-        await api(`/asset-requests/${rejectTarget.id}/cancel`, {
-          method: 'POST',
-          body: { reason, cancellationReason: reason },
-        });
-      } else {
-        await api(`/asset-requests/${rejectTarget.id}/reject`, {
-          method: 'POST',
-          body: { reason, rejectionReason: reason },
-        });
+      for (const item of items) {
+        try {
+          if (item.mode === 'cancel') {
+            await api(`/asset-requests/${item.id}/cancel`, {
+              method: 'POST',
+              body: { reason, cancellationReason: reason },
+            });
+          } else {
+            await api(`/asset-requests/${item.id}/reject`, {
+              method: 'POST',
+              body: { reason, rejectionReason: reason },
+            });
+          }
+        } catch (err) {
+          failed.push(`${item.requestNumber}: ${err.message || 'failed'}`);
+        }
       }
-      setMsg(`Request ${rejectTarget.requestNumber} refused.`);
+      if (failed.length) {
+        setError(`Refuse finished with errors. ${failed.join(' · ')}`);
+      } else if (items.length === 1) {
+        setMsg(`Request ${items[0].requestNumber} refused.`);
+      } else {
+        setMsg(`${items.length} requests refused.`);
+      }
       setRejectTarget(null);
       setRejectReason('');
+      clearSelection();
       await load();
     } catch (err) {
       setError(err.message);
     } finally {
       setRejectBusy(false);
+    }
+  };
+
+  const submitBulkApprove = async () => {
+    if (!canBulkApprove || bulkBusy) return;
+    setBulkBusy(true);
+    setError('');
+    setMsg('');
+    const failed = [];
+    try {
+      for (const row of bulkApproveRows) {
+        try {
+          await api(`/asset-requests/${row._id}/approve`, { method: 'POST', body: {} });
+        } catch (err) {
+          failed.push(`${row.requestNumber || row._id}: ${err.message || 'failed'}`);
+        }
+      }
+      if (failed.length) {
+        setError(`Approve finished with errors. ${failed.join(' · ')}`);
+      } else {
+        setMsg(
+          bulkApproveRows.length === 1
+            ? `Request ${bulkApproveRows[0].requestNumber || bulkApproveRows[0]._id} approved.`
+            : `${bulkApproveRows.length} requests approved.`
+        );
+      }
+      setBulkApproveOpen(false);
+      clearSelection();
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBulkBusy(false);
     }
   };
 
@@ -4319,7 +4446,8 @@ export default function AssetRequestsPage() {
           }}
         />
         <AdaptiveSelect
-          className="filter-select"
+          className="filter-select arq-filter-select arq-filter-select--type"
+          threshold={1}
           aria-label="Request type"
           value={typeFilter}
           onChange={(e) => {
@@ -4335,7 +4463,8 @@ export default function AssetRequestsPage() {
           ))}
         </AdaptiveSelect>
         <AdaptiveSelect
-          className="filter-select"
+          className="filter-select arq-filter-select"
+          threshold={1}
           aria-label="Status"
           value={statusFilter}
           onChange={(e) => {
@@ -4369,9 +4498,45 @@ export default function AssetRequestsPage() {
         />
       </MasterFilterShell>
 
+      {showBulkBar ? (
+        <div className="master-bulk-bar arq-bulk-bar" role="region" aria-label="Bulk request actions">
+          <span className="arq-bulk-bar__count">{selectedIds.length} selected</span>
+          <Button
+            variant="primary"
+            size="compact"
+            disabled={bulkBusy || rejectBusy || !canBulkApprove}
+            title={
+              canBulkApprove
+                ? `Approve ${bulkApproveRows.length} selected request(s)`
+                : 'Select only Requested rows you can approve (not Hiring or Master One)'
+            }
+            onClick={() => setBulkApproveOpen(true)}
+          >
+            Approve
+          </Button>
+          <Button
+            variant="danger"
+            size="compact"
+            disabled={bulkBusy || rejectBusy || !canBulkRefuse}
+            title={
+              canBulkRefuse
+                ? `Refuse ${bulkRefuseRows.length} selected request(s)`
+                : 'Select only rows you can refuse'
+            }
+            onClick={openBulkRefuse}
+          >
+            Refuse
+          </Button>
+          <Button variant="secondary" size="compact" disabled={bulkBusy || rejectBusy} onClick={clearSelection}>
+            Clear
+          </Button>
+        </div>
+      ) : null}
+
       <section className="inv-catalog card card--flush table-wrap arq-table-wrap">
         <table className="inv-table arq-table">
           <colgroup>
+            <col className="arq-col-select" />
             <col className="arq-col-number" />
             <col className="arq-col-type" />
             <col className="arq-col-status" />
@@ -4381,8 +4546,17 @@ export default function AssetRequestsPage() {
           </colgroup>
           <thead>
             <tr>
+              <th className="arq-th-select">
+                <input
+                  type="checkbox"
+                  className="arq-row-check"
+                  checked={filteredRows.length > 0 && selectedIds.length === filteredRows.length}
+                  onChange={toggleSelectAll}
+                  aria-label="Select all requests on this page"
+                />
+              </th>
               <th>Request Number</th>
-              <th>Type</th>
+              <th className="arq-th-type">Type</th>
               <th>Status</th>
               <th>Requestor</th>
               <th>Last Update</th>
@@ -4410,7 +4584,16 @@ export default function AssetRequestsPage() {
                 r.status === 'REQUESTED' && isApprovalOverdue(r.createdAt || r.requestedAt);
               const displayStatus = requestDisplayStatus(r);
               return (
-                <tr key={r._id}>
+                <tr key={r._id} className={selectedIds.includes(r._id) ? 'is-selected' : undefined}>
+                  <td className="arq-select-cell">
+                    <input
+                      type="checkbox"
+                      className="arq-row-check"
+                      checked={selectedIds.includes(r._id)}
+                      onChange={() => toggleSelect(r._id)}
+                      aria-label={`Select request ${r.requestNumber || r._id}`}
+                    />
+                  </td>
                   <td className="mono-sm">{r.requestNumber}</td>
                   <td className="arq-type">{displayType(r.requestType)}</td>
                   <td>
@@ -4674,7 +4857,7 @@ export default function AssetRequestsPage() {
             })}
             {!filteredRows.length && (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <div className="inv-empty arq-empty">
                     {listLoading ? (
                       <p className="muted" style={{ margin: 0 }}>
@@ -5090,11 +5273,30 @@ export default function AssetRequestsPage() {
       </ModalShell>
 
       <ConfirmDialog
+        open={bulkApproveOpen}
+        title="Approve selected requests?"
+        message={
+          canBulkApprove
+            ? `Approve ${bulkApproveRows.length} request${bulkApproveRows.length === 1 ? '' : 's'}? They will move to Accepted.`
+            : ''
+        }
+        confirmLabel={bulkBusy ? 'Approving…' : 'Approve'}
+        cancelLabel="Cancel"
+        confirmVariant="primary"
+        loading={bulkBusy}
+        onConfirm={submitBulkApprove}
+        onCancel={() => {
+          if (!bulkBusy) setBulkApproveOpen(false);
+        }}
+      />
+      <ConfirmDialog
         open={Boolean(rejectTarget)}
-        title="Refuse request?"
+        title={rejectTarget?.bulk ? 'Refuse selected requests?' : 'Refuse request?'}
         message={
           rejectTarget
-            ? `Refuse request ${rejectTarget.requestNumber}? A remark is required.`
+            ? rejectTarget.bulk
+              ? `Refuse ${rejectTarget.items.length} request${rejectTarget.items.length === 1 ? '' : 's'}? A remark is required.`
+              : `Refuse request ${rejectTarget.requestNumber}? A remark is required.`
             : ''
         }
         confirmLabel={rejectBusy ? 'Refusing…' : 'Refuse'}

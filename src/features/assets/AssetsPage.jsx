@@ -394,7 +394,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setFormOpen(true);
     setError('');
     setMsg('');
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
   };
 
   const openEdit = (row) => {
@@ -426,7 +425,6 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     setFormOpen(true);
     setError('');
     setMsg('');
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
 
     // Existing rows: Agreement Signed only if Actions already has a document.
     api(`/assets/${assetId}/documents`)
@@ -736,269 +734,286 @@ export default function AssetsPage({ embedded = false, productType = '' } = {}) 
     <>
       {(error || msg) && <FeedbackAlerts error={error} message={msg} />}
 
-      {canWrite && formOpen && (
-        <form ref={formRef} className="form-card asset-form-card" onSubmit={save}>
-          <div className="asset-form-header-row">
-            <div className="asset-form-page-header">
-              <h3>{editingId ? 'Edit asset' : 'Add asset'}</h3>
-              <p className="meta-text muted">
-                Register product, serial, purchase details, ownership, status, and custody.
-              </p>
-            </div>
-            <div className="asset-form-header-actions">
-              <button className="btn secondary btn-compact" type="button" onClick={closeForm}>
-                Close
+      {canWrite && formOpen ? (
+        <>
+          <div
+            className="cd-drawer-backdrop"
+            onClick={() => !busy && closeForm()}
+            aria-hidden="true"
+          />
+          <aside
+            className={`cd-drawer cd-drawer--wide${editingId ? ' cd-drawer--editing' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-drawer-heading"
+            aria-label={editingId ? 'Edit asset' : 'Add asset'}
+          >
+            <div className="cd-drawer-header">
+              <div className="cd-drawer-header-copy">
+                <span className="cd-drawer-kicker">
+                  {editingId ? 'Edit Asset Record' : 'New Asset Record'}
+                </span>
+                <h3 id="asset-drawer-heading" className="cd-drawer-title">
+                  {editingId ? 'Edit asset' : 'Add asset'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="cd-drawer-close-btn"
+                onClick={() => !busy && closeForm()}
+                aria-label="Close drawer"
+                title="Close"
+                disabled={busy}
+              >
+                ×
               </button>
             </div>
-          </div>
-
-          <div className="asset-form-body">
-            <section className="asset-form-section">
-              <div className="asset-form-row asset-form-row-3">
-                <div className="field">
-                  <label htmlFor="asset-product-type">{FIELD.ASSET_TYPE} *</label>
-                  <AdaptiveSelect
-                    id="asset-product-type"
-                    required
-                    value={assetClassificationLabel(form.productType || scopedType || 'Medical Device')}
-                    onChange={(e) => {
-                      const classification = e.target.value;
-                      const categoryKind = assetCategoryKind(
-                        form.productType,
-                        form.productCategoryKind
-                      );
-                      setForm({
-                        ...form,
-                        productType: productTypeFromCascade(classification, categoryKind),
-                        productCategoryKind: categoryKind,
-                        productId: '',
-                        name: '',
-                        cost: '',
-                      });
-                    }}
-                    disabled={Boolean(scopedType)}
-                  >
-                    {PRODUCT_CLASSIFICATIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-product-category">Product Category *</label>
-                  <AdaptiveSelect
-                    id="asset-product-category"
-                    required
-                    value={assetCategoryKind(form.productType, form.productCategoryKind)}
-                    onChange={(e) => {
-                      const categoryKind = e.target.value;
-                      const classification = assetClassificationLabel(
-                        form.productType || scopedType || 'Medical Device'
-                      );
-                      setForm({
-                        ...form,
-                        productType: productTypeFromCascade(classification, categoryKind),
-                        productCategoryKind: categoryKind,
-                        productId: '',
-                        name: '',
-                        cost: '',
-                      });
-                    }}
-                    disabled={Boolean(scopedType)}
-                  >
-                    {PRODUCT_CATEGORY_KINDS.map((c) => (
-                      <option key={c} value={c}>
-                        {categoryOptionLabel(c)}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-product-id">Display Name *</label>
-                  <AdaptiveSelect
-                    id="asset-product-id"
-                    required={!editingId}
-                    value={form.productId}
-                    onChange={(e) => pickProduct(e.target.value)}
-                  >
-                    <option value="">Select Display Name from Product Master…</option>
-                    {productsForType.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {productOptionLabel(p)}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-              </div>
-              <div className="asset-form-row asset-form-row-3">
-                <div className="field">
-                  <label htmlFor="asset-purchase">{FIELD.PURCHASE_MONTH} *</label>
-                  <input
-                    id="asset-purchase"
-                    required
-                    type="month"
-                    value={form.purchaseMonth}
-                    onChange={(e) => setForm({ ...form, purchaseMonth: e.target.value })}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-cost">{FIELD.ASSET_VALUE} *</label>
-                  <input
-                    id="asset-cost"
-                    required
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.cost}
-                    onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-ownership">{FIELD.OWNERSHIP_TYPE} *</label>
-                  <AdaptiveSelect
-                    id="asset-ownership"
-                    required
-                    value={form.assetType}
-                    onChange={(e) => setForm({ ...form, assetType: e.target.value })}
-                  >
-                    <option value="">Select ownership type</option>
-                    {OWNERSHIP_TYPE_OPTIONS.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-              </div>
-              <div className="asset-form-row asset-form-row-3">
-                <div className="field">
-                  <label htmlFor="asset-status">{FIELD.ASSET_STATUS} *</label>
-                  <AdaptiveSelect
-                    id="asset-status"
-                    required
-                    value={form.agreementStatus}
-                    onChange={(e) => setForm({ ...form, agreementStatus: e.target.value })}
-                  >
-                    {ASSET_STATUS_OPTIONS.filter(
-                      (o) => o !== 'Agreement Signed' || editHasAgreementDoc
-                    ).map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                  {!editHasAgreementDoc && (
-                    <p className="field-hint muted">
-                      Set Agreement Signed from Actions after uploading a document.
-                    </p>
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="asset-custody">{FIELD.ASSET_CUSTODY} *</label>
-                  <AdaptiveSelect
-                    id="asset-custody"
-                    required
-                    value={form.custody}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setForm((f) => {
-                        const patch = { ...f, custody: next };
-                        if (!custodyRequiresCustodianContact(next)) {
-                          patch.contactId = '';
-                        } else if (f.contactId) {
-                          const current = contacts.find((c) => c._id === f.contactId);
-                          if (!current || !contactMatchesCustody(current, next)) {
-                            patch.contactId = '';
-                          }
-                        }
-                        return patch;
-                      });
-                    }}
-                  >
-                    <option value="">Select custody</option>
-                    {ASSET_CUSTODY_OPTIONS.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </AdaptiveSelect>
-                </div>
-                {custodyRequiresCustodianContact(form.custody) ? (
-                  <div className="field">
-                    <label htmlFor="asset-custodian-contact">{FIELD.CUSTODIAN_CONTACT} *</label>
-                    <AdaptiveSelect
-                      id="asset-custodian-contact"
-                      required
-                      value={form.contactId}
-                      onChange={(e) => setForm({ ...form, contactId: e.target.value })}
+            <form ref={formRef} className="cd-drawer-form asset-drawer-form" onSubmit={save}>
+              <div className="cd-drawer-scroll">
+                <section className="cd-form-section is-open asset-drawer-section">
+                  <h4 className="cd-section-title">Asset details</h4>
+                  <div className="cd-form-grid">
+                    <div className="field">
+                      <label htmlFor="asset-product-type">{FIELD.ASSET_TYPE} *</label>
+                      <AdaptiveSelect
+                        id="asset-product-type"
+                        threshold={1}
+                        required
+                        value={assetClassificationLabel(form.productType || scopedType || 'Medical Device')}
+                        onChange={(e) => {
+                          const classification = e.target.value;
+                          const categoryKind = assetCategoryKind(
+                            form.productType,
+                            form.productCategoryKind
+                          );
+                          setForm({
+                            ...form,
+                            productType: productTypeFromCascade(classification, categoryKind),
+                            productCategoryKind: categoryKind,
+                            productId: '',
+                            name: '',
+                            cost: '',
+                          });
+                        }}
+                        disabled={Boolean(scopedType)}
+                      >
+                        {PRODUCT_CLASSIFICATIONS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="asset-product-category">Product Category *</label>
+                      <AdaptiveSelect
+                        id="asset-product-category"
+                        threshold={1}
+                        required
+                        value={assetCategoryKind(form.productType, form.productCategoryKind)}
+                        onChange={(e) => {
+                          const categoryKind = e.target.value;
+                          const classification = assetClassificationLabel(
+                            form.productType || scopedType || 'Medical Device'
+                          );
+                          setForm({
+                            ...form,
+                            productType: productTypeFromCascade(classification, categoryKind),
+                            productCategoryKind: categoryKind,
+                            productId: '',
+                            name: '',
+                            cost: '',
+                          });
+                        }}
+                        disabled={Boolean(scopedType)}
+                      >
+                        {PRODUCT_CATEGORY_KINDS.map((c) => (
+                          <option key={c} value={c}>
+                            {categoryOptionLabel(c)}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field cd-span-2">
+                      <label htmlFor="asset-product-id">Display Name *</label>
+                      <AdaptiveSelect
+                        id="asset-product-id"
+                        threshold={1}
+                        required={!editingId}
+                        value={form.productId}
+                        onChange={(e) => pickProduct(e.target.value)}
+                        placeholder="Select Display Name from Product Master…"
+                      >
+                        <option value="">Select Display Name from Product Master…</option>
+                        {productsForType.map((p) => (
+                          <option key={p._id} value={p._id}>
+                            {productOptionLabel(p)}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="asset-purchase">{FIELD.PURCHASE_MONTH} *</label>
+                      <input
+                        id="asset-purchase"
+                        required
+                        type="month"
+                        value={form.purchaseMonth}
+                        onChange={(e) => setForm({ ...form, purchaseMonth: e.target.value })}
+                      />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="asset-cost">{FIELD.ASSET_VALUE} *</label>
+                      <input
+                        id="asset-cost"
+                        required
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.cost}
+                        onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="asset-ownership">{FIELD.OWNERSHIP_TYPE} *</label>
+                      <AdaptiveSelect
+                        id="asset-ownership"
+                        threshold={1}
+                        required
+                        value={form.assetType}
+                        onChange={(e) => setForm({ ...form, assetType: e.target.value })}
+                        placeholder="Select ownership type"
+                      >
+                        <option value="">Select ownership type</option>
+                        {OWNERSHIP_TYPE_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="asset-status">{FIELD.ASSET_STATUS} *</label>
+                      <AdaptiveSelect
+                        id="asset-status"
+                        threshold={1}
+                        required
+                        value={form.agreementStatus}
+                        onChange={(e) => setForm({ ...form, agreementStatus: e.target.value })}
+                      >
+                        {ASSET_STATUS_OPTIONS.filter(
+                          (o) => o !== 'Agreement Signed' || editHasAgreementDoc
+                        ).map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                      {!editHasAgreementDoc && (
+                        <p className="field-hint muted">
+                          Set Agreement Signed from Actions after uploading a document.
+                        </p>
+                      )}
+                    </div>
+                    <div className="field">
+                      <label htmlFor="asset-custody">{FIELD.ASSET_CUSTODY} *</label>
+                      <AdaptiveSelect
+                        id="asset-custody"
+                        threshold={1}
+                        required
+                        value={form.custody}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setForm((f) => {
+                            const patch = { ...f, custody: next };
+                            if (!custodyRequiresCustodianContact(next)) {
+                              patch.contactId = '';
+                            } else if (f.contactId) {
+                              const current = contacts.find((c) => c._id === f.contactId);
+                              if (!current || !contactMatchesCustody(current, next)) {
+                                patch.contactId = '';
+                              }
+                            }
+                            return patch;
+                          });
+                        }}
+                        placeholder="Select custody"
+                      >
+                        <option value="">Select custody</option>
+                        {ASSET_CUSTODY_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </AdaptiveSelect>
+                    </div>
+                    {custodyRequiresCustodianContact(form.custody) ? (
+                      <div className="field">
+                        <label htmlFor="asset-custodian-contact">{FIELD.CUSTODIAN_CONTACT} *</label>
+                        <AdaptiveSelect
+                          id="asset-custodian-contact"
+                          threshold={1}
+                          required
+                          value={form.contactId}
+                          onChange={(e) => setForm({ ...form, contactId: e.target.value })}
+                          placeholder="Select Contact Directory record"
+                        >
+                          <option value="">Select Contact Directory record</option>
+                          {contacts
+                            .filter((contact) => contactMatchesCustody(contact, form.custody))
+                            .map((contact) => (
+                              <option key={contact._id} value={contact._id}>
+                                {contact.name}
+                                {contact.contact
+                                  ? ` · ${contact.contact}`
+                                  : contact.email
+                                    ? ` · ${contact.email}`
+                                    : ''}
+                                {contact.resourceType ? ` · ${contact.resourceType}` : ''}
+                              </option>
+                            ))}
+                        </AdaptiveSelect>
+                      </div>
+                    ) : null}
+                    <div
+                      className={`field${custodyRequiresCustodianContact(form.custody) ? ' cd-span-2' : ''}`}
                     >
-                      <option value="">Select Contact Directory record</option>
-                      {contacts
-                        .filter((contact) => contactMatchesCustody(contact, form.custody))
-                        .map((contact) => (
-                        <option key={contact._id} value={contact._id}>
-                          {contact.name}
-                          {contact.contact ? ` · ${contact.contact}` : contact.email ? ` · ${contact.email}` : ''}
-                          {contact.resourceType ? ` · ${contact.resourceType}` : ''}
-                        </option>
-                      ))}
-                    </AdaptiveSelect>
+                      <label htmlFor="asset-serial">Serial Number *</label>
+                      <input
+                        id="asset-serial"
+                        required
+                        value={form.serialNumber}
+                        onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+                        placeholder="SN-1001"
+                      />
+                    </div>
+                    {form.productId && selectedProductImages.length > 0 ? (
+                      <div className="field cd-span-2 asset-product-images-field">
+                        <label>Product reference images</label>
+                        <ProductImagesPanel
+                          product={selectedProduct}
+                          compact
+                          title="Product reference images"
+                          hint="From Product Master: for visual identification."
+                        />
+                      </div>
+                    ) : null}
                   </div>
-                ) : (
-                  <div className="field">
-                    <label htmlFor="asset-serial">Serial Number *</label>
-                    <input
-                      id="asset-serial"
-                      required
-                      value={form.serialNumber}
-                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                      placeholder="SN-1001"
-                    />
-                  </div>
-                )}
+                </section>
               </div>
-              {custodyRequiresCustodianContact(form.custody) ? (
-                <div className="asset-form-row asset-form-row-1">
-                  <div className="field">
-                    <label htmlFor="asset-serial">Serial Number *</label>
-                    <input
-                      id="asset-serial"
-                      required
-                      value={form.serialNumber}
-                      onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
-                      placeholder="SN-1001"
-                    />
-                  </div>
-                </div>
-              ) : null}
-              {form.productId && selectedProductImages.length > 0 ? (
-                <div className="asset-form-row asset-form-row-1">
-                  <div className="field asset-product-images-field">
-                    <label>Product reference images</label>
-                    <ProductImagesPanel
-                      product={selectedProduct}
-                      compact
-                      title="Product reference images"
-                      hint="From Product Master: for visual identification."
-                    />
-                  </div>
-                </div>
-              ) : null}
-            </section>
-          </div>
-
-          <div className="form-actions">
-            <Button variant="primary" type="submit" loading={busy}>
-              {editingId ? 'Save changes' : 'Add asset'}
-            </Button>
-            <Button variant="secondary" type="button" disabled={busy} onClick={closeForm}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      )}
+              <div className="cd-drawer-footer">
+                <Button variant="secondary" type="button" size="compact" disabled={busy} onClick={closeForm}>
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" size="compact" loading={busy}>
+                  {editingId ? 'Save changes' : 'Add asset'}
+                </Button>
+              </div>
+            </form>
+          </aside>
+        </>
+      ) : null}
 
       <MasterFilterShell
         actions={

@@ -9346,6 +9346,10 @@ body:has(.login-page),
   border-left: 3px solid var(--color-brand-primary);
 }
 
+.cd-drawer--wide {
+  width: min(840px, 96vw);
+}
+
 @keyframes cdFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -18185,7 +18189,8 @@ button.vf-summary-card.is-clickable:hover,
 }
 
 .arq-page .arq-table .arq-col-actions {
-  width: 176px;
+  width: 220px;
+  min-width: 200px;
 }
 
 .arq-page .arq-table td.arq-updated {
@@ -18443,6 +18448,59 @@ button.vf-summary-card.is-clickable:hover,
 
 .arq-process-form__lead {
   margin: 0;
+}
+
+.arq-process-form__error {
+  margin: 0;
+}
+
+.arq-page .arq-filter-shell {
+  margin-bottom: 0;
+}
+
+.arq-page .arq-filter-shell .master-filter-main {
+  flex-wrap: wrap !important;
+  row-gap: 8px !important;
+}
+
+.arq-page .arq-filter-shell .arq-filter-date,
+.arq-page .arq-filter-shell .arq-filter-date .date-input,
+.arq-page .arq-filter-shell .arq-filter-date .date-input-control {
+  width: 148px;
+  min-width: 148px;
+  max-width: 160px;
+}
+
+.arq-page .arq-filter-shell .arq-filter-date .date-input-display {
+  min-height: 36px;
+  height: 36px;
+}
+
+.arq-page .arq-filter-shell .master-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.arq-page .inv-catalog {
+  margin-top: 0;
+}
+
+.arq-page .arq-empty {
+  padding: 40px 20px;
+  gap: 10px;
+}
+
+.arq-page .arq-empty .muted {
+  margin: 0;
+  max-width: 360px;
+}
+
+.arq-page .arq-actions-primary {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  min-height: 36px;
 }
 
 .arq-process-form .field {

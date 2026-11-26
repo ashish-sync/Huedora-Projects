@@ -16,10 +16,11 @@ import {
   Upload,
   UserCheck,
 } from 'lucide-react';
-import FeedbackBanner from '../../components/ui/FeedbackBanner.jsx';
+import FeedbackBanner, { FeedbackAlerts } from '../../components/ui/FeedbackBanner.jsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, apiFetch, downloadExcel } from '../../shared/api.js';
 import { fetchContactsList } from '../../shared/contactsApi.js';
+import { useDebouncedValue } from '../../shared/useDebouncedValue.js';
 import { productAssetName, productOptionLabel } from '../../shared/productMasterLabel.js';
 import { FIELD, MODULE, ACTION } from '../../shared/labels.js';
 import { useAuth } from '../../shared/auth.jsx';
@@ -33,6 +34,9 @@ import FilePicker from '../../components/ui/FilePicker.jsx';
 import LocationCascade from '../../components/ui/LocationCascade.jsx';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import DateInput from '../../components/ui/DateInput.jsx';
+import Button from '../../components/ui/Button.jsx';
+import MasterFilterShell from '../../components/masters/MasterFilterShell.jsx';
+import MasterSearchField from '../../components/masters/MasterSearchField.jsx';
 import { usePicklistOptions } from '../../shared/usePicklistOptions.js';
 import { FALLBACK_PRODUCT } from '../logistics/logisticsTxnShared.jsx';
 import { resolveProductType } from '../../shared/productTypes.js';
@@ -40,6 +44,7 @@ import { categoriesForType } from '../../shared/productMasterConfig.js';
 import { isApprovalOverdue } from '../../shared/approvalTiming.js';
 import { formatDateTime } from '../../shared/dateFormat.js';
 import '../notifications/notifications.css';
+import '../assets/assetInventory.css';
 import { approvalRuleLabel } from './requestApproval.js';
 import {
   canCancelRequest,
@@ -55,12 +60,13 @@ import {
   hiringProgressLabel,
   hiringUpdateKindLabel,
   requestDisplayStatus,
-  HIRING_PROGRESS_OPTIONS,
+  hiringProgressOptionsForType,
   HIRING_UPDATE_KIND_OPTIONS,
 } from './hiringUpdates.js';
 import {
   canShowProcessAction,
   emptyProcessForm,
+  logisticsUnfulfilledLineIds,
   processActionForType,
 } from './requestProcessActions.js';
 import {
@@ -123,6 +129,14 @@ const NON_DEVICE_TRAINING_NAMES = [
   'All Other Training',
 ];
 const TRAINING_MODES = ['Virtual', 'Physical'];
+const REQUEST_STATUS_FILTERS = [
+  { value: '', label: 'All statuses' },
+  { value: 'REQUESTED', label: 'Requested' },
+  { value: 'APPROVED', label: 'Accepted / Approved' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'REJECTED', label: 'Refused' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+];
 
 function isNonDeviceRefresher(trainingType) {
   const value = String(trainingType || '').trim().toLowerCase();
@@ -531,6 +545,19 @@ function requestDetailFields(r) {
     if (r.engagementDateTime) {
       pushDetail(rows, 'Engagement', new Date(r.engagementDateTime).toLocaleString());
     }
+    const budgetMin =
+      r.budgetMin != null && r.budgetMin !== '' && Number.isFinite(Number(r.budgetMin))
+        ? Number(r.budgetMin)
+        : null;
+    const budgetMax =
+      r.budgetMax != null && r.budgetMax !== '' && Number.isFinite(Number(r.budgetMax))
+        ? Number(r.budgetMax)
+        : null;
+    if (budgetMin != null || budgetMax != null) {
+      const minLabel = budgetMin != null ? budgetMin.toLocaleString('en-IN') : '—';
+      const maxLabel = budgetMax != null ? budgetMax.toLocaleString('en-IN') : '—';
+      pushDetail(rows, 'Budget range', `INR ${minLabel} – ${maxLabel}`);
+    }
     if (r.hireeName) {
       pushDetail(
         rows,
@@ -705,11 +732,20 @@ export default function AssetRequestsPage() {
   const [logisticsDivisionOptions, setLogisticsDivisionOptions] = useState([]);
   const [logisticsProgramsLoading, setLogisticsProgramsLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [formOpen, setFormOpen] = useState(false);
+  const formRef = useRef(null);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [typeFilter, setTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 300);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [appliedDateFrom, setAppliedDateFrom] = useState('');
+  const [appliedDateTo, setAppliedDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [listMeta, setListMeta] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
@@ -786,6 +822,9 @@ export default function AssetRequestsPage() {
   useEffect(() => {
     const requestType = String(searchParams.get('type') || '').toUpperCase();
     const campRecordId = String(searchParams.get('campRecordId') || '').trim();
+    if (requestType === 'HIRING' && campRecordId) {
+      setFormOpen(true);
+    }
     if (requestType !== 'HIRING' || !campRecordId) {
       if (!campRecordId) setLinkedCamp(null);
       return undefined;
@@ -1175,10 +1214,23 @@ export default function AssetRequestsPage() {
     form.logisticsProducts.every((item) => isLogisticsProductRowComplete(item));
   const filteredRows = rows;
 
+  const buildListQuery = ({ forExport = false } = {}) => {
+    const params = new URLSearchParams();
+    if (!forExport) {
+      params.set('page', String(page));
+      params.set('limit', String(limit));
+    }
+    if (typeFilter) params.set('requestType', typeFilter);
+    if (statusFilter) params.set('status', statusFilter);
+    if (String(debouncedQ || '').trim()) params.set('q', String(debouncedQ).trim());
+    if (appliedDateFrom) params.set('dateFrom', appliedDateFrom);
+    if (appliedDateTo) params.set('dateTo', appliedDateTo);
+    return params;
+  };
+
   const load = () => {
     setListLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (typeFilter) params.set('requestType', typeFilter);
+    const params = buildListQuery();
     api(`/asset-requests?${params}`)
       .then((r) => {
         setRows(r.data || []);
@@ -1188,10 +1240,45 @@ export default function AssetRequestsPage() {
       .finally(() => setListLoading(false));
   };
 
+  const openCreate = () => {
+    if (!canRequest) return;
+    setError('');
+    setMsg('');
+    setFormOpen(true);
+  };
+
+  const closeCreate = () => {
+    if (busy) return;
+    setFormOpen(false);
+  };
+
+  const setCreatedFrom = (value) => {
+    setDateFrom(value);
+    setAppliedDateFrom(value);
+    setPage(1);
+  };
+
+  const setCreatedTo = (value) => {
+    setDateTo(value);
+    setAppliedDateTo(value);
+    setPage(1);
+  };
+
+  const clearListFilters = () => {
+    setQ('');
+    setTypeFilter('');
+    setStatusFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setAppliedDateFrom('');
+    setAppliedDateTo('');
+    setPage(1);
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit, typeFilter]);
+  }, [page, limit, typeFilter, statusFilter, debouncedQ, appliedDateFrom, appliedDateTo]);
 
   useEffect(() => {
     // Keep the list route light — load picklist data only when a create type needs it.
@@ -1782,6 +1869,7 @@ export default function AssetRequestsPage() {
       if (reimbursementBillRef.current) reimbursementBillRef.current.value = '';
       if (otherAttachmentRef.current) otherAttachmentRef.current.value = '';
       setMsg(savedMessage);
+      setFormOpen(false);
       if (form.requestType === 'HIRING' && created?.data?._id) {
         setJdFile(null);
         if (jdFileRef.current) jdFileRef.current.value = '';
@@ -2098,6 +2186,19 @@ export default function AssetRequestsPage() {
             setProcessBusy(false);
             return;
           }
+          if (!body.issueNote) {
+            setError('Issue note is required.');
+            setProcessBusy(false);
+            return;
+          }
+          const remaining = logisticsUnfulfilledLineIds(processTarget);
+          if (remaining.length) {
+            setError(
+              `Issue all product lines in Movement One before completing this request (${remaining.length} line(s) still pending).`
+            );
+            setProcessBusy(false);
+            return;
+          }
         } else if (type === 'REPAIR' || type === 'MAINTENANCE' || type === 'SERVICE') {
           body.assigneeName = String(processForm.assigneeName || '').trim();
           body.assigneeContact = String(processForm.assigneeContact || '').trim();
@@ -2157,14 +2258,23 @@ export default function AssetRequestsPage() {
           progress: kind === 'STATUS' ? progress : undefined,
         },
       });
+      const closedAsHcwExists = kind === 'STATUS' && progress === 'HCW_EXISTS';
       setMsg(
-        kind === 'STATUS'
-          ? `Status updated on ${hiringLogTarget.requestNumber || hiringLogTarget._id}.`
-          : `Clarification sent on ${hiringLogTarget.requestNumber || hiringLogTarget._id}.`
+        closedAsHcwExists
+          ? `Request ${hiringLogTarget.requestNumber || hiringLogTarget._id} closed — HCW Exists.`
+          : kind === 'STATUS'
+            ? `Status updated on ${hiringLogTarget.requestNumber || hiringLogTarget._id}.`
+            : `Clarification sent on ${hiringLogTarget.requestNumber || hiringLogTarget._id}.`
       );
       resetHiringUpdateForm(hiringLogTarget);
       const res = await api(`/asset-requests/${hiringLogTarget._id}/hiring-updates`);
-      setHiringLogData(res.data || null);
+      const payload = res?.data && typeof res.data === 'object' ? res.data : res;
+      setHiringLogData(payload || null);
+      if (payload?.status) {
+        setHiringLogTarget((prev) =>
+          prev ? { ...prev, status: payload.status, hiringProgress: payload.hiringProgress } : prev
+        );
+      }
       await load();
     } catch (err) {
       setError(err.message);
@@ -2306,7 +2416,12 @@ export default function AssetRequestsPage() {
     setError('');
     setExportBusy(true);
     try {
-      await downloadExcel('/asset-requests/export', 'Request_One.xlsx');
+      const params = buildListQuery({ forExport: true });
+      const qs = params.toString();
+      await downloadExcel(
+        `/asset-requests/export${qs ? `?${qs}` : ''}`,
+        'Request_One.xlsx'
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -2315,25 +2430,37 @@ export default function AssetRequestsPage() {
   };
 
   const pending = rows.filter((r) => r.status === 'REQUESTED').length;
+  const headerActions = (
+    <div className="inv-header-actions">
+      <button
+        className="btn btn-compact"
+        type="button"
+        disabled={exportBusy}
+        onClick={downloadMaster}
+      >
+        {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD}
+      </button>
+      {canRequest ? (
+        <button className="btn btn-compact" type="button" onClick={openCreate}>
+          + New request
+        </button>
+      ) : null}
+    </div>
+  );
 
   return (
     <PageShell
       className="arq-page"
       breadcrumbs={[{ to: '/', label: MODULE.HOME }, { label: MODULE.ASSET_REQUESTS }]}
       title={MODULE.ASSET_REQUESTS}
-      description="Submit Repair & Service, Goods Issuance, Training, Finance One, Hiring, Master One, and Other requests."
-      actions={
-        <button className="btn secondary" type="button" disabled={exportBusy} onClick={downloadMaster}>
-          {exportBusy ? ACTION.DOWNLOADING : ACTION.DOWNLOAD_EXCEL}
-        </button>
-      }
+      description="Raise and manage Repair & Service, Goods Issuance, Training, Finance, Hiring, Master One, and Other requests."
+      actions={headerActions}
       kpis={[
-        { label: 'Total requests', value: rows.length },
-        { label: 'Pending approval', value: pending },
+        { label: 'Total requests', value: listMeta.total || 0 },
+        { label: 'Pending (this page)', value: pending },
       ]}
     >
-      {error && <p className="error">{error}</p>}
-      {msg && <FeedbackBanner variant="success">{msg}</FeedbackBanner>}
+      <FeedbackAlerts error={error} message={msg} />
 
       {jdUploadPrompt && (
         <div className="card arq-jd-prompt" role="dialog" aria-labelledby="arq-jd-prompt-title">
@@ -2397,10 +2524,11 @@ export default function AssetRequestsPage() {
         closeOnOverlayClick={!processBusy}
       >
         {processTarget ? (
-          <form className="arq-process-form" onSubmit={submitProcess}>
+          <form className="arq-process-form" onSubmit={submitProcess} noValidate>
             <p className="muted mono-sm arq-process-form__lead">
               {displayType(processTarget.requestType)}
             </p>
+            {error ? <p className="error arq-process-form__error">{error}</p> : null}
 
             {processTarget.requestType === 'MASTER_ADD' ? (
               <>
@@ -2551,6 +2679,16 @@ export default function AssetRequestsPage() {
                 ) : (
                   <p className="muted mono-sm">No product lines on this request.</p>
                 )}
+                {(() => {
+                  const pendingLines = logisticsUnfulfilledLineIds(processTarget);
+                  if (!pendingLines.length) return null;
+                  return (
+                    <p className="error mono-sm">
+                      Product lines must be issued in Movement One before you can click Issue here (
+                      {pendingLines.length} pending).
+                    </p>
+                  );
+                })()}
                 <div className="field">
                   <label htmlFor="arq-process-delivery-mode">Mode of delivery *</label>
                   <select
@@ -2693,9 +2831,46 @@ export default function AssetRequestsPage() {
         ) : null}
       </ModalShell>
 
-      {canRequest && (
-        <form className="card arq-form" onSubmit={submit} autoComplete="off" data-form-type="other">
-          <h3>New request</h3>
+      {canRequest && formOpen ? (
+        <>
+          <div
+            className="cd-drawer-backdrop"
+            onClick={() => !busy && closeCreate()}
+            aria-hidden="true"
+          />
+          <aside
+            className="cd-drawer cd-drawer--wide"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="arq-drawer-heading"
+            aria-label="New request"
+          >
+            <div className="cd-drawer-header">
+              <div className="cd-drawer-header-copy">
+                <span className="cd-drawer-kicker">New Request Record</span>
+                <h3 id="arq-drawer-heading" className="cd-drawer-title">
+                  New request
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="cd-drawer-close-btn"
+                onClick={() => !busy && closeCreate()}
+                aria-label="Close drawer"
+                title="Close"
+                disabled={busy}
+              >
+                ×
+              </button>
+            </div>
+            <form
+              ref={formRef}
+              className="cd-drawer-form arq-form"
+              onSubmit={submit}
+              autoComplete="off"
+              data-form-type="other"
+            >
+              <div className="cd-drawer-scroll">
           {(linkedCamp || linkedCampLoading) && form.requestType === 'HIRING' ? (
             <div className="arq-camp-link-banner">
               {linkedCampLoading ? (
@@ -4101,40 +4276,101 @@ export default function AssetRequestsPage() {
                 : 'Custodian details auto-fill when a unique asset match is found.'}
             </p>
           ) : null}
-          <button className="btn" type="submit" disabled={busy}>
-            {busy ? 'Submitting…' : 'Submit request'}
-          </button>
-        </form>
-      )}
+              </div>
+              <div className="cd-drawer-footer">
+                <Button type="button" variant="secondary" size="compact" disabled={busy} onClick={closeCreate}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="compact" disabled={busy}>
+                  {busy ? 'Submitting…' : 'Submit request'}
+                </Button>
+              </div>
+            </form>
+          </aside>
+        </>
+      ) : null}
 
-      <div className="arq-type-tabs" role="tablist" aria-label="Filter by request type">
-        <button
-          type="button"
-          className={`arq-type-tab${!typeFilter ? ' is-active' : ''}`}
-          onClick={() => {
-            setTypeFilter('');
+      <MasterFilterShell
+        className="arq-filter-shell"
+        actions={
+          <>
+            <Button type="button" variant="secondary" size="compact" onClick={clearListFilters}>
+              Clear
+            </Button>
+            <Button type="button" variant="secondary" size="compact" onClick={load}>
+              Refresh
+            </Button>
+          </>
+        }
+      >
+        <MasterSearchField
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search request #, remarks, AWB…"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              setPage(1);
+              load();
+            }
+          }}
+        />
+        <AdaptiveSelect
+          className="filter-select"
+          aria-label="Request type"
+          value={typeFilter}
+          onChange={(e) => {
+            setTypeFilter(e.target.value);
             setPage(1);
           }}
         >
-          All
-        </button>
-        {REQUEST_TYPES.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            className={`arq-type-tab${typeFilter === t.value ? ' is-active' : ''}`}
-            onClick={() => {
-              setTypeFilter(t.value);
-              setPage(1);
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+          <option value="">All types</option>
+          {REQUEST_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </AdaptiveSelect>
+        <AdaptiveSelect
+          className="filter-select"
+          aria-label="Status"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+        >
+          {REQUEST_STATUS_FILTERS.map((s) => (
+            <option key={s.value || 'all'} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </AdaptiveSelect>
+        <DateInput
+          className="arq-filter-date"
+          hideLabel
+          aria-label="Created from"
+          placeholder="From date"
+          value={dateFrom}
+          max={dateTo || undefined}
+          onChange={setCreatedFrom}
+        />
+        <DateInput
+          className="arq-filter-date"
+          hideLabel
+          aria-label="Created to"
+          placeholder="To date"
+          value={dateTo}
+          min={dateFrom || undefined}
+          onChange={setCreatedTo}
+        />
+      </MasterFilterShell>
 
-      <div className="card card--flush table-wrap arq-table-wrap">
-        <table className="arq-table">
+      <section className="inv-catalog card card--flush table-wrap arq-table-wrap">
+        <table className="inv-table arq-table">
           <colgroup>
             <col className="arq-col-number" />
             <col className="arq-col-type" />
@@ -4438,8 +4674,36 @@ export default function AssetRequestsPage() {
             })}
             {!filteredRows.length && (
               <tr>
-                <td colSpan={6} className="muted">
-                  No requests yet.
+                <td colSpan={6}>
+                  <div className="inv-empty arq-empty">
+                    {listLoading ? (
+                      <p className="muted" style={{ margin: 0 }}>
+                        Loading requests…
+                      </p>
+                    ) : (
+                      <>
+                        <strong>
+                          {q || typeFilter || statusFilter || appliedDateFrom || appliedDateTo
+                            ? 'No matching requests'
+                            : 'No requests yet'}
+                        </strong>
+                        <p className="muted">
+                          {q || typeFilter || statusFilter || appliedDateFrom || appliedDateTo
+                            ? 'Try clearing filters or adjusting the date range.'
+                            : 'Raise a request to start tracking work in Request One.'}
+                        </p>
+                        {q || typeFilter || statusFilter || appliedDateFrom || appliedDateTo ? (
+                          <Button type="button" variant="secondary" size="compact" onClick={clearListFilters}>
+                            Clear filters
+                          </Button>
+                        ) : canRequest ? (
+                          <Button type="button" variant="primary" onClick={openCreate}>
+                            + New request
+                          </Button>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             )}
@@ -4457,7 +4721,7 @@ export default function AssetRequestsPage() {
             setPage(1);
           }}
         />
-      </div>
+      </section>
       <ConfirmDialog
         open={Boolean(cancelConfirmTarget)}
         title="Cancel Asset Request"
@@ -4539,7 +4803,10 @@ export default function AssetRequestsPage() {
               const mayPostHiring =
                 !mayReplyHiring &&
                 canProcessRequest(user, can, hiringLogTarget) &&
-                ['REQUESTED', 'APPROVED'].includes(hiringLogTarget.status);
+                ['REQUESTED', 'APPROVED'].includes(status);
+              const progressOptions = hiringProgressOptionsForType(
+                hiringLogTarget.requestType
+              );
               const isClarification = hiringUpdateForm.kind === 'CLARIFICATION';
               const onActions = requestInfoTab === 'actions';
               const detailRows = requestDetailFields(hiringLogTarget);
@@ -4731,7 +4998,7 @@ export default function AssetRequestsPage() {
                                     }))
                                   }
                                 >
-                                  {HIRING_PROGRESS_OPTIONS.map((opt) => (
+                                  {progressOptions.map((opt) => (
                                     <option key={opt.value} value={opt.value}>
                                       {opt.label}
                                     </option>

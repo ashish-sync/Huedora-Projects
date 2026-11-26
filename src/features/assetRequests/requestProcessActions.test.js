@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   canShowProcessAction,
   emptyProcessForm,
+  logisticsUnfulfilledLineIds,
+  normalizeProcessTransportMode,
   processActionForType,
 } from './requestProcessActions.js';
 
@@ -58,5 +60,27 @@ describe('requestProcessActions', () => {
     });
     expect(form.transportMode).toBe('Courier');
     expect(form.awbNumber).toBe('');
+  });
+
+  it('normalizes legacy delivery modes for the Issue select', () => {
+    expect(normalizeProcessTransportMode('Blue Dart')).toBe('Courier');
+    expect(emptyProcessForm({ transportMode: 'Hand-carry' }).transportMode).toBe(
+      'Hand Delivery'
+    );
+  });
+
+  it('lists unfulfilled goods issue line ids', () => {
+    expect(
+      logisticsUnfulfilledLineIds({
+        logisticsProducts: [{ lineId: 'a' }, { lineId: 'b' }],
+        fulfilledLineIds: ['a'],
+      })
+    ).toEqual(['b']);
+    expect(
+      logisticsUnfulfilledLineIds({
+        logisticsProducts: [{ lineId: 'a' }],
+        fulfilledLineIds: ['a'],
+      })
+    ).toEqual([]);
   });
 });

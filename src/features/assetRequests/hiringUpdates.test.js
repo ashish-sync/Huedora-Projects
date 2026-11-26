@@ -3,6 +3,7 @@ import {
   canCreatorEditHiringDetails,
   hasOpenClarification,
   hiringProgressLabel,
+  hiringProgressOptionsForType,
   hiringUpdateKindLabel,
   requestDisplayStatus,
 } from './hiringUpdates.js';
@@ -12,8 +13,23 @@ describe('hiringUpdates client helpers', () => {
     expect(hiringProgressLabel('OPEN')).toBe('Requested');
     expect(hiringProgressLabel('IN_PROGRESS')).toBe('Accepted');
     expect(hiringProgressLabel('AWAITING_INFO')).toBe('Clarification');
+    expect(hiringProgressLabel('HCW_EXISTS')).toBe('HCW Exists');
     expect(hiringProgressLabel('FULFILLED')).toBe('Assigned');
     expect(hiringUpdateKindLabel('CLARIFICATION')).toBe('Clarification');
+  });
+
+  it('adds HCW Exists only for Hiring Update status options', () => {
+    expect(hiringProgressOptionsForType('TRAINING').map((o) => o.value)).toEqual([
+      'IN_PROGRESS',
+      'AWAITING_INFO',
+      'ON_HOLD',
+    ]);
+    expect(hiringProgressOptionsForType('HIRING').map((o) => o.value)).toEqual([
+      'IN_PROGRESS',
+      'AWAITING_INFO',
+      'ON_HOLD',
+      'HCW_EXISTS',
+    ]);
   });
 
   it('shows a single display status for hiring and other rows', () => {
@@ -45,6 +61,13 @@ describe('hiringUpdates client helpers', () => {
         hiringProgress: 'FULFILLED',
       }).label
     ).toBe('Assigned');
+    expect(
+      requestDisplayStatus({
+        requestType: 'HIRING',
+        status: 'COMPLETED',
+        hiringProgress: 'HCW_EXISTS',
+      }).label
+    ).toBe('HCW Exists');
     expect(
       requestDisplayStatus({
         requestType: 'OTHER',

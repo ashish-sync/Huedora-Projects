@@ -1,11 +1,17 @@
 /** Client helpers for Request One progress + update log (all request types). */
 
-/** Progress values a processor can set from Update status. */
+/** Progress values a processor can set from Update status (non-closing). */
 export const HIRING_PROGRESS_OPTIONS = [
   { value: 'IN_PROGRESS', label: 'Accepted' },
   { value: 'AWAITING_INFO', label: 'Clarification' },
   { value: 'ON_HOLD', label: 'On hold' },
 ];
+
+/** Hiring-only close option via Update status (alongside Assign). */
+export const HIRING_CLOSE_PROGRESS_OPTION = {
+  value: 'HCW_EXISTS',
+  label: 'HCW Exists',
+};
 
 const HIRING_PROGRESS_LABELS = {
   OPEN: 'Requested',
@@ -13,6 +19,7 @@ const HIRING_PROGRESS_LABELS = {
   AWAITING_INFO: 'Clarification',
   SHORTLISTING: 'Accepted',
   ON_HOLD: 'On hold',
+  HCW_EXISTS: 'HCW Exists',
   FULFILLED: 'Assigned',
 };
 
@@ -20,6 +27,13 @@ export const HIRING_UPDATE_KIND_OPTIONS = [
   { value: 'STATUS', label: 'Update status' },
   { value: 'CLARIFICATION', label: 'Ask clarification' },
 ];
+
+export function hiringProgressOptionsForType(requestType) {
+  if (String(requestType || '').toUpperCase() === 'HIRING') {
+    return [...HIRING_PROGRESS_OPTIONS, HIRING_CLOSE_PROGRESS_OPTION];
+  }
+  return HIRING_PROGRESS_OPTIONS;
+}
 
 export function hiringProgressLabel(value) {
   const key = String(value || '').toUpperCase();
@@ -29,7 +43,7 @@ export function hiringProgressLabel(value) {
 /**
  * Single Status-column label for Request One rows.
  * Workflow progress drives Accepted / Clarification / On hold;
- * terminal request statuses win (Refused / Assigned / Closed).
+ * terminal request statuses win (Refused / Assigned / HCW Exists / Closed).
  */
 export function requestDisplayStatus(row) {
   const status = String(row?.status || '').toUpperCase();
@@ -40,6 +54,7 @@ export function requestDisplayStatus(row) {
   const progress = String(row?.hiringProgress || 'OPEN').toUpperCase();
   const isHiring = row?.requestType === 'HIRING';
 
+  if (progress === 'HCW_EXISTS') return { label: 'HCW Exists', tone: 'ok' };
   if (status === 'COMPLETED' || progress === 'FULFILLED') {
     return { label: isHiring ? 'Assigned' : 'Closed', tone: 'ok' };
   }

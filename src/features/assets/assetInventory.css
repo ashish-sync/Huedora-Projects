@@ -269,6 +269,86 @@ html[data-theme='dark'] .asset-inventory-shell .asset-form-card {
   border-color: var(--line);
 }
 
+/* Add / Edit asset drawer — Contact Directory form chrome (not asset-form-row page layout) */
+.asset-drawer-form .asset-drawer-section {
+  margin: 0;
+}
+
+.asset-drawer-form .cd-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+  align-items: start;
+  width: 100%;
+}
+
+.asset-drawer-form .cd-form-grid .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.asset-drawer-form .cd-form-grid .field > label {
+  display: block;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+
+.asset-drawer-form .cd-form-grid .field > input:not([type='file']):not([type='checkbox']):not([type='radio']):not([type='hidden']),
+.asset-drawer-form .cd-form-grid .field > select {
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--control-h, 40px);
+  min-height: var(--control-h, 40px);
+  max-height: var(--control-h, 40px);
+  padding: 0 12px;
+  border: 1px solid var(--border-major, var(--color-border-default));
+  border-radius: var(--control-radius, 8px);
+  background: var(--bg-input, var(--color-bg-elevated));
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  line-height: calc(var(--control-h, 40px) - 2px);
+}
+
+.asset-drawer-form .cd-form-grid .field > .adaptive-select-host,
+.asset-drawer-form .cd-form-grid .field > .adaptive-select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-height: none;
+}
+
+.asset-drawer-form .cd-form-grid .field > .adaptive-select-host .adaptive-select__control {
+  height: var(--control-h, 40px) !important;
+  min-height: var(--control-h, 40px) !important;
+  max-height: var(--control-h, 40px) !important;
+}
+
+.asset-drawer-form .cd-form-grid .cd-span-2 {
+  grid-column: 1 / -1;
+}
+
+.asset-drawer-form .field-hint {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .asset-drawer-form .cd-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .asset-drawer-form .cd-form-grid .cd-span-2 {
+    grid-column: auto;
+  }
+}
+
 /* Asset detail — Details + Audit trail */
 .asset-detail-page,
 .asset-inventory-shell .asset-detail-page {

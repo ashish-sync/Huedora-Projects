@@ -8,19 +8,17 @@ import {
   columnKeysForPreset,
   columnKeysForSections,
 } from '../constants/campExportPresets.js';
+import { buildCampDownloadExportFilters } from '../utils/campOperationsBoardQuery.js';
+import {
+  ASSIGNMENT_WORKFLOW_STATUSES,
+  EXECUTION_WORKFLOW_STATUSES,
+  FINANCIAL_LIST_FILTER_STATUSES,
+  REQUEST_WORKFLOW_STATUSES,
+} from '../constants/campWorkflowStatuses.js';
 
 const LIFECYCLE_FILTER_OPTIONS = [
   { value: '', label: 'All stages' },
   ...CAMP_LIFECYCLE_STAGES.map((stage) => ({ value: stage.id, label: stage.short || stage.label })),
-];
-
-const STATUS_FILTER_OPTIONS = [
-  { value: '', label: 'Any status' },
-  { value: 'pending_review', label: 'Pending review' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'executed', label: 'Executed' },
-  { value: 'rejected', label: 'Refused' },
-  { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const EMPTY_FILTERS = {
@@ -32,22 +30,23 @@ const EMPTY_FILTERS = {
   overdue: false,
 };
 
-function buildExportFilters(filters = {}) {
-  const payload = {};
-  const search = trimString(filters.search);
-  const client = trimString(filters.client);
-  const campaignType = trimString(filters.campaignType);
-  const status = trimString(filters.status);
-  const lifecycleStage = trimString(filters.lifecycleStage);
+function statusOptionsForLifecycle(lifecycleStage) {
+  if (lifecycleStage === 'assignment') return ASSIGNMENT_WORKFLOW_STATUSES;
+  if (lifecycleStage === 'execution') return EXECUTION_WORKFLOW_STATUSES;
+  if (lifecycleStage === 'financial') return FINANCIAL_LIST_FILTER_STATUSES;
+  if (lifecycleStage === 'request') return REQUEST_WORKFLOW_STATUSES;
+  return [
+    { value: 'pending_review', label: 'Pending review' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'executed', label: 'Executed' },
+    { value: 'rejected', label: 'Refused' },
+    { value: 'cancelled', label: 'Cancelled' },
+  ];
+}
 
-  if (search) payload.search = search;
-  if (client) payload.client = client;
-  if (campaignType) payload.campaignType = campaignType;
-  if (status) payload.status = status;
-  if (filters.overdue) payload.overdue = '1';
-  if (lifecycleStage) payload.lifecycleStage = lifecycleStage;
-
-  return payload;
+/** @deprecated use buildCampDownloadExportFilters — kept for tests/imports */
+export function buildExportFilters(filters = {}) {
+  return buildCampDownloadExportFilters(filters);
 }
 
 export function exportTemplateId(template) {
@@ -113,6 +112,13 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
   }, [sections, normalizedSearch, activeModuleId]);
 
   const selectedCount = selectedColumns.length;
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: '', label: 'Any status' },
+      ...statusOptionsForLifecycle(filters.lifecycleStage),
+    ],
+    [filters.lifecycleStage],
+  );
   const activeFiltersCount = [
     filters.lifecycleStage,
     filters.status,
@@ -148,7 +154,14 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
   }, []);
 
   function updateFilter(key, value) {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'lifecycleStage') {
+        const allowed = new Set(statusOptionsForLifecycle(value).map((row) => row.value));
+        if (next.status && !allowed.has(next.status)) next.status = '';
+      }
+      return next;
+    });
     setActivePresetId('');
     setSelectedTemplateId('');
   }
@@ -371,7 +384,7 @@ export function CampAdvancedExport({ dateFrom, dateTo, format }) {
                   value={filters.status}
                   onChange={(e) => updateFilter('status', e.target.value)}
                 >
-                  {STATUS_FILTER_OPTIONS.map((option) => (
+                  {statusFilterOptions.map((option) => (
                     <option key={option.value || 'any'} value={option.value}>{option.label}</option>
                   ))}
                 </select>

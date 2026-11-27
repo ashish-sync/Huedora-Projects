@@ -170,6 +170,13 @@ export const campApi = {
   holdPayment: (id, payload = {}) => post(`${BASE}/camps/${id}/hold`, payload),
   releaseHold: (id, payload = {}) => post(`${BASE}/camps/${id}/release-hold`, payload),
   delete: (id) => del(`${BASE}/camps/${id}`),
+  restore: (id, payload = {}) => post(`${BASE}/camps/${id}/restore`, payload),
+  restoreBatch: (payload = {}) => post(`${BASE}/camps/restore-batch`, payload),
+  rollbackRestoreBatch: (batchId, payload = {}) =>
+    post(`${BASE}/camps/restore-batch/${encodeURIComponent(batchId)}/rollback`, payload),
+  recoveryInventory: (params = {}) => get(`${BASE}/camps/recovery/inventory`, params),
+  recoveryInventoryCsvUrl: () => `${BASE}/camps/recovery/inventory?format=csv`,
+  rehydrateHistorical: (payload = {}) => post(`${BASE}/camps/recovery/rehydrate`, payload),
   bulkAction: (payload) => post(`${BASE}/camps/bulk-action`, payload),
   bulkSaveConfirmedFinancial: (payload = {}) => post(`${BASE}/camps/bulk-save-confirmed-financial`, payload),
   uploadExecutionDocuments: async (id, files, docType, docNote = '') => {

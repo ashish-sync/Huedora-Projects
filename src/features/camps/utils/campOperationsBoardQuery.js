@@ -110,6 +110,56 @@ export function operationsBoardExportPath(options = {}) {
   return query ? `/camp-ops/camps/export?${query}` : '/camp-ops/camps/export';
 }
 
+/**
+ * Advanced Download filters → same query vocabulary as Manage / Ops Board exports.
+ * Maps lifecycle + status onto requestReviewStatus / assignmentFilter /
+ * executionFilter / financialFilter so Excel matches the selected UI stage.
+ */
+export function buildCampDownloadExportFilters(filters = {}) {
+  const search = String(filters.search || '').trim();
+  const client = String(filters.client || '').trim();
+  const campaignType = String(filters.campaignType || '').trim();
+  const campaign = String(filters.campaign || '').trim();
+  const assignedUser = String(filters.assignedUser || '').trim();
+  const lifecycleStage = String(filters.lifecycleStage || '').trim();
+  const status = String(filters.status || '').trim();
+  const overdue = filters.overdue === true || filters.overdue === '1' || filters.overdue === 'true';
+
+  let payload;
+  if (lifecycleStage) {
+    payload = buildOperationsBoardListParams({
+      stageId: lifecycleStage,
+      statusValue: status,
+      search,
+      client,
+      campaignType,
+      campaign,
+      assignedUser,
+      includePaging: false,
+    });
+  } else {
+    // All stages: apply raw status (and shared dims) without stage-specific review filters.
+    payload = buildOperationsBoardListParams({
+      stageId: '',
+      statusValue: '',
+      search,
+      client,
+      campaignType,
+      campaign,
+      assignedUser,
+      includePaging: false,
+    });
+    if (status) payload.status = status;
+  }
+
+  if (overdue) payload.overdue = '1';
+
+  // Drop empty keys for a clean POST body.
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  );
+}
+
 export function operationsBoardExportFilename({
   stageLabel = '',
   statusLabel = '',

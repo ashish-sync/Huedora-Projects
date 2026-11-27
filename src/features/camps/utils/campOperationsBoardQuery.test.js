@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOperationsBoardListParams,
   buildOperationsBoardManagePath,
+  buildCampDownloadExportFilters,
   operationsBoardExportFilename,
   operationsBoardExportPath,
 } from './campOperationsBoardQuery.js';
@@ -160,5 +161,31 @@ describe('campOperationsBoardQuery', () => {
       stageId: 'financial',
       includePaging: false,
     })).toEqual({ lifecycleStage: 'financial', excludeBoardCancelled: '1' });
+  });
+
+  it('advanced download filters map lifecycle+status like the Ops Board export', () => {
+    expect(buildCampDownloadExportFilters({
+      lifecycleStage: 'request',
+      status: 'review_pending',
+      client: 'c1',
+      overdue: true,
+    })).toEqual({
+      lifecycleStage: 'request',
+      requestReviewStatus: 'review_pending',
+      client: 'c1',
+      overdue: '1',
+    });
+
+    expect(buildCampDownloadExportFilters({
+      lifecycleStage: 'execution',
+      status: 'cancelled_by_tylo',
+    })).toEqual({
+      lifecycleStage: 'financial',
+      executionFilter: 'cancelled_by_tylo',
+    });
+
+    expect(buildCampDownloadExportFilters({
+      status: 'cancelled',
+    })).toEqual({ status: 'cancelled' });
   });
 });

@@ -42,6 +42,7 @@ import { CampAssignmentRowActions } from './components/CampAssignmentRowActions'
 import { CampExecutionRowActions } from './components/CampExecutionRowActions';
 import { CampFinancialRowActions } from './components/CampFinancialRowActions';
 import { CampAdminDeleteButton } from './components/CampAdminDeleteButton';
+import { CampRecoveryPanel } from './components/CampRecoveryPanel';
 import { CampActionConfirmModal } from './components/CampActionConfirmModal';
 import { api } from '../../shared/api.js';
 import { Pagination } from './components/Pagination';
@@ -90,11 +91,13 @@ export default function CampsPage() {
     hasPermission,
     isSuperAdmin,
     isPaymentConfirmedAdmin,
+    isStrictAdmin,
     canDeleteRecords,
     canApproveCamps,
     canRejectCamps,
     canEditCampRecord,
   } = useAuth();
+  const canManageRecovery = Boolean(isPaymentConfirmedAdmin?.() || isStrictAdmin?.());
   const { workingStage, workingStageMeta, setWorkingStage } = useCampWorkingStage();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -981,6 +984,14 @@ export default function CampsPage() {
           ].filter(Boolean)}
         />
       )}
+
+      <CampRecoveryPanel
+        enabled={canManageRecovery}
+        onRestored={() => {
+          setBulkMessage('Camp restore completed');
+          loadCampsRef.current?.(1, pageSize);
+        }}
+      />
 
       <div className="card card--flush table-wrap camps-manage-card">
         <CampsFilters
